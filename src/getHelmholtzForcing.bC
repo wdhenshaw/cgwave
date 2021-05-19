@@ -1,0 +1,110 @@
+#include "CgWave.h"
+#include "ParallelUtility.h"
+#include "ParallelGridUtility.h"
+#include "OGFunction.h"
+
+// -------- function prototypes for Fortran routines --------
+#define bcOptWave EXTERN_C_NAME(bcoptwave)
+extern "C"
+{
+
+void bcOptWave( const int&nd, 
+                const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
+                const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const int&mask,
+                const real&rsxy, const real&xy, const int&boundaryCondition, 
+                const DataBase *pdb, const int&ipar, const real&rpar, int&ierr );
+
+}
+
+
+// The getBcOptParameters macro is defined here:
+#Include "boundaryConditionMacros.h"
+
+// =======================================================================================================
+/// \brief Fill in the forcing (right-hand-side) for the direct Helmholtz solver (solveHelmHoltz)
+/// \details Fill in the interior forcing and boundary conditions 
+/// \param f (output) 
+// =======================================================================================================
+int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
+{
+  const int myid = max(0,Communication_Manager::My_Process_Number);
+  const int np   = max(1,Communication_Manager::numberOfProcessors());
+
+  const int & debug = dbase.get<int>("debug");
+
+  const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
+  const real & dt             = dbase.get<real>("dt");
+  const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  bool useUpwindDissipation   = ad4  > 0.;
+  const int & solveHelmholtz  = dbase.get<int>("solveHelmholtz");
+
+  const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption"); 
+
+  const int & addForcing                  = dbase.get<int>("addForcing");
+  const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
+  const bool twilightZone = forcingOption==twilightZoneForcing; 
+
+
+  f.updateToMatchGrid(cg);
+  
+  Index I1,I2,I3;
+
+  if( forcingOption==helmholtzForcing )
+  {
+    printF("CgWave::getHelmholtzForcing: ***FILL IN RHS FOR DIRECT HELMHOLTZ SOLVER***\n");
+    
+    int current=0; // not used 
+    real t=0.;
+
+    int ipar[10];
+    real rpar[10];
+    ipar[1]=current;
+    rpar[0]=t;
+    rpar[1]=dt;
+    // -- evaluate the forcing for a Helmholtz solve ---
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    {
+      ipar[0]=grid;
+      userDefinedForcing( f[grid], ipar,rpar );
+    }
+    
+  }
+  else
+  {
+    f=0.;
+  }
+
+  // --- Fill in boundary conditions ---------
+  Real t=0.; // this should not matter
+  int numGhost = orderOfAccuracy/2;
+  if( useUpwindDissipation ) numGhost++; 
+  const int assignBCForImplicit = 1;  
+  for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+  {
+    MappedGrid & mg = cg[grid];
+    // const IntegerArray & gid = mg.gridIndexRange();
+    
+    OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
+    OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+    // get parameters for calling fortran
+    getBcOptParameters(f,fLocal);
+
+    int ierr=0;
+    bcOptWave(mg.numberOfDimensions(),
+              fLocal.getBase(0),fLocal.getBound(0),fLocal.getBase(1),fLocal.getBound(1),
+              fLocal.getBase(2),fLocal.getBound(2),
+              indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
+              *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0),  
+              pdb, ipar[0],rpar[0], ierr );
+
+    // // ...swap periodic edges 
+    // u[grid].periodicUpdate();
+    // u[grid].updateGhostBoundaries();
+    
+
+  } // end for grid 
+
+
+  return 0;
+}

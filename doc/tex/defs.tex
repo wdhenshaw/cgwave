@@ -1,0 +1,442 @@
+% ----- definitions-----
+
+\definecolor{jwbGreen}{rgb}{0, .6, 0}
+\definecolor{daocolor}{rgb}{1.0, .6, 0}
+%\definecolor{jbaPurple}{HTML}{6600FF}
+\newcommand{\red}{\color{red}}
+\newcommand{\green}{\color{green}}
+\newcommand{\blue}{\color{blue}}
+\newcommand{\dao}{\color{daocolor}}
+
+\renewcommand{\url}[1]{}% ******** Remove URL's from bibtex entries ********
+\newcommand{\citeCount}[1]{}% for citation counts papers for WDH citations
+
+\newcommand{\bogus}[1]{{}}
+\newcommand{\strutt}{\rule{0pt}{10pt}}% strutt to make table height bigger
+
+\newlength{\ycbTop}% For colour bar
+\newlength{\ycbMid}%
+
+\newcommand{\eqn}{}
+\newcommand{\eqns}{}
+
+\newcommand{\nd}{n_d}% number of space dimensions
+
+\newcommand{\Lhat}{\hat{L}}
+
+\newcommand{\dx}{\Delta x}
+\newcommand{\dy}{\Delta y}
+%
+\newcommand{\stabTwo}{\mathbf{A}_2}
+\newcommand{\stabFour}{\mathbf{A}_4}
+% Defines for the fourth-order scheme intermediate variables:
+%\newcommand{\Evt}{\widetilde{\Ev}}
+%\newcommand{\Pvt}{\widetilde{\Pv}}
+\newcommand{\Evt}{{\Ev^*}}
+\newcommand{\Pvt}{{\Pv^*}}
+% 
+\newcommand{\Evj}{\Ev_{\jv}}
+\newcommand{\Evtj}{\Evt_{\jv}}
+\newcommand{\Pvj}{\Pv_{\jv}}
+\newcommand{\Pvk}{\Pv_{m}}
+\newcommand{\Pvkj}{\Pv_{m,\,\jv}}
+\newcommand{\Pvtj}{\Pvt_{\jv}}
+\newcommand{\Pvtkj}{\Pvt_{m,\,\jv}}
+%
+\newcommand{\UpTwo}{\mathbf{L}_{2h}}
+\newcommand{\UpFour}{\mathbf{L}_{4h}}
+% 
+\newcommand{\DeltaPtts}{{\blue\big[\Delta_{2h} \partial_t^2 \Pv^*\big]_{\jv}^n}}
+\newcommand{\DeltaPktts}{{\blue\big[\Delta_{2h} \partial_t^2 \Pv_m^*\big]_{\jv}^n}}
+\newcommand{\Pttts}{{\blue\big[\partial_t^3 \Pv^*\big]_{\jv}^n}}
+\newcommand{\Pkts}{{\blue\big[\partial_t \Pv_m^*\big]_{\jv}^n}}
+\newcommand{\Pkttts}{{\blue\big[\partial_t^3 \Pv_m^*\big]_{\jv}^n}}
+\newcommand{\Ets}{{\blue\big[\partial_t \Ev^*\big]_{\jv}^n}}
+\newcommand{\Etts}{{\blue\big[\partial_t^2 \Ev^*]_{\jv}^n}}
+\newcommand{\Ettts}{{\blue\big[\partial_t^3 \Ev^*\big]_{\jv}^n}}
+\newcommand{\DeltaEts}{{\blue\big[\Delta_{2h} \partial_t \Ev^*\big]_{\jv}^n}}
+
+% possible def's for coeffcients in the equations 
+\newcommand{\epsz}{\eps_0}
+\newcommand{\epszi}{\epsz^{-1}}
+\newcommand{\muz}{\mu_0}
+% \newcommand{\epsz}{\eps_\infty}
+% \newcommand{\muz}{\mu_\infty}
+
+\newcommand{\alphaP}{\alpha_p}
+% \newcommand{\alphaP}{\epsz^{-1}}
+% \newcommand{\alphaP}{}
+\newcommand{\bk}{b_{0,m}}
+\newcommand{\btk}{b_{1,m}}
+\newcommand{\ak}{a_{0,m}}
+\newcommand{\atk}{a_{1,m}}
+\newcommand{\epsa}{\check{a}} % \eps_0 * a
+\newcommand{\ake}{\epsa_{0,m}}%  \eps_0 * a_{0,m} 
+\newcommand{\atke}{\epsa_{1,m}}
+\newcommand{\azme}{\epsa_{0,m}}%  \eps_0 * a_{0,m} 
+\newcommand{\atme}{\epsa_{1,m}}
+\newcommand{\attme}{\epsa_{2,m}}
+%
+\newcommand{\bz}{b_{0}}
+\newcommand{\bt}{b_{1}}
+\newcommand{\az}{a_{0}}
+\newcommand{\at}{a_{1}}
+\newcommand{\aze}{\epsa_{0}}
+\newcommand{\ate}{\epas_{1}}
+% 
+\newcommand{\signum}{\operatorname{sgn}}
+% 
+
+% 6 vectors:
+% \newcommand{\vctr}[1]{\underline{#1}}
+% \newcommand{\vctr}[1]{\underaccent{\widebar}{#1}}
+\newcommand{\vctr}[1]{\underaccent{\mbox{\rule[0pt]{7pt}{.7pt}}}{#1}}
+% \newcommand{\Pvv}{\underline{\Pv}}
+% \newcommand{\Evv}{\underline{\Ev}}
+\newcommand{\Ivv}{\vctr{\Iv}}
+\newcommand{\Uvv}{\vctr{\Uv}}
+\newcommand{\Pvv}{\vctr{\Pv}}
+\newcommand{\Qvv}{\vctr{\Qv}}
+\newcommand{\UvvHat}{\hat{\Uvv}}
+\newcommand{\PvvHat}{\hat{\Pvv}}
+\newcommand{\evv}{\vctr{\ev}}
+\newcommand{\Vvv}{\vctr{\Vv}}
+
+\newcommand{\qvv}{\vctr{\qv}}
+
+\newcommand{\Np}{{N_p}}% Number of P_m vectors 
+\newcommand{\sump}{\sum_{m=1}^{\Np}}
+
+\newcommand{\OmegaPEC}{\partial\Omega_{\text{PEC}}}
+
+\newcommand{\psiP}{\psi}
+\newcommand{\chiP}{\hat{\chi}}
+
+\newcommand{\Evh}{\hat{\Ev}}
+\newcommand{\Pvh}{\hat{\Pv}}
+\newcommand{\Pvhk}{\Pvh_m}
+
+\newcommand{\Evth}{\hat{\Evt}}
+\newcommand{\Pvth}{\hat{\Pvt}}
+
+\newcommand{\tableFont}{\footnotesize}
+\newcommand{\tableFontSize}{\tableFont}
+\newcommand{\num}[2]{#1e#2} % Use this macro to define the format of the numbers in the table
+\newcommand{\errFormat}[1]{$e_{#1}$} % form of error label in tables
+\newcommand{\eem}{e^{(j)}}
+\newcommand{\rateLabel}{rate}
+
+\newcommand{\f}[2]{\frac{#1}{#2}}
+
+% short for for begin{align} and \end{align}
+\def\ba#1\ea{\begin{align}#1\end{align}}
+
+% short for for begin{align*} and \end{align*}
+\def\bas#1\eas{\begin{align*}#1\end{align*}}
+
+% short for for begin{alignat}{3} and \end{alignat}
+\def\bat#1\eat{\begin{alignat}{3}#1\end{alignat}}
+
+% short for for begin{alignat*}{3} and \end{alignat*}
+\def\bats#1\eats{\begin{alignat*}{3}#1\end{alignat*}}
+
+\newcommand{\bse}{\begin{subequations}}
+\newcommand{\ese}{\end{subequations}}
+
+
+\newcommand{\jumpI}[1]{\left[#1\right]_I}% jump at interfaces 
+
+
+\newcommand{\Dzx}{D_{0x}}
+\newcommand{\Dpx}{D_{+x}}
+\newcommand{\Dmx}{D_{-x}}
+
+\newcommand{\Dzt}{D_{0t}}
+\newcommand{\Dpt}{D_{+t}}
+\newcommand{\Dmt}{D_{-t}}
+\newcommand{\dt}{\Delta t}
+
+\newcommand{\defeq}{\overset{{\rm def}}{=}}% definition = 
+\newcommand{\eqdef}{\overset{{\rm def}}{=}}% definition = 
+
+\newcommand{\qvb}{\qv_b}% solid state
+\newcommand{\cma}{\,,\,}% command with a little space
+
+\newcommand{\av}{\mathbf{ a}}
+\newcommand{\bv}{\mathbf{ b}}
+\newcommand{\cv}{\mathbf{ c}}
+\newcommand{\dv}{\mathbf{ d}}
+\newcommand{\ev}{\mathbf{ e}}
+\newcommand{\fv}{\mathbf{ f}}
+\newcommand{\gv}{\mathbf{ g}}
+\newcommand{\hv}{\mathbf{ h}}
+\newcommand{\iv}{\mathbf{ i}}
+\newcommand{\jv}{\mathbf{ j}}
+\newcommand{\kv}{\mathbf{ k}}
+\newcommand{\lv}{\mathbf{ l}}
+\newcommand{\mv}{\mathbf{ m}}
+\newcommand{\nv}{\mathbf{ n}}
+\newcommand{\ov}{\mathbf{ o}}
+\newcommand{\pv}{\mathbf{ p}}
+\newcommand{\qv}{\mathbf{ q}}
+\newcommand{\rv}{\mathbf{ r}}
+\newcommand{\sv}{\mathbf{ s}}
+\newcommand{\tv}{\mathbf{ t}}
+\newcommand{\uv}{\mathbf{ u}}
+\newcommand{\vv}{\mathbf{ v}}
+\newcommand{\wv}{\mathbf{ w}}
+\newcommand{\xv}{\mathbf{ x}}
+\newcommand{\yv}{\mathbf{ y}}
+\newcommand{\zv}{\mathbf{ z}}
+% 
+\newcommand{\Av}{\mathbf{ A}}
+\newcommand{\Bv}{\mathbf{ B}}
+\newcommand{\Cv}{\mathbf{ C}}
+\newcommand{\Dv}{\mathbf{ D}}
+\newcommand{\Ev}{\mathbf{ E}}
+\newcommand{\Fv}{\mathbf{ F}}
+\newcommand{\Gv}{\mathbf{ G}}
+\newcommand{\Hv}{\mathbf{ H}}
+\newcommand{\Iv}{\mathbf{ I}}
+\newcommand{\Jv}{\mathbf{ J}}
+\newcommand{\Kv}{\mathbf{ K}}
+\newcommand{\Lv}{\mathbf{ L}}
+\newcommand{\Mv}{\mathbf{ M}}
+\newcommand{\Nv}{\mathbf{ N}}
+\newcommand{\Ov}{\mathbf{ O}}
+\newcommand{\Pv}{\mathbf{ P}}
+\newcommand{\Qv}{\mathbf{ Q}}
+\newcommand{\Rv}{\mathbf{ R}}
+\newcommand{\Sv}{\mathbf{ S}}
+\newcommand{\Tv}{\mathbf{ T}}
+\newcommand{\Uv}{\mathbf{ U}}
+\newcommand{\Vv}{\mathbf{ V}}
+\newcommand{\Wv}{\mathbf{ W}}
+\newcommand{\Xv}{\mathbf{ X}}
+\newcommand{\Yv}{\mathbf{ Y}}
+\newcommand{\Zv}{\mathbf{ Z}}
+
+\newcommand{\collon}{:}  % note \colon already defined by someone.
+\newcommand{\ff}{\tt}
+
+% \newcommand{\lt}{{<}}
+% \newcommand{\grad}{\nabla}
+% \newcommand{\comma}{~~~,~~}
+% \newcommand{\calo}{{\cal O}}
+
+\newcommand{\half}{{1\over2}}
+
+\newcommand{\Real}{{\mathbb R}}
+\newcommand{\Imag}{\text{Im}}
+\newcommand{\Complex}{{\mathbb C}}
+\newcommand{\Integers}{{\mathbb Z}}
+
+\newcommand{\zerov}{\mathbf{0}}
+
+
+
+\newcommand{\Ac}{{\mathcal A}}
+\newcommand{\Bc}{{\mathcal B}}
+\newcommand{\Cc}{{\mathcal C}}
+\newcommand{\Dc}{{\mathcal D}}
+\newcommand{\Ec}{{\mathcal E}}
+\newcommand{\Fc}{{\mathcal F}}
+\newcommand{\Gc}{{\mathcal G}}
+\newcommand{\Gs}{{\mathcal G}}
+\newcommand{\Ic}{{\mathcal I}}
+\newcommand{\Jc}{{\mathcal J}}
+\newcommand{\Rc}{{\mathcal R}}
+\newcommand{\Lc}{{\mathcal L}}
+\newcommand{\Nc}{{\mathcal N}}
+\newcommand{\Oc}{{\mathcal O}}
+\newcommand{\Pc}{{\mathcal P}}
+\newcommand{\Qc}{{\mathcal Q}}
+\newcommand{\Sc}{{\mathcal S}}
+\newcommand{\Tc}{{\mathcal T}}
+
+
+
+\newcommand{\deltav}{\boldsymbol{\delta}}
+\newcommand{\omegav}{\boldsymbol{\omega}}
+\newcommand{\tauv}{\boldsymbol{\tau}}
+\newcommand{\phiv}{\boldsymbol{\phi}}
+\newcommand{\psiv}{\boldsymbol{\psi}}
+\newcommand{\sigmav}{\boldsymbol{\sigma}}
+\newcommand{\chiv}{\boldsymbol{\chi}}
+\newcommand{\xiv}{\boldsymbol{\xi}}
+\newcommand{\alphav}{\boldsymbol{\alpha}}
+\newcommand{\kappav}{\boldsymbol{\kappa}}
+
+\newcommand{\kvTilde}{\tilde{\kv}}
+\newcommand{\kTilde}{\tilde{k}}
+
+
+\newcommand{\grad}{\nabla}
+
+
+\newcommand{\eps}{\epsilon}
+\newcommand{\epsHat}{\hat{\epsilon}}
+\newcommand{\chiHat}{\hat{\chi}}
+\newcommand{\epsBar}{\bar{\epsilon}}
+
+
+\newcommand{\xHat}{\hat{x}}
+\newcommand{\yHat}{\hat{y}}
+\newcommand{\zHat}{\hat{z}}
+
+
+\newcommand{\VvHat}{\hat{\Vv}}
+\newcommand{\UvHat}{\hat{\Uv}}
+\newcommand{\DvHat}{\hat{\Dv}}
+\newcommand{\PvHat}{\hat{\Pv}}
+\newcommand{\PHat}{\hat{P}}
+\newcommand{\Phat}{\hat{P}}
+\newcommand{\EvHat}{\hat{\Ev}}
+\newcommand{\EHat}{\hat{E}}
+\newcommand{\Ehat}{\hat{E}}
+\newcommand{\HzHat}{\hat{H}_z}
+\newcommand{\HvHat}{\hat{\Hv}}
+\newcommand{\HHat}{\hat{H}}
+
+\newcommand{\ap}{a_p}% coeff of in P equation, P_tt + a_p P_t + b_p P = c_p E 
+\newcommand{\bp}{b_p}% coeff of in P equation, P_tt + a_p P_t + b_p P = c_p E 
+\newcommand{\cp}{c_p}% coeff of in P equation, P_tt + a_p P_t + b_p P = c_p E 
+
+\newcommand{\Ej}{\mathbf{E}_{\jv}}
+\newcommand{\Pj}{\mathbf{P}_{\jv}}
+\newcommand{\Wj}{\mathbf{W}_{\jv}}
+\newcommand{\Qj}{\mathbf{Q}_{\jv}}
+
+\newcommand{\Ejn}{\Ej^n}
+\newcommand{\Pjn}{\Pj^n}
+ \newcommand{\Psij}{\mathbf{\Psi}_{\jv}}
+ 
+ \newcommand{\Wjn}{\Wj^n}
+\newcommand{\Qjn}{\Qj^n}
+
+
+\newcommand{\LambdaMax}{\Lambda_{\text{max}}}
+\newcommand{\Cfl}{C_{\rm cfl}}
+\newcommand{\summ}{\sum_m}
+
+
+
+\newcommand{\p}{\partial}
+\newcommand{\matr}[1]{\underline{\underline{#1}}}
+
+\newcommand{\epsv}{\boldsymbol{\eps}}
+\newcommand{\muv}{\boldsymbol{\mu}}
+% \newcommand{\chiv}{\boldsymbol{\chi}}
+\newcommand{\etav}{\boldsymbol{\eta}}
+\newcommand{\zetav}{\boldsymbol{\zeta}}
+% \newcommand{\xiv}{\boldsymbol{\xi}}
+
+\newcommand{\chivHat}{\hat{\matr{\chiv}}}
+% \newcommand{\chiHat}{\hat{\chi}}
+\newcommand{\psiHat}{\hat{\psi}}
+
+% \newcommand{\epsHat}{\hat{\eps}}
+\newcommand{\epsvHat}{\hat{\boldsymbol{\eps}}}
+
+\newcommand{\epsm}{\matr{\epsv}}% eps-matrix
+\newcommand{\mum}{\matr{\muv}}% mu-matrix 
+\newcommand{\zetam}{\matr{\zetav}}% v-matrix 
+\newcommand{\etam}{\matr{\etav}}% v-matrix 
+\newcommand{\xim}{\matr{\xiv}}% v-matrix 
+
+\newcommand{\epsmHat}{\hat{\matr{\epsv}}}% eps-matrix-hat
+\newcommand{\mumHat}{\hat{\matr{\muv}}}% mu-matrix-hat 
+\newcommand{\zetamHat}{\hat{\matr{\zetav}}}% v-matrix-hat 
+\newcommand{\etamHat}{\hat{\matr{\etav}}}% v-matrix-hat 
+\newcommand{\ximHat}{\hat{\matr{\xiv}}}% v-matrix-hat 
+% 
+\newcommand{\umHat}{\hat{\matr{\etav}}}% u-matrix-hat 
+\newcommand{\vmHat}{\hat{\matr{\zetav}}}% v-matrix-hat 
+% 
+% \newcommand{\DvHat}{\hat{\Dv}}
+\newcommand{\BvHat}{\hat{\Bv}}
+% \newcommand{\EvHat}{\hat{\Ev}}
+% \newcommand{\HvHat}{\hat{\Hv}}
+% \newcommand{\PvHat}{\hat{\Pv}}
+\newcommand{\MvHat}{\hat{\Mv}}
+
+\newcommand{\uHat}{\hat{u}}
+\newcommand{\vHat}{\hat{v}}
+% \newcommand{\zHat}{\hat{z}}
+
+% \newcommand{\PHat}{\hat{P}}
+
+\newcommand{\vvHat}{\hat{\vv}}
+\newcommand{\wvHat}{\hat{\wv}}
+\newcommand{\zvHat}{\hat{\zv}}
+\newcommand{\EHvHat}{\begin{bmatrix} \EvHat \\ \HvHat \end{bmatrix}}
+\newcommand{\DBvHat}{\begin{bmatrix} \DvHat \\ \BvHat \end{bmatrix}}
+\newcommand{\PMvHat}{\begin{bmatrix} \PvHat \\ \MvHat \end{bmatrix}}
+\newcommand{\EHv}{\begin{bmatrix} \Ev \\ \Hv \end{bmatrix}}
+\newcommand{\DBv}{\begin{bmatrix} \Dv \\ \Bv \end{bmatrix}}
+\newcommand{\PMv}{\begin{bmatrix} \Pv \\ \Mv \end{bmatrix}}
+\newcommand{\curlEHv}{\begin{bmatrix} \grad\times\Hv \\ -\grad\times\Ev \end{bmatrix}}
+\newcommand{\Nm}{N}% frequency dependent part of the material matrix,
+
+\newcommand{\Ivm}{\matr{\Iv}}% 6 x 6 identity
+
+\newcommand{\Am}{\matr{\Kv}}% 6 x 6 material tensor 
+\newcommand{\Bm}{\matr{\Bv}}
+\newcommand{\Cm}{\matr{\Cv}}
+\newcommand{\Dm}{\matr{\Dv}}
+\newcommand{\Km}{\matr{\Kv}}% 6 x 6 material tensor 
+\newcommand{\KmHat}{\hat{\matr{\Kv}}}% 
+\newcommand{\Mm}{\matr{\Mv}}
+\newcommand{\mm}{\matr{\mv}}
+\newcommand{\Pm}{\matr{\Pv}}
+\newcommand{\Qm}{\matr{\Qv}}
+\newcommand{\Gm}{\matr{\Gv}}
+\newcommand{\Rm}{\matr{\Rv}}
+\newcommand{\Sm}{\matr{\Sv}}
+
+% \newcommand{\chim}{\matr{\chiv}}
+\newcommand{\chim}{\mathrel{\raisebox{2pt}{$\matr{\chiv}$}}}% raise chi bit 
+
+% \newcommand{\chimHat}{\matr{\hat{\chiv}}}
+\newcommand{\chimHat}{\hat{\chim}}
+
+
+
+\newcommand{\Tm}{\matr{\Tv}}
+
+\newcommand{\Kmz}{\Km_0}  % 6 x 6 material tensor -- constant part
+\newcommand{\KHat}{\hat{K}}
+
+\renewcommand{\Im}{\text{Im}}
+
+% For scattering from an interface: 
+\newcommand{\kvr}{\kv^r}
+\newcommand{\kr}{k^r}
+\newcommand{\kvt}{\kv^t}
+\newcommand{\kt}{k^t}
+
+\newcommand{\kvHat}{\hat{\kv}}
+% \newcommand{\cMax}{c_{\rm max}}
+\newcommand{\cMax}{c_M}
+\newcommand{\WvHat}{\hat{\Wv}}
+\newcommand{\kHat}{\hat{k}}
+\newcommand{\Dhat}{\hat{D}}
+
+
+\newcommand{\Nij}{N^{ij}}
+
+\newcommand{\crk}{c^{RK}}% RK coefficients 
+\newcommand{\ark}{a^{RK}}% RK coefficients 
+\newcommand{\brk}{b^{RK}}% RK coefficients 
+\newcommand{\Nstage}{N_{\rm stage}}
+
+\newcommand{\Pp}{P}  % name for polarization terms
+\newcommand{\Qp}{Q}
+\newcommand{\UPQ}{\Wv} % vector holding [U, P, Q] 
+\newcommand{\mat}{\nu} % material index 
+\newcommand{\Nmat}{{N_m}}% number of materials
+
+\newcommand{\DHat}{\hat{D}}
+\newcommand{\dtMax}{\dt_{\rm max}}
+\newcommand{\CFL}{C_{\rm CFL}}
+\newcommand{\yStab}{y_{\rm stab}}% stability region limit on imag-axis 

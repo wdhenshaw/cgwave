@@ -1,0 +1,145 @@
+#
+# Measure convergence rates for CgWave
+#
+#     conv.p tests.conv -option=[planeWave|helmholtz] -cg=[gridName] -alwaysCompute=[0|1] -ng=<num-refinement-levels>
+#
+$check="cgWave.check";
+# 
+# Set default parameters: 
+$cg="square"; $option="planeWave"; 
+$cmdFile="planeWave.cmd"; 
+$CGBUILDPREFIX=$ENV{CGBUILDPREFIX};
+# $cgmx = "$CGBUILDPREFIX/mx/bin/cgmx";  # command for cgmx
+$cgWave = "../bin/cgWave";  # command for cgWave
+# $cmdDir="$ENV{CG}/mx/cmd";  
+$cmdDir="../cmd";  
+$tf=.5; $tp=.1; $order = "2"; $ng=3; $interp="i"; $cfl=.9; $radius=.5; $bg="box";
+$kx=1; $ky=0; $kz=0; 
+$diss=0;  
+$errorNorm=0; $method=""; 
+$alwaysCompute=1; $saveVectorErrors=0; 
+$numberOfDimensions=2; 
+#
+GetOptions( "name=s"=>\$name,"order=s"=>\$order,"ng=i"=>\$ng,"tf=f"=>\$tf,"interp=s"=>\$interp,"diss=f"=>\$diss,\
+            "fixed=s"=>\$fixed,"cfl=f"=>\$cfl,"alwaysCompute=i"=>\$alwaysCompute,"tp=f"=>\$tp,\
+            "errorNorm=i"=>\$errorNorm,"cg=s"=>\$cg,"option=s"=>\$option,\
+            "kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz );
+# --------------------------------------------------------------------------
+$name=$option; 
+if( $option eq "planeWave" ){ $cmdFile="planeWave.cmd";  }
+if( $option eq "helmholtz" ){ $cmdFile="helmholtz.cmd";  }
+# 
+if( $cg =~ /nonSquarenp/ ){ $bg="square"; }
+if( $cg =~ /nonSquare/ ){ $bg="square"; }
+if( $cg =~ /nonBoxnpp/ ){ $bg="box"; }
+# 
+if( $cg =~ /box*/ || $cg =~ /nonBox*/ || $cg =~ /unitBox*/ || $cg =~ /unitNonBox*/ || $cg =~ /refineBox*/ || $cg =~ /refineNonBox*/ ){ $numberOfDimensions=3; }
+$extraLabel ="";
+#
+if( $errorNorm eq 0 ){ $normName = "max"; }elsif( $errorNorm eq 1 ){ $normName = "L1";}\
+   elsif( $errorNorm eq 2 ){ $normName = "L2"; }else{ $normName="UnknownNorm"; }
+# 
+$outputFile="$name$method$cg$extraLabel" . "Order$order" . $normName . "NormConvTable.tex"; 
+#
+$caseName="$name$method$cg\Order$order";
+$caseName .= $normName . "Norm";
+#
+#
+#
+$numberOfComponents=1;
+# 
+$title= "grid  \& N \&  \$ u \$ ";
+#
+$labelMethod=$method;
+$caption= "\\caption\{CgWave, $name, $normName norm, order=\$$order\$, \$t=$tf\$, cfl=\$$cfl\$, diss=\$$diss\$, kx=$kx, ky=$ky, kz=$kz, $date}\\label\{table:$name" . $method . "Order$order$normName}"; 
+# 
+$options = "-cfl=$cfl -tf=$tf -tp=$tp -kx=$kx -ky=$ky -kz=$kz -go=go";
+#
+$suffix="";
+if( ($diss > 0.) && ($order eq 4) ){ $suffix=".ng3"; }
+if( ($diss > 0.) && ($order eq 6) ){ $suffix=".ng4"; }
+$grid1=$cg . "2";   $gName1 = $cg . "e2.order$order$suffix"; 
+$grid2=$cg . "4";   $gName2 = $cg . "e4.order$order$suffix"; 
+$grid3=$cg . "8";   $gName3 = $cg . "e8.order$order$suffix"; 
+$grid4=$cg . "16";  $gName4 = $cg . "e16.order$order$suffix"; 
+$grid5=$cg . "32";  $gName5 = $cg . "e32.order$order$suffix"; 
+$grid6=$cg . "64";  $gName6 = $cg . "e64.order$order$suffix"; 
+# Special cases; 
+if( $cg =~ /nonSquarenp/ ){\
+$grid1=$cg . "1";   $gName1 = "nonSquare8np.order$order$suffix"; \
+$grid2=$cg . "2";   $gName2 = "nonSquare16np.order$order$suffix"; \
+$grid3=$cg . "4";   $gName3 = "nonSquare32np.order$order$suffix"; \
+$grid4=$cg . "8";   $gName4 = "nonSquare64np.order$order$suffix"; \
+$grid5=$cg . "16";  $gName5 = "nonSquare128np.order$order$suffix";\
+$grid6=$cg . "32";  $gName6 = "nonSquare256np.order$order$suffix";\
+}
+if( $cg =~ /nonBoxnpp/ ){\
+$grid1=$cg . "1";   $gName1 = "nonBox2npp.order$order$suffix"; \
+$grid2=$cg . "2";   $gName2 = "nonBox4npp.order$order$suffix"; \
+$grid3=$cg . "4";   $gName3 = "nonBox8npp.order$order$suffix"; \
+$grid4=$cg . "8";   $gName4 = "nonBox16npp.order$order$suffix"; \
+$grid5=$cg . "16";  $gName5 = "nonBox32npp.order$order$suffix";\
+$grid6=$cg . "32";  $gName6 = "nonBox64npp.order$order$suffix";\
+}
+if( $cg =~ /box/ ){\
+$grid1=$cg . "1";   $gName1 = "box1.order$order$suffix"; \
+$grid2=$cg . "2";   $gName2 = "box2.order$order$suffix"; \
+$grid3=$cg . "4";   $gName3 = "box4.order$order$suffix"; \
+$grid4=$cg . "8";   $gName4 = "box8.order$order$suffix"; \
+$grid5=$cg . "16";  $gName5 = "box16.order$order$suffix";\
+$grid6=$cg . "32";  $gName6 = "box32.order$order$suffix";\
+}
+if( $cg =~ /boxp/ ){\
+$grid1=$cg . "1";   $gName1 = "box1p.order$order$suffix"; \
+$grid2=$cg . "2";   $gName2 = "box2p.order$order$suffix"; \
+$grid3=$cg . "4";   $gName3 = "box4p.order$order$suffix"; \
+$grid4=$cg . "8";   $gName4 = "box8p.order$order$suffix"; \
+$grid5=$cg . "16";  $gName5 = "box16p.order$order$suffix";\
+$grid6=$cg . "32";  $gName6 = "box32p.order$order$suffix";\
+}
+if( $cg =~ /square/ ){\
+$grid1=$cg . "8";   $gName1 = "square8.order$order$suffix"; \
+$grid2=$cg . "16";   $gName2 = "square16.order$order$suffix"; \
+$grid3=$cg . "32";   $gName3 = "square32.order$order$suffix"; \
+$grid4=$cg . "64";   $gName4 = "square64.order$order$suffix"; \
+$grid5=$cg . "128";  $gName5 = "square128.order$order$suffix";\
+$grid6=$cg . "256";  $gName6 = "square256.order$order$suffix";\
+$grid7=$cg . "512";  $gName7 = "square512.order$order$suffix";\
+$grid8=$cg . "1024"; $gName8 = "square1024.order$order$suffix";\
+}
+if( $cg =~ /squarep/ ){\
+$grid1=$cg . "8";   $gName1 = "square8p.order$order$suffix"; \
+$grid2=$cg . "16";   $gName2 = "square16p.order$order$suffix"; \
+$grid3=$cg . "32";   $gName3 = "square32p.order$order$suffix"; \
+$grid4=$cg . "64";   $gName4 = "square64p.order$order$suffix"; \
+$grid5=$cg . "128";  $gName5 = "square128p.order$order$suffix";\
+$grid6=$cg . "256";  $gName6 = "square256p.order$order$suffix";\
+}
+if( $cg =~ /nonSquare/ ){\
+$grid1=$cg . "8";   $gName1 = "nonSquare8.order$order$suffix"; \
+$grid2=$cg . "16";   $gName2 = "nonSquare16.order$order$suffix"; \
+$grid3=$cg . "32";   $gName3 = "nonSquare32.order$order$suffix"; \
+$grid4=$cg . "64";   $gName4 = "nonSquare64.order$order$suffix"; \
+$grid5=$cg . "128";  $gName5 = "nonSquare128.order$order$suffix";\
+$grid6=$cg . "256";  $gName6 = "nonSquare256.order$order$suffix";\
+}
+if( $cg =~ /nonSquarep/ ){\
+$grid1=$cg . "8";   $gName1 = "nonSquare8p.order$order$suffix"; \
+$grid2=$cg . "16";   $gName2 = "nonSquare16p.order$order$suffix"; \
+$grid3=$cg . "32";   $gName3 = "nonSquare32p.order$order$suffix"; \
+$grid4=$cg . "64";   $gName4 = "nonSquare64p.order$order$suffix"; \
+$grid5=$cg . "128";  $gName5 = "nonSquare128p.order$order$suffix";\
+$grid6=$cg . "256";  $gName6 = "nonSquare256p.order$order$suffix";\
+}
+# 
+if( $ng > 0 ){ $grid=$grid1; $res=1; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName1 $options";  }
+if( $ng > 1 ){ $grid=$grid2; $res=2; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName2 $options";}
+if( $ng > 2 ){ $grid=$grid3; $res=4; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName3 $options";}
+if( $ng > 3 ){ $grid=$grid4; $res=8; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName4 $options";}
+if( $ng > 4 ){ $grid=$grid5; $res=16; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName5 $options";}
+if( $ng > 5 ){ $grid=$grid6; $res=32; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName6 $options";}
+if( $ng > 6 ){ $grid=$grid7; $res=64; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName7 $options";}
+if( $ng > 7 ){ $grid=$grid8; $res=128; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName8 $options";}
+$closeFile="true";
+# -------------------------------------------------------------------------------
+exit
