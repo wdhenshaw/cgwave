@@ -1529,22 +1529,22 @@ end if
   buildFile(advWave2dOrder2c,2,2,curvilinear)
   buildFile(advWave3dOrder2c,3,2,curvilinear)
 
-  ! buildFile(advWave2dOrder4r,2,4,rectangular)
-  ! buildFile(advWave3dOrder4r,3,4,rectangular)
-  ! buildFile(advWave2dOrder4c,2,4,curvilinear)
-  ! buildFile(advWave3dOrder4c,3,4,curvilinear)
+  buildFile(advWave2dOrder4r,2,4,rectangular)
+  buildFile(advWave3dOrder4r,3,4,rectangular)
+  buildFile(advWave2dOrder4c,2,4,curvilinear)
+  buildFile(advWave3dOrder4c,3,4,curvilinear)
 
-  ! !   ORDER=6 : BC's not implemented yet
-  ! buildFile(advWave2dOrder6r,2,6,rectangular)
-  ! buildFile(advWave3dOrder6r,3,6,rectangular)
-  ! buildFile(advWave2dOrder6c,2,6,curvilinear)
-  ! buildFile(advWave3dOrder6c,3,6,curvilinear)
+  !   ORDER=6 : BC's not implemented yet
+  buildFile(advWave2dOrder6r,2,6,rectangular)
+  buildFile(advWave3dOrder6r,3,6,rectangular)
+  buildFile(advWave2dOrder6c,2,6,curvilinear)
+  buildFile(advWave3dOrder6c,3,6,curvilinear)
 
-  ! ! ORDER 8 -- finish BCs
-  ! buildFile(advWave2dOrder8r,2,8,rectangular)
-  ! buildFile(advWave3dOrder8r,3,8,rectangular)
-  ! buildFile(advWave2dOrder8c,2,8,curvilinear)
-  ! buildFile(advWave3dOrder8c,3,8,curvilinear)
+  ! ORDER 8 -- finish BCs
+  buildFile(advWave2dOrder8r,2,8,rectangular)
+  buildFile(advWave3dOrder8r,3,8,rectangular)
+  buildFile(advWave2dOrder8c,2,8,curvilinear)
+  buildFile(advWave3dOrder8c,3,8,curvilinear)
 
 
 
