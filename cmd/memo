@@ -1,8 +1,31 @@
 
 THINGS TO FIX:
   (1) 2nd-order upwind scheme needs cfl=.7 *fix me*
-  (2) Add TRIG TZ
-  (3) OGPolyfunction: increase degree to 8 ??
+  (2) OGPolyfunction: increase degree to 8 ??
+  (3) Upwind dissipation + implicit -- not working yet
+
+
+************************************************************************
+********* Thursday May 19, 2021
+
+CONTINUE On CgWave sourceforge git repo.
+
+Build new repo on cg6
+
+cg6 test:
+
+../bin/cgwh waveHoltz.cmd -g=square64.order2.hdf -x0=.75 -y0=.75 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64FixedPoint -tol=1e-12 -tp=1 -ad4=0 -imode=1 -go=halt
+
+it=170:  max(|v-vOld|)=8.97e-13 (tol=1e-12)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =171 #########################
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23365e+00 (from symbol of D+D-), dt=7.694709e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=5.618e-11 (using omega), max-res=2.837e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=5.618e-11, CR=0.851 CR-perPeriod=0.851, cpu= 3.10e+00(s)
+CgWaveHoltz::Results saved to file square64FixedPoint.m
+
+
+exact: 
+../bin/cgWave tz.cmd -g=square16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 
 
 
 

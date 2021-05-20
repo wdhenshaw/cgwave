@@ -1,0 +1,20 @@
+Getting started:
+
+(1) Install Overture from the sourceforge git repo.
+
+(2) To clone a new version of CgWave from sourceforge (replace wdhenshaw by your sourceforge account name)
+
+git clone ssh://wdhenshaw@git.code.sf.net/p/cgwave/code cgwave
+
+(2) Build CgWave. in the cgwave directory type:
+    > make
+
+  This will create the executable cgwave/bin/cgWave
+
+
+(3) Run the regression tests:
+   > cd cgwave/check
+   > make
+
+(4) Goto the cgwave/cmd directory to see some sample command files. 
+    The cgwave/cmd/memo file has some examples of different runs.
