@@ -2621,7 +2621,7 @@
           if( option.eq.1 )then 
             useSosupDissipation = 1
           else
-            useSosupDissipation=0
+            useSosupDissipation = 0
           end if
             if( useUpwindDissipation.eq.1 )then
        ! Upwind dissipation for implicit time time-stepping
@@ -2654,7 +2654,7 @@
                   stop 2222
               end if
             end if
-          if( (.true. .or. debug.gt.3) .and. t.le.dt )then
+          if( (.false. .or. debug.gt.1) .and. t.le.dt )then
               write(*,'("advWave: option=",i4," grid=",i4)') option,grid
               write(*,'("advWave: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
               write(*,'("advWave: addForcing=",i2," forcingOption=",i2," useUpwindDissipation=",i2)') addForcing,forcingOption,useUpwindDissipation
@@ -2675,7 +2675,7 @@
             uDotFactor=.5  ! By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
       ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
             adSosup=sosupParameter*adSosup
-            if( (.true. .or. debug.gt.3) .and. t.le.2*dt )then
+            if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
                 write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useUpwindDissipation
                 write(*,'("         : t,dt,adSosup=",3e10.2)')t,dt,adSosup
                 write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2)') useSosupDissipation,sosupParameter
@@ -3078,10 +3078,13 @@
                                   upw = 0. 
                                   do iStencil=-upwindHalfStencilWidth,upwindHalfStencilWidth
                                       j1 = i1 + iStencil*idv(0);  j2 = i2 + iStencil*idv(1);  j3 = i3 + iStencil*idv(2)
-                                      upw = upw - upwindCoeff(iStencil,upwCase)*um(j1,j2,j3,ec)  ! *** CHECK ME 
-                                      write(*,'("upw-rhs: i1,i2=",2i4," j1,j2=",2i4," upwindCoeff=",1pe9.2, " um=",1pe9.2," upw=",1pe9.2)') i1,i2,j1,j2,upwindCoeff(iStencil,upwCase),um(j1,j2,j3,ec),upw
+                                      upw = upw + upwindCoeff(iStencil,upwCase)*um(j1,j2,j3,ec)  ! *** CHECK ME 
+                   ! write(*,'("upw-rhs: i1,i2=",2i4," j1,j2=",2i4," upwindCoeff=",1pe9.2, " um=",1pe9.2," upw=",1pe9.2)') i1,i2,j1,j2,upwindCoeff(iStencil,upwCase),um(j1,j2,j3,ec),upw
                                   end do 
-                                  un(i1,i2,i3,ec) = un(i1,i2,i3,ec) + adxSosup(dir)*upw 
+                 ! if( abs(upw).gt.1e-10 )then
+                 !   write(*,'(">>upw-rhs: i1,i2=",2i4," upw=",1pe9.2)') i1,i2,upw
+                 ! end if 
+                                  un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - adxSosup(dir)*upw 
                               end do
                                   end if
                               end do

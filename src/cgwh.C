@@ -47,6 +47,7 @@
 int 
 getLineFromFile( FILE *file, char s[], int lim);
 
+#define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
 #define FOR_3(i1,i2,i3,I1,I2,I3) for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  
 
@@ -64,160 +65,6 @@ enum InitialConditionOptionEnum
   pulse
 };
 
-
-
-// // Assign the initial conditions
-// void
-// getInitialConditions( InitialConditionOptionEnum option, realCompositeGridFunction *u, real t, real dt,
-//                       real c, const bool plotOption )
-// {
-//   const int myid=Communication_Manager::My_Process_Number;
-//   printF("get initial conditions\n");
-  
-//   CompositeGrid & cg = *( u[0].getCompositeGrid() );
-
-//   // Pulse parameters:
-  
-//   Index I1,I2,I3;
-
-// // define U0(x,y,t) exp( - alpha*( SQR((x)-(xPulse-c*dt)) + SQR((y)-yPulse) ) )
-// // #define U0(x,y,t) exp( - alpha*( SQR((x)-(xPulse+c*(t))) ) )
-// // define U0(x,y,t) exp( - alpha*( pow( a0*( (x)-(xPulse+c*(t)) ),20.) ) )
-// #define U0(x,y,t) exp( - alpha*( pow( a0*( (x)-(xPulse+c*(t)) ),pulsePow) ) )
-
-//   int grid;
-//   for( grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-//   {
-//     // initial condition is a pulse, we make an approximate guess for u(-dt) 
-//     // u[1] = u(x,-dt) 
-//     // u[0] = u(x,t)
-
-//     // get the local serial arrays
-//     OV_GET_SERIAL_ARRAY(real,u[0][grid],u0Local);
-//     OV_GET_SERIAL_ARRAY(real,u[1][grid],u1Local);
-
-//     getIndex(cg[grid].dimension(),I1,I2,I3); // assign all points including ghost points.
-//     const bool isRectangular=cg[grid].isRectangular();
-
-//     if( option==smoothPulse )
-//     {
-
-//       // restrict the bounds (I1,I2,i3) to the local array bounds (including parallel ghost pts):
-//       const int includeGhost=1;
-//       bool ok=ParallelUtility::getLocalArrayBounds(u[0][grid],u0Local,I1,I2,I3,includeGhost);
-
-//       if( isRectangular )
-//       {
-//         // for a rectangular grid we avoid building the array of verticies.
-//         // we assign the initial conditions with C-style loops
-
-//         if( !ok ) continue;  // nothing to do on this processor
-
-//         real dx[3]={0.,0.,0.}, xab[2][3]={0.,0.,0.,0.,0.,0.};
-//         if( cg[grid].isRectangular() )
-//           cg[grid].getRectangularGridParameters( dx, xab );
-
-//         const real xa=xab[0][0], dx0=dx[0];
-//         const real ya=xab[0][1], dy0=dx[1];
-//         const real za=xab[0][2], dz0=dx[2];
-
-//         const int i0a=cg[grid].gridIndexRange(0,0);
-//         const int i1a=cg[grid].gridIndexRange(0,1);
-//         const int i2a=cg[grid].gridIndexRange(0,2);
-
-//         #define VERTEX0(i0,i1,i2) xa+dx0*(i0-i0a)
-//         #define VERTEX1(i0,i1,i2) ya+dy0*(i1-i1a)
-//         #define VERTEX2(i0,i1,i2) za+dz0*(i2-i2a)
-
-//         // Here we grab a pointer to the data of the array so we can index it as a C-array
-//         real *upm= u1Local.Array_Descriptor.Array_View_Pointer3;
-//         real *up = u0Local.Array_Descriptor.Array_View_Pointer3;
-//         const int uDim0=u0Local.getRawDataSize(0);
-//         const int uDim1=u0Local.getRawDataSize(1);
-//         const int d1=uDim0, d2=d1*uDim1; 
-//         #define U(i0,i1,i2) up[(i0)+(i1)*d1+(i2)*d2]
-//         #define UM(i0,i1,i2) upm[(i0)+(i1)*d1+(i2)*d2]
-
-//         int i1,i2,i3;
-//         FOR_3(i1,i2,i3,I1,I2,I3) // loop over all points
-//         {
-//           UM(i1,i2,i3)=U0(VERTEX0(i1,i2,i3),VERTEX1(i1,i2,i3),-dt);
-//           U(i1,i2,i3) =U0(VERTEX0(i1,i2,i3),VERTEX1(i1,i2,i3),0.);
-//         }
-        
-//         #undef VERTEX0
-//         #undef VERTEX1
-//         #undef VERTEX2
-//         #undef U
-//         #undef UM
-//       }
-//       else
-//       {
-//         cg[grid].update(MappedGrid::THEvertex);  // build the array of vertices
-//         realArray & vertex = cg[grid].vertex();
-
-//         if( !ok ) continue;  // nothing to do on this processor
-
-//         // const realSerialArray & xLocal = vertex.getLocalArrayWithGhostBoundaries();
-//         // display(vertex,"vertex",NULL,"%4.1f ");
-//         // display(xLocal,"xLocal",NULL,"%4.1f ");
-
-// //      u[1][grid]=U0(vertex(I1,I2,I3,0),vertex(I1,I2,I3,1),-dt);
-// //      u[0][grid]=U0(vertex(I1,I2,I3,0),vertex(I1,I2,I3,1),0.);
-
-//         real *upm= u1Local.Array_Descriptor.Array_View_Pointer3;
-//         real *up = u0Local.Array_Descriptor.Array_View_Pointer3;
-//         const int uDim0=u0Local.getRawDataSize(0);
-//         const int uDim1=u0Local.getRawDataSize(1);
-//         const int d1=uDim0, d2=d1*uDim1; 
-//         #define U(i0,i1,i2) up[(i0)+(i1)*d1+(i2)*d2]
-//         #define UM(i0,i1,i2) upm[(i0)+(i1)*d1+(i2)*d2]
-
-//         OV_GET_SERIAL_ARRAY(real,vertex,vertexLocal);
-//         const real *vertexp = vertexLocal.Array_Descriptor.Array_View_Pointer3;
-//         const int vertexDim0=vertexLocal.getRawDataSize(0);
-//         const int vertexDim1=vertexLocal.getRawDataSize(1);
-//         const int vertexDim2=vertexLocal.getRawDataSize(2);
-//         #define VERTEX(i0,i1,i2,i3) vertexp[i0+vertexDim0*(i1+vertexDim1*(i2+vertexDim2*(i3)))]
-
-//         int i1,i2,i3;
-//         FOR_3(i1,i2,i3,I1,I2,I3) // loop over all points
-//         {
-//           UM(i1,i2,i3)=U0(VERTEX(i1,i2,i3,0),VERTEX(i1,i2,i3,1),-dt);
-//           U(i1,i2,i3) =U0(VERTEX(i1,i2,i3,0),VERTEX(i1,i2,i3,1),0.);
-//         }
-
-//       }
-//       #undef U
-//       #undef UM
-//       #undef VERTEX
-
-//     }
-//     else
-//     {
-//       // discontinuous pulse -- this doesn't work as planned since c*dt < dx and then
-//       // u[1] is just the same as u[0] 
-//       cg[grid].update(MappedGrid::THEvertex);  // build the array of vertices
-//       const realArray & vertex = cg[grid].vertex();
-//       u[1][grid]=0.;
-//       where( fabs(vertex(I1,I2,I3,0)-(xPulse-c*dt))<.2 )
-//       {
-//         u[1][grid]=1.;
-//       }
-//       u[0][grid]=0.;
-//       where( fabs(vertex(I1,I2,I3,0)-xPulse)<.2 )
-//       {
-//         u[0][grid]=1.;
-//       }
-//     }
-//     if( !plotOption ) 
-//       cg[grid].destroy(MappedGrid::THEvertex);  // vertices are no nolonger needed.
-
-//   }
-
-//   printF("done initial conditions\n");
-
-// }
 
 
 //=============================================================================================================
@@ -271,8 +118,6 @@ main(int argc, char *argv[])
   }
 
   
-//old  PlotStuff ps(plotOption,"wave equation");
-
   GL_GraphicsInterface & ps = (GL_GraphicsInterface&)(*Overture::getGraphicsInterface("cgwh",plotOption,argc,argv));
 
   PlotStuffParameters psp;
@@ -287,7 +132,7 @@ main(int argc, char *argv[])
 
   // int orderOfAccuracy=4;  // **** need two ghost lines in parallel ****
 
-  aString nameOfShowFile="cgWaveHoltz.show";
+  aString nameOfShowFile = "cgWaveHoltz.show";
 
   // create and read in a CompositeGrid
   #ifdef USE_PPP
@@ -310,7 +155,8 @@ main(int argc, char *argv[])
   // real tFinal=Tperiod;
   // real tPlot=Tperiod/10.;  // plot this often
   // real tShow=Tperiod/10.;  // save to show file this often
-  bool saveShowFile=false;
+  // bool saveShowFile=false;
+  bool showFileIsOpen=false;
   
   // real t=0;
   // real c=1., cSquared=c*c;
@@ -337,14 +183,18 @@ main(int argc, char *argv[])
   cgWave.setup();
   cgWave.interactiveUpdate();
 
-  const int & orderOfAccuracy = cgWave.dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracy       = cgWave.dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracyInTime = cgWave.dbase.get<int>("orderOfAccuracyInTime");
+  const Real & ad4                  = cgWave.dbase.get<Real>("ad4");
+  const int & computeErrors         = cgWave.dbase.get<int>("computeErrors");
+
   cgWaveHoltz.dbase.get<int>("orderOfAccuracy")=orderOfAccuracy; // set value in CgWaveHoltz
 
-  real & omega      = cgWaveHoltz.dbase.get<real>("omega");
-  int & numPeriods  = cgWaveHoltz.dbase.get<int>("numPeriods");
-  real & tol        = cgWaveHoltz.dbase.get<real>("tol");
-  int & adjustOmega = cgWaveHoltz.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
-
+  real & omega                    = cgWaveHoltz.dbase.get<real>("omega");
+  int & numPeriods                = cgWaveHoltz.dbase.get<int>("numPeriods");
+  real & tol                      = cgWaveHoltz.dbase.get<real>("tol");
+  int & adjustOmega               = cgWaveHoltz.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  int & maximumNumberOfIterations = cgWaveHoltz.dbase.get<int>("maximumNumberOfIterations");
   // Build a dialog menu for changing parameters
   GUIState gui;
   DialogData & dialog=gui;
@@ -372,26 +222,30 @@ main(int argc, char *argv[])
   aString pbLabels[] = {
                         "compute with fixed-point",
                         "compute with petsc",
-                        "solve Helmholtz directly", 
+                        "solve Helmholtz directly",
+                        "zero initial condition",
+                        "random initial condition",
                         "change parameters",
                         "contour",
                         "grid",
                         "plot residual",
-                        "compute errors",
+                        // "compute errors",
+                        "run cgWave and plot",
+                        "save to show",
                         "plot errors",
                         "plot forcing",
                         "erase",
                         "exit",
                         ""};
-  int numRows=6;
+  int numRows=8;
   dialog.setPushButtons( pbLabels, pbLabels, numRows ); 
 
-  aString tbCommands[] = {"save show file",
-                           ""};
-  int tbState[10];
-  tbState[0] = saveShowFile==true;
-  int numColumns=1;
-  dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
+  // aString tbCommands[] = {"save show file",
+  //                          ""};
+  // int tbState[10];
+  // tbState[0] = saveShowFile==true;
+  // int numColumns=1;
+  // dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
 
   // ----- Text strings ------
   const int numberOfTextStrings=20;
@@ -400,19 +254,21 @@ main(int argc, char *argv[])
   aString textStrings[numberOfTextStrings];
 
   int nt=0;
-  // textCommands[nt] = "omega";  textLabels[nt]=textCommands[nt];
-  // sPrintF(textStrings[nt], "%g",omega);  nt++; 
+  textCommands[nt] = "omega";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%g",omega);  nt++; 
+
   textCommands[nt] = "number of periods";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",numPeriods);  nt++; 
+
   textCommands[nt] = "tol";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g",tol);  nt++; 
 
-  // textCommands[nt] = "tFinal";  textLabels[nt]=textCommands[nt];
-  // sPrintF(textStrings[nt], "%g",tFinal);  nt++; 
-  // textCommands[nt] = "tPlot";  textLabels[nt]=textCommands[nt];
-  // sPrintF(textStrings[nt], "%g",tPlot);  nt++; 
-  // textCommands[nt] = "tShow";  textLabels[nt]=textCommands[nt];
-  // sPrintF(textStrings[nt], "%g",tShow);  nt++; 
+  textCommands[nt] = "max iterations";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",maximumNumberOfIterations);  nt++; 
+
+  textCommands[nt] = "show file";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%s",(const char*)nameOfShowFile);  nt++; 
+
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
   dialog.setTextBoxes(textCommands, textLabels, textStrings);
@@ -427,6 +283,17 @@ main(int argc, char *argv[])
 
   aString answer;
   char buff[200];
+
+  // keep track of what has been plotted
+  int plotChoices=0; // 1=grid, 2=contour
+  bool replot=false;
+  bool reComputeErrors=false; 
+  int checkFileCounter=0; // keeps track of how many times the checkFile is saved with results
+
+  realCompositeGridFunction uHelmholtz; // holds Helmholtz solution from direct solver
+  bool helmholtzFromDirectSolverWasComputed=false;
+  Ogshow show;  // show file for saving solutions
+
   int current=0;
   for(;;) 
   {
@@ -440,10 +307,10 @@ main(int argc, char *argv[])
       cgWaveHoltz.interactiveUpdate();
     }
     
-    // else if( dialog.getTextValue(answer,"omega","%e",omega) )
-    // {
-    //   printF("Setting omega=%g\n",omega);
-    // }
+    else if( dialog.getTextValue(answer,"omega","%e",omega) )
+    {
+      printF("Setting omega=%g\n",omega);
+    }
     else if( dialog.getTextValue(answer,"number of periods","%i",numPeriods) )
     {
       printF("Setting numPeriods=%i\n",numPeriods);
@@ -452,7 +319,20 @@ main(int argc, char *argv[])
     {
       printF("Setting tol=%g (tolerence for Krylov solvers)\n",tol);
     }
-    
+    else if( dialog.getTextValue(answer,"max iterations","%i",maximumNumberOfIterations) )
+    {
+      printF("Setting maximumNumberOfIterations=%i\n",maximumNumberOfIterations);
+    }   
+    else if( dialog.getTextValue(answer,"show file","%s",nameOfShowFile) )
+    {
+      printF("Setting nameOfShowFile=%s\n",(const char*)nameOfShowFile);
+      if( showFileIsOpen )
+      {
+        // close any open show file
+        show.close();
+        showFileIsOpen=false;
+      }
+    }         
 
     else if( answer=="compute with fixed-point" )
     {
@@ -468,6 +348,9 @@ main(int argc, char *argv[])
       // save results to a matlab file
       cgWaveHoltz.dbase.get<aString>("solverName")="fixedPoint";
       cgWaveHoltz.outputMatlabFile();
+
+      replot=true;
+      reComputeErrors=true;
 
     }
     else if( answer=="compute with petsc" )
@@ -487,52 +370,145 @@ main(int argc, char *argv[])
       cgWaveHoltz.dbase.get<aString>("solverName")="gmres";  // ** fix me **
       cgWaveHoltz.outputMatlabFile();
 
+      replot=true;
+      reComputeErrors=true;
     }
     else if( answer == "solve Helmholtz directly" )
     {
        // this may require cgWave to have been called to create f ?
+      uHelmholtz.updateToMatchGrid(cg); // save Helmholtz solution here
 
       realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
       realCompositeGridFunction & f = cgWave.dbase.get<realCompositeGridFunction>("f");
 
+      // Make a copy of f since the direct solver will change it 
+      realCompositeGridFunction fHelmholtz(cg);
+      fHelmholtz = f; 
+
       const Real cpu0=getCPU();
 
-      cgWaveHoltz.solveHelmholtz( v, f  );
+      cgWaveHoltz.solveHelmholtz( v, fHelmholtz  );
 
       const Real cpu = getCPU()-cpu0;
 
-      Real maxRes = cgWaveHoltz.residual();
+      uHelmholtz = v;
+      helmholtzFromDirectSolverWasComputed=true;
+
+      bool useAdjustedOmega=false;
+      Real maxRes = cgWaveHoltz.residual( useAdjustedOmega );
       printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e, cpu=%9.2e (Direct solution of Helmholtz).\n",
              omega,maxRes,cpu);
+
+      reComputeErrors=true;
+      replot=true;
 
     }
     else if( answer=="compute errors" )
     {
-      const int & computeErrors = cgWave.dbase.get<int>("computeErrors");
       if( computeErrors )
-      {
-        realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-        Real t=0; // compute errors with t=0 in cos(omega*t)
-        Real maxErr = cgWave.getErrors( v, t );
-        printF("CgWaveHoltz: max-err=%9.3e\n",maxErr);
-      }
+        reComputeErrors=true; // errors are computed below
       else
-      {
         printF("compute errors: WARNING: this solution has no errors to compute. Probably not a known solution.\n"); 
-      }
-
     }
+    else if( answer == "zero initial condition" )
+    {
+      realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+      v=0.; 
+    }
+    else if( answer == "random initial condition" )
+    {
+      realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+      CompositeGrid & cg = *v.getCompositeGrid();
+      Index I1,I2,I3;
+
+      std::srand(12789.);
+
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      {
+        MappedGrid & mg = cg[grid];
+        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+        getIndex(mg.gridIndexRange(),I1,I2,I3);
+        FOR_3D(i1,i2,i3,I1,I2,I3)
+        {
+          // do this for now
+          // vLocal(i1,i2,i3) = sin(i1)*cos(i2);
+
+          vLocal(i1,i2,i3) = -1. + std::rand()*(2./RAND_MAX); // [-1,1]
+
+        }
+
+      }
+      replot=true;
+
+    }    
+    else if( answer=="save to show" )
+    {
+      printF("Save the current solution (and errors) to the show file [%s].\n",(const char*)nameOfShowFile);
+      if( !showFileIsOpen )
+      {
+        showFileIsOpen=true;
+        show.open(nameOfShowFile);
+      }
+      
+      show.saveGeneralComment("Solutions from CgWaveHoltz"); // save a general comment in the show file
+      // show.saveGeneralComment(" file written on April 1");      // save another general comment
+
+      show.startFrame();                       // start a new frame
+      const bool useUpwind = ad4>0.;
+      show.saveComment(0,sPrintF("CgWaveHoltz: FD%i%i%s omega=%.5g",orderOfAccuracy,orderOfAccuracyInTime,(useUpwind ? "s" : ""),omega));   // comment 0 (shown on plot)
+      show.saveComment(1,sPrintF("v=WaveHoltz, u=Helmholtz"));               // comment 1 (shown on plot)
+
+      // We save the current solution and optionally the direct solution and or errors
+      int numShowComponents=1;
+      if( helmholtzFromDirectSolverWasComputed ) numShowComponents++;
+      if( computeErrors || helmholtzFromDirectSolverWasComputed ) numShowComponents++;
+
+      Range all;
+      realCompositeGridFunction q(cg,all,all,all,numShowComponents);
+      q.setName("q");
+      int ishow=0;  // counts components in q as we fill them in
+
+      q.setName("v",ishow); 
+      realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+         q[grid](all,all,all,ishow) = v[grid];   // waveHoltz solution
+
+      ishow++;
+
+      if( helmholtzFromDirectSolverWasComputed )
+      { 
+        q.setName("u",ishow); 
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+          q[grid](all,all,all,ishow) = uHelmholtz[grid];  // direct solver solution
+        ishow++; 
+      }
+      if( computeErrors || helmholtzFromDirectSolverWasComputed )
+      { 
+        realCompositeGridFunction & error = cgWave.dbase.get<realCompositeGridFunction>("error");
+        if( !computeErrors && helmholtzFromDirectSolverWasComputed )
+        {
+          // compute difference between WaveHoltz and Direct Helmholtz solve
+          realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+          error = uHelmholtz - v;
+        }
+        q.setName("error",ishow);
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+          q[grid](all,all,all,ishow) = error[grid];  // error or diff with direct
+        ishow++;
+      }
+      assert( ishow==numShowComponents );
+
+
+      show.saveSolution( q );              // save to show file
+      show.endFrame();
+
+      // show.close();
+    }
+
     else if( answer=="contour" )
     {
-      CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
-
-      realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-      ps.erase();
-      psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
-      psp.set(GI_TOP_LABEL,sPrintF("Helmholtz Solution O%d omega=%.5g",orderOfAccuracy,omega));
-      PlotIt::contour(ps,v,psp);
-      psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);
-
+      // -- this is done below so that we can also treat the case of replot=true ---
     }
     else if( answer=="grid" )
     {
@@ -555,19 +531,31 @@ main(int argc, char *argv[])
     }
     else if( answer=="plot errors" )
     {
-      const int & computeErrors = cgWave.dbase.get<int>("computeErrors");
-      if( computeErrors )
+      if( computeErrors || helmholtzFromDirectSolverWasComputed )
       {
         realCompositeGridFunction & error = cgWave.dbase.get<realCompositeGridFunction>("error");
+        if( !computeErrors && helmholtzFromDirectSolverWasComputed )
+        {
+          // plot difference between WaveHoltz and Direct Helmholtz solve
+          realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+          error = uHelmholtz - v;
+
+          psp.set(GI_TOP_LABEL,sPrintF("Error (disc. sol) O%d omega=%.5g",orderOfAccuracy,omega));
+        }
+        else
+        {
+          psp.set(GI_TOP_LABEL,sPrintF("Error (true soln) O%d omega=%.5g",orderOfAccuracy,omega));
+
+        }
         ps.erase();
         psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
-        psp.set(GI_TOP_LABEL,sPrintF("error O%d omega=%.5g",orderOfAccuracy,omega));
         PlotIt::contour(ps,error,psp);
         psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);
       }
       else
       {
         printF("plot errors: WARNING: this solution has no errors to compute. Probably not a known solution.\n"); 
+        printF("           : Compute the direct Helmholtz solution in order to plot the difference between it and the WaveHoltz solution.\n"); 
       }      
     }
     else if( answer=="plot forcing" )
@@ -583,7 +571,24 @@ main(int argc, char *argv[])
     }
     else if( answer.matches("erase") )
     {
+      replot=false;
+      plotChoices=0; 
       ps.erase();
+    }
+    else if( answer=="run cgWave and plot" )    
+    {
+      printF("Run cgWave and plot the solution over time...\n");
+      int & plotChoices  = cgWave.dbase.get<int>("plotChoices");
+      int & plotOptions  = cgWave.dbase.get<int>("plotOptions");
+
+      plotChoices=2; // contours
+      plotOptions = CgWave::plotAndWait; // plotNoWait
+
+      cgWave.dbase.get<real>("omega")     = omega;
+
+      int it=0;
+      cgWave.advance( it );
+
     }
     else
     {
@@ -591,10 +596,64 @@ main(int argc, char *argv[])
       ps.stopReadingCommandFile();
        
     }
-    
+
+    if( reComputeErrors )
+    {
+      reComputeErrors=false;
+
+      if( computeErrors )
+      {
+        realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+        Real t=0; // compute errors with t=0 in cos(omega*t)
+        Real maxErr = cgWave.getErrors( v, t );
+        printF("CgWaveHoltz: max-err =%8.2e (between WaveHoltz and known solution)\n",maxErr);
+
+        Real solutionNorm = maxNorm( v ); 
+        cgWaveHoltz.saveCheckFile( checkFileCounter,maxErr,solutionNorm ); 
+        checkFileCounter++; 
+      }
+
+      if( helmholtzFromDirectSolverWasComputed )
+      {
+        realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+        realCompositeGridFunction err(cg);
+        err = uHelmholtz - v;
+        Real maxDiff = maxNorm( err );
+        printF("CgWaveHoltz: max-diff=%8.2e (between WaveHoltz and Direct Helmholtz solution)\n",maxDiff);
+
+        Real solutionNorm = maxNorm ( v );
+        cgWaveHoltz.saveCheckFile( checkFileCounter,maxDiff,solutionNorm ); 
+        checkFileCounter++; 
+
+      }
+    }
+
+    if( answer=="contour" || (replot && plotChoices & 2) )
+    {
+      CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
+      printF("plot contours...\n");
+
+      realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+      ps.erase();
+      if( answer=="contour" )
+        psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false); // wait inside contour
+
+      const bool useUpwind = ad4>0.;
+      psp.set(GI_TOP_LABEL,sPrintF("CgWaveHoltz: FD%i%i%s omega=%.5g",orderOfAccuracy,orderOfAccuracyInTime,(useUpwind ? "s" : ""),omega));
+
+      PlotIt::contour(ps,v,psp);
+
+      psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);
+
+      plotChoices |= 2; 
+    }    
+
   }
   
   ps.popGUI();  // pop dialog
+
+  if( showFileIsOpen )
+    show.close();
 
   // CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
   cgWave.printStatistics();

@@ -1,0 +1,117 @@
+**************************************************
+**** Sun May 23, 2021
+
+
+ADD OPTION TO PLOT MOVIE OF CGWAVE
+
+Small omega: WH and H agree
+cgwh gaussian.cmd -g=cice4.order4.ng3.hdf -x0=.9 -y0=.9 -omega=3.555 -amp=10 -adjustOmega=0 -orderInTime=4 -solver=none -tol=1e-10 -ad4=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=9.22e-11 (tol=1.00e-10) numberOfIterations=26 #############
+CgWaveHoltz::residual: c=1, omega= 3.55500e+00, omegas= 3.55464e+00 (from symbol of D+D-), dt=1.380798e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.441e-03 (using omega), max-res=2.616e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=3.555e+00, max-res=1.441e-03, CR=0.482 CR-perPeriod=0.482, cpu= 3.86e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+CgWaveHoltz: max-diff=4.56e-05 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -ad4=0 -go=halt
+
+
+ADD SHOW FILE OPTION
+
+plotStuff plotSolution.cmd -show=gaussianSquare.show -name=gaussianSquareOmega17p17 -solution=1
+
+show file for doc's 
+cgwh gaussian.cmd -g=square128.order4.ng3.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -ad4=0 -show=gaussianSquare.show -go=halt
+
+
+**************************************************
+**** Sat May 22, 2021
+
+Generate results for the documentation
+
+
+FD24 + orderinTime=2 + adjustOmega + ad4=0 -- MATCHES
+cgwh -noplot gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=gaussianWaveHoltzSquare64Order4Krylov -tol=1e-10 -ad4=0 -imode=1 -go=go
+
+FP
+cgwh -noplot gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWaveHoltzSquare64Order4FixedPoint -tol=1e-10 -ad4=0 -imode=1 -go=go
+
+
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -ad4=0 -imode=1 -go=halt
+
+
+
+
+
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=0 -solver=none -tol=1e-8 -ad4=1 -imode=1 -go=halt
+
+
+BUG FIXED -- userDefinedForcing: SET fLocal=0 
+
+cgwh gaussian.cmd -g=square64.order2.hdf -x0=.7 -y0=.7 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-12 -tp=1 -ad4=0 -imode=1 -go=halt
+
+
+cgwh gaussian.cmd -g=square64.order2.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=0 -solver=none -tol=1e-8 -ad4=1 -imode=1 -go=halt
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+>>>> FLIPPED SIGN ON GAUSSIAN SOURCE so source term is a positive Gaussian by default for Helmholtz
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+BIGGER omega
+FP has trouble converging
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -ad4=0 -imode=1 -go=halt
+
+
+FD24 + orderinTime=2 + adjustOmega + ad4=0 -- MATCHES
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=3.333 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -ad4=0 -imode=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=8.93e-14 (tol=1.00e-12) numberOfIterations=2 #############
+CgWaveHoltz::residual: c=1, omega= 3.33300e+00, omegas= 3.33289e+00 (from symbol of D+D-), dt=8.607669e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=4.900e-11 (using omega), max-res=1.705e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=3.333e+00, max-res=4.900e-11, CR=0.000 CR-perPeriod=0.000, cpu= 1.27e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+CgWaveHoltz: max-diff=6.76e-13 (between WaveHoltz and Direct Helmholtz solution)
+
+FD24s
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.40e-13 (tol=1.00e-12) numberOfIterations=5 #############
+CgWaveHoltz::residual: c=1, omega= 3.33300e+00, omegas= 3.33289e+00 (from symbol of D+D-), dt=8.607669e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=1.985e-06 (using omega), max-res=1.704e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=3.333e+00, max-res=1.985e-06, CR=0.005 CR-perPeriod=0.005, cpu= 3.16e-01(s)
+
+
+
+FD44 
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=3.333 -amp=100 -adjustOmega=0 -solver=none -tol=1e-12 -ad4=1 -imode=1 -go=halt
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=6.56e-13 (tol=1.00e-12) numberOfIterations=7 #############
+CgWaveHoltz::residual: c=1, omega= 3.33300e+00, omegas= 3.33285e+00 (from symbol of D+D-), dt=9.921811e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=2.525e-03 (using omega), max-res=2.393e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=3.333e+00, max-res=2.525e-03, CR=0.028 CR-perPeriod=0.028, cpu= 3.73e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+CgWaveHoltz: max-diff=2.27e-06 (between WaveHoltz and Direct Helmholtz solution)
+
+
+>> ad4:
+cgwh gaussian.cmd -g=square64.order2.hdf -x0=.7 -y0=.7 -omega=3.333 -amp=100 -adjustOmega=1 -solver=none -tol=1e-12 -ad4=1 -imode=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.26e-14 (tol=1.00e-12) numberOfIterations=7 #############
+CgWaveHoltz::residual: c=1, omega= 3.33300e+00, omegas= 3.33295e+00 (from symbol of D+D-), dt=5.401486e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=5.467e-04 (using omega), max-res=1.717e-04 (using omega from discrete symbol)
+CgWaveHoltz: omega=3.333e+00, max-res=5.467e-04, CR=0.017 CR-perPeriod=0.017, cpu= 4.69e-01(s)
+CgWaveHoltz: max-diff=5.66e-05 (between WaveHoltz and Direct Helmholtz solution)
+
+
+>>> NO AD4
+cgwh gaussian.cmd -g=square64.order2.hdf -x0=.7 -y0=.7 -omega=3.333 -amp=100 -adjustOmega=1 -solver=none -tol=1e-12 -ad4=0 -imode=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=5.41e-13 (tol=1.00e-12) numberOfIterations=10 #############
+CgWaveHoltz::residual: c=1, omega= 3.33300e+00, omegas= 3.33291e+00 (from symbol of D+D-), dt=7.725787e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=7.352e-11 (using omega), max-res=1.375e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=3.333e+00, max-res=7.352e-11, CR=0.061 CR-perPeriod=0.061, cpu= 3.33e-01(s)
+
+DIRECT SOLVER:
+CgWaveHoltz::residual: c=1, omega= 3.33300e+00, omegas= 3.33291e+00 (from symbol of D+D-), dt=7.733980e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.327e-11 (using omega).
+CgWaveHoltz: omega=3.333e+00, max-res=3.327e-11, cpu= 2.19e-02 (Direct solution of Helmholtz).

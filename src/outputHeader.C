@@ -30,6 +30,7 @@ outputHeader()
 	
   const int & solveHelmholtz          = dbase.get<int>("solveHelmholtz");
   const int & computeTimeIntegral     = dbase.get<int>("computeTimeIntegral");
+  const int & adjustOmega             = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
   RealArray & dxMinMax                = dbase.get<RealArray>("dxMinMax");
 
   TwilightZoneEnum & twilightZone = dbase.get<TwilightZoneEnum>("twilightZone");
@@ -78,7 +79,9 @@ outputHeader()
     
     
     if( solveHelmholtz )
-      fPrintF(file," **** solveHelmholtz=true : Solving the Helmholtz problem ****\n");
+    {
+      fPrintF(file," **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=%d (for discrete symbol of D+tD-t) ****\n",adjustOmega);
+    }
       
     fPrintF(file," computeTimeIntegral=%d\n",computeTimeIntegral);
     fPrintF(file," computeErrors=%d\n",computeErrors);

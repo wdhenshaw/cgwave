@@ -1216,16 +1216,19 @@ getErrors( realCompositeGridFunction & u, real t )
 
 //=================================================================================================
 /// \brief Take the first BACKWARD step using Taylor series in time (e.g. for Helmholtz solve) 
+/// THIS ASSUMES A HELMHOLTZ SOLVE OR HELMHOLTZ FORCING 
 //=================================================================================================
 int CgWave::
 takeFirstBackwardStep( int cur, real t )
 {
-  printF("*******  CgWave::takeFirstBackwardStep GET SOLUTION at -dt *************\n");
-  
 
-  const real & c         = dbase.get<real>("c");
-  const real & dt        = dbase.get<real>("dt");
-  const real & omega     = dbase.get<real>("omega");
+  const int & debug           = dbase.get<int>("debug");
+  if( debug & 4 )
+    printF("*******  CgWave::takeFirstBackwardStep GET SOLUTION at -dt *************\n");
+  
+  const real & c              = dbase.get<real>("c");
+  const real & dt             = dbase.get<real>("dt");
+  const real & omega          = dbase.get<real>("omega");
   const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
 
   ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");

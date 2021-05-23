@@ -47,7 +47,10 @@ int outputHeader();
 int outputMatlabFile();
 
 // Compute the residual in the current solution
-real residual();
+real residual( int useAdjustedOmega = 2 );
+
+// save check file -- used for regression and convergence tests
+int saveCheckFile( int checkFileCounter, Real maxErr, Real solutionNorm );
 
 int setNameOfGridFile( aString & nameOfOGFile );
 

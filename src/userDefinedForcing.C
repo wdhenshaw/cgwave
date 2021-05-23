@@ -52,7 +52,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
   // const int & solveHelmholtz = dbase.get<int>("solveHelmholtz");
     
     ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
-    const Real fSign = forcingOption==helmholtzForcing ? -1.0 : 1.0;
+    const Real fSign = forcingOption==helmholtzForcing ? -1.0 : 1.0;  
   // const Real fSign = 1.;
     
     if( true )
@@ -106,10 +106,10 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
     bool ok = ParallelUtility::getLocalArrayBounds(f,fLocal,I1,I2,I3,1);   
     if( !ok ) return 0;  // no points on this processor (NOTE: no communication should be done after this point)
 
-  // fLocal=0.;
 
     if( option=="gaussianSources" )
     {
+        fLocal=0.;
     
         int & numberOfGaussianSources = db.get<int>("numberOfGaussianSources");
         RealArray & gaussianParameters = db.get<RealArray>("gaussianParameters");
@@ -126,7 +126,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
             real z0   = gaussianParameters(6,m);
             real t0   = gaussianParameters(7,m);
 
-            if( false && t0 < 5.*dt )
+            if( true && t0 < 2.*dt )
                 printF("Gaussian source %i: setting a=%8.2e, beta=%8.2e, omega=%8.2e, p=%8.2e, x0=%8.2e, y0=%8.2e, "
                               "z0=%8.2e, t0=%8.2e\n", m,a,beta,omega,p,x0,y0,z0,t0);
 
@@ -137,7 +137,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
 
             if( mg.numberOfDimensions()==2 )
             {
-            
+        // --- 2D ---
                 FOR_3D(i1,i2,i3,I1,I2,I3)
                 {
                     real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1);
@@ -148,7 +148,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
                     real g = aExp*cost;
                     real rPow = p==1. ? 1 :  pow(rSq,p-1.);
 
-                    fLocal(i1,i2,i3)+= fSign*rPow*g;
+                    fLocal(i1,i2,i3)+= -fSign*rPow*g;
                     
                 }
             }
@@ -164,7 +164,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
                     real g = aExp*cost;
                     real rPow = pow(rSq,p-1.);
                     
-                    fLocal(i1,i2,i3)+= fSign*rPow*g;
+                    fLocal(i1,i2,i3)+= -fSign*rPow*g;
 
                 }
             }

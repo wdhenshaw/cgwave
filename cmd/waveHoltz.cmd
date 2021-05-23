@@ -11,7 +11,7 @@
 #
 $go="go"; $forcing="gaussian"; 
 $omega=30.1; $beta=50.; $x0=0.5; $y0=0.5; $z0=0.5; $t0=0.
-$beta=400; $numPeriods=1; $omegaSOR=1; $tol=1.e-3; $ad4=1; $tp=.5; $imode=0; 
+$numPeriods=1; $omegaSOR=1; $tol=1.e-3; $ad4=1; $tp=.5; $imode=0; 
 $solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIt=500; $adjustOmega=0; 
 $matlab="cgWaveHoltz";
 $cfl=.7; $bc="d"; $ts="explicit"; $dtMax=1; 
@@ -78,8 +78,8 @@ $cmd
 #
 exit
 # --- end cgWave setup  ---
-# contour
-# exit
+contour
+exit
 if( $solver eq "fixedPoint" ){ $cmd="compute with fixed-point"; }elsif( $solver eq "krylov" ){ $cmd="compute with petsc"; }else{ $cmd="#" }; 
 if( $go eq "go" && $cmd ne "#" ){ $cmd .= "\n exit"; }
 $cmd

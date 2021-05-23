@@ -13,6 +13,7 @@ updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction
 
   realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
 
+  const int & debug      = dbase.get<int>("debug");
   const real & tFinal    = dbase.get<real>("tFinal");
   const real & dt        = dbase.get<real>("dt");
 
@@ -49,7 +50,7 @@ updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction
       bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
       if( ok )
       {
-	vLocal = ( .5*( cos(omega*(t))-.25 ) )*uLocal;  // Trapezoidal first term (.5)
+        vLocal = ( .5*( cos(omega*(t))-.25 ) )*uLocal;  // Trapezoidal first term (.5)
       }
   
     }
@@ -72,10 +73,10 @@ updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction
       bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
       if( ok )
       {
-	vLocal += ( trapFactor*( cos(omega*(t))-.25 ) )*uLocal;
+        vLocal += ( trapFactor*( cos(omega*(t))-.25 ) )*uLocal;
 
-	if( stepOption==lastStep )
-	  vLocal *= (2./tFinal)*dt;  // multiply by dt and normalize the time integral 
+        if( stepOption==lastStep )
+          vLocal *= (2./tFinal)*dt;  // multiply by dt and normalize the time integral 
       }
        
     } // end for grid 
@@ -85,12 +86,13 @@ updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction
         applyBoundaryConditions( v, t );
 
       const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
-      if( knownSolutionOption=="userDefinedKnownSolution" ) 
+
+      if( debug & 2 && knownSolutionOption=="userDefinedKnownSolution" ) 
       {
-	real maxErr = getErrors( v, t );
-	printF("cgWave:updateTimeIntegral: t=%9.3e TIME INTEGRAL v:  maxErr=%9.2e\n",t,maxErr);
+        real maxErr = getErrors( v, t );
+        printF("cgWave:updateTimeIntegral: t=%9.3e, error in WaveHoltz v:  maxErr=%9.2e\n",t,maxErr);
       }
-	
+        
     }
       
   }

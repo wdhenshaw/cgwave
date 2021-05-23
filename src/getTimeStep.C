@@ -18,6 +18,7 @@ getTimeStep()
   CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
   const real & cfl                   = dbase.get<real>("cfl");
   real & dt                          = dbase.get<real>("dt");
+  const real & ad4                   = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
   const Real & dtMax                 = dbase.get<Real>("dtMax"); 
   const real & c                     = dbase.get<real>("c");
   const int & orderOfAccuracyInTime  = dbase.get<int>("orderOfAccuracyInTime");
@@ -25,6 +26,8 @@ getTimeStep()
   IntegerArray & gridIsImplicit      = dbase.get<IntegerArray>("gridIsImplicit");
 
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+
+  const int useUpwindDissipation = ad4>0.;  // ** FIX ME**
 
   printF("CgWave::getTimeStep: c=%g, cfl=%g, timeSteppingMethod=%d\n",c,cfl,(int)timeSteppingMethod);
 
@@ -181,6 +184,11 @@ getTimeStep()
     if( orderOfAccuracyInTime==2 )
     {
       Real stabilityBound=1.; 
+
+      if( useUpwindDissipation )
+      {
+        stabilityBound=.7; // *************** TEMPORARY: FD22s needs cfl=.7 for some reason ... FIX ME 
+      }
 
       if( orderOfAccuracy==4  )
       {

@@ -1,12 +1,137 @@
 
 THINGS TO FIX:
-  (1) 2nd-order upwind scheme needs cfl=.7 *fix me*
+  (1) 2nd-order upwind scheme needs cfl=.7 *fix me* (Note: dt is now temporarily adjusted by a factor of .7 in getTimeStep)
   (2) OGPolyfunction: increase degree to 8 ??
   (3) Upwind dissipation + implicit -- not working yet
+  (4) Add CBC's to explicit and implicit codes.
+
+************************************************************************
+********* Friday May 21, 2021
+
+
+START ON CONV TESTS
+
+WARNING : UPW WAS OFF FOR BOX HELMHOLTZ
+
+
+TO-DO : ADD POLY TZ + cos(omega*t) to WAVEHOLTZ TESTS ??
+
+
+G2 = omega=6 
+     Residuals are large near boundaries --> WHY??? --> MAYBE NEED CBC's
+     dierct solve followed by PETSc --> BIG RESIDUALS AT INTERP POINTS!! .. FIXED, helmholtzSolve changed the RHS GD "f"
+cgwh boxHelmholtz.cmd -g=cice2.order4.ng3 -omega=6 -solver=none -tol=1e-6 -tp=1 -ad4=1 
+
+FD22s --> residuals OK near boundaries
+cgwh boxHelmholtz.cmd -g=cice2.order2 -omega=6 -solver=none -tol=1e-6 -tp=1 -ad4=1 
+CgWaveHoltz::residual: c=1, omega= 6.00000e+00, omegas= 5.99804e+00 (from symbol of D+D-), dt=1.474926e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=2.746e-01 (using omega), max-res=2.539e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=6.000e+00, max-res=2.746e-01, CR=0.614 CR-perPeriod=0.614, cpu= 1.04e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+CgWaveHoltz: max-err =1.07e-01 (between WaveHoltz and known solution)
+CgWaveHoltz: max-diff=1.89e-01 (between WaveHoltz and Direct Helmholtz solution)
+
+
+++++++++++++++++REDO
+
+G4
+cgwh boxHelmholtz.cmd -g=cice4.order4.ng3 -omega=2 -solver=none -tol=1e-5 -tp=1 -ad4=1 -imode=1
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.15e-04 (tol=1.00e-05) numberOfIterations=7 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99996e+00 (from symbol of D+D-), dt=1.079585e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=6.904e-03 (using omega), max-res=6.822e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=6.904e-03, CR=0.160 CR-perPeriod=0.160, cpu= 3.74e+00(s)
+CgWaveHoltz: max-err=2.078e-05
+
+
+G2
+cgwh boxHelmholtz.cmd -g=cice2.order4.ng3 -omega=2 -solver=none -tol=1e-5 -tp=1 -ad4=1 -imode=1
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.82e-04 (tol=1.00e-05) numberOfIterations=7 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99988e+00 (from symbol of D+D-), dt=1.892526e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.655e-02 (using omega), max-res=3.635e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=3.655e-02, CR=0.171 CR-perPeriod=0.171, cpu= 1.12e+00(s)
+CgWaveHoltz: max-err=4.681e-04
+
+
+O2 G4
+cgwh boxHelmholtz.cmd -g=cice4.order2 -omega=2 -solver=none -tol=1e-5 -tp=1 -ad4=1 -imode=1
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.13e-04 (tol=1.00e-05) numberOfIterations=7 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99998e+00 (from symbol of D+D-), dt=8.014267e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=7.740e-04 (using omega), max-res=6.907e-04 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=7.740e-04, CR=0.161 CR-perPeriod=0.161, cpu= 3.14e+00(s)
+CgWaveHoltz: max-err=2.703e-03
+
+
+O2 G2
+cgwh boxHelmholtz.cmd -g=cice2.order2 -omega=2 -solver=none -tol=1e-5 -tp=1 -ad4=1 -imode=1
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.09e-04 (tol=1.00e-05) numberOfIterations=10 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99993e+00 (from symbol of D+D-), dt=1.488906e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=4.910e-03 (using omega), max-res=4.766e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=4.910e-03, CR=0.295 CR-perPeriod=0.295, cpu= 1.25e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+plot contours...
+CgWaveHoltz: max-err=1.953e-02
+
+
++++++++++++++++++++++++++++++++++++++
+ORDER=2 
+cgwh boxHelmholtz.cmd -g=cice2.order2 -omega=2 -solver=none -tol=1e-9 -tp=1 -ad4=1 -adjustOmega=1
+
+
+ADJUST OMEGA: --> NOT WORKING??
+################ DONE KYRLOV ITERATIONS -- KSP residual=3.06e-08 (tol=1.00e-09) numberOfIterations=13 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99985e+00 (from symbol of D+D-), dt=2.122538e-02, adjustOmega=1
+CgWaveHoltz::residual: max-res=2.900e-04 (using omega), max-res=7.618e-04 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=2.900e-04, CR=0.199 CR-perPeriod=0.199, cpu= 9.59e-01(s)
+
+
+NO ADJUST OMEGA -- WHy is the residual so small when we have UPW dissipation??? .. BECAUSE DISSIPATION WAS OFF
+
+################ DONE KYRLOV ITERATIONS -- KSP residual=1.78e-10 (tol=1.00e-11) numberOfIterations=5 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99985e+00 (from symbol of D+D-), dt=2.122698e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=6.116e-04 (using omega), max-res=4.614e-11 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=6.116e-04, CR=0.509 CR-perPeriod=0.509, cpu= 5.08e-01(s)
+
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.36e-04 (tol=1.00e-05) numberOfIterations=10 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99985e+00 (from symbol of D+D-), dt=2.122698e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=6.458e-04 (using omega), max-res=4.634e-05 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=6.458e-04, CR=0.300 CR-perPeriod=0.300, cpu= 7.32e-01(s)
+
+
+cgwh boxHelmholtz.cmd -g=cice2.order4.ng3 -omega=2 -solver=none -tol=1e-5 -tp=1 -ad4=1 -imode=1
+
+--> add final residual to list:
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.43e-04 (tol=1.00e-05) numberOfIterations=7 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99988e+00 (from symbol of D+D-), dt=1.892526e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.654e-02 (using omega), max-res=3.635e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=3.654e-02, CR=0.166 CR-perPeriod=0.166, cpu= 9.41e-01(s)
+
+
+ 
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.43e-04 (tol=1.00e-05) numberOfIterations=6 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99988e+00 (from symbol of D+D-), dt=1.892526e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.654e-02 (using omega), max-res=3.635e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=3.654e-02, CR=0.190 CR-perPeriod=0.190, cpu= 9.82e-01(s)
+
+
+
+FOR NOW CHANGE dt for FD22s by a factor of .7
+
+test: Looks ok: 
+cgWave known.cmd  -g=square32.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=.5 -tf=20 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+cgWave known.cmd  -g=rsise4.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=20 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+cgWave known.cmd  -g=sise4.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=20 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+
+
+
 
 
 ************************************************************************
-********* Thursday May 19, 2021
+********* Thursday May 20, 2021
 
 CONTINUE On CgWave sourceforge git repo.
 
@@ -14,7 +139,155 @@ Build new repo on cg6
 
 cg6 test:
 
-../bin/cgwh waveHoltz.cmd -g=square64.order2.hdf -x0=.75 -y0=.75 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64FixedPoint -tol=1e-12 -tp=1 -ad4=0 -imode=1 -go=halt
+
+TEST OVERSET:
+
+++++++++++++++++++++++++++ SOURCE TERM ++++++++++++++++++
+
+GMRES FAILS: .. TURN ON DISS!
+
+NOTE -- VERY SMALL SOURCE TERM!! was beta=400!
+
+STILL SOMETHING WRONG -- solution does not match DIRECT!!!
+
+CHECK RESIDUALS AT INTERPOLATION POINTS 
+
+cgwh waveHoltz.cmd -g=cice4.order2.hdf -x0=1.25 -y0=1.25 -omega=2.79345 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-4 -tp=1 -ad4=1 -imode=1 -beta=10 -go=halt
+
+
+DIRECT SOLVER: ANSWER = [-37.428,27.04]
+
+cgwh waveHoltz.cmd -g=cice8.order2.hdf -x0=1.25 -y0=1.25 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-4 -tp=1 -ad4=1 -imode=1 -beta=10 -go=halt
+
+cgwh waveHoltz.cmd -g=cice4.order2.hdf -x0=1.25 -y0=1.25 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-4 -tp=1 -ad4=1 -imode=1 -beta=10 -go=halt
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.67e-02 (tol=1.00e-04) numberOfIterations=63 #############
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23322e+00 (from symbol of D+D-), dt=1.143121e-02, adjustOmega=1
+CgWaveHoltz::residual: max-res=2.410e+00 (using omega), max-res=2.532e+00 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=2.410e+00, CR=0.864 CR-perPeriod=0.864, cpu= 3.82e+00(s)
+
+---> DIRECT SOLVE: 
+*** max residual=0.00e+00, time for 1st solve of the Dirichlet problem = 1.20e-01 (iterations=0) ***
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23322e+00 (from symbol of D+D-), dt=1.143121e-02, adjustOmega=1
+CgWaveHoltz::residual: max-res=6.128e-06 (using omega), max-res=7.646e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=6.128e-06, cpu= 1.40e-01 (Direct solution of Helmholtz).
+
+
+cgwh waveHoltz.cmd -g=cice2.order2.hdf -x0=1.25 -y0=1.25 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-4 -tp=1 -ad4=1 -imode=1 -beta=10 -go=halt
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=8.18e-03 (tol=1.00e-04) numberOfIterations=56 #############
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23135e+00 (from symbol of D+D-), dt=2.104997e-02, adjustOmega=1
+CgWaveHoltz::residual: max-res=9.950e+00 (using omega), max-res=1.014e+01 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=9.950e+00, CR=0.850 CR-perPeriod=0.850, cpu= 1.04e+00(s)
+
+
+
+cgwh waveHoltz.cmd -g=sise4.order2.hdf -x0=.75 -y0=.75 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-12 -tp=1 -ad4=0 -imode=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=3.06e-12 (tol=1.00e-12) numberOfIterations=22 #############
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23309e+00 (from symbol of D+D-), dt=1.237367e-02, adjustOmega=1
+CgWaveHoltz::residual: max-res=1.776e-03 (using omega), max-res=1.163e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=1.776e-03, CR=0.314 CR-perPeriod=0.314, cpu= 5.15e-01(s)
+
+
+
+cgwh waveHoltz.cmd -g=square64.order2.hdf -x0=.75 -y0=.75 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-12 -tp=1 -ad4=0 -imode=1 -go=halt
+################ DONE KYRLOV ITERATIONS -- KSP residual=1.65e-12 (tol=1.00e-12) numberOfIterations=12 #############
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23365e+00 (from symbol of D+D-), dt=7.694709e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=1.100e-11 (using omega), max-res=2.837e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=1.100e-11, CR=0.118 CR-perPeriod=0.118, cpu= 2.83e-01(s)
+
+
+
+
++++++++++++++++++++++ BOX HELMHOLTZ ++++++++++++
+
+cgwh boxHelmholtz.cmd -g=cice2.order4.ng3 -omega=2 -solver=none -tol=1e-5 -tp=1 -ad4=1 -imode=1
+
+TURN ON MASK CHECK in solvePETSc.C
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.43e-04 (tol=1.00e-05) numberOfIterations=6 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99988e+00 (from symbol of D+D-), dt=1.892526e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.654e-02 (using omega), max-res=3.635e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=3.654e-02, CR=0.190 CR-perPeriod=0.190, cpu= 1.01e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+
+
+--> FIXED iteration counting in solvePETSc.C
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.23e-04 (tol=1.00e-05) numberOfIterations=7 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99988e+00 (from symbol of D+D-), dt=1.892526e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.655e-02 (using omega), max-res=3.635e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=3.655e-02, CR=0.215 CR-perPeriod=0.215, cpu= 1.14e+00(s)
+
+
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.23e-04 (tol=1.00e-05) numberOfIterations=9 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99988e+00 (from symbol of D+D-), dt=1.892526e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.655e-02 (using omega), max-res=3.635e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=3.655e-02, CR=  inf CR-perPeriod=  inf, cpu= 1.01e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m.m
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.23e-04 (tol=1.00e-05) numberOfIterations=8 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99988e+00 (from symbol of D+D-), dt=1.892526e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.655e-02 (using omega), max-res=3.635e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=3.655e-02, CR=0.261 CR-perPeriod=0.261, cpu= 9.48e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m.m
+CgWaveHoltz: max-err=4.972e-04
+
+
+cgwh boxHelmholtz.cmd -g=cice2.order2 -omega=2 -solver=none -tol=1e-5 -tp=1 -ad4=1 -imode=1
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.32e-04 (tol=1.00e-05) numberOfIterations=11 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99985e+00 (from symbol of D+D-), dt=2.122698e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=6.233e-04 (using omega), max-res=2.241e-05 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=6.233e-04, CR=0.354 CR-perPeriod=0.354, cpu= 7.61e-01(s)
+CgWaveHoltz: max-err=1.987e-02
+
+
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =48 #########################
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99985e+00 (from symbol of D+D-), dt=2.122698e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=6.917e-04 (using omega), max-res=9.201e-05 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=6.917e-04, CR=0.785 CR-perPeriod=0.785, cpu= 2.77e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m.m
+
+
+################ DONE KYRLOV ITERATIONS -- KSP residual=3.00e-02 (tol=1.00e-03) numberOfIterations=5 #############
+CgWaveHoltz::residual: c=1, omega= 2.00000e+00, omegas= 1.99985e+00 (from symbol of D+D-), dt=2.122698e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=6.129e-03 (using omega), max-res=5.609e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=2.000e+00, max-res=6.129e-03, CR=0.261 CR-perPeriod=0.261, cpu= 3.97e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m.m
+CgWaveHoltz: max-err=1.838e-02
+
+
+cgwh boxHelmholtz.cmd -g=sise4.order2 -omega=2 -solver=krylov -tol=1e-3 -tp=1 -ad4=1 -imode=1
+
+
+OK -- converges fast: 
+../bin/cgwh boxHelmholtz.cmd -g=square64.order2.hdf -omega=2 -solver=krylov -tol=1e-3 -tp=1 -ad4=1 -imode=1
+
+
+TROUBLE with cice and petsc solve --> *fix me*
+
+../bin/cgwh waveHoltz.cmd -g=square64.order2.hdf -x0=.75 -y0=.75 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-12 -tp=1 -ad4=0 -imode=1 -go=halt
+
+++++ PETSc
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.65e-12 (tol=1.00e-12) numberOfIterations=13 #############
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23365e+00 (from symbol of D+D-), dt=7.694709e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=1.100e-11 (using omega), max-res=2.837e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=1.100e-11, CR=0.139 CR-perPeriod=0.139, cpu= 2.58e-01(s)
+CgWaveHoltz::Results saved to file square64Krylov.m
+
+
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.65e-12 (tol=1.00e-12) numberOfIterations=13 #############
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23365e+00 (from symbol of D+D-), dt=7.695229e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=2.838e-03 (using omega), max-res=1.637e-11 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=2.838e-03, CR=  inf CR-perPeriod=  inf, cpu= 2.73e-01(s)
+CgWaveHoltz::Results saved to file square64FixedPoint.m
+
+
 
 it=170:  max(|v-vOld|)=8.97e-13 (tol=1e-12)
 #################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =171 #########################

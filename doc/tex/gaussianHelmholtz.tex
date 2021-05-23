@@ -1,0 +1,164 @@
+\subsection{Gaussian forcing} \label{sec:gaussianPulse}
+
+We consider solving the Helmholtz problem with a source term consisting of a sum of generalized Gaussians,
+\ba
+   f(x,y,z,t) = \sum_m a_m \, \cos( \omega_m (t-t_{0,m}) ) \, e^{ -\beta_m [ (x-x_{0,m})^2 + (y-y_{0,m})^2 + (z-z_{0,m})^2 ]^{p_m} } .
+\ea 
+
+
+\mni
+Figure~\ref{fig:gaussianSquare} shows results from CgWaveHoltz for a square. Source term: $\omega=17.17$, $a=100$, $(x_0,y_0)=(.7,.7)$, $\beta=50$, $p=1$. 
+\plotTwoFigsByHeight{fig/gaussianSquareOmega17p17WaveHoltz}{fig/gaussianHelmholtzSquare}{Gaussian pulse, $\omega=17.17$, square64, order 4}{fig:gaussianSquare}{7cm}
+
+
+\clearpage
+\mni
+\textbf{******* OLD STUFF *******}
+\begin{itemize}
+  \item The Krylov method works much better than the fixed-point iteration.
+\end{itemize}  
+
+{% -------------------
+%
+\newcommand{\figWidth}{6cm}% height 
+\newcommand{\trimfig}[2]{\trimhb{#1}{#2}{.0}{.0}{.0}{.0}}
+\begin{figure}[htb]
+\begin{center}
+\begin{tikzpicture}[scale=1]
+  \useasboundingbox (0,0.5) rectangle (14,6.);  % set the bounding box (so we have less surrounding white space)
+
+  \draw(0.0,0.0) node[anchor=south west,xshift=-15pt,yshift=-8pt] {\trimfig{fig/gaussianForcingSquare}{\figWidth}};
+
+  \draw(7,0.0) node[anchor=south west,xshift=-15pt,yshift=-8pt] {\trimfig{fig/gaussianForcingSquareOmega7}{\figWidth}};
+% grid:
+%  \draw[step=1cm,gray] (0,0) grid (14,6);
+\end{tikzpicture}
+\end{center}
+\caption{Gaussian forcing on a square. Left forcing. Right solution for $\omega=7$. }
+  \label{fig:gaussianForcingSquare}
+\end{figure}
+}
+
+{% -------------------
+%
+\newcommand{\figWidth}{6cm}% height 
+\newcommand{\trimfig}[2]{\trimhb{#1}{#2}{.0}{.0}{.0}{.0}}
+\begin{figure}[htb]
+\begin{center}
+\begin{tikzpicture}[scale=1]
+  \useasboundingbox (0,0.5) rectangle (14,6.);  % set the bounding box (so we have less surrounding white space)
+
+  \draw(0.0,0.0) node[anchor=south west,xshift=-15pt,yshift=-8pt] {\trimfig{fig/gaussianForcingCIC}{\figWidth}};
+
+  \draw(7,0.0) node[anchor=south west,xshift=-15pt,yshift=-8pt] {\trimfig{fig/gaussianForcingCICOmega2p56}{\figWidth}};
+% grid:
+%  \draw[step=1cm,gray] (0,0) grid (14,6);
+\end{tikzpicture}
+\end{center}
+\caption{Gaussian forcing on the cic. Left forcing. Right solution for $\omega=2.56$. }
+  \label{fig:gaussianForcingCIC}
+\end{figure}
+}
+
+
+\bigskip
+\textbf{Square  : Krylov iteration. SECOND-ORDER  - looks OK}
+\begin{Verbatim}[fontsize=\scriptsize]
+================  ORDER=2 -- looks OK 
+
+cgwh waveHoltz.cmd -g=square512.order2.hdf -x0=.75 -y0=.75 -omega=7 -solver=krylov -tol=1e-5 -tp=1 -ad4=0 -imode=1
+cgwh waveHoltz.cmd -g=square256.order2.hdf -x0=.75 -y0=.75 -omega=7 -solver=krylov -tol=1e-4 -tp=1 -ad4=0 -imode=1
+cgwh waveHoltz.cmd -g=square128.order2.hdf -x0=.75 -y0=.75 -omega=7 -solver=krylov -tol=1e-3 -tp=1 -ad4=0 -imode=1
+
+ ################ DONE KYRLOV ITERATIONS -- numberOfIterations=11 #############
+CgWaveHoltz::residual: c=1, omega=7
+
+G512
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=3.35e-04 (tol=1.00e-05) numberOfIterations=12 #############
+CgWaveHoltz::residual: c=1, omega=7
+Maximum residual = 8.888e-03
+
+G256
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=3.17e-03 (tol=1.00e-04) numberOfIterations=11 #############
+CgWaveHoltz::residual: c=1, omega=7
+Maximum residual = 3.792e-02
+
+G128
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.64e-03 (tol=1.00e-03) numberOfIterations=11 #############
+CgWaveHoltz::residual: c=1, omega=7
+Maximum residual = 1.449e-01
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+G128 FIXED-POINT ITERATION
+FIXED-POINT -omega=7 has trouble, may be close to a resonance!! TRY -omega=6.869 ...converges NOTE numPeriods
+cgwh waveHoltz.cmd -g=square128.order2.hdf -x0=.75 -y0=.75 -omega=6.869 -solver=fixedPoint -tol=1e-3 -tp=1 -ad4=0 -imode=1 -maxIt=200 -numPeriods=5
+
+it=75:  max(|v-vOld|)=9.70e-04 (tol=0.001)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =76 #########################
+Maximum residual = 4.527e-02
+
+\end{Verbatim}
+
+
+\bigskip
+\textbf{Square  : Krylov iteration. FOURTH-ORDER  - not bad -- RESIDUAL LARGE AT BOUNDARY probably degrades convergence}
+\begin{Verbatim}[fontsize=\scriptsize]
+cgwh waveHoltz.cmd -g=square512.order4.hdf -x0=.75 -y0=.75 -omega=7 -solver=krylov -tol=1e-6 -tp=1 -ad4=0 -imode=1
+cgwh waveHoltz.cmd -g=square256.order4.hdf -x0=.75 -y0=.75 -omega=7 -solver=krylov -tol=1e-5 -tp=1 -ad4=0 -imode=1
+cgwh waveHoltz.cmd -g=square128.order4.hdf -x0=.75 -y0=.75 -omega=7 -solver=krylov -tol=1e-3 -tp=1 -ad4=0 -imode=1
+cgwh waveHoltz.cmd -g=square64.order4.hdf -x0=.75 -y0=.75 -omega=7 -solver=krylov -tol=1e-3 -tp=1 -ad4=0 -imode=1
+
+G512
+################ DONE KYRLOV ITERATIONS -- KSP residual=1.54e-05 (tol=1.00e-06) numberOfIterations=13 #############
+Maximum residual = 4.732e-05
+################ DONE KYRLOV ITERATIONS -- KSP residual=7.44e-07 (tol=1.00e-07) numberOfIterations=14 #############
+Maximum residual = 4.734e-05
+
+
+G256
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.67e-04 (tol=1.00e-05) numberOfIterations=12 #############
+Maximum residual = 5.578e-04
+
+--- tol=1e-4 not enough
+################ DONE KYRLOV ITERATIONS -- KSP residual=3.14e-03 (tol=1.00e-04) numberOfIterations=11 #############
+Maximum residual = 4.488e-03
+
+
+G128 
+################ DONE KYRLOV ITERATIONS -- KSP residual=1.57e-03 (tol=1.00e-03) numberOfIterations=11 #############
+Maximum residual = 1.392e-02
+
+
+G64 
+################ DONE KYRLOV ITERATIONS -- KSP residual=7.93e-04 (tol=1.00e-03) numberOfIterations=11 #############
+CgWaveHoltz::residual: c=1, omega=7
+Maximum residual = 1.531e-01
+
+\end{Verbatim}
+
+\bigskip
+\bigskip
+\bigskip
+\textbf{CIC  : Krylov iteration. SECOND-ORDER -- NOT BAD, some wiggles in RESIDUAL near interpolation points, worse for cice16.}
+\begin{Verbatim}[fontsize=\scriptsize]
+cgwh waveHoltz.cmd -g=cice8.order2 -beta=10 -x0=1 -y0=1 -omega=2.56 -solver=krylov -tol=1e-5 -tp=1 -ad4=1 -imode=1
+cgwh waveHoltz.cmd -g=cice4.order2 -beta=10 -x0=1 -y0=1 -omega=2.56 -solver=krylov -tol=1e-3 -tp=1 -ad4=1 -imode=1
+
+
+G8
+################ DONE KYRLOV ITERATIONS -- KSP residual=1.31e-03 (tol=1.00e-05) numberOfIterations=14 #############
+omega=2.560e+00, Maximum residual = 7.921e-04
+
+G4
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=5.26e-02 (tol=1.00e-03) numberOfIterations=12 #############
+omega=2.560e+00, Maximum residual = 3.118e-03
+
+G2 
+cgwh waveHoltz.cmd -g=cice2.order2 -beta=10 -x0=1 -y0=1 -omega=2.56 -solver=krylov -tol=1e-3 -tp=1 -ad4=1 -imode=1
+
+################ DONE KYRLOV ITERATIONS -- KSP residual=3.38e-02 (tol=1.00e-03) numberOfIterations=12 #############
+omega=2.560e+00, Maximum residual = 1.640e-02
+
+\end{Verbatim}
+
+% gaussianForcingSquareOmega7.pdf

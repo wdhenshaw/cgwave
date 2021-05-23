@@ -48,10 +48,11 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
 
   dbase.put<int>("monitorResiduals")=1;  // montior the residuals at every step
   dbase.put<int>("saveMatabFile")=1;     // save matlab file with residuals etc.
-  dbase.put<aString>("matlabFileName")="cgWaveHoltz.m";  // name of matlab file holding residuals etc.
+  dbase.put<aString>("matlabFileName")="cgWaveHoltz";  // name of matlab file holding residuals etc. is by default cgWaveHoltz.m
 
   dbase.put<realCompositeGridFunction>("vOld");
   dbase.put<realCompositeGridFunction>("residual");
+  dbase.put<Real>("numberOfActivePoints")=0.;         // hold number of active points on the grid for scaling L2 norms
 
   // Save "residuals" by iteration: 
   // resVector(it) = norm( v^{n+1} - v^n )
@@ -196,6 +197,7 @@ int CgWaveHoltz::interactiveUpdate()
 
   psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);
   psp.set(GI_TOP_LABEL,sPrintF(buff,"CgWaveHoltz"));
+
 
   for(;;) 
   {
@@ -375,8 +377,11 @@ int CgWaveHoltz::setup()
 
 // ================================================================================================
 /// \brief Compute the residual in the current solution
+/// \param useAdjustedOmega (input) : 0 = use standard omega
+///                                   1 = compute residual using the adjusted omega, 
+///                                   2 = compute resdiual for both omega and adjusted omega.
 // ================================================================================================
-real CgWaveHoltz::residual()
+real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
 {
 
   CgWave & cgWave                     = *dbase.get<CgWave*>("cgWave");
@@ -396,22 +401,50 @@ real CgWaveHoltz::residual()
   //  omegaTilde = (2/dt)*sin(omega*dt/2)
   const Real omegas = (2./dt)*sin(omega*dt/2.);
 
-  bool computeResidualUsingDiscreteSymbol = true;
+  // bool computeResidualUsingDiscreteSymbol = true;
   // bool adjustOmega = true;
   // const Real omegar = adjustOmega ? omegas : omega; // omega to use for residual
 
   printF("CgWaveHoltz::residual: c=%g, omega=%12.5e, omegas=%12.5e (from symbol of D+D-), dt=%12.6e, adjustOmega=%d\n",c,omega,omegas,dt,adjustOmega);
 
-  realCompositeGridFunction & res     = dbase.get<realCompositeGridFunction>("residual");
+  realCompositeGridFunction & res = dbase.get<realCompositeGridFunction>("residual");
 
   Real maxRes =0., maxResFromDiscreteSymbol=0.;
 
   Index I1,I2,I3;
   Index Ib1,Ib2,Ib3;
 
-  int numRes=2; // compute the residual in two ways
+  // If we have not adjusted omega, then final residual is with standard omega
+  // If we have adjusted omega, then final residual is with the adjusted
+  int numRes=1;  // number of residuals we compute 
+  bool computeResidualWithAdjustedOmega[2] ={ false,false };
+
+  if( useAdjustedOmega==0 )
+  {
+    numRes=1;  computeResidualWithAdjustedOmega[0]=false;
+  }
+  else if( useAdjustedOmega==1 )
+  {
+    numRes=1;  computeResidualWithAdjustedOmega[0]=true;
+  }
+  else
+  {
+    numRes=2; // compute redisuals in two ways
+    if( adjustOmega )
+    {
+      computeResidualWithAdjustedOmega[0]=false;
+      computeResidualWithAdjustedOmega[1]=true;
+    }
+    else
+    {
+      computeResidualWithAdjustedOmega[0]=true;
+      computeResidualWithAdjustedOmega[1]=false;
+    }
+  }
+
   for( int ires=0; ires<numRes; ires++ )
   {
+
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       MappedGrid & mg = cg[grid];
@@ -434,7 +467,7 @@ real CgWaveHoltz::residual()
         operators[grid].derivative(MappedGridOperators::laplacianOperator,vLocal,lap,I1,I2,I3);
 
         Real om = omega;
-        if( ires==1 ) // computeResidualUsingDiscreteSymbol )
+        if( computeResidualWithAdjustedOmega[ires] )
         {
           // --- Compute the residual using omegas (from discrete symbol) ---
           om = omegas;
@@ -464,20 +497,27 @@ real CgWaveHoltz::residual()
     }
 
     const int cc=0, maskOption=1;  // maskOption=1 : check points with mask>0
-    if( ires==0 )
-      maxRes                   = maxNorm(res,cc,maskOption);
-    else
+    if( computeResidualWithAdjustedOmega[ires]  )
       maxResFromDiscreteSymbol = maxNorm(res,cc,maskOption);
-
+    else
+      maxRes                   = maxNorm(res,cc,maskOption);
   }
 
 
   
-  if( computeResidualUsingDiscreteSymbol )
+  if( useAdjustedOmega==2 )
   {
     printF("CgWaveHoltz::residual: max-res=%9.3e (using omega), max-res=%9.3e (using omega from discrete symbol)\n",maxRes,maxResFromDiscreteSymbol);
-
   } 
+ else if( useAdjustedOmega==0  )
+ {
+    printF("CgWaveHoltz::residual: max-res=%9.3e (using omega).\n",maxRes);
+ }
+ else
+ {
+   printF("CgWaveHoltz::residual: max-res=%9.3e (using omega from discrete symbol)\n",maxResFromDiscreteSymbol);
+ }
+
 
   return maxRes;
 
@@ -565,7 +605,7 @@ solve()
   // Save "residuals" by iteration: 
   // resVector(it) = norm( v^{n+1} - v^n )
   RealArray & resVector = dbase.get<RealArray>("resVector");
-  resVector.redim(maximumNumberOfIterations);
+  resVector.redim(maximumNumberOfIterations+1);
   resVector=0.;
 
   int & plotOptions = cgWave.dbase.get<int>("plotOptions");
@@ -588,12 +628,13 @@ solve()
     
     vOld = v-vOld;
 
-    real errMax = maxNorm(vOld);
-    printF("it=%d:  max(|v-vOld|)=%8.2e (tol=%g)\n",it,errMax,tol);
-    resVector(it)= errMax; // norm( v-vOld )     
+    // real errMax = maxNorm(vOld);
+    real errNorm = l2Norm(vOld);    // use L2h norm to match Krylov norm
+    printF("it=%d:  l2Norm( v-vOld )=%8.2e (tol=%g)\n",it,errNorm,tol);
+    resVector(it)= errNorm; // norm( v-vOld )     
 
     numberOfIterations=it+1;
-    if( errMax<tol )
+    if( errNorm<tol )
       break;
     
 
@@ -661,5 +702,39 @@ int CgWaveHoltz::outputHeader()
 }
 
 
+// ===================================================================================
+/// \brief Save check file -- used for regression and convergence tests
+/// \param checkFileCounter (input) : checkFileCounter=0,1,2,3 : a counter for different values saved in the check file.
+/// \param maxErr (input) : some measure of the error.
+/// \param solutionNorm (input) : norm of the solution.
+// ===================================================================================
+int CgWaveHoltz::saveCheckFile( int checkFileCounter, Real maxErr, Real solutionNorm )
+{
+  // *************************************************************
+  // write to the check file for regression and convergence tests
+  // *************************************************************
+
+  FILE *& checkFile = dbase.get<FILE*>("checkFile");
+  assert( checkFile != NULL );
+
+  // const real & maxError     = dbase.get<real>("maxError");      // save max-error here 
+  // const real & solutionNorm = dbase.get<real>("solutionNorm");  // save solution norm here 
+  // const int & computeErrors = dbase.get<int>("computeErrors");
+  
+  const int & numberOfComponents= 1;
+
+  int numberToOutput = numberOfComponents;
+
+  Real t = checkFileCounter; 
+  fPrintF(checkFile,"%9.2e %i  ",t,numberToOutput);
+  for( int i=0; i<numberToOutput; i++ )
+  {
+    fPrintF(checkFile,"%i %9.2e %10.3e  ",i,maxErr,solutionNorm);
+  }
+  fPrintF(checkFile,"\n");
+
+
+  return 0;
+}
 
 

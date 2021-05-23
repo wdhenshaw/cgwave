@@ -1,0 +1,17 @@
+\begin{table}[H]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+\begin{center}
+\begin{tabular}{|l|c|c|c|} \hline 
+grid  & N &  $ u $ & r \\ \hline 
+   square8 &     1 & \num{3.4}{-3} &        \\ \hline
+  square16 &     2 & \num{3.4}{-4} & 10.12  \\ \hline
+  square32 &     4 & \num{1.5}{-5} & 22.97  \\ \hline
+  square64 &     8 & \num{5.1}{-7} & 28.96  \\ \hline
+ square128 &    16 & \num{3.8}{-8} & 13.34  \\ \hline
+ square256 &    32 & \num{2.7}{-9} & 14.03  \\ \hline
+ square512 &    64 & \num{1.9}{-10} & 14.52  \\ \hline
+    rate             &       &  $4.10$       &       \\ \hline
+\end{tabular}
+\caption{CgWaveHoltz, boxHelmholtz, max norm, solver=krylov, order=$4$, $t=0.5$, cfl=$0.9$, ad4=$1$, omega=2, tol=1e-8 Sat May 22 06:36:05 2021}\label{table:boxHelmholtzkrylovOrder4max}
+\end{center}
+\end{table}

@@ -3,6 +3,7 @@
 #include "Overture.h"
 #include "gridFunctionNorms.h"
 #include "display.h"
+#include "ParallelUtility.h"
 
 // krb do not use extern "C" if PETSc is linked using BOPT=g_c++
 extern "C"
@@ -27,20 +28,27 @@ static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
 // -- global variables -- do this for now 
-Mat *pA=NULL;
-Vec *pb=NULL;
-int mA,nA;
+static KSP  ksp=NULL;     /* linear solver context */
+static Mat *pA=NULL;
+static Vec *pb=NULL;
+static int mA,nA;
+
+static int computeRightHandSide =-2; // = 0;
+static int computeResidual      =-3; // =-1;
+
+static bool checkMask = true;  // if true, do not use values of the solution where mask==0 
 
 // =========================================================================================================
 //     MATRIX-VECTOR MULTIPLY FOR MATRIX FREE KRYLOV SOLVERS
 // 
 // Compute y = M*x 
 // =========================================================================================================
-extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
+extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 {
   PetscErrorCode ierr = 0;
 
-  printf("+++ usermult called iteration=%d\n",iteration);
+  printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=%d\n",iteration);
+
   if( testCase==0 )
   {
     // solve a Poisson equation **TEST CASE***
@@ -63,9 +71,9 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
 
     if( iteration<=1 )
     {
-      printf("iteration=%d: MF : x=[",iteration);
-      for( int i=iStart; i<iEnd; i++ ){ printf("%5.2f,",xl[i]); } // 
-      printf("];\n");
+      printF("iteration=%d: MF : x=[",iteration);
+      for( int i=iStart; i<iEnd; i++ ){ printF("%5.2f,",xl[i]); } // 
+      printF("];\n");
     }
 
 
@@ -95,7 +103,7 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
   
     if( 0==1 )
     {
-      printf("+++ usermult call MatMult...\n");
+      printf("+++ waveHoltzMatrixVectorMultiply call MatMult...\n");
       ierr = MatMult(*matrix, x, y);
 
       printf("A*x: y=[");
@@ -113,12 +121,17 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
   {
     // ---- Helmholtz solver ----
 
-    printF("\n **************** MatVec for PETSc iteration=%i *************\n\n",iteration);
+    printF(" **************** MatVec for PETSc iteration=%i *************\n\n",iteration);
+    if( iteration==computeRightHandSide )
+    {
+      printF(" >>>> Call cgWave to COMPUTE the Right-hand-side to Ax=b : b = Pi * v(0) \n");    
+    }
 
     assert( pCgWaveHoltz!=NULL );
     CgWaveHoltz & cgWaveHoltz = *pCgWaveHoltz;
     
-    const int & monitorResiduals = cgWaveHoltz.dbase.get<int>("monitorResiduals");      // montior the residuals at every step
+    const int & monitorResiduals      = cgWaveHoltz.dbase.get<int>("monitorResiduals");      // montior the residuals at every step
+    const Real & numberOfActivePoints = cgWaveHoltz.dbase.get<Real>("numberOfActivePoints");
 
     // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
@@ -146,19 +159,25 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
 
 
     // --- Set v = x ---
-    v=0.;
+    v=0.; // is this needed ? 
 
     Index I1,I2,I3;
     int i=0;
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
+      MappedGrid & mg = cg[grid];
+      OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
       getIndex(cg[grid].dimension(),I1,I2,I3);
 
       OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
       FOR_3D(i1,i2,i3,I1,I2,I3)
       {
         assert( i<iEnd );
-        vLocal(i1,i2,i3)=xl[i];
+        if( checkMask && maskLocal(i1,i2,i3)!=0 )  // this may not be needed if xl[i] is always zero
+          vLocal(i1,i2,i3)=xl[i];
+        else
+          vLocal(i1,i2,i3)=0.; 
         i++;
       }
     }
@@ -177,11 +196,12 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
     cgWave.advance( iteration );
     
 
-    if( iteration==0 )
+    if( iteration==computeRightHandSide )
     {
       // ---------- INITIALIZE ITERATIONS -----
 
-      printf("COMPUTE b = P*v(0) \n");
+      printF("COMPUTE b = Pi * v(0) \n");
+
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         bcg[grid]= v[grid];
 
@@ -190,7 +210,7 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
         ::display(bcg[0],"b: iteration 0 ","%5.2f ");
       }
 
-      //compute y = P*x 
+      //compute y = Pi * x 
       // set y = v 
       int i=0;
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
@@ -202,14 +222,16 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
         FOR_3D(i1,i2,i3,I1,I2,I3)
         {
           assert( i<iEnd );
-          if( true || maskLocal(i1,i2,i3)>0 )
+          // if( true || maskLocal(i1,i2,i3)>0 )
+          if( checkMask && maskLocal(i1,i2,i3) !=0 )
           {
             yl[i]= vLocal(i1,i2,i3);
           }
           else
           {
             // un-used points: set [Ax]_i = x_i   -- is this right ??
-            yl[i]=xl[i];
+            // yl[i]=xl[i];
+            yl[i]=.0; // Make Ax=0 at usued points
           }
           
           i++;
@@ -217,9 +239,9 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
       }
       assert( i==iEnd );
     }
-    else if( iteration==-1 )
+    else if( iteration==computeResidual )
     {
-      // ---- iteration=-1: (after final step usually) check the residual in the computed solution  : v^n - v^{n+1}
+      // ---- iteration=computeResidual: (after final step usually) check the residual in the computed solution  : v^n - v^{n+1}
       // Compute :
       //       A v^n = v^n - v^{n+1} + b 
 
@@ -263,13 +285,14 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
         {
           assert( i<iEnd );
           // yl[i]= vOldLocal(i1,i2,i3,0) + bl[i]; 
-          if( true || maskLocal(i1,i2,i3)>0 )          // ************************* check me ***************
+          if( checkMask && maskLocal(i1,i2,i3)!=0 )          // ************************* check me ***************
           {
-            yl[i]= vOldLocal(i1,i2,i3,0);
+            yl[i]= vOldLocal(i1,i2,i3,0);    // y = A*x 
           }
           else
           {
-            yl[i]=xl[i];
+            // yl[i]=xl[i];
+            yl[i]=0.;  // unused point 
           }
           
           i++;
@@ -277,19 +300,38 @@ extern PetscErrorCode usermult(Mat m ,Vec x, Vec y)
       }
       assert( i==iEnd );
 
-      // ----- Optionally save the current residual -----
-      if( monitorResiduals )
-      {
-        if( iteration<0 || iteration>=resVector.getLength(0) )
-        {
-          printF("solvePETSC: ERROR: INVALID iteration=%d. resVector.getLength(0)=%d\n",iteration,resVector.getLength(0));
-          OV_ABORT("ERROR");
-        }
-        resVector(iteration)= cgWaveHoltz.residual(); 
-      } 
+
     
     }
 
+    if( monitorResiduals && iteration>=0 )
+    {
+      // ----- Optionally save the current residual -----
+      // Save "residuals" by iteration: 
+      // resVector(it) = norm( v^{n+1} - v^n )
+      RealArray & resVector = cgWaveHoltz.dbase.get<RealArray>("resVector");  
+
+      if( iteration<0 || iteration>=resVector.getLength(0) )
+      {
+        printF("solvePETSC: ERROR: INVALID iteration=%d. resVector.getLength(0)=%d\n",iteration,resVector.getLength(0));
+        OV_ABORT("ERROR");
+      }
+
+      // resVector(iteration)= cgWaveHoltz.residual();   // this is not correct since solution is not the right one
+
+      Real kspResidual;
+      assert( ksp !=NULL );
+      KSPGetResidualNorm(ksp,&kspResidual); 
+      kspResidual /= sqrt(numberOfActivePoints);  // make an approximate L2h norm
+
+      resVector(iteration)= kspResidual;
+
+      printF("\n ##### SAVE RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
+
+      // // There is no residual for iteration=0 since the Krylov solver is just computing the first A*x
+      // if( iteration==1 )
+      //   resVector(0) = resVector(iteration); // do this for now -- ksp is not built yet for iteration=0
+    } 
 
   }
 
@@ -311,28 +353,33 @@ solvePETSc(int argc,char **args)
   const real & omega                    = dbase.get<real>("omega");
   real & Tperiod                        = dbase.get<real>("Tperiod");
   const int & numPeriods                = dbase.get<int>("numPeriods");
+  const int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t   
   const int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
+  Real & numberOfActivePoints           = dbase.get<Real>("numberOfActivePoints");
 
  // here is the CgWave solver for the time dependent wave equation
  CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
  Tperiod=numPeriods*twoPi/omega;  
  printF("CgWaveHoltz::solvePETSc: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
  
- cgWave.dbase.get<real>("omega")=omega; // ** FIX ME **
- cgWave.dbase.get<real>("tFinal")=Tperiod; // ** FIX ME **
- cgWave.dbase.get<real>("Tperiod")=Tperiod; // ** FIX ME **
- cgWave.dbase.get<int>("numPeriods")=numPeriods; // ** FIX ME **
+ cgWave.dbase.get<real>("omega")     = omega;        // ** FIX ME **
+ cgWave.dbase.get<real>("tFinal")    = Tperiod;      // ** FIX ME **
+ cgWave.dbase.get<real>("Tperiod")   = Tperiod;      // ** FIX ME **
+ cgWave.dbase.get<int>("numPeriods") = numPeriods;   // ** FIX ME **
+ cgWave.dbase.get<int>("adjustOmega")= adjustOmega;  // 1 : choose omega from the symbol of D+t D-t 
 
    // Save "residuals" by iteration: 
   // resVector(it) = norm( v^{n+1} - v^n )
   RealArray & resVector = dbase.get<RealArray>("resVector");
-  resVector.redim(maximumNumberOfIterations);
+  resVector.redim(maximumNumberOfIterations+10);
   resVector=0.;
   
+  int & plotOptions = cgWave.dbase.get<int>("plotOptions");
+  plotOptions= CgWave::noPlotting; // turn of plotting in cgWave  
 
   Vec            x,b,u;  /* approx solution, RHS, exact solution */
   Mat            A;        /* linear system matrix */
-  KSP            ksp;     /* linear solver context */
+//  KSP            ksp;     /* linear solver context */
   PetscRandom    rctx;     /* random number generator context */
   PetscReal      norm;     /* norm of solution error */
   PetscInt       i,j,Ii,J,Istart,Iend,m = 8,n = 7,its;
@@ -424,7 +471,7 @@ solvePETSc(int argc,char **args)
   
 
   // ============== Create a shell object for matrix free method ================
-  // double mycontext; // passed to usermult 
+  // double mycontext; // passed to waveHoltzMatrixVectorMultiply 
   Mat *mycontext=&A;
   
   // ******  global variables
@@ -452,7 +499,7 @@ solvePETSc(int argc,char **args)
   
   Mat Amf;
   ierr = MatCreateShell(PETSC_COMM_WORLD, numEquations, numEquations, PETSC_DECIDE,  PETSC_DECIDE, mycontext, &Amf);
-  ierr = MatShellSetOperation(Amf, MATOP_MULT, (void(*)(void))usermult);
+  ierr = MatShellSetOperation(Amf, MATOP_MULT, (void(*)(void))waveHoltzMatrixVectorMultiply);
   CHKERRQ(ierr);
 
   /* 
@@ -479,6 +526,7 @@ solvePETSc(int argc,char **args)
 
   pb = &b;  // global variable for now
   
+  PetscReal bNorm; // save l2-norm of RHS b
 
   /* 
      Set exact solution; then compute right-hand-side vector.
@@ -502,12 +550,81 @@ solvePETSc(int argc,char **args)
   }
   else
   {
-    // Initial Guess is zero:
-    ierr = VecSet(x,0.0);CHKERRQ(ierr);
+
+
+
+    if( false )
+    {
+      // -- zero initial guess 
+      ierr = VecSet(x,0.0);CHKERRQ(ierr);
+
+    }
+    else 
+    {
+       // **** FIX ME ****
+
+      // --- Set initial guesss to be current v ---
+
+      PetscScalar *xl;
+      VecGetArray(x,&xl);  // get the local array from Petsc
+      int iStart,iEnd;
+      ierr = VecGetOwnershipRange(x,&iStart,&iEnd); CHKERRQ(ierr);
+      // printf("  [iStart,iEnd]=[%i,%i]\n",iStart,iEnd);
+    
+      // Helmholtz solution is stored here:
+      realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+      CompositeGrid & cg = *v.getCompositeGrid();
+
+      Index I1,I2,I3;
+      Real normV=0; 
+      numberOfActivePoints = 0.; // count active points for scaling norm.
+      int i=0;
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      {
+        MappedGrid & mg = cg[grid];
+        getIndex(mg.dimension(),I1,I2,I3);
+
+        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+
+        FOR_3D(i1,i2,i3,I1,I2,I3)
+        {
+          assert( i<iEnd );
+          if( maskLocal(i1,i2,i3) !=0 )
+            numberOfActivePoints++;
+
+          if( checkMask && maskLocal(i1,i2,i3)!=0 )
+            xl[i] = vLocal(i1,i2,i3);
+          else
+            xl[i]=0.;
+
+          normV = max( normV,xl[i]);
+          i++;
+        }
+      }
+      assert( i==iEnd );
+      numberOfActivePoints = ParallelUtility::getSum(numberOfActivePoints);
+
+      printF("solvePETSc: Set initial guess to v, max-norm(v)=%8.2e, numberOfActivePoints=%g\n",normV,numberOfActivePoints);
+
+
+    } // send set initial guess 
+
+    // ---- set RHS b = A*u -----
     ierr = VecSet(u,0.0);CHKERRQ(ierr);
-    // ierr = VecSet(b,0.0);CHKERRQ(ierr);
-    // set RHS: 
-    ierr = MatMult(Amf,u,b);CHKERRQ(ierr);
+    // This next call will to MatMult will eventually call CgWave with initial condition u=0
+    // Warning: the next call will over-write v, so we need to save v in PETSc vector x before we get to here
+
+    iteration=computeRightHandSide;
+    ierr = MatMult(Amf,u,b);CHKERRQ(ierr); 
+
+    VecNorm(b,NORM_2,&bNorm);
+    Real bNorm2h = bNorm/sqrt(numberOfActivePoints); 
+    printF("solvePETSc: RHS is b: l2-norm(b)=%9.3e, L2h-norm(b)=%9.2e\n",bNorm,bNorm2h);
+
+    iteration=-1; // Set to -1 to start the true iterations (first call to A*x does not generate a residual)
+
+
   }
   
   /*
@@ -546,8 +663,18 @@ solvePETSc(int argc,char **args)
   */
   const real & tol = dbase.get<real>("tol");
   
-  ierr = KSPSetTolerances(ksp,tol,1.e-50,PETSC_DEFAULT,
-                          PETSC_DEFAULT);CHKERRQ(ierr);
+  // PETSc relative tolerance is based on the l2-norms:
+  //        l2Norm(res)/l2Norm(b) < relativeTol
+  // We want
+  //        L2hNorm(res) = l2Norm(res)/sqrt(N) < tol
+  // so 
+  //     relativeTol = tol*sqrt(N)/l2Norm(b)
+
+  assert( numberOfActivePoints>0. );
+  const Real relativeTol = tol*sqrt(numberOfActivePoints)/max(REAL_MIN*1000.,bNorm);
+
+  // KSPSetTolerances(KSP ksp,PetscReal rtol,PetscReal abstol,PetscReal dtol,PetscInt maxits)
+  ierr = KSPSetTolerances(ksp,relativeTol,1.e-50,PETSC_DEFAULT,maximumNumberOfIterations); CHKERRQ(ierr);
 
   /* 
     Set runtime options, e.g.,
@@ -556,13 +683,16 @@ solvePETSc(int argc,char **args)
     KSPSetFromOptions() is called _after_ any other customization
     routines.
   */
-  ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
+  ierr = KSPSetFromOptions(ksp); CHKERRQ(ierr);
+
+  PetscBool trueFlag=PETSC_TRUE;  // the initial guess is non-zero
+  ierr = KSPSetInitialGuessNonzero(ksp,trueFlag); CHKERRQ(ierr);       
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
                       Solve the linear system
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-  ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
+  ierr = KSPSolve(ksp,b,x); CHKERRQ(ierr);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
                       Check solution and clean up
@@ -572,56 +702,62 @@ solvePETSc(int argc,char **args)
   {
     printF("***** DONE KSP SOLVE ******\n");
 
-    if( false )
-    {
-      // --- Set v = x ---
-      PetscScalar *xl;
-      VecGetArray(x,&xl);  // get the local array from Petsc
-      int iStart,iEnd;
-      ierr = VecGetOwnershipRange(x,&iStart,&iEnd);CHKERRQ(ierr);
-      // printf("  [iStart,iEnd]=[%i,%i]\n",iStart,iEnd);
+    // if( false )
+    // {
+    //   // --- Set v = x ---
+    //   PetscScalar *xl;
+    //   VecGetArray(x,&xl);  // get the local array from Petsc
+    //   int iStart,iEnd;
+    //   ierr = VecGetOwnershipRange(x,&iStart,&iEnd); CHKERRQ(ierr);
+    //   // printf("  [iStart,iEnd]=[%i,%i]\n",iStart,iEnd);
     
-      realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
-      Index I1,I2,I3;
-      int i=0;
-      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-      {
-        getIndex(cg[grid].dimension(),I1,I2,I3);
+    //   realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
+    //   Index I1,I2,I3;
+    //   int i=0;
+    //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    //   {
+    //     getIndex(cg[grid].dimension(),I1,I2,I3);
 
-        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-        FOR_3D(i1,i2,i3,I1,I2,I3)
-        {
-          assert( i<iEnd );
-          vLocal(i1,i2,i3)=xl[i];
-          i++;
-        }
-      }
-      assert( i==iEnd );      
+    //     OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+    //     FOR_3D(i1,i2,i3,I1,I2,I3)
+    //     {
+    //       assert( i<iEnd );
+    //       vLocal(i1,i2,i3)=xl[i];
+    //       i++;
+    //     }
+    //   }
+    //   assert( i==iEnd );      
 
-      v.interpolate();
+    //   v.interpolate();
       
-    }
-    else
-    {
+    // }
 
-      printF("***** CALL AGAIN TO CHECK SOLUTION ******\n");
-      int & numberOfIterations = dbase.get<int>("numberOfIterations");  // holds actual number of iterations taken
-      numberOfIterations = iteration;
+    // IS THIS NEEDED?  Maybe if we don't monitor the residual
 
-
-      iteration=-1;  // **fix me**
-      ierr = MatMult(Amf,x,b);CHKERRQ(ierr);     
+    printF("***** CALL AGAIN TO CHECK SOLUTION ******\n");
+    int & numberOfIterations = dbase.get<int>("numberOfIterations");  // holds actual number of iterations taken
+    numberOfIterations = iteration;
 
 
-      real maxKspResidal;
-      KSPGetResidualNorm(ksp,&maxKspResidal);
+    iteration=computeResidual; // This tells the matrix-vector multiply routine we are computing the residual
+    ierr = MatMult(Amf,x,b);CHKERRQ(ierr);     
 
-      printF("\n ################ DONE KYRLOV ITERATIONS -- KSP residual=%8.2e (tol=%8.2e) numberOfIterations=%i #############\n",
-             maxKspResidal,tol,numberOfIterations);
 
-      // real maxRes = residual();
-      // printF("Maximum residual = %9.3e\n",maxRes);
-    }
+    Real kspResidual;
+    KSPGetResidualNorm(ksp,&kspResidual);
+    kspResidual /= sqrt(numberOfActivePoints);  // make an approximate L2h norm
+
+    // add final residual
+    resVector(numberOfIterations) = kspResidual;
+    numberOfIterations++;    
+
+    printF("\n ################ DONE KYRLOV ITERATIONS -- KSP residual=%8.2e (tol=%8.2e) numberOfIterations=%i #############\n",
+           kspResidual,tol,numberOfIterations);
+
+  
+
+    // real maxRes = residual();
+    // printF("Maximum residual = %9.3e\n",maxRes);
     
   }
   else
@@ -662,8 +798,18 @@ solvePETSc(int argc,char **args)
   Real & convergenceRate          = dbase.get<Real>("convergenceRate");
   Real & convergenceRatePerPeriod = dbase.get<Real>("convergenceRatePerPeriod");
   
-  convergenceRate          = pow( resVector(numberOfIterations-1)/resVector(0), 1./( numberOfIterations ) ); 
-  convergenceRatePerPeriod = pow( resVector(numberOfIterations-1)/resVector(0), 1./( numberOfIterations*numPeriods) ); 
+  const int & numberOfIterations = dbase.get<int>("numberOfIterations");  // holds actual number of iterations taken  
+  if( numberOfIterations>0 )
+  {
+    convergenceRate          = pow( resVector(numberOfIterations-1)/resVector(0), 1./( numberOfIterations ) ); 
+    convergenceRatePerPeriod = pow( resVector(numberOfIterations-1)/resVector(0), 1./( numberOfIterations*numPeriods) ); 
+  }
+  else
+  {
+    // No iterations we used -- the current solution must have met the tolerance
+    convergenceRate          = 1.; 
+    convergenceRatePerPeriod = 1.;
+  }
 
   /*
      Always call PetscFinalize() before exiting a program.  This routine

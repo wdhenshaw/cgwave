@@ -1,0 +1,207 @@
+\subsection{Exact trigonometric Helmholtz solution} \label{sec:trigHelmholtz}
+
+An exact solution to the Helmholtz equation on a square domain $[0,1]^2$ is
+given by the trigonometric function 
+\bas
+   u_e(\xv,t) \eqdef \sin( k_x x) \, \sin( k_y y) \, \cos(\omega t), \\
+\eas
+where the forcing function is
+\bas
+  f(\xv,t) = \Big( -\omega^2 + c^2( k_x^2 + k_y^2) \Big) u_e(\xv,t)
+\eas
+This solution is also used on other domains in which case we allow for in-homogeneous BCs.
+
+\mni
+\textbf{FD22s} Errors and convergence of WaveHoltz solutions on a square.
+\input tables/boxHelmholtzKrylovSquareUpwindOrder2maxNormConvTable.tex
+
+\mni
+\textbf{FD44s} Errors and convergence of WaveHoltz solutions on a square.
+\input tables/boxHelmholtzKrylovSquareUpwindOrder4maxNormConvTable.tex
+
+
+\clearpage
+\textbf{****** OLD STUFF *******}
+Here are some initial results for $k_x=2\pi$, $k_y=2\pi$ and $\omega=2$. 
+
+\noindent Notes on output: 
+\begin{itemize}
+  \item line with ``TIME INTEGRAL v'' gives the true solution error.
+  \item lines with ``Maximum residual = 9.319e-05'' gives the residual in the Helmholtz equation.
+  \item lines with ``\texttt{it=3:  max(|v-vOld|)=8.47e-06 (tol=0.0001)}'' give the residual in the
+        WaveHoltz iteration $\| v^{n+1} - \vv^{n} \|_\infty$
+\end{itemize}
+
+
+\bigskip
+\textbf{Square : fixed-point iteration. SECOND-ORDER - looks OK}
+\begin{Verbatim}[fontsize=\scriptsize]
+RESIDUAL IS SMOOTH
+
+../bin/cgwh -grid=square64.order2 -cmd=boxHelmholtz.cmd -omega=2 -tol=1e-4
+../bin/cgwh -grid=square32.order2 -cmd=boxHelmholtz.cmd -omega=2 -tol=1e-3
+
+G64
+cgWave: t=5.030e-01 (65 steps) maxErr= 4.55e-04
+cgWave: t=1.006e+00 (130 steps) maxErr= 3.53e-04
+cgWave: t=1.509e+00 (195 steps) maxErr= 8.45e-04
+cgWave: t=2.012e+00 (260 steps) maxErr= 5.42e-04
+cgWave: t=2.515e+00 (325 steps) maxErr= 2.72e-04
+cgWave: t=3.018e+00 (390 steps) maxErr= 8.21e-04
+cgWave: t=3.142e+00 TIME INTEGRAL v:  maxErr= 8.45e-04
+cgWave: t=3.142e+00 (406 steps) maxErr= 8.54e-04
+it=3:  max(|v-vOld|)=8.47e-06 (tol=0.0001)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =3 #########################
+Maximum residual = 9.319e-05
+
+
+G32
+advWave: sosupParameter=  0.10E+01
+cgWave: t=4.952e-01 (32 steps) maxErr= 2.00e-03
+cgWave: t=9.905e-01 (64 steps) maxErr= 9.78e-04
+cgWave: t=1.486e+00 (96 steps) maxErr= 3.71e-03
+cgWave: t=1.981e+00 (128 steps) maxErr= 2.45e-03
+cgWave: t=2.476e+00 (160 steps) maxErr= 1.27e-03
+cgWave: t=2.971e+00 (192 steps) maxErr= 3.05e-03
+cgWave: t=3.142e+00 TIME INTEGRAL v:  maxErr= 3.38e-03
+cgWave: t=3.142e+00 (203 steps) maxErr= 3.81e-03
+it=2:  max(|v-vOld|)=4.51e-04 (tol=0.001)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =2 #########################
+Maximum residual = 1.058e-03
+\end{Verbatim}
+
+\bigskip
+\textbf{Square : fixed-point iteration. FOURTH-ORDER -- not bad, errors may be skewed by poor BC's }
+\begin{Verbatim}[fontsize=\scriptsize]
+LOOKS BETTER -- residual largest near the boundary -- need to fix ghost 
+COMPARE ERRORS IN TIME INTEGRAL ratio= 30 
+
+../bin/cgwh -grid=square64.order4 -cmd=boxHelmholtz.cmd -omega=2 -tol=1e-4
+../bin/cgwh -grid=square32.order4 -cmd=boxHelmholtz.cmd -omega=2 -tol=1e-3
+
+G64
+cgWave: t=5.030e-01 (65 steps) maxErr= 2.20e-06
+cgWave: t=1.006e+00 (130 steps) maxErr= 7.10e-06
+cgWave: t=1.509e+00 (195 steps) maxErr= 5.93e-06
+cgWave: t=2.012e+00 (260 steps) maxErr= 4.95e-06
+cgWave: t=2.515e+00 (325 steps) maxErr= 7.88e-06
+cgWave: t=3.018e+00 (390 steps) maxErr= 1.40e-06
+cgWave: t=3.142e+00 TIME INTEGRAL v:  maxErr= 5.34e-07
+cgWave: t=3.142e+00 (406 steps) maxErr= 8.17e-06
+it=3:  max(|v-vOld|)=8.09e-06 (tol=0.0001)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =3 #########################
+Maximum residual = 7.956e-04
+
+
+G32
+cgWave: t=9.905e-01 (64 steps) maxErr= 3.30e-04
+cgWave: t=1.486e+00 (96 steps) maxErr= 3.31e-04
+cgWave: t=1.981e+00 (128 steps) maxErr= 1.31e-04
+cgWave: t=2.476e+00 (160 steps) maxErr= 4.08e-04
+cgWave: t=2.971e+00 (192 steps) maxErr= 1.18e-04
+cgWave: t=3.142e+00 TIME INTEGRAL v:  maxErr= 1.63e-05
+cgWave: t=3.142e+00 (203 steps) maxErr= 3.85e-04
+it=2:  max(|v-vOld|)=4.00e-04 (tol=0.001)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =2 #########################
+Maximum residual = 5.925e-03
+\end{Verbatim}
+
+
+\bigskip
+\textbf{CIC grid  : fixed-point iteration. SECOND-ORDER - looks OK}
+\begin{Verbatim}[fontsize=\scriptsize]
+G4  - ORDER=2
+cgWave: t=5.045e-01 (44 steps) maxErr= 2.23e-03 (max(|u|)= 5.35e-01) 
+cgWave: t=1.009e+00 (88 steps) maxErr= 2.95e-03 (max(|u|)= 4.35e-01) 
+cgWave: t=1.513e+00 (132 steps) maxErr= 4.82e-03 (max(|u|)= 9.98e-01) 
+cgWave: t=2.018e+00 (176 steps) maxErr= 1.64e-03 (max(|u|)= 6.28e-01) 
+cgWave: t=2.522e+00 (220 steps) maxErr= 3.43e-03 (max(|u|)= 3.30e-01) 
+cgWave: t=3.027e+00 (264 steps) maxErr= 4.38e-03 (max(|u|)= 9.78e-01) 
+cgWave: t=3.142e+00 TIME INTEGRAL v:  maxErr= 4.58e-03
+cgWave: t=3.142e+00 (274 steps) maxErr= 3.90e-03 (max(|u|)= 1.00e+00) 
+it=3:  max(|v-vOld|)=4.52e-04 (tol=0.001)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =3 #########################
+Maximum residual = 4.049e-03
+
+G2 - ORDER=2
+cgWave: t=5.094e-01 (24 steps) maxErr= 9.28e-03 (max(|u|)= 5.33e-01) 
+cgWave: t=1.019e+00 (48 steps) maxErr= 7.21e-03 (max(|u|)= 4.57e-01) 
+cgWave: t=1.528e+00 (72 steps) maxErr= 1.72e-02 (max(|u|)= 1.01e+00) 
+cgWave: t=2.038e+00 (96 steps) maxErr= 1.14e-02 (max(|u|)= 6.05e-01) 
+cgWave: t=2.547e+00 (120 steps) maxErr= 6.96e-03 (max(|u|)= 3.80e-01) 
+cgWave: t=3.057e+00 (144 steps) maxErr= 1.74e-02 (max(|u|)= 1.00e+00) 
+cgWave: t=3.142e+00 TIME INTEGRAL v:  maxErr= 1.74e-02
+cgWave: t=3.142e+00 (148 steps) maxErr= 1.80e-02 (max(|u|)= 1.02e+00) 
+it=5:  max(|v-vOld|)=9.19e-04 (tol=0.001)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =5 #########################
+Maximum residual = 8.508e-03
+\end{Verbatim}
+
+
+\bigskip
+\textbf{CIC grid  : Krylov iteration. FOURTH-ORDER  - v error looks OK, check residual compared to order=2, residual
+is large near boundaries}
+\begin{Verbatim}[fontsize=\scriptsize]
+../bin/cgwh boxHelmholtz.cmd -g=cice4.order4.ng3.hdf -omega=2 -solver=krylov -tol=1e-5 -imode=1
+../bin/cgwh boxHelmholtz.cmd -g=cice2.order4.ng3.hdf -omega=2 -solver=krylov -tol=1e-5 -imode=1
+
+G4 : ORDER=4
+advWave: ADVANCE dim=2 order=4                 grid=curvilinear... t=  0.11E-01
+cgWave: t=4.966e-01 (46 steps) maxErr= 1.12e-05, ||u||= 5.46e-01 
+cgWave: t=9.932e-01 (92 steps) maxErr= 8.34e-06, ||u||= 4.04e-01 
+cgWave: t=1.490e+00 (138 steps) maxErr= 2.00e-05, ||u||= 9.87e-01 
+cgWave: t=1.986e+00 (184 steps) maxErr= 1.39e-05, ||u||= 6.74e-01 
+cgWave: t=2.483e+00 (230 steps) maxErr= 5.05e-06, ||u||= 2.51e-01 
+cgWave: t=2.980e+00 (276 steps) maxErr= 1.97e-05, ||u||= 9.48e-01 
+cgWave: t=3.142e+00 TIME INTEGRAL v:  maxErr= 2.05e-05
+cgWave: t=3.142e+00 (291 steps) maxErr= 2.07e-05, ||u||= 1.00e+00 
+it=-1:  max(|v-vOld|)=1.30e-06, tol=1e-05
+
+ **************** DONE KYRLOV ITERATIONS -- numberOfIterations=8 *************
+
+Maximum residual = 6.903e-03
+
+G2  order=4
+cgWave: t=4.950e-01 (26 steps) maxErr= 2.82e-04, ||u||= 5.49e-01 
+cgWave: t=9.901e-01 (52 steps) maxErr= 2.00e-04, ||u||= 3.98e-01 
+cgWave: t=1.485e+00 (78 steps) maxErr= 4.84e-04, ||u||= 9.86e-01 
+cgWave: t=1.980e+00 (104 steps) maxErr= 3.73e-04, ||u||= 6.83e-01 
+cgWave: t=2.475e+00 (130 steps) maxErr= 1.88e-04, ||u||= 2.36e-01 
+cgWave: t=2.970e+00 (156 steps) maxErr= 4.49e-04, ||u||= 9.42e-01 
+cgWave: t=3.142e+00 TIME INTEGRAL v:  maxErr= 4.98e-04
+cgWave: t=3.142e+00 (165 steps) maxErr= 4.97e-04, ||u||= 1.00e+00 
+it=-1:  max(|v-vOld|)=3.40e-06, tol=1e-05
+
+ ################ DONE KYRLOV ITERATIONS -- numberOfIterations=8 #############
+Maximum residual = 3.699e-02
+\end{Verbatim}
+
+\bigskip
+\textbf{CIC grid  : Krylov iteration. SECOND-ORDER  - looks OK, residual is smooth}
+\begin{Verbatim}[fontsize=\scriptsize]
+  ../bin/cgwh boxHelmholtz.cmd -g=cice4.order2.hdf -omega=2 -solver=krylov -tol=1e-4
+ORDER=2
+advWave: ADVANCE dim=2 order=2                 grid=curvilinear... t=  0.11E-01
+cgWave: t=5.045e-01 (44 steps) maxErr= 1.46e-03, ||u||= 5.34e-01 
+cgWave: t=1.009e+00 (88 steps) maxErr= 1.16e-03, ||u||= 4.34e-01 
+cgWave: t=1.513e+00 (132 steps) maxErr= 2.72e-03, ||u||= 9.96e-01 
+cgWave: t=2.018e+00 (176 steps) maxErr= 1.78e-03, ||u||= 6.28e-01 
+cgWave: t=2.522e+00 (220 steps) maxErr= 9.08e-04, ||u||= 3.27e-01 
+cgWave: t=3.027e+00 (264 steps) maxErr= 2.66e-03, ||u||= 9.76e-01 
+cgWave: t=3.142e+00 TIME INTEGRAL v:  maxErr= 2.74e-03
+cgWave: t=3.142e+00 (274 steps) maxErr= 2.74e-03, ||u||= 1.00e+00 
+plot: finish chosen...
+it=-1:  max(|v-vOld|)=9.43e-05, tol=0.0001
+
+ **************** DONE KYRLOV ITERATIONS -- numberOfIterations=6 *************
+
+Maximum residual = 4.955e-04
+\end{Verbatim}
+
+
+
+
+
+
+
+

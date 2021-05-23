@@ -8,8 +8,26 @@
 
 include ${Overture}/make.options
 
-PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/mpiuni
-PETSC_LIBS = -Wl,-rpath,$(PETSC_LIB) -L$(PETSC_LIB) -lpetsc
+usePETSc := on
+# usePETSc := off
+ifeq ($(usePETSc),on)
+  usePETSc   = on
+  petscSolver = obj/solvePETSc.o
+
+  OGES_PETSC = buildEquationSolvers.o PETScEquationSolver.o
+  PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/mpiuni
+  PETSC_LIBS = -Wl,-rpath,$(PETSC_LIB) -L$(PETSC_LIB) -lpetsc
+
+else
+  usePETSc   = off
+  petscSolver = obj/solvePETScNull.o
+
+  OGES_PETSC = 
+  PETSC_INCLUDE = 
+  PETSC_LIBS = 
+endif
+
+
 
 
 CCFLAGS = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG)
@@ -101,16 +119,15 @@ all = cgWave cgwh
 all: $(all);
 
 
-Oges = /home/henshaw.0/Overture/oges
+Oges = $(Overture)/Oges
 linkFiles:
 	ln -sf $(Oges)/PETScEquationSolver.C src/
 	ln -sf $(Oges)/PETScSolver.C src/
 	ln -sf $(Oges)/buildEquationSolvers.C src/
 
-# OGES_PETSC = buildEquationSolvers.o PETScEquationSolver.o
-OGES_PETSC = 
-buildEquationSolvers.o : $(Oges)/buildEquationSolvers.C
-	$(CXX) $(CCFLAGS) -DOVERTURE_USE_PETSC -c $(Oges)/buildEquationSolvers.C
+# This is needed with PETSc
+buildEquationSolvers.o : $(Oges)/buildEquationSolvers.C; $(CXX) $(CCFLAGS) -DOVERTURE_USE_PETSC -c $(Oges)/buildEquationSolvers.C
+PETScEquationSolver.o : $(Oges)/PETScEquationSolver.C; $(CXX) $(CCFLAGS) -DOVERTURE_USE_PETSC -c $(Oges)/PETScEquationSolver.C
 
 OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/userDefinedKnownSolution.o \
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
@@ -127,23 +144,7 @@ FNOBJO = obj/advWave.o\
 # OBJO = obj/advWave.o\
 #         obj/advWave2dOrder2r.o obj/advWave2dOrder2c.o obj/advWave2dOrder4r.o obj/advWave2dOrder4c.o 
 
-# usePETSc := on
-usePETSc := off
-ifeq ($(usePETSc),on)
-  usePETSc   = on
-  petscSolver = obj/solvePETSc.o
-else
-  usePETSc   = off
-  petscSolver = obj/solvePETScNull.o
-endif
 
-# ifeq ($(usePETSc),on)
-#   petscSolver = obj/solvePETSc.o
-# endif
-# ifeq ($(usePETSc),)
-#   petscSolver = obj/solvePETScNull.o
-# endif
-# petscSolver = obj/solvePETScNull.o
 
 
 # --- test the CgWave solver ---
@@ -164,17 +165,17 @@ obj/cgesl1234.o : src/cgesl1234.F; $(FC) $(FFLAGSO) -I.  -DOV_USE_DOUBLE  -o $*.
 obj/tcmWideStencil.o : src/tcmWideStencil.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/solvePETScNull.o : src/solvePETScNull.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
-# --------- CgWaveHoltz ----------
 
+# --------- CgWaveHoltz ----------
 
 test: 
 	-@echo "usePETSc=[$(usePETSc)]"
 	-@echo "petscSolver=$(petscSolver)"
 
 # cgwh = obj/cgwh.o obj/CgWaveHoltz.o $(petscSolver) $(OBJC) $(OBJO)
-cgwh = obj/cgwh.o obj/CgWaveHoltz.o obj/solvePETScNull.o obj/solveHelmholtz.o $(OBJC) $(OBJO) $(FNOBJO)
+cgwh = obj/cgwh.o obj/CgWaveHoltz.o obj/solveHelmholtz.o $(petscSolver) $(OGES_PETSC) $(OBJC) $(OBJO) $(FNOBJO)
 cgwh: $(cgwh) 
-	$(CXX) $(CCFLAGS) -o bin/cgwh $(cgwh) $(LIBS)
+	$(CXX) $(CCFLAGS) -o bin/cgwh $(cgwh) $(PETSC_LIBS) $(LIBS)
 
 
 

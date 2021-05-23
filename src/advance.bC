@@ -10,7 +10,6 @@
 #include "gridFunctionNorms.h"
 #include "OGPolyFunction.h"
 
-#define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
 #define FOR_3(i1,i2,i3,I1,I2,I3) for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  
 
@@ -356,9 +355,9 @@ advance( int it )
     }
   }
 
-
-  printF("CgWave:advance: nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e)\n",
-         nextTimeToPlot,numPlotSteps, dt,dtMax);
+  if( debug & 2 )
+    printF("CgWave:advance: nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e)\n",
+           nextTimeToPlot,numPlotSteps, dt,dtMax);
 
   // int plotSteps = (int)max(1.,tPlot/dt+.5);
   // plotSteps=10;
@@ -399,6 +398,7 @@ advance( int it )
   }
   else
   {
+    // WaveHoltz: initial condition is provided in v: 
     realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
     u1=v;
 

@@ -49,6 +49,16 @@
 
 \usepackage{fancyvrb}% fancy verbatim
 
+% for fancy coloured boxes: 
+\usepackage{empheq}
+\usepackage[most]{tcolorbox}
+
+\newtcbox{\mymath}[1][]{%
+    nobeforeafter, math upper, tcbox raise base,
+    enhanced, colframe=blue!60!black,
+    colback=blue!20, boxrule=1pt,
+    #1}
+
 %\usepackage[ruled]{algorithm2e}% http://ctan.org/pkg/algorithm2e
 %\usepackage{algcompatible}
 \usepackage{algorithm}

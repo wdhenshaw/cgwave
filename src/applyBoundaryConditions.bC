@@ -110,7 +110,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
 
   bool useOpt= true; // twilightZone && true;
   
-  if( t<=2*dt )
+  if( debug & 4 && t<=2*dt )
     printF("CgWave: applyBC: useOpt=%d\n",(int)useOpt);
   if( useOpt )
   {

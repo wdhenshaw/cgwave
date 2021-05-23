@@ -2654,7 +2654,7 @@
                   stop 2222
               end if
             end if
-          if( (.true. .or. debug.gt.3) .and. t.le.dt )then
+          if( (.false. .or. debug.gt.1) .and. t.le.dt )then
               write(*,'("advWave: option=",i4," grid=",i4)') option,grid
               write(*,'("advWave: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
               write(*,'("advWave: addForcing=",i2," forcingOption=",i2," useUpwindDissipation=",i2)') addForcing,forcingOption,useUpwindDissipation
@@ -2675,7 +2675,7 @@
             uDotFactor=.5  ! By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
       ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
             adSosup=sosupParameter*adSosup
-            if( (.true. .or. debug.gt.3) .and. t.le.2*dt )then
+            if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
                 write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useUpwindDissipation
                 write(*,'("         : t,dt,adSosup=",3e10.2)')t,dt,adSosup
                 write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2)') useSosupDissipation,sosupParameter

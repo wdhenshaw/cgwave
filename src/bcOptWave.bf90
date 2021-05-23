@@ -1176,7 +1176,7 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
 
 
 
-  if( t.le.dt .and. (.true. .or. debug.gt.1) )then
+  if( t.le.dt .and. (.false. .or. debug.gt.1) )then
 
     write(*,'(" bcOptWave: grid=",i4," gridType=",i2," orderOfAccuracy=",i2," uc=",i3," twilightZone=",i2)') grid,gridType,orderOfAccuracy,uc,twilightZone
     write(*,'("  addForcing=",i4," forcingOption=",i4," assignKnownSolutionAtBoundaries=",i4)') addForcing, forcingOption, assignKnownSolutionAtBoundaries
@@ -1196,7 +1196,7 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
       getRealParameter(kzPlaneWave)
       getRealParameter(omegaPlaneWave)
 
-      if(  t.le.dt  )then
+      if(  t.le.dt .and. debug.gt.1  )then
         write(*,'(" bcOptWave:  knownSolutionOption=planeWave: ampPlaneWave=",e10.2," kxPlaneWave=",e10.2," kyPlaneWave=",e10.2)') ampPlaneWave,kxPlaneWave,kyPlaneWave
       end if 
         
@@ -1208,8 +1208,8 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
       getRealParameter(   kzBoxHelmholtz)
       getRealParameter(omegaBoxHelmholtz)
       coswt = cos(omegaBoxHelmholtz*t)
-      if(  t.le.dt  )then
-        write(*,'(" bcOptWave:  knownSolutionOption=boxHelmholtz: kx,ky,kz,omega=",4e10.2," kyPlaneWave=",e10.2)') \
+      if(  t.le.dt .and. debug.gt.1   )then
+        write(*,'(" bcOptWave:  knownSolutionOption=boxHelmholtz: kx,ky,kz,omega=",4e10.2)') \
                      kxBoxHelmholtz,kyBoxHelmholtz,kzBoxHelmholtz,omegaBoxHelmholtz
       end if
 

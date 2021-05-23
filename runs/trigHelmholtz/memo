@@ -1,0 +1,59 @@
+**************************************************
+**** Sat May 22, 2021
+
+Generate results for the documentation
+
+
+FIX NORMS TO BE L2h NORMS
+
+
+cgwh trigHelmholtz.cmd -g=cice4.order2 -omega=6 -solver=none -tol=1e-4 -tp=1 -ad4=1 -go=halt
+
+it=25:  l2Norm( v-vOld )=9.90e-05 (tol=0.0001)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =26 #########################
+CgWaveHoltz::residual: c=1, omega= 6.00000e+00, omegas= 5.99942e+00 (from symbol of D+D-), dt=7.993874e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=7.817e-02 (using omega), max-res=7.267e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=6.000e+00, max-res=7.817e-02, CR=0.723 CR-perPeriod=0.723, cpu= 3.02e+00(s)
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=9.71e-05 (tol=1.00e-04) numberOfIterations=9 #############
+CgWaveHoltz::residual: c=1, omega= 6.00000e+00, omegas= 5.99942e+00 (from symbol of D+D-), dt=7.993874e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=7.469e-02 (using omega), max-res=6.885e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=6.000e+00, max-res=7.469e-02, CR=0.391 CR-perPeriod=0.391, cpu= 1.35e+00(s)
+
+
+
+
+
+CIC grid:
+
+cgwh trigHelmholtz.cmd -g=cice4.order2 -omega=6 -solver=none -tol=1e-4 -tp=1 -ad4=1 -go=halt
+
+cgwh -noplot trigHelmholtz.cmd -g=cice4.order2 -omega=6 -solver=fixedPoint -tol=1e-5 -tp=1 -ad4=1 -matlab=trigHelmholtzCIC4FixedPoint -maxIterations=100 -go=go
+
+cgwh -noplot trigHelmholtz.cmd -g=cice4.order2 -omega=6 -solver=krylov -tol=1e-8 -tp=1 -ad4=1 -matlab=trigHelmholtzCIC4Krylov -go=go
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=7.25e-05 (tol=1.00e-06) numberOfIterations=33 #############
+CgWaveHoltz::residual: c=1, omega= 6.00000e+00, omegas= 5.99942e+00 (from symbol of D+D-), dt=7.993874e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=7.006e-02 (using omega), max-res=6.497e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=6.000e+00, max-res=7.006e-02, CR=0.657 CR-perPeriod=0.657, cpu= 4.20e+00(s)
+
+
+TEST RANDOM INITIAL CONDITIONS:
+
+cgwh trigHelmholtz.cmd -g=square64.order2 -omega=6 -solver=none
+
+
+converges very fast --> TODO: add a random initial condition
+
+cgwh -noplot trigHelmholtz.cmd -g=square64.order2 -omega=6 -solver=fixedPoint -tol=1e-10 -tp=1 -ad4=1 -matlab=trigHelmholtzSquare64FixedPoint -go=go
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =9 #########################
+CgWaveHoltz::residual: c=1, omega= 6.00000e+00, omegas= 5.99974e+00 (from symbol of D+D-), dt=5.397926e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=7.198e-03 (using omega), max-res=4.047e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=6.000e+00, max-res=7.198e-03, CR=0.060 CR-perPeriod=0.060, cpu= 4.58e-01(s)
+
+cgwh -noplot trigHelmholtz.cmd -g=square64.order2 -omega=6 -solver=krylov -tol=1e-10 -tp=1 -ad4=1 -matlab=trigHelmholtzSquare64Krylov -go=go
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.44e-10 (tol=1.00e-10) numberOfIterations=6 #############
+CgWaveHoltz::residual: c=1, omega= 6.00000e+00, omegas= 5.99974e+00 (from symbol of D+D-), dt=5.397926e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=7.198e-03 (using omega), max-res=4.047e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=6.000e+00, max-res=7.198e-03, CR=0.013 CR-perPeriod=0.013, cpu= 4.31e-01(s)
