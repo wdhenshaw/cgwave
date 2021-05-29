@@ -1,5 +1,79 @@
 
 ************************************************************************
+********* Sat May 29, 2021
+
+ADD SAVE SHOW FILE TO CGWAVE
+
+
+cgWave known.cmd -g=shapesBige8.order4.ng3 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -k0=12 -beta=40 -x0=-1.5 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -setKnownOnBoundaries=0 -show=shapes.show
+
+
+cgWave known.cmd -g=square32.order2 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -beta=40 -x0=.4 -y0=.0 -bc=d -computeErrors=0 -upwind=1 -show=known.show
+
+
+************************************************************************
+********* Friday May 28, 2021
+
+ADDED GAUSSIAN PLANE WAVE 
+
+ADD: SET BC's to GPW
+
+MODULATED GPW
+cgWave known.cmd -g=shapesBige8.order4.ng3 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -k0=12 -beta=60 -x0=-1.5 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -setKnownOnBoundaries=0
+
+cgWave known.cmd -g=shapesBige4.order2 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -beta=60 -x0=-1.5 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -setKnownOnBoundaries=0 -ts=implicit -dtMax=.01
+
+cgWave known.cmd -g=shapesBige4.order2 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -beta=60 -x0=-1.5 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -setKnownOnBoundaries=0
+
+getTimeStep: grid=0 : dx= 1.25e-02, dy= 1.25e-02, dt=7.955e-03
+getTimeStep: grid=1, dxMin= 3.34e-03, dxMax= 9.55e-03, dt=3.005e-03
+getTimeStep: grid=2, dxMin= 6.97e-03, dxMax= 7.52e-03, dt=6.270e-03
+getTimeStep: grid=3, dxMin= 3.93e-03, dxMax= 8.53e-03, dt=3.535e-03
+
+
+TEST setKnownOnBoundaries
+cgWave known.cmd -g=square32.order2 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -beta=40 -x0=.4 -y0=.0 -bc=d -computeErrors=0 -upwind=1 -setKnownOnBoundaries=0
+
+
+FD44s:  *TROUBLE** CORNERS
+cgWave known.cmd -g=cice4.order4.ng3 -kx=1 -ky=0 -tp=1 -tf=100 -known=gpw -beta=40 -x0=-1.25 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -bc=n
+
+FD22s - IMP  stable
+cgWave known.cmd -g=cice4.order2 -kx=1 -ky=0 -tp=1 -tf=100 -known=gpw -beta=40 -x0=-1.25 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -bc=n -ts=implicit -dtMax=.05
+
+
+FD22s **stable**
+cgWave known.cmd -g=cice4.order2 -kx=1 -ky=0 -tp=1 -tf=100 -known=gpw -beta=40 -x0=-1.25 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -bc=n
+
+
+BUG FOUND -- upwind in applyBC
+
+scattering from a cylinder: **TROUBLE WITH UPWIND*** TOP AND BOTTOM
+   NOT ALL GHOST ARE BEING EXTRAPOLATED !! ... FIXED
+cgWave known.cmd -g=square32.order4.ng3 -kx=1 -ky=0 -tp=.01 -tf=100 -known=gpw -beta=40 -x0=.4 -y0=.0 -bc=n -computeErrors=0 -upwind=1
+
+cgWave known.cmd -g=cice4.order4.ng3 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -beta=40 -x0=-1.25 -y0=.0 -bc=n -computeErrors=0 -upwind=1
+
+scattering from a cylinder: wiggles by t=40 with no upwind
+cgWave known.cmd -g=cice4.order4.ng3 -kx=1 -ky=0 -tp=.1 -tf=50 -known=gpw -beta=40 -x0=-1.25 -y0=.0 -bc=n -computeErrors=0 -upwind=0
+
+
+****Corner issues with Neumann BCs ****
+cgWave known.cmd -g=square64.order4 -kx=1 -ky=0 -tp=.1 -tf=5 -known=gpw -beta=60 -x0=.3 -y0=.5 -bc=n
+
+
+cgWave known.cmd -g=square64.order4 -kx=1 -ky=1 -tp=.1 -tf=5 -known=gpw -beta=60 -x0=.3 -y0=.5 
+
+cgWave:FD44 t=1.000e-01 ( 11 steps) dt=9.091e-03 maxErr= 9.36e-06, ||u||= 1.00e+00, cpu= 2.62e+00(s)
+cgWave:FD44 t=2.000e-01 ( 22 steps) dt=9.091e-03 maxErr= 1.20e-05, ||u||= 9.99e-01, cpu= 4.69e+00(s)
+
+
+cgWave known.cmd -g=square64np.order2 -kx=1 -ky=0 -tp=.1 -tf=5 -known=gpw -beta=40 -x0=.5 -y0=.5
+
+cgWave known.cmd -g=square32.order2 -kx=1 -ky=1 -tp=.1 -tf=5 -known=gpw -beta=20 -x0=.25 
+
+
+************************************************************************
 ********* Monday May 24, 2021
 
 MOVED known.cmd and planeWave.cmd (not used anymore) from the cmd folder

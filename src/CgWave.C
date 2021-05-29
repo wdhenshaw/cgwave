@@ -11,6 +11,7 @@
 #include "OGPolyFunction.h"
 #include "OGTrigFunction.h"
 #include "DialogData.h"
+#include "Ogshow.h"
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
@@ -34,8 +35,15 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<real>("dt")=-1.;
   dbase.put<Real>("dtMax")=-1.;  // save maximum allowable dt (before corrections to reach a given time)
 
-  dbase.put<real>("ad4")=0.; // coeff of the artificial dissipation.
+  dbase.put<int>("upwind")=0;  // use upwind dissipation
+  dbase.put<real>("ad4")=0.;   // coeff of the artificial dissipation. (*old)
   dbase.put<int>("dissipationFrequency")=1; // apply dissipation every this many steps (1= every step)
+  // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
+  //                      false=compute Ut inline in Gauss-Seidel fashion  
+  dbase.put<int>("preComputeUpwindUt")= false;  
+
+  dbase.put<int>("computeErrors") = 1;                  // by default, compute errors for TZ or a known solution
+  dbase.put<int>("applyKnownSolutionAtBoundaries") = 0; // by default, do NOT apply known solution at boundaries
 
   dbase.put<int>("current")=0;              // holds current solution
 
@@ -48,13 +56,27 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<TimeSteppingMethodEnum>("timeSteppingMethod")=explicitTimeStepping;
 
   // coefficients in implicit time-stepping  
-  //  D+t D-t u = c^2 Delta( cImp(1) *u^{n+1} + cImp(0) *u^n + cImp(-1)* u^{n-1} )
+  //  D+t D-t u =              c^2 Delta( cImp(1,0) *u^{n+1} + cImp(0,0) *u^n + cImp(-1,0)* u^{n-1} )   :  second-order coeff cImp(-1:1,0)
+  //              -(c^4*dt^2/12) Delta^2( cImp(1,1) *u^{n+1} + cImp(0,1) *u^n + cImp(-1,1)* u^{n-1}  )  :  foruth-order ceoff cImp(-1:1,1) 
+  RealArray & bImp = dbase.put<RealArray>("bImp");
   RealArray & cImp = dbase.put<RealArray>("cImp");
-  cImp.redim(Range(-1,1)); 
-  // Full-weighting by default: 
-  cImp(-1)=.25;
-  cImp( 0)=.5;
-  cImp( 1)=.25;
+  const int maxOrderOfAccuracy=12; // being rather hopeful here 
+  bImp.redim(2,maxOrderOfAccuracy);             bImp=0.; 
+  cImp.redim(Range(-1,1),maxOrderOfAccuracy);   cImp=0.; 
+  // For accuracy the weights depend on one parameter beta2 for second-order,
+  // and a second parameter beta4 for fourth-order: (See notes in implicitTaylorSchemes.pdf)
+  // Full-weighting for second-order part by default: 
+  Real beta2=.5, beta4=0.; 
+  bImp(0)=beta2;
+  bImp(1)=beta4; 
+  Real alpha2 = (1.-beta2)/2.;
+  Real alpha4 = (alpha2-beta4-1./12.)/2.; 
+  cImp(-1,0)=alpha2;
+  cImp( 0,0)= beta2;
+  cImp( 1,0)=alpha2;
+  cImp(-1,1)=alpha4;
+  cImp( 0,1)= beta4;
+  cImp( 1,1)=alpha4;  
 
   // interactiveMode :
   //       0 = plot intermediate results
@@ -70,7 +92,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   dbase.put<real>("maxError")=0.;      // save max-error here 
   dbase.put<real>("solutionNorm")=1.;  // save solution norm here 
-  dbase.put<int>("computeErrors")=0;   // true of we compute errors 
+  // dbase.put<int>("computeErrors")=0;   // true of we compute errors 
 
   // For Helmholtz solve with CgWaveHoltz
   dbase.put<int>("solveHelmholtz")=false;
@@ -126,7 +148,10 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("addForcing")=0;
   dbase.put<ForcingOptionEnum>("forcingOption")=noForcing;
 
-  dbase.put<InitialConditionOptionEnum>("initialConditionOption")=zeroInitialCondition; 
+  dbase.put<InitialConditionOptionEnum>("initialConditionOption")=zeroInitialCondition;
+
+  dbase.put<BoundaryConditionApproachEnum>("bcApproach")=defaultBoundaryConditionApproach;
+
 
   dbase.put<realCompositeGridFunction>("error");
 
@@ -169,6 +194,12 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   FILE *& checkFile = dbase.put<FILE*>("checkFile");
   checkFile = fopen("cgWave.check","w" );        // for regression and convergence tests
+
+  // show file variables:
+  dbase.put<bool>("saveShowFile")     =false; 
+  dbase.put<aString>("nameOfShowFile")="cgWave.show"; // name of the show file
+  dbase.put<Ogshow*>("showFile")      =NULL;
+  dbase.put<int>("flushFrequency")    =10;  // number of solutions per sub-showFile
 
   // enum TimingEnum
   // { 
@@ -240,6 +271,10 @@ CgWave::
   delete [] dbase.get<aString*>("bcNames");
 
   delete dbase.get<GUIState*>("runTimeDialog");
+
+  Ogshow *& showFile = dbase.get<Ogshow*>("showFile");
+  delete showFile;  
+
 }
 
 // ================================================================================================
@@ -279,7 +314,7 @@ int CgWave::initialize()
   const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
   bool twilightZone = addForcing && forcingOption==twilightZoneForcing;
   int & computeErrors = dbase.get<int>("computeErrors");
-  computeErrors = twilightZone || knownSolutionOption=="userDefinedKnownSolution";
+  // computeErrors = twilightZone || knownSolutionOption=="userDefinedKnownSolution";
   
   const real & omega     = dbase.get<real>("omega");
   const real & cfl       = dbase.get<real>("cfl");
@@ -293,9 +328,10 @@ int CgWave::initialize()
   if( orderOfAccuracyInTime==-1 )
     orderOfAccuracyInTime = orderOfAccuracy;
 
-  const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  const int & upwind                  = dbase.get<int>("upwind");
+  // const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
 
-  bool useUpwindDissipation = ad4  > 0.;
+  bool useUpwindDissipation = upwind;
   if( useUpwindDissipation )
   {
     // --Upwind dissipation ---
@@ -490,6 +526,17 @@ int CgWave::initialize()
 
   }
 
+  const bool & saveShowFile = dbase.get<bool>("saveShowFile"); 
+  if( saveShowFile )
+  {
+    aString & nameOfShowFile = dbase.get<aString>("nameOfShowFile"); // name of the show file
+    int & flushFrequency     = dbase.get<int>("flushFrequency");  // number of solutions per show file 
+    Ogshow *& showFile       = dbase.get<Ogshow*>("showFile");
+
+    bool useStreamMode=true;  // show files will be saved compressed
+    showFile = new Ogshow( nameOfShowFile,".",useStreamMode );   
+    showFile->setFlushFrequency( flushFrequency ); // save this many solutions per sub-showFile
+  }
 
   // -- compute the time-step ---
   getTimeStep(); 
@@ -524,11 +571,17 @@ int CgWave::interactiveUpdate()
   int & orderOfAccuracy         = dbase.get<int>("orderOfAccuracy");
   int & orderOfAccuracyInTime   = dbase.get<int>("orderOfAccuracyInTime");
   IntegerArray & gridIsImplicit = dbase.get<IntegerArray>("gridIsImplicit");
+  RealArray & bImp              = dbase.get<RealArray>("bImp");
   RealArray & cImp              = dbase.get<RealArray>("cImp");
 
 
-  real & ad4                    = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  int & upwind                  = dbase.get<int>("upwind");
+  real & ad4                    = dbase.get<real>("ad4"); // coeff of the artificial dissipation. (*old*)
   int & dissipationFrequency    = dbase.get<int>("dissipationFrequency");
+  int & preComputeUpwindUt      = dbase.get<int>("preComputeUpwindUt");
+
+  int & computeErrors           = dbase.get<int>("computeErrors");                         // by default, compute errors for TZ or a known solution
+  int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
 
   int & debug                   = dbase.get<int>("debug");
   int & interactiveMode         = dbase.get<int>("interactiveMode");
@@ -536,16 +589,21 @@ int CgWave::interactiveUpdate()
   int & solveHelmholtz          = dbase.get<int>("solveHelmholtz");
   int & computeTimeIntegral     = dbase.get<int>("computeTimeIntegral");
   real & tol                    = dbase.get<real>("tol");
+
+  bool & saveShowFile           = dbase.get<bool>("saveShowFile"); 
+  aString & nameOfShowFile      = dbase.get<aString>("nameOfShowFile"); // name of the show file
+  int & flushFrequency          = dbase.get<int>("flushFrequency");     // number of solutions per show file  
           
   real & omegaSOR               = dbase.get<real>("omegaSOR");
 
-  // Gaussian forcing 
+  // Gaussian forcing ** FIX ME** why here
   real & beta = dbase.get<real>("beta");
   real & x0   = dbase.get<real>("x0");
   real & y0   = dbase.get<real>("y0");
   real & z0   = dbase.get<real>("z0");
 
   TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+  BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
 
   TwilightZoneEnum & twilightZone = dbase.get<TwilightZoneEnum>("twilightZone");
   int & degreeInSpace             = dbase.get<int>("degreeInSpace");
@@ -590,6 +648,9 @@ int CgWave::interactiveUpdate()
   aString tzLabel[] = {"polynomial", "trigonometric", "" };
   dialog.addOptionMenu("Twilight zone::",tzLabel,tzLabel,(int)twilightZone );
 
+  aString bcApproachLabel[] = {"useDefaultApproachForBCs", "useOneSidedBCs", "useCompatibilityBCs", "useLocalCompatibilityBCs", "" };
+  dialog.addOptionMenu("BC approach:", bcApproachLabel, bcApproachLabel, (int)bcApproach );
+
   aString pbLabels[] = {
                         "user defined known solution...",
                         "user defined forcing...",
@@ -601,12 +662,26 @@ int CgWave::interactiveUpdate()
   int numRows=5;
   dialog.setPushButtons( pbLabels, pbLabels, numRows ); 
 
-  aString tbCommands[] = {"turn on forcing",
+  aString tbCommands[] = {
+                          "save show file",
+                          "upwind dissipation",
+                          "turn on forcing",
+                          "compute errors",
                           "solve Helmholtz",
                           "compute time integral",
+                          "pre-compute upwind Ut",
+                          "set known on boundaries"
                             ""};
   int tbState[10];
-  tbState[0] = addForcing;
+  tbState[0] = saveShowFile;
+  tbState[1] = upwind;
+  tbState[2] = addForcing;
+  tbState[3] = computeErrors;
+  tbState[4] = solveHelmholtz;
+  tbState[5] = computeTimeIntegral;
+  tbState[6] = preComputeUpwindUt;
+  tbState[7] = applyKnownSolutionAtBoundaries;
+
   int numColumns=1;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
 
@@ -622,6 +697,12 @@ int CgWave::interactiveUpdate()
 
   textCommands[nt] = "cfl";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g",cfl);  nt++; 
+
+  textCommands[nt] = "show file name";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%s",(const char*)nameOfShowFile);  nt++;
+
+  textCommands[nt] = "flush frequency";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",flushFrequency);  nt++;   
 
   textCommands[nt] = "orderInTime";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",orderOfAccuracyInTime);  nt++; 
@@ -641,8 +722,8 @@ int CgWave::interactiveUpdate()
   textCommands[nt] = "number of periods";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",numPeriods);  nt++; 
 
-  textCommands[nt] = "artificial dissipation";  textLabels[nt]=textCommands[nt];
-  sPrintF(textStrings[nt], "%g",ad4);  nt++; 
+  // textCommands[nt] = "artificial dissipation";  textLabels[nt]=textCommands[nt];
+  // sPrintF(textStrings[nt], "%g",ad4);  nt++; 
 
   textCommands[nt] = "Gaussian params";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g %g %g %g (beta,x0,y0,z0)",beta,x0,y0,z0);  nt++; 
@@ -666,7 +747,7 @@ int CgWave::interactiveUpdate()
   sPrintF(textStrings[nt], "%g",dtMax);  nt++; 
 
   textCommands[nt] = "implicit weights";  textLabels[nt]=textCommands[nt];
-  sPrintF(textStrings[nt], "%g, %g, %g",cImp(-1),cImp(0),cImp(1));  nt++; 
+  sPrintF(textStrings[nt], "%g, %g, %g, %g, %g (beta2,beta4,...)",bImp(0),bImp(1),bImp(2),bImp(3),bImp(4));  nt++; 
   
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -740,6 +821,11 @@ int CgWave::interactiveUpdate()
     //   printF("Setting omega=%g\n",omega);
     // }
 
+    else if( dialog.getTextValue(answer,"show file name","%s",nameOfShowFile) )
+    {
+      printF("Setting nameOfShowFile=%s\n",(const char*)nameOfShowFile);
+    }
+
     else if( dialog.getTextValue(answer,"debug","%i",debug) )
     {
       printF("Setting debug=%i\n",debug);
@@ -778,8 +864,32 @@ int CgWave::interactiveUpdate()
     else if( dialog.getTextValue(answer,"dtMax","%e",dtMax) )
     {
       printF("Setting dtMax=%g\n",dtMax);
+    }   
+
+    else if( dialog.getTextValue(answer,"flush frequency","%i",flushFrequency) )
+    {
+      printF("Setting flushFrequency=%i (number of solution in each sun showFile)\n",flushFrequency);
+    }
+
+    else if( dialog.getToggleValue(answer,"save show file",saveShowFile) )
+    {
+      printF("Setting saveShowFile=%d\n",saveShowFile);
+    }
+
+    else if( dialog.getToggleValue(answer,"compute errors",computeErrors) )
+    {
+      printF("Setting computeErrors=%d (1=compute errors for TZ or known solutions.\n",computeErrors);
+    }
+
+    else if( dialog.getToggleValue(answer,"set known on boundaries",applyKnownSolutionAtBoundaries) )
+    {
+      printF("Setting applyKnownSolutionAtBoundaries=%d (1=apply known solution on boundaries).\n",applyKnownSolutionAtBoundaries);
     }    
-    
+
+    else if( dialog.getToggleValue(answer,"upwind dissipation",upwind) )
+    {
+      printF("Setting upwind=%d (upwind dissipation is on or off).\n",upwind);
+    }
     else if( dialog.getToggleValue(answer,"turn on forcing",addForcing) ){}//
     else if( dialog.getToggleValue(answer,"solve Helmholtz",solveHelmholtz) )
     {
@@ -794,7 +904,14 @@ int CgWave::interactiveUpdate()
     {
       printF("Setting computeTimeIntegral=%i\n",computeTimeIntegral);
     }
-    
+
+    else if( dialog.getToggleValue(answer,"pre-compute upwind Ut",preComputeUpwindUt) )
+    {
+      printF("Setting preComputeUpwindUt=%i\n",preComputeUpwindUt);
+      printF("        : true  = precompute Ut in upwind dissipation.\n"
+            "         : false = compute Ut inline in Gauss-Seidel fashion (allows a bigger upwind coefficient).\n");
+    }    
+
     else if( answer=="explicit" || answer=="implicit" )
     {
       timeSteppingMethod = ( answer=="explicit" ? explicitTimeStepping :
@@ -809,8 +926,20 @@ int CgWave::interactiveUpdate()
 
     else if( len=answer.matches("implicit weights") )
     {
-      sScanF(answer(len,answer.length()-1),"%e %e %e",&cImp(-1),&cImp(0),&cImp(1));
-      printF("Setting implicit time-stepping weights to cImp(-1)=%g, cImp(0)=%g, cImp(1)=%g\n",cImp(-1),cImp(0),cImp(1));
+      sScanF(answer(len,answer.length()-1),"%e %e %e %e %e",&bImp(0),&bImp(1),&bImp(2),&bImp(3),&bImp(4));
+      printF("Setting implicit time-stepping weights to beta2=%g, beta4=%g, beta6=%g, beta8=%g\n",bImp(0),bImp(1),bImp(2),bImp(2));
+      Real beta2=bImp(0), beta4=bImp(1); 
+      bImp(0)=beta2;
+      bImp(1)=beta4; 
+      Real alpha2 = (1.-beta2)/2.;
+      Real alpha4 = (alpha2-beta4-1./12.)/2.; 
+      cImp(-1,0)=alpha2;
+      cImp( 0,0)= beta2;
+      cImp( 1,0)=alpha2;
+      cImp(-1,1)=alpha4;
+      cImp( 0,1)= beta4;
+      cImp( 1,1)=alpha4;
+
     } 
 
     // aString initialConditionLabel[] = {"zero initial condition", "twilightZone initial condition", "known solution initial condition", "pulse initial condition", "" };
@@ -850,17 +979,35 @@ int CgWave::interactiveUpdate()
       printF("Setting trig frequencies: fx=%g, fy=%g, fz=%g, ft=%g\n",trigFreq(0),trigFreq(1),trigFreq(2),trigFreq(3));
     }
 
+    else if( answer=="useDefaultApproachForBCs" || 
+             answer=="useOneSidedBCs" || 
+             answer=="useCompatibilityBCs" || 
+             answer=="useLocalCompatibilityBCs" )
+    {
+      bcApproach = ( answer=="useDefaultApproachForBCs" ? defaultBoundaryConditionApproach :
+                     answer=="useOneSidedBCs"           ? useOneSidedBoundaryConditions : 
+                     answer=="useCompatibilityBCs"      ? useCompatibilityBoundaryConditions :
+                     answer=="useLocalCompatibilityBCs" ? useLocalCompatibilityBoundaryConditions : 
+                                                          defaultBoundaryConditionApproach );
+      printF("Setting approach for boundary conditions to %s\n",(const char *)answer);
+    }
+
     else if( len=answer.matches("tPlot") )
     {
       sScanF(answer(len,answer.length()-1),"%e",&tPlot);
       printF(" tPlot=%g\n",tPlot);
       dialog.setTextLabel("tPlot",sPrintF(line, "%g",tPlot));
     }
-    else if( len=answer.matches("artificial dissipation") )
+    else if( len=answer.matches("artificial dissipation") ) // **OLD WAY**
     {
       sScanF(answer(len,answer.length()-1),"%e",&ad4);
       printF(" artificial diffusion=%g\n",ad4);
-      dialog.setTextLabel("artificial dissipation",sPrintF(line, "%g",ad4));
+      if( ad4>0. )
+        upwind=1;
+      else
+        upwind=0;
+
+      // dialog.setTextLabel("artificial dissipation",sPrintF(line, "%g",ad4));
     }
     else if( len=answer.matches("Gaussian params") )
     {
@@ -1121,9 +1268,9 @@ getErrors( realCompositeGridFunction & u, real t )
   // printF("+++++++++++ getErrors t=%9.3e +++++++++++\n",t);
 
   real & maxError     = dbase.get<real>("maxError");      // save max-error here 
-  real & solutionNorm = dbase.get<real>("solutionNorm");  // save solution norm here 
-  int & computeErrors = dbase.get<int>("computeErrors");
-  
+  real & solutionNorm = dbase.get<real>("solutionNorm");  // save solution norm here
+
+
   maxError=0.;
 
   const int & addForcing = dbase.get<int>("addForcing");
@@ -1132,7 +1279,11 @@ getErrors( realCompositeGridFunction & u, real t )
 
   bool twilightZone = addForcing && forcingOption==twilightZoneForcing;
 
-//  computeErrors = twilightZone || knownSolutionOption=="userDefinedKnownSolution";
+  int & computeErrors = dbase.get<int>("computeErrors");
+
+  computeErrors = computeErrors && (twilightZone || knownSolutionOption=="userDefinedKnownSolution");
+  
+  //  computeErrors = twilightZone || knownSolutionOption=="userDefinedKnownSolution";
   
 
   if( computeErrors )

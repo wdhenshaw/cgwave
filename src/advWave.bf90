@@ -612,7 +612,7 @@ end if
         tm = t + dt*mt
         OGDERIV2D( 0,2,0,0,i1,i2,i3,tm, ec, evxx(m) )
         OGDERIV2D( 0,0,2,0,i1,i2,i3,tm, ec, evyy(m) )
-        fv(m) = fv(m) -csq*( cImp(mt)*( evxx(m) + evyy(m) )  )
+        fv(m) = fv(m) -csq*( cImp(mt,0)*( evxx(m) + evyy(m) )  )
       end do
 
     else
@@ -626,7 +626,7 @@ end if
         OGDERIV3D( 0,2,0,0,i1,i2,i3,tm, ec, evxx(m) )
         OGDERIV3D( 0,0,2,0,i1,i2,i3,tm, ec, evyy(m) )
         OGDERIV3D( 0,0,0,2,i1,i2,i3,tm, ec, evzz(m) )
-        fv(m) = fv(m) -csq*( cImp(mt)*( evxx(m) + evyy(m) + evzz(m) )  ) 
+        fv(m) = fv(m) -csq*( cImp(mt,0)*( evxx(m) + evyy(m) + evzz(m) )  ) 
       end do
    end if
 
@@ -708,7 +708,7 @@ end if
       
   if( forcingOption.eq.helmholtzForcing )then
     coswt = cos(omega*t)
-    coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
+    coswtAve = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))
   end if 
 
   fv(m)=0.
@@ -723,23 +723,23 @@ end if
      #If #DIM eq "2"
        ! --- TWO DIMENSIONS ---
        #If #GRIDTYPE eq "rectangular"
-         un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0) *( uxx22r(i1,i2,i3,0) +  uyy22r(i1,i2,i3,0) ) +  \
-                                                                       cImp(-1) *(umxx22r(i1,i2,i3,0) + umyy22r(i1,i2,i3,0) ) )  \
+         un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *( uxx22r(i1,i2,i3,0) +  uyy22r(i1,i2,i3,0) ) +  \
+                                                                       cImp(-1,0) *(umxx22r(i1,i2,i3,0) + umyy22r(i1,i2,i3,0) ) )  \
                                                            + dtSq*fv(m)
        #Else
-         un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0) *(  uxx22(i1,i2,i3,0) +  uyy22(i1,i2,i3,0) ) +  \
-                                                                       cImp(-1) *( umxx22(i1,i2,i3,0) + umyy22(i1,i2,i3,0) ) )  \
+         un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *(  uxx22(i1,i2,i3,0) +  uyy22(i1,i2,i3,0) ) +  \
+                                                                       cImp(-1,0) *( umxx22(i1,i2,i3,0) + umyy22(i1,i2,i3,0) ) )  \
                                                            + dtSq*fv(m)
        #End
      #Else
        ! --- THREE DIMENSIONS ---
        #If #GRIDTYPE eq "rectangular"
-         un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0) *(  uxx23r(i1,i2,i3,0) +  uyy23r(i1,i2,i3,0) +  uzz23r(i1,i2,i3,0) ) + \
-                                                                       cImp(-1) *( umxx23r(i1,i2,i3,0) + umyy23r(i1,i2,i3,0) + umzz23r(i1,i2,i3,0) ) )  \
+         un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *(  uxx23r(i1,i2,i3,0) +  uyy23r(i1,i2,i3,0) +  uzz23r(i1,i2,i3,0) ) + \
+                                                                       cImp(-1,0) *( umxx23r(i1,i2,i3,0) + umyy23r(i1,i2,i3,0) + umzz23r(i1,i2,i3,0) ) )  \
                                                            + dtSq*fv(m)
        #Else
-         un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0) *(  uxx23(i1,i2,i3,0)  +  uyy23(i1,i2,i3,0)  +  uzz23(i1,i2,i3,0) ) + \
-                                                                       cImp(-1) *( umxx23(i1,i2,i3,0)  + umyy23(i1,i2,i3,0)  + umzz23(i1,i2,i3,0) )  ) \
+         un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *(  uxx23(i1,i2,i3,0)  +  uyy23(i1,i2,i3,0)  +  uzz23(i1,i2,i3,0) ) + \
+                                                                       cImp(-1,0) *( umxx23(i1,i2,i3,0)  + umyy23(i1,i2,i3,0)  + umzz23(i1,i2,i3,0) )  ) \
                                                            + dtSq*fv(m)
        #End
      #End
@@ -752,9 +752,17 @@ end if
        #If #ORDERINTIME eq "4"
          ! 2D orderInSpace=4 and orderInTime=4 IMPLICIT
          #If #GRIDTYPE eq "rectangular"
-           write(*,'("advWave: finish me for IMPLICIT order=ORDER, dim=DIM")')
+
+           write(*,'("advWave: finish me for GRIDTYPE IMPLICIT order=ORDER, dim=DIM")')
            stop 4444
-           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*lap2d4(i1,i2,i3,m) + cdtsq12*lap2d2pow2(i1,i2,i3,m) + dtSq*fv(m)
+
+           ! This could be maybe optimized by first computing w = cImp(0)*u + cImp(-1)*um and then computing laplacian(w)
+           ! FIX ME : Need different Implicit weights for lap^2
+           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( cImp( 0,0)*LAP2D4(u ,i1,i2,i3,m)       \
+                                                                    +cImp(-1,0)*LAP2D4(um,i1,i2,i3,m) )     \
+                                                         + cdtsq12*( cImp( 0,1)*LAP2D2POW2(u ,i1,i2,i3,m)   \
+                                                         +          +cImp(-1,1)*LAP2D2POW2(um,i1,i2,i3,m) ) \
+                                                         + dtSq*fv(m)
          #Else
            write(*,'("advWave: finish me for IMPLICIT order=ORDER, dim=DIM")')
            stop 4444
@@ -766,12 +774,12 @@ end if
        #Else
          ! 2D orderInSpace==4 and orderInTime==2  IMPLICIT                                                 
          #If #GRIDTYPE eq "rectangular"
-           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0) *( uxx42r(i1,i2,i3,0) +  uyy42r(i1,i2,i3,0) ) +  \
-                                                                         cImp(-1) *(umxx42r(i1,i2,i3,0) + umyy42r(i1,i2,i3,0) ) )  \
+           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *( uxx42r(i1,i2,i3,0) +  uyy42r(i1,i2,i3,0) ) +  \
+                                                                         cImp(-1,0) *(umxx42r(i1,i2,i3,0) + umyy42r(i1,i2,i3,0) ) )  \
                                                              + dtSq*fv(m)         
          #Else
-           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0) *(  uxx42(i1,i2,i3,0) +  uyy42(i1,i2,i3,0) ) +   \
-                                                                         cImp(-1) *( umxx42(i1,i2,i3,0) + umyy42(i1,i2,i3,0) ) )   \
+           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *(  uxx42(i1,i2,i3,0) +  uyy42(i1,i2,i3,0) ) +   \
+                                                                         cImp(-1,0) *( umxx42(i1,i2,i3,0) + umyy42(i1,i2,i3,0) ) )   \
                                                              + dtSq*fv(m)                                                             
          #End
 
@@ -797,12 +805,12 @@ end if
        #Else
          ! 3D orderInSpace==4 and orderInTime==2 IMPLICIT                                                  
          #If #GRIDTYPE eq "rectangular"
-           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0) *( uxx43r(i1,i2,i3,0) +  uyy43r(i1,i2,i3,0) +  uzz43r(i1,i2,i3,0) ) +  \
-                                                                         cImp(-1) *(umxx43r(i1,i2,i3,0) + umyy43r(i1,i2,i3,0) + umzz43r(i1,i2,i3,0) ) )  \
+           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *( uxx43r(i1,i2,i3,0) +  uyy43r(i1,i2,i3,0) +  uzz43r(i1,i2,i3,0) ) +  \
+                                                                         cImp(-1,0) *(umxx43r(i1,i2,i3,0) + umyy43r(i1,i2,i3,0) + umzz43r(i1,i2,i3,0) ) )  \
                                                              + dtSq*fv(m)         
          #Else
-           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0) *(  uxx43(i1,i2,i3,0) +  uyy43(i1,i2,i3,0) +  uzz43(i1,i2,i3,0) ) +   \
-                                                                         cImp(-1) *( umxx43(i1,i2,i3,0) + umyy43(i1,i2,i3,0) + umzz43(i1,i2,i3,0) ) )   \
+           un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *(  uxx43(i1,i2,i3,0) +  uyy43(i1,i2,i3,0) +  uzz43(i1,i2,i3,0) ) +   \
+                                                                         cImp(-1,0) *( umxx43(i1,i2,i3,0) + umyy43(i1,i2,i3,0) + umzz43(i1,i2,i3,0) ) )   \
                                                              + dtSq*fv(m)                                                             
          #End
       #End
@@ -835,10 +843,10 @@ end if
 !   ORDER : 2 or 4   
 !   GRIDTYPE : rectangular or curvilinear
 ! ========================================================================================
-#beginMacro addUpwindDiss(DIM,ORDER,GRIDTYPE)
+#beginMacro addUpwindDiss(DIM,ORDER,GRIDTYPE,uDot)
 
   if( debug.gt.3 .and. t.lt.2*dt )then
-    write(*,'("addUpwindDiss: UPWIND DISS dim=DIM order=ORDER grid=GRIDTYPE... t=",e10.2)') t
+    write(*,'("addUpwindDiss: UPWIND DISS using u.t=uDot dim=DIM order=ORDER grid=GRIDTYPE... t=",e10.2)') t
     write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
   end if
   
@@ -853,18 +861,18 @@ end if
      #If #DIM eq "2"
        ! --- TWO DIMENSIONS ---
        #If #GRIDTYPE eq "rectangular"
-         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss2d4(v,i1,i2,i3,ec)
+         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss2d4(uDot,i1,i2,i3,ec)
        #Else
          getSosupDissipationCoeff2d(adxSosup)
-         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss2d4(v,i1,i2,i3,ec)
+         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss2d4(uDot,i1,i2,i3,ec)
        #End
      #Else
        ! --- THREE DIMENSIONS ---
        #If #GRIDTYPE eq "rectangular"
-         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss3d4(v,i1,i2,i3,ec)
+         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss3d4(uDot,i1,i2,i3,ec)
        #Else
          getSosupDissipationCoeff3d(adxSosup)
-         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss3d4(v,i1,i2,i3,ec)
+         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss3d4(uDot,i1,i2,i3,ec)
        #End
      #End
 
@@ -874,18 +882,18 @@ end if
      #If #DIM eq "2"
        ! --- TWO DIMENSIONS ---
        #If #GRIDTYPE eq "rectangular"
-         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss2d6(v,i1,i2,i3,ec)
+         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss2d6(uDot,i1,i2,i3,ec)
        #Else
          getSosupDissipationCoeff2d(adxSosup)
-         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss2d6(v,i1,i2,i3,ec)
+         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss2d6(uDot,i1,i2,i3,ec)
        #End
      #Else
        ! --- THREE DIMENSIONS ---
        #If #GRIDTYPE eq "rectangular"
-         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss3d6(v,i1,i2,i3,ec)
+         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss3d6(uDot,i1,i2,i3,ec)
        #Else
          getSosupDissipationCoeff3d(adxSosup)
-         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss3d6(v,i1,i2,i3,ec)
+         un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+sosupDiss3d6(uDot,i1,i2,i3,ec)
        #End
      #End
 
@@ -929,6 +937,7 @@ end if
     !                           };
   
 
+  ! -- Note: Could adjust loop bounds to avoid Dirichlet boundaries
 
   m=0 ! component number 
   ec = 0 ! component number
@@ -983,6 +992,7 @@ end if
         j1 = i1 + iStencil*idv(0);  j2 = i2 + iStencil*idv(1);  j3 = i3 + iStencil*idv(2)
 
         upw = upw + upwindCoeff(iStencil,upwCase)*um(j1,j2,j3,ec)  ! *** CHECK ME 
+        ! upw = upw + upwindCoeff(iStencil,upwCase)*un(j1,j2,j3,ec)  ! *** TEST ****
 
         ! write(*,'("upw-rhs: i1,i2=",2i4," j1,j2=",2i4," upwindCoeff=",1pe9.2, " um=",1pe9.2," upw=",1pe9.2)') i1,i2,j1,j2,upwindCoeff(iStencil,upwCase),um(j1,j2,j3,ec),upw
       end do 
@@ -990,7 +1000,11 @@ end if
       !   write(*,'(">>upw-rhs: i1,i2=",2i4," upw=",1pe9.2)') i1,i2,upw
       ! end if 
 
+      ! This is the coeff of um in
+      !         + adxSosup(dir)*(UpwindStencil)( un - um )
       un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - adxSosup(dir)*upw 
+
+      ! TEST un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - adxSosup(dir)*upw 
 
     end do
 
@@ -1082,11 +1096,12 @@ end if
  integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt
 
  integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid
- integer addForcing,orderOfDissipation,option,gridIsImplicit
+ integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
  integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev
- real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz,adc,adcdt,add,adddt
+ real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz
+ ! ,adc,adcdt,add,adddt
  real dt4by12
- logical addDissipation
+ ! logical addDissipation
  integer debug
 
  real dx(0:2),dr(0:2)
@@ -1097,7 +1112,13 @@ end if
  real dxi4,dyi4,dzi4,dxdyi2,dxdzi2,dydzi2
 
  real c0,c1,csq,dtsq,cdtsq,cdtsq12,cdtSqBy12
- real cImp(-1:1)
+
+ integer maxOrderOfAccuracy
+ parameter( maxOrderOfAccuracy=12 )
+ ! Coefficients in the implicit scheme
+ real bImp(0:maxOrderOfAccuracy-1)
+ real cImp(-1:1,0:maxOrderOfAccuracy-1)
+ real alpha2,alpha4,alpha6,alpha8, beta2,beta4,beta6,beta8
 
  integer rectangular,curvilinear
  parameter( rectangular=0, curvilinear=1 )
@@ -1140,11 +1161,13 @@ end if
       lap2d2Pow4,lap3d2Pow4,lap2d4Pow2,lap3d4Pow2,lap2d4Pow3,lap3d4Pow3,lap2d6Pow2,lap3d6Pow2
  real lap2d2m,lap3d2m
  real du,fd22d,fd23d,fd42d,fd43d,fd62d,fd63d,fd82d,fd83d
+ real DztU
 
  ! forcing correction functions: 
  real lap2d2f,f2drme44, lap3d2f, f3drme44, f2dcme44, f3dcme44, ff
 
- real cdSosupx,cdSosupy,cdSosupz, adSosup,sosupParameter, uDotFactor, adxSosup(0:2)
+ ! real cdSosupx,cdSosupy,cdSosupz
+ real adSosup,sosupParameter, uDotFactor, adxSosup(0:2)
  integer useSosupDissipation,sosupDissipationOption
  integer updateSolution,updateDissipation,computeUt
 
@@ -1155,7 +1178,8 @@ end if
  real omega, coswt, coswtAve
 
   integer idv(0:2),j1,j2,j3
-  integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r,useUpwindDissipation
+  integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r
+  integer useUpwindDissipation,useImplicitUpwindDissipation
   real upw
   real upwindCoeff(-3:3,0:3) 
  
@@ -1256,7 +1280,8 @@ end if
   lap2d4Pow3(i1,i2,i3,c)=LAP2D4(lap2d4Pow2,i1,i2,i3,c)
   lap3d4Pow3(i1,i2,i3,c)=LAP3D4(lap3d4Pow2,i1,i2,i3,c)
 
-
+  ! D-zero in time (really undivided)
+  DztU(i1,i2,i3,n) = (un(i1,i2,i3,n)-um(i1,i2,i3,n))
 
   !...........end   statement functions
 
@@ -1275,26 +1300,28 @@ end if
   ep             = rpar( 9)
   sosupParameter = rpar(10)
   omega          = rpar(11) ! for helmholtz 
-  cImp(-1)       = rpar(12) ! .25 Coefficient for implicit time-stepping
-  cImp( 0)       = rpar(13) ! .5  
-  cImp( 1)       = rpar(14) ! .25
+  bImp( 0)       = rpar(12) ! beta2 : coefficient for implicit time-stepping
+  bImp( 1)       = rpar(13) ! beta4 : coefficient for implicit time-stepping
+  bImp( 2)       = rpar(14) ! beta6 (for future)
+  bImp( 3)       = rpar(15) ! beta8 (for future)
  
   dy=dx(1)  ! Are these needed?
   dz=dx(2)
  
-  option                   =ipar( 0)
-  grid                     =ipar( 1)
-  gridType                 =ipar( 2)
-  orderOfAccuracy          =ipar( 3)
-  orderInTime              =ipar( 4)
-  addForcing               =ipar( 5)
-  forcingOption            =ipar( 6)
-  numberOfForcingFunctions =ipar( 7)
-  fcur                     =ipar( 8) 
-  debug                    =ipar( 9)
-  gridIsImplicit           =ipar(10)
-  useUpwindDissipation     =ipar(11)  ! true if upwind-dissipation is on
-
+  option                       = ipar( 0)
+  grid                         = ipar( 1)
+  gridType                     = ipar( 2)
+  orderOfAccuracy              = ipar( 3)
+  orderInTime                  = ipar( 4)
+  addForcing                   = ipar( 5)
+  forcingOption                = ipar( 6)
+  numberOfForcingFunctions     = ipar( 7)
+  fcur                         = ipar( 8) 
+  debug                        = ipar( 9)
+  gridIsImplicit               = ipar(10)
+  useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
+  useImplicitUpwindDissipation = ipar(11)  ! true if upwind-dissipation is on for impliciit time-stepping
+  preComputeUpwindUt           = ipar(12)
  
   fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
   fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
@@ -1302,12 +1329,25 @@ end if
  
   ! ** fix me ***
   timeSteppingMethod=modifiedEquationTimeStepping
+
+  ! ---- Compute the coefficients in the implicit time-stepping scheme ----
+
+  beta2=bImp(0)
+  beta4=bImp(1)
+  alpha2 = (1.-beta2)/2.
+  alpha4 = (alpha2-beta4-1./12.)/2. 
+  cImp(-1,0)=alpha2
+  cImp( 0,0)= beta2
+  cImp( 1,0)=alpha2
+  cImp(-1,1)=alpha4
+  cImp( 0,1)= beta4
+  cImp( 1,1)=alpha4  
  
-  ! addDissipation=.true. if we add the dissipation in the dis(i1,i2,i3,c) array
-  !  if combineDissipationWithAdvance.ne.0 we compute the dissipation on the fly in the time step
-  !  rather than pre-computing it in diss(i1,i2,i3,c)
-  addDissipation = adc.gt.0.
-  adcdt=adc*dt
+  ! ! addDissipation=.true. if we add the dissipation in the dis(i1,i2,i3,c) array
+  ! !  if combineDissipationWithAdvance.ne.0 we compute the dissipation on the fly in the time step
+  ! !  rather than pre-computing it in diss(i1,i2,i3,c)
+  ! addDissipation = adc.gt.0.
+  ! adcdt=adc*dt
  
   csq=cc**2
   dtsq=dt**2
@@ -1350,7 +1390,7 @@ end if
    useSosupDissipation = 0
   end if
  
-   if( useUpwindDissipation.eq.1 )then
+   if( useImplicitUpwindDissipation.eq.1 )then
 
     ! Upwind dissipation for implicit time time-stepping
     ! from formImplicitTimeSteppingMatrix
@@ -1392,19 +1432,34 @@ end if
   if( (.false. .or. debug.gt.1) .and. t.le.dt )then
     write(*,'("advWave: option=",i4," grid=",i4)') option,grid
     write(*,'("advWave: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
-    write(*,'("advWave: addForcing=",i2," forcingOption=",i2," useUpwindDissipation=",i2)') addForcing,forcingOption,useUpwindDissipation
+    write(*,'("advWave: addForcing=",i2," forcingOption=",i2)') addForcing,forcingOption
+    write(*,'("advWave: useUpwindDissipation=",i2,"(explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
+    write(*,'("advWave: useSosupDissipation=",i2,"(1= add upwind dissipation in this stage)")') useSosupDissipation
     write(*,'("advWave: t,dt,c,omega=",4e10.2)') t,dt,cc,omega 
-    write(*,'("advWave: gridIsImplicit=",i2," cImp=",3(1pe10.2,1x))') gridIsImplicit,cImp(-1),cImp(0),cImp(1)
+    write(*,'("advWave: gridIsImplicit=",i2)') gridIsImplicit
+    if( gridIsImplicit.eq.1 )then
+      write(*,'("  Implicit coeff: cImp(-1:1,0) = ",3(1pe10.2,1x), "(for 2nd-order)")') cImp(-1,0),cImp(0,0),cImp(1,0)
+      write(*,'("  Implicit coeff: cImp(-1:1,1) = ",3(1pe10.2,1x), "(for 4th-order)")') cImp(-1,1),cImp(0,1),cImp(1,1)
+    end if
   end if
  
  
-  if( useSosupDissipation.ne.0 .or. useUpwindDissipation.eq.1 )then
+  if( useSosupDissipation.ne.0 .or. useImplicitUpwindDissipation.eq.1 )then
   
    ! Coefficients in the sosup dissipation from Jordan Angel
    if( orderOfAccuracy.eq.2 )then
     adSosup=-cc*dt*1./8.
+
+    if( preComputeUpwindUt.eq.1 )then
+      ! We need to reduce the upwind coefficient for stability if we pre-compute uDot: (see CgWave documentation)
+      adSosup=adSosup/sqrt(1.*nd)
+    end if 
+
    else if( orderOfAccuracy.eq.4 )then 
      adSosup=cc*dt*5./288.
+     if( .false. )then 
+        adSosup = adSosup*.5 ! ****TEST****
+     end if
    else if( orderOfAccuracy.eq.6 )then 
      adSosup=-cc*dt*31./8640.
    else
@@ -1417,17 +1472,17 @@ end if
    adSosup=sosupParameter*adSosup
  
    if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
-     write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useUpwindDissipation
-     write(*,'("         : t,dt,adSosup=",3e10.2)')t,dt,adSosup
-     write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2)') useSosupDissipation,sosupParameter
+     write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useImplicitUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useImplicitUpwindDissipation
+     write(*,'("         : t,dt,adSosup=",3e10.2," adSosup/(c*dt)=",e12.4)')t,dt,adSosup,adSosup/(cc*dt)
+     write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2," preComputeUpwindUt=",i2)') useSosupDissipation,sosupParameter,preComputeUpwindUt
      ! write(*,'("advMxUp: updateDissipation=",i2)') updateDissipation
      ! write(*,'("advMxUp: useNewForcingMethod=",i2)') useNewForcingMethod
    end if
  
-   ! Coefficients of the sosup dissipation with Cartesian grids:
-   cdSosupx= adSosup/dx(0)
-   cdSosupy= adSosup/dx(1)
-   cdSosupz= adSosup/dx(2)
+   ! ! Coefficients of the sosup dissipation with Cartesian grids:
+   ! cdSosupx= adSosup/dx(0)
+   ! cdSosupy= adSosup/dx(1)
+   ! cdSosupz= adSosup/dx(2)
  
    ! Note: these next values are only used for rectangular grids. (curvilinear grid values are computed in the loops)
    adxSosup(0)=  uDotFactor*adSosup/dx(0)
@@ -1436,7 +1491,11 @@ end if
   end if
  
  
-  if( useSosupDissipation.eq.1 )then
+  if( useSosupDissipation.eq.1 .and. preComputeUpwindUt.eq.1 )then
+    if( option.ne.1 )then
+      write(*,'("advWaveOpt:ERROR: useSosupDissipation.eq.1 BUT option.ne.1")')
+      stop 6663
+    end if
  
     computeUDot()
  
@@ -1493,7 +1552,7 @@ end if
       #End
 
       ! --- Add contributions from upwind dissipation ---
-      if( useUpwindDissipation.eq.1 )then
+      if( useImplicitUpwindDissipation.eq.1 )then
         addUpwindDissImplicit(DIM,ORDER,GRIDTYPE)
       end if 
 
@@ -1501,9 +1560,16 @@ end if
     
   else
 
-    ! ---- add upwind dissipation (uses v=uDot computed above) -----
-
-    addUpwindDiss(DIM,ORDER,GRIDTYPE)
+    ! ---- add upwind dissipation -----
+    ! preComputeUpwindUt : true=precompute Ut in upwind dissipation,  (uses v=uDot computed above)
+    !                      false=compute Ut inline in Gauss-Seidel fashion 
+    if( preComputeUpwindUt.eq.1 )then
+      ! precompute Ut in upwind dissipation,  (uses v=uDot computed above)
+      addUpwindDiss(DIM,ORDER,GRIDTYPE,v)
+    else
+      ! compute Ut inline in Gauss-Seidel fashion (this is more stable)
+      addUpwindDiss(DIM,ORDER,GRIDTYPE,Dztu)
+    end if
   
   end if
  

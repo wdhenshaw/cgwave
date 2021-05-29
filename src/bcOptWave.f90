@@ -188,7 +188,7 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
     integer debug,myid,ghost
 
     integer ok,getInt,getReal
-    real omega,cfl
+    real omega,cfl,c
 
     real t,dt,epsx,REAL_MIN 
     real ep
@@ -239,10 +239,16 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
 
   ! known solutions
     integer knownSolutionOption
-    integer planeWave, boxHelmHoltz
-    parameter( planeWave=1, boxHelmHoltz=2 )
+    integer planeWave, gaussianPlaneWave, boxHelmHoltz
+    parameter( planeWave=1, gaussianPlaneWave=2, boxHelmHoltz=3 )
+
   ! parameters for plane wave known solution
     real ampPlaneWave, kxPlaneWave,kyPlaneWave,kzPlaneWave, omegaPlaneWave
+
+  ! parameters for Gaussian plane wave
+    real kxGPW,kyGPW,kzGPW, x0GPW,y0GPW,z0GPW, k0GPW, betaGPW
+    real xi
+
   ! parameters for boxHelmholtz known solution
     real kxBoxHelmholtz,kyBoxHelmholtz,kzBoxHelmholtz,omegaBoxHelmholtz,coswt
 
@@ -259,6 +265,20 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
     integer noForcing,twilightZoneForcing,userForcing,helmholtzForcing
     parameter( noForcing=0, twilightZoneForcing=1, userForcing=2, helmholtzForcing=2 )
 
+  ! BC APPROACH -- these must match the values in CgWave.h 
+  ! enum BoundaryConditionApproachEnum
+  ! {
+  !   defaultBoundaryConditionApproach,
+  !   useOneSidedBoundaryConditions,
+  !   useCompatibilityBoundaryConditions,
+  !   useLocalCompatibilityBoundaryConditions
+  ! };  
+    integer bcApproach
+    integer defaultBoundaryConditionApproach
+    integer useOneSidedBoundaryConditions
+    integer useCompatibilityBoundaryConditions
+    integer useLocalCompatibilityBoundaryConditions  
+    parameter( defaultBoundaryConditionApproach       =0, useOneSidedBoundaryConditions          =1, useCompatibilityBoundaryConditions     =2, useLocalCompatibilityBoundaryConditions=3 )
 
   !     --- start statement function ----
     real bcf,mixedRHS,mixedCoeff,mixedNormalCoeff
@@ -788,34 +808,36 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
     ierr=0
 
 
-    uc                              =ipar( 0)
-    numberOfComponents              =ipar( 1)
-    grid                            =ipar( 2)
-    gridType                        =ipar( 3)
-    orderOfAccuracy                 =ipar( 4)
-    gridIsImplicit                  =ipar( 5)
-    twilightZone                    =ipar( 6)
-    numberOfProcessors              =ipar( 7)
-    debug                           =ipar( 8)
-    myid                            =ipar( 9)
-    assignKnownSolutionAtBoundaries =ipar(10)
-    knownSolutionOption             =ipar(11)
-    addForcing                      =ipar(12)
-    forcingOption                   =ipar(13)
-    useUpwindDissipation            =ipar(14)
-    numGhost                        =ipar(15)  
-    assignBCForImplicitForImplicit  =ipar(16)
-
-    t         =rpar( 0)
-    dt        =rpar( 1)
-    dx(0)     =rpar( 2)
-    dx(1)     =rpar( 3)
-    dx(2)     =rpar( 4)
-    dr(0)     =rpar( 5)
-    dr(1)     =rpar( 6)
-    dr(2)     =rpar( 7)
-    ep        =rpar( 8) ! pointer for exact solution -- new : 110311 
-    REAL_MIN  =rpar( 9)
+    uc                              = ipar( 0)
+    numberOfComponents              = ipar( 1)
+    grid                            = ipar( 2)
+    gridType                        = ipar( 3)
+    orderOfAccuracy                 = ipar( 4)
+    gridIsImplicit                  = ipar( 5)
+    twilightZone                    = ipar( 6)
+    numberOfProcessors              = ipar( 7)
+    debug                           = ipar( 8)
+    myid                            = ipar( 9)
+    assignKnownSolutionAtBoundaries = ipar(10)
+    knownSolutionOption             = ipar(11)
+    addForcing                      = ipar(12)
+    forcingOption                   = ipar(13)
+    useUpwindDissipation            = ipar(14)
+    numGhost                        = ipar(15)  
+    assignBCForImplicitForImplicit  = ipar(16)
+    bcApproach                      = ipar(17)
+  
+    t         = rpar( 0)
+    dt        = rpar( 1)
+    dx(0)     = rpar( 2)
+    dx(1)     = rpar( 3)
+    dx(2)     = rpar( 4)
+    dr(0)     = rpar( 5)
+    dr(1)     = rpar( 6)
+    dr(2)     = rpar( 7)
+    ep        = rpar( 8) ! pointer for exact solution -- new : 110311 
+    REAL_MIN  = rpar( 9)
+    c         = rpar(10)
 
 
 
@@ -825,10 +847,19 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
         write(*,'("  addForcing=",i4," forcingOption=",i4," assignKnownSolutionAtBoundaries=",i4)') addForcing, forcingOption, assignKnownSolutionAtBoundaries
         write(*,'("  t=",e10.2," dt=",e10.2," knownSolutionOption=",i4," REAL_MIN=",e10.2)') t,dt,knownSolutionOption,REAL_MIN
         write(*,'("  useUpwindDissipation=",i2," numGhost=",i2)') useUpwindDissipation,numGhost
-        write(*,'("  assignBCForImplicitForImplicit=",i4)') assignBCForImplicitForImplicit
+        write(*,'("  assignBCForImplicitForImplicit=",i4," bcApproach=",i4)') assignBCForImplicitForImplicit,bcApproach
         write(*,'("  bc=",6i4)') ((boundaryCondition(side,axis),side=0,1),axis=0,2)
     end if
     
+    if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+        write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+        stop 1010
+    end if
+    if( bcApproach.eq.useLocalCompatibilityBoundaryConditions )then
+        write(*,'("bcOptWave: ERROR: useLocalCompatibilityBoundaryConditions not implemented yet.")') 
+        stop 2020    
+    end if
+
     if( .true. ) then
         if( knownSolutionOption.eq.planeWave )then
 
@@ -863,6 +894,53 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                 write(*,'(" bcOptWave:  knownSolutionOption=planeWave: ampPlaneWave=",e10.2," kxPlaneWave=",e10.2," kyPlaneWave=",e10.2)') ampPlaneWave,kxPlaneWave,kyPlaneWave
             end if 
                 
+        else if( knownSolutionOption.eq.gaussianPlaneWave )then
+
+      ! Get the parameters in the Gaussian plane wave (Set in userDefinedKnownSolution)
+              ok=getReal(pdb,'kxGPW',kxGPW) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find kxGPW")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'kyGPW',kyGPW) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find kyGPW")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'kzGPW',kzGPW) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find kzGPW")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'x0GPW',x0GPW) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find x0GPW")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'y0GPW',y0GPW) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find y0GPW")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'z0GPW',z0GPW) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find z0GPW")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'k0GPW',k0GPW) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find k0GPW")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'betaGPW',betaGPW) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find betaGPW")') 
+                  stop 1133
+              end if
+            if(  t.le.dt .and. debug.ge.0  )then
+                write(*,'(" bcOptWave:  knownSolutionOption=gaussianPlaneWave: kx,ky,kz=",3(1pe10.2)," x0,y0,z0=",3(1pe10.2)," k0,beta=",2(1pe10.2))') kxGPW,kyGPW,kzGPW,x0GPW,y0GPW,z0GPW,k0GPW,betaGPW
+            end if           
+
         else if( knownSolutionOption.eq.boxHelmholtz )then
 
       ! get parameter values from the C++ data-base
@@ -921,7 +999,7 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
 
     if( assignBCForImplicitForImplicit.eq.1 )then
 
-    ! -------- IMPLIICIT BooundaryConditions --------
+    ! -------- IMPLICIT BooundaryConditions --------
 
     ! write(*,'("bcOptWave: fill BCs into RHS for direct Helmholtz solver")')
     ! write(*,'("FINISH ME")')
@@ -1056,6 +1134,17 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                     else
                                         ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
                                     end if 
+                                else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                  ! Eval the Gaussian plane wave solution
+                  !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                  !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                  !  
+                                    if( nd.eq.2 )then
+                                        xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                    else
+                                        xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                    end if 
+                                    ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
                                 else if( knownSolutionOption.eq.boxHelmholtz ) then
                   ! --- evaluate the boxHelmholtz solution ---
                                     if( nd.eq.2 )then
@@ -1069,6 +1158,18 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                             end if
             ! fill in boundary value: 
                         u(i1,i2,i3,uc)=ff
+
+            ! -- Set ghost to zero (RHS to extrapolation conditions) ---
+            ! Is this necessary ?
+                        do ghost=1,numGhost
+                            j1=i1-is1*ghost
+                            j2=i2-is2*ghost
+                            j3=i3-is3*ghost
+
+                            u(j1,j2,j3,uc) = 0.
+
+                        end do  
+
                     end if 
                   end do
                   end do
@@ -1148,6 +1249,9 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                         uez   = kzPlaneWave*cosPw
                                         ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
                                     end if 
+                                else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                  ! Do nothing for Gaussian plane wave solution for now
+                                    ff = 0.
                                 else if( knownSolutionOption.eq.boxHelmholtz ) then
                   ! --- evaluate RHS the boxHelmholtz solution ---
                                     if( nd.eq.2 )then
@@ -1187,6 +1291,7 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
           end do ! end side
           end do ! end axis
         
+    ! ---------------- RETURN ---------------
         return
 
     end if
@@ -1331,6 +1436,17 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                         else
                                             ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
                                         end if 
+                                    else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                    ! Eval the Gaussian plane wave solution
+                    !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                    !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                    !  
+                                        if( nd.eq.2 )then
+                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                        else
+                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                        end if 
+                                        ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
                                     else if( knownSolutionOption.eq.boxHelmholtz ) then
                     ! --- evaluate the boxHelmholtz solution ---
                                         if( nd.eq.2 )then
@@ -1381,6 +1497,17 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                         else
                                             ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
                                         end if 
+                                    else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                    ! Eval the Gaussian plane wave solution
+                    !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                    !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                    !  
+                                        if( nd.eq.2 )then
+                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                        else
+                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                        end if 
+                                        ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
                                     else if( knownSolutionOption.eq.boxHelmholtz ) then
                     ! --- evaluate the boxHelmholtz solution ---
                                         if( nd.eq.2 )then
@@ -1431,6 +1558,17 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                         else
                                             ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
                                         end if 
+                                    else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                    ! Eval the Gaussian plane wave solution
+                    !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                    !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                    !  
+                                        if( nd.eq.2 )then
+                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                        else
+                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                        end if 
+                                        ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
                                     else if( knownSolutionOption.eq.boxHelmholtz ) then
                     ! --- evaluate the boxHelmholtz solution ---
                                         if( nd.eq.2 )then
@@ -1481,6 +1619,17 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                         else
                                             ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
                                         end if 
+                                    else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                    ! Eval the Gaussian plane wave solution
+                    !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                    !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                    !  
+                                        if( nd.eq.2 )then
+                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                        else
+                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                        end if 
+                                        ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
                                     else if( knownSolutionOption.eq.boxHelmholtz ) then
                     ! --- evaluate the boxHelmholtz solution ---
                                         if( nd.eq.2 )then
@@ -1918,6 +2067,9 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                             uez   = kzPlaneWave*cosPw
                                             ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
                                         end if 
+                                    else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                    ! Do nothing for Gaussian plane wave solution for now
+                                        ff = 0.
                                     else if( knownSolutionOption.eq.boxHelmholtz ) then
                     ! --- evaluate RHS the boxHelmholtz solution ---
                                         if( nd.eq.2 )then
@@ -2135,6 +2287,9 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                             uez   = kzPlaneWave*cosPw
                                             ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
                                         end if 
+                                    else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                    ! Do nothing for Gaussian plane wave solution for now
+                                        ff = 0.
                                     else if( knownSolutionOption.eq.boxHelmholtz ) then
                     ! --- evaluate RHS the boxHelmholtz solution ---
                                         if( nd.eq.2 )then
@@ -2352,6 +2507,9 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                             uez   = kzPlaneWave*cosPw
                                             ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
                                         end if 
+                                    else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                    ! Do nothing for Gaussian plane wave solution for now
+                                        ff = 0.
                                     else if( knownSolutionOption.eq.boxHelmholtz ) then
                     ! --- evaluate RHS the boxHelmholtz solution ---
                                         if( nd.eq.2 )then
@@ -2569,6 +2727,9 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                             uez   = kzPlaneWave*cosPw
                                             ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
                                         end if 
+                                    else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                    ! Do nothing for Gaussian plane wave solution for now
+                                        ff = 0.
                                     else if( knownSolutionOption.eq.boxHelmholtz ) then
                     ! --- evaluate RHS the boxHelmholtz solution ---
                                         if( nd.eq.2 )then

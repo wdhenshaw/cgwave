@@ -4,13 +4,16 @@
 #   imode =1 : do not wait in cgWave
 #
 $omega=30.1; $beta=50.; $x0=0.5; $y0=0.5; $z0=0.5; $t0=0.; $go="halt"; $matlab="cgWaveHoltz"; 
-$beta=400; $numPeriods=1; $omegaSOR=1; $tol=1.e-3; $ad4=1; $tp=.5; $imode=0; $adjustOmega=0; 
+$beta=400; $numPeriods=1; $omegaSOR=1; $tol=1.e-3; 
+$ad4=1; # old way
+$upwind=1; # new way
+ $tp=.5; $imode=0; $adjustOmega=0; 
 $solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIterations=100; 
 $cfl=.7; $bc="d"; 
 GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"numPeriods=i"=>\$numPeriods,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"ad4=f"=>\$ad4,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,\
             "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"adjustOmega=i"=>\$adjustOmega,\
-            "matlab=s"=>\$matlab,"maxIterations=i"=>\$maxIterations,"go=s"=>\$go );
+            "matlab=s"=>\$matlab,"maxIterations=i"=>\$maxIterations,"upwind=i"=>\$upwind,"go=s"=>\$go );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -34,7 +37,9 @@ tPlot $tp
 # -- Here is input for cgWave 
 bc=$bc
 #
-artificial dissipation $ad4
+if( $ad4>0. ){ $upwind=1; }# for backward compatibility
+upwind dissipation $upwind
+# artificial dissipation $ad4
 #
 helmholtzForcing
 solve Helmholtz 1

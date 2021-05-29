@@ -24,6 +24,7 @@ getTimeStep()
   const int & orderOfAccuracyInTime  = dbase.get<int>("orderOfAccuracyInTime");
   const int & orderOfAccuracy        = dbase.get<int>("orderOfAccuracy");
   IntegerArray & gridIsImplicit      = dbase.get<IntegerArray>("gridIsImplicit");
+  const int & preComputeUpwindUt       = dbase.get<int>("preComputeUpwindUt");
 
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
@@ -185,10 +186,10 @@ getTimeStep()
     {
       Real stabilityBound=1.; 
 
-      if( useUpwindDissipation )
-      {
-        stabilityBound=.7; // *************** TEMPORARY: FD22s needs cfl=.7 for some reason ... FIX ME 
-      }
+      // if( orderOfAccuracy==2 && useUpwindDissipation )
+      // {
+      //   stabilityBound=.7; // *************** TEMPORARY: FD22s needs cfl=.7 for some reason ... FIX ME 
+      // }
 
       if( orderOfAccuracy==4  )
       {

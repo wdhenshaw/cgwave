@@ -208,7 +208,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
             FOR_3D(i1,i2,i3,I1,I2,I3)
             {
                 real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1), z=xLocal(i1,i2,i3,2);
-                fLocal(i1,i2,i3) = amp*sin(kx*x)*sin(ky*y);
+                fLocal(i1,i2,i3) = amp*sin(kx*x)*sin(ky*y)*sin(kz*z);
             }
         }
     }

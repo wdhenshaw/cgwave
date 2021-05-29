@@ -1,9 +1,133 @@
 
 THINGS TO FIX:
-  (1) 2nd-order upwind scheme needs cfl=.7 *fix me* (Note: dt is now temporarily adjusted by a factor of .7 in getTimeStep)
-  (2) OGPolyfunction: increase degree to 8 ??
-  (3) Upwind dissipation + implicit -- not working yet
-  (4) Add CBC's to explicit and implicit codes.
+  (o) 4th-order in time implicit schemes -- finish me 
+  (o) Add CBC's to explicit and implicit codes.
+  (o) Work on 6th and 8th order codes -- HOA in time and CBC's
+  (o) OGPolyfunction: increase degree to 8 ??
+
+Things FIXED:
+  (o) Upwind dissipation + implicit -- not working yet
+  (o) *fixed* 2nd-order upwind scheme needs cfl=.7 *fix me* (Note: dt is now temporarily adjusted by a factor of .7 in getTimeStep)
+      ---> ADJUST SOSUP PARAMETER BY .75 : SEEMS OK !?
+
+
+************************************************************************
+********* Thurs May 27, 2021
+
+REVISIT IMPLICIT TIME STEPPING
+
+
+CHANGE SPECIFICATION OF IMPLICIT TIME-STEPPING COEFF: Set beta2 and beta4!  *** FIX CMD FILES ***
+
+cgWave known.cmd -g=square32.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=50  -ts=implicit  -dt=.1 -known=boxHelmholtz -go=halt
+
+
+XXX TURN OFF REGULAR UPWIND DISS when doesing implicit!!!
+
+FD44s --> FINISH ME 
+cgWave known.cmd -g=rsise4.order4.ng3 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=50 -ts=implicit -dt=.1 -known=boxHelmholtz -go=halt
+
+TEST FD24-IMP
+cgWave known.cmd -g=square32.order4.ng3 -bc=d -ad4=0 -kx=1 -ky=1 -tp=.1 -tf=50 -ts=implicit -orderInTime=2 -dt=.1 -known=boxHelmholtz -go=halt
+
+FD22s-IMP RSIS Look ok
+cgWave known.cmd -g=rsise4.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=50 -ts=implicit -dt=.1 -known=boxHelmholtz -go=halt
+
+
+Now is stable: 
+cgWave known.cmd -g=square32.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=50  -ts=implicit  -dt=.1 -known=boxHelmholtz -go=halt
+
+
+************************************************************************
+********* Wed May 26, 2021
+
+
+REVISIT IMPLICIT TIME STEPPING
+
+UNSTABLE FOR dt=.1 OK for dt=.01, unstable above cfl=1 !?
+cgWave known.cmd -g=square32.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=50  -ts=implicit  -dt=.1 -known=boxHelmholtz -go=halt
+
+
+cgWave tz.cmd -g=square32.order2 -ad4=1 -degreeInTime=2 -degreeInSpace=2 -ts=implicit -tf=.2 -tp=.1  -dtMax=.1 -go=og 
+
+cgWave -noplot tz.cmd -g=square5.order2 -ad4=1 -degreeInTime=2 -degreeInSpace=2 -ts=implicit -tf=.2 -tp=.1  -dtMax=.1 -go=go 
+
+NOT Exact!
+cgWave tz.cmd -g=square64.order2 -ad4=1 -degreeInTime=2 -degreeInSpace=2 -ts=implicit -tf=100 -tp=.05  -dtMax=.05 -go=og
+
+
+EXACT: 
+cgWave tz.cmd -g=square64.order2 -ad4=1 -degreeInTime=2 -degreeInSpace=2 -ts=implicit -tf=100 -tp=.01  -dtMax=.01 -go=og
+
+EXACT
+cgWave -noplot tz.cmd -g=square5.order2 -ad4=1 -degreeInTime=2 -degreeInSpace=2 -ts=implicit -tf=.1 -tp=.1  -dtMax=.05 -go=go > junk
+
+
+
+ISSUE RESOLVED FOR UPWIND DISSIPATION -- See CgWave documentation
+
+
+cgWave known.cmd  -g=square32.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=50 -debug=3 -known=boxHelmholtz -go=halt -cfl=.999
+
+************************************************************************
+********* Tues May 25, 2021
+
+
+REVISIT FD22s -- why does upwind dissipation require cfl=.7 ???
+
+TEST 3D --> also blows up 
+cgWave known.cmd -g=box4.order2 -bc=d -ad4=1 -kx=1 -ky=1 -kz=1 -tp=.5 -tf=10 -debug=3 -known=boxHelmholtz -go=halt -cfl=1.43
+
+3D BoxHelmholtz not working .... FIXED userDefinedForcing was wrong
+cgWave known.cmd -g=box4.order2 -bc=d -ad4=0 -kx=1 -ky=1 -kz=1 -tp=.01 -tf=10 -debug=3 -known=boxHelmholtz -go=halt
+
+
+-------
+Order=2 + UPW : cfl=.7 needed --> 1/.7 = 1.4286
+cgWave known.cmd  -g=square32.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=.1 -tf=5 -debug=3 -known=boxHelmholtz -go=halt -cfl=1.43
+
+CgWave::getTimeStep: c=1, cfl=1.43, timeSteppingMethod=0
+getTimeStep: grid=0 : dx= 3.12e-02, dy= 3.12e-02, dt=3.160e-02
+CgWave::initialize: dt=0.0221192
+
+------
+TURN OFF .7 FIX: 
+
+ADJUST SOSUP-DISS BY A FACTOR OF .5 -- OK
+ADJUST SOSUP-DISS BY A FACTOR OF .75 -- OK
+cgWave known.cmd  -g=square32p.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=5 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+
+OK: till t=50
+cgWave known.cmd  -g=rsise4.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=5 -debug=3 -known=boxHelmholtz -go=halt
+
+NO-DISS -- blows up by t=10
+cgWave known.cmd  -g=rsise4.order2 -bc=d -ad4=0 -kx=1 -ky=1 -tp=1 -tf=50 -debug=3 -known=boxHelmholtz -go=halt
+
+PERIODIC
+cgWave known.cmd  -g=square32p.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=5 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+
+cgWave known.cmd  -g=nonSquare32.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=5 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+
+cgWave known.cmd  -g=square32.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=5 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+
+CgWave::getTimeStep: c=1, cfl=0.9, timeSteppingMethod=0
+getTimeStep: grid=0 : dx= 3.12e-02, dy= 3.12e-02, dt=1.989e-02
+CgWave::initialize: dt=0.0198874
+
+advMxWave: grid=  0 gridType= 0 orderOfAccuracy= 2 useUpwindDissipation= 0
+         : t,dt,adSosup=  0.20E-01  0.20E-01 -0.25E-02 adSosup/(c*dt)= -0.1250E+00
+         : useSosupDissipation= 1 sosupParameter=  1.00E+00
+
+############## CGMX
+CGMX: cfl=.9
+ computeTimeStep: grid=0 dx=3.12e-02 dy=3.12e-02 c=1.00e+00, dtg=1.99e-02
+ computeTimeStep: grid=0 c=1.00e+00, dtg=1.99e-02 min-dx=3.12e-02 max-dx=3.12e-02
+==== computeTimeStep: deltaT=1.99e-02
+
+>>>> Inside advOptNew... t= 0.196E-01 grid=  0
+advOPT: useSosup dissipation, t,dt,adSosup=  0.20E-01  0.20E-01  0.25E-02
+
+
 
 ************************************************************************
 ********* Friday May 21, 2021

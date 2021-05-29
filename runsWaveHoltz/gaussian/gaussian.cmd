@@ -34,9 +34,6 @@ if( $bc eq "r" ){ $bc="radiation"; }
 Gaussian params $beta $x0 $y0 0 (beta,x0,y0,z0)
 omega $omega
 maximum number of iterations $maxIterations 
-if( $ad4>0. ){ $upwind=1; }# for backward compatibility
-upwind dissipation $upwind
-# artificial dissipation $ad4
 tol $tol 
 number of periods $numPeriods
 adjust omega $adjustOmega
@@ -55,7 +52,9 @@ tPlot $tp
 # -- Here is input for cgWave 
 bc=$bc
 #
-artificial dissipation $ad4
+if( $ad4>0. ){ $upwind=1; }# for backward compatibility
+upwind dissipation $upwind
+# artificial dissipation $ad4
 # 
 helmholtzForcing
 solve Helmholtz 1

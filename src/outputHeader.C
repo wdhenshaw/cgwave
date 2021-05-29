@@ -15,8 +15,10 @@ outputHeader()
   const real & tFinal                 = dbase.get<real>("tFinal");
   const real & tPlot                  = dbase.get<real>("tPlot");
 
-  const real & ad4                    = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  const int & upwind                  = dbase.get<int>("upwind");
+  // const real & ad4                    = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
   const int & dissipationFrequency    = dbase.get<int>("dissipationFrequency");
+  const int & preComputeUpwindUt       = dbase.get<int>("preComputeUpwindUt");
 
   const int & orderOfAccuracy         = dbase.get<int>("orderOfAccuracy");
   const int & orderOfAccuracyInTime   = dbase.get<int>("orderOfAccuracyInTime");
@@ -25,6 +27,8 @@ outputHeader()
   int & addForcing                    = dbase.get<int>("addForcing");
   ForcingOptionEnum & forcingOption   = dbase.get<ForcingOptionEnum>("forcingOption");
   const IntegerArray & gridIsImplicit = dbase.get<IntegerArray>("gridIsImplicit");
+  const RealArray & bImp              = dbase.get<RealArray>("bImp");
+  const RealArray & cImp              = dbase.get<RealArray>("cImp");
 
   const int & computeErrors           = dbase.get<int>("computeErrors");
 	
@@ -37,8 +41,8 @@ outputHeader()
   const int & degreeInSpace = dbase.get<int>("degreeInSpace");
   const int & degreeInTime =  dbase.get<int>("degreeInTime");
 
+  const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
-  const RealArray & cImp = dbase.get<RealArray>("cImp");
 
   const aString & nameOfGridFile= dbase.get<aString>("nameOfGridFile");
   real & numberOfGridPoints = dbase.get<real>("numberOfGridPoints");
@@ -64,20 +68,31 @@ outputHeader()
     fPrintF(file," tFinal=%f, dt=%9.3e, tPlot=%9.3e cfl=%3.2f\n",tFinal,dt,tPlot,cfl );
     fPrintF(file," timeSteppingMethod = %s\n",(timeSteppingMethod==explicitTimeStepping ? "explicit (modified equation)" :
                                                timeSteppingMethod==implicitTimeStepping ? "implicit" : "unknown") );
-    fPrintF(file," implicit time-stepping weights: cImp(-1)=%g, cimp(0)=%g, cImp(1)=%g\n",cImp(-1),cImp(0),cImp(1));
+    fPrintF(file," implicit time-stepping weights: cImp(-1,0)=%g, cImp(0,0)=%g, cImp(1,0)=%g (2nd-order term)\n",cImp(-1,0),cImp(0,0),cImp(1,0));
+    fPrintF(file,"                               : cImp(-1,1)=%g, cImp(0,1)=%g, cImp(1,1)=%g (4th-order term)\n",cImp(-1,1),cImp(0,1),cImp(1,1));
     fPrintF(file," orderOfAccuracy=%i, orderOfAccuracyInTime=%d \n",orderOfAccuracy, (orderOfAccuracyInTime==-1 ? orderOfAccuracy : orderOfAccuracyInTime) );
 
-    fPrintF(file," upwind dissipation: coeff=%4.2f, dissipationFrequency=%i\n",ad4,dissipationFrequency);
+    fPrintF(file," upwind dissipation is %s, dissipationFrequency=%i\n",(upwind ? "on" : "off"),dissipationFrequency);
+    fPrintF(file," upwind dissipation: preComputeUpwindUt=%i \n"
+                 "                     true=precompute Ut in upwind dissipation,\n"
+                 "                     false=compute Ut inline in Gauss-Seidel fashion)\n",preComputeUpwindUt);
     
-    fPrintF(file," forcingOption=%s.\n",(forcingOption==noForcing ? "noForcing" :
+    fPrintF(file," forcingOption=%s.\n",(forcingOption==noForcing           ? "noForcing"           :
                                          forcingOption==twilightZoneForcing ? "twilightZoneForcing" :
-                                         forcingOption==userForcing ? "userForcing" :
-                                         forcingOption==helmholtzForcing ? "helmholtzForcing" : "unknown"));
+                                         forcingOption==userForcing         ? "userForcing"         :
+                                         forcingOption==helmholtzForcing    ? "helmholtzForcing"    : 
+                                                                              "unknown"));
 
     fPrintF(file," twilightZone = %s, degreeInSpace=%d, degreeInTime=%d\n",
             (twilightZone==polynomial ? "polynomial" : "trigonometric"), degreeInSpace,degreeInTime);
     
-    
+    fPrintF(file," BC approach = %s. [useDefault|useOneSided|useCompatibility|useLocalCompatibility]\n",
+                  ( bcApproach==defaultBoundaryConditionApproach        ? "useDefaultApproachForBCs"                :
+                    bcApproach==useOneSidedBoundaryConditions           ? "useOneSidedBCs"                          :
+                    bcApproach==useCompatibilityBoundaryConditions      ? "useCompatibilityBCs"                     :
+                    bcApproach==useLocalCompatibilityBoundaryConditions ? "useLocalCompatibilityBoundaryConditions" : 
+                                                                          "unknown" ));
+
     if( solveHelmholtz )
     {
       fPrintF(file," **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=%d (for discrete symbol of D+tD-t) ****\n",adjustOmega);

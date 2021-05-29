@@ -11,7 +11,7 @@
   if( isRectangular )
     mg.getDeltaX(dx);
 
-  int assignKnownSolutionAtBoundaries = 0;  // changed below 
+  // int assignKnownSolutionAtBoundaries = 0;  // changed below 
 
   DataBase *pdb = &dbase;
   // Real cfl1 = pdb->get<real>("cfl");
@@ -24,14 +24,20 @@
     const aString & userKnownSolution = db.get<aString>("userKnownSolution");
     if( userKnownSolution=="planeWave"  )
     {
-      knownSolutionOption=1;
-      assignKnownSolutionAtBoundaries=1;
+      knownSolutionOption=1;                   // this number must match in bcOptWave.bf90
+      // assignKnownSolutionAtBoundaries=1;
     }
+    else if( userKnownSolution=="gaussianPlaneWave"  ) 
+    {
+      knownSolutionOption=2;                   // this number must match in bcOptWave.bf90
+      // assignKnownSolutionAtBoundaries=1;  
+    }    
     else if( userKnownSolution=="boxHelmholtz"  ) 
     {
-      knownSolutionOption=2;
-      assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
+      knownSolutionOption=3;                   // this number must match in bcOptWave.bf90
+      // assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
     }
+
 
   }
 
@@ -50,13 +56,14 @@
     np                  ,            // ipar( 7)
     debug               ,            // ipar( 8)
     myid                ,            // ipar( 9)
-    assignKnownSolutionAtBoundaries, // ipar(10)
+    applyKnownSolutionAtBoundaries,  // ipar(10)
     knownSolutionOption,             // ipar(11)
     addForcing,                      // ipar(12)
     forcingOption,                   // ipar(13)
     useUpwindDissipation,            // ipar(14)
     numGhost,                        // ipar(15)
-    assignBCForImplicit              // ipar(16)
+    assignBCForImplicit,             // ipar(16)
+    bcApproach                       // ipar(17)
                };
   real rpar[] = {
     t                , //  rpar( 0)
@@ -68,7 +75,8 @@
     mg.gridSpacing(1), //  rpar( 6)
     mg.gridSpacing(2), //  rpar( 7)
     (real &)(dbase.get<OGFunction* >("tz")) ,        //  rpar( 8) ! pointer for exact solution -- new : 110311 
-    REAL_MIN           //  rpar( 9)
+    REAL_MIN,         //  rpar( 9)
+    c                 //  rpar(10)
                 };
 
   real *pu = uLocal.getDataPointer();

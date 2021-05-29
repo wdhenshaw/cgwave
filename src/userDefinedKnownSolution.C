@@ -132,7 +132,46 @@ getUserDefinedKnownSolution(real t,  int grid,
         }
         
     }
-    else if(userKnownSolution=="boxHelmholtz" )
+    else if( userKnownSolution=="gaussianPlaneWave" )
+    {
+    // Gaussian plane wave (possibly modulated at frequency k0)
+    //    u = exp( -beta*(xi^2) )*cos( k0*xi )
+    //    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t 
+
+    // For now create the vertex array -- could avoid this
+        mg.update( MappedGrid::THEvertex | MappedGrid::THEcenter );
+        OV_GET_SERIAL_ARRAY(real,mg.vertex(),xLocal );
+
+        const Real *kv    = db.get<real[3]>("kv");
+        const Real *x0v   = db.get<real[3]>("x0v");
+        const Real & beta = db.get<Real>("beta");
+        const Real & k0   = db.get<Real>("k0");
+
+    // Normalize (kx,ky,kz) to the unit vector (so we have a true solution)
+        const Real kNorm = max( REAL_MIN*100., sqrt(SQR(kv[0]) + SQR(kv[1]) + SQR(kv[2])) );
+        const Real kx=kv[0]/kNorm, ky=kv[1]/kNorm, kz=kv[2]/kNorm;
+
+        if( true && t<= 2.*dt )
+            printF("--CgWave-- GaussianPlaneWave, t=%9.3e, (kx,ky,kz)=(%g,%g,%g), (x0,y0,z0)=(%g,%g,%g), k0=(%g)*2*pi, beta=%g, c=%g\n",
+                      t,kv[0],kv[1],kv[2],x0v[0],x0v[1],x0v[2],k0,beta,c);    
+
+        RealArray xei(I1,I2,I3);
+        if( numberOfDimensions==2 )
+            xei = kx*(xLocal(I1,I2,I3,0)-x0v[0]) + ky*(xLocal(I1,I2,I3,1)-x0v[1]) -c*t;
+        else
+            xei = kx*(xLocal(I1,I2,I3,0)-x0v[0]) + ky*(xLocal(I1,I2,I3,1)-x0v[1]) + kz*(xLocal(I1,I2,I3,2)-x0v[2]) - c*t;
+        if( k0 != 0. )
+        {
+      // modulated GPW:
+            uLocal(I1,I2,I3,0) = exp( -beta*((xei)*(xei)) ) * cos( (twoPi*k0)*xei );
+        }
+        else
+        {
+            uLocal(I1,I2,I3,0) = exp( -beta*((xei)*(xei)) );
+        }
+    }
+
+    else if( userKnownSolution=="boxHelmholtz" )
     {
 
         const real omega = rpar[0];
@@ -220,30 +259,99 @@ updateUserDefinedKnownSolution()
         db.put<aString>("userKnownSolution");
         db.get<aString>("userKnownSolution")="unknownSolution";
         
+    // wave numbers (kx,ky,kz) for plane wave and Gaussian plane wave , will be scaled by 2*Pi
+        real *kv = db.put<real[3]>("kv");
+        kv[0]=1.;
+        kv[1]=1.;
+        kv[2]=1.;
+
+    // Offset (x0,y0,z0) for Gaussian plane wave 
+        real *x0v = db.put<real[3]>("x0v");
+        x0v[0]=0.;
+        x0v[1]=0.;
+        x0v[2]=0.; 
+
+    // Exponential factor "beta" for Gaussian plane wave 
+        db.put<Real>("beta")=20.;
+
+    // Modulation wave-number for Gaussian plane wave 
+        db.put<Real>("k0")=0.;
+
+
         db.put<real[20]>("rpar");
         db.put<int[20]>("ipar");
     }
+    real *kv    = db.get<real[3]>("kv");
+    real *x0v   = db.get<real[3]>("x0v");
+    Real & beta = db.get<Real>("beta");
+    Real & k0   = db.get<Real>("k0");
+
     aString & userKnownSolution = db.get<aString>("userKnownSolution");
     real *rpar = db.get<real[20]>("rpar");
     int *ipar = db.get<int[20]>("ipar");
 
 
-    const aString menu[]=
-        {
-            "no known solution",
-            "plane wave",
-            "box helmholtz",
-            "done",
-            ""
-        }; 
+  // Build a dialog menu for changing parameters
+    GUIState gui;
+    DialogData & dialog=gui;
+
+    dialog.setWindowTitle("Known Solutions");
+    dialog.setExitCommand("exit", "exit");
+
+  // -------- PUSH BUTTONS ---------
+    aString pbLabels[] = {
+                                                "no known solution",
+                                                "plane wave",
+                                                "gaussian plane wave",
+                                                "box helmholtz",
+                                                "done",    
+                                                ""};
+    int numRows=3;
+    dialog.setPushButtons( pbLabels, pbLabels, numRows ); 
+
+ // ----- Text boxes ------
+    const int numberOfTextStrings=10;            // max number of text boxes 
+    aString textCommands[numberOfTextStrings];
+    aString textLabels[numberOfTextStrings];
+    aString textStrings[numberOfTextStrings];
+    int nt=0; 
+    textCommands[nt] = "wave numbers:";  textLabels[nt]=textCommands[nt];
+    sPrintF(textStrings[nt], "%g, %g, %g (kx,ky,kz)",kv[0],kv[1],kv[2]);     nt++; 
+
+    textCommands[nt] = "offset:";  textLabels[nt]=textCommands[nt];
+    sPrintF(textStrings[nt], "%g, %g, %g (x0,y0,z0)",x0v[0],x0v[1],x0v[2]);  nt++;  
+
+    textCommands[nt] = "beta:";  textLabels[nt]=textCommands[nt];
+    sPrintF(textStrings[nt], "%g)",beta);                                    nt++; 
+
+    textCommands[nt] = "k0:";  textLabels[nt]=textCommands[nt];
+    sPrintF(textStrings[nt], "%g)",k0);                                      nt++; 
+  
+   // null strings terminal list
+    textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
+    dialog.setTextBoxes(textCommands, textLabels, textStrings);
+
+  // const aString menu[]=
+  //   {
+  //     "no known solution",
+  //     "plane wave",
+  //     "box helmholtz",
+  //     "done",
+  //     ""
+  //   }; 
+
+    gi.pushGUI(gui);
 
     gi.appendToTheDefaultPrompt("userDefinedKnownSolution>");
     aString answer;
+    int len;
     for( ;; ) 
     {
 
-        int response=gi.getMenuItem(menu,answer,"Choose a known solution");
+    // int response=gi.getMenuItem(menu,answer,"Choose a known solution");
         
+        gi.getAnswer(answer,""); 
+
         if( answer=="done" || answer=="exit" )
         {
             break;
@@ -281,6 +389,37 @@ updateUserDefinedKnownSolution()
 
             
         }
+        else if( answer=="gaussian plane wave")
+        {
+            printF("--- Gaussian plane wave (possibly modulated at frequency k0)--- \n"
+                          "    u(x,y,z,t) = exp( -beta*(xi^2) )*cos( k0*xi ) \n"
+                          " where \n"
+                          "    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t \n"
+                          "    k0 : most energy will be at this wave-number. \n"
+                          "    (kx,ky,kz) will be normalized to a unit vector. \n"
+                          " Set parameters (kx,ky,kz) (x0,y0,z0), beta and k0 in the text boxes.\n");
+
+            userKnownSolution="gaussianPlaneWave";
+            dbase.get<bool>("knownSolutionIsTimeDependent")=true;  // known solution depends on time
+
+      // Save parameters in dbase so we can look them up in bcOptWave
+      // These are updated below (in case the user has changed kx,ky,kz, etc.)
+            if( !dbase.has_key("kxGPW") )
+            {
+                const Real kNorm  = max( REAL_MIN*1000., sqrt( SQR(kv[0]) + SQR(kv[1]) + SQR(kv[2] ) ) ); 
+                dbase.put<Real>("kxGPW")   = kv[0]/kNorm;
+                dbase.put<Real>("kyGPW")   = kv[1]/kNorm;
+                dbase.put<Real>("kzGPW")   = kv[2]/kNorm; 
+        
+                dbase.put<Real>("x0GPW")   = x0v[0];
+                dbase.put<Real>("y0GPW")   = x0v[1];
+                dbase.put<Real>("z0GPW")   = x0v[2];
+    
+                dbase.put<Real>("betaGPW") = beta;
+                dbase.put<Real>("k0GPW")   = k0;
+            }
+
+        }
         else if( answer=="box helmholtz" ) 
         {
             printF("----------------- box helmholtz -----------------\n"
@@ -306,6 +445,27 @@ updateUserDefinedKnownSolution()
             dbase.put<Real>("kzBoxHelmholtz")    = kz;
             
         }
+        else if( dialog.getTextValue(answer,"beta:","%e",beta) )
+        {
+            printF("UDKS: Setting beta=%g (exponential factor in Gaussian plane wave)\n",beta);
+        }
+        else if( dialog.getTextValue(answer,"k0:","%e",k0) )
+        {
+            printF("UDKS: Setting k0=%g : modulation wave-number in Gaussian plane wave, will be scaled by 2*pi.\n",k0);
+        }
+
+        else if( len=answer.matches("wave numbers:") )
+        {
+            sScanF(answer(len,answer.length()-1),"%e %e %e",&kv[0],&kv[1],&kv[2]);
+            printF("UDKS: Setting wave numbers: kx=%g, ky=%g, kz=%g (may be normalized or scaled by 2*pi)\n",kv[0],kv[1],kv[2]);
+        }
+        else if( len=answer.matches("offset:") )
+        {
+            sScanF(answer(len,answer.length()-1),"%e %e %e",&x0v[0],&x0v[1],&x0v[2]);
+            printF("UDKS: Setting offset (x0,y0,z0)=(%g,%g,%g) (for Gaussian plane-wave)\n",x0v[0],x0v[1],x0v[2]);
+        }
+
+
         else
         {
             printF("unknown response=[%s]\n",(const char*)answer);
@@ -313,8 +473,24 @@ updateUserDefinedKnownSolution()
         }
         
     }
+    if( userKnownSolution == "gaussianPlaneWave" )
+    {
+    // Save parameters in dbase so we can look them up in bcOptWave
+        const Real kNorm  = max( REAL_MIN*1000., sqrt( SQR(kv[0]) + SQR(kv[1]) + SQR(kv[2] ) ) ); 
+        dbase.get<Real>("kxGPW")   = kv[0]/kNorm;
+        dbase.get<Real>("kyGPW")   = kv[1]/kNorm;
+        dbase.get<Real>("kzGPW")   = kv[2]/kNorm; 
+        dbase.get<Real>("x0GPW")   = x0v[0];
+        dbase.get<Real>("y0GPW")   = x0v[1];
+        dbase.get<Real>("z0GPW")   = x0v[2];
+        dbase.get<Real>("betaGPW") = beta;
+        dbase.get<Real>("k0GPW")   = k0;
 
+    }
     gi.unAppendTheDefaultPrompt();
+
+    gi.popGUI();  // pop dialog
+
     bool knownSolutionChosen = userKnownSolution!="unknownSolution";
     return knownSolutionChosen;
 }

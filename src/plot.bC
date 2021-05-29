@@ -200,7 +200,23 @@ setSensitivity( GUIState & dialog, bool trueOrFalse )
 }
 
 
+// ========================================================================================
+/// \brief Return the method name: FD22, FD24s etc.
+// ========================================================================================
+aString CgWave::getMethodName() const
+{
+  const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");
+  const int & upwind                = dbase.get<int>("upwind");
 
+  aString suffix="";
+  if( upwind )
+    suffix = suffix + "s";  // name = FD22s, FD44s etc. for sosup dissipation
+
+  aString methodName = sPrintF("FD%i%i%s",orderOfAccuracyInTime,orderOfAccuracy,(const char *)suffix);
+
+  return methodName;
+}
 
 // ========================================================================================
 /// \brief Construct the label that defines the time-stepping method and used in the
@@ -300,18 +316,21 @@ plot( int current, real t, real dt )
   real & cfl     = dbase.get<real>("cfl");
   int & debug    = dbase.get<int>("debug");
 
-  const real & ad4              = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
-  const int useSosupDissipation = ad4>0.;
+  // const int & upwind                  = dbase.get<int>("upwind");
+  // const real & ad4              = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  // const int useSosupDissipation = upwind;
+  // // const int useSosupDissipation = ad4>0.;
 
-  aString suffix="";
-  // if( timeSteppingMethod==implicitTimeStepping )
-  //   suffix = "i"; // i = implicit TS
-  if( useSosupDissipation )
-    suffix = suffix + "s";  // name = FD22s, FD44s etc. for sosup dissipation
+  // aString suffix="";
+  // // if( timeSteppingMethod==implicitTimeStepping )
+  // //   suffix = "i"; // i = implicit TS
+  // if( useSosupDissipation )
+  //   suffix = suffix + "s";  // name = FD22s, FD44s etc. for sosup dissipation
+
+  aString methodName = getMethodName();  // FD22, or FD24s etc.
 
   char buff[100];
-  psp.set(GI_TOP_LABEL,sPrintF(buff,"CgWave FD%i%i%s t=%6.2e ",
-                               orderOfAccuracyInTime,orderOfAccuracyInSpace,(const char *)suffix,t));
+  psp.set(GI_TOP_LABEL,sPrintF(buff,"CgWave %s t=%6.2e ",(const char *)methodName,t));
   aString label;
   getTimeSteppingLabel( dt,label );
   

@@ -11,6 +11,19 @@ Figure~\ref{fig:gaussianSquare} shows results from CgWaveHoltz for a square. Sou
 \plotTwoFigsByHeight{fig/gaussianSquareOmega17p17WaveHoltz}{fig/gaussianHelmholtzSquare}{Gaussian pulse, $\omega=17.17$, square64, order 4}{fig:gaussianSquare}{7cm}
 
 
+\bni
+\plotOneFigByWidth{fig/gaussianShapesOmega9p777WaveHoltz}{Gaussian pulse for shapes, $\omega=9.777$, source at $(.3,-.75)$ }{fig:gaussianPulseShapes}{6cm}{6cm}
+
+\begin{Verbatim}[fontsize=\scriptsize]
+SHAPES: omega=9.777
+################ DONE KYRLOV ITERATIONS -- KSP residual=9.71e-09 (tol=1.00e-08) numberOfIterations=93 #############
+CgWaveHoltz::residual: c=1, omega= 9.77700e+00, omegas= 9.77691e+00 (from symbol of D+D-), dt=1.501518e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.500e-02 (using omega), max-res=3.382e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=3.500e-02, CR=0.872 CR-perPeriod=0.872, cpu= 9.54e+01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+CgWaveHoltz: max-diff=1.16e-02 (between WaveHoltz and Direct Helmholtz solution)
+\end{Verbatim}
+
 \clearpage
 \mni
 \textbf{******* OLD STUFF *******}

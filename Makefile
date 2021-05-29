@@ -131,7 +131,7 @@ PETScEquationSolver.o : $(Oges)/PETScEquationSolver.C; $(CXX) $(CCFLAGS) -DOVERT
 
 OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/userDefinedKnownSolution.o \
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
-       obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o
+       obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o
 
 # Fortran 90 (FN) object files: 
 FNOBJO = obj/advWave.o\
@@ -183,11 +183,11 @@ cgwh: $(cgwh)
 
 # bpp files: 
 src/advance.C: src/advance.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include advance.bC
-src/implicit.C: src/implicit.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include implicit.bC
-src/applyBoundaryConditions.C: src/applyBoundaryConditions.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include applyBoundaryConditions.bC
+src/implicit.C: src/implicit.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include implicit.bC
+src/applyBoundaryConditions.C: src/applyBoundaryConditions.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include applyBoundaryConditions.bC
 src/plot.C: src/plot.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include plot.bC
 src/userDefinedForcing.C: src/userDefinedForcing.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include userDefinedForcing.bC
-src/getHelmholtzForcing.C: src/getHelmholtzForcing.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include getHelmholtzForcing.bC
+src/getHelmholtzForcing.C: src/getHelmholtzForcing.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include getHelmholtzForcing.bC
 
 src/tcmWideStencil.C: src/tcmWideStencil.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include tcmWideStencil.bC
 
@@ -243,6 +243,7 @@ obj/updateTimeIntegral.o : src/updateTimeIntegral.C src/CgWave.h; $(CXX) $(CCFLA
 obj/getTimeStep.o : src/getTimeStep.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getHelmholtzForcing.o : src/getHelmholtzForcing.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getInitialConditions.o : src/getInitialConditions.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/saveShow.o : src/saveShow.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 
 # obj/bcOptWave.o : src/bcOptWave.f90; $(FC) $(FFLAGSO) -ffree-line-length-none -o $*.o -c $<	

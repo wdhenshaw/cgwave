@@ -1,3 +1,48 @@
+
+************************************************************************
+********* Thurs May 27, 2021
+
+IMPLICIT
+
+set dt = C*dx 
+
+FD24-IMP : Only order=2 in time is implemented so far
+conv.p tests.conv -option=helmholtz -cg=square -order=4 -orderInTime=2 -kx=1 -ky=1 -tf=1 -tp=.5 -ts=implicit -dtMax=.05 -ng=5
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 4.43e-03 &       
+  square16 &     2 & 4.79e-04 &  9.25 
+  square32 &     4 & 2.00e-05 & 23.95 
+  square64 &     8 & 1.07e-06 & 18.69 
+ square128 &    16 & 1.76e-07 &  6.08 
+Convergence rates: c0=3.80 
+
+
+CFL=2.5
+conv.p tests.conv -option=helmholtz -cg=square -order=2 -kx=1 -ky=1 -tf=1 -tp=1 -ts=implicit -dtMax=.2 -ng=5
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 8.75e-02 &       
+  square16 &     2 & 4.41e-04 &198.41 
+  square32 &     4 & 1.22e-03 &  0.36 
+  square64 &     8 & 3.67e-04 &  3.32 
+ square128 &    16 & 9.51e-05 &  3.86 
+Convergence rates: c0=2.00 
+
+conv.p tests.conv -option=helmholtz -cg=square -order=2 -kx=1 -ky=1 -tf=1 -tp=.5 -ts=implicit -dtMax=.05 -ng=5
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 1.12e-02 &       
+  square16 &     2 & 5.34e-03 &  2.10 
+  square32 &     4 & 1.46e-03 &  3.66 
+  square64 &     8 & 3.72e-04 &  3.92 
+ square128 &    16 & 9.35e-05 &  3.98 
+Convergence rates: c0=1.77 
+
+
+
+
+
 ************************************************************************
 ********* Friday/Sat May 21/22, 2021
 

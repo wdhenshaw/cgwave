@@ -177,14 +177,15 @@ main(int argc, char *argv[])
   const int numberOfDimensions = cg.numberOfDimensions();
 
 
-
   bool saveShowFile=false;
   
 
-  // ---- Build the WaveHoltz solver and set parameters ----
+  // ---- Build the CgWave solver and set parameters ----
   CgWave cgWave(cg,ps);
   cgWave.setNameOfGridFile(nameOfOGFile);
   cgWave.setup();
+
+  // --- Prompt for changes to options and parameters ---
   cgWave.interactiveUpdate();
 
 

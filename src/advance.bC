@@ -73,6 +73,8 @@ extern "C"
   const bool isRectangular = mg.isRectangular();
   int gridType = isRectangular? 0 : 1;
 
+
+
   int ipar[]={option,                        // ipar[ 0]
               grid,                          // ipar[ 1]
               gridType,                      // ipar[ 2]
@@ -84,7 +86,9 @@ extern "C"
               fCurrent,                      // ipar[ 8] 
               debug,                         // ipar[ 9]
               gridIsImplicit(grid),          // ipar[10]
-              useImplicitUpwindDissipation   // ipar[11]
+              useUpwindDissipation,          // ipar[11]
+              useImplicitUpwindDissipation,  // ipar[12]
+              preComputeUpwindUt             // ipar[13]
                           };  //
 
   real dx[3]={1.,1.,1.};
@@ -104,9 +108,10 @@ extern "C"
   rpar[ 9]= (real &)tz;  // twilight zone pointer
   rpar[10]=sosupParameter;
   rpar[11]=dbase.get<real>("omega");
-  rpar[12]=cImp(-1);
-  rpar[13]=cImp( 0);
-  rpar[14]=cImp( 1);
+  rpar[12]=bImp(0);
+  rpar[13]=bImp(1);
+  rpar[14]=bImp(2);
+  rpar[15]=bImp(3);
 
   intArray & mask = mg.mask();
   OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
@@ -121,9 +126,10 @@ extern "C"
     real *unptr = unLocal.getDataPointer();
 
     real *vptr = umptr;  // This may be OK for dissipation stage
-    // We need v for upwinding or 4th-order curvilinear to hold Lap_2h(u) 
+    // We may need v for upwinding or 4th-order curvilinear to hold Lap_2h(u) 
     RealArray uDot;
-    if( option==1 || ( orderOfAccuracy==4 && !isRectangular) )
+    if( ( option==1 && preComputeUpwindUt ) || 
+        ( orderOfAccuracy==4 && !isRectangular) )
     {
       uDot.redim(uLocal);
       vptr = uDot.getDataPointer();  // do this for now 
@@ -226,8 +232,13 @@ advance( int it )
   Real & tPlot                      = dbase.get<real>("tPlot");
   Real & dtMax                      = dbase.get<Real>("dtMax"); 
 
-  real & ad4                        = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  const int & upwind                = dbase.get<int>("upwind");
+  // real & ad4                        = dbase.get<real>("ad4"); // coeff of the artificial dissipation. **OLD**
   const int & dissipationFrequency  = dbase.get<int>("dissipationFrequency");
+  // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
+  //                      false=compute Ut inline in Gauss-Seidel fashion  
+  const int & preComputeUpwindUt = dbase.get<int>("preComputeUpwindUt");
+
 
   real & dt                         = dbase.get<real>("dt");
   const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
@@ -255,7 +266,8 @@ advance( int it )
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
   IntegerArray & gridIsImplicit     = dbase.get<IntegerArray>("gridIsImplicit");
-  RealArray & cImp                  = dbase.get<RealArray>("cImp");
+  const RealArray & bImp            = dbase.get<RealArray>("bImp");
+  const RealArray & cImp            = dbase.get<RealArray>("cImp");
 
   real & solutionNorm               = dbase.get<real>("solutionNorm");  // save solution norm here 
 
@@ -451,40 +463,21 @@ advance( int it )
       char myFormat[180];
       if( computeErrors )
       {
-        sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) maxErr=%%9.2e, ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
-        printF(myFormat,t,step,maxErr,solutionNorm,cpuTime);
+        sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e maxErr=%%9.2e, ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
+        printF(myFormat,t,step,dt,maxErr,solutionNorm,cpuTime);
       }
       else
       {
-        sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
-        printF(myFormat,t,step,solutionNorm,cpuTime);
+        sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
+        printF(myFormat,t,step,dt,solutionNorm,cpuTime);
       }
 
-      //   if( numberOfTimeSteps < 1e4 )
-      //   {
-      //     if( computeErrors )
-      //       printF("cgWave: t=%9.3e (%4i steps) maxErr=%9.2e, ||u||=%9.2e \n",t,step,maxErr,solutionNorm);
-      //     else
-      //       printF("cgWave: t=%9.3e (%4i steps) ||u||=%9.2e \n",t,step,solutionNorm);
-      //   }
-      //   else if( numberOfTimeSteps < 1e7 )
-      //   {
-      //     if( computeErrors )
-      //       printF("cgWave: t=%9.3e (%6i steps) maxErr=%9.2e, ||u||=%9.2e \n",t,step,maxErr,solutionNorm);
-      //     else
-      //       printF("cgWave: t=%9.3e (%6i steps) ||u||=%9.2e \n",t,step,solutionNorm);
-      //   }
-      //   else
-      //   {
-      //     if( computeErrors )        
-      //       printF("cgWave: t=%9.3e (%9i steps) maxErr=%9.2e, ||u||=%9.2e \n",t,step,maxErr,solutionNorm);
-      //     else
-      //       printF("cgWave: t=%9.3e (%9i steps) ||u||=%9.2e \n",t,step,solutionNorm);
-      //   }
-      // }
 
       // output results (e.g. print errors to the check file)
       outputResults( cur, t );
+
+      // Optionally save results to a show file
+      saveShow( current,t,dt );
 
       // int current = step % 2;      // ********* FIX ME
       // ------ plot the solution -----
@@ -555,16 +548,35 @@ advance( int it )
         ::display(u[cur ][grid],sPrintF("BEFORE: u=Cur grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
       }
 
-     const int useUpwindDissipation = ad4>0.;  // ** FIX ME**
+     const int useUpwindDissipation = upwind;  
+     // const int useUpwindDissipation = ad4>0.;  // ** OLD **
 
      // useUpwindDissipation : true if grid is implicit AND upwind dissipation in ON 
      int useImplicitUpwindDissipation=false;
-     if( gridIsImplicit(grid) && ad4>0. )
+     if( gridIsImplicit(grid) && upwind )
        useImplicitUpwindDissipation=true;
 
 
-      // Add upwinding at least 2 steps in a row 
+      //     ----- UPWIND PREDICTOR CORRECTOR (UPC) ----
+      // UPC scheme: 
+      // Predict: 
+      //   (P)  u^p = 2 u^n - u^{n-1} + dt^2{ c^2 Delta_h( u^n) + ... }      (normal update) 
+      //        applyBC( u^p, t+dt )
+      // Correct
+      //   (C)  u^{n+1} = u^p + dt^2 * [ cupx*(D+xD-x)^q + cupy*(D+yD-y)^q ] ( u^p - u^{n-1} )/(2*dt)  ( add upwinding )
+      //        applyBC( u^{n+1}, t+dt )
+      // 
+      // NOTE: To avoid an extra application of the BC's after (C) we instead delay stage (C) to the BEGINNING of the next step,
+      // and actualy do step (C) FIRST on the current solution u^n:
+      //   (C)  u^{n}  <-  u^{n} +  dt^2 * [ cupx*(D+xD-x)^q + cupy*(D+yD-y)^q ] ( u^n - u^{n-2} )/(2*dt)  ( add upwinding to u^n )
+      //         Skip BC routine since doesn't appear to be necessary.
+      //   (P)  u^{n+1} = 2 u^n - u^{n-1} + dt^2{ Stuff }                                            (normal update for u^{n+1}) 
+      //         applyBC( u^{n+1}, t+dt )
+      // 
+      // Note: We need step>0 below since we need 3 levels of the solution to apply the upwind dissipation.
+      // Note: Add upwinding at least 2 steps in a row 
       if( step>0 && useUpwindDissipation &&
+             !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added added with option=0 below
              ( (step % dissipationFrequency)==0 ) ||
              ( (step % dissipationFrequency)==1 ) )
       {
@@ -572,12 +584,22 @@ advance( int it )
 
         const int prev2= (cur-2+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
 
-        OV_GET_SERIAL_ARRAY(real,u[prev2][grid],umLocal);
-        OV_GET_SERIAL_ARRAY(real,u[prev ][grid],uLocal);
-        OV_GET_SERIAL_ARRAY(real,u[cur  ][grid],unLocal);
+        OV_GET_SERIAL_ARRAY(real,u[prev2][grid],umLocal);  // u(t-2*dt)
+        OV_GET_SERIAL_ARRAY(real,u[prev ][grid],uLocal);   // u(t-dt)
+        OV_GET_SERIAL_ARRAY(real,u[cur  ][grid],unLocal);  // u(t)
 
-        int option= 1;    // 0=advance, 1=add dissipation
+        if( debug & 4 )
+        {
+          printF("advance: ADD DISSIPATION: step=%d, t=%9.3e using [prev2,prev,cur]=[%d,%d,%d]\n",step,t,prev2,prev,cur);
+        }
+        int option = 1;    // 0=advance, 1=add dissipation
         callOptimizedAdvance();
+
+        if( FALSE )
+        {
+          // testing: apply BC's after dissipation is added
+          applyBoundaryConditions( u[cur],t); 
+        }       
       }
 
       // -- optimized advance ---
@@ -585,7 +607,12 @@ advance( int it )
       OV_GET_SERIAL_ARRAY(real,u[cur ][grid],uLocal);
       OV_GET_SERIAL_ARRAY(real,u[next][grid],unLocal);
 
-      int option= 0;    // 0=advance, 1=add dissipation
+      if( debug & 4 )
+      {
+        printF("advance: UPDATE SOLUTION: step=%d, t=%9.3e using [prev,cur,nex]=[%d,%d,%d]\n",step,t,prev,cur,next);
+      }      
+
+      int option = 0;    // 0=advance, 1=add dissipation
 
       // =================== TAKE A STEP ==========================
       callOptimizedAdvance();
@@ -608,8 +635,7 @@ advance( int it )
 
     if( debug & 4 ) printf("...done advance, now interpolate...\n");
 
-        
-    // int next = (step+1) %2;
+    // ----- apply boundary conditions ------
     applyBoundaryConditions( u[next],t);
     
 

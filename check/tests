@@ -12,31 +12,31 @@ cgWave.check
 # Here is a list of commands to run for tests
 #
 # TZ explicit tests
-squareOrder2.check ../cmd/tz.cmd -g=square16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
-squareOrder4.check ../cmd/tz.cmd -g=square16.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
-boxOrder2.check ../cmd/tz.cmd -g=box1.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
-boxOrder4.check ../cmd/tz.cmd -g=box1.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
-nonSquareOrder2.check ../cmd/tz.cmd -g=nonSquare16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
-nonSquareOrder4.check ../cmd/tz.cmd -g=nonSquare16.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
-nonBoxOrder2.check ../cmd/tz.cmd -g=nonBox1.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
-nonBoxOrder4.check ../cmd/tz.cmd -g=nonBox1.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+squareOrder2.check    ../runs/tz/tz.cmd -g=square16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+squareOrder4.check    ../runs/tz/tz.cmd -g=square16.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+boxOrder2.check       ../runs/tz/tz.cmd -g=box1.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+boxOrder4.check       ../runs/tz/tz.cmd -g=box1.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+nonSquareOrder2.check ../runs/tz/tz.cmd -g=nonSquare16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+nonSquareOrder4.check ../runs/tz/tz.cmd -g=nonSquare16.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+nonBoxOrder2.check    ../runs/tz/tz.cmd -g=nonBox1.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+nonBoxOrder4.check    ../runs/tz/tz.cmd -g=nonBox1.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
 # TZ implicit tests
-squareOrder2Imp.check ../cmd/tz.cmd -g=square16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
-squareOrder4Imp.check ../cmd/tz.cmd -g=square16.order4 -ad4=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
-boxOrder2Imp.check ../cmd/tz.cmd -g=box1.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
-boxOrder4Imp.check ../cmd/tz.cmd -g=box1.order4 -ad4=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
-nonSquareOrder2Imp.check ../cmd/tz.cmd -g=nonSquare16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
-nonSquareOrder4Imp.check ../cmd/tz.cmd -g=nonSquare16.order4 -ad4=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
-nonBoxOrder2Imp.check ../cmd/tz.cmd -g=nonBox1.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
-nonBoxOrder4Imp.check ../cmd/tz.cmd -g=nonBox1.order4 -ad4=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
+squareOrder2Imp.check    ../runs/tz/tz.cmd -g=square16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+squareOrder4Imp.check    ../runs/tz/tz.cmd -g=square16.order4 -ad4=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
+boxOrder2Imp.check       ../runs/tz/tz.cmd -g=box1.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+boxOrder4Imp.check       ../runs/tz/tz.cmd -g=box1.order4 -ad4=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
+nonSquareOrder2Imp.check ../runs/tz/tz.cmd -g=nonSquare16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+nonSquareOrder4Imp.check ../runs/tz/tz.cmd -g=nonSquare16.order4 -ad4=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
+nonBoxOrder2Imp.check    ../runs/tz/tz.cmd -g=nonBox1.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+nonBoxOrder4Imp.check    ../runs/tz/tz.cmd -g=nonBox1.order4 -ad4=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
 #
 # planeWave : square grids
-planeWaveOrder2.check ../cmd/planeWave.cmd -g=square16.order2 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
-planeWaveOrder4.check ../cmd/planeWave.cmd -g=square16.order4.ng3 -ad4=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+planeWaveOrder2.check ../runs/known/planeWave.cmd -g=square16.order2 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+planeWaveOrder4.check ../runs/known/planeWave.cmd -g=square16.order4.ng3 -ad4=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
 #
 # planeWave : cic grid 
-planeWaveCicOrder2.check ../cmd/planeWave.cmd -g=cice2.order2 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
-planeWaveCicOrder4.check ../cmd/planeWave.cmd -g=cice2.order4.ng3 -ad4=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+planeWaveCicOrder2.check ../runs/known/planeWave.cmd -g=cice2.order2 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+planeWaveCicOrder4.check ../runs/known/planeWave.cmd -g=cice2.order4.ng3 -ad4=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
 #
 # Forced Helmholtz solve
 helmHoltzCicOrder2.check ../cmd/helmholtz.cmd -g=cice2.order2 -ad4=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go

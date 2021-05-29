@@ -102,6 +102,9 @@ keywordstyle=\color{black}\bfseries
 \input tex/defs
 \input tex/trimFig.tex
 
+\usepackage{xargs}% for optional args to \newcommandx
+\input tex/plotFigureMacros.tex
+
 
 \newcommand{\ignore}[1]{}
 \newcommand{\nobibentry}[1]{{\let\nocite\ignore\bibentry{#1}}}
@@ -118,7 +121,8 @@ keywordstyle=\bfseries\color{mygreen}
 %\maketitle
 \begin{frontmatter}
 \title{
-CgWave: Composite Grid Wave Equation Solver. User Guide and Reference Manual
+CgWave: Composite Grid Wave Equation Solver. \\
+User Guide and Reference Manual
 }
 
 \author[rpi]{W.~D.~Henshaw\corref{cor1}\fnref{NSFgrantNew}}
@@ -171,8 +175,10 @@ Here is a citation~\cite{pog2008a}.
 
 \noindent\textbf{Things to do:}
 \begin{enumerate}
-  \item Add 4th order compatibility conditions.
-  \item Extend CgWave to 3D.
+   \item Add 4th order compatibility conditions.
+   \item Sixth and eight-order accurate BCs.
+   \item Finish 3D version of CgWave.
+   \item Finish upwind-dissipation for implicit time-stepping   
 \end{enumerate}  
 
 % -------------------------------------------------------------------------------------------------------
@@ -211,6 +217,10 @@ At fourth-order accuracy the scheme takes the form
 \eas
 where $\Delta_{ph}$ is a p-th order accurate approximation to $\Delta$. 
 
+
+% -------------------------------------------------------------------------------------------------------
+\input tex/upwindDissipation
+
 % -------------------------------------------------------------------------------------------------------
 \section{Numerical results} \label{sec:numericalResults}
 
@@ -219,6 +229,7 @@ Here are some numerical results.
 
 % ----------------------------------------------------------
 \subsection{Plane Wave}
+
 
 Here are errors in computing an exact plane wave solution
 \bas
@@ -270,6 +281,16 @@ where the forcing function is
 \bigskip 
 \noindent{\textbf{CIC - circle in a channel - Order 4}
 \input tables/helmholtzcicOrder4maxNormConvTable.tex
+
+
+% ----------------------------------------------------------
+\subsection{Gaussian Plane Wave}
+
+Figure~\ref{fig:shapesGPW} shows a modulated Gaussian plane wave hitting some shapes, scheme FD44s.
+\plotOneFigByWidth{fig/shapesMGPWt1p0}{Modulated Gaussian plane wave hitting some shapes, FD44s.}{fig:shapesGPW}{8cm}{5cm}
+
+
+
 
 % \clearpage
 \bibliographystyle{elsart-num}

@@ -5,6 +5,14 @@
 MOVED tz.cmd from the cmd folder
 
 
+TRIG:
+cgWave tz.cmd -g=square64.order4 -ad4=0 -tz=trig -fx=3 -fy=2 -tf=2 -tp=.1 -go=go
+
+cgWave:FD44 t=1.000e-01 ( 11 steps) maxErr= 1.54e-06, ||u||= 8.09e-01, cpu= 2.66e+00(s)
+cgWave:FD44 t=2.000e-01 ( 22 steps) maxErr= 1.82e-06, ||u||= 3.09e-01, cpu= 1.49e+01(s)
+cgWave:FD44 t=3.000e-01 ( 33 steps) maxErr= 1.22e-06, ||u||= 3.09e-01, cpu= 1.62e+01(s)
+
+
 exact:
 cgWave -noplot tz.cmd -g=square16.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.3 -tp=.1 -go=go
 

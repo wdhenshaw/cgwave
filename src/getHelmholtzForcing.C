@@ -36,16 +36,23 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
     const int & debug = dbase.get<int>("debug");
 
     const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
+    const Real & c              = dbase.get<real>("c");
     const real & dt             = dbase.get<real>("dt");
-    const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
-    bool useUpwindDissipation   = ad4  > 0.;
+    const int & upwind                = dbase.get<int>("upwind");
+  // const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  // bool useUpwindDissipation   = ad4  > 0.;
+    bool useUpwindDissipation   = upwind!=0;
     const int & solveHelmholtz  = dbase.get<int>("solveHelmholtz");
 
     const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption"); 
 
+    const int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
+
     const int & addForcing                  = dbase.get<int>("addForcing");
     const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
     const bool twilightZone = forcingOption==twilightZoneForcing; 
+
+    const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
 
 
     f.updateToMatchGrid(cg);
@@ -97,7 +104,7 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
             real dx[3]={1.,1.,1.};
             if( isRectangular )
                 mg.getDeltaX(dx);
-            int assignKnownSolutionAtBoundaries = 0;  // changed below 
+      // int assignKnownSolutionAtBoundaries = 0;  // changed below 
             DataBase *pdb = &dbase;
       // Real cfl1 = pdb->get<real>("cfl");
       // printF(" CFL from pdb: cfl1=%g\n",cfl1);
@@ -108,13 +115,18 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
                 const aString & userKnownSolution = db.get<aString>("userKnownSolution");
                 if( userKnownSolution=="planeWave"  )
                 {
-                    knownSolutionOption=1;
-                    assignKnownSolutionAtBoundaries=1;
+                    knownSolutionOption=1;                   // this number must match in bcOptWave.bf90
+          // assignKnownSolutionAtBoundaries=1;
                 }
+                else if( userKnownSolution=="gaussianPlaneWave"  ) 
+                {
+                    knownSolutionOption=2;                   // this number must match in bcOptWave.bf90
+          // assignKnownSolutionAtBoundaries=1;  
+                }    
                 else if( userKnownSolution=="boxHelmholtz"  ) 
                 {
-                    knownSolutionOption=2;
-                    assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
+                    knownSolutionOption=3;                   // this number must match in bcOptWave.bf90
+          // assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
                 }
             }
             int gridType = isRectangular ? 0 : 1;
@@ -132,13 +144,14 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
                 np                  ,            // ipar( 7)
                 debug               ,            // ipar( 8)
                 myid                ,            // ipar( 9)
-                assignKnownSolutionAtBoundaries, // ipar(10)
+                applyKnownSolutionAtBoundaries,  // ipar(10)
                 knownSolutionOption,             // ipar(11)
                 addForcing,                      // ipar(12)
                 forcingOption,                   // ipar(13)
                 useUpwindDissipation,            // ipar(14)
                 numGhost,                        // ipar(15)
-                assignBCForImplicit              // ipar(16)
+                assignBCForImplicit,             // ipar(16)
+                bcApproach                       // ipar(17)
                                       };
             real rpar[] = {
                 t                , //  rpar( 0)
@@ -150,7 +163,8 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
                 mg.gridSpacing(1), //  rpar( 6)
                 mg.gridSpacing(2), //  rpar( 7)
                 (real &)(dbase.get<OGFunction* >("tz")) ,        //  rpar( 8) ! pointer for exact solution -- new : 110311 
-                REAL_MIN           //  rpar( 9)
+                REAL_MIN,         //  rpar( 9)
+                c                 //  rpar(10)
                                         };
             real *pu = fLocal.getDataPointer();
             int *pmask = maskLocal.getDataPointer();

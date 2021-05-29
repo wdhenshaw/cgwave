@@ -27,18 +27,24 @@
    !     ---- local variables -----
         integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt
         integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid
-        integer addForcing,orderOfDissipation,option,gridIsImplicit
+        integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
         integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev
-        real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz,adc,adcdt,add,adddt
+        real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz
+    ! ,adc,adcdt,add,adddt
         real dt4by12
-        logical addDissipation
+    ! logical addDissipation
         integer debug
         real dx(0:2),dr(0:2)
         real dx2i,dy2i,dz2i,dxsqi,dysqi,dzsqi,dxi,dyi,dzi
         real dx12i,dy12i,dz12i,dxsq12i,dysq12i,dzsq12i,dxy4i,dxz4i,dyz4,time0,time1
         real dxi4,dyi4,dzi4,dxdyi2,dxdzi2,dydzi2
         real c0,c1,csq,dtsq,cdtsq,cdtsq12,cdtSqBy12
-        real cImp(-1:1)
+        integer maxOrderOfAccuracy
+        parameter( maxOrderOfAccuracy=12 )
+    ! Coefficients in the implicit scheme
+        real bImp(0:maxOrderOfAccuracy-1)
+        real cImp(-1:1,0:maxOrderOfAccuracy-1)
+        real alpha2,alpha4,alpha6,alpha8, beta2,beta4,beta6,beta8
         integer rectangular,curvilinear
         parameter( rectangular=0, curvilinear=1 )
         integer timeSteppingMethod
@@ -1396,9 +1402,11 @@
         real lap2d2,lap3d2,lap2d4,lap3d4,lap2d6,lap3d6,lap2d8,lap3d8,lap2d2Pow2,lap3d2Pow2,lap2d2Pow3,lap3d2Pow3,lap2d2Pow4,lap3d2Pow4,lap2d4Pow2,lap3d4Pow2,lap2d4Pow3,lap3d4Pow3,lap2d6Pow2,lap3d6Pow2
         real lap2d2m,lap3d2m
         real du,fd22d,fd23d,fd42d,fd43d,fd62d,fd63d,fd82d,fd83d
+        real DztU
     ! forcing correction functions: 
         real lap2d2f,f2drme44, lap3d2f, f3drme44, f2dcme44, f3dcme44, ff
-        real cdSosupx,cdSosupy,cdSosupz, adSosup,sosupParameter, uDotFactor, adxSosup(0:2)
+    ! real cdSosupx,cdSosupy,cdSosupz
+        real adSosup,sosupParameter, uDotFactor, adxSosup(0:2)
         integer useSosupDissipation,sosupDissipationOption
         integer updateSolution,updateDissipation,computeUt
         integer ec 
@@ -1407,7 +1415,8 @@
         real evxxxx(0:1), evxxyy(0:1), evyyyy(0:1), evxxzz(0:1), evyyzz(0:1), evzzzz(0:1), evtttt(0:1)
         real omega, coswt, coswtAve
           integer idv(0:2),j1,j2,j3
-          integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r,useUpwindDissipation
+          integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r
+          integer useUpwindDissipation,useImplicitUpwindDissipation
           real upw
           real upwindCoeff(-3:3,0:3) 
         integer forcingOption
@@ -2554,6 +2563,8 @@
           lap3d4Pow2(i1,i2,i3,c)=(-30.*lap3d4(i1,i2,i3,c)+16.*(lap3d4(i1+1,i2,i3,c)+lap3d4(i1-1,i2,i3,c))-(lap3d4(i1+2,i2,i3,c)+lap3d4(i1-2,i2,i3,c)))*dxsq12i+(-30.*lap3d4(i1,i2,i3,c)+16.*(lap3d4(i1,i2+1,i3,c)+lap3d4(i1,i2-1,i3,c))-(lap3d4(i1,i2+2,i3,c)+lap3d4(i1,i2-2,i3,c)))*dysq12i+(-30.*lap3d4(i1,i2,i3,c)+16.*(lap3d4(i1,i2,i3+1,c)+lap3d4(i1,i2,i3-1,c))-(lap3d4(i1,i2,i3+2,c)+lap3d4(i1,i2,i3-2,c)))*dzsq12i
           lap2d4Pow3(i1,i2,i3,c)=(-30.*lap2d4Pow2(i1,i2,i3,c)+16.*(lap2d4Pow2(i1+1,i2,i3,c)+lap2d4Pow2(i1-1,i2,i3,c))-(lap2d4Pow2(i1+2,i2,i3,c)+lap2d4Pow2(i1-2,i2,i3,c)))*dxsq12i+(-30.*lap2d4Pow2(i1,i2,i3,c)+16.*(lap2d4Pow2(i1,i2+1,i3,c)+lap2d4Pow2(i1,i2-1,i3,c))-(lap2d4Pow2(i1,i2+2,i3,c)+lap2d4Pow2(i1,i2-2,i3,c)))*dysq12i
           lap3d4Pow3(i1,i2,i3,c)=(-30.*lap3d4Pow2(i1,i2,i3,c)+16.*(lap3d4Pow2(i1+1,i2,i3,c)+lap3d4Pow2(i1-1,i2,i3,c))-(lap3d4Pow2(i1+2,i2,i3,c)+lap3d4Pow2(i1-2,i2,i3,c)))*dxsq12i+(-30.*lap3d4Pow2(i1,i2,i3,c)+16.*(lap3d4Pow2(i1,i2+1,i3,c)+lap3d4Pow2(i1,i2-1,i3,c))-(lap3d4Pow2(i1,i2+2,i3,c)+lap3d4Pow2(i1,i2-2,i3,c)))*dysq12i+(-30.*lap3d4Pow2(i1,i2,i3,c)+16.*(lap3d4Pow2(i1,i2,i3+1,c)+lap3d4Pow2(i1,i2,i3-1,c))-(lap3d4Pow2(i1,i2,i3+2,c)+lap3d4Pow2(i1,i2,i3-2,c)))*dzsq12i
+     ! D-zero in time (really undivided)
+          DztU(i1,i2,i3,n) = (un(i1,i2,i3,n)-um(i1,i2,i3,n))
      !...........end   statement functions
      ! write(*,*) 'Inside advWave...'
           cc             = rpar( 0)  ! this is c
@@ -2568,32 +2579,46 @@
           ep             = rpar( 9)
           sosupParameter = rpar(10)
           omega          = rpar(11) ! for helmholtz 
-          cImp(-1)       = rpar(12) ! .25 Coefficient for implicit time-stepping
-          cImp( 0)       = rpar(13) ! .5  
-          cImp( 1)       = rpar(14) ! .25
+          bImp( 0)       = rpar(12) ! beta2 : coefficient for implicit time-stepping
+          bImp( 1)       = rpar(13) ! beta4 : coefficient for implicit time-stepping
+          bImp( 2)       = rpar(14) ! beta6 (for future)
+          bImp( 3)       = rpar(15) ! beta8 (for future)
           dy=dx(1)  ! Are these needed?
           dz=dx(2)
-          option                   =ipar( 0)
-          grid                     =ipar( 1)
-          gridType                 =ipar( 2)
-          orderOfAccuracy          =ipar( 3)
-          orderInTime              =ipar( 4)
-          addForcing               =ipar( 5)
-          forcingOption            =ipar( 6)
-          numberOfForcingFunctions =ipar( 7)
-          fcur                     =ipar( 8) 
-          debug                    =ipar( 9)
-          gridIsImplicit           =ipar(10)
-          useUpwindDissipation     =ipar(11)  ! true if upwind-dissipation is on
+          option                       = ipar( 0)
+          grid                         = ipar( 1)
+          gridType                     = ipar( 2)
+          orderOfAccuracy              = ipar( 3)
+          orderInTime                  = ipar( 4)
+          addForcing                   = ipar( 5)
+          forcingOption                = ipar( 6)
+          numberOfForcingFunctions     = ipar( 7)
+          fcur                         = ipar( 8) 
+          debug                        = ipar( 9)
+          gridIsImplicit               = ipar(10)
+          useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
+          useImplicitUpwindDissipation = ipar(11)  ! true if upwind-dissipation is on for impliciit time-stepping
+          preComputeUpwindUt           = ipar(12)
           fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
           fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
      ! ** fix me ***
           timeSteppingMethod=modifiedEquationTimeStepping
-     ! addDissipation=.true. if we add the dissipation in the dis(i1,i2,i3,c) array
-     !  if combineDissipationWithAdvance.ne.0 we compute the dissipation on the fly in the time step
-     !  rather than pre-computing it in diss(i1,i2,i3,c)
-          addDissipation = adc.gt.0.
-          adcdt=adc*dt
+     ! ---- Compute the coefficients in the implicit time-stepping scheme ----
+          beta2=bImp(0)
+          beta4=bImp(1)
+          alpha2 = (1.-beta2)/2.
+          alpha4 = (alpha2-beta4-1./12.)/2. 
+          cImp(-1,0)=alpha2
+          cImp( 0,0)= beta2
+          cImp( 1,0)=alpha2
+          cImp(-1,1)=alpha4
+          cImp( 0,1)= beta4
+          cImp( 1,1)=alpha4  
+     ! ! addDissipation=.true. if we add the dissipation in the dis(i1,i2,i3,c) array
+     ! !  if combineDissipationWithAdvance.ne.0 we compute the dissipation on the fly in the time step
+     ! !  rather than pre-computing it in diss(i1,i2,i3,c)
+     ! addDissipation = adc.gt.0.
+     ! adcdt=adc*dt
           csq=cc**2
           dtsq=dt**2
           cdtsq=(cc**2)*(dt**2)
@@ -2623,7 +2648,7 @@
           else
             useSosupDissipation = 0
           end if
-            if( useUpwindDissipation.eq.1 )then
+            if( useImplicitUpwindDissipation.eq.1 )then
        ! Upwind dissipation for implicit time time-stepping
        ! from formImplicitTimeSteppingMatrix
        ! // fourth-order dissipation for 2nd-order scheme:
@@ -2657,16 +2682,29 @@
           if( (.false. .or. debug.gt.1) .and. t.le.dt )then
               write(*,'("advWave: option=",i4," grid=",i4)') option,grid
               write(*,'("advWave: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
-              write(*,'("advWave: addForcing=",i2," forcingOption=",i2," useUpwindDissipation=",i2)') addForcing,forcingOption,useUpwindDissipation
+              write(*,'("advWave: addForcing=",i2," forcingOption=",i2)') addForcing,forcingOption
+              write(*,'("advWave: useUpwindDissipation=",i2,"(explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
+              write(*,'("advWave: useSosupDissipation=",i2,"(1= add upwind dissipation in this stage)")') useSosupDissipation
               write(*,'("advWave: t,dt,c,omega=",4e10.2)') t,dt,cc,omega 
-              write(*,'("advWave: gridIsImplicit=",i2," cImp=",3(1pe10.2,1x))') gridIsImplicit,cImp(-1),cImp(0),cImp(1)
+              write(*,'("advWave: gridIsImplicit=",i2)') gridIsImplicit
+              if( gridIsImplicit.eq.1 )then
+                  write(*,'("  Implicit coeff: cImp(-1:1,0) = ",3(1pe10.2,1x), "(for 2nd-order)")') cImp(-1,0),cImp(0,0),cImp(1,0)
+                  write(*,'("  Implicit coeff: cImp(-1:1,1) = ",3(1pe10.2,1x), "(for 4th-order)")') cImp(-1,1),cImp(0,1),cImp(1,1)
+              end if
           end if
-          if( useSosupDissipation.ne.0 .or. useUpwindDissipation.eq.1 )then
+          if( useSosupDissipation.ne.0 .or. useImplicitUpwindDissipation.eq.1 )then
       ! Coefficients in the sosup dissipation from Jordan Angel
             if( orderOfAccuracy.eq.2 )then
               adSosup=-cc*dt*1./8.
+              if( preComputeUpwindUt.eq.1 )then
+         ! We need to reduce the upwind coefficient for stability if we pre-compute uDot: (see CgWave documentation)
+                  adSosup=adSosup/sqrt(1.*nd)
+              end if 
             else if( orderOfAccuracy.eq.4 )then 
                 adSosup=cc*dt*5./288.
+                if( .false. )then 
+                      adSosup = adSosup*.5 ! ****TEST****
+                end if
             else if( orderOfAccuracy.eq.6 )then 
                 adSosup=-cc*dt*31./8640.
             else
@@ -2676,22 +2714,26 @@
       ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
             adSosup=sosupParameter*adSosup
             if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
-                write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useUpwindDissipation
-                write(*,'("         : t,dt,adSosup=",3e10.2)')t,dt,adSosup
-                write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2)') useSosupDissipation,sosupParameter
+                write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useImplicitUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useImplicitUpwindDissipation
+                write(*,'("         : t,dt,adSosup=",3e10.2," adSosup/(c*dt)=",e12.4)')t,dt,adSosup,adSosup/(cc*dt)
+                write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2," preComputeUpwindUt=",i2)') useSosupDissipation,sosupParameter,preComputeUpwindUt
         ! write(*,'("advMxUp: updateDissipation=",i2)') updateDissipation
         ! write(*,'("advMxUp: useNewForcingMethod=",i2)') useNewForcingMethod
             end if
-      ! Coefficients of the sosup dissipation with Cartesian grids:
-            cdSosupx= adSosup/dx(0)
-            cdSosupy= adSosup/dx(1)
-            cdSosupz= adSosup/dx(2)
+      ! ! Coefficients of the sosup dissipation with Cartesian grids:
+      ! cdSosupx= adSosup/dx(0)
+      ! cdSosupy= adSosup/dx(1)
+      ! cdSosupz= adSosup/dx(2)
       ! Note: these next values are only used for rectangular grids. (curvilinear grid values are computed in the loops)
             adxSosup(0)=  uDotFactor*adSosup/dx(0)
             adxSosup(1)=  uDotFactor*adSosup/dx(1)
             adxSosup(2)=  uDotFactor*adSosup/dx(2)
           end if
-          if( useSosupDissipation.eq.1 )then
+          if( useSosupDissipation.eq.1 .and. preComputeUpwindUt.eq.1 )then
+              if( option.ne.1 )then
+                  write(*,'("advWaveOpt:ERROR: useSosupDissipation.eq.1 BUT option.ne.1")')
+                  stop 6663
+              end if
           ! precompute "uDot" = dt*du/dt used in the dissipation and store in v 
           ! we need uDot at enough ghost points for the dissipation operator 
                     if( debug.gt.3 .and. t.le.3.*dt )then
@@ -2794,7 +2836,7 @@
              ! #End
                           if( forcingOption.eq.helmholtzForcing )then
                               coswt = cos(omega*t)
-                              coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
+                              coswtAve = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))
                           end if 
                           fv(m)=0.
                               do i3=n3a,n3b
@@ -2811,7 +2853,7 @@
                                               tm = t + dt*mt
                                                   call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,tm, ec,evxx(m) )
                                                   call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,tm, ec,evyy(m) )
-                                              fv(m) = fv(m) -csq*( cImp(mt)*( evxx(m) + evyy(m) )  )
+                                              fv(m) = fv(m) -csq*( cImp(mt,0)*( evxx(m) + evyy(m) )  )
                                           end do
                                       else
                      ! OGDERIV3D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
@@ -2823,7 +2865,7 @@
                                                   call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evxx(m) )
                                                   call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evyy(m) )
                                                   call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evzz(m) )
-                                              fv(m) = fv(m) -csq*( cImp(mt)*( evxx(m) + evyy(m) + evzz(m) )  ) 
+                                              fv(m) = fv(m) -csq*( cImp(mt,0)*( evxx(m) + evyy(m) + evzz(m) )  ) 
                                           end do
                                     end if
                                 else if( forcingOption.eq.helmholtzForcing )then
@@ -2838,7 +2880,7 @@
                                 end if
                 ! --- SECOND 2 ---
                   ! --- THREE DIMENSIONS ---
-                                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0) *(  uxx23r(i1,i2,i3,0) +  uyy23r(i1,i2,i3,0) +  uzz23r(i1,i2,i3,0) ) + cImp(-1) *( umxx23r(i1,i2,i3,0) + umyy23r(i1,i2,i3,0) + umzz23r(i1,i2,i3,0) ) )  + dtSq*fv(m)
+                                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *(  uxx23r(i1,i2,i3,0) +  uyy23r(i1,i2,i3,0) +  uzz23r(i1,i2,i3,0) ) + cImp(-1,0) *( umxx23r(i1,i2,i3,0) + umyy23r(i1,i2,i3,0) + umzz23r(i1,i2,i3,0) ) )  + dtSq*fv(m)
               ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
               ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
               ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -2848,7 +2890,7 @@
                               end do
                               end do
          ! --- Add contributions from upwind dissipation ---
-                  if( useUpwindDissipation.eq.1 )then
+                  if( useImplicitUpwindDissipation.eq.1 )then
                           if( (.true. .or. debug.gt.3) .and. t.lt.2*dt )then
                               write(*,'("addUpwindDissImplicit: UPWIND DISS dim=3 order=2 grid=rectangular... t=",e10.2)') t
                               write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
@@ -2866,6 +2908,7 @@
                !                            0.,-1., 5.,-10.,10., 5.,1.,  // extrap left -most point D+^5 u(-3)
                !                            0.,-1., 4., -6., 4.,-1.,0.
                !                           };
+             ! -- Note: Could adjust loop bounds to avoid Dirichlet boundaries
                           m=0 ! component number 
                           ec = 0 ! component number
                           upwindHalfStencilWidth = orderOfAccuracy
@@ -2901,12 +2944,16 @@
                                   do iStencil=-upwindHalfStencilWidth,upwindHalfStencilWidth
                                       j1 = i1 + iStencil*idv(0);  j2 = i2 + iStencil*idv(1);  j3 = i3 + iStencil*idv(2)
                                       upw = upw + upwindCoeff(iStencil,upwCase)*um(j1,j2,j3,ec)  ! *** CHECK ME 
+                   ! upw = upw + upwindCoeff(iStencil,upwCase)*un(j1,j2,j3,ec)  ! *** TEST ****
                    ! write(*,'("upw-rhs: i1,i2=",2i4," j1,j2=",2i4," upwindCoeff=",1pe9.2, " um=",1pe9.2," upw=",1pe9.2)') i1,i2,j1,j2,upwindCoeff(iStencil,upwCase),um(j1,j2,j3,ec),upw
                                   end do 
                  ! if( abs(upw).gt.1e-10 )then
                  !   write(*,'(">>upw-rhs: i1,i2=",2i4," upw=",1pe9.2)') i1,i2,upw
                  ! end if 
+                 ! This is the coeff of um in
+                 !         + adxSosup(dir)*(UpwindStencil)( un - um )
                                   un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - adxSosup(dir)*upw 
+                 ! TEST un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - adxSosup(dir)*upw 
                               end do
                                   end if
                               end do
@@ -2915,24 +2962,48 @@
                   end if 
               end if
           else
-       ! ---- add upwind dissipation (uses v=uDot computed above) -----
-                  if( debug.gt.3 .and. t.lt.2*dt )then
-                      write(*,'("addUpwindDiss: UPWIND DISS dim=3 order=2 grid=rectangular... t=",e10.2)') t
-                      write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
-                  end if
-                  m=0 ! component number 
-                  ec = 0 ! component number
-                      do i3=n3a,n3b
-                      do i2=n2a,n2b
-                      do i1=n1a,n1b
-                          if( mask(i1,i2,i3).gt.0 )then
-            ! --- SECOND 2 ---
-              ! --- THREE DIMENSIONS ---
-                                un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+(+6.*v(i1,i2,i3,ec)-4.*(v(i1+1,i2,i3,ec)+v(i1-1,i2,i3,ec))+(v(i1+2,i2,i3,ec)+v(i1-2,i2,i3,ec)))*adxSosup(0)+(+6.*v(i1,i2,i3,ec)-4.*(v(i1,i2+1,i3,ec)+v(i1,i2-1,i3,ec))+(v(i1,i2+2,i3,ec)+v(i1,i2-2,i3,ec)))*adxSosup(1)+(+6.*v(i1,i2,i3,ec)-4.*(v(i1,i2,i3+1,ec)+v(i1,i2,i3-1,ec))+(v(i1,i2,i3+2,ec)+v(i1,i2,i3-2,ec)))*adxSosup(2)
-                          end if
-                      end do
-                      end do
-                      end do
+       ! ---- add upwind dissipation -----
+       ! preComputeUpwindUt : true=precompute Ut in upwind dissipation,  (uses v=uDot computed above)
+       !                      false=compute Ut inline in Gauss-Seidel fashion 
+              if( preComputeUpwindUt.eq.1 )then
+         ! precompute Ut in upwind dissipation,  (uses v=uDot computed above)
+                      if( debug.gt.3 .and. t.lt.2*dt )then
+                          write(*,'("addUpwindDiss: UPWIND DISS using u.t=v dim=3 order=2 grid=rectangular... t=",e10.2)') t
+                          write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
+                      end if
+                      m=0 ! component number 
+                      ec = 0 ! component number
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                              if( mask(i1,i2,i3).gt.0 )then
+              ! --- SECOND 2 ---
+                ! --- THREE DIMENSIONS ---
+                                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+(+6.*v(i1,i2,i3,ec)-4.*(v(i1+1,i2,i3,ec)+v(i1-1,i2,i3,ec))+(v(i1+2,i2,i3,ec)+v(i1-2,i2,i3,ec)))*adxSosup(0)+(+6.*v(i1,i2,i3,ec)-4.*(v(i1,i2+1,i3,ec)+v(i1,i2-1,i3,ec))+(v(i1,i2+2,i3,ec)+v(i1,i2-2,i3,ec)))*adxSosup(1)+(+6.*v(i1,i2,i3,ec)-4.*(v(i1,i2,i3+1,ec)+v(i1,i2,i3-1,ec))+(v(i1,i2,i3+2,ec)+v(i1,i2,i3-2,ec)))*adxSosup(2)
+                              end if
+                          end do
+                          end do
+                          end do
+              else
+         ! compute Ut inline in Gauss-Seidel fashion (this is more stable)
+                      if( debug.gt.3 .and. t.lt.2*dt )then
+                          write(*,'("addUpwindDiss: UPWIND DISS using u.t=Dztu dim=3 order=2 grid=rectangular... t=",e10.2)') t
+                          write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
+                      end if
+                      m=0 ! component number 
+                      ec = 0 ! component number
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                              if( mask(i1,i2,i3).gt.0 )then
+              ! --- SECOND 2 ---
+                ! --- THREE DIMENSIONS ---
+                                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+(+6.*Dztu(i1,i2,i3,ec)-4.*(Dztu(i1+1,i2,i3,ec)+Dztu(i1-1,i2,i3,ec))+(Dztu(i1+2,i2,i3,ec)+Dztu(i1-2,i2,i3,ec)))*adxSosup(0)+(+6.*Dztu(i1,i2,i3,ec)-4.*(Dztu(i1,i2+1,i3,ec)+Dztu(i1,i2-1,i3,ec))+(Dztu(i1,i2+2,i3,ec)+Dztu(i1,i2-2,i3,ec)))*adxSosup(1)+(+6.*Dztu(i1,i2,i3,ec)-4.*(Dztu(i1,i2,i3+1,ec)+Dztu(i1,i2,i3-1,ec))+(Dztu(i1,i2,i3+2,ec)+Dztu(i1,i2,i3-2,ec)))*adxSosup(2)
+                              end if
+                          end do
+                          end do
+                          end do
+              end if
           end if
           return
           end

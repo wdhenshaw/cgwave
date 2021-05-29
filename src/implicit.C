@@ -48,15 +48,21 @@ int CgWave::takeImplictStep( Real t )
     }
 
     const int & debug           = dbase.get<int>("debug");
+    const Real & c              = dbase.get<real>("c");
     const real & dt             = dbase.get<real>("dt");
     const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
-    const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
-    bool useUpwindDissipation   = ad4  > 0.;
+
+    const int & upwind           = dbase.get<int>("upwind");
+  // const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  // bool useUpwindDissipation   = ad4  > 0.;
+    bool useUpwindDissipation   = upwind;
 
     const int & addForcing                  = dbase.get<int>("addForcing");
     const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
     const bool twilightZone = forcingOption==twilightZoneForcing; 
 
+    const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
+    const int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
 
     const int & current                  = dbase.get<int>("current"); // hold the current solution index
     const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
@@ -91,7 +97,7 @@ int CgWave::takeImplictStep( Real t )
             real dx[3]={1.,1.,1.};
             if( isRectangular )
                 mg.getDeltaX(dx);
-            int assignKnownSolutionAtBoundaries = 0;  // changed below 
+      // int assignKnownSolutionAtBoundaries = 0;  // changed below 
             DataBase *pdb = &dbase;
       // Real cfl1 = pdb->get<real>("cfl");
       // printF(" CFL from pdb: cfl1=%g\n",cfl1);
@@ -102,13 +108,18 @@ int CgWave::takeImplictStep( Real t )
                 const aString & userKnownSolution = db.get<aString>("userKnownSolution");
                 if( userKnownSolution=="planeWave"  )
                 {
-                    knownSolutionOption=1;
-                    assignKnownSolutionAtBoundaries=1;
+                    knownSolutionOption=1;                   // this number must match in bcOptWave.bf90
+          // assignKnownSolutionAtBoundaries=1;
                 }
+                else if( userKnownSolution=="gaussianPlaneWave"  ) 
+                {
+                    knownSolutionOption=2;                   // this number must match in bcOptWave.bf90
+          // assignKnownSolutionAtBoundaries=1;  
+                }    
                 else if( userKnownSolution=="boxHelmholtz"  ) 
                 {
-                    knownSolutionOption=2;
-                    assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
+                    knownSolutionOption=3;                   // this number must match in bcOptWave.bf90
+          // assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
                 }
             }
             int gridType = isRectangular ? 0 : 1;
@@ -126,13 +137,14 @@ int CgWave::takeImplictStep( Real t )
                 np                  ,            // ipar( 7)
                 debug               ,            // ipar( 8)
                 myid                ,            // ipar( 9)
-                assignKnownSolutionAtBoundaries, // ipar(10)
+                applyKnownSolutionAtBoundaries,  // ipar(10)
                 knownSolutionOption,             // ipar(11)
                 addForcing,                      // ipar(12)
                 forcingOption,                   // ipar(13)
                 useUpwindDissipation,            // ipar(14)
                 numGhost,                        // ipar(15)
-                assignBCForImplicit              // ipar(16)
+                assignBCForImplicit,             // ipar(16)
+                bcApproach                       // ipar(17)
                                       };
             real rpar[] = {
                 t                , //  rpar( 0)
@@ -144,7 +156,8 @@ int CgWave::takeImplictStep( Real t )
                 mg.gridSpacing(1), //  rpar( 6)
                 mg.gridSpacing(2), //  rpar( 7)
                 (real &)(dbase.get<OGFunction* >("tz")) ,        //  rpar( 8) ! pointer for exact solution -- new : 110311 
-                REAL_MIN           //  rpar( 9)
+                REAL_MIN,         //  rpar( 9)
+                c                 //  rpar(10)
                                         };
             real *pu = unLocal.getDataPointer();
             int *pmask = maskLocal.getDataPointer();
@@ -253,27 +266,50 @@ int CgWave::formImplicitTimeSteppingMatrix()
     real cpu0=getCPU();
 
     int & debug                          = dbase.get<int>("debug");
-    real & dt                            = dbase.get<real>("dt");
-    const real & c                       = dbase.get<real>("c");
+    const Real & c                       = dbase.get<real>("c");
+    const real & dt                      = dbase.get<real>("dt");
     const int & orderOfAccuracy          = dbase.get<int>("orderOfAccuracy");
     const int & orderOfAccuracyInTime    = dbase.get<int>("orderOfAccuracyInTime");
     const IntegerArray & gridIsImplicit  = dbase.get<IntegerArray>("gridIsImplicit");
-    const real & ad4                     = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
 
-    bool addUpwinding = ad4>0.;
+    const int & upwind                   = dbase.get<int>("upwind");
+  // const real & ad4                     = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+
+    bool addUpwinding = upwind;
+  // bool addUpwinding = ad4>0.;
+
+    const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
 
   // addUpwinding=false; // *********** TURN OFF FOR NOW ***************
 
 
-    printF("\n ==================== FORM MATRIX FOR IMPLICI TIME-STEPPING ===================\n");
-    printF("   c=%.4g, dt=%9.3e, orderOfAccuracy=%d, orderOfAccuracyInTime=%d addUpwinding=%d\n", c,dt,orderOfAccuracy,orderOfAccuracyInTime,addUpwinding);
+    printF("\n ==================== FORM MATRIX FOR IMPLICIT TIME-STEPPING ===================\n");
+    printF("   c=%.4g, dt=%9.3e, orderOfAccuracy=%d, orderOfAccuracyInTime=%d addUpwinding=%d, bcApproach=%d\n",
+              c,dt,orderOfAccuracy,orderOfAccuracyInTime,addUpwinding,(int)bcApproach);
     printF(" ================================================================================\n");
+
+    if( orderOfAccuracyInTime != 2  )
+    {
+        printF("CgWave::formImplicitTimeSteppingMatrix: Error orderOfAccuracyInTime != 2 not implemented yet.\n");
+        OV_ABORT("ERROR");    
+    }
+    if( bcApproach==useCompatibilityBoundaryConditions )
+    {
+        printF("CgWave::formImplicitTimeSteppingMatrix: Error useCompatibilityBoundaryConditions not implemented yet\n");
+        OV_ABORT("ERROR");
+    }
+
+    if( bcApproach==useLocalCompatibilityBoundaryConditions )
+    {
+        printF("CgWave::formImplicitTimeSteppingMatrix: Error useLocalCompatibilityBoundaryConditions not implemented yet\n");
+        OV_ABORT("ERROR");
+    }  
 
     const int & numberOfComponentGrids = cg.numberOfComponentGrids(); 
     const int & numberOfDimensions = cg.numberOfDimensions(); 
 
   // coefficients in implicit time-stepping  
-  //  D+t D-t u = c^2 Delta( cImp(1) *u^{n+1} + cImp(0) *u^n + cImp(-1)* u^{n-1} )
+  //  D+t D-t u = c^2 Delta( cImp(1,0) *u^{n+1} + cImp(0,0) *u^n + cImp(-1,0)* u^{n-1} )
     RealArray & cImp              = dbase.get<RealArray>("cImp");  
 
     if( !dbase.has_key("impSolver") )
@@ -317,7 +353,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
     // Solve constCoeff(0,grid)*I +constCoeff(1,grid)*Laplacian 
     // We solve:  I - alpha*(c^2*dt^2)* Delta = ...
-        Real alpha=cImp(-1);
+        Real alpha=cImp(-1,0);
         RealArray constantCoeff(2,numberOfComponentGrids);
 
         constantCoeff(0,all) = 1.;
@@ -505,7 +541,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
       // --- FILL INTERIOR EQUATIONS ----
       // Solve constCoeff(0,grid)*I +constCoeff(1,grid)*Laplacian 
-      // We solve:  I - cImp(-1) * (c^2*dt^2)* Delta = ...
+      // We solve:  I - cImp(-1,0) * (c^2*dt^2)* Delta = ...
 
             const int mDiag = M123(0,0,0);              // index of diagonal entry
 
@@ -517,7 +553,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
                 mgop.assignCoefficients(MappedGridOperators::laplacianOperator,lapCoeff,I1,I2,I3,0,0); // 
                 
 
-                Real ccLap = - cImp(-1)*SQR(c*dt);         // note minus
+                Real ccLap = - cImp(-1,0)*SQR(c*dt);         // note minus
                 coeffLocal(M0,I1,I2,I3)  = ccLap*lapCoeff;
 
         // set diagonal entry
@@ -666,7 +702,9 @@ int CgWave::formImplicitTimeSteppingMatrix()
                   // ***TEST*** Just add difference coefficients 
                   // if( true ) upwStencilValue=0.;
                   // Note: adxSosup is NEGATIVE : we subtract upwind coefficient since it has been moved to the LHS
+
                                     coeffLocal(m,i1,i2,i3) -= adxSosup[dir] * upwStencilValue;
+                  // TEST : coeffLocal(m,i1,i2,i3) += adxSosup[dir] * upwStencilValue;
 
 
                                     setEquationNumber(m, e,i1,i2,i3,  cc,i1s,i2s,i3s );      // macro to set equationNumber    
@@ -685,6 +723,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
       // --- FILL BOUNDARY CONDITIONS ----
 
             const int extrapOrder = orderOfAccuracy+1;
+
             const Real extrapCoeff3[] = {1.,-3.,3.,-1.};
             const Real extrapCoeff4[] = {1.,-4.,6.,-4.,1.};
             const Real extrapCoeff5[] = {1.,-5.,10.,-10.,5.,-1.};

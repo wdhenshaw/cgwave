@@ -67,6 +67,14 @@ enum TimeSteppingMethodEnum
   implicitTimeStepping=1
 };
 
+enum BoundaryConditionApproachEnum
+{
+  defaultBoundaryConditionApproach=0,
+  useOneSidedBoundaryConditions,
+  useCompatibilityBoundaryConditions,
+  useLocalCompatibilityBoundaryConditions
+};
+
 CgWave(CompositeGrid & cg, GenericGraphicsInterface & gi);
 ~CgWave();
 
@@ -92,6 +100,8 @@ int getHelmholtzForcing( realCompositeGridFunction & f  );
 
 void getInitialConditions( real t );
 
+aString getMethodName() const;
+
 int getTimeStep();
   
 void getTimeSteppingLabel( real dt, aString & label ) const;
@@ -105,8 +115,6 @@ int initialize();
 // Assign parameters 
 int interactiveUpdate();
 
-int takeImplictStep( Real t );
-
 void outputHeader();
 
 // Output results (e.g. errors to the checkFile)
@@ -116,6 +124,8 @@ int printStatistics(FILE *file = stdout );
 
 int plot( int current, real t, real dt );
 
+int saveShow( int current, Real t, Real dt );
+
 int setNameOfGridFile( aString & nameOfOGFile );
 
 // Setup grids and grid functions
@@ -124,6 +134,8 @@ int setup();
 int setupUserDefinedForcing();
 
 int takeFirstBackwardStep( int cur, real t );
+
+int takeImplictStep( Real t );
 
 // update time-integral for Helmholtz projection
 int updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction& u );
