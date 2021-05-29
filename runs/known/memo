@@ -1,0 +1,25 @@
+
+************************************************************************
+********* Monday May 24, 2021
+
+MOVED known.cmd and planeWave.cmd (not used anymore) from the cmd folder
+
+
+cgWave known.cmd -g=square32.order4 -ad4=0 -kx=1 -ky=1 -tp=.1 -tf=5 -known=planeWave -orderInTime=2 
+
+cgWave:FD24 t=1.000e-01 (  6 steps) maxErr= 7.56e-04, ||u||= 9.96e-01, cpu= 2.82e+00(s)
+cgWave:FD24 t=2.000e-01 ( 12 steps) maxErr= 2.12e-03, ||u||= 1.00e+00, cpu= 4.50e+00(s)
+
+ORDER=6: (finish ME, BC's)
+cgWave known.cmd -g=square32.order6 -ad4=0 -kx=1 -ky=1 -tp=.1 -tf=5 -known=planeWave -orderInTime=2 
+
+cgWave:FD26 t=1.000e-01 (  9 steps) maxErr= 3.23e-04, ||u||= 9.96e-01, cpu= 5.73e+00(s)
+cgWave:FD26 t=2.000e-01 ( 18 steps) maxErr= 9.25e-04, ||u||= 1.00e+00, cpu= 9.50e+00(s)
+
+
+cgWave known.cmd  -g=square32.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=.5 -tf=20 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+cgWave known.cmd  -g=rsise4.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=20 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+cgWave known.cmd  -g=sise4.order2 -bc=d -ad4=1 -kx=1 -ky=1 -tp=1 -tf=20 -debug=3 -known=boxHelmholtz -go=halt -cfl=.9
+
+
+
