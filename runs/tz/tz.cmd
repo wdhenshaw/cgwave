@@ -2,6 +2,7 @@
 #  cgWave: test twilightZone
 #     cgWave [-noplot] tz.cmd -g=<grid-name> -bc=[d|n] -cfl=<f> -tz=[polyl|trig] -degreeInSpace=<i> -degreeInTime=<i> ...
 #                              -upwind=[0|1] -fx= -fy= -fz= -ft= -ts=[explicit|implicit] -rectangular=[implicit|explicit] -debug=<i>
+#                              -bcApproach=[cbc|lcbc|oneSided]
 #
 $omega=30.1; $x0=0; $y0=0; $z0=0; $beta=400; $numPeriods=1; $omegaSOR=1; $tol=1.e-3; 
 $ad4=0; # OLD
@@ -12,6 +13,7 @@ $rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat re
 $beta2=.5; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping 
 $dtMax=1e10; 
 $bc="d"; 
+$bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $orderInTime=-1;  # -1 = use default
 $tz="polynomial"; 
 $tf=1.; $tp=.1; $cfl=.9; $go="halt; "
@@ -20,7 +22,7 @@ GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\
             "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"debug=i"=>\$debug,"orderInTime=i"=>\$orderInTime,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"bc=s"=>\$bc,"tf=f"=>\$tf,"tp=f"=>\$tp,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,\
             "fx=f"=>\$fx,"fy=f"=>\$fy,"fz=f"=>\$fz,"ft=f"=>\$ft,"rectangular=s"=>\$rectangular,\
-            "beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"upwind=i"=>\$upwind,"go=s"=>\$go );
+            "beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,"go=s"=>\$go );
 #
 if( $tz eq "trig" ){ $tz="trigonometric"; }
 if( $tz eq "poly" ){ $tz="polynomial"; }
@@ -32,6 +34,12 @@ cfl $cfl
 tPlot $tp 
 tFinal $tf
 dtMax $dtMax
+#
+$cmd="#";
+if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }
+if( $bcApproach eq "cbc"      ){ $cmd="useCompatibilityBCs"; }
+if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
+$cmd
 #
 if( $ts eq "implicit" ){ $cmd="choose grids for implicit\n  rectangular=$rectangular\n done"; }else{ $cmd="#"; }
 $cmd

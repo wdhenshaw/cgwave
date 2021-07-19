@@ -2833,7 +2833,7 @@
                               ec = 0 ! component number
                       ! write(*,'("advWave: COMPUTE V= LAP(U) TO SECOND ORDER dim=2")') 
                       ! We need Lap2h(u) at an extra point 
-                                            numGhost=orderOfAccuracy/2
+                                            numGhost=orderOfAccuracy/2 -1 
                                             m1a=n1a-numGhost
                                             m1b=n1b+numGhost
                                             m2a=n2a-numGhost

@@ -2,7 +2,7 @@
 #  cgWave: Compute to some "known" solutions
 #
 #   cgWave [-noplot] known.cmd -g=<grid-name> -known=[pw|gpw|boxHelmholtz] -upwind=[0|1] -computeErrors=[0|1]
-#                              -setKnownOnBoundaries=[0|1]
+#                              -setKnownOnBoundaries=[0|1] -bcApproach=[cbc|lcbc|oneSided]
 #
 #   pw = plane wave 
 #   gpw = Gaussian plane wave 
@@ -12,6 +12,7 @@ $beta=20; $x0=.5; $y0=.0; $z0=.0; $k0=0.; # for Gaussian plane wave
 $ad4=0;   # old
 $upwind=0; 
 $debug=3;  $go="halt"; $bc="d"; $dissFreq=1; 
+$bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $computeErrors=1; $setKnownOnBoundaries=1; 
 $tf=5.; $tp=.05; $cfl=.9; 
 $ts="explicit"; $dtMax=1e10; 
@@ -23,7 +24,7 @@ GetOptions( "cfl=f"=>\$cfl,"ad4=f"=>\$ad4,"amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$
             "known=s"=>\$known,"orderInTime=i"=>\$orderInTime,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,"upwind=i"=>\$upwind,\
             "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"k0=f"=>\$k0,"beta=f"=>\$beta,"computeErrors=i"=>\$computeErrors,\
             "setKnownOnBoundaries=s"=>\$setKnownOnBoundaries,"show=s"=>\$show,\
-            "flushFrequency=i"=>\$flushFrequency,"go=s"=>\$go );
+            "flushFrequency=i"=>\$flushFrequency,"bcApproach=s"=>\$bcApproach,"go=s"=>\$go );
 # 
 #
 if( $bc eq "d" ){ $bc="dirichlet"; }
@@ -43,7 +44,13 @@ compute errors $computeErrors
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
 if( $show ne "" ){ $cmd="show file name $show\n save show file 1\n flush frequency $flushFrequency"; }else{ $cmd="#"; }
-$cmd 
+$cmd
+# 
+$cmd="#";
+if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }
+if( $bcApproach eq "cbc"      ){ $cmd="useCompatibilityBCs"; }
+if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
+$cmd
 #
 bc=$bc
 #

@@ -134,6 +134,13 @@
 ! ORDER : 2,4,6,8
 ! ===================================================================================================
 
+! ===================================================================================================
+! Macro: Assign boundary and ghost points on Dirichlet boundaries 
+!          *** COMPATIBILITY BOUNDARY CONDITIONS ****
+! ORDER : 2,4,6,8
+! ===================================================================================================
+
+
 
 ! ------------------------------------------------------------------------------------
 !  Macro: evaluate the RHS to the Neumann BC
@@ -143,6 +150,14 @@
 ! Macro: Assign ghost points on Neumann boundaries 
 ! ORDER : 2,4,6,8
 ! ===================================================================================================
+
+
+! ===================================================================================================
+! Macro: Assign ghost points on Neumann boundaries
+!          *** COMPATIBILITY BOUNDARY CONDITIONS **** 
+! ORDER : 2,4,6,8
+! ===================================================================================================
+
 
 
 subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange, isPeriodic, u, mask,rsxy, xy, boundaryCondition, pdb, ipar, rpar, ierr )
@@ -851,10 +866,11 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
         write(*,'("  bc=",6i4)') ((boundaryCondition(side,axis),side=0,1),axis=0,2)
     end if
     
-    if( bcApproach.eq.useCompatibilityBoundaryConditions )then
-        write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
-        stop 1010
-    end if
+  ! if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+  !   write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+  !   stop 1010
+  ! end if
+
     if( bcApproach.eq.useLocalCompatibilityBoundaryConditions )then
         write(*,'("bcOptWave: ERROR: useLocalCompatibilityBoundaryConditions not implemented yet.")') 
         stop 2020    
@@ -999,7 +1015,7 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
 
     if( assignBCForImplicitForImplicit.eq.1 )then
 
-    ! -------- IMPLICIT BooundaryConditions --------
+    ! -------- IMPLICIT BoundaryConditions --------
 
     ! write(*,'("bcOptWave: fill BCs into RHS for direct Helmholtz solver")')
     ! write(*,'("FINISH ME")')
@@ -1413,247 +1429,509 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
 
             if( orderOfAccuracy.eq.2 )then
 
-                    ff=0.
-                      do i3=n3a,n3b
-                      do i2=n2a,n2b
-                      do i1=n1a,n1b
-                        if( mask(i1,i2,i3).ne.0 )then
-              ! --- get the RHS to the Dirichlet BC ---
-                                if( assignTwilightZone.eq.1 )then
-                  ! compute RHS from TZ
-                                    if( nd.eq.2 )then
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
-                                    else
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                            write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+                            stop 1010
+                        end if
+                        ff=0.
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                            if( mask(i1,i2,i3).ne.0 )then
+                ! --- get the RHS to the Dirichlet BC ---
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                        end if
+                                        ff = ue
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Dirichlet values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            else
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                      ! Eval the Gaussian plane wave solution
+                      !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                      !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                      !  
+                                            if( nd.eq.2 )then
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            else
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            end if 
+                                            ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                            else
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
+                                        else
+                                            stop 9876
+                                        end if 
                                     end if
-                                    ff = ue
-                                else if( assignKnownSolutionAtBoundaries.eq.1 )then
-                  ! -- we set inhomogeneous Dirichlet values for some known solutions 
-                                    if( knownSolutionOption.eq.planeWave )then
-                    ! --- evaluate the plane wave solution ---
+                ! --- Dirichlet BC ---
+                                u(i1,i2,i3,uc)=ff
+                ! -- extrapolate ghost ---
+                                do ghost=1,numGhost
+                                    j1=i1-is1*ghost
+                                    j2=i2-is2*ghost
+                                    j3=i3-is3*ghost
+                                    u(j1,j2,j3,uc) = (3.*u(j1+is1,j2+is2,j3+is3,uc)-3.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)) 
+                                end do
+                            end if ! mask .ne. 0
+                          end do
+                          end do
+                          end do
+                else
+                        ff=0.
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                            if( mask(i1,i2,i3).ne.0 )then
+                ! --- get the RHS to the Dirichlet BC ---
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
                                         if( nd.eq.2 )then
-                                            ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
                                         else
-                                            ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                        end if 
-                                    else if( knownSolutionOption.eq.gaussianPlaneWave ) then
-                    ! Eval the Gaussian plane wave solution
-                    !    u = exp( -beta*(xi^2) )*cos( k0*xi )
-                    !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
-                    !  
-                                        if( nd.eq.2 )then
-                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                        end if
+                                        ff = ue
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Dirichlet values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            else
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                      ! Eval the Gaussian plane wave solution
+                      !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                      !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                      !  
+                                            if( nd.eq.2 )then
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            else
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            end if 
+                                            ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                            else
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
                                         else
-                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            stop 9876
                                         end if 
-                                        ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
-                                    else if( knownSolutionOption.eq.boxHelmholtz ) then
-                    ! --- evaluate the boxHelmholtz solution ---
-                                        if( nd.eq.2 )then
-                                            ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
-                                        else
-                                            ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
-                                        end if 
-                                    else
-                                        stop 9876
-                                    end if 
-                                end if
-              ! --- Dirichlet BC ---
-                            u(i1,i2,i3,uc)=ff
-              ! -- extrapolate ghost ---
-                            do ghost=1,numGhost
-                                j1=i1-is1*ghost
-                                j2=i2-is2*ghost
-                                j3=i3-is3*ghost
-                                u(j1,j2,j3,uc) = (3.*u(j1+is1,j2+is2,j3+is3,uc)-3.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)) 
-                            end do
-                        end if ! mask .ne. 0
-                      end do
-                      end do
-                      end do
+                                    end if
+                ! --- Dirichlet BC ---
+                                u(i1,i2,i3,uc)=ff
+                ! -- extrapolate ghost ---
+                                do ghost=1,numGhost
+                                    j1=i1-is1*ghost
+                                    j2=i2-is2*ghost
+                                    j3=i3-is3*ghost
+                                    u(j1,j2,j3,uc) = (3.*u(j1+is1,j2+is2,j3+is3,uc)-3.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)) 
+                                end do
+                            end if ! mask .ne. 0
+                          end do
+                          end do
+                          end do
+                end if
 
             else if( orderOfAccuracy.eq.4 )then
 
-                    ff=0.
-                      do i3=n3a,n3b
-                      do i2=n2a,n2b
-                      do i1=n1a,n1b
-                        if( mask(i1,i2,i3).ne.0 )then
-              ! --- get the RHS to the Dirichlet BC ---
-                                if( assignTwilightZone.eq.1 )then
-                  ! compute RHS from TZ
-                                    if( nd.eq.2 )then
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
-                                    else
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                            write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+                            stop 1010
+                        end if
+                        ff=0.
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                            if( mask(i1,i2,i3).ne.0 )then
+                ! --- get the RHS to the Dirichlet BC ---
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                        end if
+                                        ff = ue
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Dirichlet values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            else
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                      ! Eval the Gaussian plane wave solution
+                      !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                      !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                      !  
+                                            if( nd.eq.2 )then
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            else
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            end if 
+                                            ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                            else
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
+                                        else
+                                            stop 9876
+                                        end if 
                                     end if
-                                    ff = ue
-                                else if( assignKnownSolutionAtBoundaries.eq.1 )then
-                  ! -- we set inhomogeneous Dirichlet values for some known solutions 
-                                    if( knownSolutionOption.eq.planeWave )then
-                    ! --- evaluate the plane wave solution ---
+                ! --- Dirichlet BC ---
+                                u(i1,i2,i3,uc)=ff
+                ! -- extrapolate ghost ---
+                                do ghost=1,numGhost
+                                    j1=i1-is1*ghost
+                                    j2=i2-is2*ghost
+                                    j3=i3-is3*ghost
+                                    u(j1,j2,j3,uc) = (5.*u(j1+is1,j2+is2,j3+is3,uc)-10.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+10.*u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)-5.*u(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,uc)+u(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,uc)) 
+                                end do
+                            end if ! mask .ne. 0
+                          end do
+                          end do
+                          end do
+
+                else
+                        ff=0.
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                            if( mask(i1,i2,i3).ne.0 )then
+                ! --- get the RHS to the Dirichlet BC ---
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
                                         if( nd.eq.2 )then
-                                            ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
                                         else
-                                            ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                        end if 
-                                    else if( knownSolutionOption.eq.gaussianPlaneWave ) then
-                    ! Eval the Gaussian plane wave solution
-                    !    u = exp( -beta*(xi^2) )*cos( k0*xi )
-                    !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
-                    !  
-                                        if( nd.eq.2 )then
-                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                        end if
+                                        ff = ue
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Dirichlet values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            else
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                      ! Eval the Gaussian plane wave solution
+                      !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                      !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                      !  
+                                            if( nd.eq.2 )then
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            else
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            end if 
+                                            ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                            else
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
                                         else
-                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            stop 9876
                                         end if 
-                                        ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
-                                    else if( knownSolutionOption.eq.boxHelmholtz ) then
-                    ! --- evaluate the boxHelmholtz solution ---
-                                        if( nd.eq.2 )then
-                                            ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
-                                        else
-                                            ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
-                                        end if 
-                                    else
-                                        stop 9876
-                                    end if 
-                                end if
-              ! --- Dirichlet BC ---
-                            u(i1,i2,i3,uc)=ff
-              ! -- extrapolate ghost ---
-                            do ghost=1,numGhost
-                                j1=i1-is1*ghost
-                                j2=i2-is2*ghost
-                                j3=i3-is3*ghost
-                                u(j1,j2,j3,uc) = (5.*u(j1+is1,j2+is2,j3+is3,uc)-10.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+10.*u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)-5.*u(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,uc)+u(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,uc)) 
-                            end do
-                        end if ! mask .ne. 0
-                      end do
-                      end do
-                      end do
+                                    end if
+                ! --- Dirichlet BC ---
+                                u(i1,i2,i3,uc)=ff
+                ! -- extrapolate ghost ---
+                                do ghost=1,numGhost
+                                    j1=i1-is1*ghost
+                                    j2=i2-is2*ghost
+                                    j3=i3-is3*ghost
+                                    u(j1,j2,j3,uc) = (5.*u(j1+is1,j2+is2,j3+is3,uc)-10.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+10.*u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)-5.*u(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,uc)+u(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,uc)) 
+                                end do
+                            end if ! mask .ne. 0
+                          end do
+                          end do
+                          end do
+                end if
+
 
             else if( orderOfAccuracy.eq.6 )then   
 
-                    ff=0.
-                      do i3=n3a,n3b
-                      do i2=n2a,n2b
-                      do i1=n1a,n1b
-                        if( mask(i1,i2,i3).ne.0 )then
-              ! --- get the RHS to the Dirichlet BC ---
-                                if( assignTwilightZone.eq.1 )then
-                  ! compute RHS from TZ
-                                    if( nd.eq.2 )then
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
-                                    else
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                            write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+                            stop 1010
+                        end if
+                        ff=0.
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                            if( mask(i1,i2,i3).ne.0 )then
+                ! --- get the RHS to the Dirichlet BC ---
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                        end if
+                                        ff = ue
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Dirichlet values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            else
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                      ! Eval the Gaussian plane wave solution
+                      !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                      !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                      !  
+                                            if( nd.eq.2 )then
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            else
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            end if 
+                                            ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                            else
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
+                                        else
+                                            stop 9876
+                                        end if 
                                     end if
-                                    ff = ue
-                                else if( assignKnownSolutionAtBoundaries.eq.1 )then
-                  ! -- we set inhomogeneous Dirichlet values for some known solutions 
-                                    if( knownSolutionOption.eq.planeWave )then
-                    ! --- evaluate the plane wave solution ---
+                ! --- Dirichlet BC ---
+                                u(i1,i2,i3,uc)=ff
+                ! -- extrapolate ghost ---
+                                do ghost=1,numGhost
+                                    j1=i1-is1*ghost
+                                    j2=i2-is2*ghost
+                                    j3=i3-is3*ghost
+                                    u(j1,j2,j3,uc) = (7.*u(j1+is1,j2+is2,j3+is3,uc)-21.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+35.*u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)-35.*u(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,uc)+21.*u(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,uc)-7.*u(j1+is1+5*is1,j2+is2+5*is2,j3+is3+5*is3,uc)+u(j1+is1+6*is1,j2+is2+6*is2,j3+is3+6*is3,uc)) 
+                                end do
+                            end if ! mask .ne. 0
+                          end do
+                          end do
+                          end do
+                else
+                        ff=0.
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                            if( mask(i1,i2,i3).ne.0 )then
+                ! --- get the RHS to the Dirichlet BC ---
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
                                         if( nd.eq.2 )then
-                                            ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
                                         else
-                                            ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                        end if 
-                                    else if( knownSolutionOption.eq.gaussianPlaneWave ) then
-                    ! Eval the Gaussian plane wave solution
-                    !    u = exp( -beta*(xi^2) )*cos( k0*xi )
-                    !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
-                    !  
-                                        if( nd.eq.2 )then
-                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                        end if
+                                        ff = ue
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Dirichlet values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            else
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                      ! Eval the Gaussian plane wave solution
+                      !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                      !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                      !  
+                                            if( nd.eq.2 )then
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            else
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            end if 
+                                            ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                            else
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
                                         else
-                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            stop 9876
                                         end if 
-                                        ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
-                                    else if( knownSolutionOption.eq.boxHelmholtz ) then
-                    ! --- evaluate the boxHelmholtz solution ---
-                                        if( nd.eq.2 )then
-                                            ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
-                                        else
-                                            ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
-                                        end if 
-                                    else
-                                        stop 9876
-                                    end if 
-                                end if
-              ! --- Dirichlet BC ---
-                            u(i1,i2,i3,uc)=ff
-              ! -- extrapolate ghost ---
-                            do ghost=1,numGhost
-                                j1=i1-is1*ghost
-                                j2=i2-is2*ghost
-                                j3=i3-is3*ghost
-                                u(j1,j2,j3,uc) = (7.*u(j1+is1,j2+is2,j3+is3,uc)-21.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+35.*u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)-35.*u(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,uc)+21.*u(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,uc)-7.*u(j1+is1+5*is1,j2+is2+5*is2,j3+is3+5*is3,uc)+u(j1+is1+6*is1,j2+is2+6*is2,j3+is3+6*is3,uc)) 
-                            end do
-                        end if ! mask .ne. 0
-                      end do
-                      end do
-                      end do
+                                    end if
+                ! --- Dirichlet BC ---
+                                u(i1,i2,i3,uc)=ff
+                ! -- extrapolate ghost ---
+                                do ghost=1,numGhost
+                                    j1=i1-is1*ghost
+                                    j2=i2-is2*ghost
+                                    j3=i3-is3*ghost
+                                    u(j1,j2,j3,uc) = (7.*u(j1+is1,j2+is2,j3+is3,uc)-21.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+35.*u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)-35.*u(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,uc)+21.*u(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,uc)-7.*u(j1+is1+5*is1,j2+is2+5*is2,j3+is3+5*is3,uc)+u(j1+is1+6*is1,j2+is2+6*is2,j3+is3+6*is3,uc)) 
+                                end do
+                            end if ! mask .ne. 0
+                          end do
+                          end do
+                          end do
+                end if
 
             else if( orderOfAccuracy.eq.8 )then   
 
-                    ff=0.
-                      do i3=n3a,n3b
-                      do i2=n2a,n2b
-                      do i1=n1a,n1b
-                        if( mask(i1,i2,i3).ne.0 )then
-              ! --- get the RHS to the Dirichlet BC ---
-                                if( assignTwilightZone.eq.1 )then
-                  ! compute RHS from TZ
-                                    if( nd.eq.2 )then
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
-                                    else
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                            write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+                            stop 1010
+                        end if
+                        ff=0.
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                            if( mask(i1,i2,i3).ne.0 )then
+                ! --- get the RHS to the Dirichlet BC ---
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                        end if
+                                        ff = ue
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Dirichlet values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            else
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                      ! Eval the Gaussian plane wave solution
+                      !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                      !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                      !  
+                                            if( nd.eq.2 )then
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            else
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            end if 
+                                            ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                            else
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
+                                        else
+                                            stop 9876
+                                        end if 
                                     end if
-                                    ff = ue
-                                else if( assignKnownSolutionAtBoundaries.eq.1 )then
-                  ! -- we set inhomogeneous Dirichlet values for some known solutions 
-                                    if( knownSolutionOption.eq.planeWave )then
-                    ! --- evaluate the plane wave solution ---
+                ! --- Dirichlet BC ---
+                                u(i1,i2,i3,uc)=ff
+                ! -- extrapolate ghost ---
+                                do ghost=1,numGhost
+                                    j1=i1-is1*ghost
+                                    j2=i2-is2*ghost
+                                    j3=i3-is3*ghost
+                                    u(j1,j2,j3,uc) = (9.*u(j1+is1,j2+is2,j3+is3,uc)-36.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+84.*u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)-126.*u(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,uc)+126.*u(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,uc)-84.*u(j1+is1+5*is1,j2+is2+5*is2,j3+is3+5*is3,uc)+36.*u(j1+is1+6*is1,j2+is2+6*is2,j3+is3+6*is3,uc)-9.*u(j1+is1+7*is1,j2+is2+7*is2,j3+is3+7*is3,uc)+u(j1+is1+8*is1,j2+is2+8*is2,j3+is3+8*is3,uc)) 
+                                end do
+                            end if ! mask .ne. 0
+                          end do
+                          end do
+                          end do
+                else
+                        ff=0.
+                          do i3=n3a,n3b
+                          do i2=n2a,n2b
+                          do i1=n1a,n1b
+                            if( mask(i1,i2,i3).ne.0 )then
+                ! --- get the RHS to the Dirichlet BC ---
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
                                         if( nd.eq.2 )then
-                                            ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
                                         else
-                                            ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                        end if 
-                                    else if( knownSolutionOption.eq.gaussianPlaneWave ) then
-                    ! Eval the Gaussian plane wave solution
-                    !    u = exp( -beta*(xi^2) )*cos( k0*xi )
-                    !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
-                    !  
-                                        if( nd.eq.2 )then
-                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                        end if
+                                        ff = ue
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Dirichlet values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                            else
+                                                ff = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave ) then
+                      ! Eval the Gaussian plane wave solution
+                      !    u = exp( -beta*(xi^2) )*cos( k0*xi )
+                      !    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t       
+                      !  
+                                            if( nd.eq.2 )then
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) - c*t
+                                            else
+                                                xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            end if 
+                                            ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                            else
+                                                ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
                                         else
-                                            xi = kxGPW*(xy(i1,i2,i3,0)-x0GPW) + kyGPW*(xy(i1,i2,i3,1)-y0GPW) + kzGPW*(xy(i1,i2,i3,2)-z0GPW) - c*t
+                                            stop 9876
                                         end if 
-                                        ff = exp( -betaGPW*xi**2 ) * cos( k0GPW*xi )      
-                                    else if( knownSolutionOption.eq.boxHelmholtz ) then
-                    ! --- evaluate the boxHelmholtz solution ---
-                                        if( nd.eq.2 )then
-                                            ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
-                                        else
-                                            ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
-                                        end if 
-                                    else
-                                        stop 9876
-                                    end if 
-                                end if
-              ! --- Dirichlet BC ---
-                            u(i1,i2,i3,uc)=ff
-              ! -- extrapolate ghost ---
-                            do ghost=1,numGhost
-                                j1=i1-is1*ghost
-                                j2=i2-is2*ghost
-                                j3=i3-is3*ghost
-                                u(j1,j2,j3,uc) = (9.*u(j1+is1,j2+is2,j3+is3,uc)-36.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+84.*u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)-126.*u(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,uc)+126.*u(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,uc)-84.*u(j1+is1+5*is1,j2+is2+5*is2,j3+is3+5*is3,uc)+36.*u(j1+is1+6*is1,j2+is2+6*is2,j3+is3+6*is3,uc)-9.*u(j1+is1+7*is1,j2+is2+7*is2,j3+is3+7*is3,uc)+u(j1+is1+8*is1,j2+is2+8*is2,j3+is3+8*is3,uc)) 
-                            end do
-                        end if ! mask .ne. 0
-                      end do
-                      end do
-                      end do
+                                    end if
+                ! --- Dirichlet BC ---
+                                u(i1,i2,i3,uc)=ff
+                ! -- extrapolate ghost ---
+                                do ghost=1,numGhost
+                                    j1=i1-is1*ghost
+                                    j2=i2-is2*ghost
+                                    j3=i3-is3*ghost
+                                    u(j1,j2,j3,uc) = (9.*u(j1+is1,j2+is2,j3+is3,uc)-36.*u(j1+is1+is1,j2+is2+is2,j3+is3+is3,uc)+84.*u(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,uc)-126.*u(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,uc)+126.*u(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,uc)-84.*u(j1+is1+5*is1,j2+is2+5*is2,j3+is3+5*is3,uc)+36.*u(j1+is1+6*is1,j2+is2+6*is2,j3+is3+6*is3,uc)-9.*u(j1+is1+7*is1,j2+is2+7*is2,j3+is3+7*is3,uc)+u(j1+is1+8*is1,j2+is2+8*is2,j3+is3+8*is3,uc)) 
+                                end do
+                            end if ! mask .ne. 0
+                          end do
+                          end do
+                          end do
+                end if
 
             else
 
@@ -1979,885 +2257,1777 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
       ! ------ NEUMANN ----------
 
             if( orderOfAccuracy.eq.2 )then
-
-           ! BC: a0*T + a1*T.n = 
-           ! a0=mixedCoeff(uc,side,axis,grid)
-           ! a1=mixedNormalCoeff(uc,side,axis,grid)
-                      a0=0.
-                      a1=1.
-           ! rectangular case:
-                      if( gridType.eq.rectangular )then
-             ! compute the outward normal (an1,an2,an3)
-                          an1 = 0.
-                          an2 = 0.
-                          an3 = 0.
-                          if( axis.eq.0 )then
-                            an1=-is
-                          else if( axis.eq.1 )then
-                            an2=-is
-                          else
-                            an3=-is
-                          end if
-                          dxn=dx(axis)
-                          b0=-4.*dxn*a0/a1-10./3.
-                          b1=4.*(dxn/a1)
-                      end if
-                      ff=0.
-                        do i3=n3a,n3b
-                        do i2=n2a,n2b
-                        do i1=n1a,n1b
-            ! first ghost pt:
-                        j1=i1-is1
-                        j2=i2-is2
-                        j3=i3-is3
-            ! 2nd ghost:
-                        k1=j1-is1
-                        k2=j2-is2
-                        k3=j3-is3
-            ! 3rd ghost:
-                        l1=k1-is1
-                        l2=k2-is2
-                        l3=k3-is3    
-                        if( mask(i1,i2,i3).gt.0 )then
-                            if( gridType.eq.curvilinear )then
-                ! compute the outward normal (an1,an2,an3)
-                                        an1 = rsxy(i1,i2,i3,axis,0)
-                                        an2 = rsxy(i1,i2,i3,axis,1)
-                                        if( nd.eq.2 )then
-                                          aNormi = (-is)/sqrt(an1**2+an2**2)
-                                          an1=an1*aNormi
-                                          an2=an2*aNormi
-                                        else
-                                          an3 = rsxy(i1,i2,i3,axis,2)
-                                          aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
-                                          an1=an1*aNormi
-                                          an2=an2*aNormi
-                                          an3=an3*aNormi
-                                        end if
-                            end if
-                                if( assignTwilightZone.eq.1 )then
-                  ! compute RHS from TZ
-                                    if( nd.eq.2 )then
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
-                                        call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
-                                        call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
-                                        ff = a0*ue + a1*( an1*uex + an2*uey )
-                                    else
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
-                                        call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
-                                        call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
-                                        call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
-                                        ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                    end if
-                                else if( assignKnownSolutionAtBoundaries.eq.1 )then
-                  ! -- we set inhomogeneous Neumann values for some known solutions 
-                                    if( knownSolutionOption.eq.planeWave )then
-                    ! --- evaluate RHS for the plane wave solution ---
-                                        if( nd.eq.2 )then
-                                            ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
-                                            cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
-                                            uex   = kxPlaneWave*cosPW
-                                            uey   = kyPlaneWave*cosPw
-                                            ff = a0*ue + a1*( an1*uex + an2*uey )
-                                        else
-                                            ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                            cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                            uex   = kxPlaneWave*cosPW
-                                            uey   = kyPlaneWave*cosPw
-                                            uez   = kzPlaneWave*cosPw
-                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                        end if 
-                                    else if( knownSolutionOption.eq.gaussianPlaneWave )then
-                    ! Do nothing for Gaussian plane wave solution for now
-                                        ff = 0.
-                                    else if( knownSolutionOption.eq.boxHelmholtz ) then
-                    ! --- evaluate RHS the boxHelmholtz solution ---
-                                        if( nd.eq.2 )then
-                                            ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
-                                            uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
-                                            uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
-                                            ff = a0*ue + a1*( an1*uex + an2*uey )
-                                        else
-                                            ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
-                                            uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
-                                            uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
-                                            uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
-                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                        end if 
-                                    else
-                                        stop 8765
-                                    end if 
-                                end if
-              ! 2=4: 
-              ! --- assign 2 ghost points using:
-              !  (1) Apply Neumann BC to 4th order
-              !  (2) Extrap. 2nd ghost to 5th order
-                            if( gridType.eq.rectangular )then
-                ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
-                                if( orderOfAccuracy.eq.2 )then
-                  ! --- NEUMANN 2=2 RECTANGULAR ---
-                  !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
-                  !  *check me* 
-                                    b0 = -2.*dxn*a0/a1 
-                                    b1 =  2.*dxn/a1 
-                                    u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
-                                else 
-                 !  --- NEUMANN 2=4 RECTANGULAR ---
-                                    u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
-                                end if
-                            else 
-                ! ------ curvilinear grid: -------
-                ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
-                ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
-                ! =>
-                !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
-                                if( orderOfAccuracy.eq.2 )then
-                  ! ----- NEUMANN 2=2 CURVILINEAR ----
-                  ! ur = ( u(i+1) - u(i-1) )/2*dr
-                  ! ur = ur0 -> 
-                  ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
-                  ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
-                                    urv(0) = ur2(i1,i2,i3,uc)
-                                    urv(1) = us2(i1,i2,i3,uc)
-                                    if( nd.eq.2 )then
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
-                                        ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    else
-                                        urv(2) = ut2(i1,i2,i3,uc)
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
-                                        t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
-                                      ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
-                                  end if
-                                  u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
-                                else
-                  ! ---- NEUMANN 2 4 CURVILINEAR ----
-                  !       d14(kd) = 1./(12.*dr(kd))
-                  !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
-                  !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
-                  ! ur = f -> 
-                  ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
-                  ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
-                  ! A - B = 
-                  !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
-                                    urv(0) = ur4(i1,i2,i3,uc)
-                                    urv(1) = us4(i1,i2,i3,uc)
-                                    if( nd.eq.2 )then
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
-                                        ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    else
-                                        urv(2) = ut4(i1,i2,i3,uc)
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
-                                        t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
-                                        ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    end if
-                                    u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
-                                end if ! order =4 
-                            end if ! curvilinear grid 
-              ! ----- Assign extra ghost ----
-                            if( orderOfAccuracy.eq.2) then
-                                if( numGhost.gt.1 )then
-                  ! extrap second ghost (UPW)
-                                    u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
-                                end if
-                            else if( orderOfAccuracy.eq.4 )then
-                ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
-                ! extrap second ghost
-                                u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
-                                if( numGhost.gt.2 )then
-                  !  extrap third ghost (UPW)
-                                    u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
-                                end if
-                            else
-                                write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
-                                stop 7777        
-                            end if
-                        else if( mask(i1,i2,i3).lt.0 )then
-              ! ----- extrap ghost outside interp. pts on physical boundaries ------
-                            if( orderOfAccuracy.eq.2 )then
-                                u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
-                                if( numGhost.gt.1 )then
-                                    u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
-                                end if
-                            else if( orderOfAccuracy.eq.4 )then
-                                u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
-                                u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
-                                if( numGhost.gt.2 )then
-                  !  extrap third ghost 
-                                    u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
-                                end if
-                            else
-                                write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
-                                stop 7777
-                            end if
+                if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+             ! BC: a0*T + a1*T.n = 
+             ! a0=mixedCoeff(uc,side,axis,grid)
+             ! a1=mixedNormalCoeff(uc,side,axis,grid)
+                        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                            write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+                            stop 1010
                         end if
-                        end do
-                        end do
-                        end do
-
+                          a0=0.
+                          a1=1.
+             ! rectangular case:
+                          if( gridType.eq.rectangular )then
+               ! compute the outward normal (an1,an2,an3)
+                              an1 = 0.
+                              an2 = 0.
+                              an3 = 0.
+                              if( axis.eq.0 )then
+                                an1=-is
+                              else if( axis.eq.1 )then
+                                an2=-is
+                              else
+                                an3=-is
+                              end if
+                              dxn=dx(axis)
+                              b0=-4.*dxn*a0/a1-10./3.
+                              b1=4.*(dxn/a1)
+                          end if
+                          ff=0.
+                            do i3=n3a,n3b
+                            do i2=n2a,n2b
+                            do i1=n1a,n1b
+              ! first ghost pt:
+                            j1=i1-is1
+                            j2=i2-is2
+                            j3=i3-is3
+              ! 2nd ghost:
+                            k1=j1-is1
+                            k2=j2-is2
+                            k3=j3-is3
+              ! 3rd ghost:
+                            l1=k1-is1
+                            l2=k2-is2
+                            l3=k3-is3    
+                            if( mask(i1,i2,i3).gt.0 )then
+                                if( gridType.eq.curvilinear )then
+                  ! compute the outward normal (an1,an2,an3)
+                                            an1 = rsxy(i1,i2,i3,axis,0)
+                                            an2 = rsxy(i1,i2,i3,axis,1)
+                                            if( nd.eq.2 )then
+                                              aNormi = (-is)/sqrt(an1**2+an2**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                            else
+                                              an3 = rsxy(i1,i2,i3,axis,2)
+                                              aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                              an3=an3*aNormi
+                                            end if
+                                end if
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
+                                            call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                        end if
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Neumann values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate RHS for the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                uez   = kzPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                      ! Do nothing for Gaussian plane wave solution for now
+                                            ff = 0.
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate RHS the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
+                                                uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else
+                                            stop 8765
+                                        end if 
+                                    end if
+                ! 2=4: 
+                ! --- assign 2 ghost points using:
+                !  (1) Apply Neumann BC to 4th order
+                !  (2) Extrap. 2nd ghost to 5th order
+                                if( gridType.eq.rectangular )then
+                  ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! --- NEUMANN 2=2 RECTANGULAR ---
+                    !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
+                    !  *check me* 
+                                        b0 = -2.*dxn*a0/a1 
+                                        b1 =  2.*dxn/a1 
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
+                                    else 
+                   !  --- NEUMANN 2=4 RECTANGULAR ---
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
+                                    end if
+                                else 
+                  ! ------ curvilinear grid: -------
+                  ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
+                  ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
+                  ! =>
+                  !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! ----- NEUMANN 2=2 CURVILINEAR ----
+                    ! ur = ( u(i+1) - u(i-1) )/2*dr
+                    ! ur = ur0 -> 
+                    ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
+                    ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
+                                        urv(0) = ur2(i1,i2,i3,uc)
+                                        urv(1) = us2(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut2(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                          ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                      end if
+                                      u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                                    else
+                    ! ---- NEUMANN 2 4 CURVILINEAR ----
+                    !       d14(kd) = 1./(12.*dr(kd))
+                    !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
+                    !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
+                    ! ur = f -> 
+                    ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
+                    ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
+                    ! A - B = 
+                    !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
+                                        urv(0) = ur4(i1,i2,i3,uc)
+                                        urv(1) = us4(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut4(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                            ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        end if
+                                        u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
+                                    end if ! order =4 
+                                end if ! curvilinear grid 
+                ! ----- Assign extra ghost ----
+                                if( orderOfAccuracy.eq.2) then
+                                    if( numGhost.gt.1 )then
+                    ! extrap second ghost (UPW)
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                  ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
+                  ! extrap second ghost
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost (UPW)
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777        
+                                end if
+                            else if( mask(i1,i2,i3).lt.0 )then
+                ! ----- extrap ghost outside interp. pts on physical boundaries ------
+                                if( orderOfAccuracy.eq.2 )then
+                                    u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
+                                    if( numGhost.gt.1 )then
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                                    u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost 
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777
+                                end if
+                            end if
+                            end do
+                            end do
+                            end do
+                else
+             ! BC: a0*T + a1*T.n = 
+             ! a0=mixedCoeff(uc,side,axis,grid)
+             ! a1=mixedNormalCoeff(uc,side,axis,grid)
+                          a0=0.
+                          a1=1.
+             ! rectangular case:
+                          if( gridType.eq.rectangular )then
+               ! compute the outward normal (an1,an2,an3)
+                              an1 = 0.
+                              an2 = 0.
+                              an3 = 0.
+                              if( axis.eq.0 )then
+                                an1=-is
+                              else if( axis.eq.1 )then
+                                an2=-is
+                              else
+                                an3=-is
+                              end if
+                              dxn=dx(axis)
+                              b0=-4.*dxn*a0/a1-10./3.
+                              b1=4.*(dxn/a1)
+                          end if
+                          ff=0.
+                            do i3=n3a,n3b
+                            do i2=n2a,n2b
+                            do i1=n1a,n1b
+              ! first ghost pt:
+                            j1=i1-is1
+                            j2=i2-is2
+                            j3=i3-is3
+              ! 2nd ghost:
+                            k1=j1-is1
+                            k2=j2-is2
+                            k3=j3-is3
+              ! 3rd ghost:
+                            l1=k1-is1
+                            l2=k2-is2
+                            l3=k3-is3    
+                            if( mask(i1,i2,i3).gt.0 )then
+                                if( gridType.eq.curvilinear )then
+                  ! compute the outward normal (an1,an2,an3)
+                                            an1 = rsxy(i1,i2,i3,axis,0)
+                                            an2 = rsxy(i1,i2,i3,axis,1)
+                                            if( nd.eq.2 )then
+                                              aNormi = (-is)/sqrt(an1**2+an2**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                            else
+                                              an3 = rsxy(i1,i2,i3,axis,2)
+                                              aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                              an3=an3*aNormi
+                                            end if
+                                end if
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
+                                            call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                        end if
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Neumann values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate RHS for the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                uez   = kzPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                      ! Do nothing for Gaussian plane wave solution for now
+                                            ff = 0.
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate RHS the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
+                                                uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else
+                                            stop 8765
+                                        end if 
+                                    end if
+                ! 2=4: 
+                ! --- assign 2 ghost points using:
+                !  (1) Apply Neumann BC to 4th order
+                !  (2) Extrap. 2nd ghost to 5th order
+                                if( gridType.eq.rectangular )then
+                  ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! --- NEUMANN 2=2 RECTANGULAR ---
+                    !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
+                    !  *check me* 
+                                        b0 = -2.*dxn*a0/a1 
+                                        b1 =  2.*dxn/a1 
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
+                                    else 
+                   !  --- NEUMANN 2=4 RECTANGULAR ---
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
+                                    end if
+                                else 
+                  ! ------ curvilinear grid: -------
+                  ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
+                  ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
+                  ! =>
+                  !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! ----- NEUMANN 2=2 CURVILINEAR ----
+                    ! ur = ( u(i+1) - u(i-1) )/2*dr
+                    ! ur = ur0 -> 
+                    ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
+                    ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
+                                        urv(0) = ur2(i1,i2,i3,uc)
+                                        urv(1) = us2(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut2(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                          ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                      end if
+                                      u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                                    else
+                    ! ---- NEUMANN 2 4 CURVILINEAR ----
+                    !       d14(kd) = 1./(12.*dr(kd))
+                    !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
+                    !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
+                    ! ur = f -> 
+                    ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
+                    ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
+                    ! A - B = 
+                    !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
+                                        urv(0) = ur4(i1,i2,i3,uc)
+                                        urv(1) = us4(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut4(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                            ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        end if
+                                        u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
+                                    end if ! order =4 
+                                end if ! curvilinear grid 
+                ! ----- Assign extra ghost ----
+                                if( orderOfAccuracy.eq.2) then
+                                    if( numGhost.gt.1 )then
+                    ! extrap second ghost (UPW)
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                  ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
+                  ! extrap second ghost
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost (UPW)
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777        
+                                end if
+                            else if( mask(i1,i2,i3).lt.0 )then
+                ! ----- extrap ghost outside interp. pts on physical boundaries ------
+                                if( orderOfAccuracy.eq.2 )then
+                                    u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
+                                    if( numGhost.gt.1 )then
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                                    u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost 
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777
+                                end if
+                            end if
+                            end do
+                            end do
+                            end do
+                end if
+                
             else if( orderOfAccuracy.eq.4 )then
-
-           ! BC: a0*T + a1*T.n = 
-           ! a0=mixedCoeff(uc,side,axis,grid)
-           ! a1=mixedNormalCoeff(uc,side,axis,grid)
-                      a0=0.
-                      a1=1.
-           ! rectangular case:
-                      if( gridType.eq.rectangular )then
-             ! compute the outward normal (an1,an2,an3)
-                          an1 = 0.
-                          an2 = 0.
-                          an3 = 0.
-                          if( axis.eq.0 )then
-                            an1=-is
-                          else if( axis.eq.1 )then
-                            an2=-is
-                          else
-                            an3=-is
-                          end if
-                          dxn=dx(axis)
-                          b0=-4.*dxn*a0/a1-10./3.
-                          b1=4.*(dxn/a1)
-                      end if
-                      ff=0.
-                        do i3=n3a,n3b
-                        do i2=n2a,n2b
-                        do i1=n1a,n1b
-            ! first ghost pt:
-                        j1=i1-is1
-                        j2=i2-is2
-                        j3=i3-is3
-            ! 2nd ghost:
-                        k1=j1-is1
-                        k2=j2-is2
-                        k3=j3-is3
-            ! 3rd ghost:
-                        l1=k1-is1
-                        l2=k2-is2
-                        l3=k3-is3    
-                        if( mask(i1,i2,i3).gt.0 )then
-                            if( gridType.eq.curvilinear )then
-                ! compute the outward normal (an1,an2,an3)
-                                        an1 = rsxy(i1,i2,i3,axis,0)
-                                        an2 = rsxy(i1,i2,i3,axis,1)
-                                        if( nd.eq.2 )then
-                                          aNormi = (-is)/sqrt(an1**2+an2**2)
-                                          an1=an1*aNormi
-                                          an2=an2*aNormi
-                                        else
-                                          an3 = rsxy(i1,i2,i3,axis,2)
-                                          aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
-                                          an1=an1*aNormi
-                                          an2=an2*aNormi
-                                          an3=an3*aNormi
-                                        end if
-                            end if
-                                if( assignTwilightZone.eq.1 )then
-                  ! compute RHS from TZ
-                                    if( nd.eq.2 )then
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
-                                        call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
-                                        call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
-                                        ff = a0*ue + a1*( an1*uex + an2*uey )
-                                    else
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
-                                        call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
-                                        call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
-                                        call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
-                                        ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                    end if
-                                else if( assignKnownSolutionAtBoundaries.eq.1 )then
-                  ! -- we set inhomogeneous Neumann values for some known solutions 
-                                    if( knownSolutionOption.eq.planeWave )then
-                    ! --- evaluate RHS for the plane wave solution ---
-                                        if( nd.eq.2 )then
-                                            ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
-                                            cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
-                                            uex   = kxPlaneWave*cosPW
-                                            uey   = kyPlaneWave*cosPw
-                                            ff = a0*ue + a1*( an1*uex + an2*uey )
-                                        else
-                                            ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                            cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                            uex   = kxPlaneWave*cosPW
-                                            uey   = kyPlaneWave*cosPw
-                                            uez   = kzPlaneWave*cosPw
-                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                        end if 
-                                    else if( knownSolutionOption.eq.gaussianPlaneWave )then
-                    ! Do nothing for Gaussian plane wave solution for now
-                                        ff = 0.
-                                    else if( knownSolutionOption.eq.boxHelmholtz ) then
-                    ! --- evaluate RHS the boxHelmholtz solution ---
-                                        if( nd.eq.2 )then
-                                            ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
-                                            uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
-                                            uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
-                                            ff = a0*ue + a1*( an1*uex + an2*uey )
-                                        else
-                                            ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
-                                            uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
-                                            uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
-                                            uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
-                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                        end if 
-                                    else
-                                        stop 8765
-                                    end if 
-                                end if
-              ! 4=4: 
-              ! --- assign 2 ghost points using:
-              !  (1) Apply Neumann BC to 4th order
-              !  (2) Extrap. 2nd ghost to 5th order
-                            if( gridType.eq.rectangular )then
-                ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
-                                if( orderOfAccuracy.eq.2 )then
-                  ! --- NEUMANN 4=2 RECTANGULAR ---
-                  !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
-                  !  *check me* 
-                                    b0 = -2.*dxn*a0/a1 
-                                    b1 =  2.*dxn/a1 
-                                    u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
-                                else 
-                 !  --- NEUMANN 4=4 RECTANGULAR ---
-                                    u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
-                                end if
-                            else 
-                ! ------ curvilinear grid: -------
-                ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
-                ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
-                ! =>
-                !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
-                                if( orderOfAccuracy.eq.2 )then
-                  ! ----- NEUMANN 4=2 CURVILINEAR ----
-                  ! ur = ( u(i+1) - u(i-1) )/2*dr
-                  ! ur = ur0 -> 
-                  ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
-                  ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
-                                    urv(0) = ur2(i1,i2,i3,uc)
-                                    urv(1) = us2(i1,i2,i3,uc)
-                                    if( nd.eq.2 )then
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
-                                        ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    else
-                                        urv(2) = ut2(i1,i2,i3,uc)
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
-                                        t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
-                                      ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
-                                  end if
-                                  u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
-                                else
-                  ! ---- NEUMANN 4 4 CURVILINEAR ----
-                  !       d14(kd) = 1./(12.*dr(kd))
-                  !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
-                  !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
-                  ! ur = f -> 
-                  ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
-                  ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
-                  ! A - B = 
-                  !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
-                                    urv(0) = ur4(i1,i2,i3,uc)
-                                    urv(1) = us4(i1,i2,i3,uc)
-                                    if( nd.eq.2 )then
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
-                                        ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    else
-                                        urv(2) = ut4(i1,i2,i3,uc)
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
-                                        t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
-                                        ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    end if
-                                    u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
-                                end if ! order =4 
-                            end if ! curvilinear grid 
-              ! ----- Assign extra ghost ----
-                            if( orderOfAccuracy.eq.2) then
-                                if( numGhost.gt.1 )then
-                  ! extrap second ghost (UPW)
-                                    u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
-                                end if
-                            else if( orderOfAccuracy.eq.4 )then
-                ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
-                ! extrap second ghost
-                                u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
-                                if( numGhost.gt.2 )then
-                  !  extrap third ghost (UPW)
-                                    u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
-                                end if
-                            else
-                                write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
-                                stop 7777        
-                            end if
-                        else if( mask(i1,i2,i3).lt.0 )then
-              ! ----- extrap ghost outside interp. pts on physical boundaries ------
-                            if( orderOfAccuracy.eq.2 )then
-                                u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
-                                if( numGhost.gt.1 )then
-                                    u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
-                                end if
-                            else if( orderOfAccuracy.eq.4 )then
-                                u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
-                                u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
-                                if( numGhost.gt.2 )then
-                  !  extrap third ghost 
-                                    u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
-                                end if
-                            else
-                                write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
-                                stop 7777
-                            end if
+                if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+             ! BC: a0*T + a1*T.n = 
+             ! a0=mixedCoeff(uc,side,axis,grid)
+             ! a1=mixedNormalCoeff(uc,side,axis,grid)
+                        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                            write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+                            stop 1010
                         end if
-                        end do
-                        end do
-                        end do
-
+                          a0=0.
+                          a1=1.
+             ! rectangular case:
+                          if( gridType.eq.rectangular )then
+               ! compute the outward normal (an1,an2,an3)
+                              an1 = 0.
+                              an2 = 0.
+                              an3 = 0.
+                              if( axis.eq.0 )then
+                                an1=-is
+                              else if( axis.eq.1 )then
+                                an2=-is
+                              else
+                                an3=-is
+                              end if
+                              dxn=dx(axis)
+                              b0=-4.*dxn*a0/a1-10./3.
+                              b1=4.*(dxn/a1)
+                          end if
+                          ff=0.
+                            do i3=n3a,n3b
+                            do i2=n2a,n2b
+                            do i1=n1a,n1b
+              ! first ghost pt:
+                            j1=i1-is1
+                            j2=i2-is2
+                            j3=i3-is3
+              ! 2nd ghost:
+                            k1=j1-is1
+                            k2=j2-is2
+                            k3=j3-is3
+              ! 3rd ghost:
+                            l1=k1-is1
+                            l2=k2-is2
+                            l3=k3-is3    
+                            if( mask(i1,i2,i3).gt.0 )then
+                                if( gridType.eq.curvilinear )then
+                  ! compute the outward normal (an1,an2,an3)
+                                            an1 = rsxy(i1,i2,i3,axis,0)
+                                            an2 = rsxy(i1,i2,i3,axis,1)
+                                            if( nd.eq.2 )then
+                                              aNormi = (-is)/sqrt(an1**2+an2**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                            else
+                                              an3 = rsxy(i1,i2,i3,axis,2)
+                                              aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                              an3=an3*aNormi
+                                            end if
+                                end if
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
+                                            call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                        end if
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Neumann values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate RHS for the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                uez   = kzPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                      ! Do nothing for Gaussian plane wave solution for now
+                                            ff = 0.
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate RHS the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
+                                                uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else
+                                            stop 8765
+                                        end if 
+                                    end if
+                ! 4=4: 
+                ! --- assign 2 ghost points using:
+                !  (1) Apply Neumann BC to 4th order
+                !  (2) Extrap. 2nd ghost to 5th order
+                                if( gridType.eq.rectangular )then
+                  ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! --- NEUMANN 4=2 RECTANGULAR ---
+                    !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
+                    !  *check me* 
+                                        b0 = -2.*dxn*a0/a1 
+                                        b1 =  2.*dxn/a1 
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
+                                    else 
+                   !  --- NEUMANN 4=4 RECTANGULAR ---
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
+                                    end if
+                                else 
+                  ! ------ curvilinear grid: -------
+                  ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
+                  ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
+                  ! =>
+                  !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! ----- NEUMANN 4=2 CURVILINEAR ----
+                    ! ur = ( u(i+1) - u(i-1) )/2*dr
+                    ! ur = ur0 -> 
+                    ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
+                    ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
+                                        urv(0) = ur2(i1,i2,i3,uc)
+                                        urv(1) = us2(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut2(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                          ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                      end if
+                                      u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                                    else
+                    ! ---- NEUMANN 4 4 CURVILINEAR ----
+                    !       d14(kd) = 1./(12.*dr(kd))
+                    !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
+                    !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
+                    ! ur = f -> 
+                    ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
+                    ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
+                    ! A - B = 
+                    !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
+                                        urv(0) = ur4(i1,i2,i3,uc)
+                                        urv(1) = us4(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut4(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                            ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        end if
+                                        u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
+                                    end if ! order =4 
+                                end if ! curvilinear grid 
+                ! ----- Assign extra ghost ----
+                                if( orderOfAccuracy.eq.2) then
+                                    if( numGhost.gt.1 )then
+                    ! extrap second ghost (UPW)
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                  ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
+                  ! extrap second ghost
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost (UPW)
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777        
+                                end if
+                            else if( mask(i1,i2,i3).lt.0 )then
+                ! ----- extrap ghost outside interp. pts on physical boundaries ------
+                                if( orderOfAccuracy.eq.2 )then
+                                    u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
+                                    if( numGhost.gt.1 )then
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                                    u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost 
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777
+                                end if
+                            end if
+                            end do
+                            end do
+                            end do
+                else
+             ! BC: a0*T + a1*T.n = 
+             ! a0=mixedCoeff(uc,side,axis,grid)
+             ! a1=mixedNormalCoeff(uc,side,axis,grid)
+                          a0=0.
+                          a1=1.
+             ! rectangular case:
+                          if( gridType.eq.rectangular )then
+               ! compute the outward normal (an1,an2,an3)
+                              an1 = 0.
+                              an2 = 0.
+                              an3 = 0.
+                              if( axis.eq.0 )then
+                                an1=-is
+                              else if( axis.eq.1 )then
+                                an2=-is
+                              else
+                                an3=-is
+                              end if
+                              dxn=dx(axis)
+                              b0=-4.*dxn*a0/a1-10./3.
+                              b1=4.*(dxn/a1)
+                          end if
+                          ff=0.
+                            do i3=n3a,n3b
+                            do i2=n2a,n2b
+                            do i1=n1a,n1b
+              ! first ghost pt:
+                            j1=i1-is1
+                            j2=i2-is2
+                            j3=i3-is3
+              ! 2nd ghost:
+                            k1=j1-is1
+                            k2=j2-is2
+                            k3=j3-is3
+              ! 3rd ghost:
+                            l1=k1-is1
+                            l2=k2-is2
+                            l3=k3-is3    
+                            if( mask(i1,i2,i3).gt.0 )then
+                                if( gridType.eq.curvilinear )then
+                  ! compute the outward normal (an1,an2,an3)
+                                            an1 = rsxy(i1,i2,i3,axis,0)
+                                            an2 = rsxy(i1,i2,i3,axis,1)
+                                            if( nd.eq.2 )then
+                                              aNormi = (-is)/sqrt(an1**2+an2**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                            else
+                                              an3 = rsxy(i1,i2,i3,axis,2)
+                                              aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                              an3=an3*aNormi
+                                            end if
+                                end if
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
+                                            call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                        end if
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Neumann values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate RHS for the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                uez   = kzPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                      ! Do nothing for Gaussian plane wave solution for now
+                                            ff = 0.
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate RHS the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
+                                                uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else
+                                            stop 8765
+                                        end if 
+                                    end if
+                ! 4=4: 
+                ! --- assign 2 ghost points using:
+                !  (1) Apply Neumann BC to 4th order
+                !  (2) Extrap. 2nd ghost to 5th order
+                                if( gridType.eq.rectangular )then
+                  ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! --- NEUMANN 4=2 RECTANGULAR ---
+                    !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
+                    !  *check me* 
+                                        b0 = -2.*dxn*a0/a1 
+                                        b1 =  2.*dxn/a1 
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
+                                    else 
+                   !  --- NEUMANN 4=4 RECTANGULAR ---
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
+                                    end if
+                                else 
+                  ! ------ curvilinear grid: -------
+                  ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
+                  ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
+                  ! =>
+                  !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! ----- NEUMANN 4=2 CURVILINEAR ----
+                    ! ur = ( u(i+1) - u(i-1) )/2*dr
+                    ! ur = ur0 -> 
+                    ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
+                    ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
+                                        urv(0) = ur2(i1,i2,i3,uc)
+                                        urv(1) = us2(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut2(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                          ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                      end if
+                                      u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                                    else
+                    ! ---- NEUMANN 4 4 CURVILINEAR ----
+                    !       d14(kd) = 1./(12.*dr(kd))
+                    !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
+                    !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
+                    ! ur = f -> 
+                    ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
+                    ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
+                    ! A - B = 
+                    !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
+                                        urv(0) = ur4(i1,i2,i3,uc)
+                                        urv(1) = us4(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut4(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                            ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        end if
+                                        u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
+                                    end if ! order =4 
+                                end if ! curvilinear grid 
+                ! ----- Assign extra ghost ----
+                                if( orderOfAccuracy.eq.2) then
+                                    if( numGhost.gt.1 )then
+                    ! extrap second ghost (UPW)
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                  ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
+                  ! extrap second ghost
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost (UPW)
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777        
+                                end if
+                            else if( mask(i1,i2,i3).lt.0 )then
+                ! ----- extrap ghost outside interp. pts on physical boundaries ------
+                                if( orderOfAccuracy.eq.2 )then
+                                    u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
+                                    if( numGhost.gt.1 )then
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                                    u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost 
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777
+                                end if
+                            end if
+                            end do
+                            end do
+                            end do
+                end if
+                
             else if( orderOfAccuracy.eq.6 )then   
-
-           ! BC: a0*T + a1*T.n = 
-           ! a0=mixedCoeff(uc,side,axis,grid)
-           ! a1=mixedNormalCoeff(uc,side,axis,grid)
-                      a0=0.
-                      a1=1.
-           ! rectangular case:
-                      if( gridType.eq.rectangular )then
-             ! compute the outward normal (an1,an2,an3)
-                          an1 = 0.
-                          an2 = 0.
-                          an3 = 0.
-                          if( axis.eq.0 )then
-                            an1=-is
-                          else if( axis.eq.1 )then
-                            an2=-is
-                          else
-                            an3=-is
-                          end if
-                          dxn=dx(axis)
-                          b0=-4.*dxn*a0/a1-10./3.
-                          b1=4.*(dxn/a1)
-                      end if
-                      ff=0.
-                        do i3=n3a,n3b
-                        do i2=n2a,n2b
-                        do i1=n1a,n1b
-            ! first ghost pt:
-                        j1=i1-is1
-                        j2=i2-is2
-                        j3=i3-is3
-            ! 2nd ghost:
-                        k1=j1-is1
-                        k2=j2-is2
-                        k3=j3-is3
-            ! 3rd ghost:
-                        l1=k1-is1
-                        l2=k2-is2
-                        l3=k3-is3    
-                        if( mask(i1,i2,i3).gt.0 )then
-                            if( gridType.eq.curvilinear )then
-                ! compute the outward normal (an1,an2,an3)
-                                        an1 = rsxy(i1,i2,i3,axis,0)
-                                        an2 = rsxy(i1,i2,i3,axis,1)
-                                        if( nd.eq.2 )then
-                                          aNormi = (-is)/sqrt(an1**2+an2**2)
-                                          an1=an1*aNormi
-                                          an2=an2*aNormi
-                                        else
-                                          an3 = rsxy(i1,i2,i3,axis,2)
-                                          aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
-                                          an1=an1*aNormi
-                                          an2=an2*aNormi
-                                          an3=an3*aNormi
-                                        end if
-                            end if
-                                if( assignTwilightZone.eq.1 )then
-                  ! compute RHS from TZ
-                                    if( nd.eq.2 )then
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
-                                        call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
-                                        call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
-                                        ff = a0*ue + a1*( an1*uex + an2*uey )
-                                    else
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
-                                        call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
-                                        call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
-                                        call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
-                                        ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                    end if
-                                else if( assignKnownSolutionAtBoundaries.eq.1 )then
-                  ! -- we set inhomogeneous Neumann values for some known solutions 
-                                    if( knownSolutionOption.eq.planeWave )then
-                    ! --- evaluate RHS for the plane wave solution ---
-                                        if( nd.eq.2 )then
-                                            ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
-                                            cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
-                                            uex   = kxPlaneWave*cosPW
-                                            uey   = kyPlaneWave*cosPw
-                                            ff = a0*ue + a1*( an1*uex + an2*uey )
-                                        else
-                                            ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                            cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                            uex   = kxPlaneWave*cosPW
-                                            uey   = kyPlaneWave*cosPw
-                                            uez   = kzPlaneWave*cosPw
-                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                        end if 
-                                    else if( knownSolutionOption.eq.gaussianPlaneWave )then
-                    ! Do nothing for Gaussian plane wave solution for now
-                                        ff = 0.
-                                    else if( knownSolutionOption.eq.boxHelmholtz ) then
-                    ! --- evaluate RHS the boxHelmholtz solution ---
-                                        if( nd.eq.2 )then
-                                            ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
-                                            uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
-                                            uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
-                                            ff = a0*ue + a1*( an1*uex + an2*uey )
-                                        else
-                                            ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
-                                            uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
-                                            uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
-                                            uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
-                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                        end if 
-                                    else
-                                        stop 8765
-                                    end if 
-                                end if
-              ! 6=4: 
-              ! --- assign 2 ghost points using:
-              !  (1) Apply Neumann BC to 4th order
-              !  (2) Extrap. 2nd ghost to 5th order
-                            if( gridType.eq.rectangular )then
-                ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
-                                if( orderOfAccuracy.eq.2 )then
-                  ! --- NEUMANN 6=2 RECTANGULAR ---
-                  !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
-                  !  *check me* 
-                                    b0 = -2.*dxn*a0/a1 
-                                    b1 =  2.*dxn/a1 
-                                    u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
-                                else 
-                 !  --- NEUMANN 6=4 RECTANGULAR ---
-                                    u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
-                                end if
-                            else 
-                ! ------ curvilinear grid: -------
-                ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
-                ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
-                ! =>
-                !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
-                                if( orderOfAccuracy.eq.2 )then
-                  ! ----- NEUMANN 6=2 CURVILINEAR ----
-                  ! ur = ( u(i+1) - u(i-1) )/2*dr
-                  ! ur = ur0 -> 
-                  ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
-                  ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
-                                    urv(0) = ur2(i1,i2,i3,uc)
-                                    urv(1) = us2(i1,i2,i3,uc)
-                                    if( nd.eq.2 )then
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
-                                        ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    else
-                                        urv(2) = ut2(i1,i2,i3,uc)
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
-                                        t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
-                                      ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
-                                  end if
-                                  u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
-                                else
-                  ! ---- NEUMANN 6 4 CURVILINEAR ----
-                  !       d14(kd) = 1./(12.*dr(kd))
-                  !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
-                  !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
-                  ! ur = f -> 
-                  ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
-                  ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
-                  ! A - B = 
-                  !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
-                                    urv(0) = ur4(i1,i2,i3,uc)
-                                    urv(1) = us4(i1,i2,i3,uc)
-                                    if( nd.eq.2 )then
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
-                                        ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    else
-                                        urv(2) = ut4(i1,i2,i3,uc)
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
-                                        t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
-                                        ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    end if
-                                    u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
-                                end if ! order =4 
-                            end if ! curvilinear grid 
-              ! ----- Assign extra ghost ----
-                            if( orderOfAccuracy.eq.2) then
-                                if( numGhost.gt.1 )then
-                  ! extrap second ghost (UPW)
-                                    u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
-                                end if
-                            else if( orderOfAccuracy.eq.4 )then
-                ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
-                ! extrap second ghost
-                                u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
-                                if( numGhost.gt.2 )then
-                  !  extrap third ghost (UPW)
-                                    u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
-                                end if
-                            else
-                                write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
-                                stop 7777        
-                            end if
-                        else if( mask(i1,i2,i3).lt.0 )then
-              ! ----- extrap ghost outside interp. pts on physical boundaries ------
-                            if( orderOfAccuracy.eq.2 )then
-                                u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
-                                if( numGhost.gt.1 )then
-                                    u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
-                                end if
-                            else if( orderOfAccuracy.eq.4 )then
-                                u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
-                                u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
-                                if( numGhost.gt.2 )then
-                  !  extrap third ghost 
-                                    u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
-                                end if
-                            else
-                                write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
-                                stop 7777
-                            end if
+                if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+             ! BC: a0*T + a1*T.n = 
+             ! a0=mixedCoeff(uc,side,axis,grid)
+             ! a1=mixedNormalCoeff(uc,side,axis,grid)
+                        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                            write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+                            stop 1010
                         end if
-                        end do
-                        end do
-                        end do
-
+                          a0=0.
+                          a1=1.
+             ! rectangular case:
+                          if( gridType.eq.rectangular )then
+               ! compute the outward normal (an1,an2,an3)
+                              an1 = 0.
+                              an2 = 0.
+                              an3 = 0.
+                              if( axis.eq.0 )then
+                                an1=-is
+                              else if( axis.eq.1 )then
+                                an2=-is
+                              else
+                                an3=-is
+                              end if
+                              dxn=dx(axis)
+                              b0=-4.*dxn*a0/a1-10./3.
+                              b1=4.*(dxn/a1)
+                          end if
+                          ff=0.
+                            do i3=n3a,n3b
+                            do i2=n2a,n2b
+                            do i1=n1a,n1b
+              ! first ghost pt:
+                            j1=i1-is1
+                            j2=i2-is2
+                            j3=i3-is3
+              ! 2nd ghost:
+                            k1=j1-is1
+                            k2=j2-is2
+                            k3=j3-is3
+              ! 3rd ghost:
+                            l1=k1-is1
+                            l2=k2-is2
+                            l3=k3-is3    
+                            if( mask(i1,i2,i3).gt.0 )then
+                                if( gridType.eq.curvilinear )then
+                  ! compute the outward normal (an1,an2,an3)
+                                            an1 = rsxy(i1,i2,i3,axis,0)
+                                            an2 = rsxy(i1,i2,i3,axis,1)
+                                            if( nd.eq.2 )then
+                                              aNormi = (-is)/sqrt(an1**2+an2**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                            else
+                                              an3 = rsxy(i1,i2,i3,axis,2)
+                                              aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                              an3=an3*aNormi
+                                            end if
+                                end if
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
+                                            call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                        end if
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Neumann values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate RHS for the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                uez   = kzPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                      ! Do nothing for Gaussian plane wave solution for now
+                                            ff = 0.
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate RHS the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
+                                                uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else
+                                            stop 8765
+                                        end if 
+                                    end if
+                ! 6=4: 
+                ! --- assign 2 ghost points using:
+                !  (1) Apply Neumann BC to 4th order
+                !  (2) Extrap. 2nd ghost to 5th order
+                                if( gridType.eq.rectangular )then
+                  ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! --- NEUMANN 6=2 RECTANGULAR ---
+                    !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
+                    !  *check me* 
+                                        b0 = -2.*dxn*a0/a1 
+                                        b1 =  2.*dxn/a1 
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
+                                    else 
+                   !  --- NEUMANN 6=4 RECTANGULAR ---
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
+                                    end if
+                                else 
+                  ! ------ curvilinear grid: -------
+                  ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
+                  ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
+                  ! =>
+                  !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! ----- NEUMANN 6=2 CURVILINEAR ----
+                    ! ur = ( u(i+1) - u(i-1) )/2*dr
+                    ! ur = ur0 -> 
+                    ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
+                    ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
+                                        urv(0) = ur2(i1,i2,i3,uc)
+                                        urv(1) = us2(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut2(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                          ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                      end if
+                                      u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                                    else
+                    ! ---- NEUMANN 6 4 CURVILINEAR ----
+                    !       d14(kd) = 1./(12.*dr(kd))
+                    !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
+                    !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
+                    ! ur = f -> 
+                    ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
+                    ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
+                    ! A - B = 
+                    !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
+                                        urv(0) = ur4(i1,i2,i3,uc)
+                                        urv(1) = us4(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut4(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                            ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        end if
+                                        u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
+                                    end if ! order =4 
+                                end if ! curvilinear grid 
+                ! ----- Assign extra ghost ----
+                                if( orderOfAccuracy.eq.2) then
+                                    if( numGhost.gt.1 )then
+                    ! extrap second ghost (UPW)
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                  ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
+                  ! extrap second ghost
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost (UPW)
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777        
+                                end if
+                            else if( mask(i1,i2,i3).lt.0 )then
+                ! ----- extrap ghost outside interp. pts on physical boundaries ------
+                                if( orderOfAccuracy.eq.2 )then
+                                    u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
+                                    if( numGhost.gt.1 )then
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                                    u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost 
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777
+                                end if
+                            end if
+                            end do
+                            end do
+                            end do
+                else
+             ! BC: a0*T + a1*T.n = 
+             ! a0=mixedCoeff(uc,side,axis,grid)
+             ! a1=mixedNormalCoeff(uc,side,axis,grid)
+                          a0=0.
+                          a1=1.
+             ! rectangular case:
+                          if( gridType.eq.rectangular )then
+               ! compute the outward normal (an1,an2,an3)
+                              an1 = 0.
+                              an2 = 0.
+                              an3 = 0.
+                              if( axis.eq.0 )then
+                                an1=-is
+                              else if( axis.eq.1 )then
+                                an2=-is
+                              else
+                                an3=-is
+                              end if
+                              dxn=dx(axis)
+                              b0=-4.*dxn*a0/a1-10./3.
+                              b1=4.*(dxn/a1)
+                          end if
+                          ff=0.
+                            do i3=n3a,n3b
+                            do i2=n2a,n2b
+                            do i1=n1a,n1b
+              ! first ghost pt:
+                            j1=i1-is1
+                            j2=i2-is2
+                            j3=i3-is3
+              ! 2nd ghost:
+                            k1=j1-is1
+                            k2=j2-is2
+                            k3=j3-is3
+              ! 3rd ghost:
+                            l1=k1-is1
+                            l2=k2-is2
+                            l3=k3-is3    
+                            if( mask(i1,i2,i3).gt.0 )then
+                                if( gridType.eq.curvilinear )then
+                  ! compute the outward normal (an1,an2,an3)
+                                            an1 = rsxy(i1,i2,i3,axis,0)
+                                            an2 = rsxy(i1,i2,i3,axis,1)
+                                            if( nd.eq.2 )then
+                                              aNormi = (-is)/sqrt(an1**2+an2**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                            else
+                                              an3 = rsxy(i1,i2,i3,axis,2)
+                                              aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                              an3=an3*aNormi
+                                            end if
+                                end if
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
+                                            call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                        end if
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Neumann values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate RHS for the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                uez   = kzPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                      ! Do nothing for Gaussian plane wave solution for now
+                                            ff = 0.
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate RHS the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
+                                                uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else
+                                            stop 8765
+                                        end if 
+                                    end if
+                ! 6=4: 
+                ! --- assign 2 ghost points using:
+                !  (1) Apply Neumann BC to 4th order
+                !  (2) Extrap. 2nd ghost to 5th order
+                                if( gridType.eq.rectangular )then
+                  ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! --- NEUMANN 6=2 RECTANGULAR ---
+                    !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
+                    !  *check me* 
+                                        b0 = -2.*dxn*a0/a1 
+                                        b1 =  2.*dxn/a1 
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
+                                    else 
+                   !  --- NEUMANN 6=4 RECTANGULAR ---
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
+                                    end if
+                                else 
+                  ! ------ curvilinear grid: -------
+                  ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
+                  ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
+                  ! =>
+                  !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! ----- NEUMANN 6=2 CURVILINEAR ----
+                    ! ur = ( u(i+1) - u(i-1) )/2*dr
+                    ! ur = ur0 -> 
+                    ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
+                    ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
+                                        urv(0) = ur2(i1,i2,i3,uc)
+                                        urv(1) = us2(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut2(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                          ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                      end if
+                                      u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                                    else
+                    ! ---- NEUMANN 6 4 CURVILINEAR ----
+                    !       d14(kd) = 1./(12.*dr(kd))
+                    !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
+                    !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
+                    ! ur = f -> 
+                    ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
+                    ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
+                    ! A - B = 
+                    !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
+                                        urv(0) = ur4(i1,i2,i3,uc)
+                                        urv(1) = us4(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut4(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                            ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        end if
+                                        u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
+                                    end if ! order =4 
+                                end if ! curvilinear grid 
+                ! ----- Assign extra ghost ----
+                                if( orderOfAccuracy.eq.2) then
+                                    if( numGhost.gt.1 )then
+                    ! extrap second ghost (UPW)
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                  ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
+                  ! extrap second ghost
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost (UPW)
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777        
+                                end if
+                            else if( mask(i1,i2,i3).lt.0 )then
+                ! ----- extrap ghost outside interp. pts on physical boundaries ------
+                                if( orderOfAccuracy.eq.2 )then
+                                    u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
+                                    if( numGhost.gt.1 )then
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                                    u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost 
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777
+                                end if
+                            end if
+                            end do
+                            end do
+                            end do
+                end if
+                
             else if( orderOfAccuracy.eq.8 )then   
-
-           ! BC: a0*T + a1*T.n = 
-           ! a0=mixedCoeff(uc,side,axis,grid)
-           ! a1=mixedNormalCoeff(uc,side,axis,grid)
-                      a0=0.
-                      a1=1.
-           ! rectangular case:
-                      if( gridType.eq.rectangular )then
-             ! compute the outward normal (an1,an2,an3)
-                          an1 = 0.
-                          an2 = 0.
-                          an3 = 0.
-                          if( axis.eq.0 )then
-                            an1=-is
-                          else if( axis.eq.1 )then
-                            an2=-is
-                          else
-                            an3=-is
-                          end if
-                          dxn=dx(axis)
-                          b0=-4.*dxn*a0/a1-10./3.
-                          b1=4.*(dxn/a1)
-                      end if
-                      ff=0.
-                        do i3=n3a,n3b
-                        do i2=n2a,n2b
-                        do i1=n1a,n1b
-            ! first ghost pt:
-                        j1=i1-is1
-                        j2=i2-is2
-                        j3=i3-is3
-            ! 2nd ghost:
-                        k1=j1-is1
-                        k2=j2-is2
-                        k3=j3-is3
-            ! 3rd ghost:
-                        l1=k1-is1
-                        l2=k2-is2
-                        l3=k3-is3    
-                        if( mask(i1,i2,i3).gt.0 )then
-                            if( gridType.eq.curvilinear )then
-                ! compute the outward normal (an1,an2,an3)
-                                        an1 = rsxy(i1,i2,i3,axis,0)
-                                        an2 = rsxy(i1,i2,i3,axis,1)
-                                        if( nd.eq.2 )then
-                                          aNormi = (-is)/sqrt(an1**2+an2**2)
-                                          an1=an1*aNormi
-                                          an2=an2*aNormi
-                                        else
-                                          an3 = rsxy(i1,i2,i3,axis,2)
-                                          aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
-                                          an1=an1*aNormi
-                                          an2=an2*aNormi
-                                          an3=an3*aNormi
-                                        end if
-                            end if
-                                if( assignTwilightZone.eq.1 )then
-                  ! compute RHS from TZ
-                                    if( nd.eq.2 )then
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
-                                        call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
-                                        call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
-                                        ff = a0*ue + a1*( an1*uex + an2*uey )
-                                    else
-                                        call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
-                                        call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
-                                        call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
-                                        call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
-                                        ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                    end if
-                                else if( assignKnownSolutionAtBoundaries.eq.1 )then
-                  ! -- we set inhomogeneous Neumann values for some known solutions 
-                                    if( knownSolutionOption.eq.planeWave )then
-                    ! --- evaluate RHS for the plane wave solution ---
-                                        if( nd.eq.2 )then
-                                            ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
-                                            cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
-                                            uex   = kxPlaneWave*cosPW
-                                            uey   = kyPlaneWave*cosPw
-                                            ff = a0*ue + a1*( an1*uex + an2*uey )
-                                        else
-                                            ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                            cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
-                                            uex   = kxPlaneWave*cosPW
-                                            uey   = kyPlaneWave*cosPw
-                                            uez   = kzPlaneWave*cosPw
-                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                        end if 
-                                    else if( knownSolutionOption.eq.gaussianPlaneWave )then
-                    ! Do nothing for Gaussian plane wave solution for now
-                                        ff = 0.
-                                    else if( knownSolutionOption.eq.boxHelmholtz ) then
-                    ! --- evaluate RHS the boxHelmholtz solution ---
-                                        if( nd.eq.2 )then
-                                            ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
-                                            uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
-                                            uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
-                                            ff = a0*ue + a1*( an1*uex + an2*uey )
-                                        else
-                                            ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
-                                            uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
-                                            uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
-                                            uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
-                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                        end if 
-                                    else
-                                        stop 8765
-                                    end if 
-                                end if
-              ! 8=4: 
-              ! --- assign 2 ghost points using:
-              !  (1) Apply Neumann BC to 4th order
-              !  (2) Extrap. 2nd ghost to 5th order
-                            if( gridType.eq.rectangular )then
-                ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
-                                if( orderOfAccuracy.eq.2 )then
-                  ! --- NEUMANN 8=2 RECTANGULAR ---
-                  !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
-                  !  *check me* 
-                                    b0 = -2.*dxn*a0/a1 
-                                    b1 =  2.*dxn/a1 
-                                    u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
-                                else 
-                 !  --- NEUMANN 8=4 RECTANGULAR ---
-                                    u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
-                                end if
-                            else 
-                ! ------ curvilinear grid: -------
-                ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
-                ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
-                ! =>
-                !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
-                                if( orderOfAccuracy.eq.2 )then
-                  ! ----- NEUMANN 8=2 CURVILINEAR ----
-                  ! ur = ( u(i+1) - u(i-1) )/2*dr
-                  ! ur = ur0 -> 
-                  ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
-                  ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
-                                    urv(0) = ur2(i1,i2,i3,uc)
-                                    urv(1) = us2(i1,i2,i3,uc)
-                                    if( nd.eq.2 )then
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
-                                        ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    else
-                                        urv(2) = ut2(i1,i2,i3,uc)
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
-                                        t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
-                                      ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
-                                  end if
-                                  u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
-                                else
-                  ! ---- NEUMANN 8 4 CURVILINEAR ----
-                  !       d14(kd) = 1./(12.*dr(kd))
-                  !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
-                  !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
-                  ! ur = f -> 
-                  ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
-                  ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
-                  ! A - B = 
-                  !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
-                                    urv(0) = ur4(i1,i2,i3,uc)
-                                    urv(1) = us4(i1,i2,i3,uc)
-                                    if( nd.eq.2 )then
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
-                                        ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    else
-                                        urv(2) = ut4(i1,i2,i3,uc)
-                                        t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
-                                        t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
-                                        t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
-                                        ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
-                                    end if
-                                    u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
-                                end if ! order =4 
-                            end if ! curvilinear grid 
-              ! ----- Assign extra ghost ----
-                            if( orderOfAccuracy.eq.2) then
-                                if( numGhost.gt.1 )then
-                  ! extrap second ghost (UPW)
-                                    u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
-                                end if
-                            else if( orderOfAccuracy.eq.4 )then
-                ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
-                ! extrap second ghost
-                                u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
-                                if( numGhost.gt.2 )then
-                  !  extrap third ghost (UPW)
-                                    u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
-                                end if
-                            else
-                                write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
-                                stop 7777        
-                            end if
-                        else if( mask(i1,i2,i3).lt.0 )then
-              ! ----- extrap ghost outside interp. pts on physical boundaries ------
-                            if( orderOfAccuracy.eq.2 )then
-                                u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
-                                if( numGhost.gt.1 )then
-                                    u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
-                                end if
-                            else if( orderOfAccuracy.eq.4 )then
-                                u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
-                                u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
-                                if( numGhost.gt.2 )then
-                  !  extrap third ghost 
-                                    u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
-                                end if
-                            else
-                                write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
-                                stop 7777
-                            end if
+                if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+             ! BC: a0*T + a1*T.n = 
+             ! a0=mixedCoeff(uc,side,axis,grid)
+             ! a1=mixedNormalCoeff(uc,side,axis,grid)
+                        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+                            write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
+                            stop 1010
                         end if
-                        end do
-                        end do
-                        end do
-
+                          a0=0.
+                          a1=1.
+             ! rectangular case:
+                          if( gridType.eq.rectangular )then
+               ! compute the outward normal (an1,an2,an3)
+                              an1 = 0.
+                              an2 = 0.
+                              an3 = 0.
+                              if( axis.eq.0 )then
+                                an1=-is
+                              else if( axis.eq.1 )then
+                                an2=-is
+                              else
+                                an3=-is
+                              end if
+                              dxn=dx(axis)
+                              b0=-4.*dxn*a0/a1-10./3.
+                              b1=4.*(dxn/a1)
+                          end if
+                          ff=0.
+                            do i3=n3a,n3b
+                            do i2=n2a,n2b
+                            do i1=n1a,n1b
+              ! first ghost pt:
+                            j1=i1-is1
+                            j2=i2-is2
+                            j3=i3-is3
+              ! 2nd ghost:
+                            k1=j1-is1
+                            k2=j2-is2
+                            k3=j3-is3
+              ! 3rd ghost:
+                            l1=k1-is1
+                            l2=k2-is2
+                            l3=k3-is3    
+                            if( mask(i1,i2,i3).gt.0 )then
+                                if( gridType.eq.curvilinear )then
+                  ! compute the outward normal (an1,an2,an3)
+                                            an1 = rsxy(i1,i2,i3,axis,0)
+                                            an2 = rsxy(i1,i2,i3,axis,1)
+                                            if( nd.eq.2 )then
+                                              aNormi = (-is)/sqrt(an1**2+an2**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                            else
+                                              an3 = rsxy(i1,i2,i3,axis,2)
+                                              aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                              an3=an3*aNormi
+                                            end if
+                                end if
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
+                                            call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                        end if
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Neumann values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate RHS for the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                uez   = kzPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                      ! Do nothing for Gaussian plane wave solution for now
+                                            ff = 0.
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate RHS the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
+                                                uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else
+                                            stop 8765
+                                        end if 
+                                    end if
+                ! 8=4: 
+                ! --- assign 2 ghost points using:
+                !  (1) Apply Neumann BC to 4th order
+                !  (2) Extrap. 2nd ghost to 5th order
+                                if( gridType.eq.rectangular )then
+                  ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! --- NEUMANN 8=2 RECTANGULAR ---
+                    !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
+                    !  *check me* 
+                                        b0 = -2.*dxn*a0/a1 
+                                        b1 =  2.*dxn/a1 
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
+                                    else 
+                   !  --- NEUMANN 8=4 RECTANGULAR ---
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
+                                    end if
+                                else 
+                  ! ------ curvilinear grid: -------
+                  ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
+                  ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
+                  ! =>
+                  !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! ----- NEUMANN 8=2 CURVILINEAR ----
+                    ! ur = ( u(i+1) - u(i-1) )/2*dr
+                    ! ur = ur0 -> 
+                    ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
+                    ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
+                                        urv(0) = ur2(i1,i2,i3,uc)
+                                        urv(1) = us2(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut2(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                          ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                      end if
+                                      u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                                    else
+                    ! ---- NEUMANN 8 4 CURVILINEAR ----
+                    !       d14(kd) = 1./(12.*dr(kd))
+                    !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
+                    !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
+                    ! ur = f -> 
+                    ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
+                    ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
+                    ! A - B = 
+                    !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
+                                        urv(0) = ur4(i1,i2,i3,uc)
+                                        urv(1) = us4(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut4(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                            ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        end if
+                                        u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
+                                    end if ! order =4 
+                                end if ! curvilinear grid 
+                ! ----- Assign extra ghost ----
+                                if( orderOfAccuracy.eq.2) then
+                                    if( numGhost.gt.1 )then
+                    ! extrap second ghost (UPW)
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                  ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
+                  ! extrap second ghost
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost (UPW)
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777        
+                                end if
+                            else if( mask(i1,i2,i3).lt.0 )then
+                ! ----- extrap ghost outside interp. pts on physical boundaries ------
+                                if( orderOfAccuracy.eq.2 )then
+                                    u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
+                                    if( numGhost.gt.1 )then
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                                    u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost 
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777
+                                end if
+                            end if
+                            end do
+                            end do
+                            end do
+                else
+             ! BC: a0*T + a1*T.n = 
+             ! a0=mixedCoeff(uc,side,axis,grid)
+             ! a1=mixedNormalCoeff(uc,side,axis,grid)
+                          a0=0.
+                          a1=1.
+             ! rectangular case:
+                          if( gridType.eq.rectangular )then
+               ! compute the outward normal (an1,an2,an3)
+                              an1 = 0.
+                              an2 = 0.
+                              an3 = 0.
+                              if( axis.eq.0 )then
+                                an1=-is
+                              else if( axis.eq.1 )then
+                                an2=-is
+                              else
+                                an3=-is
+                              end if
+                              dxn=dx(axis)
+                              b0=-4.*dxn*a0/a1-10./3.
+                              b1=4.*(dxn/a1)
+                          end if
+                          ff=0.
+                            do i3=n3a,n3b
+                            do i2=n2a,n2b
+                            do i1=n1a,n1b
+              ! first ghost pt:
+                            j1=i1-is1
+                            j2=i2-is2
+                            j3=i3-is3
+              ! 2nd ghost:
+                            k1=j1-is1
+                            k2=j2-is2
+                            k3=j3-is3
+              ! 3rd ghost:
+                            l1=k1-is1
+                            l2=k2-is2
+                            l3=k3-is3    
+                            if( mask(i1,i2,i3).gt.0 )then
+                                if( gridType.eq.curvilinear )then
+                  ! compute the outward normal (an1,an2,an3)
+                                            an1 = rsxy(i1,i2,i3,axis,0)
+                                            an2 = rsxy(i1,i2,i3,axis,1)
+                                            if( nd.eq.2 )then
+                                              aNormi = (-is)/sqrt(an1**2+an2**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                            else
+                                              an3 = rsxy(i1,i2,i3,axis,2)
+                                              aNormi = (-is)/sqrt(an1**2+an2**2+an3**2)
+                                              an1=an1*aNormi
+                                              an2=an2*aNormi
+                                              an3=an3*aNormi
+                                            end if
+                                end if
+                                    if( assignTwilightZone.eq.1 )then
+                    ! compute RHS from TZ
+                                        if( nd.eq.2 )then
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uey)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey )
+                                        else
+                                            call ogDeriv(ep,0,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ue )
+                                            call ogDeriv(ep,0,1,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uex)
+                                            call ogDeriv(ep,0,0,1,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uey)
+                                            call ogDeriv(ep,0,0,0,1,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uez)
+                                            ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                        end if
+                                    else if( assignKnownSolutionAtBoundaries.eq.1 )then
+                    ! -- we set inhomogeneous Neumann values for some known solutions 
+                                        if( knownSolutionOption.eq.planeWave )then
+                      ! --- evaluate RHS for the plane wave solution ---
+                                            if( nd.eq.2 )then
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue    = ampPlaneWave*sin( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                cosPW = ampPlaneWave*cos( kxPlaneWave*xy(i1,i2,i3,0) + kyPlaneWave*xy(i1,i2,i3,1) + kzPlaneWave*xy(i1,i2,i3,2) - omegaPlaneWave*t )
+                                                uex   = kxPlaneWave*cosPW
+                                                uey   = kyPlaneWave*cosPw
+                                                uez   = kzPlaneWave*cosPw
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else if( knownSolutionOption.eq.gaussianPlaneWave )then
+                      ! Do nothing for Gaussian plane wave solution for now
+                                            ff = 0.
+                                        else if( knownSolutionOption.eq.boxHelmholtz ) then
+                      ! --- evaluate RHS the boxHelmholtz solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt * kyBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                                uex = cos( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kxBoxHelmholtz
+                                                uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
+                                                uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if 
+                                        else
+                                            stop 8765
+                                        end if 
+                                    end if
+                ! 8=4: 
+                ! --- assign 2 ghost points using:
+                !  (1) Apply Neumann BC to 4th order
+                !  (2) Extrap. 2nd ghost to 5th order
+                                if( gridType.eq.rectangular )then
+                  ! write(*,'(" TBC: j1,j2=",2i3," u,ff=",2e12.2)') j1,j2,ff,u(j1,j2,j3,uc)
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! --- NEUMANN 8=2 RECTANGULAR ---
+                    !    (+/-)*a1*[-u(i-1)  + u(i+1)] + 2*dxn*a0*u(i) = 2*dxn*ff 
+                    !  *check me* 
+                                        b0 = -2.*dxn*a0/a1 
+                                        b1 =  2.*dxn/a1 
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+   u(j1+2*is1,j2+2*is2,j3+2*is3,uc)+ b1*ff
+                                    else 
+                   !  --- NEUMANN 8=4 RECTANGULAR ---
+                                        u(j1,j2,j3,uc)=  b0*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc)/3.+b1*ff
+                                    end if
+                                else 
+                  ! ------ curvilinear grid: -------
+                  ! a1*( n1*ux + n2*ux + n3*uz ) + a0*u = f 
+                  ! a1*( (n1*rx+n2*ry+n3*rz)*ur + (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ) + a0*u = f 
+                  ! =>
+                  !  ur = [ f - (n1*sx+n2*sy+n3*sz)*us + (n1*tx+n2*ty+n3*st)*ut ]/( a1*( (n1*rx+n2*ry+n3*rz) ) 
+                                    if( orderOfAccuracy.eq.2 )then
+                    ! ----- NEUMANN 8=2 CURVILINEAR ----
+                    ! ur = ( u(i+1) - u(i-1) )/2*dr
+                    ! ur = ur0 -> 
+                    ! u(i-1) = u(i+1) - 2*dr*( ur0 )   (left)
+                    ! u(i+1) = u(i-1) + 2*dr*( ur0 )   (right) 
+                                        urv(0) = ur2(i1,i2,i3,uc)
+                                        urv(1) = us2(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut2(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                          ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                      end if
+                                      u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                                    else
+                    ! ---- NEUMANN 8 4 CURVILINEAR ----
+                    !       d14(kd) = 1./(12.*dr(kd))
+                    !       ur4(i1,i2,i3,kd)=(8.*(u(i1+1,i2,i3,kd)-u(i1-1,i2,i3,kd))-(u(i1+2,
+                    !        & i2,i3,kd)-u(i1-2,i2,i3,kd)))*d14(0)
+                    ! ur = f -> 
+                    ! u(-2) -8*u(-1) =            -8*u(1)   + u(2)        + 12*dr( f )    --- (A)
+                    ! u(-2) -5*u(-1) = -10*u(0) + 10*u(1) - 5*u(2) + u(3)                 --- (B)
+                    ! A - B = 
+                    !       -3*u(-1) =  10*u(0) - 18*u(1) + 6*u(2) - u(3) + 12*dr*( f ) 
+                                        urv(0) = ur4(i1,i2,i3,uc)
+                                        urv(1) = us4(i1,i2,i3,uc)
+                                        if( nd.eq.2 )then
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) )
+                                            ur0 = (ff - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        else
+                                            urv(2) = ut4(i1,i2,i3,uc)
+                                            t1=a1*( an1*rsxy(i1,i2,i3,axis  ,0)+an2*rsxy(i1,i2,i3,axis  ,1)+an3*rsxy(i1,i2,i3,axis  ,2) )
+                                            t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1)+an3*rsxy(i1,i2,i3,axisp1,2) )
+                                            t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
+                                            ur0 = ( ff - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
+                                        end if
+                                        u(j1,j2,j3,uc) = (-10./3.)*u(j1+  is1,j2+  is2,j3+  is3,uc)+6.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-2.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+(1./3)*u(j1+4*is1,j2+4*is2,j3+4*is3,uc)-4.*is*dr(axis)*ur0
+                                    end if ! order =4 
+                                end if ! curvilinear grid 
+                ! ----- Assign extra ghost ----
+                                if( orderOfAccuracy.eq.2) then
+                                    if( numGhost.gt.1 )then
+                    ! extrap second ghost (UPW)
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))          
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                  ! For Neumann BC's it IS necessary to extrap to order 5 for fourth order. 
+                  ! extrap second ghost
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost (UPW)
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777        
+                                end if
+                            else if( mask(i1,i2,i3).lt.0 )then
+                ! ----- extrap ghost outside interp. pts on physical boundaries ------
+                                if( orderOfAccuracy.eq.2 )then
+                                    u(j1,j2,j3,uc)=(3.*u(i1,i2,i3,uc)-3.*u(i1+is1,i2+is2,i3+is3,uc)+u(i1+2*is1,i2+2*is2,i3+2*is3,uc))
+                                    if( numGhost.gt.1 )then
+                                        u(k1,k2,k3,uc)=(3.*u(j1,j2,j3,uc)-3.*u(j1+is1,j2+is2,j3+is3,uc)+u(j1+2*is1,j2+2*is2,j3+2*is3,uc))
+                                    end if
+                                else if( orderOfAccuracy.eq.4 )then
+                                    u(j1,j2,j3,uc)=(5.*u(i1,i2,i3,uc)-10.*u(i1+is1,i2+is2,i3+is3,uc)+10.*u(i1+2*is1,i2+2*is2,i3+2*is3,uc)-5.*u(i1+3*is1,i2+3*is2,i3+3*is3,uc)+u(i1+4*is1,i2+4*is2,i3+4*is3,uc))
+                                    u(k1,k2,k3,uc)=(5.*u(j1,j2,j3,uc)-10.*u(j1+is1,j2+is2,j3+is3,uc)+10.*u(j1+2*is1,j2+2*is2,j3+2*is3,uc)-5.*u(j1+3*is1,j2+3*is2,j3+3*is3,uc)+u(j1+4*is1,j2+4*is2,j3+4*is3,uc))
+                                    if( numGhost.gt.2 )then
+                    !  extrap third ghost 
+                                        u(l1,l2,l3,uc)=(5.*u(k1,k2,k3,uc)-10.*u(k1+is1,k2+is2,k3+is3,uc)+10.*u(k1+2*is1,k2+2*is2,k3+2*is3,uc)-5.*u(k1+3*is1,k2+3*is2,k3+3*is3,uc)+u(k1+4*is1,k2+4*is2,k3+4*is3,uc))            
+                                    end if
+                                else
+                                    write(*,'("bcOptWave: orderOfAccuracy=",i4," is not implemented (Neumann)")') orderOfAccuracy
+                                    stop 7777
+                                end if
+                            end if
+                            end do
+                            end do
+                            end do
+                end if
+                
             else
 
                 write(*,'("CgWave::bcOpt:ERROR: unexpected orderOfAccuracy=",i6)') orderOfAccuracy

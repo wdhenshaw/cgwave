@@ -97,7 +97,7 @@ getInitialConditions( real t )
       assert( dbase.get<OGFunction*>("tz")!=NULL );
       OGFunction & e = *dbase.get<OGFunction*>("tz");
 
-      mg.update(MappedGrid::THEvertex || MappedGrid::THEcenter );
+      mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
       OV_GET_SERIAL_ARRAY(real,mg.vertex(),xLocal);
 
       const int includeGhost=1;
@@ -173,7 +173,7 @@ getInitialConditions( real t )
       }
       else
       {
-        cg[grid].update(MappedGrid::THEvertex);  // build the array of vertices
+        cg[grid].update(MappedGrid::THEvertex | MappedGrid::THEcenter );  // build the array of vertices
         realArray & vertex = cg[grid].vertex();
 
         if( !ok ) continue;  // nothing to do on this processor

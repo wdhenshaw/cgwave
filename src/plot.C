@@ -46,6 +46,7 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
   // computeErrors = twilightZone || knownSolutionOption=="userDefinedKnownSolution";
 
     int plotErrors= computeErrors;
+  // plotErrors=0;
 
     const bool saveErrors = plotErrors;
 

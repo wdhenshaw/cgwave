@@ -1,3 +1,4 @@
+# *** OLD *** NOT USED ANYMORE --> USE known.cmd 
 #
 #  cgWave: test a plane wave
 #

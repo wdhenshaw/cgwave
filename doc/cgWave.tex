@@ -221,74 +221,7 @@ where $\Delta_{ph}$ is a p-th order accurate approximation to $\Delta$.
 % -------------------------------------------------------------------------------------------------------
 \input tex/upwindDissipation
 
-% -------------------------------------------------------------------------------------------------------
-\section{Numerical results} \label{sec:numericalResults}
-
-Here are some numerical results. 
-
-
-% ----------------------------------------------------------
-\subsection{Plane Wave}
-
-
-Here are errors in computing an exact plane wave solution
-\bas
-    u = \sin( 2\pi ( k_x y + k_y y + k_z z ) - \omega t )
-\eas
-with $\omega/k=c$ and $k=|\kv|$. 
-
-\noindent{\textbf{Square - Plane Wave Order 2}
-\input tables/planeWavesquareOrder2maxNormConvTable.tex
-
-\bigskip 
-\noindent{\textbf{Square -Plane Wave Order 4}
-\input tables/planeWavesquareOrder4maxNormConvTable.tex
-
-\bigskip 
-\noindent{\textbf{CIC - circle in a channel - Plane Wave Order 2}
-\input tables/planeWavecicOrder2maxNormConvTable.tex
-
-\bigskip 
-\noindent{\textbf{CIC - circle in a channel - Plane Wave Order 4}
-\input tables/planeWavecicOrder4maxNormConvTable.tex
-
-
-% ----------------------------------------------------------
-\subsection{Time-periodic solution in a box (showing forcing)}
-
-An eact solution to the forced wave equation in a rectangular box $[0,1]^d$ is
-given by
-\bas
-   u_e(\xv,t) \eqdef \sin( k_x x) \, \sin( k_y y) \, \cos(\omega t), \\
-\eas
-where the forcing function is
-\bas
-  f(\xv,t) = \Big( -\omega^2 + c^2( k_x^2 + k_y^2) \Big) u_e(\xv,t)
-\eas
-
-\bigskip 
-\noindent{\textbf{Square - Order 2}
-\input tables/helmholtzsquareOrder4maxNormConvTable.tex
-
-\bigskip 
-\noindent{\textbf{Square - Order 2}
-\input tables/helmholtzsquareOrder4maxNormConvTable.tex
-
-\bigskip 
-\noindent{\textbf{CIC - circle in a channel - Order 2}
-\input tables/helmholtzcicOrder2maxNormConvTable.tex
-
-\bigskip 
-\noindent{\textbf{CIC - circle in a channel - Order 4}
-\input tables/helmholtzcicOrder4maxNormConvTable.tex
-
-
-% ----------------------------------------------------------
-\subsection{Gaussian Plane Wave}
-
-Figure~\ref{fig:shapesGPW} shows a modulated Gaussian plane wave hitting some shapes, scheme FD44s.
-\plotOneFigByWidth{fig/shapesMGPWt1p0}{Modulated Gaussian plane wave hitting some shapes, FD44s.}{fig:shapesGPW}{8cm}{5cm}
-
+\input tex/numericalResults
 
 
 
@@ -297,6 +230,10 @@ Figure~\ref{fig:shapesGPW} shows a modulated Gaussian plane wave hitting some sh
 \bibliography{bib/journal-ISI,bib/henshaw,bib/henshawPapers}
 
 \end{document}
+% ******************************* END ********************************
+% ******************************* END ********************************
+% ******************************* END ********************************
+% ******************************* END ********************************
 % ******************************* END ********************************
 
 

@@ -1,4 +1,77 @@
 **************************************************
+**** Fri July 16, 2021
+
+
+QUESTION -- why doesn't adjustOmega=1 work ??
+
+cgwh gaussian.cmd -g=square32.order2 -x0=.5 -y0=.5 -omega=9.777 -amp=20 -beta=50 -adjustOmega=1 -solver=none -tol=1e-10 -ad4=1 -go=halt
+
+
+REVISIT test annulus for Cassandra
+
+cgwh gaussian.cmd -g=annulus4.order2 -x0=.5 -y0=.5 -omega=9.777 -amp=20 -beta=50 -adjustOmega=0 -solver=none -tol=1e-10 -ad4=1 -go=halt
+
+--- random initial condition
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=5.16e-11 (tol=1.00e-10) numberOfIterations=48 #############
+CgWaveHoltz::residual: c=1, omega= 9.77700e+00, omegas= 9.77268e+00 (from symbol of D+D-), dt=1.053524e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=2.446e-01 (using omega), max-res=2.520e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=2.446e-01, CR=0.618 CR-perPeriod=0.618, cpu= 1.28e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+CgWaveHoltz: max-diff=2.43e-02 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+--- zero initial condition
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=9.92e-11 (tol=1.00e-10) numberOfIterations=47 #############
+CgWaveHoltz::residual: c=1, omega= 9.77700e+00, omegas= 9.77268e+00 (from symbol of D+D-), dt=1.053524e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=2.446e-01 (using omega), max-res=2.520e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=2.446e-01, CR=0.668 CR-perPeriod=0.668, cpu= 1.15e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+
+
+
+**************************************************
+**** Fri June 11, 2021
+
+Test annulus for Cassandra
+
+cgwh gaussian.cmd -g=annulus4.order4.ng3 -x0=.5 -y0=.5 -omega=9.777 -amp=20 -beta=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -ad4=1 -go=halt
+
+
+cgwh gaussian.cmd -g=annulus4.order4.ng3 -x0=.5 -y0=.5 -omega=9.777 -amp=20 -beta=50 -adjustOmega=0 -solver=none -tol=1e-10 -ad4=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=6.83e-11 (tol=1.00e-10) numberOfIterations=37 #############
+CgWaveHoltz::residual: c=1, omega= 9.77700e+00, omegas= 9.77268e+00 (from symbol of D+D-), dt=1.053524e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=2.795e-03 (using omega), max-res=1.822e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=2.795e-03, CR=0.561 CR-perPeriod=0.561, cpu= 2.04e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+CgWaveHoltz: max-diff=9.09e-05 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+
+cgwh gaussian.cmd -g=annulus4.order2 -x0=.5 -y0=.5 -omega=9.777 -amp=20 -beta=50 -adjustOmega=0 -solver=none -tol=1e-10 -ad4=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=3.51e-11 (tol=1.00e-10) numberOfIterations=33 #############
+CgWaveHoltz::residual: c=1, omega= 9.77700e+00, omegas= 9.77268e+00 (from symbol of D+D-), dt=1.053524e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=2.446e-01 (using omega), max-res=2.520e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=2.446e-01, CR=0.559 CR-perPeriod=0.559, cpu= 8.62e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+CgWaveHoltz: max-diff=2.43e-02 (between WaveHoltz and Direct Helmholtz solution)
+plot contours...
+
+
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=9.62e-12 (tol=1.00e-11) numberOfIterations=52 #############
+CgWaveHoltz::residual: c=1, omega= 9.77700e+00, omegas= 9.77268e+00 (from symbol of D+D-), dt=1.053524e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=2.446e-01 (using omega), max-res=2.520e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=2.446e-01, CR=0.664 CR-perPeriod=0.664, cpu= 1.31e+00(s)
+
+
+cgwh gaussian.cmd -g=cice4.order4.ng3.hdf -x0=.9 -y0=.9 -omega=3.555 -amp=10 -adjustOmega=0 -orderInTime=4 -solver=none -tol=1e-10 -ad4=1 -go=halt
+
+**************************************************
 **** Mon May 24, 2021
 
 

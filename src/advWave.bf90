@@ -232,7 +232,7 @@ end if
 #beginMacro computeLaplacianOrder2(DIM)
    ! write(*,'("advWave: COMPUTE V= LAP(U) TO SECOND ORDER dim=DIM")') 
    ! We need Lap2h(u) at an extra point 
-   numGhost=orderOfAccuracy/2
+   numGhost=orderOfAccuracy/2 -1 
    m1a=n1a-numGhost
    m1b=n1b+numGhost
    m2a=n2a-numGhost
@@ -296,7 +296,9 @@ end if
        fv(m) = fv(m) + (dtSq/12.)*evtttt(m) - (cdtsq12/dtSq)*( evxxxx(m) + 2.*( evxxyy(m) + evxxzz(m) + evyyzz(m) ) + evyyyy(m) + evzzzz(m) )       
      #End
    #End
+
  else if( forcingOption.eq.helmholtzForcing )then
+
    ! forcing for solving the Helmholtz equation   
    ! NOTE: change sign of forcing since for Helholtz we want to solve
    !      ( omega^2 I + c^2 Delta) w = f    
@@ -668,7 +670,7 @@ end if
        #If #DIM eq "2"
          fv(m) = -( f(i1,i2,i3,0) + cdtSqBy12*( cSq*(fxx22(i1,i2,i3,0) + fyy22(i1,i2,i3,0)) - omega*omega*f(i1,i2,i3,0)) )*coswtAve
        #Else
-         fv(m) = -( f(i1,i2,i3,0) + cdtSqBy12*( cSq*(fxx23(i1,i2,i3,0) + fyy23(i1,i2,i3,0) + fzz23r(i1,i2,i3,0)) - omega*omega*f(i1,i2,i3,0)) )*coswtAve 
+         fv(m) = -( f(i1,i2,i3,0) + cdtSqBy12*( cSq*(fxx23(i1,i2,i3,0) + fyy23(i1,i2,i3,0) + fzz23(i1,i2,i3,0)) - omega*omega*f(i1,i2,i3,0)) )*coswtAve 
        #End
      #End           
    #End  

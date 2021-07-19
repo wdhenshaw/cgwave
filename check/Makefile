@@ -1,17 +1,20 @@
 # Type "make check" to run the regression tests
-common = $(CG)/common
+# MASTER VERSION of check.p and checkCheckFiles.C is in cg/common/src --> move to Overture! )
 
-check:  buildGrids
-	ln -sf $(common)/src/check.p .
+check:  buildGrids buildCheckCheckFiles
 	./check.p -solver=cgWave
 
-check-quiet:  buildGrids
-	ln -sf $(common)/src/check.p .
+check-quiet: buildGrids buildCheckCheckFiles
 	./check.p -solver=cgWave -verbose=0
 
 # build grids that are used by the regression tests (and not already in Overture/sampleGrids)
-buildGrids: square16.order2.hdf square16.order4.ng3.hdf nonSquare16.order2.hdf cice2.order2.hdf cice2.order4.ng3.hdf
+buildGrids: square16.order2.hdf square16.order4.ng3.hdf nonSquare16.order2.hdf nonSquare16.order4.hdf cice2.order2.hdf cice2.order4.ng3.hdf box1.order2.hdf nonBox1.order2.hdf nonBox1.order4.hdf
 	touch buildGrids
+
+
+# Build the program that processes the check files:
+buildCheckCheckFiles:
+	@cd ..;      $(MAKE) -$(MAKEFLAGS) checkCheckFiles
 
 
 square16.order2.hdf:
@@ -23,12 +26,23 @@ square16.order4.ng3.hdf:
 nonSquare16.order2.hdf:
 	$(Overture)/bin/ogen -noplot  $(Overture)/sampleGrids/nonSquare -order=2 -n=16 
 
+nonSquare16.order4.hdf:
+	$(Overture)/bin/ogen -noplot  $(Overture)/sampleGrids/nonSquare -order=4 -n=16 
+
 cice2.order2.hdf:
-	$(Overture)/bin/ogen noplot $(Overture)/sampleGrids/cicArg -factor=2 -interp=e -order=2
+	$(Overture)/bin/ogen -noplot $(Overture)/sampleGrids/cicArg -factor=2 -interp=e -order=2
 
 cice2.order4.ng3.hdf:
-	$(Overture)/bin/ogen noplot $(Overture)/sampleGrids/cicArg -factor=2 -interp=e -order=4 -numGhost=3
+	$(Overture)/bin/ogen -noplot $(Overture)/sampleGrids/cicArg -factor=2 -interp=e -order=4 -numGhost=3
 
+box1.order2.hdf:
+	$(Overture)/bin/ogen -noplot boxArg -order=2 -factor=1
+
+nonBox1.order2.hdf:
+	$(Overture)/bin/ogen -noplot boxArg -prefix=nonBox -order=2 -factor=1
+
+nonBox1.order4.hdf:
+	$(Overture)/bin/ogen -noplot boxArg -prefix=nonBox -order=4 -factor=1
 
 #tube1.order4.hdf:
 #	$(Overture)/bin/ogen noplot $(Overture)/sampleGrids/tube1.order4.cmd

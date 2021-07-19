@@ -27,7 +27,7 @@ GetOptions( "name=s"=>\$name,"order=s"=>\$order,"ng=i"=>\$ng,"tf=f"=>\$tf,"inter
             "kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,"orderInTime=i"=>\$orderInTime );
 # --------------------------------------------------------------------------
 $name=$option; 
-if( $option eq "planeWave" ){ $cmdFile="runs/planeWave/planeWave.cmd";  }
+if( $option eq "planeWave" ){ $cmdFile="runs/known/known.cmd";  $known="-known=planeWave"; }
 if( $option eq "helmholtz" ){ $cmdFile="cmd/helmholtz.cmd";  }
 # 
 if( $cg =~ /nonSquarenp/ ){ $bg="square"; }
@@ -52,9 +52,9 @@ $numberOfComponents=1;
 $title= "grid  \& N \&  \$ u \$ ";
 #
 $labelMethod=$method;
-$caption= "\\caption\{CgWave, $name, $normName norm, order=\$$order\$, ts=$ts, orderInTime=$orderInTime, dtMax0=\$$dtMax\$, \$t=$tf\$, cfl=\$$cfl\$, diss=\$$diss\$, kx=$kx, ky=$ky, kz=$kz, $date}\\label\{table:$name" . $method . "Order$order$normName}"; 
+$caption= "\\caption\{CgWave, $name, $normName norm, order=\$$order\$, ts=$ts, orderInTime=$orderInTime, dtMax0=\$$dtMax\$, \$t=$tf\$, cfl=\$$cfl\$, diss=\$$diss\$, $known, kx=$kx, ky=$ky, kz=$kz, $date}\\label\{table:$name" . $method . "Order$order$normName}"; 
 # 
-$options = "-cfl=$cfl -tf=$tf -tp=$tp -kx=$kx -ky=$ky -kz=$kz -ts=$ts -orderInTime=$orderInTime -go=go";
+$options = "-cfl=$cfl -tf=$tf -tp=$tp -kx=$kx -ky=$ky -kz=$kz -ts=$ts -orderInTime=$orderInTime -ad4=$diss $known -go=go";
 #
 $suffix="";
 if( ($diss > 0.) && ($order eq 4) ){ $suffix=".ng3"; }
@@ -97,6 +97,14 @@ $grid3=$cg . "4";   $gName3 = "box4p.order$order$suffix"; \
 $grid4=$cg . "8";   $gName4 = "box8p.order$order$suffix"; \
 $grid5=$cg . "16";  $gName5 = "box16p.order$order$suffix";\
 $grid6=$cg . "32";  $gName6 = "box32p.order$order$suffix";\
+}
+if( $cg =~ /nonBox/ ){\
+$grid1=$cg . "1";   $gName1 = "nonBox2.order$order$suffix"; \
+$grid2=$cg . "2";   $gName2 = "nonBox4.order$order$suffix"; \
+$grid3=$cg . "4";   $gName3 = "nonBox8.order$order$suffix"; \
+$grid4=$cg . "8";   $gName4 = "nonBox16.order$order$suffix"; \
+$grid5=$cg . "16";  $gName5 = "nonBox32.order$order$suffix";\
+$grid6=$cg . "32";  $gName6 = "nonBox64.order$order$suffix";\
 }
 if( $cg =~ /square/ ){\
 $grid1=$cg . "8";   $gName1 = "square8.order$order$suffix"; \

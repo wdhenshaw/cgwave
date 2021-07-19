@@ -1,5 +1,6 @@
 #
-# Composite Grid Helmholtz Solver using the WaveHoltz algorithm of Daniel Appelo 
+# CgWave: Composite Grid Wave Equation Solver 
+# CgWaveHoltz: Composite Grid Helmholtz Solver using the WaveHoltz algorithm of Daniel Appelo 
 #
 # NOTE: To compile optimized:
 #   setenv COMPILE [opt|dbg]
@@ -145,12 +146,13 @@ FNOBJO = obj/advWave.o\
 #         obj/advWave2dOrder2r.o obj/advWave2dOrder2c.o obj/advWave2dOrder4r.o obj/advWave2dOrder4c.o 
 
 
+# For regression tests: (Note: the master version of checkCheckFiles is in cg/common/src --> could move to Overture)
+checkCheckFiles = obj/checkCheckFiles.o 
+checkCheckFiles: $(checkCheckFiles); $(CXX) $(CCFLAGS) -o check/checkCheckFiles $(checkCheckFiles) $(LIBS)
 
-
-# --- test the CgWave solver ---
+# --- CgWave solver ---
 cgWaveFiles = obj/cgWaveMain.o $(OBJC) $(OBJO) $(FNOBJO)
-cgWave: $(cgWaveFiles) 
-	$(CXX) $(CCFLAGS) -o bin/cgWave $(cgWaveFiles) $(LIBS)
+cgWave: $(cgWaveFiles) ; $(CXX) $(CCFLAGS) -o bin/cgWave $(cgWaveFiles) $(LIBS)
 
 
 # ----- test of coeff matricies with wide stencils -----
@@ -176,9 +178,6 @@ test:
 cgwh = obj/cgwh.o obj/CgWaveHoltz.o obj/solveHelmholtz.o $(petscSolver) $(OGES_PETSC) $(OBJC) $(OBJO) $(FNOBJO)
 cgwh: $(cgwh) 
 	$(CXX) $(CCFLAGS) -o bin/cgwh $(cgwh) $(PETSC_LIBS) $(LIBS)
-
-
-
 
 
 # bpp files: 
@@ -244,6 +243,9 @@ obj/getTimeStep.o : src/getTimeStep.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c
 obj/getHelmholtzForcing.o : src/getHelmholtzForcing.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getInitialConditions.o : src/getInitialConditions.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/saveShow.o : src/saveShow.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
+
+# For regression testing:
+obj/checkCheckFiles.o : src/checkCheckFiles.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 
 # obj/bcOptWave.o : src/bcOptWave.f90; $(FC) $(FFLAGSO) -ffree-line-length-none -o $*.o -c $<	

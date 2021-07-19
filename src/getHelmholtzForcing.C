@@ -180,7 +180,7 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
             bool vertexNeeded = twilightZone || knownSolutionOption!=0;
             if( vertexNeeded )
             {
-                mg.update(MappedGrid::THEvertex);
+                mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
                 #ifdef USE_PPP
                   pxy=mg.vertex().getLocalArray().getDataPointer();
                 #else

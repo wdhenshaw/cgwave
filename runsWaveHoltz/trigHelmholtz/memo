@@ -1,4 +1,33 @@
 **************************************************
+**** Sat July 17, 2021
+
+
+---> new RESID IS NOT SMALL !!
+
+cgwh trigHelmholtz.cmd -g=square64.order2.hdf -x0=.75 -y0=.75 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-12 -tp=1 -ad4=0 -imode=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=5.32e-14 (tol=1.00e-12) numberOfIterations=10 #############
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23365e+00 (from symbol of D+D-), dt=7.694709e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=1.417e-03 (using omega), max-res=2.332e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=1.417e-03, CR=0.050 CR-perPeriod=0.050, cpu= 4.60e-01(s)
+CgWaveHoltz::Results saved to file square64Krylov.m
+CgWaveHoltz: max-err =1.21e-03 (between WaveHoltz and known solution)
+
+
+---> OLD: RESIDUAL WAS SMALL!!!  WHAT SOLUTION WAS THIS??
+
+../bin/cgwh waveHoltz.cmd -g=square64.order2.hdf -x0=.75 -y0=.75 -omega=5.234 -adjustOmega=1 -solver=none -matlab=square64Krylov -tol=1e-12 -tp=1 -ad4=0 -imode=1 -go=halt
+
+++++ PETSc
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.65e-12 (tol=1.00e-12) numberOfIterations=13 #############
+CgWaveHoltz::residual: c=1, omega= 5.23400e+00, omegas= 5.23365e+00 (from symbol of D+D-), dt=7.694709e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=1.100e-11 (using omega), max-res=2.837e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.234e+00, max-res=1.100e-11, CR=0.139 CR-perPeriod=0.139, cpu= 2.58e-01(s)
+CgWaveHoltz::Results saved to file square64Krylov.m
+
+
+
+**************************************************
 **** Sat May 22, 2021
 
 Generate results for the documentation

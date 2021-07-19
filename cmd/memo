@@ -12,6 +12,20 @@ Things FIXED:
 
 
 ************************************************************************
+********* Sat Jul 17, 2021
+
+TEST 3D 
+
+**bug found** advWave.bf90 --> fzz32r --> fzz32
+
+valgrind $cgWave -noplot helmholtz.cmd -g=nonBox2.order4 -cfl=0.9 -tf=.05 -tp=.05 -kx=1 -ky=1 -kz=1 -ts=explicit -orderInTime=-1 -ad4=0 -go=go
+
+-- seg fault --
+cgWave helmholtz.cmd -g=nonBox2.order4 -cfl=0.9 -tf=.7 -tp=.7 -kx=1 -ky=1 -kz=1 -ts=explicit -orderInTime=-1 -ad4=0 -go=halt
+
+cgWave helmholtz.cmd -g=box2.order4 -cfl=0.9 -tf=.7 -tp=.7 -kx=1 -ky=1 -kz=1 -ts=explicit -orderInTime=-1 -ad4=0 -go=halt
+
+************************************************************************
 ********* Thurs May 27, 2021
 
 REVISIT IMPLICIT TIME STEPPING

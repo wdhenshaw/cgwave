@@ -1,6 +1,6 @@
 #
 #  cgWaveHoltz script: 
-#   solver = [fixedPoint|krylov] : fiexed-point or Krylov 
+#   solver = [fixedPoint|krylov] : fixed-point or Krylov 
 #   imode =1 : do not wait in cgWave
 #
 $omega=30.1; $beta=50.; $x0=0.5; $y0=0.5; $z0=0.5; $t0=0.; $go="halt"; $matlab="cgWaveHoltz"; 
@@ -10,10 +10,11 @@ $upwind=1; # new way
  $tp=.5; $imode=0; $adjustOmega=0; 
 $solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIterations=100; 
 $cfl=.7; $bc="d"; 
+$bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"numPeriods=i"=>\$numPeriods,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"ad4=f"=>\$ad4,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,\
             "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"adjustOmega=i"=>\$adjustOmega,\
-            "matlab=s"=>\$matlab,"maxIterations=i"=>\$maxIterations,"upwind=i"=>\$upwind,"go=s"=>\$go );
+            "matlab=s"=>\$matlab,"maxIterations=i"=>\$maxIterations,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,"go=s"=>\$go );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -35,6 +36,13 @@ exit
 interactiveMode $imode 
 tPlot $tp 
 # -- Here is input for cgWave 
+#
+$cmd="#";
+if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }
+if( $bcApproach eq "cbc"      ){ $cmd="useCompatibilityBCs"; }
+if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
+$cmd
+#
 bc=$bc
 #
 if( $ad4>0. ){ $upwind=1; }# for backward compatibility

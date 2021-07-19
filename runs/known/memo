@@ -1,3 +1,25 @@
+************************************************************************
+********* Sat Jul 17, 2021
+
+test 3D
+
+*bug fixed* -- update THEcenter too for contour3d
+
+
+seg-fault : 
+cgWave known.cmd -g=box4.order4.ng3 -ad4=0 -kx=1 -ky=1 -tp=.1 -tf=5 -known=planeWave
+
+gdb $cgWave known.cmd -g=box2.order4.ng3 -ad4=0 -kx=1 -ky=1 -tp=.1 -tf=5 -known=planeWave
+
+cgWave known.cmd -g=box8.order4.ng3 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -k0=12 -beta=40 -x0=.5 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -setKnownOnBoundaries=1
+
+cgWave known.cmd -g=box4.order4.ng3 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -k0=12 -beta=40 -x0=.5 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -setKnownOnBoundaries=1
+
+
+************************************************************************
+********* Tues June 1, 2021
+
+cgWave known.cmd -g=shapesBige4.order4.ng3 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -k0=12 -beta=40 -x0=-1.5 -y0=.0 -bc=n -computeErrors=0 -upwind=1 -setKnownOnBoundaries=0 
 
 ************************************************************************
 ********* Sat May 29, 2021

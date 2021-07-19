@@ -2833,7 +2833,7 @@
                               ec = 0 ! component number
                       ! write(*,'("advWave: COMPUTE V= LAP(U) TO SECOND ORDER dim=3")') 
                       ! We need Lap2h(u) at an extra point 
-                                            numGhost=orderOfAccuracy/2
+                                            numGhost=orderOfAccuracy/2 -1 
                                             m1a=n1a-numGhost
                                             m1b=n1b+numGhost
                                             m2a=n2a-numGhost
@@ -3039,7 +3039,7 @@
                     !   coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
                       ! Add corrections for 4th order modified equation 
                       !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
-                                                    fv(m) = -( f(i1,i2,i3,0) + cdtSqBy12*( cSq*(fxx23(i1,i2,i3,0) + fyy23(i1,i2,i3,0) + fzz23r(i1,i2,i3,0)) - omega*omega*f(i1,i2,i3,0)) )*coswtAve 
+                                                    fv(m) = -( f(i1,i2,i3,0) + cdtSqBy12*( cSq*(fxx23(i1,i2,i3,0) + fyy23(i1,i2,i3,0) + fzz23(i1,i2,i3,0)) - omega*omega*f(i1,i2,i3,0)) )*coswtAve 
                                     else if( addForcing.ne.0 )then  
                                           fv(m) = f(i1,i2,i3,0)
                                     end if

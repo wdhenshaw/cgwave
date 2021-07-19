@@ -1,3 +1,34 @@
+************************************************************************
+********* Sat July 17, 2021
+
+setup templates for CBC's
+
+cgWave -noplot tz.cmd -g=square16.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=.1 -go=go -bcApproach=cbc
+
+
+
+************************************************************************
+********* Fri July 16, 2021
+
+RETURN to cgWave. Does 3D work? .. yes.
+
+EXACT
+cgWave -noplot tz.cmd -g=box2.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=.1 -go=go
+
+
+
+EXACT
+cgWave tz.cmd -g=box2.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 
+
+cgWave:FD22 t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 3.11e-15, ||u||= 4.29e+00, cpu= 2.89e+00(s)
+cgWave:FD22 t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 3.11e-15, ||u||= 4.54e+00, cpu= 4.92e+00(s)
+cgWave:FD22 t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 4.44e-15, ||u||= 4.81e+00, cpu= 7.02e+00(s)
+
+
+
+cgWave -noplot tz.cmd -g=square16.order4 -ad4=0 -degreeInTime=4 -degreeInSpace=4 -tf=.3 -tp=.1 -go=go
+
+
 
 ************************************************************************
 ********* Monday May 24, 2021
