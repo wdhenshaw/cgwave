@@ -213,6 +213,44 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
         }
     }
 
+    else if( option=="polyPeriodic" )
+    {
+
+        const real & c = dbase.get<real>("c");
+
+    // --- Get data from the userDefinedKnownSolution ---
+        const real & omega        = dbase.get<Real>("omegaPolyPeriodic");
+        const int & degreeInSpace = dbase.get<int>("degreeInSpacePolyPeriodic");
+        const real & a0           = dbase.get<Real>("a0PolyPeriodic");
+        const real & a1           = dbase.get<Real>("a1PolyPeriodic");
+        const real & b1           = dbase.get<Real>("b1PolyPeriodic");
+        const real & c1           = dbase.get<Real>("c1PolyPeriodic"); 
+
+        if( true || t<= 2.*dt )
+            printF("userDefinedForcing: eval polyPeriodic omega=%g, a0=%g, a1=%g, b1=%g, c1=%g at t=%9.3e\n",omega,a0,a1,b1,c1,t);       
+        
+        if( mg.numberOfDimensions()==2 )
+        {
+            const real amp = fSign*( -SQR(omega) ); 
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            {
+                real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1);
+                  
+                fLocal(i1,i2,i3) = ( a0 + a1*x + b1*y )*amp;
+            }
+        }
+        else
+        {
+      // --- 3D ---
+            const real amp = fSign*( -SQR(omega) );
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            {
+                real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1), z=xLocal(i1,i2,i3,2);
+                fLocal(i1,i2,i3) = ( a0 + a1*x + b1*y + c1*z )*amp;
+            }
+        }
+    }  
+
     else
     {
         printF("CgWave::userDefinedForcing:ERROR: unknown option =[%s]\n",(const char*)option);
@@ -242,6 +280,7 @@ setupUserDefinedForcing()
         "no forcing",
         "gaussian sources",
         "box Helmholtz",
+        "poly periodic",
         "exit",
         ""
     };
@@ -343,6 +382,16 @@ setupUserDefinedForcing()
             option="boxHelmholtz";
 
         }
+      else if( answer=="poly periodic" )
+        {
+            printF("----------------- polynomial in space and periodic in time -----------------\n");
+            printF("   We solve :   utt = c^2 * Delta(u) - f(x)*cos(omega*t) \n");
+            printF("The solution is of the form: (a0 + a1*x + a2*x^2 + ... b1*y + b2*y^2 + ... + c1*z + c2*z^2 + ...)*cos(omega*t)\n");
+
+            option="polyPeriodic";
+
+        }
+
         else 
         {
             printF("Maxwell::setupUserDefinedForcing:ERROR: unknown option =[%s]\n",(const char*)answer);

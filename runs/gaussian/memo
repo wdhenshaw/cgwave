@@ -1,4 +1,13 @@
 
+**************************************************
+**** Thurs July 22, 2021
+
+CHECK FPI CONVERGENCE RATES VS THEORY
+
+
+cgwh -noplot gaussian.cmd -g=square64.order2 -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWaveHoltzSquare64Order2FixedPoint -tol=1e-10 -ad4=0 -imode=1 -go=go
+
+
 
 **************************************************
 **** Fri May 28, 2021

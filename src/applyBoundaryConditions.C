@@ -169,6 +169,11 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
                             knownSolutionOption=3;                   // this number must match in bcOptWave.bf90
               // assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
                         }
+                        else if( userKnownSolution=="polyPeriodic"  ) 
+                        {
+                            knownSolutionOption=4;                   // this number must match in bcOptWave.bf90
+              // assignKnownSolutionAtBoundaries=1;  
+                        }    
                     }
                     int gridType = isRectangular ? 0 : 1;
                     int gridIsImplicit = 0; 
@@ -259,6 +264,19 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
                     OV_ABORT("error");
                 }
             }
+        }
+
+    // ** TESTING ***
+        if( false )
+        {
+            printF("applyBC: TESTING: SET UNUSED GHOST TO ZERO\n");
+    
+            for( int ghost=2; ghost<=2; ghost++ )
+            {
+                bcParams.ghostLineToAssign=ghost;
+                u.applyBoundaryCondition(0,BCTypes::extrapolate,dirichlet,0.,t,bcParams);
+            }
+            bcParams.ghostLineToAssign=1; // reset 
         }
 
 

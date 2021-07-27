@@ -235,6 +235,66 @@ getUserDefinedKnownSolution(real t,  int grid,
     }
 
   }
+
+  else if( userKnownSolution=="polyPeriodic" )
+  {
+    // ----------------- polynomial in space and periodic in time -----------------
+
+    const real & omega        = dbase.get<Real>("omegaPolyPeriodic");
+    const int & degreeInSpace = dbase.get<int>("degreeInSpacePolyPeriodic");
+    const real & a0           = dbase.get<Real>("a0PolyPeriodic");
+    const real & a1           = dbase.get<Real>("a1PolyPeriodic");
+    const real & b1           = dbase.get<Real>("b1PolyPeriodic");
+    const real & c1           = dbase.get<Real>("c1PolyPeriodic");
+
+
+    if( true || t<= 2.*dt )
+      printF("userDefinedKnownSolution: eval polyPeriodic omega=%g, a0=%g, a1=%g, b1=%g, c1=%g at t=%9.3e\n",omega,a0,a1,b1,c1,t);
+
+    const real coswt = cos(omega*t);
+      
+    real x,y,z;
+    if( numberOfDimensions==2 )
+    {
+      FOR_3D(i1,i2,i3,I1,I2,I3)
+      {
+        if( !isRectangular )
+        {
+          x= xLocal(i1,i2,i3,0);
+          y= xLocal(i1,i2,i3,1);
+        }
+        else
+        {
+          x=XC(iv,0);
+          y=XC(iv,1);
+        }
+        uLocal(i1,i2,i3,0) = ( a0 + a1*x + b1*y )*coswt;
+      }
+    }
+    else
+    {
+      FOR_3D(i1,i2,i3,I1,I2,I3)
+      {
+        if( !isRectangular )
+        {
+          x= xLocal(i1,i2,i3,0);
+          y= xLocal(i1,i2,i3,1);
+          z= xLocal(i1,i2,i3,2);
+        }
+        else
+        {
+          x=XC(iv,0);
+          y=XC(iv,1);
+          z=XC(iv,2);
+        }
+        uLocal(i1,i2,i3,0) = ( a0 + a1*x + b1*y + c1*z )*coswt;
+
+      }
+    }
+
+  }
+
+
   else
   {
     printF("getUserDefinedKnownSolution:ERROR: unknown value for userDefinedKnownSolution=%s\n",
@@ -308,6 +368,7 @@ updateUserDefinedKnownSolution()
                         "plane wave",
                         "gaussian plane wave",
                         "box helmholtz",
+                        "poly periodic",
                         "done",    
                         ""};
   int numRows=3;
@@ -449,6 +510,38 @@ updateUserDefinedKnownSolution()
       dbase.put<Real>("kzBoxHelmholtz")    = kz;
       
     }
+    else if( answer=="poly periodic" ) 
+    {
+      printF("----------------- polynomial in space and periodic in time -----------------\n");
+      printF("   We solve :   utt = c^2 * Delta(u) - f(x)*cos(omega*t) \n");
+      printF("The solution is of the form: (a0 + a1*x + a2*x^2 + ... b1*y + b2*y^2 + ... + c1*z + c2*z^2 + ...)*cos(omega*t)\n");
+      
+      userKnownSolution="polyPeriodic";
+      dbase.get<bool>("knownSolutionIsTimeDependent")=true;  // known solution depends on time
+
+      // Save parameters in dbase so we can look them up in bcOptWave
+      real & omega        = dbase.put<Real>("omegaPolyPeriodic");
+      int & degreeInSpace = dbase.put<int>("degreeInSpacePolyPeriodic");
+      real & a0           = dbase.put<Real>("a0PolyPeriodic");
+      real & a1           = dbase.put<Real>("a1PolyPeriodic");
+      real & b1           = dbase.put<Real>("b1PolyPeriodic");
+      real & c1           = dbase.put<Real>("c1PolyPeriodic");
+
+      omega=1.; degreeInSpace=1; 
+      a0=1.; a1=1.; b1=1.; c1=1.;
+
+      gi.inputString(answer,"Enter omega,degreeInSpace");
+      sScanF(answer,"%e %i",&omega,&degreeInSpace);
+      printF(" Setting omega=%g, degreeInSpace=%d\n",omega,degreeInSpace);
+
+      if( degreeInSpace==0 )
+      {
+        a1=0.; b1=0; c1=0; 
+      }
+
+
+    }
+
     else if( dialog.getTextValue(answer,"beta:","%e",beta) )
     {
       printF("UDKS: Setting beta=%g (exponential factor in Gaussian plane wave)\n",beta);

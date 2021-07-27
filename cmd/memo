@@ -12,6 +12,37 @@ Things FIXED:
 
 
 ************************************************************************
+********* Sat Jul 24, 2021
+
+CHECK TIME INTEGRAL 
+omega=2
+T = 2*pi/omega = pi 
+
+cgWave helmholtz.cmd -g=square64.order4 -cfl=0.9 -tf=3.141592653589793 -tp=3.141592653589793 -kx=1 -ky=1 -kz=1 -ts=explicit -orderInTime=-1 -ad4=0 -debug=3 -go=halt
+
+G128
+** cgWave:updateTimeIntegral: t=3.142e+00, error in WaveHoltz v:  maxErr= 2.58e-08 ** 
+
+G64:
+** cgWave:updateTimeIntegral: t=3.142e+00, error in WaveHoltz v:  maxErr= 4.03e-07 ** 
+
+
+
+cgWave helmholtz.cmd -g=square64.order2 -cfl=0.9 -tf=3.141592653589793 -tp=3.141592653589793 -kx=1 -ky=1 -kz=1 -ts=explicit -orderInTime=-1 -ad4=0 -debug=3 -go=halt
+
+G128
+** cgWave:updateTimeIntegral: t=3.142e+00, error in WaveHoltz v:  maxErr= 2.07e-04 ** 
+
+
+G64:
+** cgWave:updateTimeIntegral: t=3.142e+00, error in WaveHoltz v:  maxErr= 8.28e-04 **
+
+G32: 
+
+ ** cgWave:updateTimeIntegral: t=3.141e+00, error in WaveHoltz v:  maxErr= 3.30e-03 ** 
+
+
+************************************************************************
 ********* Sat Jul 17, 2021
 
 TEST 3D 

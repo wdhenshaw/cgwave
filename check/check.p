@@ -283,10 +283,14 @@ foreach $cmdCommand ( @cmdFiles )
       {
         $pipeOutput = $verbose ? "" : ">! junk"; 
 
+        # printf("RUN: system \"$checkCheckFiles $checkFile $checkFileName -tol=$tol $pipeOutput\"\n");
+
         $diff = system "$checkCheckFiles $checkFile $checkFileName -tol=$tol $pipeOutput";
 
         if( $diff!=0 )
         {
+          printf("diff=$diff\n");
+
           if( $verbose ){ printf("\n ++++ The check files for \"$checkFilePrefix\" do not agree +++++\n\n"); }
           $numberOfErrors++;
         }

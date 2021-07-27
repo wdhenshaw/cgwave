@@ -1,4 +1,12 @@
 ************************************************************************
+********* Mon July 26, 2021
+
+REWORK CGWAVE -- TAKE A FORWARD INITIAL STEP
+
+cgWave tz.cmd -g=square16.order2 -ad4=0 -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.01 -go=halt
+
+
+************************************************************************
 ********* Sat July 17, 2021
 
 setup templates for CBC's

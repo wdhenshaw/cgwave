@@ -66,8 +66,9 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
   FILE *& logFile = dbase.put<FILE*>("logFile");
   logFile = fopen("cgWaveHoltz.out","w" );        // log file 
 
-    FILE *& checkFile = dbase.put<FILE*>("checkFile");
+  FILE *& checkFile = dbase.put<FILE*>("checkFile");
   checkFile = fopen("cgWaveHoltz.check","w" );        // for regression and convergence tests
+  fPrintF(checkFile,"# Check file for CgWaveHoltz\n"); // check file has one title line
 
   // here is the CgWave solver for the time dependent wave equation
   CgWave *& cgWave = dbase.put<CgWave*>("cgWave");
@@ -282,21 +283,24 @@ int CgWaveHoltz::outputMatlabFile()
   if( myid!=0 )
    return 0;
 
-  const aString & solverName         = dbase.get<aString>("solverName");
-  const aString & nameOfGridFile     = dbase.get<aString>("nameOfGridFile");
-  const real & omega                 = dbase.get<real>("omega");
-  const real & Tperiod               = dbase.get<real>("Tperiod");
-  const int & numPeriods             = dbase.get<int>("numPeriods");
-  const real & tol                   = dbase.get<real>("tol");
-  const int & adjustOmega            = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  const aString & solverName            = dbase.get<aString>("solverName");
+  const aString & nameOfGridFile        = dbase.get<aString>("nameOfGridFile");
+  const real & omega                    = dbase.get<real>("omega");
+  const real & Tperiod                  = dbase.get<real>("Tperiod");
+  const int & numPeriods                = dbase.get<int>("numPeriods");
+  const real & tol                      = dbase.get<real>("tol");
+  const int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
 
-  RealArray & resVector              = dbase.get<RealArray>("resVector");
-  const int & numberOfIterations     = dbase.get<int>("numberOfIterations");
+  RealArray & resVector                 = dbase.get<RealArray>("resVector");
+  const int & numberOfIterations        = dbase.get<int>("numberOfIterations");
   const Real & convergenceRate          = dbase.get<Real>("convergenceRate");
   const Real & convergenceRatePerPeriod = dbase.get<Real>("convergenceRatePerPeriod");
 
-  CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
+  CgWave & cgWave             = *dbase.get<CgWave*>("cgWave");
   const int & orderOfAccuracy = cgWave.dbase.get<int>("orderOfAccuracy");
+  const real & c              = cgWave.dbase.get<real>("c");
+
+
 
   // aString fileName="cgWaveHoltz.m"; // allow this to be specified
   aString & matlabFileName           = dbase.get<aString>("matlabFileName");    // name of matlab file holding residuals etc.
@@ -318,9 +322,17 @@ int CgWaveHoltz::outputMatlabFile()
   fPrintF(matlabFile,"%% Residuals versus iteration.\n");
   delete tp;
 
+  if( cgWave.dbase.has_key("userDefinedForcingData") )
+  {
+    DataBase & db = cgWave.dbase.get<DataBase>("userDefinedForcingData");
+    aString & option= db.get<aString>("option");
+    fPrintF(matlabFile,"%% User defined forcing:\nuserDefinedForcingOption='%s';\n",(const char*)option);
+  }
+
   fPrintF(matlabFile,"solverName='%s';\n",(const char*)solverName);
   fPrintF(matlabFile,"gridName=\'%s\';\n",(const char*)nameOfGridFile);
   fPrintF(matlabFile,"omega=%20.14e;\n",omega);
+  fPrintF(matlabFile,"c=%20.14e;\n",c);
   fPrintF(matlabFile,"convergenceRate=%12.4e;\n",convergenceRate);
   fPrintF(matlabFile,"convergenceRatePerPeriod=%12.4e;\n",convergenceRatePerPeriod);
   fPrintF(matlabFile,"adjustOmega=%d; %% (1= adjust omega to account for discrete symbol of D+t D-t).\n",adjustOmega);
@@ -390,6 +402,7 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
 
   const real & dt                     = cgWave.dbase.get<real>("dt");
   const real & c                      = cgWave.dbase.get<real>("c");
+  const int & upwind                  = cgWave.dbase.get<int>("upwind");
   realCompositeGridFunction & v       = cgWave.dbase.get<realCompositeGridFunction>("v");
   realCompositeGridFunction & f       = cgWave.dbase.get<realCompositeGridFunction>("f");
   CompositeGridOperators & operators  = cgWave.dbase.get<CompositeGridOperators>("operators");
@@ -405,8 +418,11 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
   // bool adjustOmega = true;
   // const Real omegar = adjustOmega ? omegas : omega; // omega to use for residual
 
-  printF("CgWaveHoltz::residual: c=%g, omega=%12.5e, omegas=%12.5e (from symbol of D+D-), dt=%12.6e, adjustOmega=%d\n",c,omega,omegas,dt,adjustOmega);
-
+  printF("CgWaveHoltz::residual: c=%g, omega=%14.7e, omegas=%14.7e (from symbol of D+D-), dt=%12.6e, adjustOmega=%d, upwind=%d\n",c,omega,omegas,dt,adjustOmega,upwind);
+  if( upwind )
+  {
+    printF(" **** WARNING: upwinding is ON! Correcting omega for the discrete-time-symbol will not fully work to give a small residual ! *****\n");
+  }
   realCompositeGridFunction & res = dbase.get<realCompositeGridFunction>("residual");
 
   Real maxRes =0., maxResFromDiscreteSymbol=0.;
@@ -470,6 +486,7 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
         if( computeResidualWithAdjustedOmega[ires] )
         {
           // --- Compute the residual using omegas (from discrete symbol) ---
+          printF("CgWaveHoltz::residual: compute residual with adjusted omegas=%20.12e\n",omegas);
           om = omegas;
         }
 
@@ -509,14 +526,14 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
   {
     printF("CgWaveHoltz::residual: max-res=%9.3e (using omega), max-res=%9.3e (using omega from discrete symbol)\n",maxRes,maxResFromDiscreteSymbol);
   } 
- else if( useAdjustedOmega==0  )
- {
-    printF("CgWaveHoltz::residual: max-res=%9.3e (using omega).\n",maxRes);
- }
- else
- {
-   printF("CgWaveHoltz::residual: max-res=%9.3e (using omega from discrete symbol)\n",maxResFromDiscreteSymbol);
- }
+  else if( useAdjustedOmega==0  )
+  {
+     printF("CgWaveHoltz::residual: max-res=%9.3e (using omega).\n",maxRes);
+  }
+  else
+  {
+    printF("CgWaveHoltz::residual: max-res=%9.3e (using omega from discrete symbol)\n",maxResFromDiscreteSymbol);
+  }
 
 
   return maxRes;
@@ -547,7 +564,11 @@ solve()
 
  // here is the CgWave solver for the time dependent wave equation
  CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
- Tperiod=numPeriods*twoPi/omega;  
+ if( omega!=0.0 )
+   Tperiod=numPeriods*twoPi/omega;  
+ else
+   Tperiod=1;
+
  printF("CgWaveHoltz::solve: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
  
  // // --- set values in CgWave:

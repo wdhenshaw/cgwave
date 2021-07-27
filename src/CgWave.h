@@ -98,7 +98,7 @@ real getErrors( realCompositeGridFunction & u, real t );
 // Fill RHS for direct Helmholtz solver
 int getHelmholtzForcing( realCompositeGridFunction & f  );
 
-void getInitialConditions( real t );
+void getInitialConditions( int current, real t );
 
 aString getMethodName() const;
 
@@ -133,6 +133,9 @@ int setup();
 
 int setupUserDefinedForcing();
 
+int takeFirstStep( int cur, real t );
+
+// Old way: 
 int takeFirstBackwardStep( int cur, real t );
 
 int takeImplictStep( Real t );

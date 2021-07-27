@@ -2805,6 +2805,9 @@
                   ! forcing for solving the Helmholtz equation   
                   ! NOTE: change sign of forcing since for Helholtz we want to solve
                   !      ( omega^2 I + c^2 Delta) w = f    
+                    ! if( i1.eq.2 .and. i2.eq.2 )then 
+                    !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+                    ! end if
                                         fv(m) = -f(i1,i2,i3,0)*coswt     
                                 else if( addForcing.ne.0 )then  
                                       fv(m) = f(i1,i2,i3,0)
@@ -2812,6 +2815,7 @@
                 ! --- SECOND 2 ---
                   ! --- TWO DIMENSIONS ---
                                         un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22r(i1,i2,i3,0) + uyy22r(i1,i2,i3,0) ) + dtSq*fv(m)
+                   ! write(*,'(" adv: i1,i2=",2i4," un,u,um=",3e12.2," cdtSq,fv=",2e12.2)') i1,i2,un(i1,i2,i3,m),u(i1,i2,i3,m),um(i1,i2,i3,m),cdtSq,fv(m)
               ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
               ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
               ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )

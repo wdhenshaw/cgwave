@@ -3,7 +3,7 @@
 
 
 // ================================================================================================
-/// \brief Update the time intgral used by the Helmholtz solver
+/// \brief Update the time integral used by the Helmholtz solver
 ///
 /// \param stepOption : firstStep, middleStep, lastStep
 // ================================================================================================
@@ -21,6 +21,31 @@ updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction
   const real & Tperiod   = dbase.get<real>("Tperiod");
   const int & numPeriods = dbase.get<int>("numPeriods");
 
+  Index I1,I2,I3;
+
+
+  if( false )
+  {
+   printF("updateTimeIntegral: stepOption=%d omega=%16.12e, t=%12.4e, dt=%16.12e, t/dt=%.3g\n",stepOption,omega,t,dt,t/dt);
+   u.display(sPrintF("u for updateTimeIntegral, t=%9.3e",t),"%6.2f ");
+  }
+
+  if( false )
+  {
+    // For testing over-write the computed solution with the exact solution
+    const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
+    if( knownSolutionOption == "userDefinedKnownSolution" )
+    {
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      {
+        MappedGrid & mg = cg[grid];
+        getIndex(cg[grid].dimension(),I1,I2,I3); // assign all points including ghost points.              
+        // -- User defined known solution ---
+        getUserDefinedKnownSolution( t, grid, u[grid], I1,I2,I3 );
+      }
+    }
+  }
+
   // const bool firstStep = stepOption==0;
   // const bool lastStep  = stepOption==2;
 
@@ -37,7 +62,6 @@ updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction
     
   }
   
-  Index I1,I2,I3;
   if( stepOption==firstStep )
   {
     // When solving the Helmholtz problem with CgWaveHoltz we need to evaluate an integral 
@@ -87,10 +111,13 @@ updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction
 
       const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
 
-      if( debug & 2 && knownSolutionOption=="userDefinedKnownSolution" ) 
+      // u.display(sPrintF("u after integral, t=%9.3e",t),"%6.2f ");
+      // v.display(sPrintF("v after integral, t=%9.3e",t),"%6.2f ");
+
+      if( ( debug & 2 ) && knownSolutionOption=="userDefinedKnownSolution" ) 
       {
         real maxErr = getErrors( v, t );
-        printF("cgWave:updateTimeIntegral: t=%9.3e, error in WaveHoltz v:  maxErr=%9.2e\n",t,maxErr);
+        printF("\n ** cgWave:updateTimeIntegral: t=%9.3e, error in WaveHoltz v:  maxErr=%9.2e ** \n\n",t,maxErr);
       }
         
     }

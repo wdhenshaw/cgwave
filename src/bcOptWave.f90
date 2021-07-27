@@ -254,8 +254,8 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
 
   ! known solutions
     integer knownSolutionOption
-    integer planeWave, gaussianPlaneWave, boxHelmHoltz
-    parameter( planeWave=1, gaussianPlaneWave=2, boxHelmHoltz=3 )
+    integer planeWave, gaussianPlaneWave, boxHelmHoltz, polyPeriodic
+    parameter( planeWave=1, gaussianPlaneWave=2, boxHelmHoltz=3, polyPeriodic=4 )
 
   ! parameters for plane wave known solution
     real ampPlaneWave, kxPlaneWave,kyPlaneWave,kzPlaneWave, omegaPlaneWave
@@ -266,6 +266,9 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
 
   ! parameters for boxHelmholtz known solution
     real kxBoxHelmholtz,kyBoxHelmholtz,kzBoxHelmholtz,omegaBoxHelmholtz,coswt
+
+  ! parameters for polyPeriodic known solution
+    real omegaPolyPeriodic,a0PolyPeriodic, a1PolyPeriodic, b1PolyPeriodic, c1PolyPeriodic
 
   ! --- forcing options ----
   ! These must match the values in CgWave.h: 
@@ -985,6 +988,41 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                 write(*,'(" bcOptWave:  knownSolutionOption=boxHelmholtz: kx,ky,kz,omega=",4e10.2)') kxBoxHelmholtz,kyBoxHelmholtz,kzBoxHelmholtz,omegaBoxHelmholtz
             end if
 
+        else if( knownSolutionOption.eq.polyPeriodic )then
+
+      ! get parameter values from the C++ data-base
+              ok=getReal(pdb,'omegaPolyPeriodic',omegaPolyPeriodic) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find omegaPolyPeriodic")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'a0PolyPeriodic',a0PolyPeriodic) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find a0PolyPeriodic")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'a1PolyPeriodic',a1PolyPeriodic) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find a1PolyPeriodic")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'b1PolyPeriodic',b1PolyPeriodic) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find b1PolyPeriodic")') 
+                  stop 1133
+              end if
+              ok=getReal(pdb,'c1PolyPeriodic',c1PolyPeriodic) 
+              if( ok.eq.0 )then
+                  write(*,'("*** bcOptWave:getReal:ERROR: unable to find c1PolyPeriodic")') 
+                  stop 1133
+              end if
+
+            coswt = cos(omegaPolyPeriodic*t)
+            if(  t.le.dt .and. debug.gt.1   )then
+                write(*,'(" bcOptWave:  knownSolutionOption=polyPeriodic: a0,a1,b1,c1,omega=",5e10.2)') a0PolyPeriodic,a1PolyPeriodic,b1PolyPeriodic,c1PolyPeriodic,omegaPolyPeriodic
+            end if
+
+
         else if( knownSolutionOption.ne.0 )then
 
             write(*,'("bcOptWave:ERROR: unknown knownSolutionOption=",i6)') knownSolutionOption
@@ -1168,6 +1206,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                     else
                                         ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
                                     end if 
+                                else if( knownSolutionOption.eq.polyPeriodic ) then
+                  ! --- evaluate the polyPeriodic solution ---
+                                    if( nd.eq.2 )then
+                                        ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1)                                 ) *coswt
+                                    else
+                                        ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                    end if 
                                 else
                                     stop 9876
                                 end if 
@@ -1281,7 +1326,21 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                         uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
                                         uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
                                         ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                    end if 
+                                    end if
+                                else if( knownSolutionOption.eq.polyPeriodic ) then
+                  ! --- evaluate RHS the polyPeriodic solution ---
+                                    if( nd.eq.2 )then
+                                        ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) ) *coswt
+                                        uex = (      a1PolyPeriodic                                                            ) *coswt
+                                        uey = (                          b1PolyPeriodic                                        ) *coswt
+                                        ff = a0*ue + a1*( an1*uex + an2*uey )
+                                    else
+                                        ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                        uex = (      a1PolyPeriodic                                                                                            ) *coswt
+                                        uey = (                          b1PolyPeriodic                                                                        ) *coswt
+                                        uez = (                                              c1PolyPeriodic                                                    ) *coswt
+                                        ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                    end if
                                 else
                                     stop 8765
                                 end if 
@@ -1475,6 +1534,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                             else
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
                                             end if 
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1)                                 ) *coswt
+                                            else
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
                                         else
                                             stop 9876
                                         end if 
@@ -1533,6 +1599,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
                                             else
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1)                                 ) *coswt
+                                            else
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
                                             end if 
                                         else
                                             stop 9876
@@ -1601,6 +1674,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                             else
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
                                             end if 
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1)                                 ) *coswt
+                                            else
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
                                         else
                                             stop 9876
                                         end if 
@@ -1660,6 +1740,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
                                             else
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1)                                 ) *coswt
+                                            else
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
                                             end if 
                                         else
                                             stop 9876
@@ -1729,6 +1816,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                             else
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
                                             end if 
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1)                                 ) *coswt
+                                            else
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
                                         else
                                             stop 9876
                                         end if 
@@ -1787,6 +1881,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
                                             else
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1)                                 ) *coswt
+                                            else
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
                                             end if 
                                         else
                                             stop 9876
@@ -1855,6 +1956,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                             else
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
                                             end if 
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1)                                 ) *coswt
+                                            else
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
                                         else
                                             stop 9876
                                         end if 
@@ -1913,6 +2021,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
                                             else
                                                 ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
+                                            end if 
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1)                                 ) *coswt
+                                            else
+                                                ff = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
                                             end if 
                                         else
                                             stop 9876
@@ -2365,7 +2480,21 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
                                                 uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
                                                 ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                            end if 
+                                            end if
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate RHS the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                        ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                                                        ) *coswt
+                                                uez = (                                              c1PolyPeriodic                                                    ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if
                                         else
                                             stop 8765
                                         end if 
@@ -2583,7 +2712,21 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
                                                 uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
                                                 ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                            end if 
+                                            end if
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate RHS the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                        ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                                                        ) *coswt
+                                                uez = (                                              c1PolyPeriodic                                                    ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if
                                         else
                                             stop 8765
                                         end if 
@@ -2808,7 +2951,21 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
                                                 uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
                                                 ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                            end if 
+                                            end if
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate RHS the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                        ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                                                        ) *coswt
+                                                uez = (                                              c1PolyPeriodic                                                    ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if
                                         else
                                             stop 8765
                                         end if 
@@ -3026,7 +3183,21 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
                                                 uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
                                                 ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                            end if 
+                                            end if
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate RHS the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                        ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                                                        ) *coswt
+                                                uez = (                                              c1PolyPeriodic                                                    ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if
                                         else
                                             stop 8765
                                         end if 
@@ -3251,7 +3422,21 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
                                                 uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
                                                 ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                            end if 
+                                            end if
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate RHS the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                        ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                                                        ) *coswt
+                                                uez = (                                              c1PolyPeriodic                                                    ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if
                                         else
                                             stop 8765
                                         end if 
@@ -3469,7 +3654,21 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
                                                 uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
                                                 ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                            end if 
+                                            end if
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate RHS the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                        ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                                                        ) *coswt
+                                                uez = (                                              c1PolyPeriodic                                                    ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if
                                         else
                                             stop 8765
                                         end if 
@@ -3694,7 +3893,21 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
                                                 uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
                                                 ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                            end if 
+                                            end if
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate RHS the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                        ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                                                        ) *coswt
+                                                uez = (                                              c1PolyPeriodic                                                    ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if
                                         else
                                             stop 8765
                                         end if 
@@ -3912,7 +4125,21 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange, dimRange
                                                 uey = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *cos( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kyBoxHelmholtz
                                                 uez = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * cos( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt * kzBoxHelmholtz
                                                 ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
-                                            end if 
+                                            end if
+                                        else if( knownSolutionOption.eq.polyPeriodic ) then
+                      ! --- evaluate RHS the polyPeriodic solution ---
+                                            if( nd.eq.2 )then
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                        ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey )
+                                            else
+                                                ue  = ( a0PolyPeriodic + a1PolyPeriodic*xy(i1,i2,i3,0) + b1PolyPeriodic*xy(i1,i2,i3,1) + c1PolyPeriodic*xy(i1,i2,i3,2) ) *coswt
+                                                uex = (      a1PolyPeriodic                                                                                            ) *coswt
+                                                uey = (                          b1PolyPeriodic                                                                        ) *coswt
+                                                uez = (                                              c1PolyPeriodic                                                    ) *coswt
+                                                ff = a0*ue + a1*( an1*uex + an2*uey + an3*uez )
+                                            end if
                                         else
                                             stop 8765
                                         end if 

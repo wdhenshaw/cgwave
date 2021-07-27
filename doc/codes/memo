@@ -1,0 +1,26 @@
+**********************************************
+******** Fri July 23, 2021
+
+plotResiduals -caseOption=gaussianSphereO2Omega8p1
+
+plotResiduals -caseOption=gaussianBoxO4Omega8p1
+
+plotResiduals -caseOption=gaussianDiskO4Omega8p1
+
+plotResiduals -caseOption=gaussianAnnulusO4Omega18p4
+
+plotResiduals -caseOption=gaussianAnnulusO4Omega9p777
+
+plotResiduals -caseOption=gaussianSquare128O4Omega15
+
+plotResiduals -caseOption=gaussianSquareOmega17p17
+
+
+**********************************************
+******** Thur July 22, 2021
+
+Add theoretical estimates of CR to plotResiduals
+
+
+plotResiduals -caseOption=trigHelmholtzCIC
+plotResiduals -caseOption=gaussianHelmholtzSquare

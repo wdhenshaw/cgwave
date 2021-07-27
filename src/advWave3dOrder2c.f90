@@ -2805,6 +2805,9 @@
                   ! forcing for solving the Helmholtz equation   
                   ! NOTE: change sign of forcing since for Helholtz we want to solve
                   !      ( omega^2 I + c^2 Delta) w = f    
+                    ! if( i1.eq.2 .and. i2.eq.2 )then 
+                    !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+                    ! end if
                                         fv(m) = -f(i1,i2,i3,0)*coswt     
                                 else if( addForcing.ne.0 )then  
                                       fv(m) = f(i1,i2,i3,0)

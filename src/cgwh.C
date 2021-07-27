@@ -185,7 +185,8 @@ main(int argc, char *argv[])
 
   const int & orderOfAccuracy       = cgWave.dbase.get<int>("orderOfAccuracy");
   const int & orderOfAccuracyInTime = cgWave.dbase.get<int>("orderOfAccuracyInTime");
-  const Real & ad4                  = cgWave.dbase.get<Real>("ad4");
+  const int & upwind                = cgWave.dbase.get<int>("upwind"); // new way
+  // const Real & ad4                  = cgWave.dbase.get<Real>("ad4");   // old way
   const int & computeErrors         = cgWave.dbase.get<int>("computeErrors");
 
   cgWaveHoltz.dbase.get<int>("orderOfAccuracy")=orderOfAccuracy; // set value in CgWaveHoltz
@@ -454,8 +455,8 @@ main(int argc, char *argv[])
       // show.saveGeneralComment(" file written on April 1");      // save another general comment
 
       show.startFrame();                       // start a new frame
-      const bool useUpwind = ad4>0.;
-      show.saveComment(0,sPrintF("CgWaveHoltz: FD%i%i%s omega=%.5g",orderOfAccuracy,orderOfAccuracyInTime,(useUpwind ? "s" : ""),omega));   // comment 0 (shown on plot)
+      // const bool useUpwind = ad4>0.;
+      show.saveComment(0,sPrintF("CgWaveHoltz: FD%i%i%s omega=%.5g",orderOfAccuracy,orderOfAccuracyInTime,(upwind ? "u" : ""),omega));   // comment 0 (shown on plot)
       show.saveComment(1,sPrintF("v=WaveHoltz, u=Helmholtz"));               // comment 1 (shown on plot)
 
       // We save the current solution and optionally the direct solution and or errors
@@ -638,8 +639,8 @@ main(int argc, char *argv[])
       if( answer=="contour" )
         psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false); // wait inside contour
 
-      const bool useUpwind = ad4>0.;
-      psp.set(GI_TOP_LABEL,sPrintF("CgWaveHoltz: FD%i%i%s omega=%.5g",orderOfAccuracy,orderOfAccuracyInTime,(useUpwind ? "s" : ""),omega));
+      // const bool useUpwind = ad4>0.;
+      psp.set(GI_TOP_LABEL,sPrintF("CgWaveHoltz: FD%i%i%s omega=%.5g",orderOfAccuracy,orderOfAccuracyInTime,(upwind ? "u" : ""),omega));
 
       PlotIt::contour(ps,v,psp);
 

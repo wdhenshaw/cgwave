@@ -5,12 +5,88 @@ We consider solving the Helmholtz problem with a source term consisting of a sum
    f(x,y,z,t) = \sum_m a_m \, \cos( \omega_m (t-t_{0,m}) ) \, e^{ -\beta_m [ (x-x_{0,m})^2 + (y-y_{0,m})^2 + (z-z_{0,m})^2 ]^{p_m} } .
 \ea 
 
-
+% ---------- SQUARE --------
+\subsubsection{Gaussian source in a square}
 \mni
 Figure~\ref{fig:gaussianSquare} shows results from CgWaveHoltz for a square. Source term: $\omega=17.17$, $a=100$, $(x_0,y_0)=(.7,.7)$, $\beta=50$, $p=1$. 
-\plotTwoFigsByHeight{fig/gaussianSquareOmega17p17WaveHoltz}{fig/gaussianHelmholtzSquare}{Gaussian pulse, $\omega=17.17$, square64, order 4}{fig:gaussianSquare}{7cm}
+\plotTwoFigsByHeight{fig/gaussianSquareOmega17p17WaveHoltz}{fig/gaussianSquareOmega17p17}{Gaussian source, $\omega=17.17$, square64, order 4}{fig:gaussianSquare}{7cm}
 
 
+\clearpage
+\mni
+Figure~\ref{fig:gaussianSquareOmega15} shows results from CgWaveHoltz for a square. Source term: $\omega=15$, $a=100$, $(x_0,y_0)=(.7,.7)$, $\beta=50$, $p=1$. The FPI convergence rate matches the theory.
+\plotTwoFigsByHeight{fig/gaussianSquare128O4Omega15}{fig/gaussianSquare128O4Omega15FixPointMuFunction}{Gaussian source, $\omega=15$, square128, order 4. Right: $\beta$ function with distribution of eigenvalues $\lambda_j$}{fig:gaussianSquareOmega15}{7cm}
+
+\begin{Verbatim}[fontsize=\scriptsize]
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.54e-11 (tol=1.00e-10) numberOfIterations=31 #############
+CgWaveHoltz::residual: c=1, omega= 1.50000e+01, omegas= 1.49974e+01 (from symbol of D+D-), dt=4.273544e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=4.010e-04 (using omega), max-res=5.004e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=1.500e+01, max-res=4.010e-04, CR=0.492 CR-perPeriod=0.492, cpu= 1.58e+00(s)
+CgWaveHoltz::Results saved to file gaussianWHSquare128O4Omega15Krylov.m
+\end{Verbatim}
+
+
+% --------------------- ANNULUS -----------------------
+\clearpage
+\subsubsection{Gaussian source in an annulus}
+Figure~\ref{fig:gaussianAnnulusOmega9p777} shows results from CgWaveHoltz for an Annulus.
+Eigenvalues for this problem were computed in \texttt{cg/ad/codes/annulusEigenvalues.maple}.
+%  Source term: $\omega=17.17$, $a=100$, $(x_0,y_0)=(.7,.7)$, $\beta=50$, $p=1$. The FPI convergence rate matches the theory.
+\plotTwoFigsByHeight{fig/gaussianAnnulusO4Omega9p777}{fig/gaussianAnnulusO4Omega9p777FixPointMuFunction}{Gaussian source, $\omega=9.777$, annulus8, order 4. Right: $\beta$ function with distribution of eigenvalues $\lambda_j$}{fig:gaussianAnnulusOmega9p777}{7cm}
+
+
+Figure~\ref{fig:gaussianAnnulusOmega18p4} shows results from CgWaveHoltz for an Annulus for $\omega=18.4$.
+It takes quite a iterations for the CR of the FPI to approach the theory; likely due to there being a few
+eigenvalues near the worst case. GMRES is also quite slow. 
+%  Source term: $\omega=17.17$, $a=100$, $(x_0,y_0)=(.7,.7)$, $\beta=50$, $p=1$. The FPI convergence rate matches the theory.
+\plotTwoFigsByHeight{fig/gaussianAnnulusO4Omega18p4}{fig/gaussianAnnulusO4Omega18p4FixPointMuFunction}{Gaussian source, $\omega=18.4$, annulus8, order 4. Right: $\beta$ function with distribution of eigenvalues $\lambda_j$}{fig:gaussianAnnulusOmega18p4}{7cm}
+
+
+
+% --------------------- DISK -----------------------
+\clearpage
+\subsubsection{Gaussian source in a disk}
+Figure~\ref{fig:gaussianDiskOmega8p1} shows results from CgWaveHoltz for an disk.
+Eigenvalues for this problem were computed in \texttt{cg/ad/codes/diskEigenvalues.maple}.
+\plotTwoFigsByHeight{fig/gaussianDiskO4Omega8p1}{fig/gaussianDiskO4Omega8p1FixPointMuFunction}{Gaussian source, $\omega=8.1$, disk8, order 4. Right: $\beta$ function with distribution of eigenvalues $\lambda_j$}{fig:gaussianDiskOmega8p1}{7cm}
+
+\plotOneFigByWidth{fig/gaussianDiskOmega8p1WaveHoltz}{Gaussian source, $\omega=8.1$, disk8, order 4.}{fig:gaussianDiskSolution}{6cm}{6cm}
+
+
+\mni
+Solution is close to the direct solver.
+\begin{Verbatim}[fontsize=\scriptsize]
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.29e-11 (tol=1.00e-10) numberOfIterations=30 #############
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09901e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.776e-02 (using omega), max-res=9.750e-05 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.776e-02, CR=0.486 CR-perPeriod=0.486, cpu= 3.41e+00(s)
+CgWaveHoltz::Results saved to file gaussianWHDiskO4Omega8p1Krylov.m
+CgWaveHoltz: max-diff=3.25e-03 (between WaveHoltz and Direct Helmholtz solution)
+\end{Verbatim}
+
+
+% --------------------- BOX -----------------------
+\clearpage
+\subsubsection{Gaussian source in a box}
+Figure~\ref{fig:gaussianBoxOmega8p1} shows results from CgWaveHoltz for a 3D box.
+\plotTwoFigsByHeight{fig/gaussianBoxO4Omega8p1}{fig/gaussianBoxO4Omega8p1FixPointMuFunction}{Gaussian source, $\omega=8.1$, box4, order 4. Right: $\beta$ function with distribution of eigenvalues $\lambda_j$}{fig:gaussianBoxOmega8p1}{7cm}
+
+
+% --------------------- Sphere -----------------------
+\clearpage
+\subsubsection{Gaussian source in a sphere}
+Figure~\ref{fig:gaussianSphereOmega8p1} shows results from CgWaveHoltz for a 3D solid sphere.
+
+{\red FIX ME -- EIGENVALUES FOR A SPHERE NEEDED}
+
+\plotTwoFigsByHeight{fig/gaussianSphereO2Omega8p1}{fig/gaussianSphereO2Omega8p1FixPointMuFunction}{Gaussian source, $\omega=8.1$, sphere4, order 2. Right: $\beta$ function with distribution of eigenvalues $\lambda_j$}{fig:gaussianSphereOmega8p1}{7cm}
+
+
+
+
+% ---------------- SHAPES ---------------
+\clearpage
+\subsubsection{Gaussian source in a domain with three shapes}
 \bni
 \plotOneFigByWidth{fig/gaussianShapesOmega9p777WaveHoltz}{Gaussian pulse for shapes, $\omega=9.777$, source at $(.3,-.75)$ }{fig:gaussianPulseShapes}{6cm}{6cm}
 
@@ -23,6 +99,10 @@ CgWaveHoltz: omega=9.777e+00, max-res=3.500e-02, CR=0.872 CR-perPeriod=0.872, cp
 CgWaveHoltz::Results saved to file cgWaveHoltz.m
 CgWaveHoltz: max-diff=1.16e-02 (between WaveHoltz and Direct Helmholtz solution)
 \end{Verbatim}
+
+
+
+
 
 \clearpage
 \mni

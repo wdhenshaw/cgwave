@@ -16,7 +16,7 @@
 /// \brief Assign the initial conditions
 // ======================================================================================================
 void CgWave::
-getInitialConditions( real t )
+getInitialConditions( int current, real t )
 {
   real cpu0 =getCPU();
   
@@ -24,7 +24,7 @@ getInitialConditions( real t )
   // const int myid=Communication_Manager::My_Process_Number;
 
   real & dt        = dbase.get<real>("dt");
-  printF("++++++++++++ getInitialConditions t=%9.3e, dt=%9.3e ++++++++++++++ \n",t,dt);
+  printF("++++++++++++ getInitialConditions current=%d, t=%9.3e, dt=%9.3e ++++++++++++++ \n",current,t,dt);
   
   // enum InitialConditionOptionEnum
   // {
@@ -75,13 +75,15 @@ getInitialConditions( real t )
     // u[0] = u(x,t)
 
     // get the local serial arrays
-    const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
-    const int cur = 0;
-    const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
-    const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+    // const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
+    // const int cur = 0;
+    // const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+    // const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+
+    int cur = current;
 
     OV_GET_SERIAL_ARRAY(real,u[cur ][grid],ucLocal);
-    OV_GET_SERIAL_ARRAY(real,u[prev][grid],upLocal);
+    // OV_GET_SERIAL_ARRAY(real,u[prev][grid],upLocal);
 
     getIndex(cg[grid].dimension(),I1,I2,I3); // assign all points including ghost points.
     const bool isRectangular=cg[grid].isRectangular();
@@ -89,7 +91,7 @@ getInitialConditions( real t )
     if( initialConditionOption == zeroInitialCondition )
     {
       ucLocal = 0.;
-      upLocal = 0.;
+      // upLocal = 0.;
     }
     else if( addForcing && forcingOption==twilightZoneForcing )
     {
@@ -108,15 +110,15 @@ getInitialConditions( real t )
         Range C=numberOfComponents;
         int isRectangular=0;
         e.gd( ucLocal ,xLocal,numberOfDimensions,isRectangular,0,0,0,0,I1,I2,I3,C,t);
-        e.gd( upLocal ,xLocal,numberOfDimensions,isRectangular,0,0,0,0,I1,I2,I3,C,t-dt);
+        // e.gd( upLocal ,xLocal,numberOfDimensions,isRectangular,0,0,0,0,I1,I2,I3,C,t-dt);  // Is this still needed?? *******
       }
       
     }
     else if( knownSolutionOption == "userDefinedKnownSolution" )
     {
       // -- User defined known solution ---
-      getUserDefinedKnownSolution( t   , grid, u[cur ][grid], I1,I2,I3 );
-      getUserDefinedKnownSolution( t-dt, grid, u[prev][grid], I1,I2,I3 );
+      getUserDefinedKnownSolution( t, grid, u[cur ][grid], I1,I2,I3 );
+      // getUserDefinedKnownSolution( t-dt, grid, u[prev][grid], I1,I2,I3 );   // Is this still needed?? ***********
         
     }
     else if( initialConditionOption == pulseInitialCondition  )
@@ -150,19 +152,19 @@ getInitialConditions( real t )
 #define VERTEX2(i0,i1,i2) za+dz0*(i2-i2a)
 
         // Here we grab a pointer to the data of the array so we can index it as a C-array
-        real *upm= upLocal.Array_Descriptor.Array_View_Pointer3;
+        // real *upm= upLocal.Array_Descriptor.Array_View_Pointer3;
         real *up = ucLocal.Array_Descriptor.Array_View_Pointer3;
         const int uDim0=ucLocal.getRawDataSize(0);
         const int uDim1=ucLocal.getRawDataSize(1);
         const int d1=uDim0, d2=d1*uDim1; 
 #define U(i0,i1,i2) up[(i0)+(i1)*d1+(i2)*d2]
-#define UM(i0,i1,i2) upm[(i0)+(i1)*d1+(i2)*d2]
+// #define UM(i0,i1,i2) upm[(i0)+(i1)*d1+(i2)*d2]
 
         int i1,i2,i3;
         FOR_3(i1,i2,i3,I1,I2,I3) // loop over all points
         {
-          UM(i1,i2,i3)=U0(VERTEX0(i1,i2,i3),VERTEX1(i1,i2,i3),-dt);
-          U(i1,i2,i3) =U0(VERTEX0(i1,i2,i3),VERTEX1(i1,i2,i3),0.);
+          // UM(i1,i2,i3)=U0(VERTEX0(i1,i2,i3),VERTEX1(i1,i2,i3),-dt);
+          U(i1,i2,i3) =U0(VERTEX0(i1,i2,i3),VERTEX1(i1,i2,i3),t);
         }
         
 #undef VERTEX0
@@ -185,13 +187,13 @@ getInitialConditions( real t )
 //      u[1][grid]=U0(vertex(I1,I2,I3,0),vertex(I1,I2,I3,1),-dt);
 //      u[0][grid]=U0(vertex(I1,I2,I3,0),vertex(I1,I2,I3,1),0.);
 
-        real *upm= upLocal.Array_Descriptor.Array_View_Pointer3;
+        // real *upm= upLocal.Array_Descriptor.Array_View_Pointer3;
         real *up = ucLocal.Array_Descriptor.Array_View_Pointer3;
         const int uDim0=ucLocal.getRawDataSize(0);
         const int uDim1=ucLocal.getRawDataSize(1);
         const int d1=uDim0, d2=d1*uDim1; 
 #define U(i0,i1,i2) up[(i0)+(i1)*d1+(i2)*d2]
-#define UM(i0,i1,i2) upm[(i0)+(i1)*d1+(i2)*d2]
+// #define UM(i0,i1,i2) upm[(i0)+(i1)*d1+(i2)*d2]
 
         OV_GET_SERIAL_ARRAY(real,vertex,vertexLocal);
         const real *vertexp = vertexLocal.Array_Descriptor.Array_View_Pointer3;
@@ -203,8 +205,8 @@ getInitialConditions( real t )
         int i1,i2,i3;
         FOR_3(i1,i2,i3,I1,I2,I3) // loop over all points
         {
-          UM(i1,i2,i3)=U0(VERTEX(i1,i2,i3,0),VERTEX(i1,i2,i3,1),-dt);
-          U(i1,i2,i3) =U0(VERTEX(i1,i2,i3,0),VERTEX(i1,i2,i3,1),0.);
+          // UM(i1,i2,i3)=U0(VERTEX(i1,i2,i3,0),VERTEX(i1,i2,i3,1),-dt);
+          U(i1,i2,i3) =U0(VERTEX(i1,i2,i3,0),VERTEX(i1,i2,i3,1),t);
         }
 
       }

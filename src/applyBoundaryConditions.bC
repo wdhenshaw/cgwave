@@ -171,6 +171,19 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
       }
     }
 
+    // ** TESTING ***
+    if( false )
+    {
+      printF("applyBC: TESTING: SET UNUSED GHOST TO ZERO\n");
+  
+      for( int ghost=2; ghost<=2; ghost++ )
+      {
+        bcParams.ghostLineToAssign=ghost;
+        u.applyBoundaryCondition(0,BCTypes::extrapolate,dirichlet,0.,t,bcParams);
+      }
+      bcParams.ghostLineToAssign=1; // reset 
+    }
+
 
     return 0; 
 

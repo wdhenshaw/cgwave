@@ -3,9 +3,12 @@
 
 check:  buildGrids buildCheckCheckFiles
 	./check.p -solver=cgWave
+	@echo "\n ------NOW RUN CGWAVEHOLTZ CHECKS ------\n"
+	./check.p -solver=cgwh -testsFile=testsWaveHoltz
 
 check-quiet: buildGrids buildCheckCheckFiles
 	./check.p -solver=cgWave -verbose=0
+	./check.p -solver=cgwh -testsFile=testsWaveHoltz -verbose=0
 
 # build grids that are used by the regression tests (and not already in Overture/sampleGrids)
 buildGrids: square16.order2.hdf square16.order4.ng3.hdf nonSquare16.order2.hdf nonSquare16.order4.hdf cice2.order2.hdf cice2.order4.ng3.hdf box1.order2.hdf nonBox1.order2.hdf nonBox1.order4.hdf

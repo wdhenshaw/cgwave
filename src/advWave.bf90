@@ -302,7 +302,11 @@ end if
    ! forcing for solving the Helmholtz equation   
    ! NOTE: change sign of forcing since for Helholtz we want to solve
    !      ( omega^2 I + c^2 Delta) w = f    
-   #If #ORDERINTIME eq "2" 
+   #If #ORDERINTIME eq "2"
+     ! if( i1.eq.2 .and. i2.eq.2 )then 
+     !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+     ! end if
+
      fv(m) = -f(i1,i2,i3,0)*coswt     
    #Else
      ! Add corrections for 4th order modified equation 
@@ -371,6 +375,9 @@ end if
        ! --- TWO DIMENSIONS ---
        #If #GRIDTYPE eq "rectangular"
          un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22r(i1,i2,i3,0) + uyy22r(i1,i2,i3,0) ) + dtSq*fv(m)
+
+        ! write(*,'(" adv: i1,i2=",2i4," un,u,um=",3e12.2," cdtSq,fv=",2e12.2)') i1,i2,un(i1,i2,i3,m),u(i1,i2,i3,m),um(i1,i2,i3,m),cdtSq,fv(m)
+
        #Else
          un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22(i1,i2,i3,0)  + uyy22(i1,i2,i3,0) ) + dtSq*fv(m)
        #End

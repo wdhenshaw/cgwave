@@ -58,6 +58,11 @@ extern "C"
 // Macro: call the optimized advance routine 
 // ==============================================================================================
 
+// ==============================================================================================
+// Macro: Plot solution, compute errors, output results
+// ==============================================================================================
+
+
 // ================================================================================================
 /// \brief Advance the solution 
 // ================================================================================================
@@ -106,6 +111,7 @@ advance( int it )
     int & numPeriods                  = dbase.get<int>("numPeriods");
     real & omegaSave                  = dbase.get<real>("omegaSave");
     real & TperiodSave                = dbase.get<real>("TperiodSave");  
+    real & dtSave                     = dbase.get<real>("dtSave");  
 
     int & addForcing                  = dbase.get<int>("addForcing");
     ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
@@ -202,10 +208,11 @@ advance( int it )
         //    omegas = (pi/N)*(2/dt)
               Real dts = sin(Pi/numPlotSteps) * (2./omega);
               Real omegas = (Pi/numPlotSteps) * (2./dts);
-              printF("\n ##### CgWave:adjust omega and dt for Helmholtz: dts=%12.4e (dt=%12.4e) omegas=%12.4e (omega=%12.4e) ####\n\n",dts,dt,omegas,omega);
+              printF("\n ##### CgWave:adjust omega and dt for Helmholtz: dts=%18.10e (dt=%18.10e) omegas=%14.6e (omega=%14.6e) ####\n\n",dts,dt,omegas,omega);
 
               omegaSave   = omega;    // save original omega ( omega is reset below)
               TperiodSave = Tperiod;  // save original Tperiod ( Tperiod is reset below)
+              dtSave      = dt;
 
               dt      = dts;
               omega   = omegas;
@@ -233,6 +240,7 @@ advance( int it )
 
     int i1,i2,i3;
 
+    const bool takeForwardInitialStep=true; // false; // true; // *new* way : July 26, 2021
 
     int step=-1;
     t=0.;
@@ -245,15 +253,14 @@ advance( int it )
     realCompositeGridFunction & u1 = u[cur];     // current time 
     realCompositeGridFunction & u2 = u[prev];    // previous time
 
+  // u1=0.;
+  // u2=0.;
+  // u[next]=0.; // initialize so there are valid values in all ghost (for WaveHoltz PETSc solver)
+
+  // ----- Initial Conditions -----
     if( !solveHelmholtz )
     {
-    // ----- Initial Conditions -----
-        getInitialConditions( t );
-        if( forcingOption==helmholtzForcing )
-        { // test backward step 
-            takeFirstBackwardStep( cur, t );
-        }
-        
+        getInitialConditions( cur,t );
     }
     else
     {
@@ -262,21 +269,43 @@ advance( int it )
         u1=v;
 
         applyBoundaryConditions( u1, t );  // *wdh* Mar 6, 2020 -- try this 
-          
-    // -- we assume v has been set ---
-        takeFirstBackwardStep( cur, t );
     }
-    
+
     if( computeTimeIntegral )
     {
     // When solving the Helmholtz problem with CgWaveHoltz we need to evaluate an integral 
     //      v  = (1/(2*T)* Int_0^T [  ( cos(omega*t)-.25)*u(x,t) dt ] 
         updateTimeIntegral( firstStep, t, u[cur] );
     }
+
+
+
+  // ----- FIRST STEP ------  
+
+    if( takeForwardInitialStep )
+    {
+        if( forcingOption==helmholtzForcing )
+            takeFirstStep( cur, t ); // -- NOTE: for now initial step is only called for Helmholtz problems *fix me*
+        else
+            getInitialConditions( next,t+dt );
+    }
+    else
+    {
+   // test backward step 
+        if( forcingOption==helmholtzForcing )
+            takeFirstBackwardStep( cur, t );
+        else
+            getInitialConditions( prev,t-dt );
+    }
+
+    
+
     
     real cpua=getCPU();
 
+  // =======================================================
   // ================== TIME STEPS =========================
+  // =======================================================
     for( int i=0; i<=maxNumberOfTimeSteps; i++ )                    // take some time steps
     {
         step++;
@@ -287,159 +316,289 @@ advance( int it )
 
         current = cur; 
 
-    // if( (i % plotSteps) == 0 || (t >tFinal-.5*dt) )  // plot solution every 'plotSteps' steps
-        if( i==0 || (t >nextTimeToPlot-.5*dt) )  // plot solution every 'plotSteps' steps
-        {
-       // ---- plot first step and last step and every plotSteps ---
-
-            if( debug & 4 )
-                printF("it=%d: completed step %i, t=%8.2e, nextTimeToPlot=%9.3e\n",it,i,t,nextTimeToPlot);
-      // getErrors( u2, t-dt );
-            real maxErr = getErrors( u[cur], t );
-
-      // ** fix this: 
-      // estimated number of time steps: (for output)
-            int numberOfTimeSteps=int( tFinal/dt+.5);
-
-      // -- output with a nice format ---
-      // sPrintF(buff,"%%4i: %%%is   ([%%2i:%%5i],[%%2i:%%5i],[%%2i:%%5i])  %%12g   %%8.2e %%8.2e    %%s\n",maxNameLength);
-
-            const Real cpuTime = getCPU()- cpua;
-
-            const int numDigits = ceil( log10(numberOfTimeSteps) );
-            char myFormat[180];
-            if( computeErrors )
+      // if( (i % plotSteps) == 0 || (t >tFinal-.5*dt) )  // plot solution every 'plotSteps' steps
+            if( i==0 || (t >nextTimeToPlot-.5*dt) )  // plot solution every 'plotSteps' steps
             {
-                sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e maxErr=%%9.2e, ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
-                printF(myFormat,t,step,dt,maxErr,solutionNorm,cpuTime);
-            }
-            else
-            {
-                sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
-                printF(myFormat,t,step,dt,solutionNorm,cpuTime);
-            }
-
-
-      // output results (e.g. print errors to the check file)
-            outputResults( cur, t );
-
-      // Optionally save results to a show file
-            saveShow( current,t,dt );
-
-      // int current = step % 2;      // ********* FIX ME
-      // ------ plot the solution -----
-            int finished = plot(current, t, dt );
-            
-            if( finished ) break;
-
-
-            if( t >tFinal-.5*dt )
-            {
-        // we are done (unless tFinal is increased in the next call to plot). plot solution at final time
-
-                if( interactiveMode==1 && plotOptions!=noPlotting )
-                    plotOptions=plotNoWait; 
-
-                plot(current, t, dt );
-                if( t >tFinal-.5*dt ) // tFinal may have been increased, so check again
-                { 
-                    finished=true;
-                    break;
-                }
-            }
-
-            if( t >nextTimeToPlot-.5*dt )
-            {
-         // --- Recompute nextTimeToPlot and dt ----
-                const Real prevTimeToPlot=nextTimeToPlot; 
-                nextTimeToPlot    = min(nextTimeToPlot+tPlot,tFinal);
-                Real timeInterval = nextTimeToPlot-prevTimeToPlot;
-                int numPlotSteps  = ceil( timeInterval/dtMax ); 
-                if( adjustTimeStep )
-                    dt = timeInterval/numPlotSteps;
-                if( debug & 4 ) 
+         // ---- plot first step and last step and every plotSteps ---
+                if( debug & 4 )
+                    printF("it=%d: completed step %i, t=%8.2e, nextTimeToPlot=%9.3e\n",it,i,t,nextTimeToPlot);
+        // getErrors( u2, t-dt );
+                real maxErr = getErrors( u[cur], t );
+        // ** fix this: 
+        // estimated number of time steps: (for output)
+                int numberOfTimeSteps=int( tFinal/dt+.5);
+        // -- output with a nice format ---
+        // sPrintF(buff,"%%4i: %%%is   ([%%2i:%%5i],[%%2i:%%5i],[%%2i:%%5i])  %%12g   %%8.2e %%8.2e    %%s\n",maxNameLength);
+                const Real cpuTime = getCPU()- cpua;
+                const int numDigits = ceil( log10(numberOfTimeSteps) );
+                char myFormat[180];
+                if( computeErrors )
                 {
-                    printF("CgWave:advance: nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e) ratio=%5.3f\n",
-                            nextTimeToPlot,numPlotSteps, dt,dtMax,dt/dtMax);
+                    sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e maxErr=%%9.2e, ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
+                    printF(myFormat,t,step,dt,maxErr,solutionNorm,cpuTime);
+                }
+                else
+                {
+                    sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
+                    printF(myFormat,t,step,dt,solutionNorm,cpuTime);
+                }
+        // output results (e.g. print errors to the check file)
+                outputResults( cur, t );
+        // Optionally save results to a show file
+                saveShow( current,t,dt );
+        // int current = step % 2;      // ********* FIX ME
+        // ------ plot the solution -----
+                int finished = plot(current, t, dt );
+                if( finished ) break;
+                if( t >tFinal-.5*dt )
+                {
+          // we are done (unless tFinal is increased in the next call to plot). plot solution at final time
+                    if( interactiveMode==1 && plotOptions!=noPlotting )
+                        plotOptions=plotNoWait; 
+                    plot(current, t, dt );
+                    if( t >tFinal-.5*dt ) // tFinal may have been increased, so check again
+                    { 
+                        finished=true;
+                        break;
+                    }
+                }
+                if( t >nextTimeToPlot-.5*dt )
+                {
+           // --- Recompute nextTimeToPlot and dt ----
+                    const Real prevTimeToPlot=nextTimeToPlot; 
+                    nextTimeToPlot    = min(nextTimeToPlot+tPlot,tFinal);
+                    Real timeInterval = nextTimeToPlot-prevTimeToPlot;
+                    int numPlotSteps  = ceil( timeInterval/dtMax ); 
+                    if( adjustTimeStep )
+                        dt = timeInterval/numPlotSteps;
+                    if( debug & 4 ) 
+                    {
+                        printF("CgWave:advance: nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e) ratio=%5.3f\n",
+                                nextTimeToPlot,numPlotSteps, dt,dtMax,dt/dtMax);
+                    }
                 }
             }
 
-        }
-
-
-    // if( saveShowFile && (i % showSteps == 0) )  // save solution every 'showSteps' steps
-    // {
-    //  show.startFrame();                                         // start a new frame
-    //  show.saveComment(0,sPrintF(buff,"Wave equation"));
-    //  show.saveComment(1,sPrintF(buff,"t=%5.2f c=%3.1f ad4=%3.1f",t,c,ad4));
-    //  show.saveSolution( u1 );                                        // save the current grid function
-    // }
-
-
-        
-        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        if( step==0 && takeForwardInitialStep )
         {
-            if( debug & 4 ) printf("Advance grid %i, step=%i...\n",grid,step);
-                    
-            MappedGrid & mg = cg[grid];
-            
-      // realArray & upg = up[grid];  // previous 
-      // realArray & ucg = uc[grid];  // current 
-      // realArray & ung = un[grid];  // next 
-      // realArray & vg = v[grid];
-                    
-
-            if( debug & 16 )
+      // --- first step has already been taken ----
+              t+=dt;
+        }
+        else
+        { // ------ take a time-step -----
+            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
             {
-                ::display(u[prev][grid],sPrintF("BEFORE: u=prev grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
-                ::display(u[cur ][grid],sPrintF("BEFORE: u=Cur grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
-            }
+                if( debug & 4 ) printf("Advance grid %i, step=%i...\n",grid,step);
+                        
+                MappedGrid & mg = cg[grid];
+                
+        // realArray & upg = up[grid];  // previous 
+        // realArray & ucg = uc[grid];  // current 
+        // realArray & ung = un[grid];  // next 
+        // realArray & vg = v[grid];
+                        
+    
+                if( debug & 16 )
+                {
+                    ::display(u[prev][grid],sPrintF("BEFORE: u=prev grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
+                    ::display(u[cur ][grid],sPrintF("BEFORE: u=Cur grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
 
-          const int useUpwindDissipation = upwind;  
-     // const int useUpwindDissipation = ad4>0.;  // ** OLD **
-
-     // useUpwindDissipation : true if grid is implicit AND upwind dissipation in ON 
-          int useImplicitUpwindDissipation=false;
-          if( gridIsImplicit(grid) && upwind )
-              useImplicitUpwindDissipation=true;
-
-
-      //     ----- UPWIND PREDICTOR CORRECTOR (UPC) ----
-      // UPC scheme: 
-      // Predict: 
-      //   (P)  u^p = 2 u^n - u^{n-1} + dt^2{ c^2 Delta_h( u^n) + ... }      (normal update) 
-      //        applyBC( u^p, t+dt )
-      // Correct
-      //   (C)  u^{n+1} = u^p + dt^2 * [ cupx*(D+xD-x)^q + cupy*(D+yD-y)^q ] ( u^p - u^{n-1} )/(2*dt)  ( add upwinding )
-      //        applyBC( u^{n+1}, t+dt )
-      // 
-      // NOTE: To avoid an extra application of the BC's after (C) we instead delay stage (C) to the BEGINNING of the next step,
-      // and actualy do step (C) FIRST on the current solution u^n:
-      //   (C)  u^{n}  <-  u^{n} +  dt^2 * [ cupx*(D+xD-x)^q + cupy*(D+yD-y)^q ] ( u^n - u^{n-2} )/(2*dt)  ( add upwinding to u^n )
-      //         Skip BC routine since doesn't appear to be necessary.
-      //   (P)  u^{n+1} = 2 u^n - u^{n-1} + dt^2{ Stuff }                                            (normal update for u^{n+1}) 
-      //         applyBC( u^{n+1}, t+dt )
-      // 
-      // Note: We need step>0 below since we need 3 levels of the solution to apply the upwind dissipation.
-      // Note: Add upwinding at least 2 steps in a row 
-            if( step>0 && useUpwindDissipation &&
-             !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added added with option=0 below
-                          ( (step % dissipationFrequency)==0 ) ||
-                          ( (step % dissipationFrequency)==1 ) )
-            {
-        // ---- upwind dissipation ------
-
-                const int prev2= (cur-2+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
-
-                OV_GET_SERIAL_ARRAY(real,u[prev2][grid],umLocal);  // u(t-2*dt)
-                OV_GET_SERIAL_ARRAY(real,u[prev ][grid],uLocal);   // u(t-dt)
-                OV_GET_SERIAL_ARRAY(real,u[cur  ][grid],unLocal);  // u(t)
-
+                    ::display(u[prev][grid],sPrintF("BEFORE: u=prev grid=%d t=%9.3e",grid,t+dt),stdout,"%6.2f ");
+                    ::display(u[cur ][grid],sPrintF("BEFORE: u=Cur grid=%d t=%9.3e",grid,t+dt),stdout,"%6.2f ");
+                }
+    
+              const int useUpwindDissipation = upwind;  
+       // const int useUpwindDissipation = ad4>0.;  // ** OLD **
+    
+       // useUpwindDissipation : true if grid is implicit AND upwind dissipation in ON 
+              int useImplicitUpwindDissipation=false;
+              if( gridIsImplicit(grid) && upwind )
+                  useImplicitUpwindDissipation=true;
+    
+    
+        //     ----- UPWIND PREDICTOR CORRECTOR (UPC) ----
+        // UPC scheme: 
+        // Predict: 
+        //   (P)  u^p = 2 u^n - u^{n-1} + dt^2{ c^2 Delta_h( u^n) + ... }      (normal update) 
+        //        applyBC( u^p, t+dt )
+        // Correct
+        //   (C)  u^{n+1} = u^p + dt^2 * [ cupx*(D+xD-x)^q + cupy*(D+yD-y)^q ] ( u^p - u^{n-1} )/(2*dt)  ( add upwinding )
+        //        applyBC( u^{n+1}, t+dt )
+        // 
+        // NOTE: To avoid an extra application of the BC's after (C) we instead delay stage (C) to the BEGINNING of the next step,
+        // and actualy do step (C) FIRST on the current solution u^n:
+        //   (C)  u^{n}  <-  u^{n} +  dt^2 * [ cupx*(D+xD-x)^q + cupy*(D+yD-y)^q ] ( u^n - u^{n-2} )/(2*dt)  ( add upwinding to u^n )
+        //         Skip BC routine since doesn't appear to be necessary.
+        //   (P)  u^{n+1} = 2 u^n - u^{n-1} + dt^2{ Stuff }                                            (normal update for u^{n+1}) 
+        //         applyBC( u^{n+1}, t+dt )
+        // 
+        // Note: We need step>0 below since we need 3 levels of the solution to apply the upwind dissipation.
+        // Note: Add upwinding at least 2 steps in a row 
+                bool startUpwinding = (takeForwardInitialStep && step>1) || (!takeForwardInitialStep && step>0); 
+                if( startUpwinding && useUpwindDissipation &&
+               !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added added with option=0 below
+                              ( (step % dissipationFrequency)==0 ) ||
+                              ( (step % dissipationFrequency)==1 ) )
+                {
+          // ---- upwind dissipation ------
+    
+                    const int prev2= (cur-2+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+    
+                    OV_GET_SERIAL_ARRAY(real,u[prev2][grid],umLocal);  // u(t-2*dt)
+                    OV_GET_SERIAL_ARRAY(real,u[prev ][grid],uLocal);   // u(t-dt)
+                    OV_GET_SERIAL_ARRAY(real,u[cur  ][grid],unLocal);  // u(t)
+    
+                    if( debug & 4 )
+                    {
+                        printF("advance: ADD DISSIPATION: step=%d, t=%9.3e using [prev2,prev,cur]=[%d,%d,%d]\n",step,t,prev2,prev,cur);
+                    }
+                    int option = 1;    // 0=advance, 1=add dissipation
+                        real cpuOpt=getCPU();
+                        const int orderOfAccuracyInSpace=orderOfAccuracy;
+                        const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");
+            // ** FIX ME **
+                        int numberOfForcingFunctions=1;
+                        int fCurrent=0;
+                        real sosupParameter=1.;
+                        OGFunction *tz = dbase.get<OGFunction*>("tz");
+                        const bool isRectangular = mg.isRectangular();
+                        int gridType = isRectangular? 0 : 1;
+                        int ipar[]={option,                        // ipar[ 0]
+                                                grid,                          // ipar[ 1]
+                                                gridType,                      // ipar[ 2]
+                                                orderOfAccuracyInSpace,        // ipar[ 3]
+                                                orderOfAccuracyInTime,         // ipar[ 4]
+                                                (int)addForcing,               // ipar[ 5]
+                                                (int)forcingOption,            // ipar[ 6]
+                                                numberOfForcingFunctions,      // ipar[ 7]
+                                                fCurrent,                      // ipar[ 8] 
+                                                debug,                         // ipar[ 9]
+                                                gridIsImplicit(grid),          // ipar[10]
+                                                useUpwindDissipation,          // ipar[11]
+                                                useImplicitUpwindDissipation,  // ipar[12]
+                                                preComputeUpwindUt             // ipar[13]
+                                                                        };  //
+                        real dx[3]={1.,1.,1.};
+                        if( isRectangular )
+                            mg.getDeltaX(dx);
+                        real rpar[20];
+                        rpar[ 0]=c;
+                        rpar[ 1]=dt;
+                        rpar[ 2]=dx[0];
+                        rpar[ 3]=dx[1];
+                        rpar[ 4]=dx[2];
+                        rpar[ 5]=mg.gridSpacing(0);
+                        rpar[ 6]=mg.gridSpacing(1);
+                        rpar[ 7]=mg.gridSpacing(2);
+                        rpar[ 8]=t;
+                        rpar[ 9]= (real &)tz;  // twilight zone pointer
+                        rpar[10]=sosupParameter;
+                        rpar[11]=dbase.get<real>("omega");
+                        rpar[12]=bImp(0);
+                        rpar[13]=bImp(1);
+                        rpar[14]=bImp(2);
+                        rpar[15]=bImp(3);
+                        intArray & mask = mg.mask();
+                        OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
+                        int *maskptr = maskLocal.getDataPointer(); 
+                        getIndex(mg.gridIndexRange(),I1,I2,I3);
+                        bool ok=ParallelUtility::getLocalArrayBounds(mask,maskLocal,I1,I2,I3);
+                        if( ok )
+                        {
+                            real *umptr = umLocal.getDataPointer();
+                            real *uptr  = uLocal.getDataPointer();
+                            real *unptr = unLocal.getDataPointer();
+                            real *vptr = umptr;  // This may be OK for dissipation stage
+              // We may need v for upwinding or 4th-order curvilinear to hold Lap_2h(u) 
+                            RealArray uDot;
+                            if( ( option==1 && preComputeUpwindUt ) || 
+                                    ( orderOfAccuracy==4 && !isRectangular) )
+                            {
+                                uDot.redim(uLocal);
+                                vptr = uDot.getDataPointer();  // do this for now 
+                            }
+                            real *fptr  = umptr;  // use this if there is nor forcing 
+                            if( forcingOption != noForcing )
+                            {
+                                OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
+                                fptr  = fLocal.getDataPointer();
+                            }
+                            real *faptr  = fptr;   // do this for now 
+                            real *rxptr;
+                            if( isRectangular )
+                            {
+                                rxptr=uptr;
+                            }
+                            else
+                            {
+                                OV_GET_SERIAL_ARRAY(real,mg.inverseVertexDerivative(),rxLocal);
+                                rxptr = rxLocal.getDataPointer();
+                            }
+                            real *xyptr = uptr;
+                            const bool centerNeeded = forcingOption == twilightZoneForcing; // **** IS THIS TRUE ?
+                            if( centerNeeded )
+                            {
+                // Pass the xy array for twilight-zone 
+                                mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
+                                OV_GET_SERIAL_ARRAY(real,mg.center(),xLocal);
+                                xyptr = xLocal.getDataPointer();
+                            }
+                            int ierr;
+                            advWave(mg.numberOfDimensions(),
+                                            I1.getBase(),I1.getBound(),I2.getBase(),I2.getBound(),I3.getBase(),I3.getBound(),
+                                            uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
+                                            uLocal.getBase(2),uLocal.getBound(2),
+                                            uLocal.getBase(3),uLocal.getBound(3),
+                                            *maskptr,*xyptr, *rxptr,  
+                                            *umptr,*uptr,*unptr, *fptr,
+                                            *faptr,  // forcing at multiple time levels 
+                                            *vptr,   // to hold uDot 
+                                            mg.boundaryCondition(0,0), ipar[0], rpar[0], ierr );
+                            if( false && option==0 )
+                            {
+                                ::display(uDot,"v=Lap2h(u)","%8.2e ");
+                            }
+                            if( false && grid==1 && option==1)
+                            {
+                                ::display(uDot,"uDot","%8.2e ");
+                                ::display(umLocal,"umLocal","%8.2e ");
+                                ::display(uLocal,"uLocal","%8.2e ");
+                                ::display(unLocal,"unLocal","%8.2e ");
+                            }
+                        }
+                        real cpu1=getCPU();
+                        if( option==0 )
+                        {
+                            if( isRectangular )
+                                timing(timeForAdvanceRectangularGrids) += cpu1-cpuOpt;
+                            else
+                                timing(timeForAdvanceCurvilinearGrids) += cpu1-cpuOpt;
+                        }
+                        else
+                        {
+                            timing(timeForDissipation) += cpu1-cpuOpt;
+                        }
+    
+                    if( FALSE )
+                    {
+            // testing: apply BC's after dissipation is added
+                        applyBoundaryConditions( u[cur],t); 
+                    }       
+                }
+    
+        // -- optimized advance ---
+                OV_GET_SERIAL_ARRAY(real,u[prev][grid],umLocal);
+                OV_GET_SERIAL_ARRAY(real,u[cur ][grid],uLocal);
+                OV_GET_SERIAL_ARRAY(real,u[next][grid],unLocal);
+    
                 if( debug & 4 )
                 {
-                    printF("advance: ADD DISSIPATION: step=%d, t=%9.3e using [prev2,prev,cur]=[%d,%d,%d]\n",step,t,prev2,prev,cur);
-                }
-                int option = 1;    // 0=advance, 1=add dissipation
+                    printF("advance: UPDATE SOLUTION: step=%d, t=%9.3e using [prev,cur,nex]=[%d,%d,%d]\n",step,t,prev,cur,next);
+                }      
+    
+                int option = 0;    // 0=advance, 1=add dissipation
+    
+        // =================== TAKE A STEP ==========================
                     real cpuOpt=getCPU();
                     const int orderOfAccuracyInSpace=orderOfAccuracy;
                     const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");
@@ -565,180 +724,40 @@ advance( int it )
                     {
                         timing(timeForDissipation) += cpu1-cpuOpt;
                     }
-
-                if( FALSE )
+                
+    
+                if( debug & 16 )
                 {
-          // testing: apply BC's after dissipation is added
-                    applyBoundaryConditions( u[cur],t); 
-                }       
-            }
-
-      // -- optimized advance ---
-            OV_GET_SERIAL_ARRAY(real,u[prev][grid],umLocal);
-            OV_GET_SERIAL_ARRAY(real,u[cur ][grid],uLocal);
-            OV_GET_SERIAL_ARRAY(real,u[next][grid],unLocal);
-
-            if( debug & 4 )
+                    ::display(u[next][grid],sPrintF("AFTER advOpt: uNext grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
+                    ::display(u[next][grid],sPrintF("AFTER advOpt: uNext grid=%d t=%9.3e",grid,t+dt),stdout,"%6.2f ");
+                }
+    
+                
+            }  // end for grid
+    
+            if( timeSteppingMethod == implicitTimeStepping )
             {
-                printF("advance: UPDATE SOLUTION: step=%d, t=%9.3e using [prev,cur,nex]=[%d,%d,%d]\n",step,t,prev,cur,next);
-            }      
-
-            int option = 0;    // 0=advance, 1=add dissipation
-
-      // =================== TAKE A STEP ==========================
-                real cpuOpt=getCPU();
-                const int orderOfAccuracyInSpace=orderOfAccuracy;
-                const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");
-        // ** FIX ME **
-                int numberOfForcingFunctions=1;
-                int fCurrent=0;
-                real sosupParameter=1.;
-                OGFunction *tz = dbase.get<OGFunction*>("tz");
-                const bool isRectangular = mg.isRectangular();
-                int gridType = isRectangular? 0 : 1;
-                int ipar[]={option,                        // ipar[ 0]
-                                        grid,                          // ipar[ 1]
-                                        gridType,                      // ipar[ 2]
-                                        orderOfAccuracyInSpace,        // ipar[ 3]
-                                        orderOfAccuracyInTime,         // ipar[ 4]
-                                        (int)addForcing,               // ipar[ 5]
-                                        (int)forcingOption,            // ipar[ 6]
-                                        numberOfForcingFunctions,      // ipar[ 7]
-                                        fCurrent,                      // ipar[ 8] 
-                                        debug,                         // ipar[ 9]
-                                        gridIsImplicit(grid),          // ipar[10]
-                                        useUpwindDissipation,          // ipar[11]
-                                        useImplicitUpwindDissipation,  // ipar[12]
-                                        preComputeUpwindUt             // ipar[13]
-                                                                };  //
-                real dx[3]={1.,1.,1.};
-                if( isRectangular )
-                    mg.getDeltaX(dx);
-                real rpar[20];
-                rpar[ 0]=c;
-                rpar[ 1]=dt;
-                rpar[ 2]=dx[0];
-                rpar[ 3]=dx[1];
-                rpar[ 4]=dx[2];
-                rpar[ 5]=mg.gridSpacing(0);
-                rpar[ 6]=mg.gridSpacing(1);
-                rpar[ 7]=mg.gridSpacing(2);
-                rpar[ 8]=t;
-                rpar[ 9]= (real &)tz;  // twilight zone pointer
-                rpar[10]=sosupParameter;
-                rpar[11]=dbase.get<real>("omega");
-                rpar[12]=bImp(0);
-                rpar[13]=bImp(1);
-                rpar[14]=bImp(2);
-                rpar[15]=bImp(3);
-                intArray & mask = mg.mask();
-                OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
-                int *maskptr = maskLocal.getDataPointer(); 
-                getIndex(mg.gridIndexRange(),I1,I2,I3);
-                bool ok=ParallelUtility::getLocalArrayBounds(mask,maskLocal,I1,I2,I3);
-                if( ok )
-                {
-                    real *umptr = umLocal.getDataPointer();
-                    real *uptr  = uLocal.getDataPointer();
-                    real *unptr = unLocal.getDataPointer();
-                    real *vptr = umptr;  // This may be OK for dissipation stage
-          // We may need v for upwinding or 4th-order curvilinear to hold Lap_2h(u) 
-                    RealArray uDot;
-                    if( ( option==1 && preComputeUpwindUt ) || 
-                            ( orderOfAccuracy==4 && !isRectangular) )
-                    {
-                        uDot.redim(uLocal);
-                        vptr = uDot.getDataPointer();  // do this for now 
-                    }
-                    real *fptr  = umptr;  // use this if there is nor forcing 
-                    if( forcingOption != noForcing )
-                    {
-                        OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
-                        fptr  = fLocal.getDataPointer();
-                    }
-                    real *faptr  = fptr;   // do this for now 
-                    real *rxptr;
-                    if( isRectangular )
-                    {
-                        rxptr=uptr;
-                    }
-                    else
-                    {
-                        OV_GET_SERIAL_ARRAY(real,mg.inverseVertexDerivative(),rxLocal);
-                        rxptr = rxLocal.getDataPointer();
-                    }
-                    real *xyptr = uptr;
-                    const bool centerNeeded = forcingOption == twilightZoneForcing; // **** IS THIS TRUE ?
-                    if( centerNeeded )
-                    {
-            // Pass the xy array for twilight-zone 
-                        mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
-                        OV_GET_SERIAL_ARRAY(real,mg.center(),xLocal);
-                        xyptr = xLocal.getDataPointer();
-                    }
-                    int ierr;
-                    advWave(mg.numberOfDimensions(),
-                                    I1.getBase(),I1.getBound(),I2.getBase(),I2.getBound(),I3.getBase(),I3.getBound(),
-                                    uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
-                                    uLocal.getBase(2),uLocal.getBound(2),
-                                    uLocal.getBase(3),uLocal.getBound(3),
-                                    *maskptr,*xyptr, *rxptr,  
-                                    *umptr,*uptr,*unptr, *fptr,
-                                    *faptr,  // forcing at multiple time levels 
-                                    *vptr,   // to hold uDot 
-                                    mg.boundaryCondition(0,0), ipar[0], rpar[0], ierr );
-                    if( false && option==0 )
-                    {
-                        ::display(uDot,"v=Lap2h(u)","%8.2e ");
-                    }
-                    if( false && grid==1 && option==1)
-                    {
-                        ::display(uDot,"uDot","%8.2e ");
-                        ::display(umLocal,"umLocal","%8.2e ");
-                        ::display(uLocal,"uLocal","%8.2e ");
-                        ::display(unLocal,"unLocal","%8.2e ");
-                    }
-                }
-                real cpu1=getCPU();
-                if( option==0 )
-                {
-                    if( isRectangular )
-                        timing(timeForAdvanceRectangularGrids) += cpu1-cpuOpt;
-                    else
-                        timing(timeForAdvanceCurvilinearGrids) += cpu1-cpuOpt;
-                }
-                else
-                {
-                    timing(timeForDissipation) += cpu1-cpuOpt;
-                }
+                takeImplictStep( t+dt );
+            }
+    
+            t+=dt;
+    
+            if( debug & 4 ) printf("...done advance, now interpolate...\n");
+    
+      // ----- apply boundary conditions ------
+            applyBoundaryConditions( u[next],t);
             
-
+    
             if( debug & 16 )
             {
-                ::display(u[next][grid],sPrintF("AFTER advOpt: uNext grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
+                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                {
+                    ::display(u[next][grid],sPrintF("after applyBC uNext grid=%d t=%9.3e",grid,t),debugFile,"%6.2f ");
+                    ::display(u[next][grid],sPrintF("after applyBC uNext grid=%d t=%9.3e",grid,t),stdout,"%6.2f ");
+                }
             }
-
-            
-        }  // end for grid
-
-        if( timeSteppingMethod == implicitTimeStepping )
-        {
-            takeImplictStep( t+dt );
-        }
-
-        t+=dt;
-
-        if( debug & 4 ) printf("...done advance, now interpolate...\n");
-
-    // ----- apply boundary conditions ------
-        applyBoundaryConditions( u[next],t);
-        
-
-        if( debug & 16 )
-        {
-            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-                ::display(u[next][grid],sPrintF("after applyBC uNext grid=%d t=%9.3e",grid,t),debugFile,"%6.2f ");
-        }
+    
+        } // end take a time-step
 
         if( computeTimeIntegral )
         {
@@ -749,12 +768,10 @@ advance( int it )
             StepOptionEnum stepOption = (t >tFinal-.5*dt) ? lastStep : middleStep;
       // printF(" computeTimeIntegral : t=%9.3e, stepOption=%d\n",t,stepOption);
             updateTimeIntegral( stepOption, t, u[next] );
-
-              
-
         }
         
-    } // for i .. number of steps
+    } // end for i .. number of steps
+
     timing(timeForAdvance) += getCPU()- cpua;
 
     current = next; // curent solution
@@ -772,6 +789,8 @@ advance( int it )
      // Reset adjusted omega and Tperiod
           omega   = omegaSave;
           Tperiod = TperiodSave;
+          dt      = dtSave; 
+          tFinal  = Tperiod; // reset too *wdh* Jul 25, 2021
     }   
 
     int & numberOfStepsTaken = dbase.get<int>("numberOfStepsTaken");

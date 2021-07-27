@@ -212,7 +212,7 @@ aString CgWave::getMethodName() const
 
   aString suffix="";
   if( upwind )
-    suffix = suffix + "s";  // name = FD22s, FD44s etc. for sosup dissipation
+    suffix = suffix + "u";  // name = FD22u, FD44u etc. for sosup upwind dissipation
 
   aString methodName = sPrintF("FD%i%i%s",orderOfAccuracyInTime,orderOfAccuracy,(const char *)suffix);
 
@@ -316,17 +316,6 @@ plot( int current, real t, real dt )
   real & tPlot   = dbase.get<real>("tPlot");
   real & cfl     = dbase.get<real>("cfl");
   int & debug    = dbase.get<int>("debug");
-
-  // const int & upwind                  = dbase.get<int>("upwind");
-  // const real & ad4              = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
-  // const int useSosupDissipation = upwind;
-  // // const int useSosupDissipation = ad4>0.;
-
-  // aString suffix="";
-  // // if( timeSteppingMethod==implicitTimeStepping )
-  // //   suffix = "i"; // i = implicit TS
-  // if( useSosupDissipation )
-  //   suffix = suffix + "s";  // name = FD22s, FD44s etc. for sosup dissipation
 
   aString methodName = getMethodName();  // FD22, or FD24s etc.
 

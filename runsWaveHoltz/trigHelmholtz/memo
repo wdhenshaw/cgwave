@@ -1,4 +1,195 @@
 **************************************************
+**** Tues July 27, 2021
+
+Run for checks: 
+
+cgwh -noplot trigHelmholtz.cmd -g=square16.order4.ng3.hdf -omega=5.4 -adjustOmega=1 -orderInTime=2 -solver=fixedPoint -matlab=junk -tol=1e-12 -tp=1000 -maxIterations=100 -go=go
+
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =17 #########################
+CgWaveHoltz::residual: c=1, omega= 5.4000000e+00, omegas= 5.3923193e+00 (from symbol of D+D-), dt=3.422214e-02, adjustOmega=1, upwind=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  5.392319331440e+00
+CgWaveHoltz::residual: max-res=3.347e-12 (using omega), max-res=8.288e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.400e+00, max-res=3.347e-12, CR=0.186 CR-perPeriod=0.186, cpu= 8.82e-02(s)
+CgWaveHoltz::Results saved to file junk.m
+CgWaveHoltz: max-err =5.32e-04 (between WaveHoltz and known solution)
+
+
+**************************************************
+**** Mon July 26, 2021
+
+ORDER=4: adjustOmega=1 and UPWIND
+cgwh trigHelmholtz.cmd -g=square32.order4.ng3.hdf -omega=5.4 -adjustOmega=1 -orderInTime=2 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -upwind=1 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+CgWaveHoltz::residual: compute residual with adjusted omegas=  5.398079217984e+00
+CgWaveHoltz::residual: max-res=1.173e-04 (using omega), max-res=2.068e-02 (using omega from discrete symbol)
+CgWaveHoltz: max-err =2.10e-05 (between WaveHoltz and known solution)
+
+NO-UPWIND: 
+CgWaveHoltz::residual: max-res=7.561e-11 (using omega), max-res=2.074e-02 (using omega from discrete symbol)
+CgWaveHoltz: max-err =2.08e-05 (between WaveHoltz and known solution)
+
+
+ORDER=4:
+cgwh trigHelmholtz.cmd -g=square32.order4.ng3.hdf -omega=5.4 -adjustOmega=0 -orderInTime=2 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -upwind=0 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=7.44e-13 (tol=1.00e-12) numberOfIterations=5 #############
+CgWaveHoltz::residual: c=1, omega= 5.4000000e+00, omegas= 5.3980792e+00 (from symbol of D+D-), dt=1.711107e-02, adjustOmega=0, upwind=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  5.398079217984e+00
+CgWaveHoltz::residual: max-res=2.073e-02 (using omega), max-res=7.792e-11 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.400e+00, max-res=2.073e-02, CR=0.004 CR-perPeriod=0.004, cpu= 8.61e-02(s)
+CgWaveHoltz: max-err =4.12e-04 (between WaveHoltz and known solution)
+
+
+
+
+
+TEST adjustOmega:
+cgwh trigHelmholtz.cmd -g=square32.order2.hdf -omega=5.4 -adjustOmega=1 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -upwind=0 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.87e-15 (tol=1.00e-12) numberOfIterations=2 #############
+CgWaveHoltz::residual: c=1, omega= 5.4000000e+00, omegas= 5.3974486e+00 (from symbol of D+D-), dt=1.972123e-02, adjustOmega=1
+CgWaveHoltz::residual: compute residual with adjusted omegas=  5.397448611087e+00
+CgWaveHoltz::residual: max-res=2.487e-12 (using omega), max-res=2.769e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.400e+00, max-res=2.487e-12, CR=0.000 CR-perPeriod=0.000, cpu= 4.62e-02(s)
+
+
+
+**BUG** found : UPWINDING WAS ON !! Messes up waveHoltz convergence
+
+CHANGED CGWAVE -- TAKE A FORWARD FIRST STEP
+
+BUG IN PETSc version fixed --> ZERO OUT u[i] to avoid nan's in 2nd ghost.
+
+PETSc : 
+cgwh trigHelmholtz.cmd -g=square32.order2.hdf -omega=5.4 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -upwind=0 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=3.20e-15 (tol=1.00e-12) numberOfIterations=2 #############
+CgWaveHoltz::residual: c=1, omega= 5.4000000e+00, omegas= 5.3974486e+00 (from symbol of D+D-), dt=1.972123e-02, adjustOmega=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  5.397448611087e+00
+CgWaveHoltz::residual: max-res=2.767e-02 (using omega), max-res=3.759e-12 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.400e+00, max-res=2.767e-02, CR=0.000 CR-perPeriod=0.000, cpu= 4.54e-02(s)
+
+
+
+cgwh trigHelmholtz.cmd -g=square32.order2.hdf -omega=5.4 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -upwind=0 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+
+cgWave:FD22 t=1.164e+00 (59 steps) dt=1.972e-02 maxErr= 4.55e-03, ||u||= 1.00e+00, cpu= 8.97e-03(s)
+it=18:  l2Norm( v-vOld )=2.19e-13 (tol=1e-12)
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =19 #########################
+CgWaveHoltz::residual: c=1, omega= 5.4000000e+00, omegas= 5.3974486e+00 (from symbol of D+D-), dt=1.972123e-02, adjustOmega=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  5.397448611087e+00
+CgWaveHoltz::residual: max-res=2.767e-02 (using omega), max-res=4.945e-12 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.400e+00, max-res=2.767e-02, CR=0.222 CR-perPeriod=0.222, cpu= 2.03e-01(s)
+
+
+BACKWARD-INITIAL-STEP (NO upwinding)
+################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =19 #########################
+CgWaveHoltz::residual: c=1, omega= 5.4000000e+00, omegas= 5.3974486e+00 (from symbol of D+D-), dt=1.972123e-02, adjustOmega=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  5.397448611087e+00
+CgWaveHoltz::residual: max-res=2.767e-02 (using omega), max-res=5.386e-12 (using omega from discrete symbol)
+CgWaveHoltz: omega=5.400e+00, max-res=2.767e-02, CR=0.222 CR-perPeriod=0.222, cpu= 1.90e-01(s)
+
+
+**************************************************
+**** Sun July 25, 2021
+
+
+COMPARE TO NEW multiFreqWaveHoltz2d.m in research/WaveHoltz
+
+cgwh trigHelmholtz.cmd -g=square32.order2.hdf -omega=5.4 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+
+
+
+
+>>>>>>>>>>>> PERIODIC
+cgwh trigHelmholtz.cmd -g=square32p.order2.hdf -x0=.75 -y0=.75 -omega=5 -adjustOmega=1 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+##### CgWave:adjust omega and dt for Helmholtz: dts=  1.5321093476e-02 (dt=  1.5324842213e-02) omegas=  5.001223e+00 (omega=  5.000000e+00) ####
+
+CgWaveHoltz::residual: c=1, omega= 5.0000000e+00, omegas= 4.9987769e+00 (from symbol of D+D-), dt=1.532484e-02, adjustOmega=1
+
+
+
+++++++++++++TEST new POLY PERIODIC SOLUTION
+
+LINEAR IN SPACE
+cgwh trigHelmholtz.cmd -g=square32.order2.hdf -known=polyPeriodic -omega=1 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -degreeInSpaceForPolyPeriodic=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=1.19e-13 (tol=1.00e-12) numberOfIterations=4 #############
+CgWaveHoltz::residual: c=1, omega= 1.0000000e+00, omegas= 9.9999007e-01 (from symbol of D+D-), dt=1.543780e-02, adjustOmega=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  9.999900697911e-01
+
+CgWaveHoltz::residual: max-res=5.836e-05 (using omega), max-res=1.604e-08 (using omega from discrete symbol)
+With periodic values for t=-dt
+CgWaveHoltz::residual: max-res=5.836e-05 (using omega), max-res=1.878e-08 (using omega from discrete symbol)
+
+G64: FACTOR 8 reduction
+CgWaveHoltz::residual: max-res=1.478e-05 (using omega), max-res=2.016e-09 (using omega from discrete symbol)
+
+
+>>>>>>>>>>>>>>CONST IN SPACE
+
+cgwh trigHelmholtz.cmd -g=square32.order2.hdf -known=polyPeriodic -omega=1 -adjustOmega=1 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -degreeInSpaceForPolyPeriodic=0 -go=halt
+
+
+cgwh trigHelmholtz.cmd -g=square32.order2.hdf -known=polyPeriodic -omega=1 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -degreeInSpaceForPolyPeriodic=0 -go=halt
+
+RESULTS: 
+  residual is off by 1.98657e-5  --> sqrt() = .004457
+  dt=1.543780e-02
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=4.73e-18 (tol=1.00e-15) numberOfIterations=2 #############
+CgWaveHoltz::residual: c=1, omega= 1.0000000e+00, omegas= 9.9999007e-01 (from symbol of D+D-), dt=1.543780e-02, adjustOmega=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  9.999900697911e-01
+
+CgWaveHoltz::residual: max-res=1.987e-05 (using omega), max-res=5.347e-09 (using omega from discrete symbol)
+
+CgWaveHoltz: omega=1.000e+00, max-res=1.987e-05, CR=0.052 CR-perPeriod=0.052, cpu= 2.86e-01(s)
+
+with first step cos(-omega*dt): 
+CgWaveHoltz::residual: max-res=1.987e-05 (using omega), max-res=6.279e-09 (using omega from discrete symbol)
+G64: FACTOR 8 reduction: 
+CgWaveHoltz::residual: max-res=4.978e-06 (using omega), max-res=7.753e-10 (using omega from discrete symbol)
+
+
+
+**************************************************
+**** Sat July 24, 2021
+
+>>>>>>>>>>>> PERIODIC omega=0 
+cgwh trigHelmholtz.cmd -g=square32p.order2.hdf -x0=.75 -y0=.75 -omega=0 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+
+cgwh trigHelmholtz.cmd -g=square32.order2.hdf -x0=.75 -y0=.75 -omega=5 -adjustOmega=1 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=2 -go=halt
+
+##### CgWave:adjust omega and dt for Helmholtz: dts=  1.5321e-02 (dt=  1.5321e-02) omegas=  5.001223e+00 (omega=  5.000000e+00) ####
+
+CgWaveHoltz::residual: c=1, omega= 5.0000000e+00, omegas= 4.9987775e+00 (from symbol of D+D-), dt=1.532109e-02, adjustOmega=1
+CgWaveHoltz::residual: max-res=6.663e-03 (using omega), max-res=6.998e-03 (using omega from discrete symbol)
+
+
+
+
+cgwh trigHelmholtz.cmd -g=square32.order2.hdf -x0=.75 -y0=.75 -omega=5 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+
+CgWaveHoltz::residual: c=1, omega= 5.0000000e+00, omegas= 4.9987769e+00 (from symbol of D+D-), dt=1.532484e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.791e-02 (using omega), max-res=6.672e-03 (using omega from discrete symbol)
+
+>>>>>>>>>>>> PERIODIC
+cgwh trigHelmholtz.cmd -g=square32p.order2.hdf -x0=.75 -y0=.75 -omega=5 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -go=halt
+
+
+takeFirstBackwardStep: setting  u(-dt) = u(0)*cos(omega*(-dt)) , dt=  1.532484221263e-02
+
+CgWaveHoltz::residual: c=1, omega= 5.0000000e+00, omegas= 4.9987769e+00 (from symbol of D+D-), dt=1.532484e-02, adjustOmega=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  4.998776908575e+00
+CgWaveHoltz::residual: max-res=1.876e-02 (using omega), max-res=6.476e-03 (using omega from discrete symbol)
+
+
+**************************************************
 **** Sat July 17, 2021
 
 

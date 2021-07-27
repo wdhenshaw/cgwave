@@ -1,0 +1,92 @@
+---- CGWAVE FILES AND FUNCTIONS ------
+
+
+CgWave.C:
+  CgWave()
+  int CgWave::initialize()
+  int CgWave::interactiveUpdate()
+  int CgWave::setup() : setup grids and grid functions
+  real CgWave::getErrors( realCompositeGridFunction & u, real t )
+  int CgWave::takeFirstBackwardStep( int cur, real t )
+  int CgWave::outputResults( int current, real t )
+
+
+advance.bC: 
+    int CgWave::advance( int it )
+
+applyBoundaryConditions.bC
+  applyBoundaryConditions( realCompositeGridFunction & u, real t ) 
+
+getHelmholtzForcing.bC 
+  int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )   
+
+getInitialConditions.C
+  void CgWave::getInitialConditions( real t ) 
+
+getTimeStep.C 
+  int CgWave::getTimeStep()
+
+implicit.bC
+  int CgWave::takeImplictStep( Real t )
+  int CgWave::formImplicitTimeSteppingMatrix()
+
+outputHeader.C
+  void CgWave::outputHeader()  
+  void CgWave::displayBoundaryConditions(FILE *file /* = stdout */)
+
+plot.bC
+  realCompositeGridFunction& getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
+  buildRunTimeDialog()
+  aString CgWave::getMethodName() const
+  getTimeSteppingLabel( real dt, aString & label ) const
+  plot( int current, real t, real dt )
+
+printStatistics.C
+  int CgWave::printStatistics(FILE *file /* = stdout */)  
+
+ saveShow.C
+   int CgWave::saveShow( int current, Real t, Real dt ) 
+
+updateTimeIntegral.C
+  int CgWave::updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction& u )
+
+userDefinedForcing.bC
+  int CgWave::userDefinedForcing( realArray & f, int iparam[], real rparam[] ) 
+  int CgWave::setupUserDefinedForcing() 
+
+userDefinedKnownSolution.bC
+  int getUserDefinedKnownSolution(...)  : evaluate the known solution
+  int CgWave::updateUserDefinedKnownSolution() : interactively choose the known solution
+
+
+-------------------------------
+---- CG-WAVE-HOLTZ FILES ------
+-------------------------------
+
+CgWaveHoltz.C: 
+  CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(giIn)  
+  int CgWaveHoltz::initialize()
+  setNameOfGridFile( aString & nameOfOGFile )
+  int CgWaveHoltz::interactiveUpdate()
+  int CgWaveHoltz::outputMatlabFile()
+  int CgWaveHoltz::setup()
+  real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
+
+  int CgWaveHoltz::solve() : WaveHoltz fix-point iterations are done here
+   
+  int CgWaveHoltz::outputHeader()
+  int CgWaveHoltz::saveCheckFile( int checkFileCounter, Real maxErr, Real solutionNorm )  
+
+solveHelmholtz.C
+   int CgWaveHoltz::solveHelmholtz( realCompositeGridFunction & u, realCompositeGridFunction & f  )
+
+solvePETSc.C
+  extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y) : matrix free matrix-vector multiply for WaveHoltz iteration
+  int CgWaveHoltz::solvePETSc(int argc,char **args)
+
+
+
+
+
+
+

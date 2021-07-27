@@ -1,3 +1,245 @@
+
+**************************************************
+**** Tues July 27, 2021
+
+Save figure for doc's
+
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -omega=9.777 -amp=20 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=gaussianWHAnnulusO4Omega9p777Krylov -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -show=annulusOmega9p777.show -go=og
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.27e-15 (tol=1.00e-14) numberOfIterations=31 #############
+CgWaveHoltz::residual: c=1, omega= 9.7770000e+00, omegas= 9.7761795e+00 (from symbol of D+D-), dt=4.590354e-03, adjustOmega=1, upwind=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  9.776179483905e+00
+CgWaveHoltz::residual: max-res=1.414e-11 (using omega), max-res=3.401e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=1.414e-11, CR=0.385 CR-perPeriod=0.385, cpu= 5.42e+00(s)
+CgWaveHoltz::Results saved to file gaussianWHAnnulusO4Omega9p777Krylov.m
+
+
+
+**************************************************
+**** Mon July 26, 2021
+
+
+REVISIT DISK: --> RESIDUALS small with adjustOmega, DIRECT solve seems to work
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -omega=8.1 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=junk -tol=1e-14 -ad4=1 -imode=1 -maxIterations=400 -go=og
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=8.41e-15 (tol=1.00e-10) numberOfIterations=1 #############
+CgWaveHoltz::residual: c=1, omega= 8.1000000e+00, omegas= 8.0990098e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=1, upwind=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  8.099009848595e+00
+CgWaveHoltz::residual: compute residual with adjusted omegas=  8.099009848595e+00
+CgWaveHoltz::residual: max-res=3.521e-11 (using omega), max-res=1.773e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=3.521e-11, CR=1.000 CR-perPeriod=1.000, cpu= 2.44e-01(s)
+CgWaveHoltz::Results saved to file junk.m
+CgWaveHoltz: max-diff=3.53e-14 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=4.56e-15 (tol=1.00e-14) numberOfIterations=24 #############
+CgWaveHoltz::residual: c=1, omega= 8.1000000e+00, omegas= 8.0990098e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=1, upwind=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  8.099009848595e+00
+CgWaveHoltz::residual: compute residual with adjusted omegas=  8.099009848595e+00
+CgWaveHoltz::residual: max-res=3.007e-11 (using omega), max-res=1.773e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=3.007e-11, CR=0.710 CR-perPeriod=0.710, cpu= 1.79e+00(s)
+CgWaveHoltz::Results saved to file junk.m
+
+
+
+REVISIT ANNULUS  --> RESIDUALS small with adjustOmega : (NOTE TURN OFF UPWINDING) 
+
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -omega=9.777 -amp=20 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=gaussianWHAnnulusO4Omega9p777Krylov -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -go=og
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.27e-15 (tol=1.00e-14) numberOfIterations=31 #############
+CgWaveHoltz::residual: c=1, omega= 9.7770000e+00, omegas= 9.7761795e+00 (from symbol of D+D-), dt=4.590354e-03, adjustOmega=1, upwind=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  9.776179483905e+00
+CgWaveHoltz::residual: max-res=1.414e-11 (using omega), max-res=3.401e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=1.414e-11, CR=0.385 CR-perPeriod=0.385, cpu= 5.42e+00(s)
+CgWaveHoltz::Results saved to file gaussianWHAnnulusO4Omega9p777Krylov.m
+
+
+
+
+
+**************************************************
+**** Fri July 23, 2021
+
+
+++++ SPHERE : NEED TO FIX ORDER=4 grid : sphere.cmd
+cgwh gaussian.cmd -g=spheree4.order2 -x0=.25 -y0=.25 -z0=.25 -omega=8.1 -amp=100 -adjustOmega=0 -orderInTime=2 -solver=krylov -matlab=gaussianWHSphereO2Omega8p1Krylov -tol=1e-8 -ad4=1 -imode=1 -maxIterations=100 -go=og
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=9.14e-09 (tol=1.00e-08) numberOfIterations=64 #############
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09720e+00 (from symbol of D+D-), dt=1.124206e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.650e+00 (using omega), max-res=1.634e+00 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.650e+00, CR=0.790 CR-perPeriod=0.790, cpu= 9.67e+01(s)
+CgWaveHoltz::Results saved to file gaussianWHSphereO4Omega8p1Krylov.m
+
+
+
+
+
+cgwh gaussian.cmd -g=spheree4.order2 -x0=.25 -y0=.25 -z0=.25 -omega=8.1 -amp=100 -adjustOmega=0 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWHSphereO2Omega8p1FPI -tol=1e-8 -ad4=1 -imode=1 -maxIterations=100 -go=og
+
+it=99:  l2Norm( v-vOld )=4.72e-04 (tol=1e-08)
+$$$$$$$$ CgWaveHoltz:ERROR -- number of iterations reached the maximum allowed = 100 $$$$$$$$
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =100 #########################
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09720e+00 (from symbol of D+D-), dt=1.124206e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=2.559e+00 (using omega), max-res=2.564e+00 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=2.559e+00, CR=0.958 CR-perPeriod=0.958, cpu= 1.42e+02(s)
+CgWaveHoltz::Results saved to file gaussianWHSphereO4Omega8p1Krylov.m
+
+
+++++ BOX 
+cgwh gaussian.cmd -g=box4.order4.ng3.hdf -x0=.25 -y0=.25 -z0=.25 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWHBoxO4Omega8p1FPI -tol=1e-10 -ad4=1 -imode=1 -maxIterations=100 -go=og
+
+it=99:  l2Norm( v-vOld )=7.23e-04 (tol=1e-10)
+$$$$$$$$ CgWaveHoltz:ERROR -- number of iterations reached the maximum allowed = 100 $$$$$$$$
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =100 #########################
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09720e+00 (from symbol of D+D-), dt=1.124206e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=9.514e-01 (using omega), max-res=9.631e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=9.514e-01, CR=0.963 CR-perPeriod=0.963, cpu= 2.07e+01(s)
+CgWaveHoltz::Results saved to file gaussianWHBoxO4Omega8p1FPI.m
+
+
+cgwh gaussian.cmd -g=box4.order4.ng3.hdf -x0=.25 -y0=.25 -z0=.25 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=krylov -matlab=gaussianWHBoxO4Omega8p1Krylov -tol=1e-10 -ad4=1 -imode=1 -maxIterations=100 -go=og
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.10e-11 (tol=1.00e-10) numberOfIterations=16 #############
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09720e+00 (from symbol of D+D-), dt=1.124206e-02, adjustOmega=0
+CgWaveHoltz::residual: max-res=4.019e-02 (using omega), max-res=7.963e-04 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=4.019e-02, CR=0.270 CR-perPeriod=0.270, cpu= 3.91e+00(s)
+CgWaveHoltz::Results saved to file gaussianWHBoxO4Omega8p1Krylov.m
+
+
+
+
+
+++++++++++++++++ DISK 
+
+SOMETHING WRONG WITH direct solve order=4 ??
+
+>>>>>>>>>SIC ORDER=4
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=krylov -matlab=gaussianWHDiskO4Omega8p1Krylov -tol=1e-10 -ad4=1 -imode=1 -maxIterations=100 -show=gaussianDiskOmega8p1.show -go=og
+
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWHDiskO4Omega8p1FPI -tol=1e-10 -ad4=1 -imode=1 -maxIterations=400 -go=og
+
+it=399:  l2Norm( v-vOld )=6.26e-05 (tol=1e-10)
+$$$$$$$$ CgWaveHoltz:ERROR -- number of iterations reached the maximum allowed = 400 $$$$$$$$
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =400 #########################
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09901e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.054e-01 (using omega), max-res=8.808e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.054e-01, CR=0.983 CR-perPeriod=0.983, cpu= 4.00e+01(s)
+CgWaveHoltz::Results saved to file gaussianWHDiskO4Omega8p1FPI.m
+
+
+
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=none -matlab=test -tol=1e-10 -ad4=1 -imode=1 -maxIterations=100 -go=og
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=6.41e-11 (tol=1.00e-10) numberOfIterations=26 #############
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09901e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.776e-02 (using omega), max-res=9.749e-05 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.776e-02, CR=0.476 CR-perPeriod=0.476, cpu= 2.97e+00(s)
+CgWaveHoltz::Results saved to file test.m
+CgWaveHoltz: max-diff=3.25e-03 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+
+
+SIC ORDER=2
+cgwh gaussian.cmd -g=sice8.order2.hdf -x0=.25 -y0=.25 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=none -matlab=test -tol=1e-10 -ad4=1 -imode=1 -maxIterations=100 -go=og
+
+it=99:  l2Norm( v-vOld )=3.88e-06 (tol=1e-10)
+$$$$$$$$ CgWaveHoltz:ERROR -- number of iterations reached the maximum allowed = 100 $$$$$$$$
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =100 #########################
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09867e+00 (from symbol of D+D-), dt=7.757019e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.158e-01 (using omega), max-res=9.883e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.158e-01, CR=0.990 CR-perPeriod=0.990, cpu= 6.54e+00(s)
+CgWaveHoltz::Results saved to file test.m
+CgWaveHoltz: max-diff=2.00e-02 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+++++++++++ ANNULUS
+
+>>> omeg=18.4
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -omega=18.4 -amp=20 -adjustOmega=0 -orderInTime=2 -solver=krylov -matlab=gaussianWHAnnulusO4Omega18p4Krylov -tol=1e-10 -ad4=0 -imode=1 -maxIterations=100 -go=og
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=8.03e-09 (tol=1.00e-10) numberOfIterations=104 #############
+CgWaveHoltz::residual: c=1, omega= 1.84000e+01, omegas= 1.83946e+01 (from symbol of D+D-), dt=4.553033e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=2.082e-02 (using omega), max-res=1.824e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=1.840e+01, max-res=2.082e-02, CR=0.870 CR-perPeriod=0.870, cpu= 1.34e+01(s)
+CgWaveHoltz::Results saved to file gaussianWHAnnulusO4Omega18p4.m
+
+
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -omega=18.4 -amp=20 -adjustOmega=0 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWHAnnulusO4Omega18p4FPI -tol=1e-10 -ad4=0 -imode=1 -maxIterations=400 -go=og
+
+
+
+
+
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -omega=9.777 -amp=20 -adjustOmega=0 -orderInTime=2 -solver=krylov -matlab=gaussianWHAnnulusO4Omega9p777Krylov -tol=1e-10 -ad4=0 -imode=1 -maxIterations=100 -go=og
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=4.13e-11 (tol=1.00e-10) numberOfIterations=27 #############
+CgWaveHoltz::residual: c=1, omega= 9.77700e+00, omegas= 9.77618e+00 (from symbol of D+D-), dt=4.590354e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=3.417e-03 (using omega), max-res=4.099e-05 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=3.417e-03, CR=0.476 CR-perPeriod=0.476, cpu= 6.79e+00(s)
+CgWaveHoltz::Results saved to file gaussianWHAnnulusO4Omega9p777Krylov.m
+
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -omega=9.777 -amp=20 -adjustOmega=0 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWHAnnulusO4Omega9p777FPI -tol=1e-10 -ad4=0 -imode=1 -maxIterations=300 -go=og
+
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =200 #########################
+CgWaveHoltz::residual: c=1, omega= 9.77700e+00, omegas= 9.77618e+00 (from symbol of D+D-), dt=4.590354e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.351e-01 (using omega), max-res=1.355e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=1.351e-01, CR=0.974 CR-perPeriod=0.974, cpu= 4.60e+01(s)
+CgWaveHoltz::Results saved to file gaussianWHAnnulusO4Omega9p777FPI.m
+
+
+
+
+
+cgwh gaussian.cmd -g=annulus4.order2 -x0=.5 -y0=.5 -omega=9.777 -amp=20 -beta=50 -adjustOmega=0 -solver=none -tol=1e-10 -ad4=1 -go=halt
+
+
++++++++++++ SQUARE
+
+cgwh -noplot gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=gaussianWaveHoltzSquare64Order4Krylov -tol=1e-10 -ad4=0 -imode=1 -go=go
+
+FP
+cgwh -noplot gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWaveHoltzSquare64Order4FixedPoint -tol=1e-10 -ad4=0 -imode=1 -maxIterations=400 -go=go
+
+
+cgwh gaussian.cmd -g=square128.order4.ng3.hdf -x0=.7 -y0=.7 -omega=15 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWHSquare128O4Omega15FPI -tol=1e-10 -ad4=0 -imode=1 -maxIterations=500 -go=og
+
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =500 #########################
+CgWaveHoltz::residual: c=1, omega= 1.50000e+01, omegas= 1.49974e+01 (from symbol of D+D-), dt=4.273544e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=2.374e-03 (using omega), max-res=4.870e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=1.500e+01, max-res=2.374e-03, CR=0.976 CR-perPeriod=0.976, cpu= 2.16e+01(s)
+CgWaveHoltz::Results saved to file gaussianWHSquare128O4Omega15FPI.m
+
+
+
+cgwh gaussian.cmd -g=square128.order4.ng3.hdf -x0=.7 -y0=.7 -omega=15 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=gaussianWHSquare128O4Omega15Krylov -tol=1e-10 -ad4=0 -imode=1 -go=og
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.54e-11 (tol=1.00e-10) numberOfIterations=31 #############
+CgWaveHoltz::residual: c=1, omega= 1.50000e+01, omegas= 1.49974e+01 (from symbol of D+D-), dt=4.273544e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=4.010e-04 (using omega), max-res=5.004e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=1.500e+01, max-res=4.010e-04, CR=0.492 CR-perPeriod=0.492, cpu= 1.58e+00(s)
+CgWaveHoltz::Results saved to file gaussianWHSquare128O4Omega15Krylov.m
+
+
+
+
+
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.7 -y0=.7 -omega=15 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=gaussianWHSquare64O4Omega15Krylov -tol=1e-10 -ad4=0 -imode=1 -go=og
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=2.52e-11 (tol=1.00e-10) numberOfIterations=31 #############
+CgWaveHoltz::residual: c=1, omega= 1.50000e+01, omegas= 1.49897e+01 (from symbol of D+D-), dt=8.542696e-03, adjustOmega=1
+CgWaveHoltz::residual: max-res=1.195e-02 (using omega), max-res=1.977e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=1.500e+01, max-res=1.195e-02, CR=0.493 CR-perPeriod=0.493, cpu= 3.91e-01(s)
+CgWaveHoltz::Results saved to file gaussianWHSquare64O4Omega15Krylov.m
+
+
 **************************************************
 **** Fri July 16, 2021
 

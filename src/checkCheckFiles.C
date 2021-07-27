@@ -24,7 +24,7 @@ main(int argc, char *argv[])
       int len=0;
       if( len=line.matches("-tol=") )
       {
-	sScanF(line(len,line.length()-1),"%e",&tol);
+        sScanF(line(len,line.length()-1),"%e",&tol);
       }
     }
   }
@@ -76,12 +76,12 @@ main(int argc, char *argv[])
       fScanF(file,"%e %i",&t[m],&numberOfComponents[m]);
       if( feof(file) )
       {
-	// printf("EOF on file %i\n",m);
+        // printf("EOF on file %i\n",m);
         if( timeStep>0 )
-	{
-	  returnValue=0;
-	  break;
-	}
+        {
+          returnValue=0;
+          break;
+        }
         else 
           return 1;
       }
@@ -90,14 +90,14 @@ main(int argc, char *argv[])
       {
         aString fileName = m==0 ? fileName1 : fileName2;
         printF("checkCheckFiles: ERROR: file%d %s invalid number of components. t[%i]=%e  numberOfComponents=%i\n",
-	       m+1,(const char*)fileName,m,t[m],numberOfComponents[m]);
+               m+1,(const char*)fileName,m,t[m],numberOfComponents[m]);
         printF("fileName1=%s fileName2=%s\n",(const char*)fileName1,(const char*)fileName2);
-	
-	return 1;
+        
+        return 1;
       }
       int dum,n;
       for( n=0; n<numberOfComponents[m]; n++ )
-	fScanF(file,"%i %e %e",&dum,&(value[m](n,0)),&(value[m](n,1)));
+        fScanF(file,"%i %e %e",&dum,&(value[m](n,0)),&(value[m](n,1)));
     }
     Range N(0,numberOfComponents[0]-1);
     real maxDiff = max(fabs(value[0](N,V)-value[1](N,V)));
@@ -115,16 +115,16 @@ main(int argc, char *argv[])
       }
       for( int n=0; n<numberOfComponents[0]; n++ )
       {
-	if( fabs(value[0](n,0)-value[1](n,0))>tol )
-	{
+        if( fabs(value[0](n,0)-value[1](n,0))>tol )
+        {
           printf(" Component %i: values: %10.4e (file1) and %10.4e (file2) differ by %8.2e.\n",
                  n,value[0](n,0),value[1](n,0),fabs(value[0](n,0)-value[1](n,0)));
-	}
-	if( fabs(value[0](n,1)-value[1](n,1))>tol )
-	{
+        }
+        if( fabs(value[0](n,1)-value[1](n,1))>tol )
+        {
           printf(" Component %i: norms:  %10.4e (file1) and %10.4e (file2) differ by %8.2e.\n",
                  n,value[0](n,1),value[1](n,1),fabs(value[0](n,1)-value[1](n,1)));
-	}
+        }
       }
       
       return 1;

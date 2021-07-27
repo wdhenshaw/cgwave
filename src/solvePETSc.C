@@ -359,7 +359,11 @@ solvePETSc(int argc,char **args)
 
  // here is the CgWave solver for the time dependent wave equation
  CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
- Tperiod=numPeriods*twoPi/omega;  
+ if( omega!=0. )
+   Tperiod=numPeriods*twoPi/omega; 
+ else 
+   Tperiod=1.;
+ 
  printF("CgWaveHoltz::solvePETSc: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
  
  cgWave.dbase.get<real>("omega")     = omega;        // ** FIX ME **

@@ -37,6 +37,11 @@
       knownSolutionOption=3;                   // this number must match in bcOptWave.bf90
       // assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
     }
+    else if( userKnownSolution=="polyPeriodic"  ) 
+    {
+      knownSolutionOption=4;                   // this number must match in bcOptWave.bf90
+      // assignKnownSolutionAtBoundaries=1;  
+    }    
 
 
   }

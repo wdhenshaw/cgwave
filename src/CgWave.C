@@ -105,6 +105,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   dbase.put<Real>("omegaSave")   = -1.;  // used when we adjust omega 
   dbase.put<Real>("TperiodSave") = -1.;
+  dbase.put<Real>("dtSave")      = -1.;
   
   dbase.put<real>("tol")=1.e-4;  // tolerance for Krylov solvers 
 
@@ -194,6 +195,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   FILE *& checkFile = dbase.put<FILE*>("checkFile");
   checkFile = fopen("cgWave.check","w" );        // for regression and convergence tests
+  fPrintF(checkFile,"# Check file for CgWave\n"); // check file has one title line
 
   // show file variables:
   dbase.put<bool>("saveShowFile")     =false; 
@@ -748,6 +750,9 @@ int CgWave::interactiveUpdate()
 
   textCommands[nt] = "implicit weights";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g, %g, %g, %g, %g (beta2,beta4,...)",bImp(0),bImp(1),bImp(2),bImp(3),bImp(4));  nt++; 
+
+  textCommands[nt] = "omega";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%g",omega);  nt++; 
   
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -870,6 +875,11 @@ int CgWave::interactiveUpdate()
     {
       printF("Setting flushFrequency=%i (number of solution in each sun showFile)\n",flushFrequency);
     }
+
+    else if( dialog.getTextValue(answer,"omega","%e",omega) )
+    {
+      printF("Setting omega=%g (for helmholtz forcing)\n",omega);
+    }    
 
     else if( dialog.getToggleValue(answer,"save show file",saveShowFile) )
     {
@@ -1239,6 +1249,7 @@ int CgWave::setup()
   for( int i=0; i<numberOfTimeLevelsStored; i++ )
   {
     ucg[i].updateToMatchGrid(cg,all,all,all);
+    ucg[i]=0.; 
     ucg[i].setOperators(operators);                                 
     ucg[i].setName("u");                       // name the grid function
   }
@@ -1364,6 +1375,107 @@ getErrors( realCompositeGridFunction & u, real t )
 
 }
 
+//=================================================================================================
+/// \brief Take the first step using Taylor series in time (e.g. for Helmholtz solve) 
+/// THIS ASSUMES A HELMHOLTZ SOLVE OR HELMHOLTZ FORCING 
+//=================================================================================================
+int CgWave::
+takeFirstStep( int cur, real t )
+{
+
+  assert( t==0. );
+
+  const int & debug           = dbase.get<int>("debug");
+  if( debug & 4 )
+    printF("*******  CgWave::takeFirstStep GET SOLUTION at dt *************\n");
+  
+  const real & c              = dbase.get<real>("c");
+  const real & dt             = dbase.get<real>("dt");
+  const real & omega          = dbase.get<real>("omega");
+  const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
+
+  ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
+
+  // Do Helmholtz case for now: 
+  assert( forcingOption==helmholtzForcing );
+
+    //  ---- NOTE: change sign of forcing for Helmholtz since we want to solve ----
+  //       ( omega^2 I + c^2 Delta) w = f  
+  const Real fSign = forcingOption==helmholtzForcing ? -1.0 : 1.0;
+
+  // const int & solveHelmholtz = dbase.get<int>("solveHelmholtz");
+  // const Real fSign = solveHelmholtz ? -1.0 : 1.0;  
+  
+
+  const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
+  const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+  const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+
+
+  realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
+  realCompositeGridFunction & uc = u[cur];     // current time 
+  realCompositeGridFunction & un = u[next];    // next time
+
+  // forcing: 
+  realCompositeGridFunction & f = dbase.get<realCompositeGridFunction>("f");
+
+  CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
+
+  Index I1,I2,I3;
+  for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+  {
+    MappedGrid & mg = cg[grid];
+    OV_GET_SERIAL_ARRAY(real,un[grid],unLocal);
+    OV_GET_SERIAL_ARRAY(real,uc[grid],ucLocal);
+    OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
+
+    getIndex(mg.gridIndexRange(),I1,I2,I3);
+    bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
+    if( ok )
+    {
+      bool usePeriodicFirstStep=true;
+      if( usePeriodicFirstStep )
+      {
+         // **TESTING** u(dt) = u(0)*cos(omega*(dt)) if time-periodic
+        printF("takeFirstStep: setting  u(dt) = u(0)*cos(omega*(dt)) , dt=%20.12e\n",dt);
+        unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) * cos(omega*dt);
+      }
+      else
+      {
+        // Taylor series first step **CHECK ME**
+        RealArray lap(I1,I2,I3);
+        operators[grid].derivative(MappedGridOperators::laplacianOperator,ucLocal,lap,I1,I2,I3);
+   
+        // -- take a FORWARD STEP ---
+        // u(t-dt) = u(t) + dt*ut + (dt^2/2)*utt + (dt^3/6)*uttt + (dt^4/4!)*utttt
+        //  utt = c^2*Delta(u) + f
+        //  uttt = c^2*Delta(ut) + ft 
+        //  utttt = c^2*Delta(utt) + ftt
+        //        = (c^2*Delta)^2 u + c^2*Delta(f) + ftt 
+        unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
+        if( orderOfAccuracy==4 )
+        {
+          // this may be good enough for 4th-order -- local error is dt^4
+          real DeltaUt =0.; // we assume ut=0
+          // upLocal(I1,I2,I3) += ( (dt*dt*dt/6.)*(-omega*sin(omega*t) )*( (c*c)*DeltaUt + fLocal(I1,I2,I3) )
+          unLocal(I1,I2,I3) += ( fSign*(dt*dt*dt/6.)*(-omega*sin(omega*t) ) )*( fLocal(I1,I2,I3) );
+        }
+
+      }
+      
+    }
+  } // end for grid
+
+  applyBoundaryConditions( u[next], t+dt );
+  
+  // u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%6.2f ");
+
+
+  return 0;
+
+}
+
+
 
 //=================================================================================================
 /// \brief Take the first BACKWARD step using Taylor series in time (e.g. for Helmholtz solve) 
@@ -1400,7 +1512,7 @@ takeFirstBackwardStep( int cur, real t )
   // const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
 
   realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
-  realCompositeGridFunction & un = u[cur];     // current tinme 
+  realCompositeGridFunction & un = u[cur];     // current time 
   realCompositeGridFunction & up = u[prev];    // previous time
 
   // forcing: 
@@ -1420,25 +1532,35 @@ takeFirstBackwardStep( int cur, real t )
     bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
     if( ok )
     {
-      RealArray lap(I1,I2,I3);
-      operators[grid].derivative(MappedGridOperators::laplacianOperator,unLocal,lap,I1,I2,I3);
- 
-      // -- take a BACKWARD STEP ---
-      // u(t-dt) = u(t) - dt*ut + (dt^2/2)*utt - (dt^3/6)*uttt + (dt^4/4!)*utttt
-      //  utt = c^2*Delta(u) + f
-      //  uttt = c^2*Delta(ut) + ft 
-      //  utttt = c^2*Delta(utt) + ftt
-      //        = (c^2*Delta)^2 u + c^2*Delta(f) + ftt 
-      upLocal(I1,I2,I3)  = unLocal(I1,I2,I3) -dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
-      if( orderOfAccuracy==4 )
+      bool usePeriodicFirstStep=false;
+      if( usePeriodicFirstStep )
       {
-        // this may be good enough for 4th-order -- local erro is dt^4
-        real DeltaUt =0.; // we assume ut=0
-        // upLocal(I1,I2,I3) += ( -(dt*dt*dt/6.)*(-omega*sin(omega*t) )*( (c*c)*DeltaUt + fLocal(I1,I2,I3) )
-        upLocal(I1,I2,I3) += ( -fSign*(dt*dt*dt/6.)*(-omega*sin(omega*t) ) )*( fLocal(I1,I2,I3) );
+         // **TESTING** u(-dt) = u(0)*cos(omega*(-dt)) if time-periodic
+        printF("takeFirstBackwardStep: setting  u(-dt) = u(0)*cos(omega*(-dt)) , dt=%20.12e\n",dt);
+        upLocal(I1,I2,I3)  = unLocal(I1,I2,I3) * cos(-omega*dt);
+      }
+      else
+      {
+        RealArray lap(I1,I2,I3);
+        operators[grid].derivative(MappedGridOperators::laplacianOperator,unLocal,lap,I1,I2,I3);
+   
+        // -- take a BACKWARD STEP ---
+        // u(t-dt) = u(t) - dt*ut + (dt^2/2)*utt - (dt^3/6)*uttt + (dt^4/4!)*utttt
+        //  utt = c^2*Delta(u) + f
+        //  uttt = c^2*Delta(ut) + ft 
+        //  utttt = c^2*Delta(utt) + ftt
+        //        = (c^2*Delta)^2 u + c^2*Delta(f) + ftt 
+        upLocal(I1,I2,I3)  = unLocal(I1,I2,I3) -dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
+        if( orderOfAccuracy==4 )
+        {
+          // this may be good enough for 4th-order -- local erro is dt^4
+          real DeltaUt =0.; // we assume ut=0
+          // upLocal(I1,I2,I3) += ( -(dt*dt*dt/6.)*(-omega*sin(omega*t) )*( (c*c)*DeltaUt + fLocal(I1,I2,I3) )
+          upLocal(I1,I2,I3) += ( -fSign*(dt*dt*dt/6.)*(-omega*sin(omega*t) ) )*( fLocal(I1,I2,I3) );
+        }
+
       }
       
-
     }
   } // end for grid
 

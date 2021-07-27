@@ -5,7 +5,7 @@
 #                              -bcApproach=[cbc|lcbc|oneSided]
 #
 $omega=30.1; $x0=0; $y0=0; $z0=0; $beta=400; $numPeriods=1; $omegaSOR=1; $tol=1.e-3; 
-$ad4=0; # OLD
+# $ad4=0; # OLD
 $upwind=0; # new
 $debug=3; 
 $ts="explicit"; 
@@ -18,7 +18,7 @@ $orderInTime=-1;  # -1 = use default
 $tz="polynomial"; 
 $tf=1.; $tp=.1; $cfl=.9; $go="halt; "
 $degreeInSpace=2; $degreeInTime=2; $fx=2.; $fy=2.; $fz=2.; $ft=2.; 
-GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\$degreeInTime,"cfl=f"=>\$cfl,"ad4=f"=>\$ad4,\
+GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\$degreeInTime,"cfl=f"=>\$cfl,\
             "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"debug=i"=>\$debug,"orderInTime=i"=>\$orderInTime,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"bc=s"=>\$bc,"tf=f"=>\$tf,"tp=f"=>\$tp,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,\
             "fx=f"=>\$fx,"fy=f"=>\$fy,"fz=f"=>\$fz,"ft=f"=>\$ft,"rectangular=s"=>\$rectangular,\
@@ -64,7 +64,7 @@ trig frequencies $fx $fy $fz $ft
 #Gaussian params $beta $x0 $y0 0 (beta,x0,y0,z0)
 # omega $omega
 # omegaSOR $omegaSOR
-if( $ad4>0. ){ $upwind=1; }# for backward compatibility
+# if( $ad4>0. ){ $upwind=1; }# for backward compatibility
 upwind dissipation $upwind
 # artificial dissipation $ad4
 # tol $tol 

@@ -12,8 +12,7 @@
 $go="go"; $forcing="gaussian"; 
 $omega=30.1; $beta=50.; $x0=0.5; $y0=0.5; $z0=0.5; $t0=0.; $amp=1.; 
 $numPeriods=1; $omegaSOR=1; $tol=1.e-3; 
-$ad4=1;    # old way
-$upwind=1; # new way
+$upwind=0; # new way
 $tp=.5; $imode=0; 
 $solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIterations=100; $adjustOmega=0; 
 $matlab="cgWaveHoltz"; $show="gaussian.show"; 
@@ -21,7 +20,7 @@ $cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1;
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $orderInTime=-1;  # -1 = use default
 GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"numPeriods=i"=>\$numPeriods,\
-            "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"ad4=f"=>\$ad4,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,\
+            "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,\
             "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,\
             "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,\
             "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f"=>\$amp,"show=s"=>\$show,\
@@ -61,7 +60,7 @@ $cmd
 #
 bc=$bc
 #
-if( $ad4>0. ){ $upwind=1; }# for backward compatibility
+# if( $ad4>0. ){ $upwind=1; }# for backward compatibility
 upwind dissipation $upwind
 # artificial dissipation $ad4
 # 

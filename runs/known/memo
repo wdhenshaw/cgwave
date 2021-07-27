@@ -1,4 +1,39 @@
 ************************************************************************
+********* Sat Jul 24, 2021
+
+START TEST polyPeriodic solution
+
+BUG FIXED : SET omega in CgWave
+
+
+cgWave known.cmd -g=square32.order4 -ad4=0 -omega=2 -tp=.1 -tf=5 -known=polyPeriodic
+
+NOT FOURTH ORDER, more like 3rd order  : errors large near boundaries ? maybe a kink
+G32
+cgWave:FD44 t=5.000e-01 ( 30 steps) dt=1.667e-02 maxErr= 2.95e-06, ||u||= 1.62e+00, cpu= 5.49e+00(s)
+G64
+cgWave:FD44 t=5.000e-01 ( 55 steps) dt=9.091e-03 maxErr= 4.88e-07, ||u||= 1.62e+00, cpu= 4.53e+00(s)
+
+G128 
+cgWave:FD44 t=5.000e-01 ( 105 steps) dt=4.762e-03 maxErr= 7.09e-08, ||u||= 1.62e+00, cpu= 5.66e+00(s)
+
+
+
+cgWave known.cmd -g=square32.order2 -ad4=0 -omega=2 -tp=.1 -tf=5 -known=polyPeriodic
+
+G32
+cgWave:FD22 t=5.000e-01 ( 30 steps) dt=1.667e-02 maxErr= 8.67e-05, ||u||= 1.62e+00, cpu= 5.33e+00(s)
+
+G64
+cgWave:FD22 t=5.000e-01 ( 55 steps) dt=9.091e-03 maxErr= 2.59e-05, ||u||= 1.62e+00, cpu= 4.55e+00(s)
+
+
+cgWave known.cmd -g=square128.order2 -ad4=0 -omega=.1 -tp=.1 -tf=5 -known=polyPeriodic
+
+cgWave:FD22 t=1.000e+00 ( 210 steps) dt=4.762e-03 maxErr= 9.04e-04, ||u||= 9.96e-01, cpu= 1.69e+01(s)
+
+
+************************************************************************
 ********* Sat Jul 17, 2021
 
 test 3D

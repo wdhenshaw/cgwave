@@ -2,6 +2,8 @@
 # 
 #   plotStuff plotSolution.cmd -show=gaussianSquare.show -name=gaussianSquareOmega -solution=1
 #   plotStuff plotSolution.cmd -show=gaussianShapesOmega9p777.show -name=gaussianShapesOmega9p777 -solution=1
+#   plotStuff plotSolution.cmd -show=gaussianDiskOmega8p1.show -name=gaussianDiskOmega8p1 -solution=1
+#   plotStuff plotSolution.cmd -show=annulusOmega9p777.show -name=annulusOmega9p777 -solution=1
 #
 $show="gaussianSquare.show"; $solution="-1"; $name="plot"; $field="Ey"; $emin=0; $emax=-1; 
 $tSave=1; $numPerTime=2; $numToSave=5; # save solution at these time intervals
