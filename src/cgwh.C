@@ -196,6 +196,7 @@ main(int argc, char *argv[])
   real & tol                      = cgWaveHoltz.dbase.get<real>("tol");
   int & adjustOmega               = cgWaveHoltz.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
   int & maximumNumberOfIterations = cgWaveHoltz.dbase.get<int>("maximumNumberOfIterations");
+  int & cgWaveDebugMode           = cgWaveHoltz.dbase.get<int>("cgWaveDebugMode");
   // Build a dialog menu for changing parameters
   GUIState gui;
   DialogData & dialog=gui;
@@ -275,6 +276,15 @@ main(int argc, char *argv[])
   dialog.setTextBoxes(textCommands, textLabels, textStrings);
 
   
+  aString tbCommands[] = {
+                          "run cgWave with debugging",
+                            ""};
+  int tbState[10];
+  tbState[0] = cgWaveDebugMode;
+
+  int numColumns=1;
+  dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
+
 
   ps.pushGUI(gui);
 
@@ -291,8 +301,15 @@ main(int argc, char *argv[])
   bool reComputeErrors=false; 
   int checkFileCounter=0; // keeps track of how many times the checkFile is saved with results
 
-  realCompositeGridFunction uHelmholtz; // holds Helmholtz solution from direct solver
+  // uHelmholtz holds Helmholtz solution from direct solver
+  //   This is optionally used in CgWave as a known solution
+  if( !cgWave.dbase.has_key("uHelmholtz") )
+    cgWave.dbase.put<realCompositeGridFunction>("uHelmholtz");
+
+  realCompositeGridFunction & uHelmholtz = cgWave.dbase.get<realCompositeGridFunction>("uHelmholtz"); 
+  uHelmholtz.updateToMatchGrid(cg); // save Helmholtz solution here
   bool helmholtzFromDirectSolverWasComputed=false;
+
   Ogshow show;  // show file for saving solutions
 
   int current=0;
@@ -333,7 +350,15 @@ main(int argc, char *argv[])
         show.close();
         showFileIsOpen=false;
       }
-    }         
+    }   
+    else if( dialog.getToggleValue(answer,"run cgWave with debugging",cgWaveDebugMode) )
+    {
+      printF("Setting cgWaveDebugMode=%d (1: run cgWave plotting every step)\n",cgWaveDebugMode);
+      if( cgWaveDebugMode==1 )
+      {
+
+      }
+    }          
 
     else if( answer=="compute with fixed-point" )
     {
@@ -377,7 +402,7 @@ main(int argc, char *argv[])
     else if( answer == "solve Helmholtz directly" )
     {
        // this may require cgWave to have been called to create f ?
-      uHelmholtz.updateToMatchGrid(cg); // save Helmholtz solution here
+      // uHelmholtz.updateToMatchGrid(cg); // save Helmholtz solution here
 
       realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
       realCompositeGridFunction & f = cgWave.dbase.get<realCompositeGridFunction>("f");
@@ -395,10 +420,16 @@ main(int argc, char *argv[])
       uHelmholtz = v;
       helmholtzFromDirectSolverWasComputed=true;
 
-      bool useAdjustedOmega=false;
-      Real maxRes = cgWaveHoltz.residual( useAdjustedOmega );
-      printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e, cpu=%9.2e (Direct solution of Helmholtz).\n",
-             omega,maxRes,cpu);
+      if( true )
+      {
+        bool useAdjustedOmega=false;
+        Real maxRes = cgWaveHoltz.residual( useAdjustedOmega );
+        printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e, cpu=%9.2e (Direct solution of Helmholtz).\n",
+               omega,maxRes,cpu);
+  
+        maxRes = cgWaveHoltz.residual();
+        printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e (direct Helmholtz solution)\n",omega,maxRes);
+      }
 
       reComputeErrors=true;
       replot=true;

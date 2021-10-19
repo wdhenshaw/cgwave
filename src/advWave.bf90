@@ -616,7 +616,7 @@ end if
       ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
       OGDERIV2D( 2,0,0,0,i1,i2,i3,t, ec, evtt(m) )
       fv(m) = evtt(m)
-      ! We weight the TZ forcing with the implicit weights to make the solution exact for ploynomials
+      ! We weight the TZ forcing with the implicit weights to make the solution exact for polynomials
       do mt=-1,1
         tm = t + dt*mt
         OGDERIV2D( 0,2,0,0,i1,i2,i3,tm, ec, evxx(m) )
@@ -629,7 +629,7 @@ end if
 
       OGDERIV3D( 2,0,0,0,i1,i2,i3,t, ec, evtt(m) )
       fv(m) = evtt(m)
-      ! We weight the TZ forcing with the implicit weights to make the solution exact for ploynomials
+      ! We weight the TZ forcing with the implicit weights to make the solution exact for polynomials
       do mt=-1,1
         tm = t + dt*mt       
         OGDERIV3D( 0,2,0,0,i1,i2,i3,tm, ec, evxx(m) )

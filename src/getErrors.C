@@ -1,15 +1,7 @@
 #include "CgWave.h"
-// #include "CompositeGridOperators.h";    
-// #include "PlotStuff.h"
-// #include "display.h"
-// #include "ParallelOverlappingGridInterpolator.h"
-// #include "ParallelUtility.h"
-// #include "LoadBalancer.h"
-// #include "gridFunctionNorms.h"
-// #include "OGPolyFunction.h"
-// #include "OGTrigFunction.h"
-// #include "DialogData.h"
-// #include "Ogshow.h"
+#include "OGFunction.h"
+#include "ParallelUtility.h"
+#include "gridFunctionNorms.h"
 
 // ======================================================================================================
 /// \brief Compute errors
@@ -19,6 +11,10 @@ getErrors( realCompositeGridFunction & u, real t )
 {
   real cpu0=getCPU();
   // printF("+++++++++++ getErrors t=%9.3e +++++++++++\n",t);
+
+  const int & debug  = dbase.get<int>("debug");
+  FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+  FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
 
   real & maxError     = dbase.get<real>("maxError");      // save max-error here 
   real & solutionNorm = dbase.get<real>("solutionNorm");  // save solution norm here
@@ -94,6 +90,16 @@ getErrors( realCompositeGridFunction & u, real t )
           errLocal(I1,I2,I3) = ue(I1,I2,I3) - uLocal(I1,I2,I3);
 
         }
+      }
+
+      if( debug & 16 )
+      {
+        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+        where( maskLocal(I1,I2,I3)==0 )
+        {
+          errLocal(I1,I2,I3)=0.; 
+        }
+        ::display(errLocal,sPrintF("\nError on grid=%d t=%9.3e",grid,t),debugFile,"%10.2e ");
       }
       
     }

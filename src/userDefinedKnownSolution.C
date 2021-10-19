@@ -231,6 +231,29 @@ getUserDefinedKnownSolution(real t,  int grid,
         }
 
     }
+    else if( userKnownSolution=="computedHelmholtz" )
+    {
+    // known solution is determined from the computed Helmholtz solution
+        if( !dbase.has_key("uHelmholtz") )
+        {
+            printF("CgWave:userDefinedKnownSolution: ERROR: uHelmholtz not found.\n");
+            printF("This grid function is current computed in cgwh.C\n");
+      // OV_ABORT("ERROR");
+            uLocal(I1,I2,I2,0) = 0.; // do this for now 
+        }
+        else
+        {
+            printF("UDKS: evaluate computedHelmholtz solution at t=%9.3e\n",t);
+            realCompositeGridFunction & uHelmholtz = dbase.get<realCompositeGridFunction>("uHelmholtz"); // holds Helmholtz solution from direct solver
+    
+            const real & omega  = dbase.get<real>("omega");
+            const real coswt = cos(omega*t);
+            OV_GET_SERIAL_ARRAY(real,uHelmholtz[grid],uHelmholtzLocal);
+    
+            uLocal(I1,I2,I3,0) = uHelmholtzLocal(I1,I2,I3)*coswt;
+        }
+
+    }
 
     else if( userKnownSolution=="polyPeriodic" )
     {
@@ -363,8 +386,9 @@ updateUserDefinedKnownSolution()
                                                 "no known solution",
                                                 "plane wave",
                                                 "gaussian plane wave",
-                                                "box helmholtz",
+                                                "box Helmholtz",
                                                 "poly periodic",
+                                                "computed Helmholtz",
                                                 "done",    
                                                 ""};
     int numRows=3;
@@ -481,7 +505,7 @@ updateUserDefinedKnownSolution()
             }
 
         }
-        else if( answer=="box helmholtz" ) 
+        else if( answer=="box Helmholtz" ) 
         {
             printF("----------------- box helmholtz -----------------\n"
                           " Define a time-periodic solution for a square or box that depends on a forcing term.\n");
@@ -535,6 +559,30 @@ updateUserDefinedKnownSolution()
                 a1=0.; b1=0; c1=0; 
             }
 
+
+        }
+        else if( answer=="computed Helmholtz" )
+        {
+            printF("Known solution will be found from the discrete solution to the Helmholtz problem.\n");
+            printF("     u(x,t) = uHelmholtz(x) * cos(omega*t) \n");
+            printF("NOTE: uHelmholtz(x) is current computed by cgwh.\n");
+
+            userKnownSolution="computedHelmholtz";
+            dbase.get<bool>("knownSolutionIsTimeDependent")=true;  // known solution depends on time
+
+      // --- do this for now : only works with boxHelmholtz solution 
+            gi.inputString(answer,"Enter omega,kx,ky,kz");
+            sScanF(answer,"%e %e %e %e",&rpar[0],&rpar[1],&rpar[2],&rpar[3]);
+            printF(" Setting omega=%g, [kx,ky,kz]=[%g,%g,%g]\n",rpar[0],rpar[1],rpar[2],rpar[3]);
+
+            dbase.get<real>("omega") = rpar[0]; // define the Helmholtz omega for advance 
+
+      // Save parameters in dbase so we can look them up in bcOptWave
+            const Real omega=rpar[0], kx=rpar[1]*twoPi, ky=rpar[2]*twoPi, kz=rpar[3]*twoPi; 
+            dbase.put<Real>("omegaBoxHelmholtz") = omega;
+            dbase.put<Real>("kxBoxHelmholtz")    = kx;
+            dbase.put<Real>("kyBoxHelmholtz")    = ky;
+            dbase.put<Real>("kzBoxHelmholtz")    = kz;
 
         }
 

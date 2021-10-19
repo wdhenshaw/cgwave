@@ -15,16 +15,17 @@
 int CgWave::
 getTimeStep()
 {
-  CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
-  const real & cfl                   = dbase.get<real>("cfl");
-  real & dt                          = dbase.get<real>("dt");
-  const real & ad4                   = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
-  const Real & dtMax                 = dbase.get<Real>("dtMax"); 
-  const real & c                     = dbase.get<real>("c");
-  const int & orderOfAccuracyInTime  = dbase.get<int>("orderOfAccuracyInTime");
-  const int & orderOfAccuracy        = dbase.get<int>("orderOfAccuracy");
-  IntegerArray & gridIsImplicit      = dbase.get<IntegerArray>("gridIsImplicit");
-  const int & preComputeUpwindUt       = dbase.get<int>("preComputeUpwindUt");
+  CompositeGridOperators & operators        = dbase.get<CompositeGridOperators>("operators");
+  const real & cfl                          = dbase.get<real>("cfl");
+  real & dt                                 = dbase.get<real>("dt");
+  const real & ad4                          = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  const Real & dtMax                        = dbase.get<Real>("dtMax"); 
+  const real & c                            = dbase.get<real>("c");
+  const int & orderOfAccuracyInTime         = dbase.get<int>("orderOfAccuracyInTime");
+  const int & orderOfAccuracy               = dbase.get<int>("orderOfAccuracy");
+  IntegerArray & gridIsImplicit             = dbase.get<IntegerArray>("gridIsImplicit");
+  const int & preComputeUpwindUt            = dbase.get<int>("preComputeUpwindUt");
+  const int & chooseImplicitTimeStepFromCFL = dbase.get<int>("chooseImplicitTimeStepFromCFL");
 
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
@@ -233,7 +234,14 @@ getTimeStep()
 
   if( timeSteppingMethod==implicitTimeStepping )
   {
-    printF("cgWave::getTimeStep: explicit dt=%9.2e, implicit dt=%9.2e, ratio=%6.2f\n",dtExplicit,dt,dt/dtExplicit);
+    printF("cgWave::getTimeStep: cfl=%g, explicit dt=%9.2e, implicit dt=%9.2e, ratio=%6.2f\n",
+         cfl,dtExplicit,dt,dt/dtExplicit);
+    if( chooseImplicitTimeStepFromCFL )
+    {
+      // --- choose the implciit dt based on the CFL parameter (which can be large) ----
+      dt=dtExplicit;
+      printF("cgWave:chooseTimeStep: chooseImplicitTimeStepFromCFL : setting dt=%9.2e, cfl=%g\n",dt,cfl);
+    }
   }
 
 

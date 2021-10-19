@@ -7,6 +7,7 @@ CgWave.C:
   int CgWave::interactiveUpdate()
   int CgWave::setup() : setup grids and grid functions
   real CgWave::getErrors( realCompositeGridFunction & u, real t )
+  int CgWave::takeFirst( int cur, real t )
   int CgWave::takeFirstBackwardStep( int cur, real t )
   int CgWave::outputResults( int current, real t )
 

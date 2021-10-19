@@ -138,7 +138,7 @@ int takeFirstStep( int cur, real t );
 // Old way: 
 int takeFirstBackwardStep( int cur, real t );
 
-int takeImplictStep( Real t );
+int takeImplicitStep( Real t );
 
 // update time-integral for Helmholtz projection
 int updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction& u );

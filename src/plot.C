@@ -150,14 +150,15 @@ buildRunTimeDialog()
         delete [] cmd;
         delete [] label;
 
-        const int numberOfTextStrings=7;
+        const int numberOfTextStrings=8;
         aString textLabels[numberOfTextStrings];
         aString textStrings[numberOfTextStrings];
 
-        const real & tFinal  = dbase.get<real>("tFinal");
-        const real & tPlot   = dbase.get<real>("tPlot");
-        const real & cfl       = dbase.get<real>("cfl");
-        const int & debug = dbase.get<int>("debug");
+        const real & tFinal       = dbase.get<real>("tFinal");
+        const real & tPlot        = dbase.get<real>("tPlot");
+        const real & cfl          = dbase.get<real>("cfl");
+        const int & debug         = dbase.get<int>("debug");
+        const int & plotFrequency = dbase.get<int>("plotFrequency");
 
         int nt=0;
         textLabels[nt] = "final time";  sPrintF(textStrings[nt], "%g",tFinal);  nt++; 
@@ -165,6 +166,7 @@ buildRunTimeDialog()
         textLabels[nt] = "cfl";  
         sPrintF(textStrings[nt], "%g",cfl);  nt++; 
         textLabels[nt] = "debug";  sPrintF(textStrings[nt], "%i",debug);  nt++; 
+        textLabels[nt] = "plotFrequency";  sPrintF(textStrings[nt], "%i",plotFrequency);  nt++; 
   
        // null strings terminal list
         textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -300,15 +302,16 @@ plot( int current, real t, real dt )
     const int orderOfAccuracyInSpace=orderOfAccuracy;
 
 
-    int & movieFrame        =   dbase.get<int>("movieFrame");
+    int & movieFrame        = dbase.get<int>("movieFrame");
     aString & movieFileName = dbase.get<aString>("movieFileName");
 
-    real & tFinal  = dbase.get<real>("tFinal");
-    real & tPlot   = dbase.get<real>("tPlot");
-    real & cfl     = dbase.get<real>("cfl");
-    int & debug    = dbase.get<int>("debug");
+    real & tFinal           = dbase.get<real>("tFinal");
+    real & tPlot            = dbase.get<real>("tPlot");
+    real & cfl              = dbase.get<real>("cfl");
+    int & debug             = dbase.get<int>("debug");
+    int & plotFrequency     = dbase.get<int>("plotFrequency");
 
-    aString methodName = getMethodName();  // FD22, or FD24s etc.
+    aString methodName      = getMethodName();  // FD22, or FD24s etc.
 
     char buff[100];
     psp.set(GI_TOP_LABEL,sPrintF(buff,"CgWave %s t=%6.2e ",(const char *)methodName,t));
@@ -504,6 +507,7 @@ plot( int current, real t, real dt )
                 else if( dialog.getTextValue(answer,"final time","%g",tFinal) ){}//
                 else if( dialog.getTextValue(answer,"times to plot","%g",tPlot) ){}//
                 else if( dialog.getTextValue(answer,"debug","%i",debug) ){}//
+                else if( dialog.getTextValue(answer,"plotFrequency","%i",plotFrequency) ){}//
 
                 else if( len=answer.matches("plot:") )
                 {

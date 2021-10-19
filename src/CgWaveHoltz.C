@@ -25,6 +25,8 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
 {
 
   dbase.put<int>("debug")=0;
+  dbase.put<int>("cgWaveDebugMode")=0;
+
   real & omega = dbase.put<real>("omega")=30.1;
   dbase.put<real>("Tperiod")=twoPi/omega;
   dbase.put<int>("numPeriods")=10;
@@ -123,13 +125,15 @@ int CgWaveHoltz::interactiveUpdate()
   real & tol       = dbase.get<real>("tol");
   int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
 
-  int & adjustOmega = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  int & adjustOmega       = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
 
   int & monitorResiduals   = dbase.get<int>("monitorResiduals");      // montior the residuals at every step
   int & saveMatlabFile     = dbase.get<int>("saveMatabFile");         // save matlab file with residuals etc.
   aString & matlabFileName = dbase.get<aString>("matlabFileName");    // name of matlab file holding residuals etc.
 
-  real & omegaSOR  = dbase.get<real>("omegaSOR");
+  real & omegaSOR          = dbase.get<real>("omegaSOR");
+
+  CgWave & cgWave          = *dbase.get<CgWave*>("cgWave");
 
   // Build a dialog menu for changing parameters
   GUIState gui;
@@ -222,6 +226,7 @@ int CgWaveHoltz::interactiveUpdate()
     else if( dialog.getTextValue(answer,"omega","%e",omega) )
     {
       printF("Setting omega=%g\n",omega);
+      cgWave.dbase.get<int>("adjustOmega")= adjustOmega;  // 1 : choose omega from the symbol of D+t D-t 
     }
 
     else if( dialog.getTextValue(answer,"tol","%e",tol) )

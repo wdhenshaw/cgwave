@@ -73,7 +73,9 @@ advance( int it )
     const int & myid = dbase.get<int>("myid");
     const int & np = dbase.get<int>("np");
 
-    FILE *& debugFile = dbase.get<FILE*>("debugFile");
+    const int & debug  = dbase.get<int>("debug");
+    FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+    FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
 
     GenericGraphicsInterface & ps = gi;
     PlotStuffParameters psp;
@@ -95,12 +97,12 @@ advance( int it )
     real & dt                         = dbase.get<real>("dt");
     const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
     const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");
-    int & debug                       = dbase.get<int>("debug");
     int & interactiveMode             = dbase.get<int>("interactiveMode");
     int & computeErrors               = dbase.get<int>("computeErrors"); 
 
     int & plotOptions                 = dbase.get<int>("plotOptions");
     int & plotChoices                 = dbase.get<int>("plotChoices");
+    int & plotFrequency               = dbase.get<int>("plotFrequency");
     
     const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz");
     const int & computeTimeIntegral   = dbase.get<int>("computeTimeIntegral");
@@ -196,18 +198,36 @@ advance( int it )
 
         if( solveHelmholtz && adjustOmega )
         {
-       // Adjust omega for Helmholtz problems so that
-       //    4 sin^2( omegas*dt/2 )/dt^2 = omega^2
-       //    dt = Ts/N
-       //    Ts = 2*pi/omegas       : adjusted period
-       // where  N = number of steps we want to take
+       // ---- adjust the scheme or omega to remove time-discretization errors -----
 
-       // dt = Ts/N = 2*pi/( omegas*N ) -> omegas*dt/2 = pi/N
-       // sin(pi/N) = omega*dt/2  
-       //  -> dt = sin(pi/N)*(2/omega)
-        //    omegas = (pi/N)*(2/dt)
-              Real dts = sin(Pi/numPlotSteps) * (2./omega);
-              Real omegas = (Pi/numPlotSteps) * (2./dts);
+              Real dts=dt, omegas=omega; 
+              if( timeSteppingMethod == implicitTimeStepping )
+              {
+         // --- adjust omega for implicit time-stepping ---
+
+         // There are at least two ways to adjust the scheme (see notes)----
+
+         // IMP-FIX 2 : adjust omega
+                  dts = (1./omega)*sqrt( 2.*( 1./cos(2.*Pi/numPlotSteps) -1. ) );
+                  omegas= (2.*Pi/numPlotSteps)*1/dts;
+
+              }
+              else
+              {
+         // --- adjust omega for explicit time stepping ---
+         // Adjust omega for Helmholtz problems so that
+         //    4 sin^2( omegas*dt/2 )/dt^2 = omega^2
+         //    dt = Ts/N
+         //    Ts = 2*pi/omegas       : adjusted period
+         // where  N = number of steps we want to take
+
+         // dt = Ts/N = 2*pi/( omegas*N ) -> omegas*dt/2 = pi/N
+         // sin(pi/N) = omega*dt/2  
+         //  -> dt = sin(pi/N)*(2/omega)
+          //    omegas = (pi/N)*(2/dt)
+                  dts = sin(Pi/numPlotSteps) * (2./omega);
+                  omegas = (Pi/numPlotSteps) * (2./dts);
+              }
               printF("\n ##### CgWave:adjust omega and dt for Helmholtz: dts=%18.10e (dt=%18.10e) omegas=%14.6e (omega=%14.6e) ####\n\n",dts,dt,omegas,omega);
 
               omegaSave   = omega;    // save original omega ( omega is reset below)
@@ -317,7 +337,7 @@ advance( int it )
         current = cur; 
 
       // if( (i % plotSteps) == 0 || (t >tFinal-.5*dt) )  // plot solution every 'plotSteps' steps
-            if( i==0 || (t >nextTimeToPlot-.5*dt) )  // plot solution every 'plotSteps' steps
+            if( i==0 || (t >nextTimeToPlot-.5*dt) || (i % plotFrequency)==0 )  // plot solution every 'plotSteps' steps
             {
          // ---- plot first step and last step and every plotSteps ---
                 if( debug & 4 )
@@ -383,6 +403,7 @@ advance( int it )
         {
       // --- first step has already been taken ----
               t+=dt;
+              printF("Skip first step since set to exact\n");
         }
         else
         { // ------ take a time-step -----
@@ -400,11 +421,8 @@ advance( int it )
     
                 if( debug & 16 )
                 {
-                    ::display(u[prev][grid],sPrintF("BEFORE: u=prev grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
-                    ::display(u[cur ][grid],sPrintF("BEFORE: u=Cur grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
-
-                    ::display(u[prev][grid],sPrintF("BEFORE: u=prev grid=%d t=%9.3e",grid,t+dt),stdout,"%6.2f ");
-                    ::display(u[cur ][grid],sPrintF("BEFORE: u=Cur grid=%d t=%9.3e",grid,t+dt),stdout,"%6.2f ");
+                    ::display(u[prev][grid],sPrintF("BEFORE: u=prev grid=%d t-dt=%9.3e",grid,t-dt),debugFile,"%11.3e ");
+                    ::display(u[cur ][grid],sPrintF("BEFORE: u=Cur  grid=%d t   =%9.3e",grid,t),debugFile,"%11.3e ");
                 }
     
               const int useUpwindDissipation = upwind;  
@@ -583,7 +601,11 @@ advance( int it )
                     {
             // testing: apply BC's after dissipation is added
                         applyBoundaryConditions( u[cur],t); 
-                    }       
+                    }   
+                    else
+                    {
+                        u[cur].periodicUpdate(); // *wdh* Aug 14, 2021 -- this may be needed (cgsm)
+                    }    
                 }
     
         // -- optimized advance ---
@@ -726,10 +748,9 @@ advance( int it )
                     }
                 
     
-                if( debug & 16 )
+                if( timeSteppingMethod == explicitTimeStepping && debug & 16 )
                 {
-                    ::display(u[next][grid],sPrintF("AFTER advOpt: uNext grid=%d t=%9.3e",grid,t+dt),debugFile,"%6.2f ");
-                    ::display(u[next][grid],sPrintF("AFTER advOpt: uNext grid=%d t=%9.3e",grid,t+dt),stdout,"%6.2f ");
+                    ::display(u[next][grid],sPrintF("AFTER advOpt: uNext grid=%d t+dt=%9.3e",grid,t+dt),debugFile,"%11.3e ");
                 }
     
                 
@@ -737,7 +758,14 @@ advance( int it )
     
             if( timeSteppingMethod == implicitTimeStepping )
             {
-                takeImplictStep( t+dt );
+                takeImplicitStep( t+dt );
+
+                if( debug & 16 )
+                {
+                    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                        ::display(u[next][grid],sPrintF("AFTER takeImplicitStep: uNext grid=%d t+dt=%9.3e",grid,t+dt),debugFile,"%11.3e ");
+                }
+
             }
     
             t+=dt;
@@ -752,8 +780,7 @@ advance( int it )
             {
                 for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                 {
-                    ::display(u[next][grid],sPrintF("after applyBC uNext grid=%d t=%9.3e",grid,t),debugFile,"%6.2f ");
-                    ::display(u[next][grid],sPrintF("after applyBC uNext grid=%d t=%9.3e",grid,t),stdout,"%6.2f ");
+                    ::display(u[next][grid],sPrintF("after applyBC uNext grid=%d t=%9.3e",grid,t),debugFile,"%11.3e ");
                 }
             }
     

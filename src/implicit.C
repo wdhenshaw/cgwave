@@ -35,7 +35,7 @@ void bcOptWave( const int&nd,
 /// \brief Take an implicit time step to new time t
 /// \param t (input) : new time
 // ============================================================================================
-int CgWave::takeImplictStep( Real t )
+int CgWave::takeImplicitStep( Real t )
 {
     real cpu0=getCPU();
 
@@ -48,6 +48,9 @@ int CgWave::takeImplictStep( Real t )
     }
 
     const int & debug           = dbase.get<int>("debug");
+    FILE *& debugFile           = dbase.get<FILE*>("debugFile");
+    FILE *& pDebugFile          = dbase.get<FILE*>("pDebugFile");
+
     const Real & c              = dbase.get<real>("c");
     const real & dt             = dbase.get<real>("dt");
     const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
@@ -348,6 +351,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
     if( usePredefined )
     {
+    // ***** OLD WAY ******
+        
     // ---- use Oges predefined equations ***OLD WAY*** ----
     
         IntegerArray boundaryConditions(2,3,numberOfComponentGrids);

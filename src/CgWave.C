@@ -27,6 +27,31 @@
 CgWave::
 CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(giIn) 
 {
+  int & np = dbase.put<int>("np"); // number of processors 
+  np = max(1,Communication_Manager::numberOfProcessors());
+
+  int & myid = dbase.put<int>("myid"); // my processor number
+  myid = max(0,Communication_Manager::My_Process_Number);
+
+  FILE *& debugFile  = dbase.put<FILE*>("debugFile");
+  FILE *& pDebugFile = dbase.put<FILE*>("pDebugFile");
+
+  // *** open multiple debug files for each processor ****
+  aString buff;
+  #ifndef USE_PPP
+    debugFile   = fopen("cgWave.debug","w" );        // Here is the log file
+    pDebugFile= debugFile;
+  #else
+    debugFile = fopen(sPrintF(buff,"cgWaveNP%i.debug",np),"w" );  // Here is the debug file
+    pDebugFile = fopen(sPrintF(buff,"cgWaveNP%ip%i.debug",np,myid),"w");
+  #endif
+
+  FILE *& logFile = dbase.put<FILE*>("logFile");
+  logFile = fopen("cgWave.out","w" );        // log file 
+
+  FILE *& checkFile = dbase.put<FILE*>("checkFile");
+  checkFile = fopen("cgWave.check","w" );        // for regression and convergence tests
+  fPrintF(checkFile,"# Check file for CgWave\n"); // check file has one title line
 
   dbase.put<real>("c")=1.;
   dbase.put<real>("cfl")=.7; // .25;
@@ -78,10 +103,14 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   cImp( 0,1)= beta4;
   cImp( 1,1)=alpha4;  
 
+  // By default choose the implicit dt based on the CFL: (otherwise us dtMax)
+  dbase.put<int>("chooseImplicitTimeStepFromCFL")=1;
+
   // interactiveMode :
   //       0 = plot intermediate results
   //       1 = run without plotting and exit advance when finished 
   dbase.put<int>("interactiveMode")=0;
+  dbase.put<int>("plotFrequency")= INT_MAX; // another way to turn on plotting every this many steps
 
 
   dbase.put<real>("numberOfGridPoints")=0.;
@@ -161,14 +190,8 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("movieFrame")=-1;
   dbase.put<int>("plotOptions")=1;
   dbase.put<int>("plotChoices")=0;
+  // dbase.put<int>("plotHelmholtzErrors")=0;  // 1 = compute error w.r.t the Helmholtz solution
 
-  dbase.put<int>("myid")=max(0,Communication_Manager::My_Process_Number);
-  int & np = dbase.put<int>("np");
-  #ifdef USE_PPP
-    np= max(1,Communication_Manager::numberOfProcessors());
-  #else
-    np=1;
-  #endif
   
   dbase.put<PlotStuffParameters>("psp");
 
@@ -187,15 +210,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   bcNames[4]="radiation";
   
 
-  FILE *& debugFile = dbase.put<FILE*>("debugFile");
-  debugFile = fopen("cgWave.debug","w" );        // log file 
 
-  FILE *& logFile = dbase.put<FILE*>("logFile");
-  logFile = fopen("cgWave.out","w" );        // log file 
-
-  FILE *& checkFile = dbase.put<FILE*>("checkFile");
-  checkFile = fopen("cgWave.check","w" );        // for regression and convergence tests
-  fPrintF(checkFile,"# Check file for CgWave\n"); // check file has one title line
 
   // show file variables:
   dbase.put<bool>("saveShowFile")     =false; 
@@ -563,40 +578,42 @@ int CgWave::interactiveUpdate()
 //  GenericGraphicsInterface & gi = *Overture::getGraphicsInterface();
   PlotStuffParameters psp;
 
-  real & cfl                    = dbase.get<real>("cfl");
-  real & tFinal                 = dbase.get<real>("tFinal");
-  real & tPlot                  = dbase.get<real>("tPlot");
-  Real & dtMax                  = dbase.get<Real>("dtMax"); 
-  real & omega                  = dbase.get<real>("omega");
-  real & Tperiod                = dbase.get<real>("Tperiod");
-  int & numPeriods              = dbase.get<int>("numPeriods");
-  int & orderOfAccuracy         = dbase.get<int>("orderOfAccuracy");
-  int & orderOfAccuracyInTime   = dbase.get<int>("orderOfAccuracyInTime");
-  IntegerArray & gridIsImplicit = dbase.get<IntegerArray>("gridIsImplicit");
-  RealArray & bImp              = dbase.get<RealArray>("bImp");
-  RealArray & cImp              = dbase.get<RealArray>("cImp");
+  real & cfl                           = dbase.get<real>("cfl");
+  real & tFinal                        = dbase.get<real>("tFinal");
+  real & tPlot                         = dbase.get<real>("tPlot");
+  Real & dtMax                         = dbase.get<Real>("dtMax"); 
+  real & omega                         = dbase.get<real>("omega");
+  real & Tperiod                       = dbase.get<real>("Tperiod");
+  int & numPeriods                     = dbase.get<int>("numPeriods");
+  int & orderOfAccuracy                = dbase.get<int>("orderOfAccuracy");
+  int & orderOfAccuracyInTime          = dbase.get<int>("orderOfAccuracyInTime");
+  IntegerArray & gridIsImplicit        = dbase.get<IntegerArray>("gridIsImplicit");
+  RealArray & bImp                     = dbase.get<RealArray>("bImp");
+  RealArray & cImp                     = dbase.get<RealArray>("cImp");
+  int & chooseImplicitTimeStepFromCFL  = dbase.get<int>("chooseImplicitTimeStepFromCFL");
 
 
-  int & upwind                  = dbase.get<int>("upwind");
-  real & ad4                    = dbase.get<real>("ad4"); // coeff of the artificial dissipation. (*old*)
-  int & dissipationFrequency    = dbase.get<int>("dissipationFrequency");
-  int & preComputeUpwindUt      = dbase.get<int>("preComputeUpwindUt");
-
-  int & computeErrors           = dbase.get<int>("computeErrors");                         // by default, compute errors for TZ or a known solution
+  int & upwind                         = dbase.get<int>("upwind");
+  real & ad4                           = dbase.get<real>("ad4"); // coeff of the artificial dissipation. (*old*)
+  int & dissipationFrequency           = dbase.get<int>("dissipationFrequency");
+  int & preComputeUpwindUt             = dbase.get<int>("preComputeUpwindUt");
+       
+  int & computeErrors                  = dbase.get<int>("computeErrors");                         // by default, compute errors for TZ or a known solution
   int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
 
-  int & debug                   = dbase.get<int>("debug");
-  int & interactiveMode         = dbase.get<int>("interactiveMode");
-  
-  int & solveHelmholtz          = dbase.get<int>("solveHelmholtz");
-  int & computeTimeIntegral     = dbase.get<int>("computeTimeIntegral");
-  real & tol                    = dbase.get<real>("tol");
-
-  bool & saveShowFile           = dbase.get<bool>("saveShowFile"); 
-  aString & nameOfShowFile      = dbase.get<aString>("nameOfShowFile"); // name of the show file
-  int & flushFrequency          = dbase.get<int>("flushFrequency");     // number of solutions per show file  
-          
-  real & omegaSOR               = dbase.get<real>("omegaSOR");
+  int & debug                          = dbase.get<int>("debug");
+  int & interactiveMode                = dbase.get<int>("interactiveMode");
+         
+  int & solveHelmholtz                 = dbase.get<int>("solveHelmholtz");
+  // int & plotHelmholtzErrors            = dbase.get<int>("plotHelmholtzErrors");
+  int & computeTimeIntegral            = dbase.get<int>("computeTimeIntegral");
+  real & tol                           = dbase.get<real>("tol");
+       
+  bool & saveShowFile                  = dbase.get<bool>("saveShowFile"); 
+  aString & nameOfShowFile             = dbase.get<aString>("nameOfShowFile"); // name of the show file
+  int & flushFrequency                 = dbase.get<int>("flushFrequency");     // number of solutions per show file  
+                 
+  real & omegaSOR                      = dbase.get<real>("omegaSOR");
 
   // Gaussian forcing ** FIX ME** why here
   real & beta = dbase.get<real>("beta");
@@ -672,7 +689,8 @@ int CgWave::interactiveUpdate()
                           "solve Helmholtz",
                           "compute time integral",
                           "pre-compute upwind Ut",
-                          "set known on boundaries"
+                          "set known on boundaries",
+                          "choose implicit dt from cfl",
                             ""};
   int tbState[10];
   tbState[0] = saveShowFile;
@@ -683,6 +701,7 @@ int CgWave::interactiveUpdate()
   tbState[5] = computeTimeIntegral;
   tbState[6] = preComputeUpwindUt;
   tbState[7] = applyKnownSolutionAtBoundaries;
+  tbState[8] = chooseImplicitTimeStepFromCFL;
 
   int numColumns=1;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -920,7 +939,12 @@ int CgWave::interactiveUpdate()
       printF("Setting preComputeUpwindUt=%i\n",preComputeUpwindUt);
       printF("        : true  = precompute Ut in upwind dissipation.\n"
             "         : false = compute Ut inline in Gauss-Seidel fashion (allows a bigger upwind coefficient).\n");
-    }    
+    }   
+    else if( dialog.getToggleValue(answer,"choose implicit dt from cfl",chooseImplicitTimeStepFromCFL) )
+    {
+      printF("Setting chooseImplicitTimeStepFromCFL=%i (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
+    }
+     
 
     else if( answer=="explicit" || answer=="implicit" )
     {
@@ -1269,111 +1293,112 @@ int CgWave::setup()
 
 
 
-// ======================================================================================================
-/// \brief Compute errors
-// ======================================================================================================
-real CgWave::
-getErrors( realCompositeGridFunction & u, real t )
-{
-  real cpu0=getCPU();
-  // printF("+++++++++++ getErrors t=%9.3e +++++++++++\n",t);
+// // ======================================================================================================
+// /// \brief Compute errors
+// // ======================================================================================================
+// real CgWave::
+// getErrors( realCompositeGridFunction & u, real t )
+// {
+//   real cpu0=getCPU();
+//   // printF("+++++++++++ getErrors t=%9.3e +++++++++++\n",t);
 
-  real & maxError     = dbase.get<real>("maxError");      // save max-error here 
-  real & solutionNorm = dbase.get<real>("solutionNorm");  // save solution norm here
+//   real & maxError     = dbase.get<real>("maxError");      // save max-error here 
+//   real & solutionNorm = dbase.get<real>("solutionNorm");  // save solution norm here
 
 
-  maxError=0.;
+//   maxError=0.;
 
-  const int & addForcing = dbase.get<int>("addForcing");
-  const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
-  const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
+//   const int & addForcing = dbase.get<int>("addForcing");
+//   const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
+//   const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
 
-  bool twilightZone = addForcing && forcingOption==twilightZoneForcing;
+//   bool twilightZone = addForcing && forcingOption==twilightZoneForcing;
 
-  int & computeErrors = dbase.get<int>("computeErrors");
+//   int & computeErrors       = dbase.get<int>("computeErrors");
+//   // int & plotHelmholtzErrors = dbase.get<int>("plotHelmholtzErrors");
 
-  computeErrors = computeErrors && (twilightZone || knownSolutionOption=="userDefinedKnownSolution");
+//   computeErrors = computeErrors && (twilightZone || knownSolutionOption=="userDefinedKnownSolution");
   
-  //  computeErrors = twilightZone || knownSolutionOption=="userDefinedKnownSolution";
+//   //  computeErrors = twilightZone || knownSolutionOption=="userDefinedKnownSolution";
   
 
-  if( computeErrors )
-  {
-    realCompositeGridFunction & error = dbase.get<realCompositeGridFunction>("error");
-    error.updateToMatchGrid(cg);
+//   if( computeErrors )
+//   {
+//     realCompositeGridFunction & error = dbase.get<realCompositeGridFunction>("error");
+//     error.updateToMatchGrid(cg);
 
-    const int numberOfDimensions = cg.numberOfDimensions();
-    Index I1,I2,I3;
-    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-    {
-      MappedGrid & mg = cg[grid];
+//     const int numberOfDimensions = cg.numberOfDimensions();
+//     Index I1,I2,I3;
+//     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+//     {
+//       MappedGrid & mg = cg[grid];
     
-      // get the local serial arrays
-      OV_GET_SERIAL_ARRAY(real,u[grid],uLocal);
-      OV_GET_SERIAL_ARRAY(real,error[grid],errLocal);
-      errLocal=0.;
+//       // get the local serial arrays
+//       OV_GET_SERIAL_ARRAY(real,u[grid],uLocal);
+//       OV_GET_SERIAL_ARRAY(real,error[grid],errLocal);
+//       errLocal=0.;
 
-      getIndex(cg[grid].dimension(),I1,I2,I3); // assign all points including ghost points.
+//       getIndex(cg[grid].dimension(),I1,I2,I3); // assign all points including ghost points.
 
-      if( knownSolutionOption=="userDefinedKnownSolution" )
-      {
-        // printF("+++++++++++ getErrors for userDefinedKnownSolution +++++++++++\n");
+//       if( knownSolutionOption=="userDefinedKnownSolution" )
+//       {
+//         // printF("+++++++++++ getErrors for userDefinedKnownSolution +++++++++++\n");
         
 
-        getUserDefinedKnownSolution( t, grid, error[grid], I1,I2,I3 ); // store true solution in error[grid]
-        const int includeGhost=1;
-        bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3,includeGhost);
-        if( ok )
-        {
-          errLocal(I1,I2,I3) -= uLocal(I1,I2,I3);
-        }
-      }
-      else
-      {
-        // ----- Twilight zone ------
-        assert( dbase.get<OGFunction*>("tz")!=NULL );
-        OGFunction & e = *dbase.get<OGFunction*>("tz");
+//         getUserDefinedKnownSolution( t, grid, error[grid], I1,I2,I3 ); // store true solution in error[grid]
+//         const int includeGhost=1;
+//         bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3,includeGhost);
+//         if( ok )
+//         {
+//           errLocal(I1,I2,I3) -= uLocal(I1,I2,I3);
+//         }
+//       }
+//       else
+//       {
+//         // ----- Twilight zone ------
+//         assert( dbase.get<OGFunction*>("tz")!=NULL );
+//         OGFunction & e = *dbase.get<OGFunction*>("tz");
 
-        mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
-        OV_GET_SERIAL_ARRAY(real,mg.vertex(),xLocal);
+//         mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
+//         OV_GET_SERIAL_ARRAY(real,mg.vertex(),xLocal);
 
 
-        const int includeGhost=1;
-        bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3,includeGhost);
-        if( ok )
-        {
-          int numberOfComponents=1;
-          Range C=numberOfComponents;
-          int isRectangular=0;
-          RealArray ue(I1,I2,I3);
-          e.gd( ue ,xLocal,numberOfDimensions,isRectangular,0,0,0,0,I1,I2,I3,C,t);
+//         const int includeGhost=1;
+//         bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3,includeGhost);
+//         if( ok )
+//         {
+//           int numberOfComponents=1;
+//           Range C=numberOfComponents;
+//           int isRectangular=0;
+//           RealArray ue(I1,I2,I3);
+//           e.gd( ue ,xLocal,numberOfDimensions,isRectangular,0,0,0,0,I1,I2,I3,C,t);
 
-          errLocal(I1,I2,I3) = ue(I1,I2,I3) - uLocal(I1,I2,I3);
+//           errLocal(I1,I2,I3) = ue(I1,I2,I3) - uLocal(I1,I2,I3);
 
-        }
-      }
+//         }
+//       }
       
-    }
-    maxError = maxNorm(error);
-    // printF("getErrors: t=%9.3e, maxError=%9.3e\n",t,maxError);
+//     }
+//     maxError = maxNorm(error);
+//     // printF("getErrors: t=%9.3e, maxError=%9.3e\n",t,maxError);
 
 
-  }
-  else if( knownSolutionOption=="userDefinedKnownSolution" )
-  {
-  }
+//   }
+//   else if( knownSolutionOption=="userDefinedKnownSolution" )
+//   {
+//   }
   
-  // compute the solution norm
-  solutionNorm = maxNorm(u);
-  
-
-  timing(timeForGetError)+= getCPU()-cpu0;
-
-  return maxError;
+//   // compute the solution norm
+//   solutionNorm = maxNorm(u);
   
 
+//   timing(timeForGetError)+= getCPU()-cpu0;
 
-}
+//   return maxError;
+  
+
+
+// }
 
 //=================================================================================================
 /// \brief Take the first step using Taylor series in time (e.g. for Helmholtz solve) 
@@ -1395,11 +1420,15 @@ takeFirstStep( int cur, real t )
   const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
 
   ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
+  const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
   // Do Helmholtz case for now: 
-  assert( forcingOption==helmholtzForcing );
 
-    //  ---- NOTE: change sign of forcing for Helmholtz since we want to solve ----
+  assert( forcingOption==helmholtzForcing );
+  const bool usePeriodicFirstStep=true;
+
+
+  //  ---- NOTE: change sign of forcing for Helmholtz since we want to solve ----
   //       ( omega^2 I + c^2 Delta) w = f  
   const Real fSign = forcingOption==helmholtzForcing ? -1.0 : 1.0;
 
@@ -1429,19 +1458,26 @@ takeFirstStep( int cur, real t )
     OV_GET_SERIAL_ARRAY(real,uc[grid],ucLocal);
     OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
 
-    getIndex(mg.gridIndexRange(),I1,I2,I3);
-    bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
-    if( ok )
+
+    if( usePeriodicFirstStep )
     {
-      bool usePeriodicFirstStep=true;
-      if( usePeriodicFirstStep )
-      {
+      // do all points including ghost 
+      getIndex(mg.dimension(),I1,I2,I3);
+      bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
+      if( ok )
+      {      
          // **TESTING** u(dt) = u(0)*cos(omega*(dt)) if time-periodic
-        printF("takeFirstStep: setting  u(dt) = u(0)*cos(omega*(dt)) , dt=%20.12e\n",dt);
-        unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) * cos(omega*dt);
+         printF("takeFirstStep: setting  u(dt) = u(0)*cos(omega*(dt)) , dt=%20.12e\n",dt);
+         unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) * cos(omega*dt);
       }
-      else
+    }
+    else
+    {
+      getIndex(mg.gridIndexRange(),I1,I2,I3);
+      bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
+      if( ok )
       {
+      
         // Taylor series first step **CHECK ME**
         RealArray lap(I1,I2,I3);
         operators[grid].derivative(MappedGridOperators::laplacianOperator,ucLocal,lap,I1,I2,I3);
@@ -1466,7 +1502,16 @@ takeFirstStep( int cur, real t )
     }
   } // end for grid
 
-  applyBoundaryConditions( u[next], t+dt );
+  if( !usePeriodicFirstStep )
+  {
+    // This will not work for implicit since only explicit conditions are done here:
+    if( timeSteppingMethod == implicitTimeStepping )
+    {
+      printF("takeFirstStep: ERROR: fix applyBC for implicit time-stepping\n");
+      OV_ABORT("error");
+    }
+    applyBoundaryConditions( u[next], t+dt );
+  }
   
   // u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%6.2f ");
 

@@ -132,6 +132,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     
     const int & monitorResiduals      = cgWaveHoltz.dbase.get<int>("monitorResiduals");      // montior the residuals at every step
     const Real & numberOfActivePoints = cgWaveHoltz.dbase.get<Real>("numberOfActivePoints");
+   
 
     // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
@@ -324,9 +325,17 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
       KSPGetResidualNorm(ksp,&kspResidual); 
       kspResidual /= sqrt(numberOfActivePoints);  // make an approximate L2h norm
 
-      resVector(iteration)= kspResidual;
-
-      printF("\n ##### SAVE RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
+      const int & maximumNumberOfIterations = cgWaveHoltz.dbase.get<int>("maximumNumberOfIterations");
+      if( iteration <= maximumNumberOfIterations )
+      {
+        resVector(iteration)= kspResidual;
+        printF("\n ##### SAVE RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
+      }
+      else
+      {
+         printF("\n ##### KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e (NOT SAVED since iteration=%d > maximumNumberOfIterations=%d)\n\n",
+          kspResidual,iteration,maximumNumberOfIterations);
+      }
 
       // // There is no residual for iteration=0 since the Krylov solver is just computing the first A*x
       // if( iteration==1 )

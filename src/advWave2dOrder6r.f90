@@ -2916,7 +2916,7 @@
                      ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
                                               call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
                                           fv(m) = evtt(m)
-                     ! We weight the TZ forcing with the implicit weights to make the solution exact for ploynomials
+                     ! We weight the TZ forcing with the implicit weights to make the solution exact for polynomials
                                           do mt=-1,1
                                               tm = t + dt*mt
                                                   call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,tm, ec,evxx(m) )
@@ -2927,7 +2927,7 @@
                      ! OGDERIV3D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
                                               call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
                                           fv(m) = evtt(m)
-                     ! We weight the TZ forcing with the implicit weights to make the solution exact for ploynomials
+                     ! We weight the TZ forcing with the implicit weights to make the solution exact for polynomials
                                           do mt=-1,1
                                               tm = t + dt*mt       
                                                   call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evxx(m) )

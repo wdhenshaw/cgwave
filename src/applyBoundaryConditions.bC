@@ -128,6 +128,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
     {
       isImplicit    = isImplicit || gridIsImplicit(grid); 
       isAllImplicit = isAllImplicit && gridIsImplicit(grid); 
+      // +++ NOTE: BCs for implicit are done in takeImplicitTimeStep +++
       if( !gridIsImplicit(grid) )
       {
         MappedGrid & mg = cg[grid];

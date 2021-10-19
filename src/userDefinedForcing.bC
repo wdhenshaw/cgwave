@@ -188,7 +188,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
     
     DataBase & db =  dbase.get<DataBase>("userDefinedKnownSolutionData");
     const aString & userKnownSolution = db.get<aString>("userKnownSolution");
-    assert( userKnownSolution=="boxHelmholtz" );
+    assert( userKnownSolution=="boxHelmholtz" || userKnownSolution=="computedHelmholtz" );
     real *rpar = db.get<real[20]>("rpar");
     int *ipar = db.get<int[20]>("ipar");
   
@@ -382,7 +382,7 @@ setupUserDefinedForcing()
     }
     else if( answer=="box Helmholtz" )
     {
-      printF("----------------- FORCING FOR the box helmholtz Soltuion-----------------\n"
+      printF("----------------- FORCING FOR the box helmholtz Solution-----------------\n"
              " Define a time-periodic solution for a square or box that depends on a forcing term.\n");
       printF("   We solve :   utt = c^2 * Delta(u) - f(x)*cos(omega*t) \n");
       printF("                u=0 on the boundary                    ) \n");
@@ -391,7 +391,7 @@ setupUserDefinedForcing()
       option="boxHelmholtz";
 
     }
-   else if( answer=="poly periodic" )
+    else if( answer=="poly periodic" )
     {
       printF("----------------- polynomial in space and periodic in time -----------------\n");
       printF("   We solve :   utt = c^2 * Delta(u) - f(x)*cos(omega*t) \n");

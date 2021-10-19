@@ -10,32 +10,33 @@ outputHeader()
 
   const int & np = dbase.get<int>("np");
 
-  const real & c                      = dbase.get<real>("c");
-  const real & cfl                    = dbase.get<real>("cfl");
-  const real & tFinal                 = dbase.get<real>("tFinal");
-  const real & tPlot                  = dbase.get<real>("tPlot");
+  const real & c                            = dbase.get<real>("c");
+  const real & cfl                          = dbase.get<real>("cfl");
+  const real & tFinal                       = dbase.get<real>("tFinal");
+  const real & tPlot                        = dbase.get<real>("tPlot");
+      
+  const int & upwind                        = dbase.get<int>("upwind");
+  // const real & ad4                          = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+  const int & dissipationFrequency          = dbase.get<int>("dissipationFrequency");
+  const int & preComputeUpwindUt             = dbase.get<int>("preComputeUpwindUt");
+      
+  const int & orderOfAccuracy               = dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracyInTime         = dbase.get<int>("orderOfAccuracyInTime");
+  const real & dt                           = dbase.get<real>("dt");
+      
+  int & addForcing                          = dbase.get<int>("addForcing");
+  ForcingOptionEnum & forcingOption         = dbase.get<ForcingOptionEnum>("forcingOption");
+  const IntegerArray & gridIsImplicit       = dbase.get<IntegerArray>("gridIsImplicit");
+  const RealArray & bImp                    = dbase.get<RealArray>("bImp");
+  const RealArray & cImp                    = dbase.get<RealArray>("cImp");
+  const int & chooseImplicitTimeStepFromCFL = dbase.get<int>("chooseImplicitTimeStepFromCFL");
 
-  const int & upwind                  = dbase.get<int>("upwind");
-  // const real & ad4                    = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
-  const int & dissipationFrequency    = dbase.get<int>("dissipationFrequency");
-  const int & preComputeUpwindUt       = dbase.get<int>("preComputeUpwindUt");
-
-  const int & orderOfAccuracy         = dbase.get<int>("orderOfAccuracy");
-  const int & orderOfAccuracyInTime   = dbase.get<int>("orderOfAccuracyInTime");
-  const real & dt                     = dbase.get<real>("dt");
-
-  int & addForcing                    = dbase.get<int>("addForcing");
-  ForcingOptionEnum & forcingOption   = dbase.get<ForcingOptionEnum>("forcingOption");
-  const IntegerArray & gridIsImplicit = dbase.get<IntegerArray>("gridIsImplicit");
-  const RealArray & bImp              = dbase.get<RealArray>("bImp");
-  const RealArray & cImp              = dbase.get<RealArray>("cImp");
-
-  const int & computeErrors           = dbase.get<int>("computeErrors");
-	
-  const int & solveHelmholtz          = dbase.get<int>("solveHelmholtz");
-  const int & computeTimeIntegral     = dbase.get<int>("computeTimeIntegral");
-  const int & adjustOmega             = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
-  RealArray & dxMinMax                = dbase.get<RealArray>("dxMinMax");
+  const int & computeErrors                 = dbase.get<int>("computeErrors");
+	      
+  const int & solveHelmholtz                = dbase.get<int>("solveHelmholtz");
+  const int & computeTimeIntegral           = dbase.get<int>("computeTimeIntegral");
+  const int & adjustOmega                   = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  RealArray & dxMinMax                      = dbase.get<RealArray>("dxMinMax");
 
   TwilightZoneEnum & twilightZone = dbase.get<TwilightZoneEnum>("twilightZone");
   const int & degreeInSpace = dbase.get<int>("degreeInSpace");
@@ -70,6 +71,7 @@ outputHeader()
                                                timeSteppingMethod==implicitTimeStepping ? "implicit" : "unknown") );
     fPrintF(file," implicit time-stepping weights: cImp(-1,0)=%g, cImp(0,0)=%g, cImp(1,0)=%g (2nd-order term)\n",cImp(-1,0),cImp(0,0),cImp(1,0));
     fPrintF(file,"                               : cImp(-1,1)=%g, cImp(0,1)=%g, cImp(1,1)=%g (4th-order term)\n",cImp(-1,1),cImp(0,1),cImp(1,1));
+    fPrintF(file," chooseImplicitTimeStepFromCFL=%d (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
     fPrintF(file," orderOfAccuracy=%i, orderOfAccuracyInTime=%d \n",orderOfAccuracy, (orderOfAccuracyInTime==-1 ? orderOfAccuracy : orderOfAccuracyInTime) );
 
     fPrintF(file," upwind dissipation is %s, dissipationFrequency=%i\n",(upwind ? "on" : "off"),dissipationFrequency);

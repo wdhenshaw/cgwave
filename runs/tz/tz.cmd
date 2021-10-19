@@ -4,6 +4,8 @@
 #                              -upwind=[0|1] -fx= -fy= -fz= -ft= -ts=[explicit|implicit] -rectangular=[implicit|explicit] -debug=<i>
 #                              -bcApproach=[cbc|lcbc|oneSided]
 #
+# $aa=1./15.;
+# printf("aa=%24.20e\n",$aa);
 $omega=30.1; $x0=0; $y0=0; $z0=0; $beta=400; $numPeriods=1; $omegaSOR=1; $tol=1.e-3; 
 # $ad4=0; # OLD
 $upwind=0; # new

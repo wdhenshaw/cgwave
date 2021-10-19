@@ -47,7 +47,7 @@ $cmd
 bc=$bc
 #
 user defined known solution...
-box helmholtz
+box Helmholtz
   $omega $kx $ky $kz
 done
 helmholtzForcing
