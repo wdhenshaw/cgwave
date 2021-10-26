@@ -168,6 +168,14 @@ obj/tcmWideStencil.o : src/tcmWideStencil.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/solvePETScNull.o : src/solvePETScNull.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 
+# ----- test quadrature formulae  -----
+testQuadFiles = obj/testQuad.o 
+# testQuadFiles = obj/testQuad.o obj/getQuadrartureWeights.o 
+testQuad: $(testQuadFiles); $(CXX) $(CCFLAGS) -o bin/testQuad $(testQuadFiles) $(LIBS)
+
+obj/testQuad.o : src/testQuad.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+obj/getQuadratureWeights.o : src/getQuadratureWeights.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+
 # --------- CgWaveHoltz ----------
 
 test: 

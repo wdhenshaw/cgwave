@@ -11,6 +11,18 @@ Things FIXED:
       ---> ADJUST SOSUP PARAMETER BY .75 : SEEMS OK !?
 
 
+
+************************************************************************
+********* Tues Oct 26, 2021
+
+START ON TEST QUADRATURE
+
+alias testQuad $wave/bin/testQuad
+
+
+
+
+
 ************************************************************************
 ********* Sat Jul 24, 2021
 
