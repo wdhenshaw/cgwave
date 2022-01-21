@@ -16,6 +16,7 @@ $beta2=.5; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping
 $dtMax=1e10; 
 $bc="d"; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$useKnownFirstStep=0; 
 $orderInTime=-1;  # -1 = use default
 $tz="polynomial"; 
 $tf=1.; $tp=.1; $cfl=.9; $go="halt; "
@@ -24,7 +25,8 @@ GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\
             "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"debug=i"=>\$debug,"orderInTime=i"=>\$orderInTime,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"bc=s"=>\$bc,"tf=f"=>\$tf,"tp=f"=>\$tp,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,\
             "fx=f"=>\$fx,"fy=f"=>\$fy,"fz=f"=>\$fz,"ft=f"=>\$ft,"rectangular=s"=>\$rectangular,\
-            "beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,"go=s"=>\$go );
+            "beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,\
+            "useKnownFirstStep=i"=>\$useKnownFirstStep,"go=s"=>\$go );
 #
 if( $tz eq "trig" ){ $tz="trigonometric"; }
 if( $tz eq "poly" ){ $tz="polynomial"; }
@@ -57,6 +59,8 @@ $cmd
 turn on forcing 1
 twilightZoneForcing
 $tz 
+#
+use known for first step $useKnownFirstStep
 #
 degreeInSpace $degreeInSpace
 degreeInTime $degreeInTime

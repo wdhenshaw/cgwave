@@ -31,6 +31,18 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
   dbase.put<real>("Tperiod")=twoPi/omega;
   dbase.put<int>("numPeriods")=10;
 
+  // For multi-frequency WaveHoltz
+  int & numberOfFrequencies  = dbase.put<int>("numberOfFrequencies")=1;
+  RealArray & frequencyArray = dbase.put<RealArray>("frequencyArray");
+  RealArray & periodArray    = dbase.put<RealArray>("periodArray");
+  IntegerArray & numPeriodsArray = dbase.put<IntegerArray>("numPeriodsArray");
+  frequencyArray.redim(numberOfFrequencies);
+  frequencyArray(0)=30.1;
+  periodArray.redim(numberOfFrequencies);
+  periodArray(0) = twoPi/frequencyArray(0);
+  numPeriodsArray.redim(numberOfFrequencies);
+  numPeriodsArray=1; 
+
   dbase.put<aString>("solverName")="fixedPoint";  // fixedPoint or gmres etc.
   dbase.put<real>("tol")=1.e-4;  // tolerance for Krylov solvers 
 
@@ -44,15 +56,17 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
   dbase.put<Real>("convergenceRate")=0.;
   dbase.put<Real>("convergenceRatePerPeriod")=0.;
 
+  dbase.put<Real>("maxResidual")=-1.;
+
   real & omegaSOR = dbase.put<real>("omegaSOR")=1.;
 
   dbase.put<int>("adjustOmega")=0;  // 1 : choose omega from the symbol of D+t D-t 
 
-  dbase.put<int>("monitorResiduals")=1;  // montior the residuals at every step
+  dbase.put<int>("monitorResiduals")=1;  // monitor the residuals at every step
   dbase.put<int>("saveMatabFile")=1;     // save matlab file with residuals etc.
   dbase.put<aString>("matlabFileName")="cgWaveHoltz";  // name of matlab file holding residuals etc. is by default cgWaveHoltz.m
 
-  dbase.put<realCompositeGridFunction>("vOld");
+  // dbase.put<realCompositeGridFunction>("vOld");
   dbase.put<realCompositeGridFunction>("residual");
   dbase.put<Real>("numberOfActivePoints")=0.;         // hold number of active points on the grid for scaling L2 norms
 
@@ -96,6 +110,48 @@ CgWaveHoltz::
 // ================================================================================================
 int CgWaveHoltz::initialize()
 {
+  // ---- adjust periods ----
+  const int & numPeriods          = dbase.get<int>("numPeriods");
+  const int & numberOfFrequencies = dbase.get<int>("numberOfFrequencies");
+  RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");
+  RealArray & periodArray         = dbase.get<RealArray>("periodArray");
+  IntegerArray & numPeriodsArray  = dbase.get<IntegerArray>("numPeriodsArray");
+
+
+
+  if( frequencyArray(0) > min(frequencyArray) )
+  {
+    printf("CgWaveHoltz::initialize: ERROR: frequencyArray(0) must be the smallest frequency\n");
+    ::display(frequencyArray,"frequencyArray");
+    OV_ABORT("ERROR");
+  }
+  // We may be able to integrate over more periods T2 in the larger time interval T1
+  numPeriodsArray.redim(numberOfFrequencies);
+  numPeriodsArray(0) = numPeriods;
+  for( int freq=1; freq<numberOfFrequencies; freq++ )
+    numPeriodsArray(freq) = floor( frequencyArray(freq)/frequencyArray(0))*numPeriodsArray(0); // integrate over this many periods for the "T2" integral
+
+  for( int freq=0; freq<numberOfFrequencies; freq++ )
+    periodArray(freq)=numPeriodsArray(freq)*twoPi/frequencyArray(freq);
+
+  // ---------- set values in CgWave ----------
+
+  CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
+  cgWave.dbase.get<int>("numberOfFrequencies") = numberOfFrequencies;  
+
+  RealArray & cgWaveFrequencyArray = cgWave.dbase.get<RealArray>("frequencyArray");
+  cgWaveFrequencyArray.redim(numberOfFrequencies);
+  cgWaveFrequencyArray = frequencyArray;
+
+  RealArray & cgWavePeriodArray = cgWave.dbase.get<RealArray>("periodArray");
+  cgWavePeriodArray.redim(numberOfFrequencies);
+  cgWavePeriodArray = periodArray; 
+
+  IntegerArray & cgWaveNumPeriodsArray = cgWave.dbase.get<IntegerArray>("numPeriodsArray");
+  cgWaveNumPeriodsArray.redim(numberOfFrequencies);
+  cgWaveNumPeriodsArray = numPeriodsArray;
+
+
   return 0;
 }
 
@@ -119,21 +175,26 @@ int CgWaveHoltz::interactiveUpdate()
 
   PlotStuffParameters psp;
 
-  real & omega     = dbase.get<real>("omega");
-  real & Tperiod   = dbase.get<real>("Tperiod");
-  int & numPeriods = dbase.get<int>("numPeriods");
-  real & tol       = dbase.get<real>("tol");
+  real & omega                    = dbase.get<real>("omega");
+  real & Tperiod                  = dbase.get<real>("Tperiod");
+  int & numPeriods                = dbase.get<int>("numPeriods");
+  real & tol                      = dbase.get<real>("tol");
   int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
 
-  int & adjustOmega       = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
+  RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");
+  RealArray & periodArray         = dbase.get<RealArray>("periodArray");
 
-  int & monitorResiduals   = dbase.get<int>("monitorResiduals");      // montior the residuals at every step
-  int & saveMatlabFile     = dbase.get<int>("saveMatabFile");         // save matlab file with residuals etc.
-  aString & matlabFileName = dbase.get<aString>("matlabFileName");    // name of matlab file holding residuals etc.
 
-  real & omegaSOR          = dbase.get<real>("omegaSOR");
+  int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
 
-  CgWave & cgWave          = *dbase.get<CgWave*>("cgWave");
+  int & monitorResiduals          = dbase.get<int>("monitorResiduals");      // montior the residuals at every step
+  int & saveMatlabFile            = dbase.get<int>("saveMatabFile");         // save matlab file with residuals etc.
+  aString & matlabFileName        = dbase.get<aString>("matlabFileName");    // name of matlab file holding residuals etc.
+
+  real & omegaSOR                 = dbase.get<real>("omegaSOR");
+
+  CgWave & cgWave                 = *dbase.get<CgWave*>("cgWave");
 
   // Build a dialog menu for changing parameters
   GUIState gui;
@@ -178,6 +239,20 @@ int CgWaveHoltz::interactiveUpdate()
 
   textCommands[nt] = "number of periods";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",numPeriods);  nt++; 
+
+  textCommands[nt] = "number of frequencies";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",numberOfFrequencies);  nt++;   
+
+  // Do this for now -- not scalable to many frequencies
+  textCommands[nt] = "frequencies";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%g",frequencyArray(0)); 
+  aString buffer; 
+  for( int freq=1; freq<numberOfFrequencies; freq++ )
+  {
+    textStrings[nt] += sPrintF(buffer, ", %g",frequencyArray(freq));   
+  }
+  nt++; 
+
 
   textCommands[nt] = "tol";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g",tol);  nt++; 
@@ -239,6 +314,45 @@ int CgWaveHoltz::interactiveUpdate()
       printF("Setting numPeriods=%i\n",numPeriods);
     }
   
+    else if( dialog.getTextValue(answer,"number of frequencies","%i",numberOfFrequencies) )
+    {
+      printF("Setting numberOfFrequencies=%i\n",numberOfFrequencies);
+      frequencyArray.resize(numberOfFrequencies);  frequencyArray=1.;
+      periodArray.resize(numberOfFrequencies);     periodArray=twoPi/frequencyArray;
+    }
+    else if( (len=answer.matches("frequencies")) )
+    {
+      // Do this for now -- **fix me**
+      if( numberOfFrequencies==1 )
+        sScanF(answer(len,answer.length()-1),"%e",&frequencyArray(0));
+      else if( numberOfFrequencies==2 )
+        sScanF(answer(len,answer.length()-1),"%e %e",&frequencyArray(0),&frequencyArray(1));
+      else if( numberOfFrequencies==3 )
+        sScanF(answer(len,answer.length()-1),"%e %e %e",&frequencyArray(0),&frequencyArray(1),&frequencyArray(2));    
+      else if( numberOfFrequencies==4 )
+        sScanF(answer(len,answer.length()-1),"%e %e %e %e",&frequencyArray(0),&frequencyArray(1),&frequencyArray(2),&frequencyArray(3)); 
+      else if( numberOfFrequencies==5 )
+        sScanF(answer(len,answer.length()-1),"%e %e %e %e %e",&frequencyArray(0),&frequencyArray(1),&frequencyArray(2),&frequencyArray(3),&frequencyArray(4));  
+      else if( numberOfFrequencies==6 )
+        sScanF(answer(len,answer.length()-1),"%e %e %e %e %e %e",&frequencyArray(0),&frequencyArray(1),&frequencyArray(2),&frequencyArray(3),&frequencyArray(4),&frequencyArray(5));  
+      else
+      {
+        printF("ERROR: two many frequencies to input. FIX ME BILL! \n");
+        OV_ABORT("error");
+      }                        
+
+      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      {
+        if( frequencyArray(freq)<=0 )
+        {
+          printF("ERROR: frequency %d = %12.6e !\n",freq,frequencyArray(freq));
+          OV_ABORT("error");
+        }
+        printF("Setting frequency %d = %12.6e\n",freq,frequencyArray(freq));
+        periodArray(freq) = twoPi/frequencyArray(freq); 
+      }      
+    }
+
     else if( dialog.getTextValue(answer,"maximum number of iterations","%i",maximumNumberOfIterations) )
     {
       printF("Setting maximumNumberOfIterations=%i\n",maximumNumberOfIterations);
@@ -296,6 +410,10 @@ int CgWaveHoltz::outputMatlabFile()
   const real & tol                      = dbase.get<real>("tol");
   const int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
 
+  const int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
+  const RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");
+  const RealArray & periodArray         = dbase.get<RealArray>("periodArray");    
+
   RealArray & resVector                 = dbase.get<RealArray>("resVector");
   const int & numberOfIterations        = dbase.get<int>("numberOfIterations");
   const Real & convergenceRate          = dbase.get<Real>("convergenceRate");
@@ -337,6 +455,25 @@ int CgWaveHoltz::outputMatlabFile()
   fPrintF(matlabFile,"solverName='%s';\n",(const char*)solverName);
   fPrintF(matlabFile,"gridName=\'%s\';\n",(const char*)nameOfGridFile);
   fPrintF(matlabFile,"omega=%20.14e;\n",omega);
+
+  int numPerLine=5;
+  fPrintF(matlabFile,"numberOfFrequencies=%d;\n",numberOfFrequencies);
+  fPrintF(matlabFile,"frequencyArray=[");
+  for( int freq=0; freq<numberOfFrequencies; freq++ )
+  {
+    fPrintF(matlabFile,"%14.6e ",frequencyArray(freq));
+    if( (freq % numPerLine)==numPerLine-1 ) fprintf(matlabFile,"...\n");
+  }
+  fPrintF(matlabFile,"];\n");
+
+  fPrintF(matlabFile,"periodArray=[");
+  for( int freq=0; freq<numberOfFrequencies; freq++ )
+  {
+    fPrintF(matlabFile,"%14.6e ",periodArray(freq));
+    if( (freq % numPerLine)==numPerLine-1 ) fprintf(matlabFile,"...\n");
+  }
+  fPrintF(matlabFile,"];\n");  
+
   fPrintF(matlabFile,"c=%20.14e;\n",c);
   fPrintF(matlabFile,"convergenceRate=%12.4e;\n",convergenceRate);
   fPrintF(matlabFile,"convergenceRatePerPeriod=%12.4e;\n",convergenceRatePerPeriod);
@@ -345,7 +482,7 @@ int CgWaveHoltz::outputMatlabFile()
   fPrintF(matlabFile,"orderOfAccuracy=%d;\n",orderOfAccuracy);
   fPrintF(matlabFile,"tol=%12.4e;\n",tol);
 
-  int numPerLine=40;
+  numPerLine=40;
   fPrintF(matlabFile,"%% itv = iteration number\n");
   fPrintF(matlabFile,"itv=[");
   for( int i=0; i<numberOfIterations; i++ )
@@ -367,7 +504,7 @@ int CgWaveHoltz::outputMatlabFile()
 
   fclose(matlabFile);
 
-  printf("CgWaveHoltz::Results saved to file %s\n",(const char*)fileName);
+  // printf("CgWaveHoltz::Results saved to file %s\n",(const char*)fileName);
 
 
   return 0;
@@ -378,13 +515,20 @@ int CgWaveHoltz::outputMatlabFile()
 // ================================================================================================
 int CgWaveHoltz::setup()
 {
+  const int & numberOfFrequencies = dbase.get<int>("numberOfFrequencies");
+  printF("cgWaveHoltz::setup: numberOfFrequencies=%d\n",numberOfFrequencies);
 
-  realCompositeGridFunction & vOld = dbase.get<realCompositeGridFunction>("vOld");
-  Range all;
-  vOld.updateToMatchGrid(cg,all,all,all);
+  // realCompositeGridFunction & vOld = dbase.get<realCompositeGridFunction>("vOld");
+  // Range all;
+  // vOld.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
 
   realCompositeGridFunction & residual = dbase.get<realCompositeGridFunction>("residual");
-  residual.updateToMatchGrid(cg,all,all,all);
+  Range all;
+  residual.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+  for( int freq=0; freq<numberOfFrequencies; freq++ )
+  {
+    residual.setName(sPrintF("r%d",freq),freq);
+  }
 
   // v=0;
   return 0;
@@ -401,16 +545,22 @@ int CgWaveHoltz::setup()
 real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
 {
 
-  CgWave & cgWave                     = *dbase.get<CgWave*>("cgWave");
-  const real & omega                  = dbase.get<real>("omega");
-  const int & adjustOmega             = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  CgWave & cgWave                         = *dbase.get<CgWave*>("cgWave");
+  const real & omega                      = dbase.get<real>("omega");
+  const int & adjustOmega                 = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+    
+  const int & debug                       = dbase.get<int>("debug");
+  const real & dt                         = cgWave.dbase.get<real>("dt");
+  const real & c                          = cgWave.dbase.get<real>("c");
+  const int & upwind                      = cgWave.dbase.get<int>("upwind");
+  const int & adjustHelmholtzForUpwinding = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding");
 
-  const real & dt                     = cgWave.dbase.get<real>("dt");
-  const real & c                      = cgWave.dbase.get<real>("c");
-  const int & upwind                  = cgWave.dbase.get<int>("upwind");
-  realCompositeGridFunction & v       = cgWave.dbase.get<realCompositeGridFunction>("v");
-  realCompositeGridFunction & f       = cgWave.dbase.get<realCompositeGridFunction>("f");
-  CompositeGridOperators & operators  = cgWave.dbase.get<CompositeGridOperators>("operators");
+  const int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
+  const RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+    
+  realCompositeGridFunction & v           = cgWave.dbase.get<realCompositeGridFunction>("v");
+  realCompositeGridFunction & f           = cgWave.dbase.get<realCompositeGridFunction>("f");
+  CompositeGridOperators & operators      = cgWave.dbase.get<CompositeGridOperators>("operators");
 
 
   // Symbol of D+t D-t : 
@@ -423,14 +573,18 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
   // bool adjustOmega = true;
   // const Real omegar = adjustOmega ? omegas : omega; // omega to use for residual
 
-  printF("CgWaveHoltz::residual: c=%g, omega=%14.7e, omegas=%14.7e (from symbol of D+D-), dt=%12.6e, adjustOmega=%d, upwind=%d\n",c,omega,omegas,dt,adjustOmega,upwind);
-  if( upwind )
+  // printF("\n +++++ ENTERING CgWaveHoltz::residual +++++ \n");
+
+  // printF("CgWaveHoltz::residual: c=%g, omega=%14.7e, omegas=%14.7e (from symbol of D+D-), dt=%12.6e, adjustOmega=%d, upwind=%d\n",c,omega,omegas,dt,adjustOmega,upwind);
+  if( upwind && !adjustHelmholtzForUpwinding )
   {
-    printF(" **** WARNING: upwinding is ON! Correcting omega for the discrete-time-symbol will not fully work to give a small residual ! *****\n");
+    printF("\n **** WARNING: upwinding is ON! Correcting omega for the discrete-time-symbol will not fully work to give a small residual ! *****\n\n");
   }
   realCompositeGridFunction & res = dbase.get<realCompositeGridFunction>("residual");
 
-  Real maxRes =0., maxResFromDiscreteSymbol=0.;
+  RealArray maxRes(numberOfFrequencies), maxResFromDiscreteSymbol(numberOfFrequencies);
+  maxRes=0.;
+  maxResFromDiscreteSymbol=0.;
 
   Index I1,I2,I3;
   Index Ib1,Ib2,Ib3;
@@ -440,7 +594,7 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
   int numRes=1;  // number of residuals we compute 
   bool computeResidualWithAdjustedOmega[2] ={ false,false };
 
-  if( useAdjustedOmega==0 )
+  if( useAdjustedOmega==0 || numberOfFrequencies>1 )
   {
     numRes=1;  computeResidualWithAdjustedOmega[0]=false;
   }
@@ -484,33 +638,52 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
       {
         resLocal=0.;
         
-        RealArray lap(I1,I2,I3);
+        RealArray lap(I1,I2,I3,numberOfFrequencies);
         operators[grid].derivative(MappedGridOperators::laplacianOperator,vLocal,lap,I1,I2,I3);
 
-        Real om = omega;
-        if( computeResidualWithAdjustedOmega[ires] )
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
         {
-          // --- Compute the residual using omegas (from discrete symbol) ---
-          printF("CgWaveHoltz::residual: compute residual with adjusted omegas=%20.12e\n",omegas);
-          om = omegas;
-        }
+          // Real om = omega;
+          Real om = frequencyArray(freq);
+          if( computeResidualWithAdjustedOmega[ires] )
+          {
+            // --- Compute the residual using omegas (from discrete symbol) ---
+            if( grid==0 && debug & 1 )
+              printF("CgWaveHoltz::residual: compute residual with adjusted omegas=%20.12e\n",omegas);
+            om = omegas;
+          }
 
-        // --- Compute the residual ---
-        where( maskLocal(I1,I2,I3)>0 )
-        {
-          // resLocal(I1,I2,I3) = (c*c)*lap(I1,I2,I3) + (omega*omega)*vLocal(I1,I2,I3) + fLocal(I1,I2,I3); // change sign on f for cgWave **FIX ME**
-          resLocal(I1,I2,I3) = (c*c)*lap(I1,I2,I3) + (om*om)*vLocal(I1,I2,I3) - fLocal(I1,I2,I3); 
+          // --- Compute the residual ---
+          if( false )
+          {
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            {
+              if( maskLocal(i1,i2,i3)>0 )
+              {
+                // resLocal(I1,I2,I3) = (c*c)*lap(I1,I2,I3) + (omega*omega)*vLocal(I1,I2,I3) + fLocal(I1,I2,I3); // change sign on f for cgWave **FIX ME**
+                resLocal(i1,i2,i3,freq) = (c*c)*lap(i1,i2,i3,freq) + (om*om)*vLocal(i1,i2,i3,freq) - fLocal(i1,i2,i3,freq); 
+              }
+            }
+          }
+          else
+          {
+            where( maskLocal(I1,I2,I3)>0 )
+            {
+              // resLocal(I1,I2,I3) = (c*c)*lap(I1,I2,I3) + (omega*omega)*vLocal(I1,I2,I3) + fLocal(I1,I2,I3); // change sign on f for cgWave **FIX ME**
+              resLocal(I1,I2,I3,freq) = (c*c)*lap(I1,I2,I3,freq) + (om*om)*vLocal(I1,I2,I3,freq) - fLocal(I1,I2,I3,freq); 
+            }
+          }
         }
-
       }
 
+      Range all;
       ForBoundary(side,axis)
       {
          // set residual to zero on dirichlet boundaries 
          if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
          {
            getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
-           resLocal(Ib1,Ib2,Ib3)=0.;
+           resLocal(Ib1,Ib2,Ib3,all)=0.;
          }
 
       }
@@ -518,30 +691,35 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
       // ::display(res[grid],"residual","%8.2e ");
     }
 
-    const int cc=0, maskOption=1;  // maskOption=1 : check points with mask>0
-    if( computeResidualWithAdjustedOmega[ires]  )
-      maxResFromDiscreteSymbol = maxNorm(res,cc,maskOption);
+    const int maskOption=1;  // maskOption=1 : check points with mask>0
+    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    {
+      if( computeResidualWithAdjustedOmega[ires]  )
+        maxResFromDiscreteSymbol(freq) = maxNorm(res,freq,maskOption);
+      else
+        maxRes(freq)                   = maxNorm(res,freq,maskOption);
+    }
+  }
+
+
+  for( int freq=0; freq<numberOfFrequencies; freq++ )
+  {
+    if( useAdjustedOmega==0 || numberOfFrequencies>1 )
+    {
+       printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e.\n",freq,frequencyArray(freq),maxRes(freq));
+    }    
+    else if( useAdjustedOmega==2 )
+    {
+      printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e (using omega), max-res=%9.3e (using omega from discrete symbol)\n",
+               freq,frequencyArray(freq),maxRes(freq),maxResFromDiscreteSymbol(freq));
+    } 
     else
-      maxRes                   = maxNorm(res,cc,maskOption);
+    {
+      printF("CgWaveHoltz::residual: freq=%d, omega=%g, max-res=%9.3e (using omega from discrete symbol)\n",freq,frequencyArray(freq),maxResFromDiscreteSymbol(freq));
+    }
   }
 
-
-  
-  if( useAdjustedOmega==2 )
-  {
-    printF("CgWaveHoltz::residual: max-res=%9.3e (using omega), max-res=%9.3e (using omega from discrete symbol)\n",maxRes,maxResFromDiscreteSymbol);
-  } 
-  else if( useAdjustedOmega==0  )
-  {
-     printF("CgWaveHoltz::residual: max-res=%9.3e (using omega).\n",maxRes);
-  }
-  else
-  {
-    printF("CgWaveHoltz::residual: max-res=%9.3e (using omega from discrete symbol)\n",maxResFromDiscreteSymbol);
-  }
-
-
-  return maxRes;
+  return max(maxRes);
 
 }
 
@@ -567,34 +745,52 @@ solve()
   const real & omegaSOR     = dbase.get<real>("omegaSOR");
   const real & tol          = dbase.get<real>("tol");
 
- // here is the CgWave solver for the time dependent wave equation
- CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
- if( omega!=0.0 )
-   Tperiod=numPeriods*twoPi/omega;  
- else
-   Tperiod=1;
+  const int & numberOfFrequencies = dbase.get<int>("numberOfFrequencies");
+  RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");
+  RealArray & periodArray         = dbase.get<RealArray>("periodArray");
+  IntegerArray & numPeriodsArray  = dbase.get<IntegerArray>("numPeriodsArray");
 
- printF("CgWaveHoltz::solve: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
+
+  // here is the CgWave solver for the time dependent wave equation
+  CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
+  if( omega!=0.0 )
+    Tperiod=numPeriods*twoPi/omega;  
+  else
+    Tperiod=1;
+
+  printF("CgWaveHoltz::solve: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
  
- // // --- set values in CgWave:
- // const real & dt    = cgWave.dbase.get<real>("dt");  // is this set ? .. NO **FIX ME***
+  // // ---- adjust periods ----
+  // IntegerArray & numPeriodsArray = dbase.put<IntegerArray>("numPeriodsArray");
+  // // We may be able to integrate over more periods T2 in the larger time interface T1
+  // numPeriodsArray = numPeriods;
+  // for( int freq=1; freq<numberOfFrequencies; freq++ )
+  //   numPeriodsArray(freq) = floor( frequencyArray(freq)/frequencyArray(0))*numPeriodsArray(0); // integrate over this many periods for the "T2" integral
 
- // Real omegaForWave   = omega;
- // Real TperiodForWave = Tperiod;
- // const Real omegaSymbol = (2./dt)*sin(omega*dt/2.);  // Symbol of D+tD-t 
- // if( adjustOmega )
- // {  // -- adjust omega to account for the Fourier Symbol of D+tD-t    ** THIS IS NOT CORRECT --> NEED TO DO INSIDE cgWave
- //    omegaForWave = omegaSymbol; 
- //    TperiodForWave = twoPi/omegaForWave; 
- // }
+  // for( int freq=0; freq<numberOfFrequencies; freq++ )
+  //   periodArray(freq)=numPeriodsArray(freq)*twoPi/frequencyArray(freq);
 
- cgWave.dbase.get<real>("omega")     = omega;        // ** FIX ME **
- cgWave.dbase.get<real>("tFinal")    = Tperiod;      // ** FIX ME **
- cgWave.dbase.get<real>("Tperiod")   = Tperiod;      // ** FIX ME **
- cgWave.dbase.get<int>("numPeriods") = numPeriods;          // ** FIX ME **
- cgWave.dbase.get<int>("adjustOmega")= adjustOmega;  // 1 : choose omega from the symbol of D+t D-t 
+  // --- set values in CgWave:  *** COULD DO BETTER ***
 
- 
+  cgWave.dbase.get<real>("omega")     = omega;        // ** FIX ME **
+  cgWave.dbase.get<real>("tFinal")    = Tperiod;      // ** FIX ME **
+  cgWave.dbase.get<real>("Tperiod")   = Tperiod;      // ** FIX ME **
+  cgWave.dbase.get<int>("numPeriods") = numPeriods;          // ** FIX ME **
+  cgWave.dbase.get<int>("adjustOmega")= adjustOmega;  // 1 : choose omega from the symbol of D+t D-t 
+
+  // // >>> --- Setting these values in cgWave are now done in initialize()
+  // const int & numberOfFrequencies = dbase.get<int>("numberOfFrequencies");
+  // cgWave.dbase.get<int>("numberOfFrequencies") = numberOfFrequencies;
+
+  // RealArray & cgWaveFrequencyArray = cgWave.dbase.get<RealArray>("frequencyArray");
+  // cgWaveFrequencyArray.redim(numberOfFrequencies);
+  // cgWaveFrequencyArray = dbase.get<RealArray>("frequencyArray");
+
+  // RealArray & cgWavePeriodArray = cgWave.dbase.get<RealArray>("periodArray");
+  // cgWavePeriodArray.redim(numberOfFrequencies);
+  // cgWavePeriodArray = dbase.get<RealArray>("periodArray"); 
+  // // <<<< ----
+
 
 
   real time0=getCPU(), timeb;
@@ -603,10 +799,20 @@ solve()
   //   timeForInterpolate=0., timeForAdvance=0., timeForGetLocalArray=0.,
   //   timeForFinishBoundaryConditions=0.;
       
-  printF("\n =========================  WAVE EQUATION HELMHOLTZ SOLVER ==========================\n"
-         "CgWaveHoltz::solve using omega=%12.4e Tperiod=%12.4e (before adjust) numPeriods=%d\n",
+  printF("\n =========================  WAVE EQUATION HELMHOLTZ SOLVER ==========================\n");
+  if( numberOfFrequencies==1 )
+  {
+    printF("CgWaveHoltz::solve using omega=%12.4e Tperiod=%12.4e (before adjust) numPeriods=%d\n",
           omega,Tperiod,numPeriods);
-
+  }
+  else
+  {
+    printF(" -------------------------- MULTI-FREQUENCY ALGORITHM -------------------------------\n");
+    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    {
+      printF(" freq=%d : omega=%12.4e, T=%12.4e, numPeriods=%d\n",freq,frequencyArray(freq),periodArray(freq),numPeriodsArray(freq));
+    }
+  }
 
   // // Gaussian forcing 
   // const real & beta = dbase.get<real>("beta");
@@ -619,8 +825,11 @@ solve()
   // printF("CgWaveHoltz: c=%g, omega=%g, Tperiod=%g, numPeriods=%d, tFinal=%g, plotSteps=%d\n",
   // 	 c,omega,Tperiod,numPeriods,tFinal,plotSteps);
 
-  realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-  realCompositeGridFunction & vOld = dbase.get<realCompositeGridFunction>("vOld");
+  realCompositeGridFunction & v    = cgWave.dbase.get<realCompositeGridFunction>("v");
+  realCompositeGridFunction & vOld = cgWave.dbase.get<realCompositeGridFunction>("vOld");
+  Range all;
+  vOld.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+
 
 
   // v=0; // Initial condition 
@@ -678,7 +887,7 @@ solve()
   convergenceRatePerPeriod = pow( resVector(numberOfIterations-1)/resVector(0), 1./( numberOfIterations*numPeriods) ); 
 
 
-  printF("#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =%d #########################\n",numberOfIterations);
+  printF("###### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =%d ######\n",numberOfIterations);
 
   return 0;
 }

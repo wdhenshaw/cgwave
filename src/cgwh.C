@@ -170,8 +170,8 @@ main(int argc, char *argv[])
   // ---- Build the WaveHoltz solver and set parameters ----
   CgWaveHoltz cgWaveHoltz(cg,ps);
   cgWaveHoltz.setNameOfGridFile(nameOfOGFile);
-  cgWaveHoltz.setup();
   cgWaveHoltz.interactiveUpdate();
+  cgWaveHoltz.setup();
 
   Real & convergenceRate          = cgWaveHoltz.dbase.get<Real>("convergenceRate");
   Real & convergenceRatePerPeriod = cgWaveHoltz.dbase.get<Real>("convergenceRatePerPeriod");
@@ -183,20 +183,27 @@ main(int argc, char *argv[])
   cgWave.setup();
   cgWave.interactiveUpdate();
 
-  const int & orderOfAccuracy       = cgWave.dbase.get<int>("orderOfAccuracy");
-  const int & orderOfAccuracyInTime = cgWave.dbase.get<int>("orderOfAccuracyInTime");
-  const int & upwind                = cgWave.dbase.get<int>("upwind"); // new way
-  // const Real & ad4                  = cgWave.dbase.get<Real>("ad4");   // old way
-  const int & computeErrors         = cgWave.dbase.get<int>("computeErrors");
+  const int & orderOfAccuracy              = cgWave.dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracyInTime        = cgWave.dbase.get<int>("orderOfAccuracyInTime");
+  const int & upwind                       = cgWave.dbase.get<int>("upwind"); // new way
+  const int & adjustHelmholtzForUpwinding  = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding"); 
+  const int & computeErrors                = cgWave.dbase.get<int>("computeErrors");
+  const RealArray & frequencyArrayAdjusted = cgWave.dbase.get<RealArray>("frequencyArrayAdjusted");
+  const IntegerArray & numPeriodsArray     = cgWave.dbase.get<IntegerArray>("numPeriodsArray");
+  const RealArray & periodArray            = cgWave.dbase.get<RealArray>("periodArray"); 
 
   cgWaveHoltz.dbase.get<int>("orderOfAccuracy")=orderOfAccuracy; // set value in CgWaveHoltz
 
-  real & omega                    = cgWaveHoltz.dbase.get<real>("omega");
-  int & numPeriods                = cgWaveHoltz.dbase.get<int>("numPeriods");
-  real & tol                      = cgWaveHoltz.dbase.get<real>("tol");
-  int & adjustOmega               = cgWaveHoltz.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
-  int & maximumNumberOfIterations = cgWaveHoltz.dbase.get<int>("maximumNumberOfIterations");
-  int & cgWaveDebugMode           = cgWaveHoltz.dbase.get<int>("cgWaveDebugMode");
+  const int & numberOfFrequencies          = cgWaveHoltz.dbase.get<int>("numberOfFrequencies");
+  const RealArray & frequencyArray         = cgWaveHoltz.dbase.get<RealArray>("frequencyArray");
+
+  real & omega                             = cgWaveHoltz.dbase.get<real>("omega");
+  int & numPeriods                         = cgWaveHoltz.dbase.get<int>("numPeriods");
+  real & tol                               = cgWaveHoltz.dbase.get<real>("tol");
+  int & adjustOmega                        = cgWaveHoltz.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  int & maximumNumberOfIterations          = cgWaveHoltz.dbase.get<int>("maximumNumberOfIterations");
+  int & numberOfIterations                 = cgWaveHoltz.dbase.get<int>("numberOfIterations");  // holds actual number of iterations taken
+  int & cgWaveDebugMode                    = cgWaveHoltz.dbase.get<int>("cgWaveDebugMode");
   // Build a dialog menu for changing parameters
   GUIState gui;
   DialogData & dialog=gui;
@@ -307,7 +314,9 @@ main(int argc, char *argv[])
     cgWave.dbase.put<realCompositeGridFunction>("uHelmholtz");
 
   realCompositeGridFunction & uHelmholtz = cgWave.dbase.get<realCompositeGridFunction>("uHelmholtz"); 
-  uHelmholtz.updateToMatchGrid(cg); // save Helmholtz solution here
+  Range all;
+  uHelmholtz.updateToMatchGrid(cg,all,all,all,numberOfFrequencies); // save Helmholtz solution here
+
   bool helmholtzFromDirectSolverWasComputed=false;
 
   Ogshow show;  // show file for saving solutions
@@ -360,16 +369,73 @@ main(int argc, char *argv[])
       }
     }          
 
-    else if( answer=="compute with fixed-point" )
+    else if( answer=="compute with fixed-point" ||
+             answer=="compute with petsc" )
     {
       const Real cpu0=getCPU();
 
-      cgWaveHoltz.solve();
+      const bool useFixedPoint =  answer=="compute with fixed-point";
+
+      if( useFixedPoint )
+        cgWaveHoltz.solve();
+      else
+        cgWaveHoltz.solvePETSc(argc,argv);
 
       const Real cpu = getCPU()-cpu0;
+
+
+      
+      // total number of steps taken:
+      const int & numberOfStepsTaken    = cgWave.dbase.get<int>("numberOfStepsTaken");      
+      const int & numberOfStepsPerSolve = cgWave.dbase.get<int>("numberOfStepsPerSolve");
+      const Real & cfl                  = cgWave.dbase.get<real>("cfl");
+      const Real & maxResidual          = cgWaveHoltz.dbase.get<real>("maxResidual");
+
+      const CgWave::TimeSteppingMethodEnum & timeSteppingMethod = cgWave.dbase.get<CgWave::TimeSteppingMethodEnum>("timeSteppingMethod");
+
+      printF("\n------------------------ CgWaveHoltz SUMMARY ------------------------------------\n");
+      printF(" Convergence rate CR=%5.3f, CR-perPeriod=%5.3f, Time to solve =%9.2e(s)\n",convergenceRate,convergenceRatePerPeriod,cpu);
+      printF(" max-residual=%8.2e (WaveHoltz its), numberOfIterations = %d (%s) (maximumNumberOfIterations=%d)\n",
+               maxResidual,numberOfIterations,(useFixedPoint? "FP" : "Krylov"),maximumNumberOfIterations);
+      printF(" numberOfFrequencies= %d, adjustOmega=%d, adjustHelmholtzForUpwinding=%d\n",
+            numberOfFrequencies,adjustOmega,adjustHelmholtzForUpwinding);
+      printF(" Time stepping = %s, cfl=%6.2f, numberOfStepsPerSolve=%d, totalTimeStepsStaken=%d\n",
+            (timeSteppingMethod==CgWave::explicitTimeStepping ? "explicit" : "implicit"),cfl,numberOfStepsPerSolve,numberOfStepsTaken);
+
+      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      {
+        printF(" freq=%2d, omega=%8.3f",freq,frequencyArray(freq));
+        if( adjustOmega )
+          printF(", (adjusted=%8.3f)",frequencyArrayAdjusted(freq));
+        const Real T = twoPi/frequencyArray(freq);  // period
+        const Real Tbar  = T*numPeriodsArray(freq);       // periods that fit in time interval
+        const Real Tbar0 = periodArray(0);          // final time integrated to 
+        printF(" T=%8.5f, Tbar=%8.5f, numPeriods=%3d, Tbar(0)/T=%6.2f",T,Tbar,numPeriodsArray(freq),Tbar0/T);
+        printF("\n");
+      }
+
+      printF("\n");
+
+
       real maxRes = cgWaveHoltz.residual();
-      printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e, CR=%5.3f CR-perPeriod=%5.3f, cpu=%9.2e(s)\n",
-              omega,maxRes,convergenceRate,convergenceRatePerPeriod,cpu);
+
+      printF("CgWaveHoltz: max-res=%9.3e (all frequencies)\n",maxRes);
+
+      // if( answer=="compute with fixed-point" )
+      // {
+      //   if( numberOfFrequencies==1 )
+      //     printF("\n >>>> cgwh: omega=%9.3e, max-res=%9.3e, CR=%5.3f CR-perPeriod=%5.3f, cpu=%9.2e(s)\n",
+      //             omega,maxRes,convergenceRate,convergenceRatePerPeriod,cpu);
+      //   else
+      //     printF("\n >>>> cgwh: numberOfFrequencies=%d, max-res=%9.3e, CR=%5.3f CR-perPeriod=%5.3f, cpu=%9.2e(s)\n",
+      //             numberOfFrequencies,maxRes,convergenceRate,convergenceRatePerPeriod,cpu);
+      // }
+      // else
+      // {
+      //   // printF("CgWaveHoltz: max-res=%9.3e, CR=%5.3f CR-perPeriod=%5.3f, cpu=%9.2e(s)\n",
+      //   //    maxRes,convergenceRate,convergenceRatePerPeriod,cpu);
+      //   printF("CgWaveHoltz: max-res=%9.3e (all frequencies)\n",maxRes);
+      // }
 
       // save results to a matlab file
       cgWaveHoltz.dbase.get<aString>("solverName")="fixedPoint";
@@ -379,26 +445,26 @@ main(int argc, char *argv[])
       reComputeErrors=true;
 
     }
-    else if( answer=="compute with petsc" )
-    {
-      // Krylov solver 
-      const Real cpu0=getCPU();
+    // else if( answer=="compute with petsc" )
+    // {
+    //   // Krylov solver 
+    //   const Real cpu0=getCPU();
 
-      cgWaveHoltz.solvePETSc(argc,argv);
+    //   cgWaveHoltz.solvePETSc(argc,argv);
 
-      const Real cpu = getCPU()-cpu0;
+    //   const Real cpu = getCPU()-cpu0;
 
-      real maxRes = cgWaveHoltz.residual();
-      printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e, CR=%5.3f CR-perPeriod=%5.3f, cpu=%9.2e(s)\n",
-             omega,maxRes,convergenceRate,convergenceRatePerPeriod,cpu);
+    //   real maxRes = cgWaveHoltz.residual();
+    //   printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e, CR=%5.3f CR-perPeriod=%5.3f, cpu=%9.2e(s)\n",
+    //          omega,maxRes,convergenceRate,convergenceRatePerPeriod,cpu);
 
-      // save results to a matlab file 
-      cgWaveHoltz.dbase.get<aString>("solverName")="gmres";  // ** fix me **
-      cgWaveHoltz.outputMatlabFile();
+    //   // save results to a matlab file 
+    //   cgWaveHoltz.dbase.get<aString>("solverName")="gmres";  // ** fix me **
+    //   cgWaveHoltz.outputMatlabFile();
 
-      replot=true;
-      reComputeErrors=true;
-    }
+    //   replot=true;
+    //   reComputeErrors=true;
+    // }
     else if( answer == "solve Helmholtz directly" )
     {
        // this may require cgWave to have been called to create f ?
@@ -407,8 +473,11 @@ main(int argc, char *argv[])
       realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
       realCompositeGridFunction & f = cgWave.dbase.get<realCompositeGridFunction>("f");
 
+      // v.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+      // f.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+
       // Make a copy of f since the direct solver will change it 
-      realCompositeGridFunction fHelmholtz(cg);
+      realCompositeGridFunction fHelmholtz(cg,all,all,all,numberOfFrequencies);
       fHelmholtz = f; 
 
       const Real cpu0=getCPU();
@@ -422,12 +491,12 @@ main(int argc, char *argv[])
 
       if( true )
       {
-        bool useAdjustedOmega=false;
-        Real maxRes = cgWaveHoltz.residual( useAdjustedOmega );
-        printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e, cpu=%9.2e (Direct solution of Helmholtz).\n",
-               omega,maxRes,cpu);
+        // bool useAdjustedOmega=false;
+        // Real maxRes = cgWaveHoltz.residual( useAdjustedOmega );
+        // printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e, cpu=%9.2e (direct solution of Helmholtz).\n",
+        //        omega,maxRes,cpu);
   
-        maxRes = cgWaveHoltz.residual();
+        Real maxRes = cgWaveHoltz.residual();
         printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e (direct Helmholtz solution)\n",omega,maxRes);
       }
 
@@ -455,20 +524,28 @@ main(int argc, char *argv[])
 
       std::srand(12789.);
 
+      const Real scale=1.; // 1.e-5; // TEST
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
       {
         MappedGrid & mg = cg[grid];
         OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+        vLocal=0.;
         getIndex(mg.gridIndexRange(),I1,I2,I3);
-        FOR_3D(i1,i2,i3,I1,I2,I3)
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
         {
-          // do this for now
-          // vLocal(i1,i2,i3) = sin(i1)*cos(i2);
+          FOR_3D(i1,i2,i3,I1,I2,I3)
+          {
+            // do this for now
+            // vLocal(i1,i2,i3) = sin(i1)*cos(i2);
+            if( maskLocal(i1,i2,i3)!=0 )
+            {
+              vLocal(i1,i2,i3,freq) = (-1. + std::rand()*(2./RAND_MAX))*scale; // [-1,1]
+            }
 
-          vLocal(i1,i2,i3) = -1. + std::rand()*(2./RAND_MAX); // [-1,1]
-
+          }
         }
-
       }
       replot=true;
 
@@ -491,29 +568,34 @@ main(int argc, char *argv[])
       show.saveComment(1,sPrintF("v=WaveHoltz, u=Helmholtz"));               // comment 1 (shown on plot)
 
       // We save the current solution and optionally the direct solution and or errors
-      int numShowComponents=1;
-      if( helmholtzFromDirectSolverWasComputed ) numShowComponents++;
-      if( computeErrors || helmholtzFromDirectSolverWasComputed ) numShowComponents++;
+      int numShowComponents= numberOfFrequencies;
+      if( helmholtzFromDirectSolverWasComputed ) numShowComponents += numberOfFrequencies;
+      if( computeErrors || helmholtzFromDirectSolverWasComputed ) numShowComponents += numberOfFrequencies;
 
-      Range all;
       realCompositeGridFunction q(cg,all,all,all,numShowComponents);
       q.setName("q");
       int ishow=0;  // counts components in q as we fill them in
 
-      q.setName("v",ishow); 
       realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      {
+        q.setName(sPrintF("v%d",freq),ishow); 
 
-      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-         q[grid](all,all,all,ishow) = v[grid];   // waveHoltz solution
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+           q[grid](all,all,all,ishow) = v[grid](all,all,all,freq);   // waveHoltz solution
 
-      ishow++;
+        ishow++;
+      }
 
       if( helmholtzFromDirectSolverWasComputed )
       { 
-        q.setName("u",ishow); 
-        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-          q[grid](all,all,all,ishow) = uHelmholtz[grid];  // direct solver solution
-        ishow++; 
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
+        {
+          q.setName(sPrintF("u%d",freq),ishow); 
+          for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+            q[grid](all,all,all,ishow) = uHelmholtz[grid](all,all,all,freq);  // direct solver solution
+          ishow++; 
+        }
       }
       if( computeErrors || helmholtzFromDirectSolverWasComputed )
       { 
@@ -524,10 +606,13 @@ main(int argc, char *argv[])
           realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
           error = uHelmholtz - v;
         }
-        q.setName("error",ishow);
-        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-          q[grid](all,all,all,ishow) = error[grid];  // error or diff with direct
-        ishow++;
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
+        {        
+          q.setName(sPrintF("err%d",freq),ishow);
+          for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+            q[grid](all,all,all,ishow) = error[grid](all,all,all,freq);  // error or diff with direct
+          ishow++;
+        }
       }
       assert( ishow==numShowComponents );
 
@@ -551,9 +636,14 @@ main(int argc, char *argv[])
     }
     else if( answer=="plot residual" )
     {
-      realCompositeGridFunction & res = cgWaveHoltz.dbase.get<realCompositeGridFunction>("residual"); 
-      res.interpolate();
-           
+      realCompositeGridFunction & res = cgWaveHoltz.dbase.get<realCompositeGridFunction>("residual");
+
+      // interpolate residual to make plots nicer: 
+      if( true )
+      { 
+        printF("INFO: interpolate the residual\n");
+        res.interpolate();
+      }
       ps.erase();
       psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
       psp.set(GI_TOP_LABEL,sPrintF("residual O%d omega=%.5g",orderOfAccuracy,omega));
@@ -572,11 +662,17 @@ main(int argc, char *argv[])
           realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
           error = uHelmholtz - v;
 
-          psp.set(GI_TOP_LABEL,sPrintF("Error (disc. sol) O%d omega=%.5g",orderOfAccuracy,omega));
+          if( numberOfFrequencies==1 )
+            psp.set(GI_TOP_LABEL,sPrintF("Error (disc. sol) O%d omega=%.5g",orderOfAccuracy,omega));
+          else
+            psp.set(GI_TOP_LABEL,sPrintF("Error (disc. sol) O%d numFreq=%d",orderOfAccuracy,numberOfFrequencies));
         }
         else
         {
-          psp.set(GI_TOP_LABEL,sPrintF("Error (true soln) O%d omega=%.5g",orderOfAccuracy,omega));
+          if( numberOfFrequencies==1 )
+            psp.set(GI_TOP_LABEL,sPrintF("Error (true soln) O%d omega=%.5g",orderOfAccuracy,omega));
+          else
+            psp.set(GI_TOP_LABEL,sPrintF("Error (true soln) O%d, numFreq=%d",orderOfAccuracy,numberOfFrequencies));
 
         }
         ps.erase();
@@ -593,7 +689,9 @@ main(int argc, char *argv[])
     else if( answer=="plot forcing" )
     {
       CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
-      realCompositeGridFunction & f = cgWave.dbase.get<realCompositeGridFunction>("f");      
+      realCompositeGridFunction & f = cgWave.dbase.get<realCompositeGridFunction>("f");
+      for( int freq=0; freq<numberOfFrequencies; freq++ )    
+        f.setName(sPrintF("f%d",freq),freq);  
       ps.erase();
       psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
       psp.set(GI_TOP_LABEL,sPrintF("forcing"));
@@ -638,7 +736,7 @@ main(int argc, char *argv[])
         realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
         Real t=0; // compute errors with t=0 in cos(omega*t)
         Real maxErr = cgWave.getErrors( v, t );
-        printF("CgWaveHoltz: max-err =%8.2e (between WaveHoltz and known solution)\n",maxErr);
+        printF("cgwh: max-err =%8.2e (between WaveHoltz and known solution, all frequencies)\n",maxErr);
 
         Real solutionNorm = maxNorm( v ); 
         cgWaveHoltz.saveCheckFile( checkFileCounter,maxErr,solutionNorm ); 
@@ -648,10 +746,21 @@ main(int argc, char *argv[])
       if( helmholtzFromDirectSolverWasComputed )
       {
         realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-        realCompositeGridFunction err(cg);
+        realCompositeGridFunction err(cg,all,all,all,numberOfFrequencies);
         err = uHelmholtz - v;
-        Real maxDiff = maxNorm( err );
-        printF("CgWaveHoltz: max-diff=%8.2e (between WaveHoltz and Direct Helmholtz solution)\n",maxDiff);
+
+        
+        Real maxDiff=0.; 
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
+        {
+          Real diff = maxNorm( err,freq );
+          if( numberOfFrequencies>1 )
+            printF("cgwh: max-diff=%8.2e for freq%d = %12.4e (between WaveHoltz and Direct Helmholtz solution)\n",diff,freq,frequencyArray(freq));
+          maxDiff = max(maxDiff,diff);
+        }
+
+        // Real maxDiff = maxNorm( err, F );
+        printF("cgwh: max-diff=%8.2e (between WaveHoltz and Direct Helmholtz solution, all frequencies)\n",maxDiff);
 
         Real solutionNorm = maxNorm ( v );
         cgWaveHoltz.saveCheckFile( checkFileCounter,maxDiff,solutionNorm ); 
@@ -671,7 +780,10 @@ main(int argc, char *argv[])
         psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false); // wait inside contour
 
       // const bool useUpwind = ad4>0.;
-      psp.set(GI_TOP_LABEL,sPrintF("CgWaveHoltz: FD%i%i%s omega=%.5g",orderOfAccuracy,orderOfAccuracyInTime,(upwind ? "u" : ""),omega));
+      if( numberOfFrequencies==1 )
+        psp.set(GI_TOP_LABEL,sPrintF("CgWaveHoltz: FD%i%i%s omega=%.5g",orderOfAccuracy,orderOfAccuracyInTime,(upwind ? "u" : ""),omega));
+      else
+        psp.set(GI_TOP_LABEL,sPrintF("CgWaveHoltz: FD%i%i%s numFreq=%d",orderOfAccuracy,orderOfAccuracyInTime,(upwind ? "u" : ""),numberOfFrequencies));
 
       PlotIt::contour(ps,v,psp);
 

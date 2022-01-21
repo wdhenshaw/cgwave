@@ -12,7 +12,7 @@ extern "C"
 void bcOptWave( const int&nd, 
                                 const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
                                 const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const int&mask,
-                                const real&rsxy, const real&xy, const int&boundaryCondition, 
+                                const real&rsxy, const real&xy, const int&boundaryCondition, const real & frequencyArray, 
                                 const DataBase *pdb, const int&ipar, const real&rpar, int&ierr );
 
 }
@@ -44,6 +44,9 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
     bool useUpwindDissipation   = upwind!=0;
     const int & solveHelmholtz  = dbase.get<int>("solveHelmholtz");
 
+    const int & numberOfFrequencies     = dbase.get<int>("numberOfFrequencies");
+    const RealArray & frequencyArray    = dbase.get<RealArray>("frequencyArray");
+
     const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption"); 
 
     const int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
@@ -54,8 +57,8 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
 
     const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
 
-
-    f.updateToMatchGrid(cg);
+    Range all; 
+    f.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
     
     Index I1,I2,I3;
 
@@ -84,11 +87,14 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
         f=0.;
     }
 
-  // --- Fill in boundary conditions ---------
+  // -------- Fill in boundary conditions for implicit and direct Helmholtz solver ---------
+
     Real t=0.; // this should not matter
     int numGhost = orderOfAccuracy/2;
-    if( useUpwindDissipation ) numGhost++; 
-    const int assignBCForImplicit = 1;  
+    if( useUpwindDissipation ) numGhost++;
+
+    const int assignBCForImplicit = 1; 
+
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
         MappedGrid & mg = cg[grid];
@@ -156,7 +162,8 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
                 useUpwindDissipation,            // ipar(14)
                 numGhost,                        // ipar(15)
                 assignBCForImplicit,             // ipar(16)
-                bcApproach                       // ipar(17)
+                bcApproach,                      // ipar(17)
+                numberOfFrequencies              // ipar(18)
                                       };
             real rpar[] = {
                 t                , //  rpar( 0)
@@ -176,6 +183,7 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
             real temp, *pxy=&temp, *prsxy=&temp;
             if( !isRectangular )
             {
+                mg.update(MappedGrid::THEinverseVertexDerivative);
                 #ifdef USE_PPP
                   prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
                 #else
@@ -198,7 +206,7 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
                             fLocal.getBase(0),fLocal.getBound(0),fLocal.getBase(1),fLocal.getBound(1),
                             fLocal.getBase(2),fLocal.getBound(2),
                             indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                            *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0),  
+                            *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0), 
                             pdb, ipar[0],rpar[0], ierr );
 
     // // ...swap periodic edges 

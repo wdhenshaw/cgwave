@@ -16,6 +16,10 @@ getErrors( realCompositeGridFunction & u, real t )
   FILE *& debugFile  = dbase.get<FILE*>("debugFile");
   FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
 
+  const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
+  const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");
+  // printF("\n >>> CgWave::getErrors: numberOfFrequencies=%d\n",numberOfFrequencies);
+
   real & maxError     = dbase.get<real>("maxError");      // save max-error here 
   real & solutionNorm = dbase.get<real>("solutionNorm");  // save solution norm here
 
@@ -38,8 +42,11 @@ getErrors( realCompositeGridFunction & u, real t )
 
   if( computeErrors )
   {
+    Range all;
     realCompositeGridFunction & error = dbase.get<realCompositeGridFunction>("error");
-    error.updateToMatchGrid(cg);
+    error.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+    for( int freq=0; freq<numberOfFrequencies; freq++ )
+      error.setName(sPrintF("err%d",freq),freq);
 
     const int numberOfDimensions = cg.numberOfDimensions();
     Index I1,I2,I3;
@@ -57,19 +64,24 @@ getErrors( realCompositeGridFunction & u, real t )
       if( knownSolutionOption=="userDefinedKnownSolution" )
       {
         // printF("+++++++++++ getErrors for userDefinedKnownSolution +++++++++++\n");
-        
 
         getUserDefinedKnownSolution( t, grid, error[grid], I1,I2,I3 ); // store true solution in error[grid]
+
+        // ::display(error[grid],"known solution","%9.2e ");
+        // ::display(uLocal,"computed solution","%9.2e ");
+
         const int includeGhost=1;
         bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3,includeGhost);
         if( ok )
         {
-          errLocal(I1,I2,I3) -= uLocal(I1,I2,I3);
+          errLocal(I1,I2,I3,all) -= uLocal(I1,I2,I3,all);
         }
       }
       else
       {
         // ----- Twilight zone ------
+        assert( numberOfFrequencies==1 ); // **FIX ME**
+
         assert( dbase.get<OGFunction*>("tz")!=NULL );
         OGFunction & e = *dbase.get<OGFunction*>("tz");
 
@@ -103,7 +115,14 @@ getErrors( realCompositeGridFunction & u, real t )
       }
       
     }
-    maxError = maxNorm(error);
+    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    {
+      Real maxErrFreq = maxNorm(error,freq);
+      maxError = max(maxError,maxErrFreq);
+      if( numberOfFrequencies>1  )
+        printF("getErrors: t=%9.3e, freq=%3d, omega=%8.3f, maxErr=%9.3e\n",t,freq,frequencyArray(freq),maxErrFreq);
+    }
+    // maxError = maxNorm(error);
     // printF("getErrors: t=%9.3e, maxError=%9.3e\n",t,maxError);
 
 

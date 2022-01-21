@@ -1,3 +1,143 @@
+
+
+************************************************************************
+********* Wed Jan 19, 2022
+
+CONTINUE ON COMPATIBILITY BCS for Cassandra
+
+
+TEST 3D
+
+NON-BOX --> NOW EXACT 
+cgWave tz.cmd -g=nonBox1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+getErrors: t=1.000e-01, freq=  0, omega=  30.100, maxErr=3.724e-03
+cgWave:FD44 t=1.000e-01 ( 2 steps) dt=5.000e-02 maxErr= 3.72e-03, ||u||= 9.18e+00, cpu= 8.83e+00(s)
+
+
+exact: 
+cgWave tz.cmd -g=box1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+
+
+degree=(4,4) **NOW EXACT**
+
+cgWave tz.cmd -g=nonSquare32.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+cgWave tz.cmd -g=square32.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+
+************************************************************************
+********* Tues Jan 18, 2022
+
+CONTINUE ON COMPATIBILITY BCS for Cassandra
+
+
+
+cgWave tz.cmd -g=nonSquare8.order4 -upwind=0 -degreeInTime4 -degreeInSpace=4 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+cgWave tz.cmd -g=square8.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+
+NON SQUARE
+degree=(4,4) **NOW EXACT**
+
+cgWave tz.cmd -g=nonSquare32.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+EXACT: 
+cgWave tz.cmd -g=square32.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+
+cgWave tz.cmd -g=nonSquare8.order4 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+cgWave tz.cmd -g=nonSquare8.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+
+cgWave tz.cmd -g=square8.order4 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+
+OK: 
+cgWave tz.cmd -g=square32.order4 -upwind=0 -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=.05 -bcApproach=cbc -go=halt
+
+cgWave tz.cmd -g=square8.order4 -upwind=0 -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+--> looks ok away from corners
+(i1,i2)=(  0  0) u(-1)= 0.170E+01 err=0.71E+00 u(-1)= 0.427E+01 err=0.33E+01
+(i1,i2)=(  0  1) u(-1)= 0.958E+00 err=0.87E-01 u(-1)= 0.109E+00 err=0.88E+00
+(i1,i2)=(  0  2) u(-1)= 0.111E+01 err=0.13E-14 u(-1)= 0.105E+01 err=0.14E-13
+(i1,i2)=(  0  3) u(-1)= 0.118E+01 err=0.13E-14 u(-1)= 0.112E+01 err=0.64E-14
+(i1,i2)=(  0  4) u(-1)= 0.128E+01 err=0.00E+00 u(-1)= 0.120E+01 err=0.67E-15
+(i1,i2)=(  0  5) u(-1)= 0.139E+01 err=0.13E-14 u(-1)= 0.131E+01 err=0.11E-13
+(i1,i2)=(  0  6) u(-1)= 0.154E+01 err=0.89E-15 u(-1)= 0.144E+01 err=0.73E-14
+(i1,i2)=(  0  7) u(-1)= 0.151E+01 err=0.21E+00 u(-1)=-0.466E+00 err=0.21E+01
+(i1,i2)=(  0  8) u(-1)= 0.361E+01 err=0.17E+01 u(-1)= 0.994E+01 err=0.81E+01
+(i1,i2)=(  8  0) u(-1)= 0.440E+01 err=0.16E+01 u(-1)= 0.109E+02 err=0.76E+01
+(i1,i2)=(  8  1) u(-1)= 0.278E+01 err=0.20E+00 u(-1)= 0.151E+01 err=0.20E+01
+(i1,i2)=(  8  2) u(-1)= 0.319E+01 err=0.00E+00 u(-1)= 0.373E+01 err=0.58E-14
+(i1,i2)=(  8  3) u(-1)= 0.343E+01 err=0.18E-14 u(-1)= 0.400E+01 err=0.27E-14
+(i1,i2)=(  8  4) u(-1)= 0.370E+01 err=0.22E-14 u(-1)= 0.432E+01 err=0.18E-13
+(i1,i2)=(  8  5) u(-1)= 0.403E+01 err=0.18E-14 u(-1)= 0.468E+01 err=0.62E-14
+(i1,i2)=(  8  6) u(-1)= 0.441E+01 err=0.00E+00 u(-1)= 0.511E+01 err=0.00E+00
+(i1,i2)=(  8  7) u(-1)= 0.440E+01 err=0.46E+00 u(-1)= 0.992E+00 err=0.46E+01
+
+
+************************************************************************
+********* Mon Jan 17, 2022
+
+START ON COMPATIBILITY BCS for Cassandra
+
+
+cgWave tz.cmd -g=square16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=1 -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+
+************************************************************************
+********* Mon Jan 10, 2022
+
+TEST IMPLICIT ORDER=4 + UPWINDING (HAS NOT BEEN CHECKED)
+
+BUG FIXED : upwindHalfStencilWidth  was wrong in implicit.bC and advWave.bf90 
+
+FD24i = OK
+
+TEST POLY:
+cgWave tz.cmd -g=square32.order4.ng3 -tz=poly -degreeInTime=2 -degreeInSpace=4 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -debug=1 -upwind=1 -go=halt
+
+degree=[2,4] : exact 
+
+No upwind:
+degree=[2,4] : exact 
+degree=[2,2] : exact
+
+cgWave tz.cmd -g=square32.order4.ng3 -tz=trig -fx=2 -fy=2 -ft=2 -tf=1 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -debug=1 -upwind=1 -go=halt
+cgWave tz.cmd -g=square32.order4.ng3 -tz=trig -fx=2 -fy=2 -ft=2 -tf=1 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -debug=1 -upwind=0 -go=halt
+
+FD24u-i 
+cgWave:FD24 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 1.31e-04, ||u||= 8.09e-01, cpu= 2.72e+00(s)
+
+
+FD24-i 
+cgWave:FD24 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 1.32e-04, ||u||= 8.09e-01, cpu= 2.26e+00(s)
+
+
+****************************************************
+****** Sat Nov 20, 2021
+
+FIX takeFirstStep for non-Helmholtz problems:
+
+
+*NOTE* ADD FORCING FOR TZ AND FIRST-STEP
+
+
+
+ORDER=4 EXACT 
+cgWave tz.cmd -g=square16.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=halt
+
+
+ORDER=2 EXACT 
+cgWave tz.cmd -g=square16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=halt
+
+
+
 ************************************************************************
 ********* Tues Oct 5, 2021
 

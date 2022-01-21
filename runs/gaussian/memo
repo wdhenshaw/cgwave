@@ -1,4 +1,43 @@
 
+
+
+
+
+**************************************************
+**** Tues Jan 11, 2022
+
+
+CHANGED UPWIND COEFFICIENTS TO MATCH NEW THEORY
+
+
+cgWave gaussian.cmd -g=cice8.order4.ng3 -beta=40 -x0=1.0 -y0=1.0 -omega=5 -amp=1000 -upwind=1 -tf=100 -tp=.5 -ts=explicit -orderInTime=2 -dtMax=.05 -cfl=.9 -go=halt 
+
+
+
+TEST Order=4 implicit + upwind after fixes 
+
+OK 
+cgWave gaussian.cmd -g=cice8.order4.ng3 -beta=40 -x0=1.0 -y0=1.0 -omega=5 -amp=1000 -upwind=1 -tf=100 -tp=.5 -ts=implicit -orderInTime=2 -dtMax=.05 -cfl=10 -go=halt 
+
+
+CFL=10 - OK 
+cgWave gaussian.cmd -g=square128.order4.ng3 -beta=60 -x0=.5 -y0=.5 -omega=5 -amp=1000 -upwind=1 -tf=100 -tp=1 -ts=implicit -orderInTime=2 -dtMax=.05 -cfl=10 -go=halt 
+
+OK
+cgWave gaussian.cmd -g=square128.order4.ng3 -beta=30 -x0=.5 -y0=.5 -omega=5 -amp=1000 -upwind=1 -tf=100 -tp=1 -ts=implicit -orderInTime=2 -dtMax=.05 -go=halt 
+
+
+
+
+**************************************************
+**** Fri Nov 19, 2021
+
+Compare to eveSolver 
+
+
+
+
+
 **************************************************
 **** Thurs July 22, 2021
 

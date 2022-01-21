@@ -15,7 +15,7 @@ extern "C"
 void bcOptWave( const int&nd, 
                                 const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
                                 const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const int&mask,
-                                const real&rsxy, const real&xy, const int&boundaryCondition, 
+                                const real&rsxy, const real&xy, const int&boundaryCondition, const real & frequencyArray,
                                 const DataBase *pdb, const int&ipar, const real&rpar, int&ierr );
 
 }
@@ -54,6 +54,9 @@ int CgWave::takeImplicitStep( Real t )
     const Real & c              = dbase.get<real>("c");
     const real & dt             = dbase.get<real>("dt");
     const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
+
+    const int & numberOfFrequencies     = dbase.get<int>("numberOfFrequencies");
+    const RealArray & frequencyArray    = dbase.get<RealArray>("frequencyArray");
 
     const int & upwind           = dbase.get<int>("upwind");
   // const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
@@ -152,7 +155,8 @@ int CgWave::takeImplicitStep( Real t )
                 useUpwindDissipation,            // ipar(14)
                 numGhost,                        // ipar(15)
                 assignBCForImplicit,             // ipar(16)
-                bcApproach                       // ipar(17)
+                bcApproach,                      // ipar(17)
+                numberOfFrequencies              // ipar(18)
                                       };
             real rpar[] = {
                 t                , //  rpar( 0)
@@ -172,6 +176,7 @@ int CgWave::takeImplicitStep( Real t )
             real temp, *pxy=&temp, *prsxy=&temp;
             if( !isRectangular )
             {
+                mg.update(MappedGrid::THEinverseVertexDerivative);
                 #ifdef USE_PPP
                   prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
                 #else
@@ -194,7 +199,7 @@ int CgWave::takeImplicitStep( Real t )
                             unLocal.getBase(0),unLocal.getBound(0),unLocal.getBase(1),unLocal.getBound(1),
                             unLocal.getBase(2),unLocal.getBound(2),
                             indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                            *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0),  
+                            *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
                             pdb, ipar[0],rpar[0], ierr );
 
     } // end for grid 
@@ -428,28 +433,38 @@ int CgWave::formImplicitTimeSteppingMatrix()
     //  --- Coefficients in the sosup dissipation from Jordan Angel ---
     // These must match the values in advWave.bf90                          
         Real *upwindCoeff[4];
-        Real adSosup;
-        const int upwindHalfStencilWidth = orderOfAccuracy; 
+
+    // const int upwindHalfStencilWidth = orderOfAccuracy; 
+        const int upwindHalfStencilWidth = (orderOfAccuracy+2)/2; 
+
+    // *new* way to define coefficients: (see cgWave.pdf)
+        Real adSosup = c*dt/( sqrt(1.*numberOfDimensions) * pow(2.,(orderOfAccuracy+1)) );
+        if( (orderOfAccuracy/2) % 2 == 1 )
+        {
+            adSosup = - adSosup;  // make negative for orders 2,6,10, ...
+        }
+
         if( orderOfAccuracy==2 )
         {
-            adSosup=-c*dt*1./8.;
+      // adSosup=-c*dt*1./8.;
             for( int m=0; m<4; m++ )
                 upwindCoeff[m] =upwindCoeff4[m];
         }
         else if( orderOfAccuracy==4 )
         {
-            adSosup=c*dt*5./288.;
+      // adSosup=c*dt*5./288.;
             for( int m=0; m<4; m++ )
                 upwindCoeff[m] =upwindCoeff6[m];      
         }
         else if( orderOfAccuracy==6 )
         {
-            adSosup=-c*dt*31./8640.;
+      // adSosup=-c*dt*31./8640.;
       // upwindDissCoeff=upwindDissCoeff8;
+            OV_ABORT("ERROR orderOfAccuracy");
         }
         else
         {
-          OV_ABORT("ERROR orderOfAccuracy");
+            OV_ABORT("ERROR orderOfAccuracy");
         }
 
 
@@ -457,7 +472,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
         Range all;
         int stencilWidth = orderOfAccuracy + 1;
-        int numberOfGhostLines= orderOfAccuracy/2;  // fix me for UPWIND
+        int numberOfGhostLines= orderOfAccuracy/2;  
     
     // if( TRUE )
     //     numberOfGhostLines++; // *********************************************** TEST ***********************
@@ -474,7 +489,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
         }
 
         const int baseStencilSize = pow(stencilWidth,cg.numberOfDimensions());   // number of entries in default stencil 
-        const int stencilSize=int( baseStencilSize + extraEntries );                      // add extra for interpolation and upwind equations
+        const int stencilSize=int( baseStencilSize + extraEntries );             // add extra for interpolation and upwind equations
 
         const int numberOfComponentsForCoefficients=1;
         const int stencilDimension=stencilSize*SQR(numberOfComponentsForCoefficients);
@@ -572,7 +587,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
             }
             else
             {
-        // ----- this grid is adavnced with EXPLICIT time-stepping ----
+        // ----- this grid is advanced with EXPLICIT time-stepping ----
         // set the matrix the IDENTITY
                 printF("+++++ IMPLICIT: grid=%d (%s) IS TREATED EXPLICITLY\n",grid,(const char*)mg.getName());        
 
@@ -657,7 +672,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
                             if( !isRectangular )
                             {
-                 // ---Upwind coefficients for a curvlinear grid ---
+                 // ---Upwind coefficients for a curvilinear grid ---
 
                  // diss-coeff ~= 1/(change in x along direction r(dir) )
                  // Assuming a nearly orthogonal grid gives ||dx|| = || grad_x(r_i) || / dr_i 
@@ -698,6 +713,11 @@ int CgWave::formImplicitTimeSteppingMatrix()
                                     }
                                     else
                                     { // point is outside the exisiting stencil, use an extra entry in the coefficient matrix 
+                                        if( extraStencilLocation >= stencilDimension )
+                                        {
+                                            printF("[i1,i2]=[%d,%d], dir=%d, iStencil=%d, baseStencilDimension=%d, stencilDimension=%d, extraStencilLocation=%d, halfWidth1=%d upwindHalfStencilWidth=%d\n",
+                                                          i1,i2,dir, iStencil,baseStencilDimension, stencilDimension, extraStencilLocation, halfWidth1, upwindHalfStencilWidth);
+                                        }
                                         assert( extraStencilLocation<stencilDimension );
 
                                         m = extraStencilLocation;

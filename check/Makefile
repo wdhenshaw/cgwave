@@ -11,7 +11,8 @@ check-quiet: buildGrids buildCheckCheckFiles
 	./check.p -solver=cgwh -testsFile=testsWaveHoltz -verbose=0
 
 # build grids that are used by the regression tests (and not already in Overture/sampleGrids)
-buildGrids: square16.order2.hdf square16.order4.ng3.hdf nonSquare16.order2.hdf nonSquare16.order4.hdf cice2.order2.hdf cice2.order4.ng3.hdf box1.order2.hdf nonBox1.order2.hdf nonBox1.order4.hdf
+buildGrids: square16.order2.hdf square16.order4.ng3.hdf nonSquare16.order2.hdf nonSquare16.order4.hdf cice2.order2.hdf cice2.order4.ng3.hdf \
+            box1.order2.hdf nonBox1.order2.hdf nonBox1.order4.hdf sice2.order2.hdf sice4.order4.ng3.hdf
 	touch buildGrids
 
 
@@ -46,6 +47,12 @@ nonBox1.order2.hdf:
 
 nonBox1.order4.hdf:
 	$(Overture)/bin/ogen -noplot boxArg -prefix=nonBox -order=4 -factor=1
+
+sice2.order2.hdf:
+	$(Overture)/bin/ogen -noplot $(Overture)/sampleGrids/sicArg -factor=2 -interp=e -order=2
+
+sice4.order4.ng3.hdf:
+	$(Overture)/bin/ogen -noplot $(Overture)/sampleGrids/sicArg -factor=2 -interp=e -order=4 -numGhost=3			
 
 #tube1.order4.hdf:
 #	$(Overture)/bin/ogen noplot $(Overture)/sampleGrids/tube1.order4.cmd

@@ -1,0 +1,85 @@
+#
+#  cgWave: Compute solutions with a modulated Gaussian initial condition
+#
+#     cgwave gaussianIC.cmd -g=<grid-name> -x0=<f> -y0=<f> -omega=<f> -tol=<f> -tp=<f> ...
+#                         -kx=<f> -ky=<f> -kz=<f> -ic=[gaussian] -upwind=[0|1] -imode=[0|1] 
+#                         -bcApproach=[cbc|lcbc|oneSided] -go=[go|og|halt]
+#
+#   -imode=1 : do not wait in cgWave
+#
+$go="go"; $ic="gaussian"; 
+$omega=30.1; $beta=50.; $x0=0.5; $y0=0.5; $z0=0.5; $t0=0.; $amp=1.; $debug=0; 
+$ad4=0;    # old way
+$upwind=1; # new way
+$tf=5.; $tp=.5; $imode=1; 
+$kx=1; $ky=1; $kz=1; 
+$bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$matlab="cgWave"; $show="gaussian.show"; 
+$cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1; 
+$orderInTime=-1;  # -1 = use default
+GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"numPeriods=i"=>\$numPeriods,\
+            "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"ad4=f"=>\$ad4,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"tf=f"=>\$tf,"iMode=i"=>\$imode,\
+            "solver=s"=>\$solver,"k0=f"=>\$kx,"k0=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,\
+            "go=s"=>\$go,"ic=s"=>\$ic,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,\
+            "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f"=>\$amp,"show=s"=>\$show,"upwind=i"=>\$upwind,\
+            "debug=i"=>\$debug,"bcApproach=s"=>\$bcApproach );
+# 
+if( $bc eq "d" ){ $bc="dirichlet"; }
+if( $bc eq "n" ){ $bc="neumann"; }
+if( $bc eq "e" ){ $bc="evenSymmetry"; }
+if( $bc eq "r" ){ $bc="radiation"; }
+# 
+# ------ Start cgWave setup ------
+# time-stepping : explicit/implicit
+$ts
+if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
+$cmd
+dtMax $dtMax
+cfl $cfl
+# interactiveMode $imode 
+debug $debug
+tPlot $tp 
+tFinal $tf
+# 
+$cmd="#";
+if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }
+if( $bcApproach eq "cbc"      ){ $cmd="useCompatibilityBCs"; }
+if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
+$cmd
+# -- 
+bc=$bc
+#
+solve Helmholtz 0
+compute errors 0
+#
+if( $ad4>0. ){ $upwind=1; }# for backward compatibility
+upwind dissipation $upwind
+#
+user defined known solution...
+  offset: $x0, $y0, $z0 (x0,y0,z0)
+  beta: $beta
+  k0: $k0
+  modulated Gaussian
+exit
+#
+exit
+# solve
+# contour
+# exit
+open graphics
+
+contour
+
+if( $go eq "go" ){ $cmd .= "movie mode\n exit"; }else{ $cmd="#"; }
+$cmd
+
+
+
+# --- end cgWave setup  ---
+show file $show
+contour
+exit
+if( $solver eq "fixedPoint" ){ $cmd="compute with fixed-point"; }elsif( $solver eq "krylov" ){ $cmd="compute with petsc"; }else{ $cmd="#" }; 
+if( $go eq "go" && $cmd ne "#" ){ $cmd .= "\n exit"; }
+$cmd
+

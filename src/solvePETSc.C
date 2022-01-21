@@ -36,7 +36,8 @@ static int mA,nA;
 static int computeRightHandSide =-2; // = 0;
 static int computeResidual      =-3; // =-1;
 
-static bool checkMask = true;  // if true, do not use values of the solution where mask==0 
+// *wdh* Jan 5, 2022 --> changed cgWave to zero out unused points => thus we do not need to check the mask
+static bool checkMask = false;  // if true, do not use values of the solution where mask==0 
 
 // =========================================================================================================
 //     MATRIX-VECTOR MULTIPLY FOR MATRIX FREE KRYLOV SOLVERS
@@ -136,17 +137,19 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
     // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
+    const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
 
     // -- cgWave solution is stored here: 
     realCompositeGridFunction & v    = cgWave.dbase.get<realCompositeGridFunction>("v");
 
-    realCompositeGridFunction & vOld = cgWaveHoltz.dbase.get<realCompositeGridFunction>("vOld");
+    realCompositeGridFunction & vOld = cgWave.dbase.get<realCompositeGridFunction>("vOld");
     CompositeGrid & cg = cgWaveHoltz.cg;
 
     if( !cgWaveHoltz.dbase.has_key("bcg") )
     {
       realCompositeGridFunction & bcg = cgWaveHoltz.dbase.put<realCompositeGridFunction>("bcg");
-      bcg.updateToMatchGrid(cg);
+      Range all;
+      bcg.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
     }
     realCompositeGridFunction & bcg = cgWaveHoltz.dbase.get<realCompositeGridFunction>("bcg");    
 
@@ -164,22 +167,30 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
     Index I1,I2,I3;
     int i=0;
-    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    for( int freq=0; freq<numberOfFrequencies; freq++ )
     {
-      MappedGrid & mg = cg[grid];
-      OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-
-      getIndex(cg[grid].dimension(),I1,I2,I3);
-
-      OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-      FOR_3D(i1,i2,i3,I1,I2,I3)
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
       {
-        assert( i<iEnd );
-        if( checkMask && maskLocal(i1,i2,i3)!=0 )  // this may not be needed if xl[i] is always zero
-          vLocal(i1,i2,i3)=xl[i];
-        else
-          vLocal(i1,i2,i3)=0.; 
-        i++;
+        MappedGrid & mg = cg[grid];
+        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+        getIndex(cg[grid].dimension(),I1,I2,I3);
+
+        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+        FOR_3D(i1,i2,i3,I1,I2,I3)
+        {
+          assert( i<iEnd );
+
+          vLocal(i1,i2,i3,freq)=xl[i]; // new way  Jan 5, 2022
+
+          // // What about upwinding -- it may use unused points
+          // // if( !checkMask || maskLocal(i1,i2,i3)!=0 )  // this may not be needed if xl[i] is always zero
+          // if( true )  // Jan 5, 2022
+          //   vLocal(i1,i2,i3,freq)=xl[i];
+          // else
+          //   vLocal(i1,i2,i3,freq)=0.; 
+          i++;
+        }
       }
     }
     assert( i==iEnd );
@@ -191,7 +202,13 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     }
     
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-      vOld[grid] = v[grid];  // save current guess
+    {
+      OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+      OV_GET_SERIAL_ARRAY(real,vOld[grid],vOldLocal);
+      vOldLocal = vLocal;  // save current guess
+
+      // vOld[grid] = v[grid];  // save current guess
+    }
   
     // -- advance for one period (or multiple periods ) ---
     cgWave.advance( iteration );
@@ -204,7 +221,33 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
       printF("COMPUTE b = Pi * v(0) \n");
 
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-        bcg[grid]= v[grid];
+      {
+        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+        OV_GET_SERIAL_ARRAY(real,bcg[grid],bcgLocal);
+
+        bcgLocal = vLocal; 
+
+        // else
+        // {
+        //   // ** Jan 5, 2020 -> testing: 
+        //   OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
+        //   Range Nf = numberOfFrequencies;
+        //   getIndex(cg[grid].dimension(),I1,I2,I3);
+        //   FOR_3D(i1,i2,i3,I1,I2,I3)
+        //   {
+        //     if( maskLocal(i1,i2,i3) > 0  )
+        //     {
+        //       bcgLocal(i1,i2,i3,Nf)=vLocal(i1,i2,i3,Nf);
+        //     }
+        //     else
+        //     {
+        //       bcgLocal(i1,i2,i3,Nf)=0.; 
+        //     }
+        //   }
+
+        // }
+        // bcg[grid]= v[grid];
+      }
 
       if( false )
       {
@@ -214,28 +257,34 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
       //compute y = Pi * x 
       // set y = v 
       int i=0;
-      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-      {
-        getIndex(cg[grid].dimension(),I1,I2,I3);
-        OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
-
-        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-        FOR_3D(i1,i2,i3,I1,I2,I3)
+      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      {      
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
-          assert( i<iEnd );
-          // if( true || maskLocal(i1,i2,i3)>0 )
-          if( checkMask && maskLocal(i1,i2,i3) !=0 )
+          getIndex(cg[grid].dimension(),I1,I2,I3);
+          OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
+
+          OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+          FOR_3D(i1,i2,i3,I1,I2,I3)
           {
-            yl[i]= vLocal(i1,i2,i3);
+            assert( i<iEnd );
+            yl[i]= vLocal(i1,i2,i3,freq); // new way Jan 5, 2022
+
+            // // if( true || maskLocal(i1,i2,i3)>0 )
+            // // if( !checkMask || maskLocal(i1,i2,i3) !=0 )
+            // if( true ) // Jan 5, 2022 
+            // {
+            //   yl[i]= vLocal(i1,i2,i3,freq);
+            // }
+            // else
+            // {
+            //   // un-used points: set [Ax]_i = x_i   -- is this right ??
+            //   // yl[i]=xl[i];
+            //   yl[i]=.0; // Make Ax=0 at unused points
+            // }
+            
+            i++;
           }
-          else
-          {
-            // un-used points: set [Ax]_i = x_i   -- is this right ??
-            // yl[i]=xl[i];
-            yl[i]=.0; // Make Ax=0 at usued points
-          }
-          
-          i++;
         }
       }
       assert( i==iEnd );
@@ -250,9 +299,10 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
         vOld[grid] -= v[grid]; // 
     
       const real & tol = cgWaveHoltz.dbase.get<real>("tol");
+      real & maxResidual = cgWaveHoltz.dbase.get<real>("maxResidual");
 
-      real errMax = maxNorm(vOld);
-      printF("it=%d:  max(|v-vOld|)=%8.2e, tol=%g\n",iteration,errMax,tol);
+      maxResidual = maxNorm(vOld);
+      printF("it=%d:  max(residual) = max(|v-vOld|)=%8.2e, tol=%g\n",iteration,maxResidual,tol);
 
     }
     else
@@ -268,7 +318,10 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
         vOld[grid] += bcg[grid];
 
       // should we interpolate vOld?
-      vOld.interpolate();
+      if( false ) //  Jan 5, 2022 : change to false : FIXES SIC
+      {
+        vOld.interpolate();
+      }
 
       assert( pb !=NULL );
       Vec & b = *pb;
@@ -277,26 +330,32 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
       // set y = v 
       int i=0;
-      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-      {
-        getIndex(cg[grid].dimension(),I1,I2,I3);
-        OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
-        OV_GET_SERIAL_ARRAY(real,vOld[grid],vOldLocal);
-        FOR_3D(i1,i2,i3,I1,I2,I3)
+      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      {       
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
-          assert( i<iEnd );
-          // yl[i]= vOldLocal(i1,i2,i3,0) + bl[i]; 
-          if( checkMask && maskLocal(i1,i2,i3)!=0 )          // ************************* check me ***************
+          getIndex(cg[grid].dimension(),I1,I2,I3);
+          OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
+          OV_GET_SERIAL_ARRAY(real,vOld[grid],vOldLocal);
+          FOR_3D(i1,i2,i3,I1,I2,I3)
           {
-            yl[i]= vOldLocal(i1,i2,i3,0);    // y = A*x 
+            assert( i<iEnd );
+            yl[i]= vOldLocal(i1,i2,i3,freq);    // y = A*x 
+
+            // // yl[i]= vOldLocal(i1,i2,i3,0) + bl[i]; 
+            // // if( checkMask && maskLocal(i1,i2,i3)!=0 )          // ************************* check me ***************
+            // if( true ) // Jan 5, 2022
+            // {
+            //   yl[i]= vOldLocal(i1,i2,i3,freq);    // y = A*x 
+            // }
+            // else
+            // {
+            //   // yl[i]=xl[i];
+            //   yl[i]=0.;  // unused point 
+            // }
+            
+            i++;
           }
-          else
-          {
-            // yl[i]=xl[i];
-            yl[i]=0.;  // unused point 
-          }
-          
-          i++;
         }
       }
       assert( i==iEnd );
@@ -329,7 +388,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
       if( iteration <= maximumNumberOfIterations )
       {
         resVector(iteration)= kspResidual;
-        printF("\n ##### SAVE RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
+        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
       }
       else
       {
@@ -366,22 +425,43 @@ solvePETSc(int argc,char **args)
   const int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
   Real & numberOfActivePoints           = dbase.get<Real>("numberOfActivePoints");
 
- // here is the CgWave solver for the time dependent wave equation
- CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
- if( omega!=0. )
-   Tperiod=numPeriods*twoPi/omega; 
- else 
-   Tperiod=1.;
+  // here is the CgWave solver for the time dependent wave equation
+  CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
+  if( omega!=0. )
+    Tperiod=numPeriods*twoPi/omega; 
+  else 
+    Tperiod=1.;
  
- printF("CgWaveHoltz::solvePETSc: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
+  printF("CgWaveHoltz::solvePETSc: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
  
- cgWave.dbase.get<real>("omega")     = omega;        // ** FIX ME **
- cgWave.dbase.get<real>("tFinal")    = Tperiod;      // ** FIX ME **
- cgWave.dbase.get<real>("Tperiod")   = Tperiod;      // ** FIX ME **
- cgWave.dbase.get<int>("numPeriods") = numPeriods;   // ** FIX ME **
- cgWave.dbase.get<int>("adjustOmega")= adjustOmega;  // 1 : choose omega from the symbol of D+t D-t 
+  // --- set values in CgWave:  *** COULD DO BETTER ***
+ 
+  cgWave.dbase.get<real>("omega")     = omega;        // ** FIX ME **
+  cgWave.dbase.get<real>("tFinal")    = Tperiod;      // ** FIX ME **
+  cgWave.dbase.get<real>("Tperiod")   = Tperiod;      // ** FIX ME **
+  cgWave.dbase.get<int>("numPeriods") = numPeriods;   // ** FIX ME **
+  cgWave.dbase.get<int>("adjustOmega")= adjustOmega;  // 1 : choose omega from the symbol of D+t D-t 
 
-   // Save "residuals" by iteration: 
+  // >> These next copies should now be done in initialize()
+  const int & numberOfFrequencies = dbase.get<int>("numberOfFrequencies");
+  cgWave.dbase.get<int>("numberOfFrequencies") = numberOfFrequencies;
+
+  RealArray & cgWaveFrequencyArray = cgWave.dbase.get<RealArray>("frequencyArray");
+  cgWaveFrequencyArray.redim(numberOfFrequencies);
+  cgWaveFrequencyArray = dbase.get<RealArray>("frequencyArray");
+
+  RealArray & cgWavePeriodArray = cgWave.dbase.get<RealArray>("periodArray");
+  cgWavePeriodArray.redim(numberOfFrequencies);
+  cgWavePeriodArray = dbase.get<RealArray>("periodArray"); 
+
+  realCompositeGridFunction & vOld = cgWave.dbase.get<realCompositeGridFunction>("vOld");
+  Range all;
+  vOld.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+
+  // <<<<
+
+
+  // Save "residuals" by iteration: 
   // resVector(it) = norm( v^{n+1} - v^n )
   RealArray & resVector = dbase.get<RealArray>("resVector");
   resVector.redim(maximumNumberOfIterations+10);
@@ -392,16 +472,16 @@ solvePETSc(int argc,char **args)
 
   Vec            x,b,u;  /* approx solution, RHS, exact solution */
   Mat            A;        /* linear system matrix */
-//  KSP            ksp;     /* linear solver context */
+  //  KSP            ksp;     /* linear solver context */
   PetscRandom    rctx;     /* random number generator context */
   PetscReal      norm;     /* norm of solution error */
   PetscInt       i,j,Ii,J,Istart,Iend,m = 8,n = 7,its;
   PetscErrorCode ierr;
   PetscBool      flg = PETSC_FALSE;
   PetscScalar    v;
-#if defined(PETSC_USE_LOG)
-  PetscLogStage  stage;
-#endif
+  #if defined(PETSC_USE_LOG)
+    PetscLogStage  stage;
+  #endif
 
   int & petscIsInitialized = dbase.get<int>("petscIsInitialized");
   
@@ -411,75 +491,6 @@ solvePETSc(int argc,char **args)
     PetscInitialize(&argc,&args,(char *)0,help);
     ierr = PetscOptionsGetInt(PETSC_NULL,"-m",&m,PETSC_NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(PETSC_NULL,"-n",&n,PETSC_NULL);CHKERRQ(ierr);
-  }
-  
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-     Compute the matrix and right-hand-side vector that define
-     the linear system, Ax = b.
-     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  /* 
-     Create parallel matrix, specifying only its global dimensions.
-     When using MatCreate(), the matrix format can be specified at
-     runtime. Also, the parallel partitioning of the matrix is
-     determined by PETSc at runtime.
-
-     Performance tuning note:  For problems of substantial size,
-     preallocation of matrix memory is crucial for attaining good 
-     performance. See the matrix chapter of the users manual for details.
-  */
-  if( false )
-  {
-
-    ierr = MatCreate(PETSC_COMM_WORLD,&A);CHKERRQ(ierr);
-    ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,m*n,m*n);CHKERRQ(ierr);
-    ierr = MatSetFromOptions(A);CHKERRQ(ierr);
-    ierr = MatMPIAIJSetPreallocation(A,5,PETSC_NULL,5,PETSC_NULL);CHKERRQ(ierr);
-    ierr = MatSeqAIJSetPreallocation(A,5,PETSC_NULL);CHKERRQ(ierr);
-    ierr = MatSetUp(A);CHKERRQ(ierr);
-  
-    /* 
-       Currently, all PETSc parallel matrix formats are partitioned by
-       contiguous chunks of rows across the processors.  Determine which
-       rows of the matrix are locally owned. 
-    */
-    ierr = MatGetOwnershipRange(A,&Istart,&Iend);CHKERRQ(ierr);
-
-    /* 
-       Set matrix elements for the 2-D, five-point stencil in parallel.
-       - Each processor needs to insert only elements that it owns
-       locally (but any non-local elements will be sent to the
-       appropriate processor during matrix assembly). 
-       - Always specify global rows and columns of matrix entries.
-
-       Note: this uses the less common natural ordering that orders first
-       all the unknowns for x = h then for x = 2h etc; Hence you see J = Ii +- n
-       instead of J = I +- m as you might expect. The more standard ordering
-       would first do all variables for y = h, then y = 2h etc.
-
-    */
-    ierr = PetscLogStageRegister("Assembly", &stage);CHKERRQ(ierr);
-    ierr = PetscLogStagePush(stage);CHKERRQ(ierr);
-    for (Ii=Istart; Ii<Iend; Ii++) { 
-      v = -1.0; i = Ii/n; j = Ii - i*n;  
-      if (i>0)   {J = Ii - n; ierr = MatSetValues(A,1,&Ii,1,&J,&v,INSERT_VALUES);CHKERRQ(ierr);}
-      if (i<m-1) {J = Ii + n; ierr = MatSetValues(A,1,&Ii,1,&J,&v,INSERT_VALUES);CHKERRQ(ierr);}
-      if (j>0)   {J = Ii - 1; ierr = MatSetValues(A,1,&Ii,1,&J,&v,INSERT_VALUES);CHKERRQ(ierr);}
-      if (j<n-1) {J = Ii + 1; ierr = MatSetValues(A,1,&Ii,1,&J,&v,INSERT_VALUES);CHKERRQ(ierr);}
-      v = 4.0; ierr = MatSetValues(A,1,&Ii,1,&Ii,&v,INSERT_VALUES);CHKERRQ(ierr);
-    }
-
-    /* 
-       Assemble matrix, using the 2-step process:
-       MatAssemblyBegin(), MatAssemblyEnd()
-       Computations can be done while messages are in transition
-       by placing code between these two statements.
-    */
-    ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-    ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-    ierr = PetscLogStagePop();CHKERRQ(ierr);
-
-    /* A is symmetric. Set symmetric flag to enable ICC/Cholesky preconditioner */
-    ierr = MatSetOption(A,MAT_SYMMETRIC,PETSC_TRUE);CHKERRQ(ierr);
   }
   
 
@@ -506,6 +517,7 @@ solvePETSc(int argc,char **args)
       getIndex(cg[grid].dimension(),I1,I2,I3);
       numEquations += I1.getLength()*I2.getLength()*I3.getLength();
     }
+    numEquations *= numberOfFrequencies;
   }
   printF("Make a Matrix Free Shell: numEquations=%d\n",numEquations);
 
@@ -576,7 +588,7 @@ solvePETSc(int argc,char **args)
     {
        // **** FIX ME ****
 
-      // --- Set initial guesss to be current v ---
+      // --- Set initial guess to be current v ---
 
       PetscScalar *xl;
       VecGetArray(x,&xl);  // get the local array from Petsc
@@ -592,27 +604,31 @@ solvePETSc(int argc,char **args)
       Real normV=0; 
       numberOfActivePoints = 0.; // count active points for scaling norm.
       int i=0;
-      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      for( int freq=0; freq<numberOfFrequencies; freq++ )
       {
-        MappedGrid & mg = cg[grid];
-        getIndex(mg.dimension(),I1,I2,I3);
-
-        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-
-        FOR_3D(i1,i2,i3,I1,I2,I3)
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
-          assert( i<iEnd );
-          if( maskLocal(i1,i2,i3) !=0 )
-            numberOfActivePoints++;
+          MappedGrid & mg = cg[grid];
+          getIndex(mg.dimension(),I1,I2,I3);
 
-          if( checkMask && maskLocal(i1,i2,i3)!=0 )
-            xl[i] = vLocal(i1,i2,i3);
-          else
-            xl[i]=0.;
+          OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+          OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+          FOR_3D(i1,i2,i3,I1,I2,I3)
+          {
+            assert( i<iEnd );
+            if( maskLocal(i1,i2,i3) !=0 )
+              numberOfActivePoints++;
 
-          normV = max( normV,xl[i]);
-          i++;
+            xl[i] = vLocal(i1,i2,i3,freq);
+
+            // if( true || (checkMask && maskLocal(i1,i2,i3)!=0) )
+            //   xl[i] = vLocal(i1,i2,i3,freq);
+            // else
+            //   xl[i]=0.;
+
+            normV = max( normV,xl[i]);
+            i++;
+          }
         }
       }
       assert( i==iEnd );
@@ -764,10 +780,51 @@ solvePETSc(int argc,char **args)
     resVector(numberOfIterations) = kspResidual;
     numberOfIterations++;    
 
-    printF("\n ################ DONE KYRLOV ITERATIONS -- KSP residual=%8.2e (tol=%8.2e) numberOfIterations=%i #############\n",
-           kspResidual,tol,numberOfIterations);
+    const real & maxResidual = dbase.get<real>("maxResidual");
+    printF("\n ######## DONE KYRLOV ITERATIONS -- KSP residual=%8.2e (max-res=%8.2e) (tol=%8.2e) numIts=%i #######\n",
+           kspResidual,maxResidual,tol,numberOfIterations);
 
   
+    // if( FALSE )
+    // {
+    //   // *** CHECK ME SOMETHING IS WRONG HERE ****
+
+    //   // compute the maximum residual
+    //   printF(" ***solvePETSc::compute max residual...\n");
+
+    //   Vec res;
+    //   //     numberOfVects++;
+    //   //     printF("VecDup res, vect object %i.\n",numberOfVects);
+    //   ierr = VecDuplicate(b,&res);CHKERRQ(ierr);
+
+    //   ierr = MatMult(Amf,x,res);CHKERRQ(ierr);   // res = A*x
+
+    //   //     if( myid==0 ) printf("PETScSolver::res=A*x\n");
+    //   //     ierr = VecView(res,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+
+    //   //     if( myid==0 ) printf("PETScSolver::b\n");
+    //   //     ierr = VecView(res,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+
+    //   // Computes y = x + alpha y.
+    //   PetscScalar alpha; alpha=-1.;
+    //   // 2.2.1 VecAYPX(&alpha,b,res);  // res = b - res
+    //   VecAYPX(res,alpha,b);  // res = b - res
+
+    //   //     if( myid==0 ) printf("PETScSolver::res=b-A*x\n");
+    //   //     ierr = VecView(res,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+          
+    //   //     if( myid==0 ) printf("PETScSolver::b\n");
+    //   //     ierr = VecView(b,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+      
+   
+    //   PetscReal maxNorm;
+    //   VecNorm(res, NORM_INFINITY, &maxNorm);
+
+    //   ierr = VecDestroy(&res);CHKERRQ(ierr);    
+
+    //   printF(" ***solvePETSc: KSP residual=%8.2e, max residual = %8.2e \n",kspResidual,maxNorm);
+
+    // }  
 
     // real maxRes = residual();
     // printF("Maximum residual = %9.3e\n",maxRes);

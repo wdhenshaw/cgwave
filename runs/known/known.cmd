@@ -1,8 +1,9 @@
 #
 #  cgWave: Compute to some "known" solutions
 #
-#   cgWave [-noplot] known.cmd -g=<grid-name> -known=[pw|gpw|boxHelmholtz|polyPeriodic] -upwind=[0|1] -computeErrors=[0|1]
-#                              -setKnownOnBoundaries=[0|1] -bcApproach=[cbc|lcbc|oneSided]
+#   cgWave [-noplot] known.cmd -g=<grid-name> -known=[pw|gpw|boxHelmholtz|polyPeriodic|diskEig|annulusEig] 
+#           -upwind=[0|1] -computeErrors=[0|1]
+#           -setKnownOnBoundaries=[0|1] -bcApproach=[cbc|lcbc|oneSided]
 #
 #   pw = plane wave 
 #   gpw = Gaussian plane wave 
@@ -13,24 +14,29 @@ $beta=20; $x0=.5; $y0=.0; $z0=.0; $k0=0.; # for Gaussian plane wave
 $upwind=0; 
 $debug=3;  $go="halt"; $bc="d"; $dissFreq=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$useKnownFirstStep=0; 
 $computeErrors=1; $setKnownOnBoundaries=1; 
 $tf=5.; $tp=.05; $cfl=.9; 
 $ts="explicit"; $dtMax=1e10; 
 $orderInTime=-1;  # -1 = use default
 $degreeInSpace=2; $degreeInTime=2; 
+$nBessel=1; $mTheta=1; 
 $show=""; $flushFrequency=10; 
 GetOptions( "cfl=f"=>\$cfl,"amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"debug=i"=>\$debug,\
             "tf=f"=>\$tf,"tp=f"=>\$tp,"bc=s"=>\$bc,"dissFreq=i"=>\$dissFreq,"omega=f"=>\$omega,\
             "known=s"=>\$known,"orderInTime=i"=>\$orderInTime,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,"upwind=i"=>\$upwind,\
             "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"k0=f"=>\$k0,"beta=f"=>\$beta,"computeErrors=i"=>\$computeErrors,\
-            "setKnownOnBoundaries=s"=>\$setKnownOnBoundaries,"show=s"=>\$show,\
-            "flushFrequency=i"=>\$flushFrequency,"bcApproach=s"=>\$bcApproach,"go=s"=>\$go );
+            "setKnownOnBoundaries=s"=>\$setKnownOnBoundaries,"show=s"=>\$show,"useKnownFirstStep=i"=>\$useKnownFirstStep,\
+            "flushFrequency=i"=>\$flushFrequency,"bcApproach=s"=>\$bcApproach,"nBessel=i"=>\$nBessel,"mTheta=i"=>\$mTheta,\
+            "go=s"=>\$go );
 # 
 #
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
 if( $bc eq "e" ){ $bc="evenSymmetry"; }
 if( $bc eq "r" ){ $bc="radiation"; }
+if( $known eq "diskEig" ){ $setKnownOnBoundaries=0; }
+if( $known eq "annulusEig" ){ $setKnownOnBoundaries=0; }
 # time-stepping: (explicit or implicit)
 $ts
 # pause
@@ -41,6 +47,7 @@ dtMax $dtMax
 debug $debug
 omega $omega
 set known on boundaries $setKnownOnBoundaries
+use known for first step $useKnownFirstStep
 compute errors $computeErrors
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
@@ -65,6 +72,12 @@ user defined known solution...
   if( $known eq "boxHelmholtz"){ $cmd="box helmholtz\n $omega $kx $ky $kz"; }
   $degreeInSpaceForPolyPeriodic=1; 
   if( $known eq "polyPeriodic"){ $cmd="poly periodic\n $omega $degreeInSpaceForPolyPeriodic"; }
+  # -- disk eigenfunction: 
+  # n,m,a,amp,bcOpt 
+  $rad=1; 
+  if( $bc eq "dirichlet" ){ $bcOpt=0; }else{ $bcOpt=1; } 
+  if( $known eq "diskEig" ){ $cmd="disk eigenfunction\n $nBessel $mTheta $rad $amp $bcOpt"; }  
+  if( $known eq "annulusEig" ){ $cmd="annulus eigenfunction\n $nBessel $mTheta $amp $bcOpt"; }  
   $cmd
 done
 #
@@ -77,7 +90,7 @@ exit
 solve
 #
 contour
-  plot contour lines (toggle)
+  #   plot contour lines (toggle)
 exit
 #
 if( $go eq "go" ){ $cmd="exit"; }else{ $cmd="#"; }

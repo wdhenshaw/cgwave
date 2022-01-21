@@ -90,5 +90,37 @@ where the forcing function is
 % ----------------------------------------------------------
 \subsection{Gaussian Plane Wave}
 
-Figure~\ref{fig:shapesGPW} shows a modulated Gaussian plane wave hitting some shapes, scheme FD44s.
-\plotOneFigByWidth{fig/shapesMGPWt1p0}{Modulated Gaussian plane wave hitting some shapes, FD44s.}{fig:shapesGPW}{8cm}{5cm}
+Figure~\ref{fig:shapesGPW} shows a modulated Gaussian plane wave hitting some shapes, scheme FD44u (fourth-order upwind).
+\plotOneFigByWidth{fig/shapesMGPWt1p0}{Modulated Gaussian plane wave hitting some shapes, FD44u.}{fig:shapesGPW}{8cm}{5cm}
+
+
+% ----------------------------------------------------------
+\subsection{Disk eigenmodes} \label{sec:diskEigenModes}
+
+The eigenmodes of the wave equation on a disk take the form
+\ba
+  u = \cos( c \lambda_{m,n} t ) \, J_n(\lambda_{m,n} r)  \cos(n \theta) 
+\ea
+
+\bigskip 
+\noindent{\textbf{DISK - FD22u - Order 2 - DIRICHLET}
+\input tables/diskEigsiccbcOrder2maxNormConvTable.tex
+
+\bigskip 
+\noindent{\textbf{DISK - FD44u - Order 4 - DIRICHLET - one-sided.} Results using the default one-side BCs.
+\input tables/diskEigsicOrder4maxNormConvTable.tex
+
+\bigskip 
+\noindent{\textbf{DISK - FD44u - Order 4 - DIRICHLET - CBC.} Here are some initial results using compatibility BCs.
+\input tables/diskEigsiccbcOrder4maxNormConvTable.tex
+
+
+
+% ----------------------------------------------------------
+\subsection{Annulus eigenmodes} \label{sec:annulusEigenModes}
+
+\bigskip 
+\noindent{\textbf{ANNULUS - FD44u - Order 4 - DIRICHLET - CBC.} Here are some initial results using compatibility BCs.
+\input tables/annulusEigannuluscbcOrder4maxNormConvTable.tex
+
+

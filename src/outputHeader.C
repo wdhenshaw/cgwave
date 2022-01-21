@@ -32,10 +32,12 @@ outputHeader()
   const int & chooseImplicitTimeStepFromCFL = dbase.get<int>("chooseImplicitTimeStepFromCFL");
 
   const int & computeErrors                 = dbase.get<int>("computeErrors");
+  const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep"); 
 	      
   const int & solveHelmholtz                = dbase.get<int>("solveHelmholtz");
   const int & computeTimeIntegral           = dbase.get<int>("computeTimeIntegral");
   const int & adjustOmega                   = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  const int & adjustHelmholtzForUpwinding   = dbase.get<int>("adjustHelmholtzForUpwinding");
   RealArray & dxMinMax                      = dbase.get<RealArray>("dxMinMax");
 
   TwilightZoneEnum & twilightZone = dbase.get<TwilightZoneEnum>("twilightZone");
@@ -79,6 +81,7 @@ outputHeader()
                  "                     true=precompute Ut in upwind dissipation,\n"
                  "                     false=compute Ut inline in Gauss-Seidel fashion)\n",preComputeUpwindUt);
     
+    fPrintF(file," adjust Helmholtz for upwinding=%d\n",adjustHelmholtzForUpwinding);
     fPrintF(file," forcingOption=%s.\n",(forcingOption==noForcing           ? "noForcing"           :
                                          forcingOption==twilightZoneForcing ? "twilightZoneForcing" :
                                          forcingOption==userForcing         ? "userForcing"         :
@@ -87,6 +90,8 @@ outputHeader()
 
     fPrintF(file," twilightZone = %s, degreeInSpace=%d, degreeInTime=%d\n",
             (twilightZone==polynomial ? "polynomial" : "trigonometric"), degreeInSpace,degreeInTime);
+    fPrintF(file," useKnownSolutionForFirstStep = %d (use known solution for first step step, if possible)\n",
+          useKnownSolutionForFirstStep);
     
     fPrintF(file," BC approach = %s. [useDefault|useOneSided|useCompatibility|useLocalCompatibility]\n",
                   ( bcApproach==defaultBoundaryConditionApproach        ? "useDefaultApproachForBCs"                :
@@ -95,6 +100,7 @@ outputHeader()
                     bcApproach==useLocalCompatibilityBoundaryConditions ? "useLocalCompatibilityBoundaryConditions" : 
                                                                           "unknown" ));
 
+    fPrintF(file," solveHelmholtz=%d (1= we are solving a Helmholtz problem).\n",solveHelmholtz);
     if( solveHelmholtz )
     {
       fPrintF(file," **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=%d (for discrete symbol of D+tD-t) ****\n",adjustOmega);

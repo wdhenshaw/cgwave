@@ -1,0 +1,14 @@
+\begin{table}[H]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+\begin{center}
+\begin{tabular}{|l|c|c|c|} \hline 
+grid  & N &  $ u $ & r \\ \hline 
+  annulus2 &     1 & \num{3.6}{-4} &        \\ \hline
+  annulus4 &     2 & \num{1.8}{-5} & 20.39  \\ \hline
+  annulus8 &     4 & \num{9.3}{-7} & 19.33  \\ \hline
+ annulus16 &     8 & \num{5.2}{-8} & 17.81  \\ \hline
+    rate             &       &  $4.26$       &       \\ \hline
+\end{tabular}
+\caption{CgWave, annulusEig, max norm, order=$4$, ts=explicit, orderInTime=-1, dtMax0=$10000000000$, $t=.65$, cfl=$0.9$, upwind=1, bcApproach=cbc, -known=annulusEig, kx=1, ky=0, kz=0, nBessel=1, mTheta=1, Fri Jan 21 06:27:15 2022}\label{table:annulusEigOrder4max}
+\end{center}
+\end{table}

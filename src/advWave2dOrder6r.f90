@@ -1,5 +1,6 @@
 ! This file automatically generated from advWave.bf90 with bpp.
-        subroutine advWave2dOrder6r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,  um,u,un, f,fa, v, bc, ipar, rpar, ierr )
+        subroutine advWave2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+    ! subroutine advWave2dOrder6r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,!                 mask,xy,rsxy,  um,u,un, f,fa, v, vh,  bc, frequencyArray, ipar, rpar, ierr )
    !======================================================================
    !   Advance a time step for Waves equations
    !
@@ -19,21 +20,24 @@
         real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
         real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
         real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+        real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
         real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
         integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
         integer bc(0:1,0:2),ierr
+        real frequencyArray(0:*)
         integer ipar(0:*)
         real rpar(0:*)
    !     ---- local variables -----
         integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt
-        integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid
+        integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
         integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
-        integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev
+        integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev,numberOfFrequencies
         real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz
     ! ,adc,adcdt,add,adddt
         real dt4by12
     ! logical addDissipation
         integer debug
+        integer adjustHelmholtzForUpwinding
         real dx(0:2),dr(0:2)
         real dx2i,dy2i,dz2i,dxsqi,dysqi,dzsqi,dxi,dyi,dzi
         real dx12i,dy12i,dz12i,dxsq12i,dysq12i,dzsq12i,dxy4i,dxz4i,dyz4,time0,time1
@@ -1413,12 +1417,15 @@
         real ep 
         real fv(0:1) , ev(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1)
         real evxxxx(0:1), evxxyy(0:1), evyyyy(0:1), evxxzz(0:1), evyyzz(0:1), evzzzz(0:1), evtttt(0:1)
-        real omega, coswt, coswtAve
-          integer idv(0:2),j1,j2,j3
-          integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r
-          integer useUpwindDissipation,useImplicitUpwindDissipation
-          real upw
-          real upwindCoeff(-3:3,0:3) 
+        real omega, coswt
+        integer maxFreq
+        parameter( maxFreq=500 )
+        real cosFreqt(0:maxFreq), coswtAve(0:maxFreq), cosineFactor(0:maxFreq)
+        integer idv(0:2),j1,j2,j3
+        integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r
+        integer useUpwindDissipation,useImplicitUpwindDissipation,adjustOmega,solveHelmholtz
+        real upw,maxDiff,umj
+        real upwindCoeff(-3:3,0:3) 
         integer forcingOption
     ! forcingOptions -- these should match ForcingEnum in CgWave.h 
     ! enum ForcingOptionEnum
@@ -2597,8 +2604,12 @@
           debug                        = ipar( 9)
           gridIsImplicit               = ipar(10)
           useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
-          useImplicitUpwindDissipation = ipar(11)  ! true if upwind-dissipation is on for impliciit time-stepping
-          preComputeUpwindUt           = ipar(12)
+          useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for impliciit time-stepping
+          preComputeUpwindUt           = ipar(13)
+          numberOfFrequencies          = ipar(14)
+          adjustOmega                  = ipar(15)
+          solveHelmholtz               = ipar(16)
+          adjustHelmholtzForUpwinding  = ipar(17)
           fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
           fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
      ! ** fix me ***
@@ -2686,82 +2697,208 @@
               write(*,'("advWave: useUpwindDissipation=",i2,"(explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
               write(*,'("advWave: useSosupDissipation=",i2,"(1= add upwind dissipation in this stage)")') useSosupDissipation
               write(*,'("advWave: t,dt,c,omega=",4e10.2)') t,dt,cc,omega 
-              write(*,'("advWave: gridIsImplicit=",i2)') gridIsImplicit
+              write(*,'("advWave: gridIsImplicit=",i2," adjustOmega=",i2," solveHelmholtz=",i2)') gridIsImplicit,adjustOmega,solveHelmholtz
+              if( forcingOption.eq.helmholtzForcing )then
+                  write(*,'("advWave: numberOfFrequencies=",i2)') numberOfFrequencies
+                  write(*,'("advWave: frequencyArray=",(1pe12.4,1x))') (frequencyArray(freq),freq=0,numberOfFrequencies-1)
+              end if
               if( gridIsImplicit.eq.1 )then
                   write(*,'("  Implicit coeff: cImp(-1:1,0) = ",3(1pe10.2,1x), "(for 2nd-order)")') cImp(-1,0),cImp(0,0),cImp(1,0)
                   write(*,'("  Implicit coeff: cImp(-1:1,1) = ",3(1pe10.2,1x), "(for 4th-order)")') cImp(-1,1),cImp(0,1),cImp(1,1)
               end if
           end if
+          if( forcingOption.eq.helmholtzForcing )then
+       ! --- solving the Helmholtz problem ---
+              if( t.le.dt .and. debug.gt.1 )then
+                  write(*,'("advWave: numberOfFrequencies=",i6," omega=",1pe12.4," frequencyArray(0)=",1pe12.4)') numberOfFrequencies,omega,frequencyArray(0)
+              end if
+              if( numberOfFrequencies.le.0 )then
+                  write(*,'("advWave: ERROR: numberOfFrequencies=",i6," is <= 0")') numberOfFrequencies
+                  stop 0123
+              end if
+              if( numberOfFrequencies.eq.1  .and. frequencyArray(0) .ne. omega )then
+                  write(*,'("advWave: ERROR: frequencyArray(0)=",1pe12.4," is not equal to omega=",1pe12.4)') frequencyArray(0),omega
+                  stop 1234
+              end if
+              if( numberOfFrequencies.gt.maxFreq )then
+                  write(*,'("advWave: ERROR: numberOfFrequencies > maxFreq=",i6," .. FIX ME")') maxFreq
+                  stop 2345
+              end if
+       ! if( numberOfFrequencies.gt.1 .and. gridIsImplicit.eq.1 )then
+       !   write(*,'("advWave: ERROR: numberOfFrequencies > 1 and implicit time-stepping : FINISH ME")') 
+       !   stop 3456  
+       ! end if
+              do freq=0,numberOfFrequencies-1
+                  cosFreqt(freq) = cos(frequencyArray(freq)*t)
+              end do
+          end if
           if( useSosupDissipation.ne.0 .or. useImplicitUpwindDissipation.eq.1 )then
-      ! Coefficients in the sosup dissipation from Jordan Angel
-            if( orderOfAccuracy.eq.2 )then
-              adSosup=-cc*dt*1./8.
-              if( preComputeUpwindUt.eq.1 )then
-         ! We need to reduce the upwind coefficient for stability if we pre-compute uDot: (see CgWave documentation)
-                  adSosup=adSosup/sqrt(1.*nd)
-              end if 
-            else if( orderOfAccuracy.eq.4 )then 
-                adSosup=cc*dt*5./288.
-                if( .false. )then 
-                      adSosup = adSosup*.5 ! ****TEST****
-                end if
-            else if( orderOfAccuracy.eq.6 )then 
-                adSosup=-cc*dt*31./8640.
-            else
-                stop 1005
-            end if
-            uDotFactor=.5  ! By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
-      ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
-            adSosup=sosupParameter*adSosup
-            if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
-                write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useImplicitUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useImplicitUpwindDissipation
-                write(*,'("         : t,dt,adSosup=",3e10.2," adSosup/(c*dt)=",e12.4)')t,dt,adSosup,adSosup/(cc*dt)
-                write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2," preComputeUpwindUt=",i2)') useSosupDissipation,sosupParameter,preComputeUpwindUt
-        ! write(*,'("advMxUp: updateDissipation=",i2)') updateDissipation
-        ! write(*,'("advMxUp: useNewForcingMethod=",i2)') useNewForcingMethod
-            end if
-      ! ! Coefficients of the sosup dissipation with Cartesian grids:
-      ! cdSosupx= adSosup/dx(0)
-      ! cdSosupy= adSosup/dx(1)
-      ! cdSosupz= adSosup/dx(2)
-      ! Note: these next values are only used for rectangular grids. (curvilinear grid values are computed in the loops)
-            adxSosup(0)=  uDotFactor*adSosup/dx(0)
-            adxSosup(1)=  uDotFactor*adSosup/dx(1)
-            adxSosup(2)=  uDotFactor*adSosup/dx(2)
+       ! ---- coefficients of upwind dissipation ---
+       !   **NOTE**: These must match the values in implicit.bC 
+              if( .true. )then
+         ! *new* way to define coefficients: (see cgWave.pdf)
+                  adSosup = cc*dt/( sqrt(1.*nd) * 2**(orderOfAccuracy+1) ) 
+                  if( mod(orderOfAccuracy/2,2).eq.1 )then
+                      adSosup = - adSosup  ! negative for orders 2,6,10, ...
+                  end if
+              else 
+         ! **** OLD WAY ****
+         ! Coefficients in the sosup dissipation from Jordan Angel
+                  if( orderOfAccuracy.eq.2 )then
+                    adSosup=-cc*dt*1./8.
+                    if( preComputeUpwindUt.eq.1 )then
+            ! We need to reduce the upwind coefficient for stability if we pre-compute uDot: (see CgWave documentation)
+                        adSosup=adSosup/sqrt(1.*nd)
+                    end if 
+                  else if( orderOfAccuracy.eq.4 )then 
+                      adSosup=cc*dt*5./288.
+                      if( .false. )then 
+                            adSosup = adSosup*.5 ! ****TEST****
+                      end if
+                  else if( orderOfAccuracy.eq.6 )then 
+                      adSosup=-cc*dt*31./8640.
+                  else
+                      stop 1005
+                  end if
+              end if
+              uDotFactor=.5  ! By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
+       ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
+              adSosup=sosupParameter*adSosup
+              if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
+                  write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useImplicitUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useImplicitUpwindDissipation
+                  write(*,'("         : t,dt,adSosup=",3e10.2," adSosup/(c*dt)=",e12.4)')t,dt,adSosup,adSosup/(cc*dt)
+                  write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2," preComputeUpwindUt=",i2)') useSosupDissipation,sosupParameter,preComputeUpwindUt
+         ! write(*,'("advMxUp: updateDissipation=",i2)') updateDissipation
+         ! write(*,'("advMxUp: useNewForcingMethod=",i2)') useNewForcingMethod
+              end if
+       ! ! Coefficients of the sosup dissipation with Cartesian grids:
+       ! cdSosupx= adSosup/dx(0)
+       ! cdSosupy= adSosup/dx(1)
+       ! cdSosupz= adSosup/dx(2)
+       ! Note: these next values are only used for rectangular grids. (curvilinear grid values are computed in the loops)
+              adxSosup(0)=  uDotFactor*adSosup/dx(0)
+              adxSosup(1)=  uDotFactor*adSosup/dx(1)
+              adxSosup(2)=  uDotFactor*adSosup/dx(2)
           end if
           if( useSosupDissipation.eq.1 .and. preComputeUpwindUt.eq.1 )then
               if( option.ne.1 )then
                   write(*,'("advWaveOpt:ERROR: useSosupDissipation.eq.1 BUT option.ne.1")')
                   stop 6663
               end if
-          ! precompute "uDot" = dt*du/dt used in the dissipation and store in v 
-          ! we need uDot at enough ghost points for the dissipation operator 
-                    if( debug.gt.3 .and. t.le.3.*dt )then
-                        write(*,'(" advWave: add UPWIND DISSIPATION: Evaluate v= uDot")') 
-                    end if
-                    numGhost=orderOfAccuracy/2
-                    numGhost=numGhost+1
-                    m1a=n1a-numGhost
-                    m1b=n1b+numGhost
-                    m2a=n2a-numGhost
-                    m2b=n2b+numGhost
-                    if( nd.eq.2 )then
-                      m3a=n3a
-                      m3b=n3b
-                    else
-                        m3a=n3a-numGhost
-                        m3b=n3b+numGhost
-                    end if
-          ! write(*,'(" numGhost=",i2," m1a,m1b,m2a,m2b=",4i4)') numGhost,m1a,m1b,m2a,m2b
-          ! We need v at ghost outside interpolation points -- do not use mask here
-                        do i3=m3a,m3b
-                        do i2=m2a,m2b
-                        do i1=m1a,m1b
-                        v(i1,i2,i3,0)=un(i1,i2,i3,0)-um(i1,i2,i3,0)
-            ! v(i1,i2,i3,0)=u(i1,i2,i3,0)-un(i1,i2,i3,0)
-                        end do
-                        end do
-                        end do
+         ! precompute "uDot" = dt*du/dt used in the dissipation and store in v 
+         ! we need uDot at enough ghost points for the dissipation operator 
+                  if( debug.gt.3 .and. t.le.3.*dt )then
+                    write(*,'(" advWave: add UPWIND DISSIPATION: Evaluate v= uDot")') 
+                  end if
+                  numGhost=orderOfAccuracy/2
+                  numGhost=numGhost+1
+                  m1a=n1a-numGhost
+                  m1b=n1b+numGhost
+                  m2a=n2a-numGhost
+                  m2b=n2b+numGhost
+                  if( nd.eq.2 )then
+                  m3a=n3a
+                  m3b=n3b
+                  else
+                    m3a=n3a-numGhost
+                    m3b=n3b+numGhost
+                  end if
+         ! write(*,'(" numGhost=",i2," m1a,m1b,m2a,m2b=",4i4)') numGhost,m1a,m1b,m2a,m2b
+         ! We need v at ghost outside interpolation points -- do not use mask here
+                  if( (adjustHelmholtzForUpwinding.eq.0) .or. adjustOmega.eq.0 .or. solveHelmholtz.eq.0 )then 
+                          do i3=m3a,m3b
+                          do i2=m2a,m2b
+                          do i1=m1a,m1b
+                          v(i1,i2,i3,0)=un(i1,i2,i3,0)-um(i1,i2,i3,0)
+                          end do
+                          end do
+                          end do
+                  else 
+           ! ***THIS OPTION IS UNDER DEVELOPMENT***
+           ! subtract off upwinding applied to current Helmholtz solution to cancel the effect of upwinding.
+           ! Periodic solution:
+           !    up = vk * cos( omega * t )
+           !   D0t( up  ) = vk * D0t( cos( omega * t ) )
+           ! NOTE: upwinding is called at the start of the step to previous times (t) (t-dt) and (t-2*dt)
+           ! write(*,'("advOpt: adjust upwinding: t=",e10.3," freq=",e14.6)') t,frequencyArray(0)
+           ! cosineFactor = cos(frequencyArray(0)*(t+0.*dt)) - cos(frequencyArray(0)*(t-2.*dt))
+           ! Compute some things needed in the loops below
+                      if( adjustHelmholtzForUpwinding.eq.1 )then
+                          do freq=0,numberOfFrequencies-1
+               ! NOTE: upwinding is called at the start of the step to previous times (t) (t-dt) and (t-2*dt)
+                              cosineFactor(freq) = cos(frequencyArray(freq)*(t+0.*dt)) - cos(frequencyArray(freq)*(t-2.*dt))
+                          end do
+                      end if
+                      if( .true. )then
+             ! ----- Adjustment for upwinding in Helmholtz solves ----
+                              do i3=m3a,m3b
+                              do i2=m2a,m2b
+                              do i1=m1a,m1b
+                              v(i1,i2,i3,0)= (un(i1,i2,i3,0)-um(i1,i2,i3,0)) 
+                              do freq=0,numberOfFrequencies-1
+                                  v(i1,i2,i3,0) = v(i1,i2,i3,0) - vh(i1,i2,i3,freq)*cosineFactor(freq)
+                              end do
+                              end do
+                              end do
+                              end do
+                      else if( .false. )then
+             ! **TESTING : 
+             !   CHECK: u = vk * cos( omega * t )
+             ! BUT DO NOT ADD UPWINDING 
+                          maxDiff=0.
+             ! beginLoops(i1,i2,i3,m1a,m1b,m2a,m2b,m3a,m3b)
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                              v(i1,i2,i3,0)= um(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt))
+               ! write(*,'("(i1,i2)=",2i4," um=",e12.4," vh*cos=",e12.4," diff=",e8.2)') i1,i2,um(i1,i2,i3,0), vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt)),v(i1,i2,i3,0)
+                              maxDiff = max(maxDiff,v(i1,i2,i3,0));
+                              end do
+                              end do
+                              end do
+                          write(*,'("advOpt: adjust upwinding: check: maxDiff(um-vh*cos)=",e10.3," (no ghost)")') maxDiff
+                          maxDiff=0.
+                              do i3=m3a,m3b
+                              do i2=m2a,m2b
+                              do i1=m1a,m1b
+                              v(i1,i2,i3,0)= um(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt))
+               ! write(*,'("(i1,i2)=",2i4," um=",e12.4," vh*cos=",e12.4," diff=",e8.2)') i1,i2,um(i1,i2,i3,0), vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt)),v(i1,i2,i3,0)
+                              maxDiff = max(maxDiff,v(i1,i2,i3,0));
+                              end do
+                              end do
+                              end do
+                          write(*,'("advOpt: adjust upwinding: check: maxDiff(um-vh*cos)=",e10.3," (with ghost)")') maxDiff      
+                          maxDiff=0.
+             ! beginLoops(i1,i2,i3,m1a,m1b,m2a,m2b,m3a,m3b)
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                              v(i1,i2,i3,0)= un(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t+0.*dt))
+                              maxDiff = max(maxDiff,v(i1,i2,i3,0));
+                              end do
+                              end do
+                              end do
+                          write(*,'("advOpt: adjust upwinding: check: maxDiff(un-vh*cos)=",e10.3," (no ghost)")') maxDiff 
+                          maxDiff=0.
+                              do i3=m3a,m3b
+                              do i2=m2a,m2b
+                              do i1=m1a,m1b
+                              v(i1,i2,i3,0)= un(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t+0.*dt))
+                              maxDiff = max(maxDiff,v(i1,i2,i3,0));
+                              end do
+                              end do
+                              end do
+                          write(*,'("advOpt: adjust upwinding: check: maxDiff(un-vh*cos)=",e10.3, " (with ghost)")') maxDiff            
+                              do i3=m3a,m3b
+                              do i2=m2a,m2b
+                              do i1=m1a,m1b
+               ! v(i1,i2,i3,0)= (un(i1,i2,i3,0)-um(i1,i2,i3,0)) - vh(i1,i2,i3,0)*cosineFactor
+                              v(i1,i2,i3,0)= 0.
+                              end do
+                              end do
+                              end do
+                      end if  
+                  end if
           end if 
      ! write(*,'(" advWave: timeSteppingMethod=",i2)') timeSteppingMethod
           if( timeSteppingMethod.eq.defaultTimeStepping )then
@@ -2805,13 +2942,20 @@
                                             fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
                                       end if
                                   else if( forcingOption.eq.helmholtzForcing )then
-                   ! forcing for solving the Helmholtz equation   
-                   ! NOTE: change sign of forcing since for Helholtz we want to solve
-                   !      ( omega^2 I + c^2 Delta) w = f    
-                     ! if( i1.eq.2 .and. i2.eq.2 )then 
-                     !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
-                     ! end if
-                                          fv(m) = -f(i1,i2,i3,0)*coswt     
+                    ! forcing for solving the Helmholtz equation   
+                    ! NOTE: change sign of forcing since for Helholtz we want to solve
+                    !      ( omega^2 I + c^2 Delta) w = f 
+                    ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                        fv(m)=0.
+                                        do freq=0,numberOfFrequencies-1 
+                                            omega = frequencyArray(freq)
+                                            coswt = cosFreqt(freq)    
+                       ! if( i1.eq.2 .and. i2.eq.2 )then 
+                       !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+                       ! end if
+                       ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                              fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
+                                        end do ! do freq  
                                   else if( addForcing.ne.0 )then  
                                         fv(m) = f(i1,i2,i3,0)
                                   end if
@@ -2858,12 +3002,18 @@
                                               fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
                                         end if
                                     else if( forcingOption.eq.helmholtzForcing )then
-                    ! forcing for solving the Helmholtz equation   
-                    ! NOTE: change sign of forcing since for Helholtz we want to solve
-                    !      ( omega^2 I + c^2 Delta) w = f    
-                      ! Add corrections for 4th order modified equation 
-                      !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
-                                                    fv(m) = -( f(i1,i2,i3,0) + cdtSqBy12*( cSq*(fxx22r(i1,i2,i3,0) + fyy22r(i1,i2,i3,0)) - omega*omega*f(i1,i2,i3,0)) )*coswt 
+                     ! forcing for solving the Helmholtz equation   
+                     ! NOTE: change sign of forcing since for Helholtz we want to solve
+                     !      ( omega^2 I + c^2 Delta) w = f 
+                     ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                          fv(m)=0.
+                                          do freq=0,numberOfFrequencies-1 
+                                              omega = frequencyArray(freq)
+                                              coswt = cosFreqt(freq)    
+                         ! Add corrections for 4th order modified equation 
+                         !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
+                                                          fv(m) = fv(m) -( f(i1,i2,i3,freq) + cdtSqBy12*( cSq*(fxx22r(i1,i2,i3,freq) + fyy22r(i1,i2,i3,freq)) - omega*omega*f(i1,i2,i3,freq)) )*coswt 
+                                          end do ! do freq  
                                     else if( addForcing.ne.0 )then  
                                           fv(m) = f(i1,i2,i3,0)
                                     end if
@@ -2903,8 +3053,13 @@
              !   #End
              ! #End
                           if( forcingOption.eq.helmholtzForcing )then
-                              coswt = cos(omega*t)
-                              coswtAve = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))
+                              do freq=0,numberOfFrequencies-1
+                                  coswt = cos(frequencyArray(freq)*t) ! is this used?
+                                  omega = frequencyArray(freq)
+                                  coswtAve(freq) = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))
+                              end do
+               ! coswt = cos(omega*t)
+               ! coswtAve = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))    
                           end if 
                           fv(m)=0.
                               do i3=n3a,n3b
@@ -2942,9 +3097,13 @@
                   !      ( omega^2 I + c^2 Delta) w = f    
                   ! Define
                   !   coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
-                    ! Add corrections for 4th order modified equation 
-                    !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
-                                                fv(m) = -( f(i1,i2,i3,0) + cdtSqBy12*( cSq*(fxx22r(i1,i2,i3,0) + fyy22r(i1,i2,i3,0)) - omega*omega*f(i1,i2,i3,0)) )*coswtAve
+                                      fv(m)=0. 
+                                      do freq=0,numberOfFrequencies-1
+                                          omega = frequencyArray(freq)
+                       ! Add corrections for 4th order modified equation 
+                       !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
+                                                      fv(m) = fv(m) -( f(i1,i2,i3,freq) + cdtSqBy12*( cSq*(fxx22r(i1,i2,i3,freq) + fyy22r(i1,i2,i3,freq)) - omega*omega*f(i1,i2,i3,freq)) )*coswtAve(freq)
+                                      end do
                                 else if( addForcing.ne.0 )then  
                                       fv(m) = f(i1,i2,i3,0)
                                 end if
@@ -2982,7 +3141,15 @@
              ! -- Note: Could adjust loop bounds to avoid Dirichlet boundaries
                           m=0 ! component number 
                           ec = 0 ! component number
-                          upwindHalfStencilWidth = orderOfAccuracy
+             ! Compute some things needed in the loops below
+                          if( adjustHelmholtzForUpwinding.eq.1 )then
+                              do freq=0,numberOfFrequencies-1
+                                  cosineFactor(freq) = cos(frequencyArray(freq)*(t+dt)) - cos(frequencyArray(freq)*(t-dt))
+                              end do
+                          end if 
+             ! stencil width = order + 1
+             ! upwind stencil = stencilWidth + 2 = order+1 + 2
+                          upwindHalfStencilWidth = (orderOfAccuracy+2)/2 
                               do i3=n3a,n3b
                               do i2=n2a,n2b
                               do i1=n1a,n1b
@@ -3014,8 +3181,14 @@
                                   upw = 0. 
                                   do iStencil=-upwindHalfStencilWidth,upwindHalfStencilWidth
                                       j1 = i1 + iStencil*idv(0);  j2 = i2 + iStencil*idv(1);  j3 = i3 + iStencil*idv(2)
-                                      upw = upw + upwindCoeff(iStencil,upwCase)*um(j1,j2,j3,ec)  ! *** CHECK ME 
-                   ! upw = upw + upwindCoeff(iStencil,upwCase)*un(j1,j2,j3,ec)  ! *** TEST ****
+                                      umj = um(j1,j2,j3,0)
+                                      if( adjustHelmholtzForUpwinding.eq.1 )then
+                                          do freq=0,numberOfFrequencies-1
+                                              umj = umj + cosineFactor(freq)*vh(j1,j2,j3,freq)
+                                          end do
+                                      end if
+                                      upw = upw + upwindCoeff(iStencil,upwCase)*umj
+                   ! upw = upw + upwindCoeff(iStencil,upwCase)*um(j1,j2,j3,ec)  ! *** CHECK ME 
                    ! write(*,'("upw-rhs: i1,i2=",2i4," j1,j2=",2i4," upwindCoeff=",1pe9.2, " um=",1pe9.2," upw=",1pe9.2)') i1,i2,j1,j2,upwindCoeff(iStencil,upwCase),um(j1,j2,j3,ec),upw
                                   end do 
                  ! if( abs(upw).gt.1e-10 )then

@@ -158,7 +158,7 @@
 ! ========================================================================================
 
 
-
+! Argument list
 
 ! **********************************************************************************
 ! Macro ADV_WAVE:
@@ -181,7 +181,7 @@
 
 
 
-            subroutine advWave(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx,  um,u,un,f,fa, v, bc, ipar, rpar, ierr )
+            subroutine advWave( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
 !======================================================================
 !   Advance a time step for Maxwells eqution
 !     OPTIMIZED version for rectangular grids.
@@ -199,15 +199,18 @@
             real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
             real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
             real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+            real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
 
             real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
-            real rx(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+            real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
 
             integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
             integer bc(0:1,0:2),ierr
 
             integer ipar(0:*)
             real rpar(0:*)
+
+            real frequencyArray(0:*)
             
 !     ---- local variables -----
             integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime
@@ -228,26 +231,26 @@
             if( orderOfAccuracy.eq.2 )then
 
                 if( nd.eq.2 .and. gridType.eq.rectangular ) then
-                    call advWave2dOrder2r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave2dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if( nd.eq.2 .and. gridType.eq.curvilinear ) then
-                    call advWave2dOrder2c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if( nd.eq.3 .and. gridType.eq.rectangular ) then
-                    call advWave3dOrder2r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave3dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if( nd.eq.3 .and. gridType.eq.curvilinear ) then
-                    call advWave3dOrder2c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave3dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else
                     stop 2271
                 end if
 
             else if( orderOfAccuracy.eq.4 ) then
                 if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    call advWave2dOrder4r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(nd.eq.2 .and. gridType.eq.curvilinear )then
-                    call advWave2dOrder4c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave2dOrder4c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-                    call advWave3dOrder4r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave3dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
-                    call advWave3dOrder4c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave3dOrder4c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
               else
                   stop 8843
               end if
@@ -255,13 +258,13 @@
             else if( orderOfAccuracy.eq.6 ) then
 
                 if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    call advWave2dOrder6r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(nd.eq.2 .and. gridType.eq.curvilinear )then
-                    call advWave2dOrder6c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave2dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-                    call advWave3dOrder6r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave3dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
-                    call advWave3dOrder6c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave3dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
               else
                   stop 8843
               end if
@@ -269,13 +272,13 @@
             else if( orderOfAccuracy.eq.8 ) then
 
                 if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    call advWave2dOrder8r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(nd.eq.2 .and. gridType.eq.curvilinear )then
-                    call advWave2dOrder8c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave2dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-                    call advWave3dOrder8r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
-                    call advWave3dOrder8c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rx, um,u,un,f,fa,v, bc, ipar, rpar, ierr )
+                    call advWave3dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
               else
                   stop 8843
               end if

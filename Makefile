@@ -132,7 +132,8 @@ PETScEquationSolver.o : $(Oges)/PETScEquationSolver.C; $(CXX) $(CCFLAGS) -DOVERT
 
 OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/userDefinedKnownSolution.o \
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
-       obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o
+       obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
+       obj/takeFirstStep.o
 
 # Fortran 90 (FN) object files: 
 FNOBJO = obj/advWave.o\
@@ -140,7 +141,7 @@ FNOBJO = obj/advWave.o\
          obj/advWave2dOrder4r.o obj/advWave3dOrder4r.o obj/advWave2dOrder4c.o obj/advWave3dOrder4c.o \
          obj/advWave2dOrder6r.o obj/advWave3dOrder6r.o obj/advWave2dOrder6c.o obj/advWave3dOrder6c.o \
          obj/advWave2dOrder8r.o obj/advWave3dOrder8r.o obj/advWave2dOrder8c.o obj/advWave3dOrder8c.o \
-         obj/bcOptWave.o
+         obj/bcOptWave.o obj/getWaveDerivatives.o
 
 # OBJO = obj/advWave.o\
 #         obj/advWave2dOrder2r.o obj/advWave2dOrder2c.o obj/advWave2dOrder4r.o obj/advWave2dOrder4c.o 
@@ -193,11 +194,14 @@ src/advance.C: src/advance.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/inclu
 src/implicit.C: src/implicit.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include implicit.bC
 src/applyBoundaryConditions.C: src/applyBoundaryConditions.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include applyBoundaryConditions.bC
 src/plot.C: src/plot.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include plot.bC
-src/userDefinedForcing.C: src/userDefinedForcing.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include userDefinedForcing.bC
+src/userDefinedKnown.C: src/userDefinedKnown.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include userDefinedKnown.bC
+src/userDefinedForcing.C: src/userDefinedForcing.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include userDefinedForcing.bC
 src/getHelmholtzForcing.C: src/getHelmholtzForcing.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include getHelmholtzForcing.bC
+src/solveHelmholtz.C: src/solveHelmholtz.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveHelmholtz.bC
 
 src/tcmWideStencil.C: src/tcmWideStencil.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include tcmWideStencil.bC
 
+src/takeFirstStep.C: src/takeFirstStep.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include takeFirstStep.bC
 
 # -- optimized advance routines
 src/advWave.f90: src/advWave.bf90 
@@ -224,8 +228,11 @@ src/advWave2dOrder8c.f90 : src/advWave.f90
 src/advWave3dOrder8c.f90 : src/advWave.f90
 
 # -- optimized BC routine
-src/bcOptWave.f90: src/bcOptWave.bf90
+src/bcOptWave.f90: src/bcOptWave.bf90 src/knownSolutionMacros.h
 	      @cd src; $(BPP) -clean -quiet -I$(Overture)/include bcOptWave.bf90	
+
+# -- optimized derivatives evaluation
+src/getWaveDerivatives.f90: src/getWaveDerivatives.bf90; @cd src; $(BPP) -clean -quiet -I$(Overture)/include getWaveDerivatives.bf90
 
 # dependencies
 obj/getDt.o : src/getDt.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
@@ -233,7 +240,7 @@ obj/cgwh.o : src/cgwh.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/CgWaveHoltz.o : src/CgWaveHoltz.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/solvePETSc.o : src/solvePETSc.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/solvePETScNull.o : src/solvePETScNull.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<	
-obj/solveHelmholtz.o : src/solveHelmholtz.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<	
+obj/solveHelmholtz.o : src/solveHelmholtz.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<	
 
 # --- cgWave ---
 obj/cgWaveMain.o : src/cgWaveMain.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
@@ -242,16 +249,17 @@ obj/advance.o : src/advance.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/plot.o : src/plot.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/applyBoundaryConditions.o : src/applyBoundaryConditions.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/implicit.o : src/implicit.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/userDefinedKnownSolution.o : src/userDefinedKnownSolution.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/userDefinedKnownSolution.o : src/userDefinedKnownSolution.C src/CgWave.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/outputHeader.o : src/outputHeader.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/printStatistics.o : src/printStatistics.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/userDefinedForcing.o : src/userDefinedForcing.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/userDefinedForcing.o : src/userDefinedForcing.C src/CgWave.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/updateTimeIntegral.o : src/updateTimeIntegral.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getTimeStep.o : src/getTimeStep.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getHelmholtzForcing.o : src/getHelmholtzForcing.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getInitialConditions.o : src/getInitialConditions.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/saveShow.o : src/saveShow.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getErrors.o : src/getErrors.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/takeFirstStep.o : src/takeFirstStep.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 # For regression testing:
 obj/checkCheckFiles.o : src/checkCheckFiles.C; $(CXX) $(CCFLAGS) -o $*.o -c $<

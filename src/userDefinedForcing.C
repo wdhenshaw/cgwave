@@ -4,6 +4,7 @@
 #include "ParallelUtility.h"
 
 
+
 #define FOR_3D(i1,i2,i3,I1,I2,I3) int I1Base =I1.getBase(),   I2Base =I2.getBase(),  I3Base =I3.getBase();  int I1Bound=I1.getBound(),  I2Bound=I2.getBound(), I3Bound=I3.getBound(); for(i3=I3Base; i3<=I3Bound; i3++) for(i2=I2Base; i2<=I2Bound; i2++) for(i1=I1Base; i1<=I1Bound; i1++)
 
 #define FOR_3(i1,i2,i3,I1,I2,I3) I1Base =I1.getBase(),   I2Base =I2.getBase(),  I3Base =I3.getBase();  I1Bound=I1.getBound(),  I2Bound=I2.getBound(), I3Bound=I3.getBound(); for(i3=I3Base; i3<=I3Bound; i3++) for(i2=I2Base; i2<=I2Bound; i2++) for(i1=I1Base; i1<=I1Bound; i1++)
@@ -46,6 +47,10 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
     const real dt =rparam[1];      // Current time step.
     const int & grid = iparam[0];  // Here is the grid we are on 
     const int & current = iparam[1];
+
+    const int & numberOfFrequencies = dbase.get<int>("numberOfFrequencies");    
+    const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");
+
 
   //  ---- NOTE: change sign of forcing for Helmholtz since we want to solve ----
   //       ( omega^2 I + c^2 Delta) w = f      
@@ -111,61 +116,67 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
     {
         fLocal=0.;
     
-        int & numberOfGaussianSources = db.get<int>("numberOfGaussianSources");
-        RealArray & gaussianParameters = db.get<RealArray>("gaussianParameters");
+        const IntegerArray & numberOfGaussianSources = db.get<IntegerArray>("numberOfGaussianSources");
+        const RealArray & gaussianParameters = db.get<RealArray>("gaussianParameters");
 
     // Add the Gaussian source terms to fLocal
-        for( int m=0; m<numberOfGaussianSources; m++ )
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
         {
-            real a    = gaussianParameters(0,m);
-            real beta = gaussianParameters(1,m); 
-            real omega= gaussianParameters(2,m); 
-            real p    = gaussianParameters(3,m);
-            real x0   = gaussianParameters(4,m); 
-            real y0   = gaussianParameters(5,m); 
-            real z0   = gaussianParameters(6,m);
-            real t0   = gaussianParameters(7,m);
-
-            if( true && t0 < 2.*dt )
-                printF("Gaussian source %i: setting a=%8.2e, beta=%8.2e, omega=%8.2e, p=%8.2e, x0=%8.2e, y0=%8.2e, "
-                              "z0=%8.2e, t0=%8.2e\n", m,a,beta,omega,p,x0,y0,z0,t0);
-
-      // const real cost=cos(2.*Pi*omega*(t-t0));
-      // const real sint=sin(2.*Pi*omega*(t-t0));
-            const real cost=cos(omega*(t-t0));
-      // const real sint=sin(omega*(t-t0));
-
-            if( mg.numberOfDimensions()==2 )
+            for( int m=0; m<numberOfGaussianSources(freq); m++ )
             {
-        // --- 2D ---
-                FOR_3D(i1,i2,i3,I1,I2,I3)
-                {
-                    real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1);
-                    real rSq = SQR(x-x0)+SQR(y-y0);
-          // real g = a*cost*exp( -beta*pow( rSq, p ) );
-                    real aExp = a*exp( -beta*pow( rSq, p ) );
-          // real g = aExp*cost;
-                    real g = aExp*cost;
-                    real rPow = p==1. ? 1 :  pow(rSq,p-1.);
+                const real a    = gaussianParameters(0,m,freq);
+                const real beta = gaussianParameters(1,m,freq); 
+        // const real omega= gaussianParameters(2,m,freq); 
+                const real p    = gaussianParameters(3,m,freq);
+                const real x0   = gaussianParameters(4,m,freq); 
+                const real y0   = gaussianParameters(5,m,freq); 
+                const real z0   = gaussianParameters(6,m,freq);
+                const real t0   = gaussianParameters(7,m,freq);
 
-                    fLocal(i1,i2,i3)+= -fSign*rPow*g;
-                    
+        // Use frequencyArray so we get any adjusted frequencies: --> doesn't matter if only evaluated at t=0
+                Real omega = frequencyArray(freq);
+
+                if( true || t0 < 2.*dt )
+                    printF(">>> Gaussian source %i, freq=%d: setting a=%8.2e, beta=%8.2e, omega=%8.2e, p=%8.2e, x0=%8.2e, y0=%8.2e, "
+                                  "z0=%8.2e, t0=%8.2e, t=%8.2e\n", m,freq,a,beta,omega,p,x0,y0,z0,t0,t);
+
+        // const real cost=cos(2.*Pi*omega*(t-t0));
+        // const real sint=sin(2.*Pi*omega*(t-t0));
+                const real cost=cos(omega*(t-t0));
+        // const real sint=sin(omega*(t-t0));
+
+                if( mg.numberOfDimensions()==2 )
+                {
+          // --- 2D ---
+                    FOR_3D(i1,i2,i3,I1,I2,I3)
+                    {
+                        real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1);
+                        real rSq = SQR(x-x0)+SQR(y-y0);
+            // real g = a*cost*exp( -beta*pow( rSq, p ) );
+                        real aExp = a*exp( -beta*pow( rSq, p ) );
+            // real g = aExp*cost;
+                        real g = aExp*cost;
+                        real rPow = p==1. ? 1 :  pow(rSq,p-1.);
+
+                        fLocal(i1,i2,i3,freq)+= -fSign*rPow*g;
+                        
+                    }
                 }
-            }
-            else
-            {
-        // -- 3D ---
-                FOR_3D(i1,i2,i3,I1,I2,I3)
+                else
                 {
-                    real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1), z=xLocal(i1,i2,i3,2);
-                    real rSq =  SQR(x-x0)+SQR(y-y0)+SQR(z-z0);
-          // real g = a*cost*exp( -beta*pow( rSq, p ) );
-                    real aExp = a*exp( -beta*pow( rSq, p ) );
-                    real g = aExp*cost;
-                    real rPow = pow(rSq,p-1.);
-                    
-                    fLocal(i1,i2,i3)+= -fSign*rPow*g;
+          // -- 3D ---
+                    FOR_3D(i1,i2,i3,I1,I2,I3)
+                    {
+                        real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1), z=xLocal(i1,i2,i3,2);
+                        real rSq =  SQR(x-x0)+SQR(y-y0)+SQR(z-z0);
+            // real g = a*cost*exp( -beta*pow( rSq, p ) );
+                        real aExp = a*exp( -beta*pow( rSq, p ) );
+                        real g = aExp*cost;
+                        real rPow = pow(rSq,p-1.);
+                        
+                        fLocal(i1,i2,i3,freq)+= -fSign*rPow*g;
 
+                    }
                 }
             }
         }
@@ -183,34 +194,57 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
         real *rpar = db.get<real[20]>("rpar");
         int *ipar = db.get<int[20]>("ipar");
     
-        const real omega = rpar[0];
-        const real kx  = rpar[1]*twoPi;
-        const real ky  = rpar[2]*twoPi;
-        const real kz  = rpar[3]*twoPi;
-
-        printF("userDefinedForcing: eval boxHelmholtz FORCING: omega=%g, kx=%g, ky=%g, kz=%g fSign=%g at t=%9.3e\n",omega,kx,ky,kz,fSign,t);
-        
-
-        if( mg.numberOfDimensions()==2 )
+    // if( omega != frequencyArray(0) )
+    // {
+    //   printF("userDefinedForcing: eval boxHelmholtz FORCING: Error - omega=%g is not equal to frequencyArray(0)=%g\n",omega,frequencyArray);
+    //   OV_ABORT("error");
+    // }
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
         {
-            const real amp = fSign*( -SQR(omega) + c*c*( kx*kx + ky*ky ) );
-            FOR_3D(i1,i2,i3,I1,I2,I3)
+      // const Real omega = frequencyArray(freq); 
+      // // These next lines must match between userDefinedKnownSolution, userDefinedForcing and bcOptWave.bf90: 
+      // const Real kx  = (rpar[1]+freq)*twoPi;
+      // const Real ky  = (rpar[2]+freq)*twoPi;
+      // const Real kz  = (rpar[3]+freq)*twoPi;
+
+            Real omega,kx,ky,kz; 
+          // This macro is used in: 
+          //    userDefinedKnownSolution.bC
+          //    userDefinedForcing.bC
+          //    solveHelmholtz.bC 
+                    omega = frequencyArray(freq);
+                    kx  = rpar[1]*twoPi*(freq*.5+1.);
+                    ky  = rpar[2]*twoPi*(freq*.5+1.);
+                    kz  = rpar[3]*twoPi*(freq*.5+1.);  
+          // kx  = (rpar[1]+freq)*twoPi;
+          // ky  = (rpar[2]+freq)*twoPi;
+          // kz  = (rpar[3]+freq)*twoPi; 
+
+            printF("userDefinedForcing: eval boxHelmholtz FORCING: numberOfFrequencies=%d, freq=%d, omega=%g, kx=%g, ky=%g, kz=%g fSign=%g at t=%9.3e\n",
+                        numberOfFrequencies,freq,omega,kx,ky,kz,fSign,t);
+            
+
+            if( mg.numberOfDimensions()==2 )
             {
-                real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1);
-                  
-                fLocal(i1,i2,i3) = amp*sin(kx*x)*sin(ky*y);
+                const real amp = fSign*( -SQR(omega) + c*c*( kx*kx + ky*ky ) );
+                FOR_3D(i1,i2,i3,I1,I2,I3)
+                {
+                    real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1);
+                      
+                    fLocal(i1,i2,i3,freq) = amp*sin(kx*x)*sin(ky*y);
+                }
             }
-        }
-        else
-        {
-      // --- 3D ---
-            const real amp = fSign*( -SQR(omega) + c*c*( kx*kx + ky*ky + kz*kz ) );
-            FOR_3D(i1,i2,i3,I1,I2,I3)
+            else
             {
-                real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1), z=xLocal(i1,i2,i3,2);
-                fLocal(i1,i2,i3) = amp*sin(kx*x)*sin(ky*y)*sin(kz*z);
+        // --- 3D ---
+                const real amp = fSign*( -SQR(omega) + c*c*( kx*kx + ky*ky + kz*kz ) );
+                FOR_3D(i1,i2,i3,I1,I2,I3)
+                {
+                    real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1), z=xLocal(i1,i2,i3,2);
+                    fLocal(i1,i2,i3,freq) = amp*sin(kx*x)*sin(ky*y)*sin(kz*z);
+                }
             }
-        }
+        }// end for freq 
     }
 
     else if( option=="polyPeriodic" )
@@ -304,6 +338,7 @@ setupUserDefinedForcing()
 
     const int numberOfComponentGrids = cg.numberOfComponentGrids();
     const int numberOfDimensions = cg.numberOfDimensions();
+    const int & numberOfFrequencies = dbase.get<int>("numberOfFrequencies");    
 
     for( ;; )
     {
@@ -325,11 +360,12 @@ setupUserDefinedForcing()
 
       // We save parameters in the data base 
 
-            if( !db.has_key("numberOfGaussianSources") ) db.put<int>("numberOfGaussianSources");
-            int & numberOfGaussianSources = db.get<int>("numberOfGaussianSources");
+            if( !db.has_key("numberOfGaussianSources") ) db.put<IntegerArray>("numberOfGaussianSources");
+            IntegerArray & numberOfGaussianSources = db.get<IntegerArray>("numberOfGaussianSources");
 
-            gi.inputString(answer2,sPrintF("Enter the number of Gaussian sources (default = 1)"));
-            sScanF(answer2,"%i",&numberOfGaussianSources);
+            numberOfGaussianSources.redim(numberOfFrequencies);
+            numberOfGaussianSources=0; 
+  
 
             if( numberOfDimensions==2 )
             {
@@ -346,28 +382,59 @@ setupUserDefinedForcing()
             
             if( !db.has_key("gaussianParameters") )
                 db.put<RealArray>("gaussianParameters");
-
             RealArray & gaussianParameters = db.get<RealArray>("gaussianParameters");
-            gaussianParameters.redim(8,numberOfGaussianSources);
+
+            const int maxGaussianSources=10;
+            gaussianParameters.redim(8,maxGaussianSources,numberOfFrequencies);
             gaussianParameters=0.;
-            
-            for( int m=0; m<numberOfGaussianSources; m++ )
+
+      // --------- Enter Gaussian sources for each frequency ---------
+            for( int freq=0; freq<numberOfFrequencies; freq++ )
             {
-                real a=1., beta=10., omega=1., p=1., x0=0., y0=0., z0=0., t0=0.;
-                gi.inputString(answer2,sPrintF("Source %i: Enter a,beta,omega,p,x0,y0,z0,t0",m));
-                sScanF(answer2,"%e %e %e %e %e %e %e %e",&a,&beta,&omega,&p,&x0,&y0,&z0,&t0);
 
-                printF("Gaussian source %i: setting a=%8.2e, beta=%8.2e, omega=%8.2e, p=%8.2e, x0=%8.2e, y0=%8.2e, "
-                              "z0=%8.2e, t0=%8.2e\n", m,a,beta,omega,p,x0,y0,z0,t0);
+                gi.inputString(answer2,sPrintF("Enter the number of Gaussian sources for frequency %d (default = 1)",freq));
+                sScanF(answer2,"%i",&numberOfGaussianSources(freq));
 
-                gaussianParameters(0,m)=a; 
-                gaussianParameters(1,m)=beta; 
-                gaussianParameters(2,m)=omega; 
-                gaussianParameters(3,m)=p;
-                gaussianParameters(4,m)=x0; 
-                gaussianParameters(5,m)=y0; 
-                gaussianParameters(6,m)=z0;
-                gaussianParameters(7,m)=t0;
+                if( numberOfGaussianSources(freq) > maxGaussianSources)
+                {
+                    printF("Error: requested more than %d Gaussian sources. Fix me Bill!\n");
+                    OV_ABORT("error");
+                }
+
+        // if( freq==0 )
+        // {
+        //   gaussianParameters.redim(8,numberOfGaussianSources(freq),numberOfFrequencies);
+        //   gaussianParameters=0.;
+        //   maxGaussianSources = numberOfGaussianSources(freq);
+        // }
+        // else if( numberOfGaussianSources(freq)>maxGaussianSources )
+        // { // **** THIS IS BROKEN ****
+        //   RealArray gp;
+        //   gp = gaussianParameters; // save existing
+        //   gaussianParameters.redim(8,numberOfGaussianSources(freq),numberOfFrequencies);
+        //   gaussianParameters=0.; 
+        //   gaussianParameters(????, Range(maxGaussianSources),Range(numberOfFrequencies))=gp; // copy previous
+        //   maxGaussianSources = numberOfGaussianSources(freq);
+        // }
+
+                for( int m=0; m<numberOfGaussianSources(freq); m++ )
+                {
+                    real a=1., beta=10., omega=1., p=1., x0=0., y0=0., z0=0., t0=0.;
+                    gi.inputString(answer2,sPrintF("Source %i for freq %d: Enter a,beta,omega,p,x0,y0,z0,t0",m,freq));
+                    sScanF(answer2,"%e %e %e %e %e %e %e %e",&a,&beta,&omega,&p,&x0,&y0,&z0,&t0);
+
+                    printF("Gaussian source %i, freq=%d: setting a=%8.2e, beta=%8.2e, omega=%8.2e, p=%8.2e, x0=%8.2e, y0=%8.2e, "
+                                  "z0=%8.2e, t0=%8.2e\n", m,freq,a,beta,omega,p,x0,y0,z0,t0);
+
+                    gaussianParameters(0,m,freq)=a; 
+                    gaussianParameters(1,m,freq)=beta; 
+                    gaussianParameters(2,m,freq)=omega; 
+                    gaussianParameters(3,m,freq)=p;
+                    gaussianParameters(4,m,freq)=x0; 
+                    gaussianParameters(5,m,freq)=y0; 
+                    gaussianParameters(6,m,freq)=z0;
+                    gaussianParameters(7,m,freq)=t0;
+                }
             }
 
         }

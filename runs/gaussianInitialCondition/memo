@@ -1,0 +1,19 @@
+****************************************************
+****** Sat Nov 20, 2021
+
+FIX takeFirstStep for non-Helmholtz problems:
+
+cgWave -noplot gaussianIC.cmd -g=square64.order4.ng3 -tf=10 -tp=.05 -x0=.5 -y0=.5 -beta=20 -k0=0 -go=og
+
+cgWave -noplot gaussianIC.cmd -g=square64.order2 -tf=10 -tp=.05 -x0=.5 -y0=.5 -beta=20 -k0=0 -go=og
+
+
+
+
+****************************************************
+****** Fri Nov 19, 2021
+
+
+*NEW* Modulated Gaussian initial conditions
+
+cgWave -noplot gaussianIC.cmd -g=square64.order2 -tf=10 -tp=.05 -x0=.5 -y0=.5 -beta=20 -k0=0 -go=og

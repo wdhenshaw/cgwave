@@ -1,3 +1,146 @@
+****************************************************
+****** Fri Jan 21, 2022
+
+---- FIX CBC's for upwind -- extrapolate extra ghost
+
+ORDER=4 Look OK NOW:
+cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3
+
+
+ORDER=2
+cgWave known.cmd -g=sice8.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3
+
+
+****************************************************
+****** Thurs Jan 20, 2022
+
+---- CHECK BRANCH CUT WITH CBC and UPWIND 
+**TROUBLE at branch cut***
+cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3
+
+****************************************************
+****** Wed Jan 19, 2022
+
++++++ START TEST ANNULUS EIGENFUNCTION +++
+
+
+cgWave known.cmd -g=annulus4.order4 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=annulusEig -bc=d -bcApproach=cbc
+
+G4: CBC -- looks ok 
+cgWave:FD44 t=1.000e-01 (  10 steps) dt=1.000e-02 maxErr= 4.90e-05, ||u||= 3.16e-01, cpu= 3.12e+00(s)
+cgWave:FD44 t=2.000e-01 (  20 steps) dt=1.000e-02 maxErr= 6.36e-05, ||u||= 7.58e-01, cpu= 6.08e+00(s)
+cgWave:FD44 t=3.000e-01 (  30 steps) dt=1.000e-02 maxErr= 8.86e-05, ||u||= 8.12e-01, cpu= 6.85e+00(s)
+
+
+G4:
+cgWave:FD44 t=1.000e-01 (  10 steps) dt=1.000e-02 maxErr= 9.49e-05, ||u||= 3.16e-01, cpu= 2.41e+00(s)
+cgWave:FD44 t=2.000e-01 (  20 steps) dt=1.000e-02 maxErr= 1.40e-04, ||u||= 7.58e-01, cpu= 5.56e+00(s)
+cgWave:FD44 t=3.000e-01 (  30 steps) dt=1.000e-02 maxErr= 1.22e-04, ||u||= 8.12e-01, cpu= 6.02e+00(s)
+
+
+
+G2:
+cgWave:FD44 t=1.000e-01 (   5 steps) dt=2.000e-02 maxErr= 1.44e-03, ||u||= 3.05e-01, cpu= 4.01e+00(s)
+cgWave:FD44 t=2.000e-01 (  10 steps) dt=2.000e-02 maxErr= 2.25e-03, ||u||= 7.28e-01, cpu= 1.60e+01(s)
+
+
++++++ START TEST DISK EIGENFUNCION ++++
+
+TEST BC=N
+
+BC=N: Looks OK: 
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=diskEig -beta=40 -x0=.4 -y0=.0 -bc=n
+cgWave:FD44 t=1.000e-01 (   7 steps) dt=1.429e-02 maxErr= 4.22e-06, ||u||= 2.64e-01, cpu= 1.28e+01(s)
+cgWave:FD44 t=2.000e-01 (  14 steps) dt=1.429e-02 maxErr= 9.17e-06, ||u||= 2.00e-01, cpu= 2.81e+01(s)
+cgWave:FD44 t=3.000e-01 (  21 steps) dt=1.429e-02 maxErr= 3.05e-06, ||u||= 4.80e-01, cpu= 2.93e+01(s)
+
+
+TRY CBC: -- looks ok 
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=diskEig -bcApproach=cbc -bc=d -debug=3
+
+cgWave:FD44 t=1.000e-01 (   7 steps) dt=1.429e-02 maxErr= 9.90e-06, ||u||= 1.92e-01, cpu= 7.67e+00(s)
+cgWave:FD44 t=2.000e-01 (  14 steps) dt=1.429e-02 maxErr= 1.57e-05, ||u||= 3.31e-01, cpu= 1.47e+01(s)
+cgWave:FD44 t=3.000e-01 (  21 steps) dt=1.429e-02 maxErr= 1.09e-05, ||u||= 4.55e-01, cpu= 1.57e+01(s)
+
+
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=diskEig -beta=40 -x0=.4 -y0=.0 -bc=d
+
+cgWave:FD44 t=1.000e-01 (   7 steps) dt=1.429e-02 maxErr= 2.58e-05, ||u||= 1.92e-01, cpu= 8.36e+00(s)
+cgWave:FD44 t=2.000e-01 (  14 steps) dt=1.429e-02 maxErr= 2.13e-05, ||u||= 3.31e-01, cpu= 8.88e+00(s)
+
+
+cgWave known.cmd -g=sice4.order4.ng3 -amp=2 -tp=.1 -tf=100 -known=diskEig -beta=40 -x0=.4 -y0=.0 -bc=d
+
+cgWave:FD44 t=1.000e-01 (   7 steps) dt=1.429e-02 maxErr= 3.16e-06, ||u||= 4.43e-01, cpu= 2.07e+00(s)
+
+
+cgWave known.cmd -g=sice4.order2 -amp=2 -tp=.1 -tf=100 -known=diskEig -beta=40 -x0=.4 -y0=.0 -bc=d
+
+cgWave:FD22 t=1.000e-01 (   7 steps) dt=1.429e-02 maxErr= 1.36e-04, ||u||= 4.43e-01, cpu= 2.77e+00(s)
+
+****************************************************
+****** Sat Nov 20, 2021
+
+FIX takeFirstStep for non-Helmholtz problems:
+
+
+GPW -- looks OK
+cgWave known.cmd -g=square64.order4.ng3 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -beta=40 -x0=.4 -y0=.0 -bc=d -computeErrors=1 -upwind=1 
+cgWave known.cmd -g=square32.order4.ng3 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -beta=40 -x0=.4 -y0=.0 -bc=d -computeErrors=1 -upwind=1 
+
+G64
+cgWave:FD44 t=2.000e-01 (   22 steps) dt=9.091e-03 maxErr= 1.95e-05, ||u||= 9.98e-01, cpu= 4.17e+00(s)
+
+G32
+cgWave:FD44 t=2.000e-01 (  12 steps) dt=1.667e-02 maxErr= 4.15e-04, ||u||= 9.98e-01, cpu= 3.11e+00(s)
+
+
+cgWave known.cmd -g=square64.order2 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -beta=40 -x0=.4 -y0=.0 -bc=d -computeErrors=1 -upwind=1 
+cgWave known.cmd -g=square32.order2 -kx=1 -ky=0 -tp=.1 -tf=100 -known=gpw -beta=40 -x0=.4 -y0=.0 -bc=d -computeErrors=1 -upwind=1 
+
+G64
+cgWave:FD22 t=2.000e-01 (   22 steps) dt=9.091e-03 maxErr= 1.92e-03, ||u||= 9.99e-01, cpu= 2.91e+00(s)
+
+G32
+cgWave:FD22 t=2.000e-01 (  12 steps) dt=1.667e-02 maxErr= 9.18e-03, ||u||= 9.98e-01, cpu= 1.41e+01(s)
+
+
+cgWave known.cmd -g=square256.order4.ng3 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave -useKnownFirstStep=1
+cgWave known.cmd -g=square128.order4.ng3 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave -useKnownFirstStep=1
+
+cgWave known.cmd -g=square128.order4.ng3 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave
+cgWave known.cmd -g=square64.order4.ng3 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave
+
+
+G256
+cgWave:FD44 t=3.000e-01 ( 123 steps) dt=2.439e-03 maxErr= 6.96e-08, ||u||= 1.00e+00, cpu= 4.27e+00(s)
+
+G128 - use known first step
+ cgWave:FD44 t=3.000e-01 (  63 steps) dt=4.762e-03 maxErr= 1.23e-06, ||u||= 1.00e+00, cpu= 1.33e+01(s)
+G128 
+ cgWave:FD44 t=3.000e-01 (  63 steps) dt=4.762e-03 maxErr= 1.40e-06, ||u||= 1.00e+00, cpu= 5.65e+00(s)
+
+G64
+cgWave:FD44 t=3.000e-01 ( 33 steps) dt=9.091e-03 maxErr= 3.26e-05, ||u||= 1.00e+00, cpu= 3.14e+00(s)
+
+
+
+-- ORDER=2 : looks ok
+cgWave known.cmd -g=square64.order2 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave -useKnownFirstStep=1
+cgWave known.cmd -g=square64.order2 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave
+
+cgWave known.cmd -g=square128.order2 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave
+
+G128
+cgWave:FD22 t=3.000e-01 (  63 steps) dt=4.762e-03 maxErr= 1.09e-03, ||u||= 1.00e+00, cpu= 3.67e+00(s)
+
+G64
+cgWave:FD22 t=3.000e-01 ( 33 steps) dt=9.091e-03 maxErr= 4.52e-03, ||u||= 1.00e+00, cpu= 3.40e+00(s)
+
+G64 - use known
+cgWave:FD22 t=3.000e-01 ( 33 steps) dt=9.091e-03 maxErr= 6.59e-03, ||u||= 1.00e+00, cpu= 8.51e+00(s)
+
+
 ************************************************************************
 ********* Sat Jul 24, 2021
 

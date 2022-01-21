@@ -1,3 +1,741 @@
+**************************************************
+**** Sun Jan 16, 2022
+
+--- ANNULUS NOTE : Increase beta so SOURCE TERM IS ZERO AT BOUNDARY (Our current BC's do not support an f)
+
+TWO FREQ IMPLICIT
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.55 -.55 .5 -y0=.5 .5 .5 -nf=2 -freq=9.777 12.34 -amp=50 50 50 -beta=400 400 400 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=4 -cfl=100 -go=og
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ Convergence rate CR=0.623, CR-perPeriod=0.888, Time to solve = 1.82e+01(s)
+ max-residual=2.10e-10 (WaveHoltz its), numberOfIterations = 41 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 2, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=100.00, numberOfStepsPerSolve=28, totalTimeStepsStaken=1204
+ freq= 0, omega=   9.777, (adjusted=   7.985) T= 0.64265, Tbar= 2.57060, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=   9.216) T= 0.50917, Tbar= 2.03669, numPeriods=  4, Tbar(0)/T=  5.05
+
+CgWaveHoltz::residual: freq= 0, omega=   9.777, max-res=2.327e-08.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=4.727e-08.
+CgWaveHoltz: max-res=4.727e-08 (all frequencies)
+cgwh: max-diff=8.71e-10 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=5.48e-08 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=5.48e-08 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+... tighter tol: 
+CgWaveHoltz::residual: freq= 0, omega=   9.777, max-res=1.623e-10.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=2.388e-10.
+CgWaveHoltz: max-res=2.388e-10 (all frequencies)
+cgwh: max-diff=8.48e-13 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=3.62e-09 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=3.62e-09 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+>>>>>>>>>>>>>>TEST more terms
+
+Nf=5 - close frequencies
+cgwh gaussian.cmd -g=square128.order4.ng3.hdf -nf=4 -freq=21 22 23 24 25 -x0=.4 .6 .3 .7 -y0=.4 .6 .7 .3 -amp=150 100 200 400 -beta=200 250 200 300 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=8 -cfl=100 -go=og
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ Convergence rate CR=0.912, CR-perPeriod=0.989, Time to solve = 2.20e+01(s)
+ numberOfIterations = 104 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 4, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=100.00, numberOfStepsPerSolve=48, totalTimeStepsStaken=13440
+ freq= 0, omega=  21.000, (adjusted=  15.550) T= 0.29920, Tbar= 2.39359, numPeriods=  8, Tbar(0)/T=  8.00
+ freq= 1, omega=  22.000, (adjusted=  15.946) T= 0.28560, Tbar= 2.28479, numPeriods=  8, Tbar(0)/T=  8.38
+ freq= 2, omega=  23.000, (adjusted=  16.317) T= 0.27318, Tbar= 2.18546, numPeriods=  8, Tbar(0)/T=  8.76
+ freq= 3, omega=  24.000, (adjusted=  16.665) T= 0.26180, Tbar= 2.09440, numPeriods=  8, Tbar(0)/T=  9.14
+
+CgWaveHoltz::residual: freq= 0, omega=  21.000, max-res=6.958e-07.
+CgWaveHoltz::residual: freq= 1, omega=  22.000, max-res=1.765e-06.
+CgWaveHoltz::residual: freq= 2, omega=  23.000, max-res=1.860e-06.
+CgWaveHoltz::residual: freq= 3, omega=  24.000, max-res=7.707e-07.
+CgWaveHoltz: max-res=1.860e-06 (all frequencies)
+cgwh: max-diff=1.29e-07 for freq0 =   2.1000e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=1.11e-07 for freq1 =   2.2000e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=1.08e-05 for freq2 =   2.3000e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=4.53e-08 for freq3 =   2.4000e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=1.08e-05 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+Nf=4 
+cgwh gaussian.cmd -g=square128.order4.ng3.hdf -nf=4 -freq=9.777 12.34 18.9 21.4 -x0=.4 .6 .3 .7 -y0=.4 .6 .7 .3 -amp=150 100 200 400 -beta=200 250 200 300 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=4 -cfl=40 -go=og
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ Convergence rate CR=0.687, CR-perPeriod=0.910, Time to solve = 1.44e+01(s)
+ numberOfIterations = 56 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 4, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl= 40.00, numberOfStepsPerSolve=56, totalTimeStepsStaken=3248
+ freq= 0, omega=   9.777, (adjusted=   9.359) T= 0.64265, Tbar= 2.57060, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=  11.530) T= 0.50917, Tbar= 2.03669, numPeriods=  4, Tbar(0)/T=  5.05
+ freq= 2, omega=  18.900, (adjusted=  16.326) T= 0.33244, Tbar= 1.99466, numPeriods=  6, Tbar(0)/T=  7.73
+ freq= 3, omega=  21.400, (adjusted=  17.861) T= 0.29361, Tbar= 2.05525, numPeriods=  7, Tbar(0)/T=  8.76
+
+CgWaveHoltz::residual: freq= 0, omega=   9.777, max-res=1.550e-07.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=3.779e-08.
+CgWaveHoltz::residual: freq= 2, omega=  18.900, max-res=3.260e-07.
+CgWaveHoltz::residual: freq= 3, omega=  21.400, max-res=2.528e-07.
+CgWaveHoltz: max-res=3.260e-07 (all frequencies)
+cgwh: max-diff=5.13e-08 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=6.14e-10 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=6.38e-06 for freq2 =   1.8900e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=8.03e-10 for freq3 =   2.1400e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=6.38e-06 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -nf=4 -freq=9.777 12.34 17.7 21.4 -x0=.4 .6 .3 .7 -y0=.4 .6 .5 .3 -amp=50 100 200 400 -beta=200 250 200 300 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=4 -cfl=20 -go=og
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ Convergence rate CR=0.767, CR-perPeriod=0.936, Time to solve = 4.86e+00(s)
+ numberOfIterations = 96 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 4, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl= 20.00, numberOfStepsPerSolve=56, totalTimeStepsStaken=5488
+ freq= 0, omega=   9.777, (adjusted=   9.359) T= 0.64265, Tbar= 2.57060, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=  11.530) T= 0.50917, Tbar= 2.03669, numPeriods=  4, Tbar(0)/T=  5.05
+ freq= 2, omega=  17.700, (adjusted=  15.533) T= 0.35498, Tbar= 2.12989, numPeriods=  6, Tbar(0)/T=  7.24
+ freq= 3, omega=  21.400, (adjusted=  17.861) T= 0.29361, Tbar= 2.05525, numPeriods=  7, Tbar(0)/T=  8.76
+
+CgWaveHoltz::residual: freq= 0, omega=   9.777, max-res=4.598e-10.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=8.631e-10.
+CgWaveHoltz::residual: freq= 2, omega=  17.700, max-res=6.351e-09.
+CgWaveHoltz::residual: freq= 3, omega=  21.400, max-res=6.627e-09.
+CgWaveHoltz: max-res=6.627e-09 (all frequencies)
+cgwh: max-diff=2.49e-11 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=1.25e-11 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=3.05e-06 for freq2 =   1.7700e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=7.50e-10 for freq3 =   2.1400e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=3.05e-06 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+plot contours...
+
+
+
+Nf=2
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.4 .6 .5 -y0=.4 .6 .5 -nf=2 -freq=9.777 12.34 -amp=50 50 50 -beta=200 200 200 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=10 -go=og
+
+**************************************************
+**** Sat Jan 15, 2022
+
+RUN FOR PLOTS:
+
+G8 IMPLICIT THREE FREQ 
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=-.2 .2 -.2 -y0=-.2 .2 .2 -nf=3 -freq=8.0 13.7 17.3 -amp=50 50 50 -beta=150 150 150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=8 -cfl=100 -go=og
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ Convergence rate CR=0.500, CR-perPeriod=0.917, Time to solve = 4.60e+01(s)
+ numberOfIterations = 30 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 3, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=100.00, numberOfStepsPerSolve=88, totalTimeStepsStaken=2816
+ freq= 0, omega=   8.000, (adjusted=   7.438) T= 0.78540, Tbar= 6.28319, numPeriods=  8, Tbar(0)/T=  8.00
+ freq= 1, omega=  13.700, (adjusted=  11.348) T= 0.45863, Tbar= 5.50352, numPeriods= 12, Tbar(0)/T= 13.70
+ freq= 2, omega=  17.300, (adjusted=  13.162) T= 0.36319, Tbar= 5.08466, numPeriods= 14, Tbar(0)/T= 17.30
+
+CgWaveHoltz::residual: freq= 0, omega=   8.000, max-res=5.639e-09.
+CgWaveHoltz::residual: freq= 1, omega=  13.700, max-res=1.579e-08.
+CgWaveHoltz::residual: freq= 2, omega=  17.300, max-res=2.228e-08.
+CgWaveHoltz: max-res=2.228e-08 (all frequencies)
+cgwh: max-diff=3.60e-11 for freq0 =   8.0000e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=1.18e-09 for freq1 =   1.3700e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=8.93e-09 for freq2 =   1.7300e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=8.93e-09 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+G4 IMPLICIT THREE FREQ 
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=-.2 .2 -.2 -y0=-.2 .2 .2 -nf=3 -freq=8.0 13.7 17.3 -amp=50 50 50 -beta=150 150 150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=8 -cfl=100 -go=og
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ Convergence rate CR=0.600, CR-perPeriod=0.938, Time to solve = 1.15e+01(s)
+ numberOfIterations = 40 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 3, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=100.00, numberOfStepsPerSolve=88, totalTimeStepsStaken=6424
+ freq= 0, omega=   8.000, (adjusted=   7.438) T= 0.78540, Tbar= 6.28319, numPeriods=  8, Tbar(0)/T=  8.00
+ freq= 1, omega=  13.700, (adjusted=  11.348) T= 0.45863, Tbar= 5.50352, numPeriods= 12, Tbar(0)/T= 13.70
+ freq= 2, omega=  17.300, (adjusted=  13.162) T= 0.36319, Tbar= 5.08466, numPeriods= 14, Tbar(0)/T= 17.30
+
+CgWaveHoltz::residual: freq= 0, omega=   8.000, max-res=1.657e-07.
+CgWaveHoltz::residual: freq= 1, omega=  13.700, max-res=5.753e-07.
+CgWaveHoltz::residual: freq= 2, omega=  17.300, max-res=7.498e-07.
+CgWaveHoltz: max-res=7.498e-07 (all frequencies)
+cgwh: max-diff=1.38e-09 for freq0 =   8.0000e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=1.83e-07 for freq1 =   1.3700e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=8.16e-09 for freq2 =   1.7300e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=1.83e-07 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
+
+
+G4 IMPLICIT THREE FREQ 
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=-.2 .2 -.2 -y0=-.2 .2 .2 -nf=3 -freq=8.0 12.34 17 -amp=50 50 50 -beta=150 150 150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=8 -cfl=100 -go=og
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ Convergence rate CR=0.797, CR-perPeriod=0.972, Time to solve = 7.45e+00(s)
+ numberOfIterations = 25 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 3, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=100.00, numberOfStepsPerSolve=88, totalTimeStepsStaken=5544
+ freq= 0, omega=   8.000, (adjusted=   7.438) T= 0.78540, Tbar= 6.28319, numPeriods=  8, Tbar(0)/T=  8.00
+ freq= 1, omega=  12.340, (adjusted=  10.536) T= 0.50917, Tbar= 5.60089, numPeriods= 11, Tbar(0)/T= 12.34
+ freq= 2, omega=  17.000, (adjusted=  13.028) T= 0.36960, Tbar= 5.17439, numPeriods= 14, Tbar(0)/T= 17.00
+
+CgWaveHoltz::residual: freq= 0, omega=   8.000, max-res=8.197e-11.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=2.406e-10.
+CgWaveHoltz::residual: freq= 2, omega=  17.000, max-res=1.141e-10.
+CgWaveHoltz: max-res=2.406e-10 (all frequencies)
+cgwh: max-diff=8.20e-13 for freq0 =   8.0000e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=3.87e-09 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=5.94e-10 for freq2 =   1.7000e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=3.87e-09 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+G8 IMPLICIT TWO FREQ
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=-.2 .2 .5 -y0=-.2 .2 .5 -nf=2 -freq=8.0 12.34 -amp=50 50 50 -beta=150 150 150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=4 -cfl=100 -go=og
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ Convergence rate CR=0.684, CR-perPeriod=0.909, Time to solve = 3.05e+01(s)
+ numberOfIterations = 57 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 2, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=100.00, numberOfStepsPerSolve=32, totalTimeStepsStaken=1888
+ freq= 0, omega=   8.000, (adjusted=   6.903) T= 0.78540, Tbar= 3.14159, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=   9.167) T= 0.50917, Tbar= 2.54586, numPeriods=  5, Tbar(0)/T=  6.17
+
+CgWaveHoltz::residual: freq= 0, omega=   8.000, max-res=7.315e-09.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=2.422e-08.
+CgWaveHoltz: max-res=2.422e-08 (all frequencies)
+cgwh: max-diff=5.73e-10 for freq0 =   8.0000e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.93e-08 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.93e-08 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+IMPLICIT TWO FREQ
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=-.2 .2 .5 -y0=-.2 .2 .5 -nf=2 -freq=8.0 12.34 -amp=50 50 50 -beta=150 150 150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=4 -cfl=100 -go=og
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ numberOfIterations = 52 (maximumNumberOfIterations=100)
+ numberOfFrequencies=2, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Convergence rate CR=0.833, CR-perPeriod=0.955, Time to solve = 5.31e+00(s)
+ freq= 0, omega=   8.000, (adjusted=   6.903) T= 0.78540, Tbar= 3.14159, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=   9.167) T= 0.50917, Tbar= 2.54586, numPeriods=  5, Tbar(0)/T=  6.17
+
+CgWaveHoltz::residual: freq= 0, omega=   8.000, max-res=5.318e-11.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=1.876e-10.
+CgWaveHoltz: max-res=1.876e-10 (all frequencies)
+cgwh: max-diff=4.25e-13 for freq0 =   8.0000e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.71e-09 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.71e-09 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+IMPLICIT TWO FREQ
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=-.2 .2 .5 -y0=-.2 .2 .5 -nf=2 -freq=8.0 12.34 -amp=50 50 50 -beta=200 200 200 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=4 -cfl=10 -go=og
+
+
+CFL=100
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ numberOfIterations = 61 (maximumNumberOfIterations=100)
+ numberOfFrequencies=2, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Convergence rate CR=0.722, CR-perPeriod=0.922, Time to solve = 6.50e+00(s)
+ freq= 0, omega=   8.000, (adjusted=   6.903) T= 0.78540, Tbar= 3.14159, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=   9.167) T= 0.50917, Tbar= 2.54586, numPeriods=  5, Tbar(0)/T=  6.17
+
+CgWaveHoltz::residual: freq= 0, omega=   8.000, max-res=2.869e-08.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=9.103e-08.
+CgWaveHoltz: max-res=9.103e-08 (all frequencies)
+cgwh: max-diff=5.66e-10 for freq0 =   8.0000e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.29e-06 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.29e-06 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+... solve to higher tol: 
+cgwh: max-diff=3.24e-13 for freq0 =   8.0000e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.18e-09 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.18e-09 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+CFL=10 AFTER FIX numPeriods
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ numberOfIterations = 33 (maximumNumberOfIterations=100)
+ numberOfFrequencies=2, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Convergence rate CR=0.545, CR-perPeriod=0.859, Time to solve = 9.57e+00(s)
+ freq= 0, omega=   8.000, (adjusted=   7.863) T= 0.78540, Tbar= 3.14159, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=  11.855) T= 0.50917, Tbar= 3.05503, numPeriods=  6, Tbar(0)/T=  6.17
+
+CgWaveHoltz::residual: freq= 0, omega=   8.000, max-res=1.438e-08.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=1.794e-08.
+CgWaveHoltz: max-res=1.794e-08 (all frequencies)
+cgwh: max-diff=2.56e-10 for freq0 =   8.0000e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.25e-08 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.25e-08 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+BEFORE FIX NUMPERIODS
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ numberOfIterations = 53 (maximumNumberOfIterations=100)
+ numberOfFrequencies=2, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Convergence rate CR=0.680, CR-perPeriod=0.908, Time to solve = 1.44e+01(s)
+ freq= 0, omega=   8.000, (adjusted=   7.863) T= 0.78540, Tbar= 3.14159, numPeriods=  4.00, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=  11.855) T= 0.50917, Tbar= 2.03669, numPeriods=  4.00, Tbar(0)/T=  6.17
+
+CgWaveHoltz::residual: freq= 0, omega=   8.000, max-res=1.250e-08.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=1.782e-08.
+CgWaveHoltz: max-res=1.782e-08 (all frequencies)
+cgwh: max-diff=2.65e-10 for freq0 =   8.0000e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=3.68e-07 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=3.68e-07 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
+IMPLICIT **WORKS NOW*** -- using adjust. for upwinding 
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=-.2 .2 .5 -y0=-.2 .2 .5 -nf=1 -freq=12.34 -amp=50 50 50 -beta=200 200 200 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=4 -cfl=10 -go=og
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+ numberOfIterations = 49 (maximumNumberOfIterations=100)
+ numberOfFrequencies=1, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Convergence rate CR=0.668, CR-perPeriod=0.904, Time to solve = 8.78e+00(s)
+ freq= 0, omega=  12.340, (adjusted=  11.881) T= 0.50917, Tbar= 2.03669, numPeriods=  4.00, Tbar(0)/T=  4.00
+
+CgWaveHoltz::residual: freq= 0, omega=  12.340, max-res=9.465e-07 (using omega), max-res=2.170e+02 (using omega from discrete symbol)
+CgWaveHoltz: max-res=9.465e-07 (all frequencies)
+cgwh: max-diff=2.40e-05 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=-.2 .2 .5 -y0=-.2 .2 .5 -nf=1 -freq=12.34 -amp=50 50 50 -beta=200 200 200 -adjustOmega=1 -ts=explicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=4 -cfl=.9 -go=og
+
+
+**************************************************
+**** Fri Jan 14, 2022
+
+START more examples for waho
+
+
+
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=-.2 .2 .5 -y0=-.2 .2 .5 -nf=1 -freq=12.34 -amp=50 50 50 -beta=200 200 200 -adjustOmega=1 -ts=explicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=4 -cfl=.9 -go=og
+
+EXPLICIT: FD24u 
+cgwh: max-diff=5.42e-05 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+IMPLICIT 
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=-.2 .2 .5 -y0=-.2 .2 .5 -nf=1 -freq=12.34 -amp=50 50 50 -beta=200 200 200 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100  -numPeriods=4 -cfl=10 -go=og
+
+CFL=1 FD24u
+
+FD24u *TROUBLE** with upwinding
+
+cgwh: max-diff=6.65e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+FD24
+cgwh: max-diff=1.50e-08 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+SIC -Np=4 (ok) trouble Np=2
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=-.2 .2 .5 -y0=-.2 .2 .5 -nf=2 -freq=9.777 12.34 -amp=50 50 50 -beta=200 200 200 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=4 -cfl=10 -go=og
+
+
+UPWIND: trouble
+CgWaveHoltz::residual: freq=0, omega=9.777, max-res=5.917e-02 (using omega).
+CgWaveHoltz::residual: freq=1, omega=12.34, max-res=5.910e-02 (using omega).
+cgwh: max-diff=5.11e-02 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=1.28e+00 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=1.28e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+NO upwind
+cgwh: max-diff=8.10e-12 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.55e-09 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.55e-09 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.4 .6 .5 -y0=.4 .6 .5 -nf=2 -freq=9.777 12.34 -amp=50 50 50 -beta=200 200 200 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=10 -go=og
+
+
+TWO FREQ IMPLICIT
+  >> RESIDUAL IS VERY SMALL BUT DIFF IS LARGER??
+  BETA=100 --> WORKS!!
+cgwh gaussian.cmd -g=square64.order4.ng3.hdf -x0=.5 .5 .5 -y0=.5 .5 .5 -nf=2 -freq=9.777 12.34 -amp=50 50 50 -beta=100 100 100 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=10 -go=og
+cgwh: max-diff=4.45e-10 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=6.89e-10 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=6.89e-10 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+BTA=50 : 
+ ######## DONE KYRLOV ITERATIONS -- KSP residual=7.34e-15 (max-res=1.07e-14) (tol=1.00e-14) numIts=10 #######
+CgWaveHoltz::residual: c=1, omega= 9.7770000e+00, omegas= 9.4520749e+00 (from symbol of D+D-), dt=9.180709e-02, adjustOmega=1, upwind=0
+CgWaveHoltz::residual: freq=0, omega=9.777, max-res=8.497e-11 (using omega).
+CgWaveHoltz::residual: freq=1, omega=12.34, max-res=4.755e-11 (using omega).
+CgWaveHoltz: omega=9.777e+00, max-res=8.497e-11, CR=0.456 CR-perPeriod=0.675, cpu= 3.56e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+cgwh: max-diff=7.54e-12 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.24e-04 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.24e-04 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
++++++++++++++++++++++++ ANNULUS:
+
+***CHECK*** residual in freq2 -- works ok for trigHelmholtz 
+
+FREQ=12.34 - OK 
+cgwh gaussian.cmd -g=annulus4.order4.ng3.hdf -x0=.5 .5 .5 -y0=.5 .5 .5 -nf=1 -freq=12.34 -amp=50 50 50 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=10 -go=og
+cgwh: max-diff=1.03e-09 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+TWO FREQ IMPLICIT
+cgwh gaussian.cmd -g=annulus4.order4.ng3.hdf -x0=.5 .5 .5 -y0=.5 .5 .5 -nf=2 -freq=9.777 12.34 -amp=50 50 50 -beta=100 100 100 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=10 -go=og
+
+
+
+OK -- one freq
+cgwh gaussian.cmd -g=annulus8.order2.hdf -x0=.5 -y0=.5 -nf=1 -freq=12.34  -amp=50 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=20 -go=og
+
+cgwh: max-diff=1.07e-09 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+THREE FREQ -- ***TROUBLE***
+cgwh gaussian.cmd -g=annulus8.order2.hdf -x0=.5 -y0=.5 -nf=3 -freq=9.777 12.34 15 -beta=100 100 100 -amp=50 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=20 -go=og
+
+
+cgwh gaussian.cmd -g=annulus8.order2.hdf -x0=.5 -y0=.5 -nf=2 -freq=9.777 12.34 -beta=100 100 -amp=50 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=20 -go=og
+
+
+ORDER=2 : TWO FREQ IMPLICIT
+cgwh gaussian.cmd -g=annulus8.order2.hdf -x0=.5 -y0=.5 -nf=2 -freq=9.777 12.34 -amp=50 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=20 -go=og
+CgWaveHoltz::residual: freq=0, omega=9.777, max-res=5.154e-08 (using omega).
+CgWaveHoltz::residual: freq=1, omega=12.34, max-res=6.031e-08 (using omega).
+CgWaveHoltz: omega=9.777e+00, max-res=6.031e-08, CR=0.111 CR-perPeriod=0.334, cpu= 8.94e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+cgwh: max-diff=9.49e-11 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=5.12e-03 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=9.49e-11 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+TWO FREQ IMPLICIT
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -nf=2 -freq=9.777 12.34 -amp=50 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -cfl=10 -go=og
+
+CFL=10: steps=51
+CgWaveHoltz::residual: freq=0, omega=9.777, max-res=2.170e-10 (using omega).
+CgWaveHoltz::residual: freq=1, omega=12.34, max-res=2.300e-10 (using omega).
+CgWaveHoltz: omega=9.777e+00, max-res=2.300e-10, CR=0.804 CR-perPeriod=0.897, cpu= 4.02e+00(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+cgwh: max-diff=4.08e-12 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=4.99e-03 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=4.08e-12 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
+TWO FREQ EXPLICIT -- ***CHECK*** residual in freq2
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -nf=2 -freq=9.777 12.34 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -go=og
+
+cgwh: max-diff=2.21e-11 for freq0 =   9.7770e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=4.99e-03 for freq1 =   1.2340e+01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: max-diff=2.21e-11 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -nf=1 -freq=9.777 -amp=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=2 -go=og
+
+######## DONE KYRLOV ITERATIONS -- KSP residual=4.99e-11 (max-res=1.90e-10) (tol=1.00e-10) numIts=15 #######
+CgWaveHoltz::residual: c=1, omega= 9.7770000e+00, omegas= 9.7761795e+00 (from symbol of D+D-), dt=4.590354e-03, adjustOmega=1, upwind=0
+CgWaveHoltz::residual: freq=0, omega=9.777, max-res=2.673e-09 (using omega), max-res=3.401e-03 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=2.673e-09, CR=0.255 CR-perPeriod=0.505, cpu= 1.12e+01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+cgwh: max-diff=3.94e-11 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+OLD:
+cgwh gaussian.cmd -g=annulus8.order4.ng3.hdf -x0=.5 -y0=.5 -omega=9.777 -amp=20 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=gaussianWHAnnulusO4Omega9p777Krylov -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -show=annulusOmega9p777.show -go=og
+
+
+
+
+**************************************************
+**** Wed Jan 12, 2022
+
+CHECK after changes to upwind coeff
+
+
+G8 IMPLICIT 
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=none -matlab=junk -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100 -ts=implicit -cfl=1000 -numPeriods=4 -go=og
+
+
+CFL=1000 steps=20, kits=26
+cgwh: max-diff=1.82e-05 (between WaveHoltz and Direct Helmholtz solution)
+
+numPeriods=4:
+CFL=100 steps=32 kits=16
+cgwh: max-diff=6.60e-06 (between WaveHoltz and Direct Helmholtz solution)
+
+G8 IMPLICIT
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=none -matlab=junk -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100 -ts=implicit -cfl=10 -go=og
+
+
+
+CFL=10 steps=11, kits=70
+cgwh: max-diff=2.30e-05 (between WaveHoltz and Direct Helmholtz solution)
+
+CFL=1 steps=104, kits=30
+cgwh: max-diff=1.76e-05 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+G8 IMPLICIT
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=none -matlab=junk -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100 -ts=implicit -cfl=1 -go=og
+
+CFL=20 steps=6 kits=190!!
+cgwh: max-diff=2.64e-05 (between WaveHoltz and Direct Helmholtz solution)
+
+CFL-10 steps=11 kits=70
+cgwh: max-diff=2.30e-05 (between WaveHoltz and Direct Helmholtz solution)
+
+CFL=1 steps=104m kits=30
+cgwh: max-diff=1.76e-05 (between WaveHoltz and Direct Helmholtz solution)
+
+IMPLICIT
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=none -matlab=junk -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100 -ts=implicit -cfl=1 -go=og
+
+CFL=10 steps=6
+cgwh: max-diff=7.71e-04 (between WaveHoltz and Direct Helmholtz solution)
+
+CFL=1
+cgwh: max-diff=5.44e-04 (between WaveHoltz and Direct Helmholtz solution)
+
+EXPLICIT: 
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -omega=8.1 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=none -matlab=junk -tol=1e-9 -upwind=1 -imode=1 -maxIterations=100 -go=og
+
+
+ ######## DONE KYRLOV ITERATIONS -- KSP residual=8.15e-10 (max-res=3.47e-09) (tol=1.00e-09) numIts=29 #######
+
+CgWaveHoltz::residual: freq=0, omega=8.1, max-res=2.298e-06 (using omega), max-res=6.627e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=2.298e-06, CR=0.539 CR-perPeriod=0.539, cpu= 9.16e-01(s)
+cgwh: max-diff=1.34e-06 (between WaveHoltz and Direct Helmholtz solution)
+
+
+**************************************************
+**** Fri Dec 31, 2021
+
+Multi-freq results for proposal
+
+
+
+**************************************************
+**** Thurs Dec 30, 2021
+
+generate plots for OverHoltz proposal
+
+
+NON ZERO INITIAL CONDITION IS BROKEN (RANDOM)
+
+>>> GMRES -- converges fast to a TOLERANCE = 1e-9 
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=krylov -matlab=junk -tol=1e-9 -ad4=1 -imode=1 -maxIterations=100 -go=og
+
+
+>>> GMRES -- converges fast to a TOLERANCE = 1e-9 
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=krylov -matlab=junk -tol=1e-9 -ad4=1 -imode=1 -maxIterations=100 -go=og
+
+it=-3:  max(residual) = max(|v-vOld|)=5.51e-06, tol=1e-09
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=6.02e-10 (max-res=5.51e-06) (tol=1.00e-09) numberOfIterations=29 #############
+
+ +++++ ENTERING CgWaveHoltz::residual +++++ 
+CgWaveHoltz::residual: c=1, omega= 8.1000000e+00, omegas= 8.0990098e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=0, upwind=0
+CgWaveHoltz::residual: freq=0, omega=8.1, max-res=1.769e-02 (using omega), max-res=4.729e-08 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.769e-02, CR=0.531 CR-perPeriod=0.531, cpu= 2.35e+00(s)
+CgWaveHoltz::Results saved to file junk.m
+cgwh: max-diff=3.24e-03 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+
+>>> GMRES -- BROKEN: slow to converge
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=krylov -matlab=junk -tol=1e-10 -ad4=1 -imode=1 -maxIterations=100 -show=junk.show -go=og
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=4.67e-10 (max-res=3.88e-02) (tol=1.00e-12) numberOfIterations=207 #############
+
+ +++++ ENTERING CgWaveHoltz::residual +++++ 
+CgWaveHoltz::residual: c=1, omega= 8.1000000e+00, omegas= 8.0990098e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=0, upwind=0
+CgWaveHoltz::residual: freq=0, omega=8.1, max-res=1.769e-02 (using omega), max-res=1.099e-08 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.769e-02, CR=0.914 CR-perPeriod=0.914, cpu= 1.52e+01(s)
+CgWaveHoltz::Results saved to file jumk.m
+cgwh: max-diff=3.24e-03 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+>>> FP : may be OK
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=fixedPoint -matlab=jumk -tol=1e-10 -ad4=1 -imode=1 -maxIterations=200 -go=og
+
+
+CgWave::advance: c=1, numberOfFrequencies=1, omega=8.1, Tperiod=0.775702, numPeriods=1, tFinal=0.775702, plotOptions=0
+cgWave:FD24 t=0.000e+00 (  0 steps) dt=6.687e-03 ||u||= 9.77e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.757e-01 (116 steps) dt=6.687e-03 ||u||= 9.77e-01, cpu= 6.91e-02(s)
+it=199:  l2Norm( v-vOld )=1.43e-11 (tol=1e-12)
+$$$$$$$$ CgWaveHoltz:ERROR -- number of iterations reached the maximum allowed = 200 $$$$$$$$
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =200 #########################
+
+ +++++ ENTERING CgWaveHoltz::residual +++++ 
+CgWaveHoltz::residual: c=1, omega= 8.1000000e+00, omegas= 8.0990098e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=0, upwind=0
+CgWaveHoltz::residual: freq=0, omega=8.1, max-res=1.769e-02 (using omega), max-res=2.064e-08 (using omega from discrete symbol)
+
+ >>>> cgwh: omega=8.100e+00, max-res=1.769e-02, CR=0.991 CR-perPeriod=0.991, cpu= 1.40e+01(s)
+CgWaveHoltz::Results saved to file jumk.m
+cgwh: max-diff=3.24e-03 (between WaveHoltz and Direct Helmholtz solution)
+
+ +++++ ENTERING CgWaveHoltz::residual +++++ 
+CgWaveHoltz::residual: c=1, omega= 8.1000000e+00, omegas= 8.0990098e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=0, upwind=0
+CgWaveHoltz::residual: freq=0, omega=8.1, max-res=1.769e-02 (using omega), max-res=3.295e-08 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.769e-02, CR=0.949 CR-perPeriod=0.949, cpu= 1.52e+01(s)
+CgWaveHoltz::Results saved to file jumk.m
+cgwh: max-diff=1.04e-02 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+
+
+
+
+
+>>> OLD: ++++++++++++++++ DISK 
+
+SOMETHING WRONG WITH direct solve order=4 ??
+
+>>>>>>>>>SIC ORDER=4
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=krylov -matlab=gaussianWHDiskO4Omega8p1Krylov -tol=1e-10 -ad4=1 -imode=1 -maxIterations=100 -show=gaussianDiskOmega8p1.show -go=og
+
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=fixedPoint -matlab=gaussianWHDiskO4Omega8p1FPI -tol=1e-10 -ad4=1 -imode=1 -maxIterations=400 -go=og
+
+it=399:  l2Norm( v-vOld )=6.26e-05 (tol=1e-10)
+$$$$$$$$ CgWaveHoltz:ERROR -- number of iterations reached the maximum allowed = 400 $$$$$$$$
+#################### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =400 #########################
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09901e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.054e-01 (using omega), max-res=8.808e-02 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.054e-01, CR=0.983 CR-perPeriod=0.983, cpu= 4.00e+01(s)
+CgWaveHoltz::Results saved to file gaussianWHDiskO4Omega8p1FPI.m
+
+
+
+cgwh gaussian.cmd -g=sice8.order4.ng3.hdf -x0=.25 -y0=.25 -omega=8.1 -amp=50 -adjustOmega=0 -orderInTime=2 -solver=none -matlab=test -tol=1e-10 -ad4=1 -imode=1 -maxIterations=100 -go=og
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=6.41e-11 (tol=1.00e-10) numberOfIterations=26 #############
+CgWaveHoltz::residual: c=1, omega= 8.10000e+00, omegas= 8.09901e+00 (from symbol of D+D-), dt=6.687085e-03, adjustOmega=0
+CgWaveHoltz::residual: max-res=1.776e-02 (using omega), max-res=9.749e-05 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=1.776e-02, CR=0.476 CR-perPeriod=0.476, cpu= 2.97e+00(s)
+CgWaveHoltz::Results saved to file test.m
+CgWaveHoltz: max-diff=3.25e-03 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+
+
+
+
+**************************************************
+**** Wed Dec 15, 2021
+
+FIXED: solveHelmholtz : ignore bc<=0 
+
+
+
+REVISIT GAUSSIAN SOURCE -- TRY fancier geometries
+
+*trouble*
+cgwh gaussian.cmd -g=sice4.order4.ng3.hdf -x0=.25 -y0=.25 -freq=8.1 -omega=8.1 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=junk -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100 -go=og
+
+
+TEST SIS -- slow convergence  **CHECK ME --> BIG ERRORS  **SOMETHING IS WRONG ****
+cgwh gaussian.cmd -g=sise4.order2.hdf -x0=.25 -y0=.25 -freq=8.1 -omega=8.1 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=junk -tol=1e-14 -upwind=1 -imode=1 -maxIterations=100 -go=og
+
+
+RESIDUAL IS LARGE NEAR INTERP POINTS -- 
+errors look OK
+cgwh gaussian.cmd -g=sice4.order2.hdf -x0=.25 -y0=.25 -freq=8.1 -omega=8.1 -amp=50 -adjustOmega=1 -orderInTime=2 -solver=krylov -matlab=junk -tol=1e-14 -upwind=1 -imode=1 -maxIterations=100 -go=og
+
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=9.87e-15 (tol=1.00e-14) numberOfIterations=93 #############
+
+ +++++ ENTERING CgWaveHoltz::residual +++++ 
+CgWaveHoltz::residual: c=1, omega= 8.1000000e+00, omegas= 8.0948783e+00 (from symbol of D+D-), dt=1.520984e-02, adjustOmega=1, upwind=1
+ **** WARNING: upwinding is ON! Correcting omega for the discrete-time-symbol will not fully work to give a small residual ! *****
+CgWaveHoltz::residual: compute residual with adjusted omegas=  8.094878339772e+00
+CgWaveHoltz::residual: compute residual with adjusted omegas=  8.094878339772e+00
+CgWaveHoltz::residual: freq=0, omega=8.1, max-res=2.712e+00 (using omega), max-res=2.646e+00 (using omega from discrete symbol)
+CgWaveHoltz: omega=8.100e+00, max-res=2.712e+00, CR=0.734 CR-perPeriod=0.734, cpu= 4.16e+00(s)
+CgWaveHoltz::Results saved to file junk.m
+cgwh: max-diff=6.60e-02 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+OK
+cgwh gaussian.cmd -g=square64.order2 -nf=2 -freq=5.1 12 -x0=.7 .3 -y0=.7 .3 -omega=5.1 -amp=100 100 -beta=100 100 -adjustOmega=0 -orderInTime=2 -solver=none -tol=1e-8 -ad4=0 -imode=1 -go=halt
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=7.64e-09 (tol=1.00e-08) numberOfIterations=14 #############
+
+ +++++ ENTERING CgWaveHoltz::residual +++++ 
+CgWaveHoltz::residual: c=1, omega= 5.1000000e+00, omegas= 5.0994544e+00 (from symbol of D+D-), dt=9.935461e-03, adjustOmega=0, upwind=0
+CgWaveHoltz::residual: freq=0, omega=5.1, max-res=8.421e-03 (using omega).
+CgWaveHoltz::residual: freq=1, omega=12, max-res=1.501e-01 (using omega).
+CgWaveHoltz: omega=5.100e+00, max-res=1.501e-01, CR=0.411 CR-perPeriod=0.411, cpu= 5.83e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+cgwh: max-diff=1.13e-03 (between WaveHoltz and Direct Helmholtz solution)
+
+**************************************************
+**** Sun Oct 31, 2021
+
+START ON multi-freq
+
+TRY TWO FREQUENCIES: starts to work (use same frequencies as for boxHelmholtz)
+cgwh gaussian.cmd -g=square64.order2 -nf=2 -freq=5.1 12 -x0=.7 .3 -y0=.7 .3 -omega=5.1 -amp=100 100 -beta=100 100 -adjustOmega=0 -orderInTime=2 -solver=none -tol=1e-8 -ad4=0 -imode=1 -go=halt
+
+
+cgWave:FD22 t=1.232e+00 (124 steps) dt=9.935e-03 ||u||= 2.84e+00, cpu= 3.75e-02(s)
+it=-3:  max(|v-vOld|)=7.36e-09, tol=1e-08
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=3.24e-09 (tol=1.00e-08) numberOfIterations=16 #############
+
+ +++++ ENTERING CgWaveHoltz::residual +++++ 
+CgWaveHoltz::residual: c=1, omega= 5.1000000e+00, omegas= 5.0994544e+00 (from symbol of D+D-), dt=9.935461e-03, adjustOmega=0, upwind=0
+CgWaveHoltz::residual: freq=0, omega=5.1, max-res=2.594e-02 (using omega).
+CgWaveHoltz::residual: freq=1, omega=12, max-res=2.145e-01 (using omega).
+CgWaveHoltz: omega=5.100e+00, max-res=2.145e-01, CR=0.304 CR-perPeriod=0.304, cpu= 7.15e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+cgwh: max-diff=3.94e-03 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+
+cgwh gaussian.cmd -g=square64.order2 -nf=1 -freq=17.17 -x0=.7 -y0=.7 -omega=17.17 -amp=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -ad4=0 -imode=1 -go=halt
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=9.31e-13 (tol=1.00e-12) numberOfIterations=30 #############
+
+ +++++ ENTERING CgWaveHoltz::residual +++++ 
+CgWaveHoltz::residual: c=1, omega= 1.7170000e+01, omegas= 1.7149377e+01 (from symbol of D+D-), dt=9.890263e-03, adjustOmega=1, upwind=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  1.714937666998e+01
+CgWaveHoltz::residual: freq=0, omega=17.17, max-res=1.009e-08 (using omega), max-res=1.063e+00 (using omega from discrete symbol)
+CgWaveHoltz: omega=1.717e+01, max-res=1.009e-08, CR=0.870 CR-perPeriod=0.870, cpu= 3.45e-01(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+cgwh: max-diff=9.84e-10 (between WaveHoltz and Direct Helmholtz solution)
+
+
+
+
+cgwh gaussian.cmd -g=square32.order2  -nf=1 -freq=9.777 -x0=.5 -y0=.5 -omega=9.777 -amp=20 -beta=50 -adjustOmega=1 -solver=none -tol=1e-10 -ad4=1 -go=halt
+
+
+ ################ DONE KYRLOV ITERATIONS -- KSP residual=5.50e-16 (tol=1.00e-10) numberOfIterations=2 #############
+
+ +++++ ENTERING CgWaveHoltz::residual +++++ 
+CgWaveHoltz::residual: c=1, omega= 9.7770000e+00, omegas= 9.7622385e+00 (from symbol of D+D-), dt=1.947423e-02, adjustOmega=1, upwind=0
+CgWaveHoltz::residual: compute residual with adjusted omegas=  9.762238536132e+00
+CgWaveHoltz::residual: freq=0, omega=9.777, max-res=6.441e-12 (using omega), max-res=7.193e-01 (using omega from discrete symbol)
+CgWaveHoltz: omega=9.777e+00, max-res=6.441e-12, CR=0.000 CR-perPeriod=0.000, cpu= 2.85e-02(s)
+CgWaveHoltz::Results saved to file cgWaveHoltz.m
+cgwh: max-diff=6.66e-15 (between WaveHoltz and Direct Helmholtz solution)
+
 
 **************************************************
 **** Tues July 27, 2021

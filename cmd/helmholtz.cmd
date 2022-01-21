@@ -6,7 +6,7 @@
 $ad4=0; $debug=3;
 $tf=-1.; # adjusted below if not set
 $tp=.1; $bc="d"; $go="halt"; 
-$omega=2;  $kx=1.0; $ky=1; $kz=1; $solveHelmholtz=0; $computeTimeIntegral=1; 
+$omega=2;  $kx=1.0; $ky=1; $kz=1; $solveHelmholtz=0; $computeTimeIntegral=0;
 $cfl=.9; 
 $pi = atan2(1.,1.)*4.; 
 $degreeInSpace=2; $degreeInTime=2;
@@ -14,10 +14,11 @@ $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $ts="explicit";
 $dtMax=1e10; 
 $orderInTime=-1;  # -1 = use default 
+$useKnownFirstStep=1;
 #
 GetOptions( "cfl=f"=>\$cfl,"omega=f"=>\$omega,"ad4=f"=>\$ad4,"debug=i"=>\$debug,"solveHelmholtz=i"=>\$solveHelmholtz,\
             "bc=s"=>\$bc,"tf=f"=>\$tf,"tp=f"=>\$tp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz, \
-            "ts=s"=>\$ts,"dtMax=f"=>\$dtMax,"orderInTime=i"=>\$orderInTime,\
+            "ts=s"=>\$ts,"dtMax=f"=>\$dtMax,"orderInTime=i"=>\$orderInTime,"useKnownFirstStep=i"=>\$useKnownFirstStep,\
             "computeTimeIntegral=i"=>\$computeTimeIntegral,"bcApproach=s"=>\$bcApproach,"go=s"=>\$go );
 # 
 if( $tf < 0. ){ $tf = 2.*$pi/$omega; }
@@ -34,6 +35,9 @@ tPlot $tp
 cfl $cfl 
 debug $debug
 dtMax $dtMax
+# number of frequencies $numberOfFrequencies
+# frequencies $omega
+omega $omega
 #
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
@@ -45,6 +49,8 @@ if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
 $cmd
 #
 bc=$bc
+#
+use known for first step $useKnownFirstStep
 #
 user defined known solution...
 box Helmholtz

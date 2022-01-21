@@ -12,6 +12,8 @@
 
 
 #define FOR_3(i1,i2,i3,I1,I2,I3) for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  
+#define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
+
 
 #define advWave EXTERN_C_NAME(advwave)
 #define ogf EXTERN_C_NAME(ogf)
@@ -47,8 +49,8 @@ extern "C"
       const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
       const int&nd4a,const int&nd4b,
       const int&mask,const real&xy, const real&rx,    
-      const real&um, const real&u, real&un, const real&f, const real&fa, const real& v,
-      const int&bc, const int&ipar, const real&rpar, int&ierr );
+      const real&um, const real&u, real&un, const real&f, const real&fa, const real& v, const real& vh,
+      const int&bc, const real & frequencyArray, const int&ipar, const real&rpar, int&ierr );
 
 }
 
@@ -73,7 +75,7 @@ extern "C"
   const bool isRectangular = mg.isRectangular();
   int gridType = isRectangular? 0 : 1;
 
-
+  // printF("advance: preComputeUpwindUt=%d\n",preComputeUpwindUt); 
 
   int ipar[]={option,                        // ipar[ 0]
               grid,                          // ipar[ 1]
@@ -88,7 +90,11 @@ extern "C"
               gridIsImplicit(grid),          // ipar[10]
               useUpwindDissipation,          // ipar[11]
               useImplicitUpwindDissipation,  // ipar[12]
-              preComputeUpwindUt             // ipar[13]
+              preComputeUpwindUt,            // ipar[13]
+              numberOfFrequencies,           // ipar[14]
+              adjustOmega,
+              solveHelmholtz,                // ipar[16]
+              adjustHelmholtzForUpwinding    // ipar[17]
                           };  //
 
   real dx[3]={1.,1.,1.};
@@ -127,6 +133,12 @@ extern "C"
 
     real *vptr = umptr;  // This may be OK for dissipation stage
     // We may need v for upwinding or 4th-order curvilinear to hold Lap_2h(u) 
+    if( adjustOmega && solveHelmholtz )
+    { // In this case we pre-compute uDot for upwinding so that we can add a correction
+      // to the Helmholtz scheme to remove the effect of the upwinding
+      preComputeUpwindUt=1; 
+    }
+
     RealArray uDot;
     if( ( option==1 && preComputeUpwindUt ) || 
         ( orderOfAccuracy==4 && !isRectangular) )
@@ -166,6 +178,11 @@ extern "C"
     }
 
 
+    real *vhptr = vptr;
+    if( solveHelmholtz )
+    { // --- Pointer to current Helmholtz solution ----
+      vhptr = vOldLocal.getDataPointer(); 
+    }
     int ierr;
     advWave(mg.numberOfDimensions(),
             I1.getBase(),I1.getBound(),I2.getBase(),I2.getBound(),I3.getBase(),I3.getBound(),
@@ -176,7 +193,8 @@ extern "C"
             *umptr,*uptr,*unptr, *fptr,
             *faptr,  // forcing at multiple time levels 
             *vptr,   // to hold uDot 
-            mg.boundaryCondition(0,0), ipar[0], rpar[0], ierr );
+            *vhptr,  // Pointer to current Helmholtz solution
+            mg.boundaryCondition(0,0), frequencyArray(0), ipar[0], rpar[0], ierr );
 
     if( false && option==0 )
     {
@@ -223,7 +241,7 @@ extern "C"
     if( debug & 4 )
       printF("it=%d: completed step %i, t=%8.2e, nextTimeToPlot=%9.3e\n",it,i,t,nextTimeToPlot);
     // getErrors( u2, t-dt );
-    real maxErr = getErrors( u[cur], t );
+
     // ** fix this: 
     // estimated number of time steps: (for output)
     int numberOfTimeSteps=int( tFinal/dt+.5);
@@ -232,13 +250,16 @@ extern "C"
     const Real cpuTime = getCPU()- cpua;
     const int numDigits = ceil( log10(numberOfTimeSteps) );
     char myFormat[180];
-    if( computeErrors )
+    if( computeErrors && !solveHelmholtz )
     {
+      real maxErr = getErrors( u[cur], t );
       sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e maxErr=%%9.2e, ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
       printF(myFormat,t,step,dt,maxErr,solutionNorm,cpuTime);
     }
     else
     {
+      // compute the solution norm
+      solutionNorm = maxNorm(u[cur]);
       sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
       printF(myFormat,t,step,dt,solutionNorm,cpuTime);
     }
@@ -282,6 +303,9 @@ extern "C"
 #endMacro
 
 
+
+
+
 // ================================================================================================
 /// \brief Advance the solution 
 // ================================================================================================
@@ -310,7 +334,7 @@ advance( int it )
   const int & dissipationFrequency  = dbase.get<int>("dissipationFrequency");
   // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
   //                      false=compute Ut inline in Gauss-Seidel fashion  
-  const int & preComputeUpwindUt = dbase.get<int>("preComputeUpwindUt");
+  int & preComputeUpwindUt = dbase.get<int>("preComputeUpwindUt");
 
 
   real & dt                         = dbase.get<real>("dt");
@@ -326,16 +350,27 @@ advance( int it )
   const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz");
   const int & computeTimeIntegral   = dbase.get<int>("computeTimeIntegral");
   const int & adjustOmega           = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  const int & adjustHelmholtzForUpwinding = dbase.get<int>("adjustHelmholtzForUpwinding");
 
   real & omega                      = dbase.get<real>("omega");
   real & Tperiod                    = dbase.get<real>("Tperiod");
   int & numPeriods                  = dbase.get<int>("numPeriods");
   real & omegaSave                  = dbase.get<real>("omegaSave");
   real & TperiodSave                = dbase.get<real>("TperiodSave");  
-  real & dtSave                     = dbase.get<real>("dtSave");  
+  real & dtSave                     = dbase.get<real>("dtSave");
+
+  const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
+  RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+  RealArray & frequencyArrayAdjusted= dbase.get<RealArray>("frequencyArrayAdjusted");
+  RealArray & periodArray           = dbase.get<RealArray>("periodArray"); 
+  IntegerArray & numPeriodsArray    = dbase.get<IntegerArray>("numPeriodsArray");
+  RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+  RealArray & periodArraySave       = dbase.get<RealArray>("periodArraySave");     
 
   int & addForcing                  = dbase.get<int>("addForcing");
   ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
+
+  const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep");
 
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
@@ -411,28 +446,110 @@ advance( int it )
 
   // NOTE: dtMax is the initial time-step determined by getTimeStep
   int numPlotSteps    =  ceil( nextTimeToPlot/dtMax );  // max number of steps 
+
+  if( solveHelmholtz && adjustOmega && timeSteppingMethod == implicitTimeStepping )
+  { // For implicit time-stepping we must take at least 5 steps per period when we adjust omega and dt
+    // numPlotSteps = max(5*numPeriods,numPlotSteps);
+
+    // Note: numPlotsSteps is per period
+    if( numberOfFrequencies==1 )
+    {
+      numPlotSteps = max(5,numPlotSteps);
+    }
+    else
+    {
+      // we need at least 5 steps for the smallest period
+      const Real minFreq = min(frequencyArray);  // should be frequencyArray(0)
+      const Real maxFreq = max(frequencyArray);
+      const Real Tmax = twoPi/minFreq;  // longest period
+      const Real Tmin = twoPi/maxFreq;  // shortest period
+      int minSteps = ceil( 5*Tmax/Tmin ); // is this correct
+      // printF("### Tmax=%12.4e, Tmin=%12.4e, Tmax/Tmin=%12.4e, minSteps=%d\n",Tmax,Tmin,Tmax/Tmin,minSteps);
+      numPlotSteps = max(minSteps,numPlotSteps);
+    }
+
+    // printF("###(1) numPlotSteps=%d\n",numPlotSteps);
+  }
+
+  // // The number of plot steps should be a multiple of the number of periods.
+  // if( solveHelmholtz && (numPlotSteps % numPeriods) != 0  )
+  // {
+  //   numPlotSteps += numPeriods - (numPlotSteps % numPeriods); 
+  //   printF("###(2) numPlotSteps=%d\n",numPlotSteps);
+  // }
+
+
   if( true || adjustTimeStep )
   {
     dt = nextTimeToPlot/numPlotSteps;  // we adjust dt first time only 
 
     if( solveHelmholtz && adjustOmega )
     {
-       // ---- adjust the scheme or omega to remove time-discretization errors -----
+      // ---- adjust the scheme or omega to remove time-discretization errors -----
+      frequencyArraySave.redim(numberOfFrequencies);
+      frequencyArraySave = frequencyArray;  // save original values 
 
-       Real dts=dt, omegas=omega; 
-       if( timeSteppingMethod == implicitTimeStepping )
-       {
-         // --- adjust omega for implicit time-stepping ---
+      frequencyArrayAdjusted.redim(numberOfFrequencies);
 
-         // There are at least two ways to adjust the scheme (see notes)----
+      periodArraySave.redim(numberOfFrequencies);
+      periodArraySave    = periodArray;     // save original values 
 
-         // IMP-FIX 2 : adjust omega
-         dts = (1./omega)*sqrt( 2.*( 1./cos(2.*Pi/numPlotSteps) -1. ) );
-         omegas= (2.*Pi/numPlotSteps)*1/dts;
+      Real dts=dt, omegas=omega; 
+      if( timeSteppingMethod == implicitTimeStepping )
+      {
+        // --- adjust omega for implicit time-stepping ---
 
-       }
-       else
-       {
+        // There are at least two ways to adjust the scheme (see notes)----
+
+        // IMP-FIX 2 : adjust omega
+        dts = (1./omega)*sqrt( 2.*( 1./cos(2.*Pi/numPlotSteps) -1. ) );
+        omegas= (2.*Pi/numPlotSteps)*1/dts;
+        
+        frequencyArray(0) = omegas;
+        periodArray.redim(numberOfFrequencies);
+        numPeriodsArray(0)=numPeriods; 
+        periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
+
+        // Additional frequencies are computed from ( see waho/notes.pdf )
+        // cos( omegaTilde_m *dt) = 1/( 1 + (omega_m *dt)^2/2 )
+        for( int freq=1; freq<numberOfFrequencies; freq++ )
+        {
+          Real omegaDt = frequencyArray(freq)*dts;
+          frequencyArray(freq) = (1./dts) * acos( 1./( 1. + SQR(omegaDt)/2. ) );
+        }        
+
+        // this next section is repeated below -- fix me 
+        periodArray.redim(numberOfFrequencies);
+        numPeriodsArray(0)=numPeriods; 
+        periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
+        // ---- fit as many periods as we can in the longest interval ----
+        for( int freq=1; freq<numberOfFrequencies; freq++ )
+        {
+         // numPeriodsArray(freq) = floor( frequencyArray(freq)/frequencyArray(0) )*numPeriodsArray(0); //  integrate over this many periods for the "T2" integral
+         // Do this - Jan 15, 2022 : fit as many smaller periods into the longest period times the number of periods
+
+         numPeriodsArray(freq) = floor( frequencyArray(freq)*numPeriodsArray(0)/frequencyArray(0) ); //  integrate over this many periods for the "T2" integral
+         periodArray(freq)=(twoPi/frequencyArray(freq))*numPeriodsArray(freq);
+
+         printF("\n >>> cgWave:implicit: freq=%d : frequencyArray(freq)/frequencyArray(0) =%6.3f, numPeriodsArray(freq)=%d\n",
+              freq,frequencyArray(freq)/frequencyArray(0),numPeriodsArray(freq));
+        }
+        
+        if( false )
+        {
+          for( int freq=0; freq<numberOfFrequencies; freq++ )
+          {
+           printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e (implicit)\n",freq,frequencyArraySave(freq),frequencyArray(freq));
+          }
+        }
+
+        // if( numberOfFrequencies>1 )
+        // {
+        // OV_ABORT("FINISH ME: adjustOmega, multi-freq, implicit");
+        // }
+      }
+      else
+      {
          // --- adjust omega for explicit time stepping ---
          // Adjust omega for Helmholtz problems so that
          //    4 sin^2( omegas*dt/2 )/dt^2 = omega^2
@@ -443,21 +560,95 @@ advance( int it )
          // dt = Ts/N = 2*pi/( omegas*N ) -> omegas*dt/2 = pi/N
          // sin(pi/N) = omega*dt/2  
          //  -> dt = sin(pi/N)*(2/omega)
-          //    omegas = (pi/N)*(2/dt)
-         dts = sin(Pi/numPlotSteps) * (2./omega);
-         omegas = (Pi/numPlotSteps) * (2./dts);
-       }
-       printF("\n ##### CgWave:adjust omega and dt for Helmholtz: dts=%18.10e (dt=%18.10e) omegas=%14.6e (omega=%14.6e) ####\n\n",dts,dt,omegas,omega);
+         //    omegas = (pi/N)*(2/dt)
+         if( numPeriods==1 )
+         {
+           dts = sin(Pi/numPlotSteps) * (2./omega);
+           omegas = (Pi/numPlotSteps) * (2./dts);
+         }
+         else
+         {
+           int numSteps = numPlotSteps; 
+           if( false ) // turn this off -- Jan 12, 2022 numPlotSteps is per period
+           {
+             // check me: Nov 3, 2022
+             numSteps = numPlotSteps/numPeriods;  // number of steps to reach T = 2*pi/omega1  (one period)IS THIS NEEDED? 
+             // assert( numSteps*numPeriods == numPlotSteps );
+             if( numSteps*numPeriods != numPlotSteps  )
+             {
+               printF("CgWave:advance:ERROR: need to adjustOmega but numSteps*numPeriods=%d  != numPlotSteps=%d, numPeriods=%d *fix me Bill*\n",
+                       numSteps*numPeriods,numPlotSteps,numPeriods);
+               OV_ABORT("error");
+             }
+           }
 
-       omegaSave   = omega;    // save original omega ( omega is reset below)
-       TperiodSave = Tperiod;  // save original Tperiod ( Tperiod is reset below)
-       dtSave      = dt;
+           dts = sin(Pi/numSteps) * (2./(omega));
+           omegas = (Pi/numSteps) * (2./dts);
+         }
 
-       dt      = dts;
-       omega   = omegas;
-       Tperiod = twoPi/omegas;
-       tFinal  = Tperiod; 
+         frequencyArray(0) = omegas;
+         for( int freq=1; freq<numberOfFrequencies; freq++ )
+         {
+           // sin( omegaTilde *dt/2) = omega*(dt/2)
+           frequencyArray(freq) = (2./dts) * asin( frequencyArray(freq)*(dts/2.) );
+         }
+
+         periodArray.redim(numberOfFrequencies);
+         numPeriodsArray(0)=numPeriods; 
+         periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
+         // ---- fit as many periods as we can in the longest interval ----
+         for( int freq=1; freq<numberOfFrequencies; freq++ )
+         {
+           // numPeriodsArray(freq) = floor( frequencyArray(freq)/frequencyArray(0) )*numPeriodsArray(0); //  integrate over this many periods for the "T2" integral
+
+           // Do this - Jan 15, 2022 : fit as many smaller periods into the longest period times the number of periods
+           numPeriodsArray(freq) = floor( frequencyArray(freq)*numPeriodsArray(0)/frequencyArray(0) ); //  integrate over this many periods for the "T2" integral
+
+           periodArray(freq)=(twoPi/frequencyArray(freq))*numPeriodsArray(freq);
+         }
+         
+
+         for( int freq=0; freq<numberOfFrequencies; freq++ )
+         {
+           printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e\n",freq,frequencyArraySave(freq),frequencyArray(freq));
+         }
+
+      }
+      printF("\n ##### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=%18.10e (dt=%18.10e) omegaAdjusted=%14.6e (omega=%14.6e) ####\n\n",dts,dt,omegas,omega);
+
+      frequencyArrayAdjusted = frequencyArray; 
+
+      omegaSave   = omega;    // save original omega ( omega is reset below)
+      TperiodSave = Tperiod;  // save original Tperiod ( Tperiod is reset below)
+      dtSave      = dt;
+
+      dt      = dts;
+      omega   = omegas;
+      Tperiod = (twoPi/omegas)*numPeriods;
+      tFinal  = Tperiod; 
+
+
+
+       // if( numberOfFrequencies==1 )
+       // {
+       //   frequencyArray(0)=omega; // do this for now 
+       //   periodArray(0)=twoPi/frequencyArray(0);
+       // }
     }
+
+    if( solveHelmholtz )
+    {
+      printF("\n >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholz Problem <<<<<<<<<<<<<<<<<<<<<<<\n");
+      printF(" dt=%20.12e, omega=%20.12e,  tFinal=%20.12e\n",dt,omega,tFinal);
+      printF(" adjustOmega=%d, adjustHelmholtzForUpwinding=%d \n",adjustOmega,adjustHelmholtzForUpwinding);
+      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      {
+        printF(" freq=%d frequency=%20.12e period=%20.12e, numberOfPeriods=%d\n",freq,frequencyArray(freq),periodArray(freq),numPeriodsArray(freq));
+      }   
+      printF(" nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e)\n",nextTimeToPlot,numPlotSteps, dt,dtMax);           
+      printF(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n");
+    }
+
   }
 
   if( debug & 2 )
@@ -473,8 +664,8 @@ advance( int it )
   //   timeForInterpolate=0., timeForAdvance=0., timeForGetLocalArray=0.,
   //   timeForFinishBoundaryConditions=0.;
       
-  printF("CgWave::advance: c=%g, omega=%g, Tperiod=%g, numPeriods=%d, tFinal=%g, plotOptions=%d\n",
-         c,omega,Tperiod,numPeriods,tFinal,plotOptions);
+  printF("CgWave::advance: c=%g, numberOfFrequencies=%d, omega=%g, Tperiod=%g, numPeriods=%d, tFinal=%g, plotOptions=%d\n",
+         c,numberOfFrequencies,omega,Tperiod,numPeriods,tFinal,plotOptions);
 
 
   int i1,i2,i3;
@@ -503,20 +694,27 @@ advance( int it )
   }
   else
   {
-    // WaveHoltz: initial condition is provided in v: 
+    // ---- WaveHoltz: initial condition is provided in v: ----
+
     realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
-    u1=v;
+
+    // u1=v;
+
+    // ---- u1 : sum of solutions for each frequency ----
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    {
+      OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+      OV_GET_SERIAL_ARRAY(real,u1[grid],u1Local);
+      getIndex(cg[grid].dimension(),I1,I2,I3);
+
+      u1Local(I1,I2,I3) = vLocal(I1,I2,I3,0);
+      for( int freq=1; freq<numberOfFrequencies; freq++ )
+        u1Local(I1,I2,I3) += vLocal(I1,I2,I3,freq);
+    }      
+    
 
     applyBoundaryConditions( u1, t );  // *wdh* Mar 6, 2020 -- try this 
   }
-
-  if( computeTimeIntegral )
-  {
-    // When solving the Helmholtz problem with CgWaveHoltz we need to evaluate an integral 
-    //      v  = (1/(2*T)* Int_0^T [  ( cos(omega*t)-.25)*u(x,t) dt ] 
-    updateTimeIntegral( firstStep, t, u[cur] );
-  }
-
 
 
   // ----- FIRST STEP ------  
@@ -526,7 +724,16 @@ advance( int it )
     if( forcingOption==helmholtzForcing )
       takeFirstStep( cur, t ); // -- NOTE: for now initial step is only called for Helmholtz problems *fix me*
     else
-      getInitialConditions( next,t+dt );
+    {
+      if( !useKnownSolutionForFirstStep && timeSteppingMethod==explicitTimeStepping )
+      { // *new* wdh Nov 19, 2021
+        takeFirstStep( cur, t ); 
+      }
+      else
+      { // Just get solution at t=dt from IC function
+        getInitialConditions( next,t+dt );
+      }
+    }
   }
   else
   {
@@ -537,7 +744,16 @@ advance( int it )
       getInitialConditions( prev,t-dt );
   }
 
-  
+
+  if( computeTimeIntegral )
+  {
+    // When solving the Helmholtz problem with CgWaveHoltz we need to evaluate an integral 
+    //      v  = (1/(2*T)* Int_0^T [  ( cos(omega*t)-.25)*u(x,t) dt ] 
+    updateTimeIntegral( 0, firstStep, t, u[cur] );
+  }
+
+
+
 
   
   real cpua=getCPU();
@@ -557,11 +773,15 @@ advance( int it )
 
     plotAndOutputResults(); 
 
+    // vOld : current guess for Helmholtz solution 
+    realCompositeGridFunction & vOld = solveHelmholtz ?  dbase.get<realCompositeGridFunction>("vOld") : u[prev];
+
     if( step==0 && takeForwardInitialStep )
     {
       // --- first step has already been taken ----
        t+=dt;
-       printF("Skip first step since set to exact\n");
+       if( debug & 2 )
+         printF("Skip first step since set to exact, or used time-periodic\n");
     }
     else
     { // ------ take a time-step -----
@@ -623,6 +843,8 @@ advance( int it )
           OV_GET_SERIAL_ARRAY(real,u[prev2][grid],umLocal);  // u(t-2*dt)
           OV_GET_SERIAL_ARRAY(real,u[prev ][grid],uLocal);   // u(t-dt)
           OV_GET_SERIAL_ARRAY(real,u[cur  ][grid],unLocal);  // u(t)
+
+          OV_GET_SERIAL_ARRAY_CONDITIONAL(real,vOld[grid],vOldLocal,solveHelmholtz);
   
           if( debug & 4 )
           {
@@ -646,6 +868,7 @@ advance( int it )
         OV_GET_SERIAL_ARRAY(real,u[prev][grid],umLocal);
         OV_GET_SERIAL_ARRAY(real,u[cur ][grid],uLocal);
         OV_GET_SERIAL_ARRAY(real,u[next][grid],unLocal);
+        OV_GET_SERIAL_ARRAY_CONDITIONAL(real,vOld[grid],vOldLocal,solveHelmholtz);
   
         if( debug & 4 )
         {
@@ -704,7 +927,7 @@ advance( int it )
       // StepOptionEnum stepOption = i== (numberOfTimeSteps-1) ? lastStep : middleStep;
       StepOptionEnum stepOption = (t >tFinal-.5*dt) ? lastStep : middleStep;
       // printF(" computeTimeIntegral : t=%9.3e, stepOption=%d\n",t,stepOption);
-      updateTimeIntegral( stepOption, t, u[next] );
+      updateTimeIntegral( step+1, stepOption, t, u[next] );
     }
     
   } // end for i .. number of steps
@@ -714,10 +937,10 @@ advance( int it )
   current = next; // curent solution
 
 
-  if( fabs(t-tFinal) > REAL_EPSILON*tFinal*1000. )
+  if( fabs(t-tFinal)/tFinal > REAL_EPSILON*tFinal*1000. )
   {
     printF("CgWave::advance:ERROR: done time-stepping but t is NOT equal to tFinal! Something is wrong.\n");
-     printF("      t=%14.6e tFinal=%14.6e diff=%9.3e\n",t,tFinal,t-tFinal);
+     printF("      t=%14.6e tFinal=%14.6e relative-diff=%9.3e\n",t,tFinal,(t-tFinal)/tFinal);
      OV_ABORT("FIX ME");
   }
 
@@ -728,10 +951,49 @@ advance( int it )
      Tperiod = TperiodSave;
      dt      = dtSave; 
      tFinal  = Tperiod; // reset too *wdh* Jul 25, 2021
+
+    frequencyArray = frequencyArraySave;  // reset to original values 
+    periodArray    = periodArraySave;     // reset to original values      
   }   
 
+  if( false && solveHelmholtz )
+  {
+    // --- Zero out unused points for Kyrlov solver -- *wdh* Jan 5, 2020
+    // The Krylov solver will measure the residual at all grid points
+    // We st used points to zero so the residual will always be zero there
+    // Note: for upwinding we use some unused points; thus it is important
+    //  that we apply the boundary conditions to the initial conditions to
+    //  restore these values.
+    printF("cgWave:INFO zero unused points at finish.\n");
+    realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
+    Range all; 
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    {
+      MappedGrid & mg = cg[grid];
+      OV_GET_SERIAL_ARRAY(real,u[current][grid],uLocal);
+      OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+      OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+      getIndex(mg.dimension(),I1,I2,I3); 
+      FOR_3D(i1,i2,i3,I1,I2,I3)
+      {
+        if( maskLocal(i1,i2,i3) ==0 )
+        {
+          // uLocal(i1,i2,i3,all)=0.; // is this needed?
+          // vLocal(i1,i2,i3,all)=0.; 
+        }    
+      }  
+    }
+
+  }
+
+  // total number of steps taken:
   int & numberOfStepsTaken = dbase.get<int>("numberOfStepsTaken");
   numberOfStepsTaken += step;
+
+  // number of steps this solve
+  int & numberOfStepsPerSolve = dbase.get<int>("numberOfStepsPerSolve");
+  numberOfStepsPerSolve = step;
 
   // -- pop run time dialog 
   if( plotOptions != noPlotting )

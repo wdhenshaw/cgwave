@@ -98,9 +98,13 @@ real getErrors( realCompositeGridFunction & u, real t );
 // Fill RHS for direct Helmholtz solver
 int getHelmholtzForcing( realCompositeGridFunction & f  );
 
-void getInitialConditions( int current, real t );
+void getInitialConditions( int current, real t, bool getTimeDerivative = false );
+
+int getIntegrationWeights( int Nt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma );
 
 aString getMethodName() const;
+
+int getMultiFrequencyWaveHoltzMatrix( RealArray & A );
 
 int getTimeStep();
   
@@ -135,13 +139,15 @@ int setupUserDefinedForcing();
 
 int takeFirstStep( int cur, real t );
 
+int takeFirstStepHelmholtz( int cur, real t );
+
 // Old way: 
 int takeFirstBackwardStep( int cur, real t );
 
 int takeImplicitStep( Real t );
 
 // update time-integral for Helmholtz projection
-int updateTimeIntegral( StepOptionEnum stepOption, real t, realCompositeGridFunction& u );
+int updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGridFunction& u );
 
 int updateUserDefinedKnownSolution();
 

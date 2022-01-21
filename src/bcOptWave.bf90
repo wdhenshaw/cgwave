@@ -8,8 +8,10 @@
 
 ! These next include files will define the macros that will define the difference approximations
 ! The actual macro is called below
-#Include "defineDiffNewerOrder2f.h"
-#Include "defineDiffNewerOrder4f.h"
+#Include "defineDiffOrder2f.h"
+#Include "defineDiffOrder4f.h"
+
+#Include "knownSolutionMacros.h"
 
 
 ! From bcOptSmFOS.bf
@@ -39,17 +41,14 @@
 
 
 
-
-#beginMacro beginLoops(n1a,n1b,n2a,n2b,n3a,n3b,na,nb)
+! General begin loops macro
+#beginMacro beginLoops(n1a,n1b,n2a,n2b,n3a,n3b)
 do i3=n3a,n3b
 do i2=n2a,n2b
 do i1=n1a,n1b
-do n=na,nb
-  ! write(*,'(" periodic i1,i2,i3,n=",4i4)') i1,i2,i3,n
 #endMacro
 
 #beginMacro endLoops()
-end do
 end do
 end do
 end do
@@ -350,7 +349,7 @@ end do
   axisp1=1
 
   i3=gridIndexRange(0,2)
-  numberOfGhostPoints=orderOfAccuracy/2
+  ! numberOfGhostPoints=orderOfAccuracy/2
 
 
   do side1=0,1
@@ -486,7 +485,7 @@ end do
 
 
 #beginMacro assignCorners3d(ORDER,GRIDTYPE,FORCING)
-  numberOfGhostPoints=orderOfAccuracy/2
+  ! numberOfGhostPoints=orderOfAccuracy/2
 
 
   ! Assign the edges
@@ -617,7 +616,8 @@ end do
     stop 1010
   #End
 
-  beginLoops3d()
+  ! ghost-loops will assign extra points in tangential directions
+  beginGhostLoops3d()
     if( mask(i1,i2,i3).ne.0 )then
      
       ! -- extrapolate ghost ---
@@ -671,11 +671,22 @@ end do
 
     else if( knownSolutionOption.eq.boxHelmholtz ) then
       ! --- evaluate the boxHelmholtz solution ---
-      if( nd.eq.2 )then
-        ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) * sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) *coswt
-      else
-        ff = sin( kxBoxHelmholtz*xy(i1,i2,i3,0) ) *sin( kyBoxHelmholtz*xy(i1,i2,i3,1) ) * sin( kzBoxHelmholtz*xy(i1,i2,i3,2) ) *coswt
-      end if 
+      ! For multi-freq we add up all the component frequencies
+      ff = 0. 
+      do freq=0,numberOfFrequencies-1
+        ! kx = kxBoxHelmholtz + twoPi*freq
+        ! ky = kyBoxHelmholtz + twoPi*freq
+        ! kz = kzBoxHelmholtz + twoPi*freq
+        ! coswt = cos( frequencyArray(freq)*t )
+
+        getBoxHelmholtzParameters( freq, omega, kx,ky,kz, F90 )
+        coswt = cos( omega*t )
+        if( nd.eq.2 )then
+          ff = ff + sin( kx*xy(i1,i2,i3,0) ) * sin( ky*xy(i1,i2,i3,1) ) *coswt
+        else
+          ff = ff + sin( kx*xy(i1,i2,i3,0) ) * sin( ky*xy(i1,i2,i3,1) ) * sin( kz*xy(i1,i2,i3,2) ) *coswt
+        end if 
+      end do
 
     else if( knownSolutionOption.eq.polyPeriodic ) then
       ! --- evaluate the polyPeriodic solution ---
@@ -734,30 +745,93 @@ end do
   endLoops3d()
 #endMacro
 
-! ===================================================================================================
-! Macro: Assign boundary and ghost points on Dirichlet boundaries 
-!          *** COMPATIBILITY BOUNDARY CONDITIONS ****
-! ORDER : 2,4,6,8
-! ===================================================================================================
-#beginMacro assignDirichletBoundaryAndGhostCompatibility(ORDER)
 
-  if( bcApproach.eq.useCompatibilityBoundaryConditions )then
-    write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
-    stop 1010
-  end if
-
-  #If #ORDER eq "2"
-    #defineMacro EXTRAP(u,i1,i2,i3,n,is1,is2,is3) extrap3(u,i1,i2,i3,n,is1,is2,is3)
-  #Elif #ORDER eq "4"
-    #defineMacro EXTRAP(u,i1,i2,i3,n,is1,is2,is3) extrap5(u,i1,i2,i3,n,is1,is2,is3)
-  #Elif #ORDER eq "6"
-    #defineMacro EXTRAP(u,i1,i2,i3,n,is1,is2,is3) extrap7(u,i1,i2,i3,n,is1,is2,is3)
-  #Elif #ORDER eq "8"
-    #defineMacro EXTRAP(u,i1,i2,i3,n,is1,is2,is3) extrap9(u,i1,i2,i3,n,is1,is2,is3)
+! ============================================================================================
+! Macro: evaluate the solution on the boundary for Dirichlet BCs
+!    Solving
+!        u_tt = c^2 * Delta( u ) + f(x,y,z,t)
+!        u = g
+! For TZ at order=2:
+!    ff = ue_tt - c^2*Delta(ue) 
+!    gtt = g_tt = uett
+!  order=4:
+!    fLap 
+!    ftt
+!    gtttt
+! ============================================================================================
+#beginMacro getDirichletCompatibilityForcing(FORCING,DIM,ORDER,ff,gtt,fLap,ftt,gtttt)
+  #If #FORCING eq "noForcing"
+    ! No forcing, do nothing 
   #Else
-     write(*,'("bcOptWave: unexpected order=ORDER")') 
-    stop 1010
+    if( assignTwilightZone.eq.1 )then
+      ! compute RHS from TZ
+      #If #DIM eq 2
+        call ogDeriv(ep,0,2,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uexx )
+        call ogDeriv(ep,0,0,2,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ueyy )
+        ueLap = uexx + ueyy
+        call ogDeriv(ep,2,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uett )
+        #If #ORDER eq "4"
+          call ogDeriv(ep,2,2,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uettxx )
+          call ogDeriv(ep,2,0,2,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uettyy )
+          uettLap = uettxx + uettyy
+
+          call ogDeriv(ep,0,4,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uexxxx )
+          call ogDeriv(ep,0,2,2,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uexxyy )
+          call ogDeriv(ep,0,0,4,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,ueyyyy )
+
+          ueLap2 = uexxxx + 2.*uexxyy + ueyyyy ! Lap^2( u )
+
+          call ogDeriv(ep,4,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uetttt )
+
+        #End
+      #Else
+        ! 3D 
+        call ogDeriv(ep,0,2,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uexx )
+        call ogDeriv(ep,0,0,2,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ueyy )
+        call ogDeriv(ep,0,0,0,2,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uezz )
+        ueLap = uexx + ueyy + uezz
+        call ogDeriv(ep,2,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uett )
+        #If #ORDER eq "4"
+          call ogDeriv(ep,2,2,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uettxx )
+          call ogDeriv(ep,2,0,2,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uettyy )
+          call ogDeriv(ep,2,0,0,2,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uettzz )
+          uettLap = uettxx + uettyy + uettzz
+
+          call ogDeriv(ep,0,4,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uexxxx )
+          call ogDeriv(ep,0,0,4,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ueyyyy )
+          call ogDeriv(ep,0,0,0,4,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uezzzz )
+          call ogDeriv(ep,0,2,2,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uexxyy )
+          call ogDeriv(ep,0,2,0,2,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,uexxzz )
+          call ogDeriv(ep,0,0,2,2,xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t,uc,ueyyzz )
+
+          ueLap2 = uexxxx + 2.*( uexxyy + uexxzz + ueyyzz)  + ueyyyy + uezzzz ! Lap^2( u )
+
+          call ogDeriv(ep,4,0,0,0,xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t,uc,uetttt )
+
+        #End      
+
+      #End
+      ff = uett - c2*ueLap
+      gtt = uett
+
+      #If #ORDER eq "4"
+        fLap = uettLap - c2*ueLap2 
+        ftt  = uetttt - c2*uettLap
+        gtttt = uetttt
+      #End    
+
+
+    else
+      ff=0.; gtt=0.; fLap=0.; ftt=0.; gtttt=0.;
+    end if
   #End
+#endMacro      
+
+
+! ===================================================================================================
+! Macro: Assign the boundary values on Dirichlet boundaries
+! ===================================================================================================
+#beginMacro assignDirichletBoundary(DIM,ORDER,GRIDTYPE)
 
   ff=0.
   beginLoops3d()
@@ -769,18 +843,283 @@ end do
       ! --- Dirichlet BC ---
       u(i1,i2,i3,uc)=ff
   
-      ! -- extrapolate ghost ---
-      do ghost=1,numGhost
+    end if ! mask .ne. 0
+  endLoops3d()
+
+#endMacro
+
+! ===================================================================================================
+! Macro: get loop bounds over boundaries with extram points in tangential directions 
+! ===================================================================================================
+#beginMacro getLoopBounds(side,axis,extram, m1a,m1b,m2a,m2b,m3a,m3b)
+  m1a=gridIndexRange(0,0)-extram
+  m1b=gridIndexRange(1,0)+extram
+  m2a=gridIndexRange(0,1)-extram
+  m2b=gridIndexRange(1,1)+extram
+  if( nd.eq.2 )then
+    m3a=gridIndexRange(0,2)
+    m3b=gridIndexRange(1,2)
+  else
+    m3a=gridIndexRange(0,2)-extram
+    m3b=gridIndexRange(1,2)+extram
+  end if
+  if( axis.eq.0 )then
+   m1a=gridIndexRange(side,axis)
+   m1b=gridIndexRange(side,axis)
+  else if( axis.eq.1 )then
+   m2a=gridIndexRange(side,axis)
+   m2b=gridIndexRange(side,axis)
+  else
+   m3a=gridIndexRange(side,axis)
+   m3b=gridIndexRange(side,axis)
+  end if
+#endMacro
+
+
+! ===================================================================================================
+! Macro: Assign ghost points on Dirichlet boundaries using: 
+!          *** COMPATIBILITY BOUNDARY CONDITIONS ****
+! ORDER : 2,4,6,8
+! FORCING : noForcing, forcing
+! ===================================================================================================
+#beginMacro assignDirichletGhostCompatibility(DIM,ORDER,GRIDTYPE,FORCING)
+
+  !---------------------------------------------------------------
+  ! --- STAGE I fill in first ghost by 2nd-order compatibility ---
+  !---------------------------------------------------------------
+  ! assign extram points in the tangential directions
+  extram = numGhost-1 
+  getLoopBounds(side,axis,extram, m1a,m1b,m2a,m2b,m3a,m3b)
+
+  ff=0.; gtt=0.; fLap=0.; ftt=0.; gtttt=0.; 
+  beginLoops(m1a,m1b,m2a,m2b,m3a,m3b)
+
+    if( mask(i1,i2,i3).gt.0 )then ! valid discretization point on the boundary 
+
+      ! --- get the compatibility forcings for order=2 ---
+      getDirichletCompatibilityForcing(FORCING,DIM,2,ff,gtt,fLap,ftt,gtttt)
+
+      ! u_tt = c^2*Lap(u) + f 
+      #If #GRIDTYPE eq "RECTANGULAR"
+        ! uLap = ulaplacian22r or ulaplacian23r 
+        uLap = ulaplacian2 ## DIM ## r(i1,i2,i3,0)
+        r1 = uLap + (ff - gtt)/c2            ! residual in equation using current ghost value
+        a11 = 1./( dx(axis)**2 )                                  ! coeff of u(-1) in r1 
+      #Else
+        ! uLap = ulaplacian22 or ulaplacian23 
+        uLap = ulaplacian2 ## DIM(i1,i2,i3,0)
+        r1 = uLap + (ff - gtt)/c2
+        #If #DIM eq "2"
+          a11 = ( rsxy(i1,i2,i3,axis,0)**2 + rsxy(i1,i2,i3,axis,1)**2 )/( dr(axis)**2 )  ! coeff of u(-1) in r1 
+        #Else
+          a11 = ( rsxy(i1,i2,i3,axis,0)**2 + rsxy(i1,i2,i3,axis,1)**2 + rsxy(i1,i2,i3,axis,2)**2 )/( dr(axis)**2 )  ! coeff of u(-1) in r1 
+        #End
+      #End
+
+      ghost =1 
+      j1=i1-is1*ghost
+      j2=i2-is2*ghost
+      j3=i3-is3*ghost
+      u(j1,j2,j3,0) = u(j1,j2,j3,0) - r1/a11 
+      if( .false. )then
+        ! check the error
+        call ogDeriv(ep,0,0,0,0,xy(j1,j2,j3,0),xy(j1,j2,j3,1),0.,t,uc,ue1 )
+        write(*,'("(i1,i2)=(",2i3,") u(-1)=",e10.3," err=",e8.2, "  (order 2 update)")') i1,i2,u(j1,j2,j3,0),abs(u(j1,j2,j3,0)-ue1)
+      end if
+
+      #If #ORDER eq "2" 
+        if( numGhost.gt.1 )then
+          ghost =2
+          k1=i1-is1*ghost
+          k2=i2-is2*ghost
+          k3=i3-is3*ghost   
+          ! extrap second ghost (UPW)
+          u(k1,k2,k3,uc)=extrap3(u,j1,j2,j3,uc,is1,is2,is3)          
+        end if
+      #End
+
+    else if( mask(i1,i2,i3).lt.0 )then ! interpolation point on the boundary 
+      ! ----- extrap ghost outside interp. pts on physical boundaries ------
+      ghost = 1 
+      j1=i1-is1*ghost
+      j2=i2-is2*ghost
+      j3=i3-is3*ghost
+      u(j1,j2,j3,uc)=extrap3(u,i1,i2,i3,uc,is1,is2,is3)
+
+      #If #ORDER eq "2" 
+        if( numGhost.gt.1 )then
+          ! extrap second ghost (UPW)
+          ghost = 2
+          k1=i1-is1*ghost
+          k2=i2-is2*ghost
+          k3=i3-is3*ghost              
+          u(k1,k2,k3,uc)=extrap3(u,j1,j2,j3,uc,is1,is2,is3)
+        end if
+      #End
+    end if ! mask 
+  endLoops()
+
+
+  #If #ORDER eq "4"
+
+    !----------------------------------------------------------------
+    ! --- STAGE II fill in first ghost by 4th-order compatibility ---
+    !----------------------------------------------------------------
+
+    #If #GRIDTYPE eq "CURVILINEAR"
+      ! Compute and save v = Lap(u) at some points near the boundary
+      !  for use below to compute Lap^2 (u)
+      !          |
+      !        +-X-+
+      !          |
+      !        +-X-+
+      !          |
+      !        +-X-+
+      !          |
+      !        +-X-+
+      !          |
+      !         r=0 
+
+      beginLoops(m1a,m1b,m2a,m2b,m3a,m3b)
+        ! eval Lap(u) on ghost, boundary and first line in:
+        if( mask(i1,i2,i3).ne.0 )then 
+          v(i1-is1,i2-is2,i3-is3,0) = ulaplacian2 ## DIM(i1-is1,i2-is2,i3-is3,0)
+          v(i1    ,i2    ,i3    ,0) = ulaplacian2 ## DIM(i1    ,i2    ,i3    ,0)
+          v(i1+is1,i2+is2,i3+is3,0) = ulaplacian2 ## DIM(i1+is1,i2+is2,i3+is3,0)
+        end if
+      endLoops()      
+
+    #End
+
+    ! --- fill in two ghost using 4th- order compatibility ---
+    beginLoops3d()
+      if( mask(i1,i2,i3).gt.0 )then
+
+        ! --- get the compatibility forcings at order=4 ---
+        getDirichletCompatibilityForcing(FORCING,DIM,4,ff,gtt,fLap,ftt,gtttt)
+
+        ! u_tt = c^2*Lap(u) + f 
+        ! u_tttt = c^2*Lap(u_tt) + f_tt 
+        !        = c^2*Lap( c^2*Lap(u) + f ) + f_tt 
+        !        = c^4*Lap^2(u) + c^2*Lap(f) ) + f_tt 
+   
+        #If #GRIDTYPE eq "RECTANGULAR"
+          ! uxx43r(i1,i2,i3,kd)=( -30.*u(i1,i2,i3,kd)+16.*(u(i1+1,i2,i3,kd)+u(i1-1,i2,i3,kd))-(u(i1+2,i2,i3,kd)+u(i1-2,i2,i3,kd)) )*dx42(0) 
+          uLap = ulaplacian4 ## DIM ## r(i1,i2,i3,0)
+          r1 =  c2*uLap + ff - gtt            ! residual in equation using current ghost value
+          a11 = c2*16./(12.*dx(axis)**2)                           ! coeff of u(-1) in r1 
+          a12 =    -c2/(12.*dx(axis)**2)                           ! coeff of u(-2) in r1
+          ! uxxxx = 1 -4 6 -4 1
+          ! vLap = Lap^2( u )
+          vLap = lap ## DIM ## d2Pow2(i1,i2,i3,0)
+          r2 =  c4*vLap + c2*fLap + ftt - gtttt
+          a21 =  -c4*4./(dx(axis)**4)                              ! coeff of u(-1) in r2
+          a22 =   c4*1./(dx(axis)**4)
+        #Else
+          ! curvilinear 
+          ! uxx42(i1,i2,i3,kd)=(rsxy(i1,i2,i3,0,0)**2)*urr4(i1,i2,i3,kd)+2.*(rsxy(i1,i2,i3,0,0)*rsxy(i1,i2,i3,1,0))*urs4(i1,i2,i3,kd)+(rsxy(i1,i2,i3,1,0)**2)*uss4(i1,i2,i3,kd)+(rsxyx42(i1,i2,i3,0,0))*ur4(i1,i2,i3,kd)+(rsxyx42(i1,i2,i3,1,0))*us4(i1,i2,i3,kd)
+          uLap = ulaplacian4 ## DIM(i1,i2,i3,0)
+          r1 =  c2*uLap + ff - gtt            ! residual in equation using current ghost value
+          #If #DIM eq "2"
+            rFactor = rsxy(i1,i2,i3,axis,0)**2 + rsxy(i1,i2,i3,axis,1)**2
+          #Else
+            rFactor = rsxy(i1,i2,i3,axis,0)**2 + rsxy(i1,i2,i3,axis,1)**2 + rsxy(i1,i2,i3,axis,2)**2
+          #End
+          a11 =  c2*rFactor*16./(12.*dr(axis)**2)                           ! coeff of u(-1) in r1 
+          a12 = -c2*rFactor    /(12.*dr(axis)**2)                           ! coeff of u(-2) in r1
+          ! vLap = Lap^2( u) to second-order
+          ! vLap = vlaplacian22 or vlaplacian23 
+          vLap = vlaplacian2 ## DIM(i1,i2,i3,0)
+          r2 =  c4*vLap + c2*fLap + ftt - gtttt
+          ! Here is the leading order term in a21, a22   ** this may not be good enough for stability but should remain accurate ***
+          a21 =  -c4*( rFactor**2*4./(dr(axis)**4) )                             ! coeff of u(-1) in r2
+          a22 =   c4*( rFactor**2   /(dr(axis)**4) )         
+
+        #End
+
+      if( .false. )then
+        write(*,'("(i1,i2)=(",2i3,"),  r1,r2,a11,a12,a21,a22,vLap=",7(1pe9.2,1x))') i1,i2,r1,r2,a11,a12,a21,a22,vLap
+      end if
+
+        ghost =1 
         j1=i1-is1*ghost
         j2=i2-is2*ghost
         j3=i3-is3*ghost
+        ghost =2
+        k1=i1-is1*ghost
+        k2=i2-is2*ghost
+        k3=i3-is3*ghost        
+        ! Solve
+        !  [ a11 a12 ][ u(-1)] = [ a11*u(j1,j2,j3,0) + a12*u(k1,k2,k3,0) - r1 ]
+        !  [ a21 a22 ][ u(-2)]   [ a21*u(j1,j2,j3,0) + a22*u(k1,k2,k3,0) - r2 ]
+        f1 = a11*u(j1,j2,j3,0) + a12*u(k1,k2,k3,0) - r1
+        f2 = a21*u(j1,j2,j3,0) + a22*u(k1,k2,k3,0) - r2
 
-        u(j1,j2,j3,uc) = EXTRAP(u,j1+is1,j2+is2,j3+is3,uc,is1,is2,is3) 
+        det = a11*a22 - a21*a12
+        uTemp(j1,j2,j3,0) = ( a22*f1 - a12*f2)/det
+        uTemp(k1,k2,k3,0) = ( a11*f2 - a21*f1)/det
 
-      end do
+        if( .false. )then
+          ! check the error
+          call ogDeriv(ep,0,0,0,0,xy(j1,j2,j3,0),xy(j1,j2,j3,1),0.,t,uc,ue1 )
+          call ogDeriv(ep,0,0,0,0,xy(k1,k2,k3,0),xy(k1,k2,k3,1),0.,t,uc,ue2 )
+          write(*,'("(i1,i2)=(",2i3,") u(-1)=",e10.3," err=",e8.2," u(-1)=",e10.3," err=",e8.2)') i1,i2,uTemp(j1,j2,j3,0),abs(uTemp(j1,j2,j3,0)-ue1),uTemp(k1,k2,k3,0),abs(uTemp(k1,k2,k3,0)-ue2)
+        end if
 
-    end if ! mask .ne. 0
-  endLoops3d()
+      end if ! mask .gt. 0
+
+    endLoops3d()
+
+    ! ------ fill in ghost values from uTemp ----
+    beginLoops3d()
+      if( mask(i1,i2,i3).gt.0 )then
+        ghost = 1 
+        j1=i1-is1*ghost
+        j2=i2-is2*ghost
+        j3=i3-is3*ghost
+        ghost = 2
+        k1=i1-is1*ghost
+        k2=i2-is2*ghost
+        k3=i3-is3*ghost 
+        u(j1,j2,j3,0) = uTemp(j1,j2,j3,0)
+        u(k1,k2,k3,0) = uTemp(k1,k2,k3,0) 
+
+        if( numGhost.gt.2 )then
+          !  extrap third ghost (UPW)
+          ghost = 3
+          l1=i1-is1*ghost
+          l2=i2-is2*ghost
+          l3=i3-is3*ghost           
+          u(l1,l2,l3,uc)=extrap5(u,k1,k2,k3,uc,is1,is2,is3)            
+        end if        
+       
+      else if( mask(i1,i2,i3).lt.0 )then
+        ! ----- extrap ghost outside interp. pts on physical boundaries ------
+        ghost = 1 
+        j1=i1-is1*ghost
+        j2=i2-is2*ghost
+        j3=i3-is3*ghost
+        u(j1,j2,j3,uc)=extrap5(u,i1,i2,i3,uc,is1,is2,is3)
+
+        ghost = 2
+        k1=i1-is1*ghost
+        k2=i2-is2*ghost
+        k3=i3-is3*ghost           
+        u(k1,k2,k3,uc)=extrap5(u,j1,j2,j3,uc,is1,is2,is3)
+
+        if( numGhost.gt.2 )then
+          !  extrap third ghost (UPW)
+          ghost = 3
+          l1=i1-is1*ghost
+          l2=i2-is2*ghost
+          l3=i3-is3*ghost           
+          u(l1,l2,l3,uc)=extrap5(u,k1,k2,k3,uc,is1,is2,is3)            
+        end if
+
+      end if    
+    endLoops3d()
+  #End
+
 #endMacro
 
 
@@ -866,7 +1205,9 @@ end do
 
 
     else
-      stop 8765
+
+      stop 9876
+
     end if 
 
   end if
@@ -1303,10 +1644,46 @@ end do
 #endMacro
 
 
+! ===================================================================================
+! Utility macro to call different versions of assignDirichletGhostCompatibility
+! for a given ORDER
+! ===================================================================================
+#beginMacro callDirichletGhostCompatibility(ORDER)
+  if( forcingOption.eq.noForcing )then
+    if( gridType.eq.rectangular )then
+      if( nd.eq.2 )then
+        assignDirichletGhostCompatibility(2,ORDER,RECTANGULAR,noForcing)
+      else
+        assignDirichletGhostCompatibility(3,ORDER,RECTANGULAR,noForcing)
+      end if
+    else
+      if( nd.eq.2 )then
+        assignDirichletGhostCompatibility(2,ORDER,CURVILINEAR,noForcing)
+      else
+        assignDirichletGhostCompatibility(3,ORDER,CURVILINEAR,noForcing)
+      end if
+    end if 
+  else
+    if( gridType.eq.rectangular )then
+      if( nd.eq.2 )then
+        assignDirichletGhostCompatibility(2,ORDER,RECTANGULAR,forcing)
+      else
+        assignDirichletGhostCompatibility(3,ORDER,RECTANGULAR,forcing)
+      end if
+    else
+      if( nd.eq.2 )then
+        assignDirichletGhostCompatibility(2,ORDER,CURVILINEAR,forcing)
+      else
+        assignDirichletGhostCompatibility(3,ORDER,CURVILINEAR,forcing)
+      end if
+    end if     
+  end if
+#endMacro 
+
 
 subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
                       gridIndexRange, dimRange, isPeriodic, u, mask,rsxy, xy, boundaryCondition, \
-                      pdb, ipar, rpar, ierr )
+                      frequencyArray, pdb, ipar, rpar, ierr )
 ! ===================================================================================
 !  Boundary conditions for CgWave
 !
@@ -1326,6 +1703,11 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
   real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
   real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
   integer gridIndexRange(0:1,0:2),boundaryCondition(0:1,0:2), dimRange(0:1,0:2), isPeriodic(0:*)
+  real frequencyArray(0:*)
+
+  ! *** TEMP ARRAYS FOR WORK SPACE --> **FIX ME **************
+  real uTemp(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
+  real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
 
   double precision pdb  ! pointer to data base
 
@@ -1343,13 +1725,14 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
 
   !     --- local variables ----
   
-  integer uc,numberOfComponents,assignTwilightZone,assignKnownSolutionAtBoundaries
+  integer uc,numberOfComponents,assignTwilightZone,assignKnownSolutionAtBoundaries,freq
   integer grid,gridType,orderOfAccuracy,useWhereMask,gridIsImplicit,useUpwindDissipation
   integer twilightZone,numberOfProcessors,addForcing,assignBCForImplicitForImplicit
   integer debug,myid,ghost
 
   integer ok,getInt,getReal
   real omega,cfl,c
+  real kx,ky,kz,twoPi
 
   real t,dt,epsx,REAL_MIN 
   real ep
@@ -1358,16 +1741,27 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
 
   real dxn,b0,b1,ue,uex,uey,uez,ff,urv(0:2),ur0,cosPW
 
+  real c2,c4,c6,c8
+  real r1,r2,r3,r4,gtt,rFactor,uLap,vLap
+  real a11,a12,a21,a22
+  real uett,uexx,ueyy,uezz,ueLap
+  real ue1,ue2,f1,f2,det
+  real uettxx,uettyy,uettzz, uexxxx,ueyyyy,uezzzz,uexxyy,uexxzz,ueyyzz
+  real uetttt,uettLap,ueLap2,lap3d2Pow2
+  real fLap,ftt,gtttt
+
 
 
   integer side,axis,axisp1,axisp2,i1,i2,i3,is1,is2,is3,j1,j2,j3,js1,js2,js3,k1,k2,k3,ks1,ks2,ks3,is,js
   integer l1,l2,l3
 
-  integer numGhost,numberOfGhostPoints,extraForNeumann,extraForDirichlet
+  integer numGhost,numberOfGhostPoints,extraForNeumann,extraForDirichlet,numberOfFrequencies
   integer side1,side2,side3
   integer n1a,n1b,n2a,n2b,n3a,n3b
+  integer m1a,m1b,m2a,m2b,m3a,m3b
   integer nn1a,nn1b,nn2a,nn2b,nn3a,nn3b
-  integer extra1a,extra1b,extra2a,extra2b,extra3a,extra3b
+  integer j1a,j1b,j2a,j2b,ja,j3b
+  integer extra1a,extra1b,extra2a,extra2b,extra3a,extra3b,extram
 
   integer cornerBC(0:2,0:2,0:2), iparc(0:10), orderOfExtrapolationForCorners
   real rparc(0:10)
@@ -1455,20 +1849,58 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
   !     --- start statement function ----
   real bcf,mixedRHS,mixedCoeff,mixedNormalCoeff
   integer kd,m,n,component
-  real uxOneSided
+  real uxOneSided,lap2d2Pow2
 
-  declareDifferenceNewOrder2(u,rsxy,dr,dx,RX)
+  real rx,ry,rz,sx,sy,sz,tx,ty,tz
 
-  declareDifferenceNewOrder4(u,rsxy,dr,dx,RX)
+  declareDifferenceOrder2(u,RX)
+  declareDifferenceOrder4(u,RX)
+  declareDifferenceOrder2(v,none)
 
-  !     The next macro call will define the difference approximation statement functions
-  defineDifferenceNewOrder2Components1(u,rsxy,dr,dx,RX)
 
-  defineDifferenceNewOrder4Components1(u,rsxy,dr,dx,RX)
+  !  The next macro call will define the difference approximation statement functions
+  defineDifferenceOrder2Components1(u,RX)
+  defineDifferenceOrder4Components1(u,RX)
+
+  defineDifferenceOrder2Components1(v,none)
+
+
 
   ! 4th-order 1 sided derivative  extrap=(1 5 10 10 5 1)
   uxOneSided(i1,i2,i3,m)=-(10./3.)*u(i1,i2,i3,m)+6.*u(i1+is1,i2+is2,i3+is3,m)-2.*u(i1+2*is1,i2+2*is2,i3+2*is3,m)\
                          +(1./3.)*u(i1+3*is1,i2+3*is2,i3+3*is3,m)
+
+  ! 2D laplacian squared = u.xxxx + 2 u.xxyy + u.yyyy
+  lap2d2Pow2(i1,i2,i3,m)= ( 6.*u(i1,i2,i3,m)   \
+    - 4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m))    \
+        +(u(i1+2,i2,i3,m)+u(i1-2,i2,i3,m)) )/(dx(0)**4) \
+    +( 6.*u(i1,i2,i3,m)    \
+     -4.*(u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m))    \
+        +(u(i1,i2+2,i3,m)+u(i1,i2-2,i3,m)) )/(dx(1)**4)  \
+    +( 8.*u(i1,i2,i3,m)     \
+     -4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m)+u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m))   \
+     +2.*(u(i1+1,i2+1,i3,m)+u(i1-1,i2+1,i3,m)+u(i1+1,i2-1,i3,m)+u(i1-1,i2-1,i3,m)) )/( (dx(0)*dx(1))**2 )
+
+  ! 3D laplacian squared = u.xxxx + u.yyyy + u.zzzz + 2 (u.xxyy + u.xxzz + u.yyzz )
+  lap3d2Pow2(i1,i2,i3,m)= ( 6.*u(i1,i2,i3,m)   \
+    - 4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m))    \
+        +(u(i1+2,i2,i3,m)+u(i1-2,i2,i3,m)) )/(dx(0)**4) \
+   +(  +6.*u(i1,i2,i3,m)    \
+     -4.*(u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m))    \
+        +(u(i1,i2+2,i3,m)+u(i1,i2-2,i3,m)) )/(dx(1)**4)\
+   +(  +6.*u(i1,i2,i3,m)    \
+     -4.*(u(i1,i2,i3+1,m)+u(i1,i2,i3-1,m))    \
+        +(u(i1,i2,i3+2,m)+u(i1,i2,i3-2,m)) )/(dx(2)**4)\
+    +(8.*u(i1,i2,i3,m)     \
+     -4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m)+u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m))   \
+     +2.*(u(i1+1,i2+1,i3,m)+u(i1-1,i2+1,i3,m)+u(i1+1,i2-1,i3,m)+u(i1-1,i2-1,i3,m)) )/( (dx(0)*dx(1))**2 ) \
+    +(8.*u(i1,i2,i3,m)     \
+     -4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m)+u(i1,i2,i3+1,m)+u(i1,i2,i3-1,m))   \
+     +2.*(u(i1+1,i2,i3+1,m)+u(i1-1,i2,i3+1,m)+u(i1+1,i2,i3-1,m)+u(i1-1,i2,i3-1,m)) )/( (dx(0)*dx(2))**2 ) \
+    +(8.*u(i1,i2,i3,m)     \
+     -4.*(u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m)+u(i1,i2,i3+1,m)+u(i1,i2,i3-1,m))   \
+     +2.*(u(i1,i2+1,i3+1,m)+u(i1,i2-1,i3+1,m)+u(i1,i2+1,i3-1,m)+u(i1,i2-1,i3-1,m)) )/( (dx(1)*dx(2))**2 ) 
+ 
 
   ! ! Here is the the generic boundary condition forcing array. It uses the bcOffset(side,axis) values as an
   ! ! an offset from the bcf0 array to access the bcf10, bcf01, bcf11, ... arrays
@@ -1480,6 +1912,18 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
   ! mixedRHS(component,side,axis,grid) = bcData(component+numberOfComponents*(0),side,axis,grid)
   ! mixedCoeff(component,side,axis,grid) = bcData(component+numberOfComponents*(1),side,axis,grid)
   ! mixedNormalCoeff(component,side,axis,grid) =  bcData(component+numberOfComponents*(2),side,axis,grid)
+
+  !.......statement functions for jacobian
+ rx(i1,i2,i3)=rsxy(i1,i2,i3,0,0)
+ ry(i1,i2,i3)=rsxy(i1,i2,i3,0,1)
+ rz(i1,i2,i3)=rsxy(i1,i2,i3,0,2)
+ sx(i1,i2,i3)=rsxy(i1,i2,i3,1,0)
+ sy(i1,i2,i3)=rsxy(i1,i2,i3,1,1)
+ sz(i1,i2,i3)=rsxy(i1,i2,i3,1,2)
+ tx(i1,i2,i3)=rsxy(i1,i2,i3,2,0)
+ ty(i1,i2,i3)=rsxy(i1,i2,i3,2,1)
+ tz(i1,i2,i3)=rsxy(i1,i2,i3,2,2)
+
 
   !............... end statement functions
 
@@ -1504,6 +1948,7 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
   numGhost                        = ipar(15)  
   assignBCForImplicitForImplicit  = ipar(16)
   bcApproach                      = ipar(17)
+  numberOfFrequencies             = ipar(18)
  
   t         = rpar( 0)
   dt        = rpar( 1)
@@ -1517,7 +1962,14 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
   REAL_MIN  = rpar( 9)
   c         = rpar(10)
 
+  c2 = c**2
+  c4 = c**4
+  c6 = c**6
+  c8 = c**8
+  twoPi = atan2(1.,1.)*8.; ! atan2(1,1)=pi/4
 
+  ! numberOfGhostPoints=orderOfAccuracy/2
+  numberOfGhostPoints=numGhost ! now passed in 
 
   if( t.le.dt .and. (.false. .or. debug.gt.1) )then
 
@@ -1577,7 +2029,12 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
       getRealParameter(kzBoxHelmholtz)
       getRealParameter(omegaBoxHelmholtz)
       coswt = cos(omegaBoxHelmholtz*t)
-      if(  t.le.dt .and. debug.gt.1   )then
+      assignKnownSolutionAtBoundaries=1  ! for inhomogeneous BCs
+      if(  t.le.dt .and. debug.ge.1   )then
+        
+        write(*,'(" bcOptWave:  assignKnownSolutionAtBoundaries=",i4)') assignKnownSolutionAtBoundaries
+        write(*,'(" bcOptWave:  numberOfFrequencies=",i4)') numberOfFrequencies
+        write(*,'(" bcOptWave:  frequencyArray=",10(1pe12.4,1x))') (frequencyArray(freq),freq=0,numberOfFrequencies-1)
         write(*,'(" bcOptWave:  knownSolutionOption=boxHelmholtz: kx,ky,kz,omega=",4e10.2)') \
                      kxBoxHelmholtz,kyBoxHelmholtz,kzBoxHelmholtz,omegaBoxHelmholtz
       end if
@@ -1725,45 +2182,48 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
 
     if( boundaryCondition(side,axis).eq.dirichlet )then
 
-      if( orderOfAccuracy.eq.2 )then
+      if( bcApproach.eq.useCompatibilityBoundaryConditions )then
+        ! --- Assign values on the boundary for CBCs ---
+        if( orderOfAccuracy.eq.2 )then
 
-        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
-          assignDirichletBoundaryAndGhostCompatibility(2)
+          if( gridType.eq.rectangular )then
+            assignDirichletBoundary(2,2,RECTANGULAR)
+          else
+            assignDirichletBoundary(2,2,CURVILINEAR)
+          end if          
+
+        else if( orderOfAccuracy.eq.4 )then
+
+          if( gridType.eq.rectangular )then
+            assignDirichletBoundary(2,4,RECTANGULAR)
+          else
+            assignDirichletBoundary(2,4,CURVILINEAR)
+          end if          
+
+        else if( orderOfAccuracy.eq.6 )then   
+          stop 666
+        else if( orderOfAccuracy.eq.8 )then   
+          stop 888
         else
+          write(*,'("CgWave::bcOpt:ERROR: unexpected orderOfAccuracy=",i6)') orderOfAccuracy
+          stop 8888
+        end if
+
+      else 
+        ! ----- assign boundary and then ghost by extrapolation ----
+        ! This was a temporary method until other approaches were implemented
+        if( orderOfAccuracy.eq.2 )then
           assignDirichletBoundaryAndGhost(2)
-        end if
-
-      else if( orderOfAccuracy.eq.4 )then
-
-        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
-          assignDirichletBoundaryAndGhostCompatibility(4)
-
-        else
+        else if( orderOfAccuracy.eq.4 )then
           assignDirichletBoundaryAndGhost(4)
-        end if
-
-
-      else if( orderOfAccuracy.eq.6 )then   
-
-        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
-          assignDirichletBoundaryAndGhostCompatibility(6)
+        else if( orderOfAccuracy.eq.6 )then   
+          stop 666
+        else if( orderOfAccuracy.eq.8 )then   
+          stop 888
         else
-          assignDirichletBoundaryAndGhost(6)
+          write(*,'("CgWave::bcOpt:ERROR: unexpected orderOfAccuracy=",i6)') orderOfAccuracy
+          stop 8888
         end if
-
-      else if( orderOfAccuracy.eq.8 )then   
-
-        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
-          assignDirichletBoundaryAndGhostCompatibility(8)
-        else
-          assignDirichletBoundaryAndGhost(8)
-        end if
-
-      else
-
-        write(*,'("CgWave::bcOpt:ERROR: unexpected orderOfAccuracy=",i6)') orderOfAccuracy
-        stop 8888
-
       end if
 
     end if ! end if dirichlet 
@@ -1775,7 +2235,8 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
   !         curvilinear grids so we have values for the Neumann BC
   beginLoopOverSides(numGhost,numGhost)
 
-    if( boundaryCondition(side,axis).ne.dirichlet .and. boundaryCondition(side,axis).gt.0 )then
+    if( ( boundaryCondition(side,axis).ne.dirichlet .or. bcApproach.eq.useCompatibilityBoundaryConditions ) \
+         .and. boundaryCondition(side,axis).gt.0 )then
 
       if( orderOfAccuracy.eq.2 )then
 
@@ -1810,13 +2271,36 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
 
   ! ---------------------------------------------------------------------
   ! ----------- STAGE II : Neumann-like Boundary Conditions -------------
+  ! -----------            Ghost values for CBCs            -------------
   ! ---------------------------------------------------------------------
 
   ! CHECK ME --> numGhost here ??
   extraForNeumann=0 ! only assign Neumann conditions to the boundary
   beginLoopOverSides(extraForNeumann,numGhost)
 
-    if( boundaryCondition(side,axis).eq.neumann )then
+    if( boundaryCondition(side,axis).eq.dirichlet .and. bcApproach.eq.useCompatibilityBoundaryConditions )then
+      ! -- fill ghost using CBCs ----
+
+      if( orderOfAccuracy.eq.2 )then
+
+        callDirichletGhostCompatibility(2)
+
+      else if( orderOfAccuracy.eq.4 )then
+
+        callDirichletGhostCompatibility(4)
+
+      else if( orderOfAccuracy.eq.6 )then   
+        stop 666
+      else if( orderOfAccuracy.eq.8 )then   
+        stop 888
+      else
+
+        write(*,'("CgWave::bcOpt:ERROR: unexpected orderOfAccuracy=",i6)') orderOfAccuracy
+        stop 8888
+
+      end if
+
+    else if( boundaryCondition(side,axis).eq.neumann )then
 
       ! ------ NEUMANN ----------
 

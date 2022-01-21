@@ -14,7 +14,7 @@ extern "C"
 void bcOptWave( const int&nd, 
                                 const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
                                 const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const int&mask,
-                                const real&rsxy, const real&xy, const int&boundaryCondition, 
+                                const real&rsxy, const real&xy, const int&boundaryCondition, const real & frequencyArray,
                                 const DataBase *pdb, const int&ipar, const real&rpar, int&ierr );
 
 }
@@ -63,6 +63,9 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
     const int & addForcing                  = dbase.get<int>("addForcing");
     const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
     const bool twilightZone = forcingOption==twilightZoneForcing; 
+
+    const int & numberOfFrequencies     = dbase.get<int>("numberOfFrequencies");
+    const RealArray & frequencyArray    = dbase.get<RealArray>("frequencyArray");  
 
     const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
 
@@ -198,7 +201,8 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
                         useUpwindDissipation,            // ipar(14)
                         numGhost,                        // ipar(15)
                         assignBCForImplicit,             // ipar(16)
-                        bcApproach                       // ipar(17)
+                        bcApproach,                      // ipar(17)
+                        numberOfFrequencies              // ipar(18)
                                               };
                     real rpar[] = {
                         t                , //  rpar( 0)
@@ -218,6 +222,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
                     real temp, *pxy=&temp, *prsxy=&temp;
                     if( !isRectangular )
                     {
+                        mg.update(MappedGrid::THEinverseVertexDerivative);
                         #ifdef USE_PPP
                           prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
                         #else
@@ -240,7 +245,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
                                     uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
                                     uLocal.getBase(2),uLocal.getBound(2),
                                     indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                                    *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0),  
+                                    *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
                                     pdb, ipar[0],rpar[0], ierr );
 
         // ...swap periodic edges 

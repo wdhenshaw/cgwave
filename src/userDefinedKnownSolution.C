@@ -4,9 +4,13 @@
 #include "ParallelUtility.h"
 
 
+
 #define FOR_3D(i1,i2,i3,I1,I2,I3)                                       int I1Base =I1.getBase(),   I2Base =I2.getBase(),  I3Base =I3.getBase(); int I1Bound=I1.getBound(),  I2Bound=I2.getBound(), I3Bound=I3.getBound(); for(i3=I3Base; i3<=I3Bound; i3++)                                       for(i2=I2Base; i2<=I2Bound; i2++)                                     for(i1=I1Base; i1<=I1Bound; i1++)
 
 typedef ::real LocalReal;
+
+// Macro to get the vertex array
+#define GET_VERTEX_ARRAY(x)                                     mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter);       OV_GET_SERIAL_ARRAY_CONST(real,mg.vertex(),x);       
 
 // ==========================================================================================
 /// \brief  Evaluate a user defined known solution.
@@ -22,6 +26,9 @@ getUserDefinedKnownSolution(real t,  int grid,
 {
     const real & c= dbase.get<real>("c");
     const real & dt= dbase.get<real>("dt");
+
+    const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
+    const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");
 
     if( false && t<= 2.*dt )
         printF("--CgWave-- getUserDefinedKnownSolution at t=%9.3e \n",t);
@@ -73,10 +80,11 @@ getUserDefinedKnownSolution(real t,  int grid,
 #define XC(iv,axis) (xab[0][axis]+dvx[axis]*(iv[axis]-iv0[axis]))
 
     
-    assert( numberOfTimeDerivatives==0 );  // this option currently not used 
-
     if( userKnownSolution=="planeWave" )
     {
+
+        assert( numberOfTimeDerivatives<=1 ); 
+
         const real amp = rpar[0];
         real kx  = rpar[1]*twoPi;
         real ky  = rpar[2]*twoPi;
@@ -105,8 +113,10 @@ getUserDefinedKnownSolution(real t,  int grid,
                     x=XC(iv,0);
                     y=XC(iv,1);
                 }
-                    
-                uLocal(i1,i2,i3,0) = amp*sin( kx*x+ky*y - omega*t );
+                if( numberOfTimeDerivatives==0 )
+                    uLocal(i1,i2,i3,0) = amp*sin( kx*x+ky*y - omega*t );
+                else
+                    uLocal(i1,i2,i3,0) = (-omega*amp)*cos( kx*x+ky*y - omega*t );
             }
         }
         else
@@ -125,8 +135,10 @@ getUserDefinedKnownSolution(real t,  int grid,
                     y=XC(iv,1);
                     z=XC(iv,2);
                 }
-
-                uLocal(i1,i2,i3,0) = amp*sin( kx*x+ky*y+kz*z - omega*t );
+                if( numberOfTimeDerivatives==0 )
+                    uLocal(i1,i2,i3,0) = amp*sin( kx*x+ky*y+kz*z - omega*t );
+                else
+                    uLocal(i1,i2,i3,0) = (-omega*amp)*cos( kx*x+ky*y+kz*z - omega*t );
 
             }
         }
@@ -137,6 +149,8 @@ getUserDefinedKnownSolution(real t,  int grid,
     // Gaussian plane wave (possibly modulated at frequency k0)
     //    u = exp( -beta*(xi^2) )*cos( k0*xi )
     //    xi = kx*( x-x0) + ky*(y-y0) + kz*(z-z0) - c*t 
+
+        assert( numberOfTimeDerivatives<=1 );  
 
     // For now create the vertex array -- could avoid this
         mg.update( MappedGrid::THEvertex | MappedGrid::THEcenter );
@@ -152,8 +166,9 @@ getUserDefinedKnownSolution(real t,  int grid,
         const Real kx=kv[0]/kNorm, ky=kv[1]/kNorm, kz=kv[2]/kNorm;
 
         if( true && t<= 2.*dt )
-            printF("--CgWave-- GaussianPlaneWave, t=%9.3e, (kx,ky,kz)=(%g,%g,%g), (x0,y0,z0)=(%g,%g,%g), k0=(%g)*2*pi, beta=%g, c=%g\n",
-                      t,kv[0],kv[1],kv[2],x0v[0],x0v[1],x0v[2],k0,beta,c);    
+            printF("CgWave::userDefinedKS -- GaussianPlaneWave, t=%9.3e, (kx,ky,kz)=(%g,%g,%g), (x0,y0,z0)=(%g,%g,%g),"
+                          " k0=(%g)*2*pi, beta=%g, c=%g numberOfTimeDerivatives=%d\n",
+                      t,kv[0],kv[1],kv[2],x0v[0],x0v[1],x0v[2],k0,beta,c,numberOfTimeDerivatives);    
 
         RealArray xei(I1,I2,I3);
         if( numberOfDimensions==2 )
@@ -163,24 +178,74 @@ getUserDefinedKnownSolution(real t,  int grid,
         if( k0 != 0. )
         {
       // modulated GPW:
-            uLocal(I1,I2,I3,0) = exp( -beta*((xei)*(xei)) ) * cos( (twoPi*k0)*xei );
+            if( numberOfTimeDerivatives==0 )
+            {
+                uLocal(I1,I2,I3,0) = exp( -beta*((xei)*(xei)) ) * cos( (twoPi*k0)*xei );
+            }
+            else
+            { // one time derivative: 
+                uLocal(I1,I2,I3,0) = exp( -beta*((xei)*(xei)) ) * 
+                            ( cos( (twoPi*k0)*xei )* (2.*c*beta)*xei - sin((twoPi*k0)*xei )*( (-c*twoPi*k0) ) );
+            }
+
         }
         else
         {
-            uLocal(I1,I2,I3,0) = exp( -beta*((xei)*(xei)) );
+            if( numberOfTimeDerivatives==0 )
+            { 
+                uLocal(I1,I2,I3,0) = exp( -beta*((xei)*(xei)) );
+            }
+            else
+            { // one time derivative:
+                uLocal(I1,I2,I3,0) = exp( -beta*((xei)*(xei)) ) * (2.*c*beta)*xei;
+            }
         }
+    }
+
+    else if( userKnownSolution=="modulatedGaussian" )
+    {
+    // Modulated Gaussian Initial Condition
+        assert( numberOfTimeDerivatives<=1 ); 
+
+    // For now create the vertex array -- could avoid this
+        mg.update( MappedGrid::THEvertex | MappedGrid::THEcenter );
+        OV_GET_SERIAL_ARRAY(real,mg.vertex(),xLocal );
+
+        const Real *x0v   = db.get<real[3]>("x0v");
+        const Real & beta = db.get<Real>("beta");
+        const Real & k0   = db.get<Real>("k0");
+
+        if( true && t<= 2.*dt )
+            printF("--CgWave-- Modulated Gaussian Initial Condition, t=%9.3e, (x0,y0,z0)=(%g,%g,%g), k0=(%g)*2*pi,"
+                          " beta=%g, c=%g, numberOfTimeDerivatives=%d\n",
+                          t,x0v[0],x0v[1],x0v[2],k0,beta,c,numberOfTimeDerivatives);    
+
+        if( numberOfTimeDerivatives==0 )
+        {
+            RealArray radSq(I1,I2,I3);
+            if( numberOfDimensions==2 )
+                radSq = SQR(xLocal(I1,I2,I3,0)-x0v[0]) + SQR(xLocal(I1,I2,I3,1)-x0v[1]);
+            else
+                radSq = SQR(xLocal(I1,I2,I3,0)-x0v[0]) + SQR(xLocal(I1,I2,I3,1)-x0v[1]) + SQR(xLocal(I1,I2,I3,2)-x0v[2]);
+            if( k0 != 0. )
+            {
+        // modulated 
+                uLocal(I1,I2,I3,0) = exp( -beta*radSq ) * cos( (twoPi*k0)*sqrt(radSq) );
+            }
+            else
+            {
+                uLocal(I1,I2,I3,0) = exp( -beta*radSq );
+            }      
+        }
+        else
+        {  // set first time derivative to zero 
+              uLocal(I1,I2,I3,0) = 0.; // ut(0) = 0 
+        }
+
     }
 
     else if( userKnownSolution=="boxHelmholtz" )
     {
-
-        const real omega = rpar[0];
-        const real kx  = rpar[1]*twoPi;
-        const real ky  = rpar[2]*twoPi;
-        const real kz  = rpar[3]*twoPi;
-
-        if( false && t<= 2.*dt )
-            printF("userDefinedKnownSolution: eval boxHelmholtz: omega=%g, kx=%g, ky=%g, kz=%g at t=%9.3e\n",omega,kx,ky,kz,t);
 
     // printF(" I1=[%i,%i] I2=[%i,%i] I3=[%i,%i]\n",I1.getBase(),I1.getBound(),I2.getBase(),I2.getBound(),I3.getBase(),I3.getBound());
     // printF(" uLocal=[%i,%i][%i,%i][%i,%i]\n",
@@ -188,52 +253,95 @@ getUserDefinedKnownSolution(real t,  int grid,
     //     uLocal.getBase(1),uLocal.getBound(1),
     //     uLocal.getBase(2),uLocal.getBound(2));
 
+        if( false )
+            printF("userDefinedKnownSolution: eval boxHelmholtz: numberOfFrequencies=%d, t=%9.3e, numberOfTimeDerivatives=%d\n",
+                numberOfFrequencies,t,numberOfTimeDerivatives);
+
+        assert( numberOfTimeDerivatives<=1 ); 
+
         const real amp=1.;
-        const real coswt = cos(omega*t);
-            
-        real x,y,z;
-        if( numberOfDimensions==2 )
+
+        Real x,y,z;
+
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
         {
-            FOR_3D(i1,i2,i3,I1,I2,I3)
+      // const real omega = rpar[0];
+      // const Real omega = frequencyArray(freq);
+      // // These next lines must match between userDefinedKnownSolution, userDefinedForcing and bcOptWave.bf90: 
+      // const Real kx  = (rpar[1]+freq)*twoPi;
+      // const Real ky  = (rpar[2]+freq)*twoPi;
+      // const Real kz  = (rpar[3]+freq)*twoPi;
+
+            Real omega,kx,ky,kz; 
+          // This macro is used in: 
+          //    userDefinedKnownSolution.bC
+          //    userDefinedForcing.bC
+          //    solveHelmholtz.bC 
+                    omega = frequencyArray(freq);
+                    kx  = rpar[1]*twoPi*(freq*.5+1.);
+                    ky  = rpar[2]*twoPi*(freq*.5+1.);
+                    kz  = rpar[3]*twoPi*(freq*.5+1.);  
+          // kx  = (rpar[1]+freq)*twoPi;
+          // ky  = (rpar[2]+freq)*twoPi;
+          // kz  = (rpar[3]+freq)*twoPi; 
+
+            if( false &&  t<= 2.*dt )
+                printF("userDefinedKnownSolution: eval boxHelmholtz: freq=%d, omega=%g, kx=%g, ky=%g, kz=%g at t=%9.3e\n",
+                              freq,omega,kx,ky,kz,t);
+
+      // const real coswt = cos(omega*t);
+            Real coswt;
+            if( numberOfTimeDerivatives==0 )
+                coswt = cos(frequencyArray(freq)*t);
+            else
+                coswt = -frequencyArray(freq)*sin(frequencyArray(freq)*t);
+
+            if( numberOfDimensions==2 )
             {
-                if( !isRectangular )
+                FOR_3D(i1,i2,i3,I1,I2,I3)
                 {
-                    x= xLocal(i1,i2,i3,0);
-                    y= xLocal(i1,i2,i3,1);
+                    if( !isRectangular )
+                    {
+                        x= xLocal(i1,i2,i3,0);
+                        y= xLocal(i1,i2,i3,1);
+                    }
+                    else
+                    {
+                        x=XC(iv,0);
+                        y=XC(iv,1);
+                    }
+                    uLocal(i1,i2,i3,freq) = amp*sin( kx*x )*sin( ky*y )*coswt;
                 }
-                else
+            }
+            else
+            {
+                FOR_3D(i1,i2,i3,I1,I2,I3)
                 {
-                    x=XC(iv,0);
-                    y=XC(iv,1);
+                    if( !isRectangular )
+                    {
+                        x= xLocal(i1,i2,i3,0);
+                        y= xLocal(i1,i2,i3,1);
+                        z= xLocal(i1,i2,i3,2);
+                    }
+                    else
+                    {
+                        x=XC(iv,0);
+                        y=XC(iv,1);
+                        z=XC(iv,2);
+                    }
+                    uLocal(i1,i2,i3,freq) = amp*sin( kx*x )*sin( ky*y )*sin( kz*z )*coswt;
+
                 }
-                uLocal(i1,i2,i3,0) = amp*sin( kx*x )*sin( ky*y )*coswt;
             }
         }
-        else
-        {
-            FOR_3D(i1,i2,i3,I1,I2,I3)
-            {
-                if( !isRectangular )
-                {
-                    x= xLocal(i1,i2,i3,0);
-                    y= xLocal(i1,i2,i3,1);
-                    z= xLocal(i1,i2,i3,2);
-                }
-                else
-                {
-                    x=XC(iv,0);
-                    y=XC(iv,1);
-                    z=XC(iv,2);
-                }
-                uLocal(i1,i2,i3,0) = amp*sin( kx*x )*sin( ky*y )*sin( kz*z )*coswt;
-
-            }
-        }
-
     }
     else if( userKnownSolution=="computedHelmholtz" )
     {
     // known solution is determined from the computed Helmholtz solution
+
+
+        assert( numberOfTimeDerivatives<=1 ); 
+
         if( !dbase.has_key("uHelmholtz") )
         {
             printF("CgWave:userDefinedKnownSolution: ERROR: uHelmholtz not found.\n");
@@ -247,7 +355,13 @@ getUserDefinedKnownSolution(real t,  int grid,
             realCompositeGridFunction & uHelmholtz = dbase.get<realCompositeGridFunction>("uHelmholtz"); // holds Helmholtz solution from direct solver
     
             const real & omega  = dbase.get<real>("omega");
-            const real coswt = cos(omega*t);
+      // const real coswt = cos(omega*t);
+            Real coswt;
+            if( numberOfTimeDerivatives==0 )
+                coswt = cos(omega*t);
+            else
+                coswt = -omega*sin(omega*t);      
+
             OV_GET_SERIAL_ARRAY(real,uHelmholtz[grid],uHelmholtzLocal);
     
             uLocal(I1,I2,I3,0) = uHelmholtzLocal(I1,I2,I3)*coswt;
@@ -258,6 +372,8 @@ getUserDefinedKnownSolution(real t,  int grid,
     else if( userKnownSolution=="polyPeriodic" )
     {
     // ----------------- polynomial in space and periodic in time -----------------
+
+        assert( numberOfTimeDerivatives <= 1 ); 
 
         const real & omega        = dbase.get<Real>("omegaPolyPeriodic");
         const int & degreeInSpace = dbase.get<int>("degreeInSpacePolyPeriodic");
@@ -270,7 +386,12 @@ getUserDefinedKnownSolution(real t,  int grid,
         if( true || t<= 2.*dt )
             printF("userDefinedKnownSolution: eval polyPeriodic omega=%g, a0=%g, a1=%g, b1=%g, c1=%g at t=%9.3e\n",omega,a0,a1,b1,c1,t);
 
-        const real coswt = cos(omega*t);
+    // const real coswt = cos(omega*t);
+        Real coswt;
+        if( numberOfTimeDerivatives==0 )
+            coswt = cos(omega*t);
+        else
+            coswt = -omega*sin(omega*t);         
             
         real x,y,z;
         if( numberOfDimensions==2 )
@@ -309,6 +430,140 @@ getUserDefinedKnownSolution(real t,  int grid,
                 uLocal(i1,i2,i3,0) = ( a0 + a1*x + b1*y + c1*z )*coswt;
 
             }
+        }
+
+    }
+
+    else if( userKnownSolution=="diskEigenfunction" )
+    {
+    // --- Eigenfunction for the wave equation in a disk ---
+
+    // --- we could avoid building the vertex array on Cartesian grids ---
+        GET_VERTEX_ARRAY(x);
+
+        const int n     = ipar[0];  // angular number, n=0,1,... --> Jn(omega*r)
+        const int m     = ipar[1];  // radial number m=0,... 
+        const int bcOpt = ipar[2];
+
+        const Real a   = rpar[0];  // radius of disk
+        const Real amp = rpar[1];  // amplitude 
+
+        Real lambda; 
+        if( bcOpt==0 )
+        {
+      // DIRICHLET BC (this next file came from mx/src)
+            #include "src/besselZeros.h"    
+            assert( m<mdbz && n<ndbz );
+            const Real jzmn = besselZeros[n][m];  // m'th zero of Jn
+            lambda=jzmn/a;
+        }
+        else
+        {
+      // Neumann BC
+            #include "src/besselPrimeZeros.h"    
+            assert( m<mdbpz && n<ndbpz );
+            const Real jzmn = besselPrimeZeros[n][m];  // m'th zero of Jn' (excluding r=0 for J0)
+            lambda=jzmn/a;
+        }
+          
+
+        if( t<=3.*dt )
+            printF("Disk: Bessel function solution: a=%g, n=%i, m=%i, lambda=%e, bcOpt=%d \n",a,n,m,lambda,bcOpt);
+
+        const Real omega = c*lambda;  
+        Real coswt;
+        if( numberOfTimeDerivatives==0 )
+            coswt = cos(omega*t);
+        else
+            coswt = -omega*sin(omega*t);       
+
+        FOR_3D(i1,i2,i3,I1,I2,I3)
+        { 
+            const Real xd = x(i1,i2,i3,0), yd = x(i1,i2,i3,1);
+            const Real theta = atan2(yd,xd);
+            const Real r = sqrt( xd*xd + yd*yd );
+
+            uLocal(i1,i2,i3,0) = jn(n,lambda*r)*cos(n*theta)*coswt;
+        }
+
+    }
+
+    else if( userKnownSolution=="annulusEigenfunction" )
+    {
+    // --- Eigenfunction for the heat equation in an annulus ---
+
+    // We can NOT check the boundaryCondition array since it may not be set yet !
+   //  bool dirichlet = (mg.boundaryCondition(0,1)==AdParameters::dirichletBoundaryCondition &&
+   //                    mg.boundaryCondition(1,1)==AdParameters::dirichletBoundaryCondition );
+   //  bool neumann   = (mg.boundaryCondition(0,1)==AdParameters::neumannBoundaryCondition &&
+   //                    mg.boundaryCondition(1,1)==AdParameters::neumannBoundaryCondition );
+
+   // dirichlet=true;
+
+   // assert( dirichlet || neumann );
+
+    // --- we could avoid building the vertex array on Cartesian grids ---
+        GET_VERTEX_ARRAY(x);
+
+        const int n     = ipar[0];  // angular number, n=0,1,... --> Jn(lambda*r), Yn(lambda*r)
+        const int m     = ipar[1];  // radial number m=0,... 
+        const int bcOpt = ipar[2];
+
+        const Real amp  = rpar[0];  // amplitude 
+
+        Real lambda, cJ,cY;
+        if( bcOpt==0 )
+        {
+      // Dirichlet boundary conditions:
+      //     det(lambda) =  Jn(lambda*a)*Yn(lambda*b) - Jn(lambda*b)*Yn(lambda*a) = 0 
+      // This solution assumes ra=.5 and rb=1 (set in the next file) 
+      // This file came from ad/codes: 
+            #include "src/annulusEigenvaluesHeatEquationDirichlet.h" 
+            lambda = annulusEigs[n][m];  // m'th zero of the determinant condition)  
+            assert( m<numRoot && n<numBesselOrder );
+      // Here is the eignevctor [cJ,cY] 
+            cJ = yn(n,lambda*ra);
+            cY =-jn(n,lambda*ra);
+        } 
+        else 
+        {
+      // Neumann boundary conditions:
+      //     det(lambda) =  Jn'(lambda*a)*Yn'(lambda*b) - Jn'(lambda*b)*Yn'(lambda*a) = 0 
+      // This solution assumes ra=.5 and rb=1 (set in the next file)
+      // This file came from ad/codes: 
+            #include "src/annulusEigenvaluesHeatEquationNeumann.h"   
+            lambda = annulusEigs[n][m];  // m'th zero of the detreminant condition)
+            assert( m<numRoot && n<numBesselOrder );
+
+      // Here is the eigenvector [cJ,cY] 
+      // Use Jn'(z) = (n/z)Jn - J_{n+1}
+            const Real z = lambda*ra;
+            cJ = ( (n/z)*yn(n,z) - yn(n+1,z) );    //  Yn'(lambda*a)
+            cY =-( (n/z)*jn(n,z) - jn(n+1,z) );    // -Jn'(lambda*a)
+        }
+
+    // scale eigenvector so solution is of size amp
+        Real cNorm = sqrt( cJ*cJ + cY*cY );
+        cJ *= amp/cNorm; 
+        cY *= amp/cNorm;
+
+        if( t<=3.*dt )
+            printF("Annulus: Bessel function solution: amp=%g, n=%i, m=%i, lambda=%e, bcOpt=%d\n", amp,n,m,lambda,bcOpt);
+
+        const Real omega = c*lambda;  
+        Real coswt;
+        if( numberOfTimeDerivatives==0 )
+            coswt = cos(omega*t);
+        else
+            coswt = -omega*sin(omega*t);       
+
+        FOR_3D(i1,i2,i3,I1,I2,I3)
+        { 
+            const Real xd = x(i1,i2,i3,0), yd = x(i1,i2,i3,1);
+            const Real theta = atan2(yd,xd);
+            const Real r = sqrt( xd*xd + yd*yd );
+
+            uLocal(i1,i2,i3,0) = ( cJ*jn(n,lambda*r) + cY*yn(n,lambda*r) )*cos(n*theta)*coswt;
         }
 
     }
@@ -389,6 +644,9 @@ updateUserDefinedKnownSolution()
                                                 "box Helmholtz",
                                                 "poly periodic",
                                                 "computed Helmholtz",
+                                                "modulated Gaussian",
+                                                "disk eigenfunction",
+                                                "annulus eigenfunction",
                                                 "done",    
                                                 ""};
     int numRows=3;
@@ -407,10 +665,10 @@ updateUserDefinedKnownSolution()
     sPrintF(textStrings[nt], "%g, %g, %g (x0,y0,z0)",x0v[0],x0v[1],x0v[2]);  nt++;  
 
     textCommands[nt] = "beta:";  textLabels[nt]=textCommands[nt];
-    sPrintF(textStrings[nt], "%g)",beta);                                    nt++; 
+    sPrintF(textStrings[nt], "%g",beta);                                    nt++; 
 
     textCommands[nt] = "k0:";  textLabels[nt]=textCommands[nt];
-    sPrintF(textStrings[nt], "%g)",k0);                                      nt++; 
+    sPrintF(textStrings[nt], "%g",k0);                                      nt++; 
   
    // null strings terminal list
     textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -520,10 +778,15 @@ updateUserDefinedKnownSolution()
             sScanF(answer,"%e %e %e %e",&rpar[0],&rpar[1],&rpar[2],&rpar[3]);
             printF(" Setting omega=%g, [kx,ky,kz]=[%g,%g,%g]\n",rpar[0],rpar[1],rpar[2],rpar[3]);
 
-            dbase.get<real>("omega") = rpar[0]; // define the Helmholtz omega for advance 
+            Real & omega = dbase.get<real>("omega");
+            omega = rpar[0]; // define the Helmholtz omega for advance 
+
+      // do this for now: 
+            const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");
+            frequencyArray(0) = omega;
 
       // Save parameters in dbase so we can look them up in bcOptWave
-            const Real omega=rpar[0], kx=rpar[1]*twoPi, ky=rpar[2]*twoPi, kz=rpar[3]*twoPi; 
+            const Real kx=rpar[1]*twoPi, ky=rpar[2]*twoPi, kz=rpar[3]*twoPi; 
             dbase.put<Real>("omegaBoxHelmholtz") = omega;
             dbase.put<Real>("kxBoxHelmholtz")    = kx;
             dbase.put<Real>("kyBoxHelmholtz")    = ky;
@@ -585,6 +848,94 @@ updateUserDefinedKnownSolution()
             dbase.put<Real>("kzBoxHelmholtz")    = kz;
 
         }
+        else if( answer=="modulated Gaussian")
+        {
+            printF("--- Modulated Gaussian Initial Condition --- \n"
+                          "    u(x,y,z,t) = exp( -beta*( r^2 ) )*cos( 2*pi*k0*r ) \n"
+                          " where \n"
+                          "    r = sqrt( (x-x0)^2 + (y-y0)^2 + (z-z0)^2 ) \n"
+                          "    k0 : most energy will be at this wave-number. \n"
+                          "    (kx,ky,kz) will be normalized to a unit vector. \n"
+                          " Set parameters (x0,y0,z0), beta and k0 in the text boxes.\n");
+
+            userKnownSolution="modulatedGaussian";
+            dbase.get<bool>("knownSolutionIsTimeDependent")=false;  // this is not a known solution
+
+      // Save parameters in dbase so we can look them up in bcOptWave
+      // These are updated below (in case the user has changed x0,y0,z0, etc.)
+            if( !dbase.has_key("kxGPW") )
+            {
+                dbase.put<Real>("x0GPW")   = x0v[0];
+                dbase.put<Real>("y0GPW")   = x0v[1];
+                dbase.put<Real>("z0GPW")   = x0v[2];
+    
+                dbase.put<Real>("betaGPW") = beta;
+                dbase.put<Real>("k0GPW")   = k0;
+            }
+
+        }
+        else if( answer=="disk eigenfunction" )
+        {
+            userKnownSolution="diskEigenfunction";
+
+            int & n     = ipar[0];
+            int & m     = ipar[1];
+            int & bcOpt = ipar[2];      
+
+            Real & a   = rpar[0];
+            Real & amp = rpar[1];
+
+            m=0; n=0; amp=1.; a=1.;
+            
+            printF("--- Eigenfunction for the Heat Equation in the unit disk ---\n"
+                          "    u = amp*e^{- lambda^2*t } * Jn(lambda_m*r) * cos(n*theta)  [2D, Dirichlet BCs]\n"
+                          "    n = angular number, n=0,1,2,\n"
+                          "    m = radial number (m'th zero of Bessel Jn(lambda*a)=0 \n"
+                          "    a = radius of the disk\n"
+                          "    amp = amplitude\n"
+                          "    bcOpt : 0=Dirichlet, 1=Neumann BCs on the annulus.\n"             
+                );
+            
+            gi.inputString(answer,"Enter n,m,a,amp,bcOpt for the exact solution");
+            sScanF(answer,"%i %i %e %e %i",&n,&m,&a,&amp,&bcOpt);
+
+            printF("Disk eigenfuncton: n=%i, m=%i, a=%g, amp=%g, bcOpt=%d\n",n,m,a,amp,bcOpt);
+
+            dbase.get<bool>("knownSolutionIsTimeDependent")= true;  // known solution is time dependent
+
+        }  
+
+        else if( answer=="annulus eigenfunction" )
+        {
+            userKnownSolution="annulusEigenfunction";
+
+            int & n     = ipar[0];
+            int & m     = ipar[1];
+            int & bcOpt = ipar[2];
+
+            Real & amp = rpar[0];
+
+            m=0; n=0; amp=1.; bcOpt=0;
+            
+            printF("--- Eigenfunction for the Heat Equation in an annulus---\n"
+                          "    u = amp*e^{- lambda^2*t } * uHat(r) * cos(n*theta),\n"
+                          "    uHat(r) = c1*Jn(lambda*r) + c2*Yn(lambda*r),\n"
+                          "    Annulus: ra=.5, rb=1.\n"
+                          "    n = angular number, n=0,1,2,\n"
+                          "    m = radial number (m'th zero of determinant condition). \n"
+                          "    amp = amplitude.\n"
+                          "    bcOpt : 0=Dirichlet, 1=Neumann BCs on the annulus.\n"
+                );
+            
+            gi.inputString(answer,"Enter n,m,amp,bcOpt for the exact solution");
+            sScanF(answer,"%i %i %e %i",&n,&m,&amp,&bcOpt);
+
+            printF("Annulus eigenfuncton: n=%i, m=%i, amp=%g, bcOpt=%d\n",n,m,amp,bcOpt);
+
+            dbase.get<bool>("knownSolutionIsTimeDependent")= true;  // known solution is time dependent
+
+        } 
+
 
         else if( dialog.getTextValue(answer,"beta:","%e",beta) )
         {

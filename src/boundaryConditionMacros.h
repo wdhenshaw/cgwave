@@ -68,7 +68,8 @@
     useUpwindDissipation,            // ipar(14)
     numGhost,                        // ipar(15)
     assignBCForImplicit,             // ipar(16)
-    bcApproach                       // ipar(17)
+    bcApproach,                      // ipar(17)
+    numberOfFrequencies              // ipar(18)
                };
   real rpar[] = {
     t                , //  rpar( 0)
@@ -89,6 +90,7 @@
   real temp, *pxy=&temp, *prsxy=&temp;
   if( !isRectangular )
   {
+    mg.update(MappedGrid::THEinverseVertexDerivative);
     #ifdef USE_PPP
      prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
     #else
