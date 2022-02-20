@@ -1,4 +1,174 @@
 ****************************************************
+****** Sat Feb 19, 2022
+
+FIXED BUG -- init f1,f2,f3
+
+START TEST - ORDER 6 with CBC6 --> NOTE: for now run with cfl=.5 for upwind
+
+
+TEST FD26 -- upwind ok , but time-step is smaller than MFD66 scheme
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.5 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=2 -debug=3 
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.5 -tf=100 -known=diskEig -upwind=0 -bcApproach=cbc -orderInTime=2 -debug=3 
+
+
+CFL=.01
+cgWave:FD26u t=5.000e-01 (   5015 steps) dt=9.970e-05 maxErr= 1.84e-08, ||u||= 5.42e-01, cpu= 9.56e+00(s)
+cgWave:FD26u t=1.000e+00 (  10030 steps) dt=9.970e-05 maxErr= 3.82e-08, ||u||= 4.31e-01, cpu= 1.80e+01(s)
+cgWave:FD26u t=1.500e+00 (  15045 steps) dt=9.970e-05 maxErr= 4.02e-08, ||u||= 2.64e-01, cpu= 2.57e+01(s)
+cgWave:FD26u t=2.000e+00 (  20060 steps) dt=9.970e-05 maxErr= 4.11e-08, ||u||= 6.14e-02, cpu= 3.34e+01(s)
+
+
+FD26u
+cgWave:FD26u t=5.000e-01 (   56 steps) dt=8.929e-03 maxErr= 1.17e-04, ||u||= 5.42e-01, cpu= 2.16e+00(s)
+cgWave:FD26u t=1.000e+00 (  112 steps) dt=8.929e-03 maxErr= 4.42e-04, ||u||= 4.31e-01, cpu= 6.79e+00(s)
+cgWave:FD26u t=1.500e+00 (  168 steps) dt=8.929e-03 maxErr= 8.85e-04, ||u||= 2.63e-01, cpu= 7.77e+00(s)
+cgWave:FD26u t=2.000e+00 (  224 steps) dt=8.929e-03 maxErr= 1.32e-03, ||u||= 6.01e-02, cpu= 8.87e+00(s)
+cgWave:FD26u t=2.500e+00 (  280 steps) dt=8.929e-03 maxErr= 1.60e-03, ||u||= 1.51e-01, cpu= 1.00e+01(s)
+cgWave:FD26u t=3.000e+00 (  336 steps) dt=8.929e-03 maxErr= 1.61e-03, ||u||= 3.42e-01, cpu= 1.08e+01(s)
+cgWave:FD26u t=3.500e+00 (  392 steps) dt=8.929e-03 maxErr= 1.27e-03, ||u||= 4.87e-01, cpu= 1.17e+01(s)
+cgWave:FD26u t=4.000e+00 (  448 steps) dt=8.929e-03 maxErr= 5.53e-04, ||u||= 5.68e-01, cpu= 1.24e+01(s)
+cgWave:FD26u t=4.500e+00 (  504 steps) dt=8.929e-03 maxErr= 4.67e-04, ||u||= 5.73e-01, cpu= 1.32e+01(s)
+cgWave:FD26u t=5.000e+00 (  560 steps) dt=8.929e-03 maxErr= 1.66e-03, ||u||= 5.02e-01, cpu= 1.39e+01(s)
+cgWave:FD26u t=5.500e+00 (  616 steps) dt=8.929e-03 maxErr= 2.84e-03, ||u||= 3.64e-01, cpu= 1.47e+01(s)
+
+
+cgWave:FD26 t=5.000e-01 (   56 steps) dt=8.929e-03 maxErr= 1.17e-04, ||u||= 5.42e-01, cpu= 3.04e+00(s)
+cgWave:FD26 t=1.000e+00 (  112 steps) dt=8.929e-03 maxErr= 4.42e-04, ||u||= 4.31e-01, cpu= 4.07e+00(s)
+cgWave:FD26 t=1.500e+00 (  168 steps) dt=8.929e-03 maxErr= 8.85e-04, ||u||= 2.63e-01, cpu= 4.86e+00(s)
+cgWave:FD26 t=2.000e+00 (  224 steps) dt=8.929e-03 maxErr= 1.32e-03, ||u||= 6.01e-02, cpu= 5.70e+00(s)
+cgWave:FD26 t=2.500e+00 (  280 steps) dt=8.929e-03 maxErr= 1.60e-03, ||u||= 1.51e-01, cpu= 6.42e+00(s)
+cgWave:FD26 t=3.000e+00 (  336 steps) dt=8.929e-03 maxErr= 1.61e-03, ||u||= 3.42e-01, cpu= 7.15e+00(s)
+cgWave:FD26 t=3.500e+00 (  392 steps) dt=8.929e-03 maxErr= 1.27e-03, ||u||= 4.87e-01, cpu= 7.85e+00(s)
+cgWave:FD26 t=4.000e+00 (  448 steps) dt=8.929e-03 maxErr= 5.53e-04, ||u||= 5.68e-01, cpu= 9.87e+00(s)
+cgWave:FD26 t=4.500e+00 (  504 steps) dt=8.929e-03 maxErr= 4.67e-04, ||u||= 5.73e-01, cpu= 1.05e+01(s)
+cgWave:FD26 t=5.000e+00 (  560 steps) dt=8.929e-03 maxErr= 1.66e-03, ||u||= 5.02e-01, cpu= 1.11e+01(s)
+
+
+
+
+cgWave known.cmd -g=sice8.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3 -cfl=.5
+
+RATIO = 64 
+cgWave:FD66u t=1.000e+00 (  240 steps) dt=4.167e-03 maxErr= 3.40e-10, ||u||= 4.33e-01, cpu= 1.98e+01(s)
+
+
+cgWave:FD66u t=1.000e+00 (  233 steps) dt=4.292e-03 maxErr= 3.34e-10, ||u||= 4.33e-01, cpu= 9.02e+00(s)
+cgWave:FD66u t=2.000e+00 (  466 steps) dt=4.292e-03 maxErr= 1.46e-09, ||u||= 6.16e-02, cpu= 1.66e+01(s)
+cgWave:FD66u t=3.000e+00 (  699 steps) dt=4.292e-03 maxErr= 2.25e-09, ||u||= 3.41e-01, cpu= 2.89e+01(s)
+cgWave:FD66u t=4.000e+00 (  932 steps) dt=4.292e-03 maxErr= 1.64e-09, ||u||= 5.69e-01, cpu= 3.56e+01(s)
+cgWave:FD66u t=5.000e+00 ( 1165 steps) dt=4.292e-03 maxErr= 9.71e-10, ||u||= 5.05e-01, cpu= 4.78e+01(s)
+cgWave:FD66u t=6.000e+00 ( 1398 steps) dt=4.292e-03 maxErr= 3.95e-09, ||u||= 1.82e-01, cpu= 5.45e+01(s)
+cgWave:FD66u t=7.000e+00 ( 1631 steps) dt=4.292e-03 maxErr= 5.67e-09, ||u||= 2.34e-01, cpu= 6.13e+01(s)
+cgWave:FD66u t=8.000e+00 ( 1864 steps) dt=4.292e-03 maxErr= 4.45e-09, ||u||= 5.30e-01, cpu= 7.32e+01(s)
+cgWave:FD66u t=9.000e+00 ( 2097 steps) dt=4.292e-03 maxErr= 3.40e-10, ||u||= 5.54e-01, cpu= 7.99e+01(s)
+cgWave:FD66u t=1.000e+01 ( 2330 steps) dt=4.292e-03 maxErr= 5.20e-09, ||u||= 2.94e-01, cpu= 8.66e+01(s)
+cgWave:FD66u t=1.100e+01 ( 2563 steps) dt=4.292e-03 maxErr= 8.76e-09, ||u||= 1.17e-01, cpu= 9.34e+01(s)
+
+
+
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3 -cfl=.5
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=0 -bcApproach=cbc -debug=3
+
+cgWave:FD66u t=1.000e+00 (  130 steps) dt=7.692e-03 maxErr= 1.61e-08, ||u||= 4.31e-01, cpu= 1.07e+01(s)
+cgWave:FD66  t=1.000e+00 (  70 steps) dt=1.429e-02 maxErr= 2.18e-08, ||u||= 4.31e-01, cpu= 1.20e+01(s)
+
+
+****************************************************
+****** Thurs Feb 17, 2022
+
++++ fixed bug : set fv(m)=0. before loops
+
+COMPARE rectangular to curvilinear at current state of the code.
+
+
+cgWave -noplot known.cmd -g=nonSquare128.order8.ng5 -upwind=0 -kx=2 -ky=1 -tp=1 -tf=1 -known=planeWave -bc=e -useKnownFirstStep=1 -go=go
+cgWave -noplot known.cmd -g=square128.order8.ng5 -upwind=0 -kx=2 -ky=1 -tp=1 -tf=1 -known=planeWave -bc=e -useKnownFirstStep=1 -go=go
+
+
+CURV: 150x SLOWER
+              -------------------CgWave Summary----------------- 
+                       Thu Feb 17 08:05:18 2022
+               Grid:   /home/henshw/grids/nonSquare128.order8.ng5.hdf 
+  ==== final time= 1.00e+00, numberOfStepsTaken =      202, grids=1, gridpts =19460, interp pts=0, processors=1 ==== 
+  ==== memory per-proc: [min=44.0664,ave=44.0664,max=44.0664](Mb), max-recorded=44.0664 (Mb), total=44.0664 (Mb)
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  5.56e+01    2.75e-01    1.41e-05   100.000   5.559e+01   5.559e+01
+setup and initialize................  5.79e-03    2.87e-05    1.47e-09     0.010   5.788e-03   5.788e-03
+initial conditions..................  5.53e-03    2.74e-05    1.41e-09     0.010   5.530e-03   5.530e-03
+advance.............................  5.56e+01    2.75e-01    1.41e-05    99.989   5.558e+01   5.558e+01
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  5.55e+01    2.75e-01    1.41e-05    99.891   5.553e+01   5.553e+01
+
+RECT
+              -------------------CgWave Summary----------------- 
+                       Thu Feb 17 08:04:06 2022
+               Grid:   /home/henshw/grids/square128.order8.ng5.hdf 
+  ==== final time= 1.00e+00, numberOfStepsTaken =      202, grids=1, gridpts =19321, interp pts=0, processors=1 ==== 
+  ==== memory per-proc: [min=38.9648,ave=38.9648,max=38.9648](Mb), max-recorded=38.9648 (Mb), total=38.9648 (Mb)
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  4.00e-01    1.98e-03    1.02e-07   100.000   3.998e-01   3.998e-01
+setup and initialize................  8.33e-04    4.12e-06    2.13e-10     0.208   8.330e-04   8.330e-04
+initial conditions..................  2.83e-03    1.40e-05    7.26e-10     0.709   2.833e-03   2.833e-03
+advance.............................  3.96e-01    1.96e-03    1.02e-07    99.152   3.964e-01   3.964e-01
+  advance rectangular grids.........  3.38e-01    1.67e-03    8.65e-08    84.456   3.377e-01   3.377e-01
+  advance curvilinear grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+
+
+
+
+NON-SQUARE: NOT WORKING nan's 
+cgWave known.cmd -g=nonSquare16.order8.ng5 -upwind=0 -kx=2 -ky=1 -tp=1 -tf=1 -known=planeWave -bc=e -useKnownFirstStep=1 -go=halt
+
+
+ORDER=6 OK: 
+cgWave known.cmd -g=nonSquare16.order6.ng5 -upwind=0 -kx=2 -ky=1 -tp=1 -tf=1 -known=planeWave -bc=e -useKnownFirstStep=1 -go=halt
+
+
+
+
+
+
+****************************************************
+****** Wed Feb 16, 2022
+
+START TEST ORDER 6 and 8 
+
+
+cgWave known.cmd -g=square128.order8.ng5 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave -bc=e -useKnownFirstStep=1
+cgWave known.cmd -g=square64.order8.ng5 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave -bc=e -useKnownFirstStep=1
+
+G128
+
+G64
+
+FD88u  
+cgWave:FD88 t=5.000e-01 ( 55 steps) dt=9.091e-03 maxErr= 4.55e-09, ||u||= 9.99e-01, cpu= 9.06e+00(s)
+
+FD88
+cgWave:FD88 t=5.000e-01 ( 55 steps) dt=9.091e-03 maxErr= 1.91e-09, ||u||= 9.99e-01, cpu= 4.20e+00(s)
+
+
+
+cgWave known.cmd -g=square128.order6.ng4 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave -bc=e -useKnownFirstStep=1
+cgWave known.cmd -g=square64.order6.ng4 -upwind=1 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave -bc=e -useKnownFirstStep=1
+cgWave known.cmd -g=square64.order6.ng4 -upwind=0 -kx=2 -ky=1 -tp=.1 -tf=5 -known=planeWave -bc=e -useKnownFirstStep=1
+
+G128 ratio = 89
+FD66u 
+cgWave:FD66 t=5.000e-01 ( 105 steps) dt=4.762e-03 maxErr= 6.22e-09, ||u||= 1.00e+00, cpu= 1.02e+01(s)
+FD66
+cgWave:FD66 t=5.000e-01 ( 105 steps) dt=4.762e-03 maxErr= 4.09e-09, ||u||= 1.00e+00, cpu= 4.71e+00(s)
+
+
+G64
+FD66u 
+cgWave:FD66 t=5.000e-01 ( 55 steps) dt=9.091e-03 maxErr= 5.57e-07, ||u||= 9.99e-01, cpu= 5.44e+00(s)
+
+FD66
+cgWave:FD66 t=5.000e-01 ( 55 steps) dt=9.091e-03 maxErr= 2.80e-07, ||u||= 9.99e-01, cpu= 4.93e+00(s)
+
+****************************************************
 ****** Fri Jan 21, 2022
 
 ---- FIX CBC's for upwind -- extrapolate extra ghost

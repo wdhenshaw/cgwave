@@ -487,7 +487,8 @@ advance( int it )
             takeFirstStep( cur, t ); // -- NOTE: for now initial step is only called for Helmholtz problems *fix me*
         else
         {
-            if( !useKnownSolutionForFirstStep && timeSteppingMethod==explicitTimeStepping )
+            if( !useKnownSolutionForFirstStep && timeSteppingMethod==explicitTimeStepping 
+                    && orderOfAccuracy < 8 ) // do this for now 
             { // *new* wdh Nov 19, 2021
                 takeFirstStep( cur, t ); 
             }
@@ -548,17 +549,19 @@ advance( int it )
                 const Real cpuTime = getCPU()- cpua;
                 const int numDigits = ceil( log10(numberOfTimeSteps) );
                 char myFormat[180];
+                aString upwindChar="";
+                if( upwind ) upwindChar="u";
                 if( computeErrors && !solveHelmholtz )
                 {
                     real maxErr = getErrors( u[cur], t );
-                    sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e maxErr=%%9.2e, ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
+                    sPrintF(myFormat,"cgWave:FD%i%i%s t=%%9.3e (%%%ii steps) dt=%%9.3e maxErr=%%9.2e, ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,(const char*)upwindChar,numDigits);
                     printF(myFormat,t,step,dt,maxErr,solutionNorm,cpuTime);
                 }
                 else
                 {
           // compute the solution norm
                     solutionNorm = maxNorm(u[cur]);
-                    sPrintF(myFormat,"cgWave:FD%i%i t=%%9.3e (%%%ii steps) dt=%%9.3e ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,numDigits);
+                    sPrintF(myFormat,"cgWave:FD%i%i%s t=%%9.3e (%%%ii steps) dt=%%9.3e ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,(const char*)upwindChar,numDigits);
                     printF(myFormat,t,step,dt,solutionNorm,cpuTime);
                 }
         // output results (e.g. print errors to the check file)

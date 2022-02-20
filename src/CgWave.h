@@ -21,7 +21,8 @@ enum BoundaryConditionEnum
   dirichlet     = 1,
   neumann       = 2,
   evenSymmetry  = 3,
-  radiation     = 4
+  radiation     = 4,
+  exactBC       = 5   // Set exact values on boundary and ghost
 };
 
 enum InitialConditionOptionEnum

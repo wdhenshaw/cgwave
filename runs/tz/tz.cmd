@@ -1,6 +1,6 @@
 #
 #  cgWave: test twilightZone
-#     cgWave [-noplot] tz.cmd -g=<grid-name> -bc=[d|n] -cfl=<f> -tz=[polyl|trig] -degreeInSpace=<i> -degreeInTime=<i> ...
+#     cgWave [-noplot] tz.cmd -g=<grid-name> -bc=[d|n|e] -cfl=<f> -tz=[polyl|trig] -degreeInSpace=<i> -degreeInTime=<i> ...
 #                              -upwind=[0|1] -fx= -fy= -fz= -ft= -ts=[explicit|implicit] -rectangular=[implicit|explicit] -debug=<i>
 #                              -bcApproach=[cbc|lcbc|oneSided]
 #
@@ -54,7 +54,7 @@ debug $debug
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
 #
-if( $bc eq "d" ){ $cmd="bc=dirichlet"; }else{ $cmd="bc=neumann"; }
+if( $bc eq "d" ){ $cmd="bc=dirichlet"; }elsif( $bc eq "n" ){ $cmd="bc=neumann"; }elsif( $bc eq "e" ){ $cmd="bc=exact"; }else{ $cmd="bc=dirichlet"; }
 $cmd
 turn on forcing 1
 twilightZoneForcing

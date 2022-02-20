@@ -1,0 +1,14 @@
+\begin{table}[H]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+\begin{center}
+\begin{tabular}{|l|c|c|c|} \hline 
+grid  & N &  $ u $ & r \\ \hline 
+      sic2 &     1 & \num{2.2}{-6} &        \\ \hline
+      sic4 &     2 & \num{3.2}{-8} & 70.44  \\ \hline
+      sic8 &     4 & \num{4.6}{-10} & 69.28  \\ \hline
+     sic16 &     8 & \num{7.0}{-12} & 65.11  \\ \hline
+    rate             &       &  $6.09$       &       \\ \hline
+\end{tabular}
+\caption{CgWave, diskEig, max norm, order=$6$, ts=explicit, orderInTime=-1, dtMax0=$10000000000$, $t=.65$, cfl=$.5$, upwind=1, bc=, bcApproach=cbc, -known=diskEig, kx=1, ky=0, kz=0, nBessel=1, mTheta=1, -tz=poly, degreeInSpace=2, -degreeInTime=2, Sat Feb 19 13:15:57 2022}\label{table:diskEigOrder6max}
+\end{center}
+\end{table}

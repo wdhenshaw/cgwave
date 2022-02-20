@@ -33,7 +33,8 @@ GetOptions( "cfl=f"=>\$cfl,"amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz
 #
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
-if( $bc eq "e" ){ $bc="evenSymmetry"; }
+if( $bc eq "e" ){ $bc="exact"; }
+# if( $bc eq "e" ){ $bc="evenSymmetry"; }
 if( $bc eq "r" ){ $bc="radiation"; }
 if( $known eq "diskEig" ){ $setKnownOnBoundaries=0; }
 if( $known eq "annulusEig" ){ $setKnownOnBoundaries=0; }

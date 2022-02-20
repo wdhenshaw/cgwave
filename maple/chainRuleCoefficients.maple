@@ -1,0 +1,605 @@
+# =============================================================
+# Save the coefficients in the chain rule for higher derivatives
+# To execute this file use the following from a Maple worksheet:
+#
+# restart; currentdir(cat(kernelopts(homedir),"/Dropbox/research/cgwave/maple")); read "chainRuleCoefficients.maple";
+#
+# =============================================================
+#
+# restart; read "makeDerivMacros.maple";
+clear;
+
+# with(CodeGeneration,Fortran):
+# with(codegen,optimize):
+# with(codegen,cost):
+
+with(StringTools):
+kernelopts(printbytes=false): # turn off memory used messages
+
+
+# read in the DuDx array of derivative definitions:
+read "derivativesByChainRule.TEMP.maple":
+
+# DuDx[2,0,0,2]:=rx^2*urr+2*rx*sx*urs+sx^2*uss+rxx*ur+sxx*us:
+
+f := DuDx[2,0,0,2];
+printf("cxxcrr = %s\n",convert(coeff(f,urr),string));
+printf("cxxcrs = %s\n",convert(coeff(f,urs),string));
+printf("cxxcss = %s\n",convert(coeff(f,uss),string));
+f := DuDx[6,0,0,2]:
+printf("cx6cr6   = %s\n",convert(coeff(subs(urrrrrr=q,f),q),string));
+printf("cx6cr5s1 = %s\n",convert(coeff(f,urrrrrs),string));
+printf("cx6cr4s2 = %s\n",convert(coeff(f,urrrrss),string));
+printf("cx6cr3s3 = %s\n",convert(coeff(f,urrrsss),string));
+printf("cx6cs6   = %s\n",convert(coeff(f,ussssss),string));
+printf("cx6cr1s2 = %s\n",convert(simplify(coeff(f,urss)),string));
+
+# f := DuDx[6,0,0,2];
+
+# coeff(f,urs);
+# coeff(f,uss);
+
+ndd := 3: dName:="Third":  maxOrder:=4: 
+ndd := 4: dName:="Fourth": maxOrder:=4:
+ndd := 8;
+# ndd := 6: dName:="Sixth":  maxOrder:=6:
+# ndd := 8: dName:="Eight":  maxOrder:=6:
+
+# ndd :=4; 
+
+#   # Here are final spatial derivatives of u by the chain rule: 
+nddMod2 := modp(ndd,2);  
+#   fprintf(mfile,"\n! ---------- %s spatial derivatives of u ---------\n",dName):
+
+dim:=2;
+
+if dim=2 then ndd3:=0; else ndd3:=ndd; end if;
+for iz from 0 to ndd3 do 
+for iy from 0 to ndd do 
+for ix from 0 to ndd do 
+  # printf("?? ndv=%d: ix=%d, iy=%d, iz=%d, nddMod2=%d modp(iy,2)=%d modp(iz,2)=%d\n",ndv, ix,iy,iz,nddMod2,modp(iy,2),modp(iz,2));
+
+  # if (ix+iy+iz) >0 and (ix+iy+iz)<=ndd and modp(ix,2)=nddMod2 and modp(iy,2)=nddMod2 and modp(iz,2)=nddMod2 then
+  if (ix+iy+iz) >0 and (ix+iy+iz)=ndd  then
+
+
+    derivName := "u"; # name of derivative: "uxxx", "uxyy", etc. 
+    for jx from 1 to ix do derivName := cat(derivName,"x"); end do;
+    for jy from 1 to iy do derivName := cat(derivName,"y"); end do;
+    for jz from 1 to iz do derivName := cat(derivName,"z"); end do;
+
+    printf("! ------ Coefficients in expansion for %s ------\n",derivName);
+    uds := DuDx[ix,iy,iz,dim];
+    udExpression :="";
+    for jt from 0 to ndd3 do   # t derivatives 
+    for js from 0 to ndd do    # s derivatives 
+      for jr from 0 to ndd do  # r derivatives
+        # Define all even or odd derivatives up to order ndd 
+        # if (jr+js+jt) >0 and (jr+js+jt)<=ndd and modp(jr,2)=nddMod2 and modp(js,2)=nddMod2 and modp(jt,2)=nddMod2 then
+        if (jr+js+jt) >0 and (jr+js+jt)<=ndd then
+          urName:=u; 
+          for kr from 1 by 1 to jr do urName := cat(urName,r); end do;
+          for ks from 1 by 1 to js do urName := cat(urName,s); end do;
+          for kt from 1 by 1 to jt do urName := cat(urName,t); end do;
+
+          # printf("cx%dy%dz%dr%ds%dt%d = %s\n",ix,iy,iz,jr,js,jt,convert(simplify(coeff(uds,urName)),string));
+          coeffExpression := convert(simplify(coeff(uds,urName)),string); # coeff of urrr, urss, etc.
+
+          # coeffExpression := RegSubs("([^\\^][0-9])\\*"="\\1.*",coeffExpression);   # add a decimal point to 2*rx --> 2.*rx  
+          coeffExpression := RegSubs("([0-9])\\*"="\\1.*",coeffExpression);   # add a decimal point to 2*rx --> 2.*rx  
+          coeffExpression := SubstituteAll( coeffExpression,"^","**");      # convert power symbol "^" to "**"
+
+          coeffName := sprintf("c%s%d%d%d",derivName,jr,js,jt);            # variable name for this coeff
+          printf("%s = %s\n",coeffName,coeffExpression);
+
+          if( udExpression = "" )then 
+            udExpression := cat(udExpression,coeffName,"*",urName);
+          else
+            udExpression := cat(udExpression,"+",coeffName,"*",urName);
+          end if;
+
+        end if;
+      end do;
+    end do;
+    end do;
+
+    printf("%s = %s\n\n",derivName,udExpression);
+  end if;
+end do;
+end do;
+end do;
+
+
+#       uds := convert(uds,string);
+#       # printf("++ ix=%d, iy=%d, iz=%d, uds=%s\n",ix,iy,iz,uds);
+
+#             # uds := SubstituteAll( uds,"rx","rxi");
+#       # uds := SubstituteAll( uds,"ry","ryi");
+#       # uds := SubstituteAll( uds,"rz","rzi");
+#       # uds := SubstituteAll( uds,"sx","sxi");
+#       # uds := SubstituteAll( uds,"sy","syi");
+#       # uds := SubstituteAll( uds,"sz","szi");
+#       # uds := SubstituteAll( uds,"tx","txi");
+#       # uds := SubstituteAll( uds,"ty","tyi");
+#       # uds := SubstituteAll( uds,"tz","tzi");
+#       # replace rx, ry, sx, sy, ... by rxi, ryi, 
+#       uds := RegSubs("([rst][xyz])([^a-z])" = "\\1i\\2", uds);
+#       # replace: no "^" followed by [0-9] followed by a "*" by [0-9].*   
+#       uds := RegSubs("([^\\^][0-9])\\*"="\\1.*",uds);   # add a decimal point to 2*rx --> 2.*rx  
+#       uds := SubstituteAll( uds,"^","**");      # convert power symbol "^" to "**"   
+
+#       fprintf(mfile,"%-8s = %s\n",derivName,uds); 
+#       if dim=3 then fprintf(ifile,"real %s\n",derivName); end if;
+
+#     end if;
+#   end do; # ix 
+#   end do;   # iy 
+#   end do;   # iz 
+
+
+
+
+
+# numberOfDimensions:=3;
+# outputMacros:=true:
+
+
+# ndd := 3: dName:="Third":  maxOrder:=4: 
+# ndd := 4: dName:="Fourth": maxOrder:=4:
+# # ndd := 6: dName:="Sixth":  maxOrder:=6:
+
+# maxDerivative:=ndd;
+# # orderOfAccuracy:=2;
+# nMax:=9:     # max stencil size
+# # nMax:=3:     # max stencil size
+
+# # maxOrder:=4: # 6:  # 8
+# # maxDer:=maxOrder:  
+
+
+# :if outputMacros then
+#   mfileName := sprintf("defineGet%sDerivativesMacros.h",dName):
+#   ifileName := sprintf("declareGet%sDerivativesMacrosVariables.h",dName):
+# else
+#   mfileName := "junkMacroDefinitions.h":
+#   ifileName := "junkGetDerivativesMacrosVariables.h":
+# end if:
+
+
+
+# # rxName:= [ rx, ry, rz, sx, sy, sz, tx, ty, tz ]:
+# rxName:= [ rx, ry, sx, sy, rz, sz, tx, ty, tz ]: # put 2D names first 
+# xName := [ x, y, z ]:
+# # 
+# # urName:= [ u ]:
+# rName := [ r, s, t ]:
+
+
+# # ----------------- TEST : from weights.maple -------
+# read "differenceWeights.maple";
+
+  
+
+# nd:=nMax-1:
+# md:=nd:
+
+# # compute difference weights for derivatives to various orders of accuracy, return results in c
+# computeDifferenceWeights(nd,md,c):
+
+
+# maxOrderSupported := nMax-1:
+# for orderOfAccuracy from 2 by 2 to maxOrderSupported do
+# maxDeriv := nMax-1 - (orderOfAccuracy-2):
+# # maxDeriv:= md+2-orderOfAccuracy:
+
+#  printf("\n **** order of accuracy =%d *****\n",orderOfAccuracy):
+#  for derivative from 1 to maxDeriv do:
+#     n:= orderOfAccuracy+ 2*floor((derivative-1)/2):
+#     nn := n/2:
+#     printf(" Derivative %d [%d:%d]: ",derivative,-nn,nn);
+#     for i from -nn to nn do
+#      printf("%s, ",convert(getWeight(i,derivative,orderOfAccuracy),string));
+#    end do:
+#  printf("\n");
+
+#  end do:
+# end do:
+
+# # -----------
+# differenceApproximation :=proc( rDeriv,sDeriv,tDeriv, orderOfAccuracy, rName, drName )
+
+#  local i,j,k,n,r,indexName,vv,dn,cn,i1,i2,i3,is,ie,ii,dir,un,ext,e,cc:
+
+
+#  if rDeriv<>0 then
+#   k:=rDeriv:
+#   dir:=0:
+# #  rName:="r":
+#   ii := i1:
+#   is := "":
+#   ie := ",i2,i3$kd":
+
+#  elif sDeriv <>0 then
+#   k:=sDeriv:
+#   dir:=1:
+# #  rName:="s":
+#   ii := i2:
+#   is := "i1,":
+#   ie := ",i3$kd":
+#  else
+#   k:=tDeriv:
+#   dir:=2:
+# #  rName:="t":
+#   ii := i3:
+#   is := "i1,i2,":
+#   ie := "$kd":
+#  end if: 
+
+#  n:= orderOfAccuracy+ 2*floor((k-1)/2):  # order=2 -> nx=3 gives k=1,2  nx=5 gives k=3,4
+
+#  dn:=""; # name of the derivative
+#  for i from 1 to rDeriv do dn:=cat(dn,rName[1]):  end do:
+#  for i from 1 to sDeriv do dn:=cat(dn,rName[2]):  end do:
+#  for i from 1 to tDeriv do dn:=cat(dn,rName[3]):  end do:
+
+#  un:="u":  # here is the thing we differentitate
+#  ext:="": 
+#  if dir=0 then for i from 1 to sDeriv do ext:=cat(ext,rName[2]):  end do: end if:
+#  if dir=0 or dir=1 then for i from 1 to tDeriv do ext:=cat(ext,rName[3]):  end do: end if:
+#  if ext <> "" then  un:=cat(un," ## ",ext,orderOfAccuracy,"Macro"):  end if:   # change us -> us2Macro etc.
+ 
+#  e:="(": # holds the expression in a string
+  
+#  r:=1; # find the lowest common multiple of the denominators
+#  for i from 0 to n do  r:=ilcm(r,denom(c[i,k,n])):  end do:
+  
+#  for i from 0 to n do
+#    indexName := ii + i-n/2:   # index name "i1-1", "i1+2" etc
+#    if i>0 and c[i,k,n]>0 then  e:=cat(e,"+"); end if;
+#    if c[i,k,n] <> 0 then
+#      cn:=r*c[i,k,n]:
+#      if cn=-1 then e:=cat(e,"-"); elif cn<>1 then e:=cat(e,sprintf("%s.*",convert(cn,string))); end if;
+#      e:=cat(e,sprintf("%s(%s%s%s)",un,is,convert(indexName,string),ie));
+#    end if;
+#  end do:
+#  if r<>1 then e:=cat(e,sprintf(")/(%d.*",r)); else e:=cat(e,")/("); end if;
+#  if k>1 then e:=cat(e,sprintf("%s(%d)**%d)",drName,dir,k)); else e:=cat(e,sprintf("%s(%d))",drName,dir)); end if:
+
+#  if outputFile then
+#    fprintf(file,"  printout \"  u ## %s%dMacro(i1,i2,i3$kd)=%s\\n\";\n",dn,orderOfAccuracy,e);
+#  end if:
+#  if components=0 then cc:="": elif components=1 then cc:=",m" elif components=2 then cc:=",m,n" else cc:=",l,m,n"; end if:
+#  e:= SubstituteAll(e,"$kd",cc):
+#  fprintf(mfile," #defineMacro u ## %s%dMacro(i1,i2,i3%s) %s\n",dn,orderOfAccuracy,cc,e);
+
+#  RETURN(vv):
+# end:
+# # -------------
+
+
+# # ----------- END TEST ---------------
+
+
+
+# # read in the DuDx array of derivative definitions:
+# read "derivativesByChainRule.maple":
+
+
+# mfile:=fopen( mfileName,WRITE ):
+# ifile:=fopen( ifileName,WRITE ):
+
+# fprintf(mfile,"! ****** File written by makeGetDerivativesMacros.maple  ******\n"):
+# fprintf(ifile,"! ****** File written by makeGetDerivativesMacros.maple  ******\n"):
+
+
+
+# outputFile:=false;
+# for components from 0 to 1 do
+#   fprintf(mfile,"\n#beginMacro define%sParameticDerivativesComponents%d(u)\n",dName,components);
+#   for myOrder from 2 to maxOrder by 2 do
+#     maxDeriv:= maxOrder +2  -myOrder:
+#     # maxDeriv:= maxOrder+2-myOrder:
+#     # for k from 1 to maxDeriv do 
+#       for jt from 0 to maxDeriv do
+#        for js from 0 to maxDeriv do
+#        for jr from 0 to maxDeriv do
+#           # if jr+js+jt = k then
+#           # if jr<=k and js<=k and jt<=k and (jr+js+jt)>0 then
+#           if (jr+js+jt)>0 and  jr<=maxDeriv and js<=maxDeriv and jt<=maxDeriv then
+#             printf(" myOrder=%d, maxDeriv=%d, components=%d, derivative r=%d s=%d t=%d\n",myOrder,maxDeriv,components,jr,js,jt):
+#             differenceApproximation(jr,js,jt,myOrder,rName,"dr");
+#             # differenceApproximation(jr,js,jt,orderOfAccuracy,xName,"dx");
+#           end if:
+#        end do:
+#        end do:
+#       end do:
+#     # end do:
+#   end do:
+#   fprintf(mfile,"#endMacro\n");
+# end do;
+
+
+
+
+
+# for dim from 2 to numberOfDimensions do 
+
+#   fprintf(mfile,"\n");
+#   fprintf(mfile,"! =======================================================\n");
+#   fprintf(mfile,"!  Macro to compute %s derivatives in %d dimensions \n",dName,dim);
+#   fprintf(mfile,"!  OPTION : evalMetrics : evaluate the derivatives of the metrics\n");
+#   fprintf(mfile,"!          (metrics need only be evaluated once when using discrete delta to get coeffs)\n");
+#   fprintf(mfile,"! =======================================================\n");
+#   fprintf(mfile,"#beginMacro get%sDerivatives%dd(ORDER,GRIDTYPE,OPTION,i1,i2,i3)\n",dName,dim): 
+
+
+#   fprintf(mfile,"\n#If #GRIDTYPE eq \"rectangular\" \n"):
+#   fprintf(mfile,"! ---------- RECTANGULAR  ---------\n"):  
+#   fprintf(mfile,"! This assumes dr(0:2) = dx(0:2)\n"):  
+
+#   # Just use parametric derivatives for cartesain derivatives, assuming dr(:) = dx(:)
+#   fprintf(mfile,"define%sParameticDerivativesComponents1(u)\n",dName);
+
+#   ndv := ndd;
+#   nddMod2 := modp(ndd,2);  
+#   if dim=2 then ndv3:=0; else ndv3:=ndv; end if;  
+#   for jt from 0 to ndv3 do   # t derivatives 
+#   for js from 0 to ndv do    # s derivatives 
+#     for jr from 0 to ndv do  # r derivatives
+#       # Define all even or odd derivatives up to order ndv 
+#       if (jr+js+jt) >0 and (jr+js+jt)<=ndv and modp(jr,2)=nddMod2 and modp(js,2)=nddMod2 and modp(jt,2)=nddMod2 then
+#         uName := u; urName:=u; 
+#         for kr from 1 by 1 to jr do uName := cat(uName,x); urName := cat(urName,r); end do;
+#         for ks from 1 by 1 to js do uName := cat(uName,y); urName := cat(urName,s); end do;
+#         for kt from 1 by 1 to jt do uName := cat(uName,z); urName := cat(urName,t); end do;
+#         # Choose the biggest stencil that fits
+#         if ( jr<=2 and js<=2 and jt<=2 ) then
+#             myOrder:=maxOrder: 
+#         elif ( jr<=4 and js<=4 and jt<=4 ) then
+#             myOrder:=maxOrder-2:   
+#         elif ( jr<=6 and js<=6 and jt<=6 ) then
+#             myOrder:=maxOrder-4: 
+#         elif ( jr<=8 and js<=8 and jt<=8 ) then
+#             myOrder:=maxOrder-6:                              
+#         else
+#             myOrder:=maxOrder-8:
+#         end if:        
+#         # Just use parametric derivatives 
+#         fprintf(mfile,"%-8s = %s%dMacro(i1,i2,i3,0)\n",uName,urName,myOrder);
+#       end if;
+#     end do;
+#   end do;
+#   end do;
+#   # if dim=2 then
+#   #    fprintf(mfile,"uxxx = uxxx22r(i1,i2,i3,0)\n");
+#   #    fprintf(mfile,"uxxy = uxxy22r(i1,i2,i3,0)\n");
+#   #    fprintf(mfile,"uxyy = uxyy22r(i1,i2,i3,0)\n");
+#   #    fprintf(mfile,"uyyy = uyyy22r(i1,i2,i3,0)\n");
+#   # else
+#   #   fprintf(mfile,"uxxx = uxxx23r(i1,i2,i3,0)\n");
+#   #   fprintf(mfile,"uxxy = uxxy23r(i1,i2,i3,0)\n");
+#   #   fprintf(mfile,"uxxz = uxxz23r(i1,i2,i3,0)\n");
+#   #   fprintf(mfile,"uxyy = uxyy23r(i1,i2,i3,0)\n");
+#   #   fprintf(mfile,"uxzz = uxzz23r(i1,i2,i3,0)\n");
+#   #   fprintf(mfile,"uyyy = uyyy23r(i1,i2,i3,0)\n");
+#   #   fprintf(mfile,"uyyz = uyyz23r(i1,i2,i3,0)\n");
+#   #   fprintf(mfile,"uyzz = uyzz23r(i1,i2,i3,0)\n");
+#   #   fprintf(mfile,"uzzz = uzzz23r(i1,i2,i3,0)\n");
+#   # end if;
+
+#   fprintf(mfile,"\n#Else\n"):
+
+
+#   fprintf(mfile,"! ---------- START CURVILINEAR  ---------\n"):
+
+#   fprintf(mfile,"define%sParameticDerivativesComponents1(u)\n",dName);
+  
+#   fprintf(mfile,"#If #OPTION eq \"evalMetrics\"\n");
+#     fprintf(mfile,"define%sParameticDerivativesComponents0(rx)\n",dName);
+#     fprintf(mfile,"define%sParameticDerivativesComponents0(ry)\n",dName);
+    
+#     fprintf(mfile,"define%sParameticDerivativesComponents0(sx)\n",dName);
+#     fprintf(mfile,"define%sParameticDerivativesComponents0(sy)\n",dName);
+#     if dim=3 then
+#       fprintf(mfile,"define%sParameticDerivativesComponents0(rz)\n",dName);
+#       fprintf(mfile,"define%sParameticDerivativesComponents0(sz)\n",dName);
+#       fprintf(mfile,"define%sParameticDerivativesComponents0(tx)\n",dName);
+#       fprintf(mfile,"define%sParameticDerivativesComponents0(ty)\n",dName);
+#       fprintf(mfile,"define%sParameticDerivativesComponents0(tz)\n",dName);
+#     end if;
+#   fprintf(mfile,"#End\n"); # end If #OPTION eq \"evalMetrics\"\n");
+
+#   fprintf(mfile,"\n! ---------- Parametric derivatives ---------\n"):  
+#   numVar:= dim^2;
+
+#   for ivar from 0 to numVar do
+#     if ivar=1 then
+#       fprintf(mfile,"#If #OPTION eq \"evalMetrics\"\n");
+#     end if;
+#     if ivar=0 then ndv:=ndd; else ndv:=ndd-1; end if; 
+#     if dim=2 then ndv3:=0; else ndv3:=ndv; end if;  
+#     for jt from 0 to ndv3 do   # t derivatives 
+#     for js from 0 to ndv do    # s derivatives 
+#       for jr from 0 to ndv do  # r derivatives
+#         if (jr+js+jt) >0 and (jr+js+jt)<=ndv then
+
+#           if ivar = 0 then
+#             uName := u;
+#           else
+#             uName := rxName[ivar]; 
+#           end if;
+#           # printf(" jr=%d, js=%d, uName=%s (start)\n",jr,js,convert(uName,string));
+
+#           for kr from 1 by 1 to jr do
+#             uName := cat(uName,r); 
+#           end do;
+#           for ks from 1 by 1 to js do
+#             uName := cat(uName,s); 
+#           end do;
+#           for kt from 1 by 1 to jt do
+#             uName := cat(uName,t); 
+#           end do;          
+
+#           uNameString := convert(uName,string); 
+
+#           # printf(" jr=%d, js=%d, uName=%s\n",jr,js,uNameString);
+#           if ( jr<=2 and js<=2 and jt<=2 ) then
+#               myOrder:=maxOrder: 
+#           elif ( jr<=4 and js<=4 and jt<=4 ) then
+#               myOrder:=maxOrder-2:   
+#           elif ( jr<=6 and js<=6 and jt<=6 ) then
+#               myOrder:=maxOrder-4: 
+#           elif ( jr<=8 and js<=8 and jt<=8 ) then
+#               myOrder:=maxOrder-6:                              
+#           else
+#               myOrder:=maxOrder-8:
+#           end if:             
+         
+
+#           if ivar=0 then
+#             fprintf(mfile,"%-8s = %s%dMacro(i1,i2,i3,0)\n",uNameString,uNameString,myOrder);
+#           else
+#             fprintf(mfile,"%-8s = %s%dMacro(i1,i2,i3)\n",uNameString,uNameString,myOrder);
+#           end if;
+#           if dim=3 then fprintf(ifile,"real %s\n",uNameString); end if;
+
+#         end if;
+
+#       end do; # end jr
+#     end do;   # end js 
+#     end do;   # end jt
+#   end do;
+
+#     #   fprintf(mfile,"urr  = urr2(i1,i2,i3,0)\n");
+#     # fprintf(mfile,"urrr = urrr2(i1,i2,i3,0)\n");
+
+#   # Define spatial derivatives of the metrics rx, ry, sx, sy, ...
+#   fprintf(mfile,"\n! ---------- Spatial derivatives of metrics rx, sx, ry, ... ---------\n"):
+
+#   for ivar from 1 to numVar do
+#     fprintf(mfile,"%si = %s(i1,i2,i3)\n",rxName[ivar],rxName[ivar]);  # set rxi = rx(i1,i2,i3) etc.
+#     if dim=3 then fprintf(ifile,"real %si\n",rxName[ivar]); end if;
+
+#   end do;
+
+#   ndv := ndd-1; # number of spatial derivatives of rx, ry, sx, etc. needed
+#   for rvar from 1 to dim do 
+#   for xvar from 1 to dim do 
+#     rxn := cat(rName[rvar],xName[xvar]); # rx, ry, sx, sy, ...
+#     # printf("rvar=%d, xvar=%d, rxn=%s\n",rvar,xvar,rxn);
+#     if xvar<=1 then ndvx:=ndv; else ndvx:=0; end if; # no need to compute ryx since we have rxy 
+#     if xvar<=2 then ndvy:=ndv; else ndvy:=0; end if; # no need to compute ryx since we have rxy 
+#     if xvar<=3 and dim=3 then ndvz:=ndv; else ndvz:=0; end if; # no need to compute ryx since we have rxy 
+#     for iz from 0 to ndvz do 
+#     for iy from 0 to ndvy do 
+#       for ix from 0 to ndvx do 
+#         if (ix+iy+iz) >0 and (ix+iy+iz)<=ndv then
+#           ud := DuDx[ix,iy,iz,dim];
+#           uds := convert(ud,string);
+#           # uds := SubstituteAll( uds,"rx","rxi");
+#           # uds := SubstituteAll( uds,"ry","ryi");
+#           # uds := SubstituteAll( uds,"rz","rzi");
+#           # uds := SubstituteAll( uds,"sx","sxi");
+#           # uds := SubstituteAll( uds,"sy","syi");
+#           # uds := SubstituteAll( uds,"sz","szi");
+#           # uds := SubstituteAll( uds,"tx","txi");
+#           # uds := SubstituteAll( uds,"ty","tyi");
+#           # uds := SubstituteAll( uds,"tz","tzi");
+#           # replace rx, ry, sx, sy, ... by rxi, ryi, 
+#           uds := RegSubs("([rst][xyz])([^a-z])" = "\\1i\\2", uds); 
+
+#           # replace: no "^" followed by [0-9] followed by a "*" by [0-9].*   
+#           uds := RegSubs("([^\\^][0-9])\\*"="\\1.*",uds);   # add a decimal point to 2*rx --> 2.*rx  
+#           # uds := RegSubs("([0-9])\\*"="\\1.*",uds);   # add a decimal point to 2*rx --> 2.*rx 
+
+#           uds := SubstituteAll( uds,"^","**");      # convert power symbol "^" to "**"
+
+#           uds := SubstituteAll( uds,"u",rxn);
+
+#           derivName := ""; # name of derivative: "x", "xx", "xy, "yy", etc 
+#           for jx from 1 to ix do derivName := cat(derivName,"x"); end do;
+#           for jy from 1 to iy do derivName := cat(derivName,"y"); end do;
+#           for jz from 1 to iz do derivName := cat(derivName,"z"); end do;
+
+#           fprintf(mfile,"%s%-6s = %s\n",rxn,derivName,uds);
+#           if dim=3 then fprintf(ifile,"real %s%s\n",rxn,derivName); end if;
+
+#         end if; 
+#       end do; # ix 
+#     end do;   # iy 
+#     end do;   # iz 
+#   end do;
+#   end do;
+#   fprintf(mfile,"#End\n"); # end If #OPTION eq \"evalMetrics\"\n");
+#   fprintf(mfile,"! ---- end OPTION eq evalMetrics ---\n");
+
+
+#   # Here are final spatial derivatives of u by the chain rule: 
+#   ndv := ndd; # number of spatial derivatives of rx, ry, sx, etc. needed
+
+#   fprintf(mfile,"\n! ---------- %s spatial derivatives of u ---------\n",dName):  
+#   if dim=2 then ndd3:=0; else ndd3:=ndd; end if;
+#   for iz from 0 to ndd3 do 
+#   for iy from 0 to ndd do 
+#   for ix from 0 to ndd do 
+#     # printf("?? ndv=%d: ix=%d, iy=%d, iz=%d, nddMod2=%d modp(iy,2)=%d modp(iz,2)=%d\n",ndv, ix,iy,iz,nddMod2,modp(iy,2),modp(iz,2));
+
+#     if (ix+iy+iz) >0 and (ix+iy+iz)<=ndv and modp(ix,2)=nddMod2 and modp(iy,2)=nddMod2 and modp(iz,2)=nddMod2 then
+
+
+#       derivName := "u"; # name of derivative: "uxxx", "uxyy", etc. 
+#       for jx from 1 to ix do derivName := cat(derivName,"x"); end do;
+#       for jy from 1 to iy do derivName := cat(derivName,"y"); end do;
+#       for jz from 1 to iz do derivName := cat(derivName,"z"); end do;
+
+#       uds := DuDx[ix,iy,iz,dim];
+#       uds := convert(uds,string);
+#       # printf("++ ix=%d, iy=%d, iz=%d, uds=%s\n",ix,iy,iz,uds);
+
+#             # uds := SubstituteAll( uds,"rx","rxi");
+#       # uds := SubstituteAll( uds,"ry","ryi");
+#       # uds := SubstituteAll( uds,"rz","rzi");
+#       # uds := SubstituteAll( uds,"sx","sxi");
+#       # uds := SubstituteAll( uds,"sy","syi");
+#       # uds := SubstituteAll( uds,"sz","szi");
+#       # uds := SubstituteAll( uds,"tx","txi");
+#       # uds := SubstituteAll( uds,"ty","tyi");
+#       # uds := SubstituteAll( uds,"tz","tzi");
+#       # replace rx, ry, sx, sy, ... by rxi, ryi, 
+#       uds := RegSubs("([rst][xyz])([^a-z])" = "\\1i\\2", uds);
+#       # replace: no "^" followed by [0-9] followed by a "*" by [0-9].*   
+#       uds := RegSubs("([^\\^][0-9])\\*"="\\1.*",uds);   # add a decimal point to 2*rx --> 2.*rx  
+#       uds := SubstituteAll( uds,"^","**");      # convert power symbol "^" to "**"   
+
+#       fprintf(mfile,"%-8s = %s\n",derivName,uds); 
+#       if dim=3 then fprintf(ifile,"real %s\n",derivName); end if;
+
+#     end if;
+#   end do; # ix 
+#   end do;   # iy 
+#   end do;   # iz 
+
+#   # uxxx := DuDx[3,0,0,dim];
+#   # uxxy := DuDx[2,1,0,dim];
+#   # uxyy := DuDx[1,2,0,dim];
+#   # uyyy := DuDx[0,3,0,dim];
+
+#   # fprintf(mfile,"uxxx = %s\n",convert(uxxx,string));
+#   # fprintf(mfile,"uxxy = %s\n",convert(uxxy,string));
+#   # fprintf(mfile,"uxyy = %s\n",convert(uxyy,string));
+#   # fprintf(mfile,"uyyy = %s\n",convert(uyyy,string));
+
+#   fprintf(mfile,"! ---------- END CURVILINEAR  ---------\n"):  
+
+#   fprintf(mfile,"#End\n"); # end curvlinear 
+
+#   fprintf(mfile,"#endMacro\n"): 
+
+# end do; # dim 
+
+# fclose(mfile):
+# fclose(ifile):
+
+# printf(" **** Output written to file [%s] and [%s] ******\n",mfileName,ifileName);
+
+

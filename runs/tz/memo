@@ -1,4 +1,1318 @@
+alias testHighDerivatives $wave/bin/testHighDerivatives
+set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDerivatives
 
+
+************************************************************************
+********* Sat Feb 19, 2022
+
+BUG FOUND : SET ghost=1 at start of loops
+
+BUG FOUND -- makeGetDerivativesMacro.maple : EVLA LOWER SPATIAL DERIVS BEFORE HIGHER
+
+START CURVILINEAR
+
+
+TEST FD26 -- exact 
+cgWave -noplot tz.cmd -g=square16.order6 -upwind=0 -tz=poly -degreeInTime=2 -degreeInSpace=6 -orderInTime=2 -tf=.1 -tp=.1 -bcApproach=cbc -go=go
+cgWave:FD26 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 3.55e-15, ||u||= 6.47e+00, cpu= 7.73e-03(s)
+
+
+cgWave tz.cmd -g=sice8.order6.ng4 -upwind=1 -tz=trig -tf=10 -tp=.5 -bcApproach=cbc -go=halt -cfl=.5
+
+cgWave:FD66u t=5.000e-01 ( 117 steps) dt=4.274e-03 maxErr= 1.84e-09, ||u||= 1.00e+00, cpu= 1.48e+01(s)
+cgWave:FD66u t=1.000e+00 ( 234 steps) dt=4.274e-03 maxErr= 1.91e-09, ||u||= 1.00e+00, cpu= 3.43e+01(s)
+cgWave:FD66u t=1.500e+00 ( 351 steps) dt=4.274e-03 maxErr= 1.93e-09, ||u||= 1.00e+00, cpu= 5.02e+01(s)
+cgWave:FD66u t=2.000e+00 ( 468 steps) dt=4.274e-03 maxErr= 1.89e-09, ||u||= 1.00e+00, cpu= 6.59e+01(s)
+cgWave:FD66u t=2.500e+00 ( 585 steps) dt=4.274e-03 maxErr= 1.89e-09, ||u||= 1.00e+00, cpu= 7.90e+01(s)
+cgWave:FD66u t=3.000e+00 ( 702 steps) dt=4.274e-03 maxErr= 1.94e-09, ||u||= 1.00e+00, cpu= 9.21e+01(s)
+cgWave:FD66u t=3.500e+00 ( 819 steps) dt=4.274e-03 maxErr= 1.86e-09, ||u||= 1.00e+00, cpu= 1.05e+02(s)
+cgWave:FD66u t=4.000e+00 ( 936 steps) dt=4.274e-03 maxErr= 1.88e-09, ||u||= 1.00e+00, cpu= 1.18e+02(s)
+
+
+cgWave tz.cmd -g=sice4.order6.ng4 -upwind=1 -tz=trig -tf=10 -tp=.5 -bcApproach=cbc -go=halt -cfl=.5
+
+cgWave:FD66 t=3.000e-01 ( 39 steps) dt=7.692e-03 maxErr= 1.21e-07, ||u||= 3.09e-01, cpu= 1.02e+01(s)
+cgWave:FD66 t=4.000e-01 ( 52 steps) dt=7.692e-03 maxErr= 2.25e-07, ||u||= 8.09e-01, cpu= 1.19e+01(s)
+cgWave:FD66 t=5.000e-01 ( 65 steps) dt=7.692e-03 maxErr= 2.80e-07, ||u||= 1.00e+00, cpu= 1.34e+01(s)
+cgWave:FD66 t=6.000e-01 ( 78 steps) dt=7.692e-03 maxErr= 2.35e-07, ||u||= 8.09e-01, cpu= 1.50e+01(s)
+cgWave:FD66 t=7.000e-01 ( 91 steps) dt=7.692e-03 maxErr= 1.73e-07, ||u||= 3.09e-01, cpu= 1.67e+01(s)
+cgWave:FD66 t=8.000e-01 (104 steps) dt=7.692e-03 maxErr= 1.32e-07, ||u||= 3.09e-01, cpu= 1.84e+01(s)
+cgWave:FD66 t=9.000e-01 (117 steps) dt=7.692e-03 maxErr= 2.23e-07, ||u||= 8.09e-01, cpu= 1.97e+01(s)
+cgWave:FD66 t=1.000e+00 (130 steps) dt=7.692e-03 maxErr= 2.87e-07, ||u||= 1.00e+00, cpu= 2.12e+01(s)
+cgWave:FD66 t=1.100e+00 (143 steps) dt=7.692e-03 maxErr= 2.46e-07, ||u||= 8.09e-01, cpu= 2.27e+01(s)
+cgWave:FD66 t=1.200e+00 (156 steps) dt=7.692e-03 maxErr= 1.87e-07, ||u||= 3.09e-01, cpu= 2.46e+01(s)
+
+
+cgWave tz.cmd -g=sice4.order6.ng4 -upwind=0 -tz=trig -tf=5 -tp=.1 -bcApproach=cbc -go=halt
+
+
+
+cgWave tz.cmd -g=nonSquare32.order6 -upwind=0 -tz=trig -tf=5 -tp=.1 -bcApproach=cbc -go=halt
+
+
+Rotated-Square
+cgWave -noplot tz.cmd -g=rotatedSquare16.order6 -upwind=0 -tz=poly -degreeInTime=6 -degreeInSpace=6 -tf=.5 -tp=.1 -bcApproach=cbc -go=go
+cgWave:FD66 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 3.11e-15, ||u||= 4.86e+00, cpu= 1.53e-02(s)
+cgWave:FD66 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 4.88e-15, ||u||= 5.15e+00, cpu= 3.78e-02(s)
+cgWave:FD66 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 4.88e-15, ||u||= 5.49e+00, cpu= 6.02e-02(s)
+cgWave:FD66 t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 4.44e-15, ||u||= 5.89e+00, cpu= 8.23e-02(s)
+cgWave:FD66 t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 4.44e-15, ||u||= 6.39e+00, cpu= 1.04e-01(s)
+
+
+NON-SQUARE : exact 
+cgWave -noplot tz.cmd -g=nonSquare8.order6 -upwind=0 -tz=poly -degreeInTime=6 -degreeInSpace=6 -tf=.5 -tp=.1 -bcApproach=cbc -go=go
+
+cgWave:FD66 t=5.000e-01 (10 steps) dt=5.000e-02 maxErr= 4.00e-15, ||u||= 8.50e+00, cpu= 3.37e-02(s)
+
+
+
+USE JACOBI UPDATE
+
+cgWave -noplot tz.cmd -g=square16.order6 -upwind=0 -tz=poly -degreeInTime=6 -degreeInSpace=6 -tf=.1 -tp=.1 -bcApproach=cbc -go=go
+
+
+CORNERS + UPWIND : CFL=.25 NEEDED!!!!
+cgWave tz.cmd -g=square32.order6.ng4 -upwind=1 -tz=trig -tf=10 -tp=.5 -bcApproach=cbc -go=halt -cfl=.25
+
+upwinding **trouble** CFL=.5 OK
+cgWave tz.cmd -g=square64np.order6.ng4 -upwind=1 -tz=trig -tf=10 -tp=.5 -bcApproach=cbc -go=halt -cfl=.5
+cgWave tz.cmd -g=square32np.order6.ng4 -upwind=1 -tz=trig -tf=10 -tp=.5 -bcApproach=cbc -go=halt -cfl=.5
+
+CBC6 + initial extrap :
+cgWave tz.cmd -g=square64np.order6.ng4 -upwind=0 -tz=trig -tf=5 -tp=.5 -bcApproach=cbc -go=halt
+cgWave tz.cmd -g=square32np.order6.ng4 -upwind=0 -tz=trig -tf=5 -tp=.1 -bcApproach=cbc -go=halt
+
+
+************************************************************************
+********* Fri Feb 18, 2022
+
+TEST CBC ORDER 6
+
+ADD SYYMETRY BC 
+
+UPWIND broken:
+cgWave tz.cmd -g=square64.order6.ng4 -upwind=1 -tz=trig -tf=5 -tp=.1 -bcApproach=cbc -go=halt
+
+cgWave tz.cmd -g=square64.order6.ng4 -upwind=0 -tz=trig -tf=5 -tp=.1 -bcApproach=cbc -go=halt
+
+
+cgWave tz.cmd -g=square16.order6 -upwind=0 -tz=trig -tf=5 -tp=.1 -bcApproach=cbc -go=halt
+
+
+
+CBC6 - TRIG
+cgWave -noplot tz.cmd -g=square64.order6 -upwind=0 -tz=trig -tf=.5 -tp=.5 -bcApproach=cbc -go=go
+cgWave -noplot tz.cmd -g=square32.order6 -upwind=0 -tz=trig -tf=.5 -tp=.5 -bcApproach=cbc -go=go
+cgWave -noplot tz.cmd -g=square16.order6 -upwind=0 -tz=trig -tf=.5 -tp=.5 -bcApproach=cbc -go=go
+
+G64
+G32
+G16
+cgWave:FD66 t=5.000e-01 (13 steps) dt=3.846e-02 maxErr= 2.51e-01, ||u||= 1.10e+00, cpu= 2.46e-02(s)
+
+cgWave tz.cmd -g=square16.order6 -upwind=0 -tz=trig -tf=5 -tp=.1 -bcApproach=cbc -go=halt
+
+
+cgWave -noplot tz.cmd -g=square16.order6 -upwind=0 -tz=poly -degreeInTime=6 -degreeInSpace=6 -tf=.1 -tp=.1 -bcApproach=cbc -go=go
+cgWave -noplot tz.cmd -g=square16.order6 -upwind=0 -tz=poly -degreeInTime=1 -degreeInSpace=2 -tf=.1 -tp=.1 -bcApproach=cbc -go=go
+
+************************************************************************
+********* Thurs Feb 17, 2022
+
+START TEST CBC ORDER 6
+
+
+cgWave -noplot tz.cmd -g=square16.order6 -upwind=0 -tz=trig -bc=d -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+
+EXACT: 
+cgWave -noplot tz.cmd -g=nonSquare16.order8 -upwind=0 -tz=poly -degreeInTime=6 -degreeInSpace=6 -bc=e -tf=1 -tp=.1 -go=go
+
+cgWave:FD88 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 4.44e-15, ||u||= 7.30e+00, cpu= 4.15e+00(s)
+cgWave:FD88 t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 5.33e-15, ||u||= 7.84e+00, cpu= 5.46e+00(s)
+
+************************************************************************
+********* Wed Feb 16, 2022
+
+**FIX ME: OGPOLY : only supports up to degree=6 +++++++++++++
+
+** FIX ME : TAKE FIRST STEP FOR ORDER=8 *****
+
++++ ADDED UPWINDING FOR ORDER=4 
+
+
+
+>>>>>>>>  START ORDER 6 
+
+FD66 EXACT degree=6 
+cgWave -noplot tz.cmd -g=nonSquare16.order6 -upwind=0 -tz=poly  -degreeInTime=6 -degreeInSpace=6 -bc=e -tf=1 -tp=.1 -go=go
+cgWave:FD66 t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 1.07e-14, ||u||= 1.59e+01, cpu= 3.84e-01(s)
+
+
+FD66 EXACT degree=6 
+cgWave -noplot tz.cmd -g=square16.order6 -upwind=0 -tz=poly  -degreeInTime=6 -degreeInSpace=6 -bc=e -tf=1 -tp=.1 -go=go
+
+cgWave:FD66 t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 1.07e-14, ||u||= 1.59e+01, cpu= 1.13e-01(s)
+
+---- improve performance
+
+BUT ALL CPU IS FOR THE FORCING!!!
+
+cgWave -noplot tz.cmd -g=nonSquare16.order8 -upwind=0 -tz=trig -bc=e -tf=.5 -tp=.5 -go=go
+
+AFTER
+cgWave:FD88 t=5.000e-01 (13 steps) dt=3.846e-02 maxErr= 3.95e-08, ||u||= 1.00e+00, cpu= 1.06e-01(s)
+
+START
+cgWave:FD88 t=5.000e-01 (13 steps) dt=3.846e-02 maxErr= 3.95e-08, ||u||= 1.00e+00, cpu= 1.09e-01(s)
+
+
+
+cgWave -noplot tz.cmd -g=nonSquare128.order8 -upwind=0 -tz=trig -bc=e -tf=.5 -tp=.5 -go=go
+
+No forcing 
+advance.............................  3.70e+01    3.66e-01    1.83e-05    99.991   3.696e+01   3.696e+01
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  3.69e+01    3.65e-01    1.82e-05    99.837   3.690e+01   3.690e+01
+
+
+cgWave -noplot tz.cmd -g=square128.order8 -upwind=0 -tz=trig -bc=e -tf=.5 -tp=.5 -go=go
+
+
+New -- turn off forcing: 
+  advance rectangular grids.........  1.75e-01    1.74e-03    8.74e-08    71.018   1.755e-01   1.755e-01
+
+
+NEW:
+
+START: 
+advance.............................  8.14e+00    8.06e-02    4.05e-06    99.958   8.137e+00   8.137e+00
+  advance rectangular grids.........  8.08e+00    8.00e-02    4.03e-06    99.288   8.083e+00   8.083e+00
+
+
+
+TEST UPWINDING - looks OK
+cgWave tz.cmd -g=cice4.order8.ng5 -upwind=1 -tz=trig -bc=e -tf=.5 -tp=.1 -go=og
+cgWave -noplot tz.cmd -g=cice2.order8.ng5 -upwind=1 -tz=trig -bc=e -tf=.5 -tp=.1 -go=go
+
+G2
+cgWave:FD88 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 6.11e-06, ||u||= 8.09e-01, cpu= 5.48e-01(s)
+cgWave:FD88 t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 3.05e-05, ||u||= 3.09e-01, cpu= 1.13e+00(s)
+cgWave:FD88 t=3.000e-01 (18 steps) dt=1.667e-02 maxErr= 5.48e-05, ||u||= 3.09e-01, cpu= 1.76e+00(s)
+cgWave:FD88 t=4.000e-01 (24 steps) dt=1.667e-02 maxErr= 5.29e-05, ||u||= 8.09e-01, cpu= 2.35e+00(s)
+cgWave:FD88 t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 2.71e-05, ||u||= 1.00e+00, cpu= 2.95e+00(s)
+
+G4 
+cgWave:FD88 t=1.000e-01 ( 9 steps) dt=1.111e-02 maxErr= 7.07e-08, ||u||= 8.09e-01, cpu= 3.88e+00(s)
+cgWave:FD88 t=2.000e-01 (18 steps) dt=1.111e-02 maxErr= 3.67e-07, ||u||= 3.09e-01, cpu= 7.83e+00(s)
+cgWave:FD88 t=3.000e-01 (27 steps) dt=1.111e-02 maxErr= 7.45e-07, ||u||= 3.09e-01, cpu= 1.51e+01(s)
+cgWave:FD88 t=4.000e-01 (36 steps) dt=1.111e-02 maxErr= 8.42e-07, ||u||= 8.09e-01, cpu= 1.81e+01(s)
+cgWave:FD88 t=5.000e-01 (45 steps) dt=1.111e-02 maxErr= 5.33e-07, ||u||= 1.00e+00, cpu= 2.10e+01(s)
+
+
+
+CIC:
+cgWave -noplot tz.cmd -g=cice8.order8.ng5 -upwind=0 -tz=trig -bc=e -tf=.5 -tp=.1 -go=go
+cgWave -noplot tz.cmd -g=cice4.order8.ng5 -upwind=0 -tz=trig -bc=e -tf=.5 -tp=.1 -go=go
+cgWave -noplot tz.cmd -g=cice2.order8.ng5 -upwind=0 -tz=trig -bc=e -tf=.5 -tp=.1 -go=go
+
+G8
+cgWave:FD88 t=1.000e-01 ( 15 steps) dt=6.667e-03 maxErr= 1.17e-11, ||u||= 8.09e-01, cpu= 1.95e+01(s)
+cgWave:FD88 t=2.000e-01 ( 30 steps) dt=6.667e-03 maxErr= 1.14e-11, ||u||= 3.09e-01, cpu= 4.05e+01(s)
+cgWave:FD88 t=3.000e-01 ( 45 steps) dt=6.667e-03 maxErr= 5.76e-12, ||u||= 3.09e-01, cpu= 6.14e+01(s)
+cgWave:FD88 t=4.000e-01 ( 60 steps) dt=6.667e-03 maxErr= 1.47e-11, ||u||= 8.09e-01, cpu= 8.23e+01(s)
+cgWave:FD88 t=5.000e-01 ( 75 steps) dt=6.667e-03 maxErr= 1.59e-11, ||u||= 1.00e+00, cpu= 1.03e+02(s)
+cgWave:FD88 t=6.000e-01 ( 90 steps) dt=6.667e-03 maxErr= 1.10e-11, ||u||= 8.09e-01, cpu= 1.25e+02(s)
+cgWave:FD88 t=7.000e-01 (105 steps) dt=6.667e-03 maxErr= 6.29e-12, ||u||= 3.09e-01, cpu= 1.46e+02(s)
+cgWave:FD88 t=8.000e-01 (120 steps) dt=6.667e-03 maxErr= 6.19e-12, ||u||= 3.09e-01, cpu= 1.67e+02(s)
+cgWave:FD88 t=9.000e-01 (135 steps) dt=6.667e-03 maxErr= 1.13e-11, ||u||= 8.09e-01, cpu= 1.88e+02(s)
+cgWave:FD88 t=1.000e+00 (150 steps) dt=6.667e-03 maxErr= 1.26e-11, ||u||= 1.00e+00, cpu= 2.09e+02(s)
+
+
+G4 
+cgWave:FD88 t=1.000e-01 ( 9 steps) dt=1.111e-02 maxErr= 4.65e-09, ||u||= 8.09e-01, cpu= 5.29e+00(s)
+cgWave:FD88 t=2.000e-01 (18 steps) dt=1.111e-02 maxErr= 7.28e-09, ||u||= 3.09e-01, cpu= 1.12e+01(s)
+cgWave:FD88 t=3.000e-01 (27 steps) dt=1.111e-02 maxErr= 3.13e-09, ||u||= 3.09e-01, cpu= 1.71e+01(s)
+cgWave:FD88 t=4.000e-01 (36 steps) dt=1.111e-02 maxErr= 6.63e-09, ||u||= 8.09e-01, cpu= 2.30e+01(s)
+cgWave:FD88 t=5.000e-01 (45 steps) dt=1.111e-02 maxErr= 7.09e-09, ||u||= 1.00e+00, cpu= 2.89e+01(s)
+
+G2
+cgWave:FD88 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 2.14e-06, ||u||= 8.09e-01, cpu= 2.00e+00(s)
+cgWave:FD88 t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 4.46e-06, ||u||= 3.09e-01, cpu= 4.31e+00(s)
+cgWave:FD88 t=3.000e-01 (18 steps) dt=1.667e-02 maxErr= 2.72e-06, ||u||= 3.09e-01, cpu= 6.66e+00(s)
+cgWave:FD88 t=4.000e-01 (24 steps) dt=1.667e-02 maxErr= 3.89e-06, ||u||= 8.09e-01, cpu= 8.98e+00(s)
+cgWave:FD88 t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 6.37e-06, ||u||= 1.00e+00, cpu= 1.13e+01(s)
+
+
+SIS - exact (first step uses exact)
+cgWave tz.cmd -g=sise2.order8.ng5 -upwind=0 -tz=poly  -degreeInTime=6 -degreeInSpace=6 -bc=e -tf=1 -tp=.01 -go=og
+
+
+cgWave -noplot tz.cmd -g=rotatedSquare32.order8 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=go
+cgWave -noplot tz.cmd -g=rotatedSquare16.order8 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=go
+
+G32
+cgWave:FD88 t=1.000e+00 (60 steps) dt=1.667e-02 maxErr= 1.20e-08, ||u||= 1.00e+00, cpu= 7.73e+00(s)
+
+G16
+cgWave:FD88 t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 3.02e-06, ||u||= 1.00e+00, cpu= 1.06e+00(s)
+
+
+
+
+FD88 Curvilinear
+cgWave -noplot tz.cmd -g=nonSquare16.order8 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=go
+
+G16c 
+cgWave:FD88 t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 6.28e-08, ||u||= 1.00e+00, cpu= 8.73e-01(s)
+
+
+FD88 RECTANGULAR 
+cgWave -noplot tz.cmd -g=square32.order8 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=go
+cgWave -noplot tz.cmd -g=square16.order8 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=go
+
+G32 ratio = 242
+cgWave:FD88 t=1.000e+00 (60 steps) dt=1.667e-02 maxErr= 2.59e-10, ||u||= 1.00e+00, cpu= 4.63e-01(s)
+G16
+cgWave:FD88 t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 6.28e-08, ||u||= 1.00e+00, cpu= 7.21e-02(s)
+
+FD88 EXACT degree=6 
+cgWave -noplot tz.cmd -g=square16.order8 -upwind=0 -tz=poly  -degreeInTime=6 -degreeInSpace=6 -bc=e -tf=1 -tp=.1 -go=go
+
+cgWave:FD88 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 2.66e-15, ||u||= 6.47e+00, cpu= 7.96e-03(s)
+
+
+cgWave:FD88 t=8.000e-01 (24 steps) dt=3.333e-02 maxErr= 6.22e-15, ||u||= 1.18e+01, cpu= 7.80e+00(s)
+cgWave:FD88 t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 8.88e-15, ||u||= 1.59e+01, cpu= 8.62e+00(s)
+
+
+
+************************************************************************
+********* Tues Feb 15, 2022
+
+Start work on advWaveME.bf90 -- sixth order ME scheme
+
+EIGHTH-ORDER -- looks ok 
+cgWave -noplot tz.cmd -g=square32.order8 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=go
+cgWave -noplot tz.cmd -g=square16.order8 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=go
+
+G32
+hierDeriv: grid= 0 max-rel-err deriv 1 = 3.47E-09
+hierDeriv: grid= 0 max-rel-err deriv 2 = 1.45E-08
+hierDeriv: grid= 0 max-rel-err deriv 3 = 7.69E-07
+hierDeriv: grid= 0 max-rel-err deriv 4 = 2.19E-06
+hierDeriv: grid= 0 max-rel-err deriv 5 = 1.33E-04
+hierDeriv: grid= 0 max-rel-err deriv 6 = 2.63E-04
+
+G16
+hierDeriv: grid= 0 max-rel-err deriv 1 = 8.56E-07
+hierDeriv: grid= 0 max-rel-err deriv 2 = 3.54E-06
+hierDeriv: grid= 0 max-rel-err deriv 3 = 4.77E-05
+hierDeriv: grid= 0 max-rel-err deriv 4 = 1.34E-04
+hierDeriv: grid= 0 max-rel-err deriv 5 = 2.07E-03
+hierDeriv: grid= 0 max-rel-err deriv 6 = 4.04E-03
+
+
+
+SIXTH-ORDER 
+cgWave -noplot tz.cmd -g=square32.order6.ng4 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=go 
+cgWave -noplot tz.cmd -g=square16.order6.ng4 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=go 
+
+G32:
+hierDeriv: grid= 0 max-rel-err deriv 1 = 2.87E-09
+hierDeriv: grid= 0 max-rel-err deriv 2 = 2.21E-08
+hierDeriv: grid= 0 max-rel-err deriv 3 = 7.68E-07
+hierDeriv: grid= 0 max-rel-err deriv 4 = 2.19E-06
+hierDeriv: grid= 0 max-rel-err deriv 5 = 1.33E-04
+hierDeriv: grid= 0 max-rel-err deriv 6 = 2.63E-04
+
+G32: 
+hierDeriv: grid= 0 max-rel-err deriv 1 = 7.07E-07
+hierDeriv: grid= 0 max-rel-err deriv 2 = 3.39E-06
+hierDeriv: grid= 0 max-rel-err deriv 3 = 4.76E-05
+hierDeriv: grid= 0 max-rel-err deriv 4 = 1.34E-04
+hierDeriv: grid= 0 max-rel-err deriv 5 = 2.07E-03
+hierDeriv: grid= 0 max-rel-err deriv 6 = 4.04E-03
+
+G16
+hierDeriv: grid= 0 max-rel-err deriv 1 = 7.07E-07
+hierDeriv: grid= 0 max-rel-err deriv 2 = 3.39E-06
+hierDeriv: grid= 0 max-rel-err deriv 3 = 4.76E-05
+hierDeriv: grid= 0 max-rel-err deriv 4 = 1.34E-04
+hierDeriv: grid= 0 max-rel-err deriv 5 = 2.07E-03
+hierDeriv: grid= 0 max-rel-err deriv 6 = 4.04E-03
+
+
+
+
+
+
+************************************************************************
+********* Sat Feb 12, 2022
+
+CONTINUE WORK ON hierDeriv.bf90
+
+**BUG FOUND** d420i was wrong
+
+PLOT DERIVATIVES AND ERRORS
+
+** TROUBLE --> CHECK NORMAL MAPPING FOR ERRORS ??
+testHighDerivatives -caseName=washer -tz=trig -fx=2 -deriv=8 -order=8 -numRes=3
+
+
+testHighDerivatives -caseName=rhombus -tz=trig -fx=2 -deriv=8 -order=8 -numRes=3
+HD: rhombus8.order8 : grid=0: order=8, deriv=1 relMaxErr=8.28e-12 ratio=253.67 rate=7.99,  relL2Err=5.89e-12 ratio=254.02 rate=7.99
+HD: rhombus8.order8 : grid=0: order=8, deriv=2 relMaxErr=2.79e-11 ratio=253.33 rate=7.98,  relL2Err=2.09e-11 ratio=253.11 rate=7.98
+HD: rhombus8.order8 : grid=0: order=8, deriv=3 relMaxErr=9.60e-09 ratio= 63.46 rate=5.99,  relL2Err=8.15e-09 ratio= 63.50 rate=5.99
+HD: rhombus8.order8 : grid=0: order=8, deriv=4 relMaxErr=3.49e-08 ratio= 63.33 rate=5.98,  relL2Err=3.50e-08 ratio= 63.27 rate=5.98
+HD: rhombus8.order8 : grid=0: order=8, deriv=5 relMaxErr=8.11e-06 ratio= 15.87 rate=3.99,  relL2Err=7.61e-06 ratio= 15.88 rate=3.99
+HD: rhombus8.order8 : grid=0: order=8, deriv=6 relMaxErr=3.36e-05 ratio= 15.83 rate=3.98,  relL2Err=3.88e-05 ratio= 15.82 rate=3.98
+HD: rhombus8.order8 : grid=0: order=8, deriv=7 relMaxErr=4.40e-03 ratio=  3.97 rate=1.99,  relL2Err=4.60e-03 ratio=  3.97 rate=1.99
+HD: rhombus8.order8 : grid=0: order=8, deriv=8 relMaxErr=1.84e-02 ratio=  3.96 rate=1.99,  relL2Err=2.22e-02 ratio=  3.95 rate=1.98
+
+
+testHighDerivatives -caseName=wiggley -tz=trig -fx=2 -deriv=8 -order=8 -numRes=3
+testHighDerivatives -caseName=annulus -tz=trig -fx=2 -deriv=8 -order=8 -numRes=3
+
+
+EIGHTH 
+testHighDerivatives -noplot -caseName=annulus -tz=trig -fx=8 -deriv=8 -order=8 -numRes=5
+HD: annulus16.order10.ng6 : grid=0: order=8, deriv=1 maxErr=5.08e-08 ratio=237.53 rate=7.89
+HD: annulus16.order10.ng6 : grid=0: order=8, deriv=2 maxErr=2.61e-08 ratio=235.46 rate=7.88
+HD: annulus16.order10.ng6 : grid=0: order=8, deriv=3 maxErr=6.29e-06 ratio= 59.53 rate=5.90
+HD: annulus16.order10.ng6 : grid=0: order=8, deriv=4 maxErr=3.58e-06 ratio= 58.54 rate=5.87
+HD: annulus16.order10.ng6 : grid=0: order=8, deriv=5 maxErr=6.30e-04 ratio= 15.00 rate=3.91
+HD: annulus16.order10.ng6 : grid=0: order=8, deriv=6 maxErr=3.83e-04 ratio= 14.69 rate=3.88
+HD: annulus16.order10.ng6 : grid=0: order=8, deriv=7 maxErr=4.06e-02 ratio=  3.80 rate=1.93
+HD: annulus16.order10.ng6 : grid=0: order=8, deriv=8 maxErr=2.92e-02 ratio=  3.75 rate=1.91
+
+
+testHighDerivatives -noplot -caseName=annulus -tz=trig -fx=2 -deriv=8 -order=8 -numRes=3
+
+
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=2 -deriv=8 -order=8 -numRes=3
+
+HD: wiggley8.order8 : grid=0: order=8, deriv=1 maxErr=5.94e-12 ratio=252.98 rate=7.98
+HD: wiggley8.order8 : grid=0: order=8, deriv=2 maxErr=1.79e-11 ratio=255.51 rate=8.00
+HD: wiggley8.order8 : grid=0: order=8, deriv=3 maxErr=1.60e-08 ratio= 63.54 rate=5.99
+HD: wiggley8.order8 : grid=0: order=8, deriv=4 maxErr=5.05e-08 ratio= 60.43 rate=5.92
+HD: wiggley8.order8 : grid=0: order=8, deriv=5 maxErr=5.27e-05 ratio= 15.59 rate=3.96
+HD: wiggley8.order8 : grid=0: order=8, deriv=6 maxErr=2.64e-04 ratio= 17.45 rate=4.12
+HD: wiggley8.order8 : grid=0: order=8, deriv=7 maxErr=1.05e-01 ratio=  4.11 rate=2.04
+HD: wiggley8.order8 : grid=0: order=8, deriv=8 maxErr=1.43e+00 ratio=  4.26 rate=2.09
+
+
+SEVENTH DERIV
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=2 -deriv=7 -order=8 -numRes=3
+HD: wiggley8.order8 : grid=0: order=8, deriv=1 maxErr=5.94e-12 ratio=252.98 rate=7.98
+HD: wiggley8.order8 : grid=0: order=8, deriv=2 maxErr=1.79e-11 ratio=255.51 rate=8.00
+HD: wiggley8.order8 : grid=0: order=8, deriv=3 maxErr=1.60e-08 ratio= 63.54 rate=5.99
+HD: wiggley8.order8 : grid=0: order=8, deriv=4 maxErr=5.05e-08 ratio= 60.43 rate=5.92
+HD: wiggley8.order8 : grid=0: order=8, deriv=5 maxErr=5.27e-05 ratio= 15.59 rate=3.96
+HD: wiggley8.order8 : grid=0: order=8, deriv=6 maxErr=2.64e-04 ratio= 17.45 rate=4.12
+HD: wiggley8.order8 : grid=0: order=8, deriv=7 maxErr=1.05e-01 ratio=  4.11 rate=2.04
+
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=6 -deriv=7 -order=8 -numRes=4
+HD: wiggley16.order8 : grid=0: order=8, deriv=1 maxErr=2.39e-11 ratio=254.10 rate=7.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=2 maxErr=2.96e-11 ratio=249.17 rate=7.96
+HD: wiggley16.order8 : grid=0: order=8, deriv=3 maxErr=4.97e-08 ratio= 63.58 rate=5.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=4 maxErr=1.31e-07 ratio= 63.65 rate=5.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=5 maxErr=5.98e-05 ratio= 15.69 rate=3.97
+HD: wiggley16.order8 : grid=0: order=8, deriv=6 maxErr=3.24e-04 ratio= 15.80 rate=3.98
+HD: wiggley16.order8 : grid=0: order=8, deriv=7 maxErr=4.41e-02 ratio=  3.68 rate=1.88
+
+
+
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=6 -deriv=6 -order=8
+
+HD: wiggley16.order8 : grid=0: order=8, deriv=1 maxErr=2.39e-11 ratio=254.10 rate=7.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=2 maxErr=2.96e-11 ratio=249.17 rate=7.96
+HD: wiggley16.order8 : grid=0: order=8, deriv=3 maxErr=4.97e-08 ratio= 63.58 rate=5.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=4 maxErr=1.31e-07 ratio= 63.65 rate=5.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=5 maxErr=5.98e-05 ratio= 15.69 rate=3.97
+HD: wiggley16.order8 : grid=0: order=8, deriv=6 maxErr=3.24e-04 ratio= 15.80 rate=3.98
+
+
+ROTATED SQUARE 
+testHighDerivatives -noplot -caseName=rotatedSquare -tz=poly -degreeInTime=6 -degreeInSpace=6 -deriv=6 -order=8 -numRes=1
+
+HD: rotatedSquare16.order8 : grid=0: order=8, deriv=1 maxErr=4.83e-15
+HD: rotatedSquare16.order8 : grid=0: order=8, deriv=2 maxErr=7.95e-14
+HD: rotatedSquare16.order8 : grid=0: order=8, deriv=3 maxErr=1.31e-12
+HD: rotatedSquare16.order8 : grid=0: order=8, deriv=4 maxErr=2.99e-11
+HD: rotatedSquare16.order8 : grid=0: order=8, deriv=5 maxErr=6.18e-10
+HD: rotatedSquare16.order8 : grid=0: order=8, deriv=6 maxErr=4.19e-08
+HD: rotatedSquare16.order8 : grid=0: order=8, deriv=7 maxErr=4.81e-05
+HD: rotatedSquare16.order8 : grid=0: order=8, deriv=8 maxErr=3.86e-03
+
+
+
+
+
+POLY SQUARE --
+testHighDerivatives -noplot -caseName=nonSquare -tz=poly -degreeInTime=6 -degreeInSpace=6 -deriv=6 -order=8 -numRes=1
+
+ (i1,i2)=(  5  6) uxxxxxx=  1.0286E+02 uexxxxxx=  1.0286E+02 rel-err=1.59E-09
+ (i1,i2)=(  5  6) uxxxxxy=  1.6000E+01 uexxxxxy=  1.6000E+01 rel-err=1.81E-09
+ (i1,i2)=(  5  6) uxxxxyy=  5.3333E+00 uexxxxyy=  6.0000E+00 rel-err=1.11E-01  ******* TROUBLE *****
+ (i1,i2)=(  5  6) uxxxyyy=  4.2353E+00 uexxxyyy=  4.2353E+00 rel-err=7.02E-10
+ (i1,i2)=(  5  6) uxxyyyy=  5.3333E+00 uexxyyyy=  5.3333E+00 rel-err=3.96E-08
+ (i1,i2)=(  5  6) uxyyyyy=  1.2632E+01 uexyyyyy=  1.2632E+01 rel-err=5.30E-11
+ (i1,i2)=(  5  6) uyyyyyy=  7.2000E+01 ueyyyyyy=  7.2000E+01 rel-err=4.32E-09
+
+
+************************************************************************
+********* Fri feb 11, 2022
+
+CONTINUE WORK ON hierDeriv.bf90
+
+
+SIXTH DERIV
+testHighDerivatives -noplot -caseName=annulus -tz=trig -fx=6 -deriv=6 -order=8
+
+
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=6 -deriv=6 -order=8
+
+testHighDerivatives -noplot -caseName=nonSquare -tz=trig -fx=6 -deriv=6 -order=8 -numRes=2
+
+
+FIXTH DERIV
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=6 -deriv=5 -order=8
+
+HD: wiggley16.order8 : grid=0: order=8, deriv=1 maxErr=2.39e-11 ratio=254.10 rate=7.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=2 maxErr=2.96e-11 ratio=249.17 rate=7.96
+HD: wiggley16.order8 : grid=0: order=8, deriv=3 maxErr=4.97e-08 ratio= 63.58 rate=5.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=4 maxErr=1.31e-07 ratio= 63.65 rate=5.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=5 maxErr=5.98e-05 ratio= 15.69 rate=3.97
+
+FOURTH DERIV:
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=6 -deriv=4 -order=8
+HD: wiggley16.order8 : grid=0: order=8, deriv=1 maxErr=2.39e-11 ratio=254.10 rate=7.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=2 maxErr=2.96e-11 ratio=249.17 rate=7.96
+HD: wiggley16.order8 : grid=0: order=8, deriv=3 maxErr=4.97e-08 ratio= 63.58 rate=5.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=4 maxErr=1.31e-07 ratio= 63.65 rate=5.99
+
+
+THIRD DERIV:
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=6 -deriv=3 -order=8
+HD: wiggley16.order8 : grid=0: order=8, deriv=1 maxErr=2.39e-11 ratio=254.10 rate=7.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=2 maxErr=2.96e-11 ratio=249.17 rate=7.96
+HD: wiggley16.order8 : grid=0: order=8, deriv=3 maxErr=4.97e-08 ratio= 63.58 rate=5.99
+
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=6 -deriv=2 -order=8
+HD: wiggley16.order8 : grid=0: order=8, deriv=1 maxErr=2.39e-11 ratio=254.10 rate=7.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=2 maxErr=2.96e-11 ratio=249.17 rate=7.96
+
+
+************************************************************************
+********* Wed Feb 9, 2022
+
+
+START TEST CURVLINEAR HIERARCHICAL
+
+RHOMBUS
+testHighDerivatives -noplot -caseName=rhombus -tz=trig -fx=6 -deriv=2 -order=8
+
+HD: rhombus16.order8 : grid=0: order=8, deriv=1 maxErr=2.11e-10 ratio=251.44 rate=7.97
+HD: rhombus16.order8 : grid=0: order=8, deriv=2 maxErr=7.12e-10 ratio=250.03 rate=7.97
+
+
+WIGGLEY
+testHighDerivatives -noplot -caseName=wiggley -tz=trig -fx=6 -deriv=2 -order=8
+
+HD: wiggley16.order8 : grid=0: order=8, deriv=1 maxErr=2.39e-11 ratio=254.10 rate=7.99
+HD: wiggley16.order8 : grid=0: order=8, deriv=2 maxErr=2.96e-11 ratio=249.17 rate=7.96
+
+
+
+** TROUBLE WITH SMOOTHED POLYGON ???
+testHighDerivatives -noplot -caseName=washer -tz=trig -fx=4 -deriv=2 -order=8
+HD: washere8.order8 : grid=0: order=8, deriv=1 maxErr=4.38e-06 ratio=  4.00 rate=2.00
+HD: washere8.order8 : grid=0: order=8, deriv=2 maxErr=3.98e-05 ratio= 14.49 rate=3.86
+
+HD: washere4.order8 : grid=0: order=8, deriv=1 maxErr=1.75e-05 ratio= 28.40 rate=4.83
+HD: washere4.order8 : grid=0: order=8, deriv=2 maxErr=5.77e-04 ratio= 13.55 rate=3.76
+
+testHighDerivatives -noplot -caseName=annulus -tz=trig -fx=4 -deriv=2 -order=8
+
+ur, urr to 8th but not metric derivative rxx, ryy
+HD: annulus8.order10.ng6 : grid=0: order=8, deriv=1 maxErr=6.14e-08 ratio=239.73 rate=7.91
+HD: annulus8.order10.ng6 : grid=0: order=8, deriv=2 maxErr=4.97e-08 ratio=231.55 rate=7.86
+
+
+Derivs 1 and 2 to 4th-order: 
+HD: annulus8.order10.ng6 : grid=0: order=8, deriv=1 maxErr=1.45e-04 ratio= 15.65 rate=3.97
+HD: annulus8.order10.ng6 : grid=0: order=8, deriv=2 maxErr=8.39e-05 ratio= 15.25 rate=3.93
+
+
+
+
+testHighDerivatives -noplot -caseName=nonSquare -tz=trig -fx=4 -deriv=2 -order=8
+hier: (i1,i2)=(  4  6) uxx= -1.2121E+02 uexx= -1.2131E+02 err=9.74E-02 uyy= -1.2121E+02 err=9.74E-02
+hierDeriv: grid= 0 max-rel-err deriv 1 = 1.61E-03
+hierDeriv: grid= 0 max-rel-err deriv 2 = 8.03E-04
+HD: nonSquare128.order8 : grid=0: order=8, deriv=1 maxErr=1.61e-03 ratio=  3.99 rate=2.00
+HD: nonSquare128.order8 : grid=0: order=8, deriv=2 maxErr=8.03e-04 ratio=  4.00 rate=2.00
+
+CONTINUE IN HIGH DERIVS
+
+Start Mixed derivs
+
+
+testHighDerivatives -noplot -caseName=square -tz=trig -fx=4 -deriv=8 -order=8
+
+
+
+
+
+ALL DERIVATIVES: 
+HD: square128.order8 : grid=0: order=8, deriv=1 maxErr=1.37e-11 ratio=253.87 rate=7.99
+HD: square128.order8 : grid=0: order=8, deriv=2 maxErr=5.73e-11 ratio=252.95 rate=7.98
+HD: square128.order8 : grid=0: order=8, deriv=3 maxErr=1.21e-08 ratio= 63.50 rate=5.99
+HD: square128.order8 : grid=0: order=8, deriv=4 maxErr=3.46e-08 ratio= 63.28 rate=5.98
+HD: square128.order8 : grid=0: order=8, deriv=5 maxErr=8.37e-06 ratio= 15.89 rate=3.99
+HD: square128.order8 : grid=0: order=8, deriv=6 maxErr=1.66e-05 ratio= 15.84 rate=3.99
+HD: square128.order8 : grid=0: order=8, deriv=7 maxErr=4.01e-03 ratio=  3.98 rate=1.99
+HD: square128.order8 : grid=0: order=8, deriv=8 maxErr=5.61e-03 ratio=  3.97 rate=1.99
+
+
+
+HD: square128.order8 : grid=0: order=8, deriv=1 maxErr=1.37e-11 ratio=253.87 rate=7.99
+HD: square128.order8 : grid=0: order=8, deriv=2 maxErr=5.73e-11 ratio=252.95 rate=7.98
+HD: square128.order8 : grid=0: order=8, deriv=3 maxErr=1.21e-08 ratio= 63.51 rate=5.99 uxxy only
+HD: square128.order8 : grid=0: order=8, deriv=4 maxErr=4.86e-09 ratio= 63.43 rate=5.99
+HD: square128.order8 : grid=0: order=8, deriv=5 maxErr=8.37e-06 ratio= 15.89 rate=3.99
+HD: square128.order8 : grid=0: order=8, deriv=6 maxErr=5.03e-06 ratio= 15.89 rate=3.99
+HD: square128.order8 : grid=0: order=8, deriv=7 maxErr=4.01e-03 ratio=  3.98 rate=1.99
+HD: square128.order8 : grid=0: order=8, deriv=8 maxErr=3.21e-03 ratio=  3.98 rate=1.99
+
+
+HD: square128.order8 : grid=0: order=8, deriv=1 maxErr=1.37e-11 ratio=253.87 rate=7.99
+HD: square128.order8 : grid=0: order=8, deriv=2 maxErr=5.73e-11 ratio=252.95 rate=7.98 uxy alone
+HD: square128.order8 : grid=0: order=8, deriv=3 maxErr=1.21e-08 ratio= 63.50 rate=5.99
+HD: square128.order8 : grid=0: order=8, deriv=4 maxErr=4.86e-09 ratio= 63.43 rate=5.99
+HD: square128.order8 : grid=0: order=8, deriv=5 maxErr=8.37e-06 ratio= 15.89 rate=3.99
+HD: square128.order8 : grid=0: order=8, deriv=6 maxErr=5.03e-06 ratio= 15.89 rate=3.99
+HD: square128.order8 : grid=0: order=8, deriv=7 maxErr=4.01e-03 ratio=  3.98 rate=1.99
+HD: square128.order8 : grid=0: order=8, deriv=8 maxErr=3.21e-03 ratio=  3.98 rate=1.99
+
+
+
+
+************************************************************************
+********* Tues Feb 8, 2022
+
+
+START ON hierDeriv
+
+
+testHighDerivatives -noplot -caseName=square -tz=poly -degreeInTime=6 -degreeInSpace=6 -deriv=2 -order=6
+
+
+
+THIS IS OK:
+testHighDerivatives -noplot -caseName=square -tz=trig -fx=4 -deriv=8 -order=8
+
+uxx = 8th, uxxxx=6th
+HD: square128.order8 : grid=0: order=8, deriv=1 maxErr=1.37e-11 ratio=253.87 rate=7.99
+HD: square128.order8 : grid=0: order=8, deriv=2 maxErr=2.75e-12 ratio=252.72 rate=7.98
+HD: square128.order8 : grid=0: order=8, deriv=3 maxErr=1.21e-08 ratio= 63.50 rate=5.99
+HD: square128.order8 : grid=0: order=8, deriv=4 maxErr=4.86e-09 ratio= 63.43 rate=5.99
+HD: square128.order8 : grid=0: order=8, deriv=5 maxErr=8.37e-06 ratio= 15.89 rate=3.99
+HD: square128.order8 : grid=0: order=8, deriv=6 maxErr=5.03e-06 ratio= 15.89 rate=3.99
+HD: square128.order8 : grid=0: order=8, deriv=7 maxErr=4.01e-03 ratio=  3.98 rate=1.99
+HD: square128.order8 : grid=0: order=8, deriv=8 maxErr=3.21e-03 ratio=  3.98 rate=1.99
+
+
+
+
+
+
+
+
+
+
+
+
+
+SOMETHING BAD HAPPENS HERE in getWaveDerivatives **memory corruption ??? ***
+testHighDerivatives -noplot -caseName=square -tz=trig -fx=4 -deriv=6 -order=6
+
+
+
+
+testHighDerivatives -noplot -caseName=square -tz=trig -fx=4 -deriv=6 -order=8
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+MORE TESTS of derivatives
+
+smoothed polygon test:
+ogen -noplot washer -order=8 -factor=1
+ogen -noplot washer -order=8 -factor=2
+ogen -noplot washer -order=8 -factor=4
+ogen -noplot washer -order=8 -factor=8
+ogen -noplot washer -order=8 -factor=16
+
+testHighDerivatives -noplot -caseName=washer -tz=trig -fx=1 -deriv=2 -order=4
+
+ washere4.order8 : grid=0: order=6, deriv=1 maxErr=2.99e-05 ratio=15.58 rate=3.96
+ washere4.order8 : grid=0: order=6, deriv=2 maxErr=9.22e-04 ratio=10.52 rate=3.39
+
+ washere8.order8 : grid=0: order=4, deriv=1 maxErr=8.03e-06 ratio=13.05 rate=3.71
+ washere8.order8 : grid=0: order=4, deriv=2 maxErr=2.24e-04 ratio=10.71 rate=3.42
+
+WASHER *trouble*
+testHighDerivatives -noplot -caseName=washer -tz=trig -fx=1 -deriv=6 -order=8
+washere2.order8 : grid=0: order=8, deriv=1 maxErr=2.37e-04 ratio=22.22 rate=4.47
+ washere2.order8 : grid=0: order=8, deriv=2 maxErr=5.70e-03 ratio=17.48 rate=4.13
+ washere2.order8 : grid=0: order=8, deriv=3 maxErr=3.14e+00 ratio=5.13 rate=2.36
+ washere2.order8 : grid=0: order=8, deriv=4 maxErr=9.89e+01 ratio=4.29 rate=2.10
+ washere2.order8 : grid=0: order=8, deriv=5 maxErr=3.39e+05 ratio=0.49 rate=-1.03
+ washere2.order8 : grid=0: order=8, deriv=6 maxErr=1.98e+07 ratio=0.25 rate=-2.01
+
+ANNULUS: trouble
+testHighDerivatives -noplot -caseName=annulus -tz=trig -fx=1 -deriv=6 -order=8 
+annulus4.order10.ng6 : grid=0: order=8, deriv=1 maxErr=1.10e-09 ratio=169.88 rate=7.41
+ annulus4.order10.ng6 : grid=0: order=8, deriv=2 maxErr=2.52e-09 ratio=177.51 rate=7.47
+ annulus4.order10.ng6 : grid=0: order=8, deriv=3 maxErr=6.91e-07 ratio=46.08 rate=5.53
+ annulus4.order10.ng6 : grid=0: order=8, deriv=4 maxErr=1.57e-06 ratio=50.65 rate=5.66
+ annulus4.order10.ng6 : grid=0: order=8, deriv=5 maxErr=1.08e+00 ratio=0.72 rate=-0.47
+ annulus4.order10.ng6 : grid=0: order=8, deriv=6 maxErr=8.40e+00 ratio=0.79 rate=-0.34
+
+testHighDerivatives -noplot -caseName=rotatedSquare -tz=trig -fx=4 -deriv=6 -order=8
+
+
+rotatedSquare128.order8 : grid=0: order=8, deriv=1 maxErr=2.18e-10 ratio=251.98 rate=7.98
+ rotatedSquare128.order8 : grid=0: order=8, deriv=2 maxErr=4.37e-11 ratio=252.48 rate=7.98
+ rotatedSquare128.order8 : grid=0: order=8, deriv=3 maxErr=9.66e-08 ratio=63.01 rate=5.98
+ rotatedSquare128.order8 : grid=0: order=8, deriv=4 maxErr=3.87e-08 ratio=63.17 rate=5.98
+ rotatedSquare128.order8 : grid=0: order=8, deriv=5 maxErr=3.34e-05 ratio=15.77 rate=3.98
+ rotatedSquare128.order8 : grid=0: order=8, deriv=6 maxErr=2.01e-05 ratio=15.80 rate=3.98
+
+testHighDerivatives -noplot -caseName=nonSquare -tz=trig -fx=4 -deriv=6 -order=8
+nonSquare128.order8 : grid=0: order=8, deriv=1 maxErr=1.37e-11 ratio=253.88 rate=7.99
+ nonSquare128.order8 : grid=0: order=8, deriv=2 maxErr=2.78e-12 ratio=250.18 rate=7.97
+ nonSquare128.order8 : grid=0: order=8, deriv=3 maxErr=1.21e-08 ratio=63.50 rate=5.99
+ nonSquare128.order8 : grid=0: order=8, deriv=4 maxErr=4.85e-09 ratio=63.52 rate=5.99
+ nonSquare128.order8 : grid=0: order=8, deriv=5 maxErr=8.37e-06 ratio=15.89 rate=3.99
+ nonSquare128.order8 : grid=0: order=8, deriv=6 maxErr=5.02e-06 ratio=15.90 rate=3.99
+
+
+testHighDerivatives -noplot -caseName=square -tz=trig -fx=4 -deriv=6 -order=8
+
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=8, deriv=1 maxErr=1.37e-11 ratio=253.88 rate=7.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=8, deriv=2 maxErr=2.78e-12 ratio=250.18 rate=7.97
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=8, deriv=3 maxErr=1.21e-08 ratio=63.50 rate=5.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=8, deriv=4 maxErr=4.85e-09 ratio=63.52 rate=5.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=8, deriv=5 maxErr=8.37e-06 ratio=15.89 rate=3.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=8, deriv=6 maxErr=5.02e-06 ratio=15.90 rate=3.99
+
+************************************************************************
+********* Mon Feb 7, 2022
+
+**** TROUBLE with 6th derivatives??
+testHighDerivatives -noplot -caseName=annulus -tz=trig -fx=1 -deriv=6 -order=6
+(i1,i2)=(  5  6) uxxxxxx=  2.2006E+03 uexxxxxx=  2.5967E+02 rel-err=7.47E+00
+ (i1,i2)=(  5  6) uxxyyyy=  3.2305E+03 uexxyyyy=  2.5967E+02 rel-err=1.14E+01
+ (i1,i2)=(  5  6) uxxxyyy= -4.2054E+02 uexxxyyy=  2.8430E+02 rel-err=2.48E+00
+ (i1,i2)=(  5  6) uxxxxxx=  2.2006E+03 uexxxxxx=  2.5967E+02 rel-err=7.47E+00
+ grid= 0 max-rel-err deriv 1 = 8.53E-08
+ grid= 0 max-rel-err deriv 2 = 1.59E-07
+ grid= 0 max-rel-err deriv 3 = 3.43E-05
+ grid= 0 max-rel-err deriv 4 = 8.52E-05
+ grid= 0 max-rel-err deriv 5 = 1.07E+00
+ grid= 0 max-rel-err deriv 6 = 8.38E+00
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=1 maxErr=8.53e-08 ratio=47.10 rate=5.56
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=2 maxErr=1.59e-07 ratio=47.95 rate=5.58
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=3 maxErr=3.43e-05 ratio=13.81 rate=3.79
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=4 maxErr=8.52e-05 ratio=13.17 rate=3.72
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=5 maxErr=1.07e+00 ratio=0.71 rate=-0.50
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=6 maxErr=8.38e+00 ratio=0.78 rate=-0.36
+
+
+
+*** WATCH OUT FOR EVAL high derivatives -- need enough ghost points
+
+*bug found** in ue for 6th derivs
+
+NOTE OPTIMAL dx for 2nd-order 6th-derivative is  eps/dx^6 = dx^2 --> dx = eps^(1/8) = 1e-2 !!
+
+TEST 6th deriv -- ***trouble**
+testHighDerivatives -noplot -caseName=annulus -tz=trig -fx=4 -deriv=6 -order=6
+
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=1 maxErr=1.16e-04 ratio=33.76 rate=5.08
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=2 maxErr=7.94e-05 ratio=35.35 rate=5.14
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=3 maxErr=3.76e-03 ratio=10.81 rate=3.43
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=4 maxErr=3.02e-03 ratio=10.49 rate=3.39
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=5 maxErr=8.29e-02 ratio=3.36 rate=1.75
+ /home/henshw/grids/annulus4.order10.ng6.hdf : grid=0: order=6, deriv=6 maxErr=6.17e-02 ratio=3.42 rate=1.78
+
+ /home/henshw/grids/annulus8.order10.ng6.hdf : grid=0: order=6, deriv=1 maxErr=2.32e-06 ratio=50.23 rate=5.65
+ /home/henshw/grids/annulus8.order10.ng6.hdf : grid=0: order=6, deriv=2 maxErr=1.60e-06 ratio=49.66 rate=5.63
+ /home/henshw/grids/annulus8.order10.ng6.hdf : grid=0: order=6, deriv=3 maxErr=2.87e-04 ratio=13.10 rate=3.71
+ /home/henshw/grids/annulus8.order10.ng6.hdf : grid=0: order=6, deriv=4 maxErr=2.24e-04 ratio=13.48 rate=3.75
+ /home/henshw/grids/annulus8.order10.ng6.hdf : grid=0: order=6, deriv=5 maxErr=2.47e-02 ratio=3.36 rate=1.75
+ /home/henshw/grids/annulus8.order10.ng6.hdf : grid=0: order=6, deriv=6 maxErr=5.42e-02 ratio=1.14 rate=0.19
+
+
+TEST 6th derivatives : nonSquare
+testHighDerivatives -noplot -caseName=nonSquare -tz=trig -fx=4 -deriv=6 -order=6
+/home/henshw/grids/nonSquare128.order8.hdf : grid=0: order=6, deriv=1 maxErr=6.38e-09 ratio=63.64 rate=5.99
+ /home/henshw/grids/nonSquare128.order8.hdf : grid=0: order=6, deriv=2 maxErr=1.60e-09 ratio=63.71 rate=5.99
+ /home/henshw/grids/nonSquare128.order8.hdf : grid=0: order=6, deriv=3 maxErr=5.41e-06 ratio=15.91 rate=3.99
+ /home/henshw/grids/nonSquare128.order8.hdf : grid=0: order=6, deriv=4 maxErr=2.71e-06 ratio=15.93 rate=3.99
+ /home/henshw/grids/nonSquare128.order8.hdf : grid=0: order=6, deriv=5 maxErr=3.21e-03 ratio=3.98 rate=1.99
+ /home/henshw/grids/nonSquare128.order8.hdf : grid=0: order=6, deriv=6 maxErr=4.81e-03 ratio=3.97 rate=1.99
+
+
+TEST 6th derivatives : square
+testHighDerivatives -noplot -caseName=square -tz=trig -fx=4 -deriv=6 -order=6
+
+/home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=1 maxErr=6.38e-09 ratio=63.64 rate=5.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=2 maxErr=1.60e-09 ratio=63.71 rate=5.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=3 maxErr=5.41e-06 ratio=15.91 rate=3.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=4 maxErr=2.71e-06 ratio=15.93 rate=3.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=5 maxErr=3.21e-03 ratio=3.98 rate=1.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=6 maxErr=4.81e-03 ratio=3.97 rate=1.99
+
+
+
+
+testHighDerivatives -noplot -caseName=square -tz=trig -fx=4 -deriv=5 -order=6
+
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=1 maxErr=6.38e-09 ratio=63.64 rate=5.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=2 maxErr=1.05e-09 ratio=16.07 rate=4.01
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=3 maxErr=5.41e-06 ratio=15.91 rate=3.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=4 maxErr=2.71e-06 ratio=15.93 rate=3.99
+ /home/henshw/grids/square128.order6.ng4.hdf : grid=0: order=6, deriv=5 maxErr=3.21e-03 ratio=3.98 rate=1.99
+
+
+START test 3rd and 4th derivs: 
+
+
+ORDER=8  : OK 
+testHighDerivatives -noplot -caseName=annulus -tz=trig -fx=4 -deriv=4 -order=8
+
+ /home/henshw/grids/annulus16.order8.ng5.hdf : grid=0: order=8, deriv=1 maxErr=2.85e-09 ratio=250.56 rate=7.97
+ /home/henshw/grids/annulus16.order8.ng5.hdf : grid=0: order=8, deriv=2 maxErr=2.66e-08 ratio=240.27 rate=7.91
+ /home/henshw/grids/annulus16.order8.ng5.hdf : grid=0: order=8, deriv=3 maxErr=2.09e-04 ratio=62.73 rate=5.97
+ /home/henshw/grids/annulus16.order8.ng5.hdf : grid=0: order=8, deriv=4 maxErr=1.40e-03 ratio=62.16 rate=5.96
+ 
+
+
+*TROUBLE*
+testHighDerivatives -noplot -caseName=square -tz=trig -fx=1 -order=4 -deriv=4
+
+
+testHighDerivatives -noplot -caseName=annulus -tz=trig -fx=1 -order=4 -deriv=4
+ /home/henshw/grids/annulus16.order6.ng4.hdf : grid=0: order=4, deriv=1 maxErr=8.77e-08 ratio=15.98 rate=4.00
+ /home/henshw/grids/annulus16.order6.ng4.hdf : grid=0: order=4, deriv=2 maxErr=5.23e-07 ratio=15.98 rate=4.00
+ /home/henshw/grids/annulus16.order6.ng4.hdf : grid=0: order=4, deriv=3 maxErr=4.87e-06 ratio=15.96 rate=4.00
+ /home/henshw/grids/annulus16.order6.ng4.hdf : grid=0: order=4, deriv=4 maxErr=3.95e-05 ratio=15.42 rate=3.95
+
+
+testHighDerivatives -noplot -g=annulus4.order6 -tz=trig -fx=2 -order=2 -deriv=4
+
+ /home/henshw/grids/annulus8.order4.hdf : grid=0: order=2, deriv=1 maxErr=1.16e-02 ratio=3.88 rate=1.95
+ /home/henshw/grids/annulus8.order4.hdf : grid=0: order=2, deriv=2 maxErr=4.97e-02 ratio=4.00 rate=2.00
+ /home/henshw/grids/annulus8.order4.hdf : grid=0: order=2, deriv=3 maxErr=7.13e-01 ratio=4.00 rate=2.00
+ /home/henshw/grids/annulus8.order4.hdf : grid=0: order=2, deriv=4 maxErr=4.11e+00 ratio=3.50 rate=1.81
+
+
+
+TRY ORDER=6
+
+testHighDerivatives -noplot -g=annulus4.order4 -tz=trig -fx=2 -order=6
+
+ /home/henshw/grids/annulus8.order6.ng4.hdf : grid=0: order=6, deriv=1 maxErr=3.53e-07 ratio=62.48 rate=5.97
+ /home/henshw/grids/annulus8.order6.ng4.hdf : grid=0: order=6, deriv=2 maxErr=2.26e-06 ratio=62.59 rate=5.97
+
+
+
+testHighDerivatives -noplot -g=annulus4.order4 -tz=trig -fx=2 -order=4
+
+
+************************************************************************
+********* Sun Feb 6, 2022
+
+++++++++++ START ON testHighDerivatives.C +++++++++
+
+testHighDerivatives -noplot -g=annulus4.order4 -tz=trig -fx=2
+
+ /home/henshw/grids/annulus8.order4.hdf : grid=0: order=4, deriv=1 maxErr=5.91e-05 ratio=15.44 rate=3.95
+ /home/henshw/grids/annulus8.order4.hdf : grid=0: order=4, deriv=2 maxErr=3.00e-04 ratio=15.87 rate=3.99
+
+
+alias testHighDerivatives $wave/bin/testHighDerivatives
+
+testHighDerivatives -tz=poly -degreeInSpace=4
+
+testHighDerivatives -g=annulus2.order4 -tz=trig -fx=2
+testHighDerivatives -tz=trig
+
+***** Mounting file /home/henshw/grids/annulus4.order4.hdf****
+getFromADataBase: number of CompositeGrid(s) found =1, name[0]=annulus
+Time to read in the grid is 2.36e-03(s)
+ grid= 0 max-rel-err deriv 1 = 9.13E-04
+ grid= 0 max-rel-err deriv 2 = 4.76E-03
+
+ ***** Mounting file /home/henshw/grids/annulus2.order4.hdf****
+getFromADataBase: number of CompositeGrid(s) found =1, name[0]=annulus
+Time to read in the grid is 2.28e-03(s)
+ grid= 0 max-rel-err deriv 1 = 1.36E-02
+ grid= 0 max-rel-err deriv 2 = 6.49E-02
+
+
+
+CHECK DERIVATIVES FOR ANNULUS
+
+
+uxxyy uyyyy look 2nd -order ... should be fourth-order
+
+cgWave -noplot tz.cmd -g=annulus16.order6.ng4 -upwind=0 -tz=trig -bc=e -tf=.02 -tp=.01 -go=go
+cgWave -noplot tz.cmd -g=annulus8.order6.ng4 -upwind=0 -tz=trig -bc=e -tf=.02 -tp=.01 -go=go
+cgWave -noplot tz.cmd -g=annulus4.order6.ng4 -upwind=0 -tz=trig -bc=e -tf=.02 -tp=.01 -go=go
+cgWave -noplot tz.cmd -g=annulus2.order6.ng4 -upwind=0 -tz=trig -bc=e -tf=.02 -tp=.01 -go=go
+
+i1,i2=  21  11
+ uxx  =  3.1742E+01 true=  3.1742E+01 err=8.32E-10
+ uyy  =  3.1742E+01 true=  3.1742E+01 err=8.86E-10
+ uxxxx= -1.2530E+03 true= -1.2531E+03 err=1.50E-01
+ uxxyy= -1.2516E+03 true= -1.2531E+03 err=1.53E+00
+ uyyyy= -1.2546E+03 true= -1.2531E+03 err=1.47E+00
+
+NOTE -- all errors at point (3,3) 
+G16 
+ uxx  =  3.9228E+01 true=  3.9228E+01 err=7.64E-12
+ uyy  =  3.9228E+01 true=  3.9228E+01 err=6.37E-10
+ uxxxx= -1.5486E+03 true= -1.5486E+03 err=4.56E-04
+ uxxyy= -1.5484E+03 true= -1.5486E+03 err=2.75E-01
+ uyyyy= -1.5489E+03 true= -1.5486E+03 err=2.95E-01
+
+G8 
+ uxx  =  3.8469E+01 true=  3.8469E+01 err=6.14E-09
+ uyy  =  3.8469E+01 true=  3.8469E+01 err=4.40E-08
+ uxxxx= -1.5187E+03 true= -1.5187E+03 err=7.07E-03
+ uxxyy= -1.5176E+03 true= -1.5187E+03 err=1.13E+00
+ uyyyy= -1.5198E+03 true= -1.5187E+03 err=1.08E+00
+
+
+ uxx  =  3.5446E+01 true=  3.5446E+01 err=1.43E-06
+ uyy  =  3.5446E+01 true=  3.5446E+01 err=3.73E-06
+ uxxxx= -1.3993E+03 true= -1.3994E+03 err=9.66E-02
+ uxxyy= -1.3948E+03 true= -1.3994E+03 err=4.53E+00
+ uyyyy= -1.4030E+03 true= -1.3994E+03 err=3.62E+00
+
+
+ uxx  =  2.4514E+01 true=  2.4515E+01 err=3.44E-04
+ uyy  =  2.4515E+01 true=  2.4515E+01 err=3.41E-04
+ uxxxx= -9.6687E+02 true= -9.6780E+02 err=9.28E-01
+ uxxyy= -9.5162E+02 true= -9.6780E+02 err=1.62E+01
+ uyyyy= -9.7755E+02 true= -9.6780E+02 err=9.76E+00
+
+
+
+ cgWave -noplot tz.cmd -g=nonSquare16.order6 -upwind=0 -tz=trig -bc=e -tf=.02 -tp=.01 -go=go
+
+
+************************************************************************
+********* Sat Feb 5, 2022
+
+CHECK annulus eigs ?
+
+
+
+ANNULUS -- looks 3rd order ??
+cgWave tz.cmd -g=annulus8.order6.ng4 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=halt
+cgWave tz.cmd -g=annulus4.order6.ng4 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -go=halt
+
+G8
+cgWave:FD66 t=1.000e-01 ( 19 steps) dt=5.263e-03 maxErr= 7.48e-08, ||u||= 8.09e-01, cpu= 1.56e+01(s)
+cgWave:FD66 t=2.000e-01 ( 38 steps) dt=5.263e-03 maxErr= 1.89e-07, ||u||= 3.09e-01, cpu= 3.04e+01(s)
+cgWave:FD66 t=3.000e-01 ( 57 steps) dt=5.263e-03 maxErr= 2.05e-07, ||u||= 3.09e-01, cpu= 4.51e+01(s)
+cgWave:FD66 t=4.000e-01 ( 76 steps) dt=5.263e-03 maxErr= 1.70e-07, ||u||= 8.09e-01, cpu= 5.98e+01(s)
+
+G4
+cgWave:FD66 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 5.12e-07, ||u||= 8.09e-01, cpu= 5.18e+00(s)
+cgWave:FD66 t=2.000e-01 (20 steps) dt=1.000e-02 maxErr= 1.34e-06, ||u||= 3.09e-01, cpu= 7.67e+00(s)
+cgWave:FD66 t=3.000e-01 (30 steps) dt=1.000e-02 maxErr= 1.54e-06, ||u||= 3.09e-01, cpu= 1.01e+01(s)
+cgWave:FD66 t=4.000e-01 (40 steps) dt=1.000e-02 maxErr= 1.36e-06, ||u||= 8.09e-01, cpu= 1.26e+01(s)
+
+
+OK
+valgrind $cgWave -noplot tz.cmd -g=nonSquare16.order6 -upwind=0 -tz=trig -bc=e -tf=.2 -tp=.1 -go=go
+
+EXACT
+cgWave tz.cmd -g=rsise4.order6.ng4 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -bc=e -tf=1 -tp=.1  -go=halt 
+
+cgWave:FD66 t=1.000e-01 ( 7 steps) dt=1.429e-02 maxErr= 5.33e-15, ||u||= 6.47e+00, cpu= 4.41e+00(s)
+cgWave:FD66 t=2.000e-01 (14 steps) dt=1.429e-02 maxErr= 7.99e-15, ||u||= 6.85e+00, cpu= 6.82e+00(s)
+cgWave:FD66 t=3.000e-01 (21 steps) dt=1.429e-02 maxErr= 1.07e-14, ||u||= 7.30e+00, cpu= 8.32e+00(s)
+
+
+
+START TEST ORDER=6 ME 
+
+**FIXED take first step
+
+** FIX polyFunction.p abd polyFunction.bf
+
+** BUGS FIXED IN 6th-order ME scheme
+
+** CHECK STARTUP 
+** CHECK CURVILINEAR VERSION 
+** CHECK BRANCH CUT at early time
+
+SIC: **check accuracy --> 3rd order??
+cgWave tz.cmd -g=sice8.order6.ng4 -upwind=1 -tz=trig -bc=e -tf=1 -tp=.5 -go=halt
+cgWave tz.cmd -g=sice4.order6.ng4 -upwind=1 -tz=trig -bc=e -tf=1 -tp=.5 -go=halt
+
+ratio at t=1: 28 
+G8
+cgWave:FD66 t=5.000e-01 ( 65 steps) dt=7.692e-03 maxErr= 4.54e-08, ||u||= 1.00e+00, cpu= 1.65e+01(s)
+cgWave:FD66 t=1.000e+00 (130 steps) dt=7.692e-03 maxErr= 4.59e-08, ||u||= 1.00e+00, cpu= 3.07e+01(s)
+
+G4:
+cgWave:FD66 t=5.000e-01 (34 steps) dt=1.471e-02 maxErr= 1.07e-06, ||u||= 1.00e+00, cpu= 6.88e+00(s)
+cgWave:FD66 t=1.000e+00 (68 steps) dt=1.471e-02 maxErr= 1.30e-06, ||u||= 1.00e+00, cpu= 1.04e+01(s)
+
+
+G8
+cgWave:FD66 t=1.000e-01 ( 13 steps) dt=7.692e-03 maxErr= 3.52e-08, ||u||= 8.09e-01, cpu= 5.67e+00(s)
+cgWave:FD66 t=2.000e-01 ( 26 steps) dt=7.692e-03 maxErr= 2.48e-08, ||u||= 3.09e-01, cpu= 9.07e+00(s)
+cgWave:FD66 t=3.000e-01 ( 39 steps) dt=7.692e-03 maxErr= 2.26e-08, ||u||= 3.09e-01, cpu= 1.22e+01(s)
+cgWave:FD66 t=4.000e-01 ( 52 steps) dt=7.692e-03 maxErr= 3.67e-08, ||u||= 8.09e-01, cpu= 1.54e+01(s)
+cgWave:FD66 t=5.000e-01 ( 65 steps) dt=7.692e-03 maxErr= 4.54e-08, ||u||= 1.00e+00, cpu= 1.86e+01(s)
+
+
+G4
+cgWave:FD66 t=1.000e-01 ( 7 steps) dt=1.429e-02 maxErr= 5.30e-07, ||u||= 8.09e-01, cpu= 6.20e+00(s)
+cgWave:FD66 t=2.000e-01 (14 steps) dt=1.429e-02 maxErr= 8.95e-07, ||u||= 3.09e-01, cpu= 7.94e+00(s)
+cgWave:FD66 t=3.000e-01 (21 steps) dt=1.429e-02 maxErr= 7.69e-07, ||u||= 3.09e-01, cpu= 9.13e+00(s)
+cgWave:FD66 t=4.000e-01 (28 steps) dt=1.429e-02 maxErr= 7.12e-07, ||u||= 8.09e-01, cpu= 1.03e+01(s)
+cgWave:FD66 t=5.000e-01 (35 steps) dt=1.429e-02 maxErr= 1.01e-06, ||u||= 1.00e+00, cpu= 1.15e+01(s)
+
+G2
+cgWave:FD66 t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 2.94e-05, ||u||= 8.09e-01, cpu= 7.62e+00(s)
+cgWave:FD66 t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 2.63e-05, ||u||= 3.09e-01, cpu= 9.60e+00(s)
+cgWave:FD66 t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 3.11e-05, ||u||= 3.09e-01, cpu= 1.06e+01(s)
+cgWave:FD66 t=4.000e-01 (16 steps) dt=2.500e-02 maxErr= 2.64e-05, ||u||= 8.09e-01, cpu= 1.16e+01(s)
+cgWave:FD66 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 3.56e-05, ||u||= 1.00e+00, cpu= 1.26e+01(s)
+
+
+
+NON SQUARE 
+cgWave tz.cmd -g=nonSquare32.order6 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -cfl=.5 -go=halt
+cgWave:FD66 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 3.12e-08, ||u||= 8.09e-01, cpu= 9.14e+00(s)
+cgWave:FD66 t=2.000e-01 (20 steps) dt=1.000e-02 maxErr= 9.02e-08, ||u||= 3.09e-01, cpu= 1.63e+01(s)
+cgWave:FD66 t=3.000e-01 (30 steps) dt=1.000e-02 maxErr= 1.02e-07, ||u||= 3.09e-01, cpu= 1.73e+01(s)
+cgWave:FD66 t=4.000e-01 (40 steps) dt=1.000e-02 maxErr= 6.41e-08, ||u||= 8.09e-01, cpu= 1.83e+01(s)
+cgWave:FD66 t=5.000e-01 (50 steps) dt=1.000e-02 maxErr= 1.27e-07, ||u||= 1.00e+00, cpu= 1.92e+01(s)
+cgWave:FD66 t=6.000e-01 (60 steps) dt=1.000e-02 maxErr= 1.53e-07, ||u||= 8.09e-01, cpu= 2.01e+01(s)
+
+** ADD UPWINDING to 6th-order scheme
+cgWave tz.cmd -g=square32.order6.ng4 -upwind=1 -tz=trig -bc=e -tf=1 -tp=.1 -cfl=.5 -go=halt
+
+
+cgWave tz.cmd -g=square64.order6 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -cfl=.5 -go=halt
+cgWave tz.cmd -g=square32.order6 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -cfl=.5 -go=halt
+
+G64: ratio = 64 
+cgWave:FD66 t=1.000e-01 ( 19 steps) dt=5.263e-03 maxErr= 4.83e-10, ||u||= 8.09e-01, cpu= 2.74e+00(s)
+cgWave:FD66 t=2.000e-01 ( 38 steps) dt=5.263e-03 maxErr= 1.39e-09, ||u||= 3.09e-01, cpu= 3.90e+00(s)
+cgWave:FD66 t=3.000e-01 ( 57 steps) dt=5.263e-03 maxErr= 1.57e-09, ||u||= 3.09e-01, cpu= 4.56e+00(s)
+cgWave:FD66 t=4.000e-01 ( 76 steps) dt=5.263e-03 maxErr= 9.89e-10, ||u||= 8.09e-01, cpu= 5.29e+00(s)
+cgWave:FD66 t=5.000e-01 ( 95 steps) dt=5.263e-03 maxErr= 1.98e-09, ||u||= 1.00e+00, cpu= 5.88e+00(s)
+
+G32
+cgWave:FD66 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 3.12e-08, ||u||= 8.09e-01, cpu= 2.61e+00(s)
+cgWave:FD66 t=2.000e-01 (20 steps) dt=1.000e-02 maxErr= 9.02e-08, ||u||= 3.09e-01, cpu= 3.39e+00(s)
+cgWave:FD66 t=3.000e-01 (30 steps) dt=1.000e-02 maxErr= 1.02e-07, ||u||= 3.09e-01, cpu= 4.00e+00(s)
+cgWave:FD66 t=4.000e-01 (40 steps) dt=1.000e-02 maxErr= 6.41e-08, ||u||= 8.09e-01, cpu= 4.48e+00(s)
+cgWave:FD66 t=5.000e-01 (50 steps) dt=1.000e-02 maxErr= 1.27e-07, ||u||= 1.00e+00, cpu= 4.93e+00(s)
+
+
+cgWave tz.cmd -g=square16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -bc=e -tf=1 -tp=.1  -go=halt -cfl=.25
+
+------------ OLD 
+
+cgWave tz.cmd -g=square16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -bc=e -tf=1 -tp=.01  -go=halt -cfl=.25
+
+
+ORDER=6 TRIG  **trouble at corners**
+cgWave tz.cmd -g=square64.order6 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -cfl=.125 -go=halt
+cgWave tz.cmd -g=square32.order6 -upwind=0 -tz=trig -bc=e -tf=1 -tp=.1 -cfl=.25 -go=halt
+
+G64 cfl=.125
+cgWave:FD66 t=1.000e-01 ( 73 steps) dt=1.370e-03 maxErr= 1.53e-08, ||u||= 8.09e-01, cpu= 4.09e+00(s)
+cgWave:FD66 t=2.000e-01 (146 steps) dt=1.370e-03 maxErr= 2.25e-08, ||u||= 3.09e-01, cpu= 2.96e+01(s)
+cgWave:FD66 t=3.000e-01 (219 steps) dt=1.370e-03 maxErr= 3.19e-08, ||u||= 3.09e-01, cpu= 3.46e+01(s)
+
+G32
+cgWave:FD66 t=1.000e-01 ( 19 steps) dt=5.263e-03 maxErr= 4.63e-06, ||u||= 8.09e-01, cpu= 3.52e+00(s)
+cgWave:FD66 t=2.000e-01 ( 38 steps) dt=5.263e-03 maxErr= 1.84e-06, ||u||= 3.09e-01, cpu= 1.15e+01(s)
+cgWave:FD66 t=3.000e-01 ( 57 steps) dt=5.263e-03 maxErr= 2.54e-06, ||u||= 3.09e-01, cpu= 1.24e+01(s)
+
+
+
+*** ADD EXACT BC *stable at cfl=.25 ??
+cgWave tz.cmd -g=square16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -bc=e -tf=1 -tp=.1  -go=halt -cfl=.25
+
+
+cgWave:FD66 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 5.33e-15, ||u||= 6.47e+00, cpu= 2.99e+00(s)
+cgWave:FD66 t=2.000e-01 (20 steps) dt=1.000e-02 maxErr= 1.15e-14, ||u||= 6.85e+00, cpu= 4.36e+00(s)
+cgWave:FD66 t=3.000e-01 (30 steps) dt=1.000e-02 maxErr= 1.69e-14, ||u||= 7.30e+00, cpu= 5.05e+00(s)
+cgWave:FD66 t=4.000e-01 (40 steps) dt=1.000e-02 maxErr= 1.69e-14, ||u||= 7.84e+00, cpu= 5.76e+00(s)
+cgWave:FD66 t=5.000e-01 (50 steps) dt=1.000e-02 maxErr= 1.51e-14, ||u||= 8.50e+00, cpu= 6.41e+00(s)
+cgWave:FD66 t=6.000e-01 (60 steps) dt=1.000e-02 maxErr= 1.60e-14, ||u||= 9.33e+00, cpu= 7.06e+00(s)
+cgWave:FD66 t=7.000e-01 (70 steps) dt=1.000e-02 maxErr= 1.78e-14, ||u||= 1.04e+01, cpu= 7.66e+00(s)
+
+
+
+ORDER=6 TRIG  **trouble at corners**
+cgWave tz.cmd -g=square32.order6 -upwind=0 -tz=trig -bc=d -tf=1 -tp=.1 -cfl=.5 -go=halt
+
+ORDER=6 - now exact 
+cgWave tz.cmd -g=square16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -bc=d -tf=1 -tp=.1 -cfl=.25 -go=halt
+
+cgWave:FD66 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 5.91e-14, ||u||= 6.47e+00, cpu= 2.57e+00(s)
+cgWave:FD66 t=2.000e-01 (20 steps) dt=1.000e-02 maxErr= 1.99e-12, ||u||= 6.85e+00, cpu= 3.76e+00(s)
+cgWave:FD66 t=3.000e-01 (30 steps) dt=1.000e-02 maxErr= 6.02e-11, ||u||= 7.30e+00, cpu= 4.49e+00(s)
+cgWave:FD66 t=4.000e-01 (40 steps) dt=1.000e-02 maxErr= 1.85e-09, ||u||= 7.84e+00, cpu= 5.22e+00(s)
+cgWave:FD66 t=5.000e-01 (50 steps) dt=1.000e-02 maxErr= 5.71e-08, ||u||= 8.50e+00, cpu= 5.87e+00(s)
+
+ORDER=6 - now exact 
+cgWave tz.cmd -g=square16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -bc=d -tf=1 -tp=.01 -go=halt
+
+cgWave:FD66 t=2.000e-02 ( 2 steps) dt=1.000e-02 maxErr= 2.66e-15, ||u||= 6.21e+00, cpu= 8.44e+00(s)
+cgWave:FD66 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 4.44e-15, ||u||= 6.24e+00, cpu= 3.14e+01(s)
+cgWave:FD66 t=4.000e-02 ( 4 steps) dt=1.000e-02 maxErr= 5.33e-15, ||u||= 6.27e+00, cpu= 3.22e+01(s)
+cgWave:FD66 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 7.11e-15, ||u||= 6.30e+00, cpu= 3.28e+01(s)
+
+
+cgWave tz.cmd -g=square16.order6 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=d -tf=1 -tp=.01 -go=halt
+
+
+ORDER=4
+cgWave tz.cmd -g=square16.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=d -tf=1 -tp=.1 -go=halt
+
+cgWave:FD44 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 1.78e-15, ||u||= 4.71e+00, cpu= 2.55e+00(s)
+cgWave:FD44 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 2.66e-15, ||u||= 4.99e+00, cpu= 3.33e+00(s)
+cgWave:FD44 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 3.55e-15, ||u||= 5.31e+00, cpu= 4.02e+00(s)
+cgWave:FD44 t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 3.11e-15, ||u||= 5.69e+00, cpu= 4.44e+00(s)
+cgWave:FD44 t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 4.44e-15, ||u||= 6.15e+00, cpu= 4.76e+00(s)
+
+************************************************************************
+********* Fri Feb 4, 2022
+
+CHECK BRANCH CUT 
+
+cgWave tz.cmd -g=annulus4.order4.ng3 -upwind=1 -tz=trig -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+cgWave tz.cmd -g=annulus2.order4.ng3 -upwind=1 -tz=trig -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+G4
+cgWave:FD44 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 1.65e-05, ||u||= 8.09e-01, cpu= 2.04e+00(s)
+cgWave:FD44 t=2.000e-01 (20 steps) dt=1.000e-02 maxErr= 4.58e-05, ||u||= 3.09e-01, cpu= 2.94e+00(s)
+cgWave:FD44 t=3.000e-01 (30 steps) dt=1.000e-02 maxErr= 5.13e-05, ||u||= 3.09e-01, cpu= 3.77e+00(s)
+
+G2
+cgWave:FD44 t=1.000e-01 ( 5 steps) dt=2.000e-02 maxErr= 2.43e-04, ||u||= 8.09e-01, cpu= 5.17e+00(s)
+cgWave:FD44 t=2.000e-01 (10 steps) dt=2.000e-02 maxErr= 7.66e-04, ||u||= 3.09e-01, cpu= 5.83e+00(s)
+cgWave:FD44 t=3.000e-01 (15 steps) dt=2.000e-02 maxErr= 9.71e-04, ||u||= 3.09e-01, cpu= 6.92e+00(s)
+
+
+
+
+valgrind $cgWave tz.cmd -g=annulus2.order4.ng3 -upwind=1 -tz=trig -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+************************************************************************
+********* Wed Feb 2, 2022
+
+
+CONTINUE ON  NEUMANN CBCs
+
+*** MISTAKE** NEUMANN CBC code was calling dirichlet CBC afterward
+** mistake : fill 2nd-order values on an extra line
+** BUGS FIXED FOR CURVILINEAR CASE 
+
+
+
+
+Looks order=4  *trouble on inner boundary with no upwind
+cgWave tz.cmd -g=annulus8.order4.ng3 -upwind=1 -tz=trig -bc=n -tf=1 -tp=.1 -bcApproach=one -go=halt
+cgWave tz.cmd -g=annulus4.order4.ng3 -upwind=1 -tz=trig -bc=n -tf=1 -tp=.1 -bcApproach=one -go=halt
+cgWave tz.cmd -g=annulus2.order4.ng3 -upwind=1 -tz=trig -bc=n -tf=1 -tp=.1 -bcApproach=one -go=halt
+
+G8 - FD44u 77/4.5 = 17 looks ok 
+cgWave:FD44 t=1.000e-01 ( 19 steps) dt=5.263e-03 maxErr= 1.21e-06, ||u||= 8.09e-01, cpu= 4.26e+00(s)
+cgWave:FD44 t=2.000e-01 ( 38 steps) dt=5.263e-03 maxErr= 2.84e-06, ||u||= 3.09e-01, cpu= 6.51e+00(s)
+cgWave:FD44 t=3.000e-01 ( 57 steps) dt=5.263e-03 maxErr= 2.68e-06, ||u||= 3.09e-01, cpu= 8.28e+00(s)
+cgWave:FD44 t=4.000e-01 ( 76 steps) dt=5.263e-03 maxErr= 1.54e-06, ||u||= 8.09e-01, cpu= 9.74e+00(s)
+cgWave:FD44 t=5.000e-01 ( 95 steps) dt=5.263e-03 maxErr= 2.72e-06, ||u||= 1.00e+00, cpu= 1.12e+01(s)
+cgWave:FD44 t=6.000e-01 (114 steps) dt=5.263e-03 maxErr= 4.03e-06, ||u||= 8.09e-01, cpu= 1.25e+01(s)
+cgWave:FD44 t=7.000e-01 (133 steps) dt=5.263e-03 maxErr= 3.52e-06, ||u||= 3.09e-01, cpu= 1.39e+01(s)
+cgWave:FD44 t=8.000e-01 (152 steps) dt=5.263e-03 maxErr= 9.63e-07, ||u||= 3.09e-01, cpu= 1.52e+01(s)
+cgWave:FD44 t=9.000e-01 (171 steps) dt=5.263e-03 maxErr= 3.62e-06, ||u||= 8.09e-01, cpu= 2.14e+01(s)
+cgWave:FD44 t=1.000e+00 (190 steps) dt=5.263e-03 maxErr= 4.50e-06, ||u||= 1.00e+00, cpu= 2.31e+01(s)
+
+
+
+G4:
+cgWave:FD44 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 2.01e-05, ||u||= 8.09e-01, cpu= 1.98e+00(s)
+cgWave:FD44 t=2.000e-01 (20 steps) dt=1.000e-02 maxErr= 5.02e-05, ||u||= 3.09e-01, cpu= 3.36e+00(s)
+cgWave:FD44 t=3.000e-01 (30 steps) dt=1.000e-02 maxErr= 5.23e-05, ||u||= 3.09e-01, cpu= 4.33e+00(s)
+cgWave:FD44 t=4.000e-01 (40 steps) dt=1.000e-02 maxErr= 3.19e-05, ||u||= 8.09e-01, cpu= 4.86e+00(s)
+cgWave:FD44 t=5.000e-01 (50 steps) dt=1.000e-02 maxErr= 3.94e-05, ||u||= 1.00e+00, cpu= 5.35e+00(s)
+cgWave:FD44 t=6.000e-01 (60 steps) dt=1.000e-02 maxErr= 6.89e-05, ||u||= 8.09e-01, cpu= 5.82e+00(s)
+cgWave:FD44 t=7.000e-01 (70 steps) dt=1.000e-02 maxErr= 6.78e-05, ||u||= 3.09e-01, cpu= 6.30e+00(s)
+cgWave:FD44 t=8.000e-01 (80 steps) dt=1.000e-02 maxErr= 2.85e-05, ||u||= 3.09e-01, cpu= 6.80e+00(s)
+cgWave:FD44 t=9.000e-01 (90 steps) dt=1.000e-02 maxErr= 5.21e-05, ||u||= 8.09e-01, cpu= 7.27e+00(s)
+cgWave:FD44 t=1.000e+00 (100 steps) dt=1.000e-02 maxErr= 7.68e-05, ||u||= 1.00e+00, cpu= 7.74e+00(s)
+
+
+
+
+G2
+cgWave:FD44 t=1.000e-01 ( 5 steps) dt=2.000e-02 maxErr= 2.25e-04, ||u||= 8.09e-01, cpu= 2.47e+00(s)
+cgWave:FD44 t=2.000e-01 (10 steps) dt=2.000e-02 maxErr= 5.46e-04, ||u||= 3.09e-01, cpu= 2.90e+01(s)
+
+ONE-SIDED
+cgWave:FD44 t=1.000e-01 ( 5 steps) dt=2.000e-02 maxErr= 3.11e-04, ||u||= 8.09e-01, cpu= 2.52e+00(s)
+cgWave:FD44 t=2.000e-01 (10 steps) dt=2.000e-02 maxErr= 6.48e-04, ||u||= 3.09e-01, cpu= 3.96e+00(s)
+
+
+
+ROTATED SQUARE FD44 - EXACT
+cgWave tz.cmd -g=rotatedSquare16.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+cgWave:FD44 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 2.22e-15, ||u||= 3.32e+00, cpu= 3.58e+00(s)
+cgWave:FD44 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 2.66e-15, ||u||= 3.52e+00, cpu= 4.26e+00(s)
+cgWave:FD44 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 5.33e-15, ||u||= 3.74e+00, cpu= 4.84e+00(s)
+cgWave:FD44 t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 5.77e-15, ||u||= 4.02e+00, cpu= 5.26e+00(s)
+
+
+ROTATED SQUARE FD22 exact 
+cgWave tz.cmd -g=rotatedSquare16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -bc=n -tf=1 -tp=.01 -bcApproach=cbc -go=halt
+
+
+non-square FD44 - exact 
+cgWave tz.cmd -g=nonSquare8.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.01 -bcApproach=cbc -go=halt
+
+cgWave:FD44 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 4.88e-15, ||u||= 4.58e+00, cpu= 1.25e+01(s)
+
+
+
+
+----------- OLD: 
+
+
+annulus
+
+cgWave tz.cmd -g=annulus2.order4 -upwind=0 -tz=trig -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+cgWave tz.cmd -g=annulus2.order4 -upwind=0 -tz=trig -bc=n -tf=1 -tp=.1 -bcApproach=one -go=halt
+
+CBC
+cgWave:FD44 t=1.000e-01 ( 5 steps) dt=2.000e-02 maxErr= 3.98e-02, ||u||= 8.19e-01, cpu= 2.53e+00(s)
+cgWave:FD44 t=2.000e-01 (10 steps) dt=2.000e-02 maxErr= 1.66e-01, ||u||= 3.44e-01, cpu= 2.95e+01(s)
+
+
+one-sided:
+cgWave:FD44 t=1.000e-01 ( 5 steps) dt=2.000e-02 maxErr= 3.11e-04, ||u||= 8.09e-01, cpu= 2.60e+00(s)
+cgWave:FD44 t=2.000e-01 (10 steps) dt=2.000e-02 maxErr= 6.48e-04, ||u||= 3.09e-01, cpu= 4.96e+00(s)
+
+
+ANNULUS order=2
+cgWave tz.cmd -g=annulus2.order2 -upwind=0 -tz=trig -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+CBC:
+cgWave:FD22 t=1.000e-01 ( 5 steps) dt=2.000e-02 maxErr= 8.34e-03, ||u||= 8.12e-01, cpu= 4.86e+00(s)
+cgWave:FD22 t=2.000e-01 (10 steps) dt=2.000e-02 maxErr= 1.74e-02, ||u||= 3.19e-01, cpu= 6.95e+00(s)
+
+
+"ONE-SIDED"
+cgWave:FD22 t=1.000e-01 ( 5 steps) dt=2.000e-02 maxErr= 8.34e-03, ||u||= 8.12e-01, cpu= 1.93e+00(s)
+cgWave:FD22 t=2.000e-01 (10 steps) dt=2.000e-02 maxErr= 1.74e-02, ||u||= 3.19e-01, cpu= 2.86e+00(s)
+
+
+
+
+SQUARE
+
+cgWave tz.cmd -g=nonSquare8.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.01 -bcApproach=cbc -go=halt
+
+cgWave:FD44 t=1.000e-01 ( 2 steps) dt=5.000e-02 maxErr= 1.86e+00, ||u||= 3.80e+00, cpu= 3.31e+00(s)
+
+FD22-cbc
+cgWave tz.cmd -g=nonSquare8.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+cgWave:FD22 t=1.000e-01 ( 2 steps) dt=5.000e-02 maxErr= 8.88e-16, ||u||= 2.92e+00, cpu= 2.18e+00(s)
+cgWave:FD22 t=2.000e-01 ( 4 steps) dt=5.000e-02 maxErr= 1.33e-15, ||u||= 3.08e+00, cpu= 3.61e+00(s)
+cgWave:FD22 t=3.000e-01 ( 6 steps) dt=5.000e-02 maxErr= 1.78e-15, ||u||= 3.27e+00, cpu= 4.37e+00(s)
+cgWave:FD22 t=4.000e-01 ( 8 steps) dt=5.000e-02 maxErr= 1.33e-15, ||u||= 3.47e+00, cpu= 4.96e+00(s)
+cgWave:FD22 t=5.000e-01 (10 steps) dt=5.000e-02 maxErr= 2.66e-15, ||u||= 3.69e+00, cpu= 5.51e+00(s)
+
+************************************************************************
+********* Tues Feb 1, 2022
+
+
+START TEST NEUMANN CBCs
+
+annulus
+cgWave tz.cmd -g=annulus2.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+NONBOX
+cgWave tz.cmd -g=nonBox1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 0 0) maxDiff= 0.57E-12 curvilinear 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 1 0) maxDiff= 0.57E-12 curvilinear 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 0 1) maxDiff= 0.34E-12 curvilinear 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 1 1) maxDiff= 0.80E-12 curvilinear 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 0 2) maxDiff= 0.45E-12 curvilinear 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 1 2) maxDiff= 0.34E-12 curvilinear 4
+
+
+BOX
+cgWave tz.cmd -g=box1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 0 0) maxDiff= 0.57E-12 rectangular 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 1 0) maxDiff= 0.80E-12 rectangular 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 0 1) maxDiff= 0.57E-12 rectangular 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 1 1) maxDiff= 0.80E-12 rectangular 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 0 2) maxDiff= 0.34E-12 rectangular 4
+bcOptWave: t=   0.500E-01 checkCoeff: (side,axis)=( 1 2) maxDiff= 0.10E-11 rectangular 4
+
+NEUMANN ORDER=4: CURV
+cgWave tz.cmd -g=nonSquare8.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+cgWave tz.cmd -g=nonSquare32.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+cgWave:FD44 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 1.42e-14, ||u||= 4.71e+00, cpu= 7.19e+00(s)
+cgWave:FD44 t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 3.38e-14, ||u||= 4.99e+00, cpu= 8.18e+00(s)
+
+
+NEUMANN ORDER=4: 
+cgWave tz.cmd -g=square8.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+cgWave tz.cmd -g=square32.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+cgWave:FD44 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 1.33e-14, ||u||= 4.71e+00, cpu= 7.21e+00(s)
+cgWave:FD44 t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 2.22e-14, ||u||= 4.99e+00, cpu= 8.47e+00(s)
+cgWave:FD44 t=3.000e-01 (18 steps) dt=1.667e-02 maxErr= 4.04e-14, ||u||= 5.31e+00, cpu= 9.07e+00(s)
+
+
+NEUMANN ORDER=2: CURV
+cgWave tz.cmd -g=nonSquare32.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+cgWave:FD22 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 4.00e-15, ||u||= 2.92e+00, cpu= 2.91e+00(s)
+cgWave:FD22 t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 9.33e-15, ||u||= 3.08e+00, cpu= 3.86e+00(s)
+cgWave:FD22 t=3.000e-01 (18 steps) dt=1.667e-02 maxErr= 1.95e-14, ||u||= 3.27e+00, cpu= 4.30e+00(s)
+
+
+
+NEUMANN ORDER=2: 
+cgWave tz.cmd -g=square32.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+cgWave:FD22 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 4.88e-15, ||u||= 2.92e+00, cpu= 2.21e+01(s)
+cgWave:FD22 t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 1.02e-14, ||u||= 3.08e+00, cpu= 2.79e+01(s)
+cgWave:FD22 t=3.000e-01 (18 steps) dt=1.667e-02 maxErr= 1.42e-14, ||u||= 3.27e+00, cpu= 2.86e+01(s)
+cgWave:FD22 t=4.000e-01 (24 steps) dt=1.667e-02 maxErr= 2.89e-14, ||u||= 3.47e+00, cpu= 2.91e+01(s)
 
 ************************************************************************
 ********* Wed Jan 19, 2022

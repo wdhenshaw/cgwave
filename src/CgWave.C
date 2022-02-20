@@ -226,13 +226,14 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<bool>("knownSolutionIsTimeDependent")=false; 
 
   // These should match BoundaryConditionEnum
-  int & numberOfBCNames = dbase.put<int>("numberOfBCNames")=5;
+  int & numberOfBCNames = dbase.put<int>("numberOfBCNames")=6;
   aString *& bcNames = dbase.put<aString*>("bcNames") = new aString [numberOfBCNames];
   bcNames[0]="periodic";
   bcNames[1]="dirichlet";
   bcNames[2]="neumann";
   bcNames[3]="evenSymmetry";
   bcNames[4]="radiation";
+  bcNames[5]="exact";
   
 
 
@@ -477,10 +478,10 @@ int CgWave::initialize()
       const int & degreeInTime =  dbase.get<int>("degreeInTime");
       const int & numberOfDimensions = cg.numberOfDimensions();
 
-      if( degreeInSpace>6 )
+      if( degreeInSpace>8 )
       {
-        printF("CgWave:ERROR: degreeInSpace=%d is not supported by OGPolyFunction, Reducing to 6\n",degreeInSpace);
-        degreeInSpace=6;
+        printF("CgWave:ERROR: degreeInSpace=%d is not supported by OGPolyFunction, Reducing to 8.\n",degreeInSpace);
+        degreeInSpace=8;
       }
       int numberOfComponentsForTZ=1;
       tz = new OGPolyFunction(degreeInSpace,numberOfDimensions,numberOfComponentsForTZ,degreeInTime);

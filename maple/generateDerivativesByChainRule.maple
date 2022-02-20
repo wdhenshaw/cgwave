@@ -1,0 +1,534 @@
+# =================================================================
+#  Build expressions for derivatives in curvilinear coordinates
+# --------------------------------------------------------------
+#
+# restart; currentdir(cat(kernelopts(homedir),"/Dropbox/research/cgwave/maple")); read "generateDerivativesByChainRule.maple";
+#
+# This file started from
+#  op/src/derivNew.maple
+# =================================================================
+#
+clear;
+
+# Here is the maximum number of derivatives we compute
+maxDerivative:=6:   # ****************
+maxDerivative:=8:   # ****************
+numberOfDimensions:=3:  # generate formujlae for nd=2:numberOfDimenions
+
+dfileName:="derivativesByChainRule.FIXED.maple":  # save the DuDx array here for reuse.
+
+outputStatementFunctions:=true:
+outputMacros:=false:
+
+with(CodeGeneration,Fortran):
+with(codegen,optimize):
+with(codegen,cost):
+
+with(StringTools):
+
+# ----------- START PROCEDURE substituteStrings -----------------
+  substituteStrings :=proc( uu )
+   local m,vv:
+   vv := convert(uu,string):
+   for m from 1 to 9 do 
+     vv := SubstituteAll(vv,cat(rxName[m],"^"),cat("[",rxName[m],"]**")):
+   end do:
+   for m from 1 to 9 do 
+     vv := SubstituteAll(vv,rxName[m],cat("$",rxName[m])):
+   end do:
+   vv := SubstituteAll(vv,"u","$u"):
+
+   vv := SubstituteAll(vv,"^","**"):
+
+  RETURN(vv):
+  end:
+# ------------- END PROCEDURE substituteStrings -----------------
+
+# ----------- START PROCEDURE substitutePartials --------
+# derivative : substitute partials for this derivative
+#
+substitutePartials :=proc( uu,derivative )
+ local vv,rxn,x1n,x2n,x3n,x4n,x5n,x6n,x7n,x8n,rxxn,m,i1,i2,i3,i4,i5,i6,i7,i8,urn,r1n,r2n,r3n,r4n,r5n,r6n,r7n,r8n,rxvn,urvn,ib:
+ vv := uu:
+
+ # substitute for rx.r, rx.s, ry.rr, ...
+ #  E.g. replace diff(rx(x,y,z),y) by rxy
+ #  E.g. replace diff(rx(x,y,z),y,z) by rxyz
+ # Note: 
+ # rxvName:= [ rx(x,y,z), ry(x,y,z), rz(x,y,z), sx(x,y,z), sy(x,y,z), sz(x,y,z), tx(x,y,z), ty(x,y,z), tz(x,y,z) ]:
+ # rxName:= [ rx, ry, rz, sx, sy, sz, tx, ty, tz ]:
+ # xName := [ x, y, z ]:
+ # urvName:= [ u(r,s,t) ]:
+ # urName:= [ u ]:
+ # rName := [ r, s, t ]:
+
+ if maxDerivative>8 then
+   printf("substitutePartials:ERROR: maxDerivative=%d not implemented\n",maxDerivative):
+   exit;
+ end if:
+
+ for m from 1 to 9 do
+  rxn := rxName[m]:
+  rxvn := cat(rxName[m],"(x,y,z)"):  # form the name rx(z,y,z) from rx
+  for i1 from 1 to 3 do
+   x1n := xName[i1]:
+   for i2 from i1 to 3 do
+    x2n := xName[i2]:
+    for i3 from i2 to 3 do
+      x3n := xName[i3]:
+      for i4 from i3 to 3 do
+        x4n := xName[i4]:
+        for i5 from i4 to 3 do
+          x5n := xName[i5]:
+            for i6 from i5 to 3 do
+              x6n := xName[i6]:
+              for i7 from i6 to 3 do
+                x7n := xName[i7]:
+                for i8 from i7 to 3 do
+                  x8n := xName[i8]:
+                  vv := subs(diff(rxvName[m],x1n,x2n,x3n,x4n,x5n,x6n,x7n,x8n)=cat(rxn,x1n,x2n,x3n,x4n,x5n,x6n,x7n,x8n),vv): # 8 derivatives of rx
+                end do:                  
+                vv := subs(diff(rxvName[m],x1n,x2n,x3n,x4n,x5n,x6n,x7n)=cat(rxn,x1n,x2n,x3n,x4n,x5n,x6n,x7n),vv): # 7 derivatives of rx
+              end do:                  
+              vv := subs(diff(rxvName[m],x1n,x2n,x3n,x4n,x5n,x6n)=cat(rxn,x1n,x2n,x3n,x4n,x5n,x6n),vv): # 6 derivatives of rx
+            end do:                   
+          vv := subs(diff(rxvName[m],x1n,x2n,x3n,x4n,x5n)=cat(rxn,x1n,x2n,x3n,x4n,x5n),vv): # 5 derivatives of rx
+        end do:         
+        vv := subs(diff(rxvName[m],x1n,x2n,x3n,x4n)=cat(rxn,x1n,x2n,x3n,x4n),vv): # 4 derivatives of rx
+      end do:     
+      vv := subs(diff(rxvName[m],x1n,x2n,x3n)=cat(rxn,x1n,x2n,x3n),vv):  # 3 derivatives of rx 
+    od:
+    vv := subs(diff(rxvName[m],x1n,x2n)=cat(rxn,x1n,x2n),vv): # 2 derivatives of rx 
+#   printf(" vv=%s\n",convert(vv,string));
+   od:
+
+   # printf("Before vv=%s, rxvn=%s x1n=%s \n",convert(vv,string),rxvn,x1n);
+   vv := subs(diff(rxvName[m],x1n)=cat(rxn,x1n),vv):  # 1 derivative
+   # printf("After subs: vv=%s \n",convert(vv,string));
+  od:
+ od:
+
+ ib := array(1..8):
+ for m from 1 to 8 do 
+   # if m <= derivative then ib[m]:=3: else ib[m]:=0: end if:  
+   ib[m]:=3; 
+ end do:
+
+  
+ if 1=1 then # ************************************** TEMP
+ # substitute for u.r, u.s, u.rr, ...
+ for m from 1 to 1 do
+  urn := urName[m]:
+  # urvn := cat(urName[m],"(r,s)"):
+  for i1 from 1 to 3 do
+   r1n := rName[i1]:
+   for i2 from i1 to ib[2] do
+    r2n := rName[i2]:
+    for i3 from i2 to ib[3] do
+      r3n := rName[i3]:
+      for i4 from i3 to ib[4] do
+       r4n := rName[i4]:
+       for i5 from i4 to ib[5] do
+         r5n := rName[i5]:
+         for i6 from i5 to ib[6] do
+           r6n := rName[i6]:
+           for i7 from i6 to ib[7] do
+             r7n := rName[i7]:
+             for i8 from i7 to ib[8] do
+               r8n := rName[i8]:
+               vv := subs(diff(urvName[m],r1n,r2n,r3n,r4n,r5n,r6n,r7n,r8n)=cat(urn,r1n,r2n,r3n,r4n,r5n,r6n,r7n,r8n),vv):
+             end do:
+             vv := subs(diff(urvName[m],r1n,r2n,r3n,r4n,r5n,r6n,r7n)=cat(urn,r1n,r2n,r3n,r4n,r5n,r6n,r7n),vv):
+           end do:
+           vv := subs(diff(urvName[m],r1n,r2n,r3n,r4n,r5n,r6n)=cat(urn,r1n,r2n,r3n,r4n,r5n,r6n),vv):
+         end do:
+         vv := subs(diff(urvName[m],r1n,r2n,r3n,r4n,r5n)=cat(urn,r1n,r2n,r3n,r4n,r5n),vv):
+       end do:
+       vv := subs(diff(urvName[m],r1n,r2n,r3n,r4n)=cat(urn,r1n,r2n,r3n,r4n),vv):
+      od:
+      vv := subs(diff(urvName[m],r1n,r2n,r3n)=cat(urn,r1n,r2n,r3n),vv):
+    od:
+    vv := subs(diff(urvName[m],r1n,r2n)=cat(urn,r1n,r2n),vv):
+#    vv := subs(diff(urvn,r1n,r2n)=cat(urn,r1n,r2n),vv):
+   od:
+   vv := subs(diff(urvName[m],r1n)=cat(urn,r1n),vv):
+  od:
+ od:
+# do last
+
+ vv := subs(rx(x,y,z)=rx,sx(x,y,z)=sx,tx(x,y,z)=tx,ry(x,y,z)=ry,sy(x,y,z)=sy,ty(x,y,z)=ty,vv);
+ vv := subs(rz(x,y,z)=rz,sz(x,y,z)=sz,tz(x,y,z)=tz,vv);
+
+ end if; # **********************
+
+ RETURN(vv):
+end:
+# ------------- END PROCEDURE substitutePartials --------
+
+
+
+# rx := (x,y) -> rx(x,y);
+# sx := (x,y) -> sx(x,y);
+# ur := (r,s) -> ur(r,s);
+# us := (r,s) -> us(r,s);
+
+
+ # *** note: deriv.h is used in makeIncludeNew.p ****
+ if outputStatementFunctions then
+   fileName:="derivNew.TEMP.pl":
+ else
+   fileName:="junk.pl":
+ end if:
+ file := fopen( fileName,WRITE ):
+ ## file := terminal:
+
+ if outputMacros then
+   mfileName := "derivMacroDefinitions.TEMP.h":
+ else
+   mfileName := "junkMacroDefinitions.h":
+ end if:
+ mfile:=fopen( mfileName,WRITE ):
+   
+
+ dfile := fopen( dfileName,WRITE ):
+
+ fprintf(file,"sub defineDerivativesXYZ {\n"):
+ fprintf(file,"# This file was generated by derivNew.maple for inclusion in makeDifferenceMacros.p \n"):
+ fprintf(file,"# It defines x,y,z derivatives of various orders and for 2D and 3D \n\n"):
+
+# simplify:
+
+rxvName:= [ rx(x,y,z), ry(x,y,z), rz(x,y,z), sx(x,y,z), sy(x,y,z), sz(x,y,z), tx(x,y,z), ty(x,y,z), tz(x,y,z) ]:
+rxName:= [ rx, ry, rz, sx, sy, sz, tx, ty, tz ]:
+xName := [ x, y, z ]:
+
+urvName:= [ u(r,s,t) ]:
+urName:= [ u ]:
+rName := [ r, s, t ]:
+
+
+
+
+# -- make a list of names ur, urr, urs, etc. : these are used for sorting
+# names := [urrrr,urrrs,urrss,ursss,ussss, urrr,urrs,urss,usss, urr,urs,uss, ur,us]:
+maxNames:=(maxDerivative+1)^3: # this is too many
+names := array(1..maxNames):
+for n from 1 to maxNames do names[n]:=u: end do:
+n:=0:
+for k from maxDerivative by -1 to 0 do
+for nt from 0 to k do:
+for ns from 0 to k do:
+for nr from 0 to k do:
+if nr+ns+nt=k then
+  urn := u;
+  for i from 1 to nr do urn:=cat(urn,rName[1]): end do:
+  for i from 1 to ns do urn:=cat(urn,rName[2]): end do:
+  for i from 1 to nt do urn:=cat(urn,rName[3]): end do:
+  n:=n+1:
+  names[n]:=urn:
+end if:
+end do:
+end do:
+end do:
+end do:
+names := convert(names,list):
+
+
+# ************************************************************************************
+# ************  Think of Dx as a function of (x,y) and (r,s):   **********************
+# ************************************************************************************
+# Dx := rx(x,y)*ur(r,s) + sx(x,y)*us(r,s):
+# Dy := ry(x,y)*ur(r,s) + sy(x,y)*us(r,s): 
+
+# dd := rx(x,y,z)*(rx(x,y,z)*diff(diff(u(r,s,t),r),r)+sx(x,y,z)*diff(diff(u(r,s,t),r),s))+sx(x,y,z)*(rx(x,y,z)*diff(diff(u(r,s,t),r),s)+sx(x,y,z)*diff(diff(u(r,s,t),s),s))+diff(rx(x,y,z),x)*diff(u(r,s,t),r)+diff(sx(x,y,z),x)*diff(u(r,s,t),s):
+# dd := diff(diff(diff(diff(rx(x,y,z),x),x),x),x)*(rx(x,y,z)*diff(diff(u(r,s,t),r),r)+sx(x,y,z)*diff(diff(u(r,s,t),r),s))+sx(x,y,z)*(rx(x,y,z)*diff(diff(u(r,s,t),r),s)+sx(x,y,z)*diff(diff(u(r,s,t),s),s))+diff(rx(x,y,z),x)*diff(u(r,s,t),r)+diff(sx(x,y,z),x)*diff(u(r,s,t),s):
+
+# dd:=rx^5*urrrrr+5*sx*rx^4*urrrrs+10*sx^2*rx^3*urrrss+10*sx^3*rx^2*urrsss+5*sx^4*rx*urssss+sx^5*usssss+5*tx*rx^4*urrrrt+20*tx*rx^3*sx*urrrst+30*tx*rx^2*sx^2*urrsst+20*sx^3*rx*tx*urssst+5*sx^4*tx*usssst+10*tx^2*rx^3*urrrtt+30*sx*rx^2*tx^2*urrstt+30*rx*sx^2*tx^2*ursstt+10*sx^3*tx^2*ussstt+10*rx^2*tx^3*urrttt+20*rx*sx*tx^3*ursttt+10*tx^3*sx^2*ussttt+5*rx*tx^4*urtttt+5*tx^4*sx*ustttt+tx^5*uttttt+10*rxx*rx^3*urrrr+(12*rxx*rx^2*sx+rx*(sxx*rx^2+rx*(2*sx*rxx+2*sxx*rx)+4*sx*rx*rxx)+sxx*rx^3+rx*(7*sx*rx*rxx+sxx*rx^2+rx*(3*sxx*rx+3*sx*rxx)+rx*(2*sx*rxx+2*sxx*rx)))*urrrs+(3*rxx*rx*sx^2+rx*(sx*(2*sx*rxx+2*sxx*rx)+4*rx*sxx*sx+rxx*sx^2)+rx*(sx*(3*sxx*rx+3*sx*rxx)+7*rx*sxx*sx+rxx*sx^2+sx*(2*sx*rxx+2*sxx*rx))+sx*(7*sx*rx*rxx+sxx*rx^2+rx*(3*sxx*rx+3*sx*rxx)+rx*(2*sx*rxx+2*sxx*rx))+3*sxx*rx^2*sx+sx*(sxx*rx^2+rx*(2*sx*rxx+2*sxx*rx)+4*sx*rx*rxx))*urrss+(rxx*sx^3+12*sxx*rx*sx^2+sx*(sx*(2*sx*rxx+2*sxx*rx)+4*rx*sxx*sx+rxx*sx^2)+sx*(sx*(3*sxx*rx+3*sx*rxx)+7*rx*sxx*sx+rxx*sx^2+sx*(2*sx*rxx+2*sxx*rx)))*ursss+10*sxx*sx^3*ussss+(txx*rx^3+12*rxx*rx^2*tx+rx*(txx*rx^2+4*rxx*tx*rx+rx*(2*tx*rxx+2*txx*rx))+rx*(rx*(3*txx*rx+3*tx*rxx)+rx*(2*tx*rxx+2*txx*rx)+7*rxx*tx*rx+txx*rx^2))*urrrt+(3*txx*rx^2*sx+tx*(sxx*rx^2+rx*(2*sx*rxx+2*sxx*rx)+4*sx*rx*rxx)+sx*(rx*(3*txx*rx+3*tx*rxx)+rx*(2*tx*rxx+2*txx*rx)+7*rxx*tx*rx+txx*rx^2)+3*sxx*rx^2*tx+sx*(txx*rx^2+4*rxx*tx*rx+rx*(2*tx*rxx+2*txx*rx))+rx*(2*txx*rx*sx+2*rxx*tx*sx+2*sxx*tx*rx+sx*(2*tx*rxx+2*txx*rx)+rx*(2*tx*sxx+2*txx*sx)+tx*(2*sx*rxx+2*sxx*rx))+rx*(2*txx*rx*sx+2*sxx*tx*rx+2*rxx*tx*sx+tx*(2*sx*rxx+2*sxx*rx)+rx*(2*tx*sxx+2*txx*sx)+sx*(3*txx*rx+3*tx*rxx)+rx*(3*txx*sx+3*tx*sxx)+tx*(3*sxx*rx+3*sx*rxx)+sx*(2*tx*rxx+2*txx*rx))+6*rxx*rx*tx*sx+tx*(7*sx*rx*rxx+sxx*rx^2+rx*(3*sxx*rx+3*sx*rxx)+rx*(2*sx*rxx+2*sxx*rx)))*urrst+(sx*(2*txx*rx*sx+2*sxx*tx*rx+2*rxx*tx*sx+tx*(2*sx*rxx+2*sxx*rx)+rx*(2*tx*sxx+2*txx*sx)+sx*(3*txx*rx+3*tx*rxx)+rx*(3*txx*sx+3*tx*sxx)+tx*(3*sxx*rx+3*sx*rxx)+sx*(2*tx*rxx+2*txx*rx))+rx*(4*sxx*tx*sx+txx*sx^2+sx*(2*tx*sxx+2*txx*sx))+3*rxx*tx*sx^2+6*sxx*rx*tx*sx+tx*(sx*(2*sx*rxx+2*sxx*rx)+4*rx*sxx*sx+rxx*sx^2)+rx*(sx*(3*txx*sx+3*tx*sxx)+txx*sx^2+7*sxx*tx*sx+sx*(2*tx*sxx+2*txx*sx))+3*txx*rx*sx^2+tx*(sx*(3*sxx*rx+3*sx*rxx)+7*rx*sxx*sx+rxx*sx^2+sx*(2*sx*rxx+2*sxx*rx))+sx*(2*txx*rx*sx+2*rxx*tx*sx+2*sxx*tx*rx+sx*(2*tx*rxx+2*txx*rx)+rx*(2*tx*sxx+2*txx*sx)+tx*(2*sx*rxx+2*sxx*rx)))*ursst+(sx*(sx*(3*txx*sx+3*tx*sxx)+txx*sx^2+7*sxx*tx*sx+sx*(2*tx*sxx+2*txx*sx))+sx*(4*sxx*tx*sx+txx*sx^2+sx*(2*tx*sxx+2*txx*sx))+12*tx*sx^2*sxx+txx*sx^3)*ussst+(3*rxx*rx*tx^2+3*txx*rx^2*tx+tx*(txx*rx^2+4*rxx*tx*rx+rx*(2*tx*rxx+2*txx*rx))+rx*(rxx*tx^2+4*rx*txx*tx+tx*(2*tx*rxx+2*txx*rx))+tx*(rx*(3*txx*rx+3*tx*rxx)+rx*(2*tx*rxx+2*txx*rx)+7*rxx*tx*rx+txx*rx^2)+rx*(tx*(2*tx*rxx+2*txx*rx)+rxx*tx^2+tx*(3*txx*rx+3*tx*rxx)+7*rx*txx*tx))*urrtt+(3*rxx*tx^2*sx+tx*(2*txx*rx*sx+2*sxx*tx*rx+2*rxx*tx*sx+tx*(2*sx*rxx+2*sxx*rx)+rx*(2*tx*sxx+2*txx*sx)+sx*(3*txx*rx+3*tx*rxx)+rx*(3*txx*sx+3*tx*sxx)+tx*(3*sxx*rx+3*sx*rxx)+sx*(2*tx*rxx+2*txx*rx))+sx*(rxx*tx^2+4*rx*txx*tx+tx*(2*tx*rxx+2*txx*rx))+6*txx*rx*tx*sx+rx*(4*sx*txx*tx+sxx*tx^2+tx*(2*tx*sxx+2*txx*sx))+3*sxx*rx*tx^2+tx*(2*txx*rx*sx+2*rxx*tx*sx+2*sxx*tx*rx+sx*(2*tx*rxx+2*txx*rx)+rx*(2*tx*sxx+2*txx*sx)+tx*(2*sx*rxx+2*sxx*rx))+sx*(tx*(2*tx*rxx+2*txx*rx)+rxx*tx^2+tx*(3*txx*rx+3*tx*rxx)+7*rx*txx*tx)+rx*(sxx*tx^2+7*sx*txx*tx+tx*(3*txx*sx+3*tx*sxx)+tx*(2*tx*sxx+2*txx*sx)))*urstt+(tx*(sx*(3*txx*sx+3*tx*sxx)+txx*sx^2+7*sxx*tx*sx+sx*(2*tx*sxx+2*txx*sx))+3*txx*tx*sx^2+tx*(4*sxx*tx*sx+txx*sx^2+sx*(2*tx*sxx+2*txx*sx))+sx*(sxx*tx^2+7*sx*txx*tx+tx*(3*txx*sx+3*tx*sxx)+tx*(2*tx*sxx+2*txx*sx))+3*sxx*tx^2*sx+sx*(4*sx*txx*tx+sxx*tx^2+tx*(2*tx*sxx+2*txx*sx)))*usstt+(12*rx*txx*tx^2+rxx*tx^3+tx*(tx*(2*tx*rxx+2*txx*rx)+rxx*tx^2+tx*(3*txx*rx+3*tx*rxx)+7*rx*txx*tx)+tx*(rxx*tx^2+4*rx*txx*tx+tx*(2*tx*rxx+2*txx*rx)))*urttt+(tx*(4*sx*txx*tx+sxx*tx^2+tx*(2*tx*sxx+2*txx*sx))+12*sx*txx*tx^2+sxx*tx^3+tx*(sxx*tx^2+7*sx*txx*tx+tx*(3*txx*sx+3*tx*sxx)+tx*(2*tx*sxx+2*txx*sx)))*usttt+10*tx^3*txx*utttt+(rx*(4*rx*rxxx+3*rxx^2)+7*rxx^2*rx+rx*(2*rx*rxxx+2*rxx^2)+rx*(3*rx*rxxx+3*rxx^2)+rxxx*rx^2)*urrr+(sxxx*rx^2+2*rxxx*sx*rx+sx*(3*rx*rxxx+3*rxx^2)+rx*(2*sx*rxxx+2*sxxx*rx+4*sxx*rxx)+rx*(4*sxxx*rx+4*sx*rxxx+6*sxx*rxx)+sx*(4*rx*rxxx+3*rxx^2)+7*sxx*rx*rxx+rxx*(3*sxx*rx+3*sx*rxx)+sx*(2*rx*rxxx+2*rxx^2)+rx*(6*sxx*rxx+3*sx*rxxx+3*sxxx*rx)+2*rxx*(2*sx*rxx+2*sxx*rx))*urrs+(7*rxx*sx*sxx+rx*(4*sxxx*sx+3*sxx^2)+sx*(4*sxxx*rx+4*sx*rxxx+6*sxx*rxx)+rx*(3*sxxx*sx+3*sxx^2)+rxxx*sx^2+rx*(2*sxxx*sx+2*sxx^2)+2*sxx*(2*sx*rxx+2*sxx*rx)+sx*(2*sx*rxxx+2*sxxx*rx+4*sxx*rxx)+sxx*(3*sxx*rx+3*sx*rxx)+sx*(6*sxx*rxx+3*sx*rxxx+3*sxxx*rx)+2*sxxx*sx*rx)*urss+(sx*(4*sxxx*sx+3*sxx^2)+7*sxx^2*sx+sx*(2*sxxx*sx+2*sxx^2)+sx*(3*sxxx*sx+3*sxx^2)+sxxx*sx^2)*usss+(rx*(3*tx*rxxx+6*txx*rxx+3*txxx*rx)+7*txx*rxx*rx+rx*(4*txxx*rx+6*txx*rxx+4*tx*rxxx)+txxx*rx^2+2*rxx*(2*tx*rxx+2*txx*rx)+tx*(4*rx*rxxx+3*rxx^2)+2*rxxx*tx*rx+rx*(2*tx*rxxx+4*txx*rxx+2*txxx*rx)+rxx*(3*txx*rx+3*tx*rxx)+tx*(3*rx*rxxx+3*rxx^2)+tx*(2*rx*rxxx+2*rxx^2))*urrt+(rx*(3*txxx*sx+3*tx*sxxx+6*txx*sxx)+tx*(4*sxxx*rx+4*sx*rxxx+6*sxx*rxx)+tx*(6*sxx*rxx+3*sx*rxxx+3*sxxx*rx)+rxx*(3*txx*sx+3*tx*sxx)+rx*(4*tx*sxxx+4*txxx*sx+6*txx*sxx)+sx*(4*txxx*rx+6*txx*rxx+4*tx*rxxx)+2*rxx*(2*tx*sxx+2*txx*sx)+tx*(2*sx*rxxx+2*sxxx*rx+4*sxx*rxx)+2*txx*(2*sx*rxx+2*sxx*rx)+sxx*(3*txx*rx+3*tx*rxx)+2*txxx*rx*sx+sx*(2*tx*rxxx+4*txx*rxx+2*txxx*rx)+2*rxxx*tx*sx+sx*(3*tx*rxxx+6*txx*rxx+3*txxx*rx)+txx*(3*sxx*rx+3*sx*rxx)+2*sxxx*tx*rx+rx*(4*txx*sxx+2*txxx*sx+2*tx*sxxx)+2*sxx*(2*tx*rxx+2*txx*rx))*urst+(2*sxx*(2*tx*sxx+2*txx*sx)+tx*(4*sxxx*sx+3*sxx^2)+sx*(4*txx*sxx+2*txxx*sx+2*tx*sxxx)+sx*(3*txxx*sx+3*tx*sxxx+6*txx*sxx)+2*sxxx*tx*sx+tx*(3*sxxx*sx+3*sxx^2)+7*txx*sx*sxx+sx*(4*tx*sxxx+4*txxx*sx+6*txx*sxx)+txxx*sx^2+tx*(2*sxxx*sx+2*sxx^2)+sxx*(3*txx*sx+3*tx*sxx))*usst+(rx*(2*txx^2+2*txxx*tx)+rx*(3*txx^2+4*txxx*tx)+tx*(3*tx*rxxx+6*txx*rxx+3*txxx*rx)+2*txx*(2*tx*rxx+2*txx*rx)+rx*(3*txxx*tx+3*txx^2)+rxxx*tx^2+txx*(3*txx*rx+3*tx*rxx)+7*rxx*tx*txx+2*txxx*tx*rx+tx*(2*tx*rxxx+4*txx*rxx+2*txxx*rx)+tx*(4*txxx*rx+6*txx*rxx+4*tx*rxxx))*urtt+(2*txxx*tx*sx+tx*(4*tx*sxxx+4*txxx*sx+6*txx*sxx)+tx*(3*txxx*sx+3*tx*sxxx+6*txx*sxx)+7*sxx*tx*txx+sxxx*tx^2+tx*(4*txx*sxx+2*txxx*sx+2*tx*sxxx)+sx*(2*txx^2+2*txxx*tx)+txx*(3*txx*sx+3*tx*sxx)+sx*(3*txxx*tx+3*txx^2)+2*txx*(2*tx*sxx+2*txx*sx)+sx*(3*txx^2+4*txxx*tx))*ustt+(tx*(3*txxx*tx+3*txx^2)+7*txx^2*tx+tx*(2*txx^2+2*txxx*tx)+tx*(3*txx^2+4*txxx*tx)+txxx*tx^2)*uttt+(10*rxx*rxxx+5*rx*rxxxx)*urr+(5*sxxxx*rx+10*sxx*rxxx+5*sx*rxxxx+10*sxxx*rxx)*urs+(5*sxxxx*sx+10*sxx*sxxx)*uss+(5*tx*rxxxx+10*txx*rxxx+10*txxx*rxx+5*txxxx*rx)*urt+(10*txxx*sxx+10*txx*sxxx+5*tx*sxxxx+5*txxxx*sx)*ust+(10*txx*txxx+5*tx*txxxx)*utt:
+
+# printf("Before: dd=[%s]\n",convert(dd,string)):
+
+# k:=4; 
+# dd := substitutePartials(dd,k):
+# dd := simplify(dd):
+# dd := collect(dd,names):
+# dd:= sort(dd,names):
+
+# printf("After: dd=[%s]\n",convert(dd,string)):
+
+
+
+
+# ************************* START BOGUS ****************************
+if 1=1 then
+
+ndx:=maxDerivative:  # highest x derivative
+ndy:=maxDerivative:  # highest y derivative
+ndz:=maxDerivative:  # highest z derivative
+
+DuDx := array(0..ndx,0..ndy,0..ndx,2..3):
+fprintf(dfile,"ndx:=%d: ndy:=%d: ndz:=%d:\n",ndx,ndy,ndz):
+fprintf(dfile,"DuDx := array(0..ndx,0..ndy,0..ndx,2..3):\n"):
+
+# ======================= start dim loop ==============================================
+for dim from 2 to numberOfDimensions do # 2D or 3D
+
+fprintf(file,"\n\n# ****** Dimension %d ******\n",dim):
+fprintf(file,"printout \"#If DIM >= %d\\n\";\n",dim):
+fprintf(file,"print DFILE \"#If DIM >= %d\\n\";\n",dim):
+
+# define short form: $rxx...  = rx ## x$order ## 2(i1,i2,i3,0,0)
+# define short form: $urrs... = u ## rr$order(i1,i2,i3$kd)
+
+# **** form the name rxx..yyy..zzz 
+
+if dim=2 then maxDeriv3:=0: else maxDeriv3:=maxDerivative: end if:
+
+for k from 1 to maxDerivative do
+
+ for mdz from 0 to maxDeriv3     do
+ for mdy from 0 to maxDerivative do
+ for mdx from 0 to maxDerivative do
+  if mdx+mdy+mdz = k then
+
+   for m1 from 1 to dim do
+   for m2 from 1 to dim do
+
+    if m2=1 or (m2=2 and mdx=0) or (m2=3 and mdx=0 and mdy=0) then
+
+      rxn := cat(rName[m1],xName[m2]):
+    
+      ext:="":
+      for i from 1 to mdx do ext:=cat(ext,'x'): end do:
+      for i from 1 to mdy do ext:=cat(ext,'y'): end do:
+      for i from 1 to mdz do ext:=cat(ext,'z'): end do:
+  
+      rxn := cat(rxn,ext):
+  
+      #  $rxx = "rx ## x$order ## 1(i1,i2,i3,0,0)";
+  
+      fprintf(file," $%s = \" rx ## %s$order ## %d(i1,i2,i3,%d,%d)\";\n",convert(rxn,string),convert(ext,string),
+               dim,m1-1,m2-1):
+    
+    end if:
+   end do:
+   end do:
+
+   ext:="":
+   for i from 1 to mdx do ext:=cat(ext,'r'): end do:
+   for i from 1 to mdy do ext:=cat(ext,'s'): end do:
+   for i from 1 to mdz do ext:=cat(ext,'t'): end do:
+  
+   #  $ursx = "u ## rs$order(i1,i2,i3$kd)";
+  
+   fprintf(file," $u%s = \" u ## %s$order(i1,i2,i3$kd)\";\n",convert(ext,string),convert(ext,string)):
+
+  end if:
+ end do:
+ end do:
+ end do:
+
+end do:
+
+
+# ------- DERIVATIVES IN CURVLINEAR COORDINATES --------
+for k from 1 to maxDerivative do
+
+ printf("  *** dim %d, derivative %d ...\n",dim,k):
+
+ fprintf(file,"  printout \"#If MAXDERIV >= %d \\n\";\n",k):
+
+if dim>1 then mdy := ndy: else mdy:=0: end if:
+if dim>2 then mdz := ndz: else mdz:=0: end if:
+
+for idz from 0 to mdz do
+for idy from 0 to mdy do
+for idx from 0 to ndx do
+if idx+idy+idz = k then
+
+ dd:= u(r,s,t):
+ dn:= "":
+ for i from 1 to idx do 
+   dd := rx(x,y,z)*diff(dd,r) + sx(x,y,z)*diff(dd,s)+ tx(x,y,z)*diff(dd,t) +diff(dd,x):
+   dn := cat(dn,"x"):
+ end do:
+ for i from 1 to idy do 
+   dd := ry(x,y,z)*diff(dd,r) + sy(x,y,z)*diff(dd,s)+ ty(x,y,z)*diff(dd,t) +diff(dd,y):
+   dn := cat(dn,"y"):
+ end do:
+ for i from 1 to idz do 
+   dd := rz(x,y,z)*diff(dd,r) + sz(x,y,z)*diff(dd,s)+ tz(x,y,z)*diff(dd,t) +diff(dd,z):
+   dn := cat(dn,"z"):
+ end do:
+
+ # dd := dxv[m]:
+
+ if dim=2 then
+   dd := subs(rz=0,sz=0,tx=0,ty=0,tz=0,dd):
+ end if:
+
+ # printf("DuDx[%d,%d,%d,%d]:=%s:\n",idx,idy,idz,dim,convert(dd,string)):
+
+ dd := substitutePartials(dd,k):
+ dd := simplify(dd):               # ************ ADDED *wdh* Feb 11, 2022
+ dd := collect(dd,names):
+ dd:= sort(dd,names):
+
+ DuDx[idx,idy,idz,dim]:=dd:  # save for later
+ fprintf(dfile,"DuDx[%d,%d,%d,%d]:=%s:\n",idx,idy,idz,dim,convert(dd,string)):
+
+ if outputStatementFunctions then
+   # convert to a string and substitite rx -> $rx etc. for perl 
+   dd := substituteStrings(dd):
+  
+   fprintf(file,"  printout \"u ## %s$order%d(i1,i2,i3$kd) =%s \\n\";\n",dn,dim,convert(dd,string)):
+  
+   # rectangular -- define uxx22r == uxx2r , uxx23r = uxx2r 
+   if dd<>"0" then
+     fprintf(file,"  printout \"u ## %s$order%d ## r(i1,i2,i3$kd) =u ## %s$order(i1,i2,i3$kd) \\n\";\n",dn,dim,dn):
+   else
+     fprintf(file,"  printout \"u ## %s$order%d ## r(i1,i2,i3$kd) =0 \\n\";\n",dn,dim,dn):
+   end if:
+ end if:
+
+ if outputMacros then
+
+   dn := cat("u",dn,dim):
+   fprintf(mfile,"#beginMacro %s(u,ff)\n",convert(dn,string)):
+   if false then
+     dc:= Fortran(dd,resultname=dn,output=string):  # output=string, optimize=true
+   
+     #dc:= SubstituteAll(dc,"\n",""):
+     #dc:= SubstituteAll(dc,"     #",""):
+     #dc:= SubstituteAll(dc," ",""):
+     fprintf(mfile,"  %s\n",dc):
+   elif false then
+     dc:=convert(dd,string):
+     dc:= SubstituteAll(dc,"^","**"):
+     fprintf(mfile,"  %s=%s\n",dn,dc):
+   else
+     dc := optimize([ff=dd]);  # returns an expression sequence
+
+     printf(" %s: cost saving=%s\n",dn,convert(cost(dd)-cost(dc),string));
+     fprintf(mfile," ! %s operation count     : %s\n",dn,convert(cost(dc),string));
+     fprintf(mfile," ! %s optimization savings: %s\n",dn,convert(cost(dd)-cost(dc),string));
+
+     if whattype(dc) = exprseq then
+       for i from 1 to nops([dc]) do
+         cc:=convert(dc[i],string):
+         cc:= SubstituteAll(cc,"^","**"):
+         cc:= SubstituteAll(cc,"u","u ##"):
+         fprintf(mfile,"  %s\n",cc):
+       end do:
+     else
+       cc:=convert(dc,string):
+       cc:= SubstituteAll(cc,"^","**"):
+       cc:= SubstituteAll(cc,"u","u ##"):
+       fprintf(mfile,"  %s\n",cc):
+     end if:
+     # dc:=convert(dc,string):
+     # dc:= SubstituteAll(dc,",","\n  "):
+     # fprintf(mfile,"  %s\n",dc):
+   end if:
+   fprintf(mfile,"#endMacro\n"):
+   
+ end if;
+
+
+ #fprintf(file,"c D%s=%s\n",dn,convert(expand(dd),string));
+
+
+
+ #fprintf(file," printout \"u ## %s$order2(i1,i2,i3$kd)=%s\\n\";\n\n",convert(dxvn[m],string),dd);
+
+end if;
+end do;
+end do;
+end do;
+
+dd:=0:
+if k=2 then
+  # form the laplacian
+  dd := DuDx[2,0,0,dim]:
+  if dim>1 then dd := dd + DuDx[0,2,0,dim]: end if:
+  if dim>2 then dd := dd + DuDx[0,0,2,dim]: end if:
+elif k=4 then
+  # x^4+2*x^2*y^2+2*x^2*z^2+y^4+2*y^2*z^2+z^4
+  dd := DuDx[4,0,0,dim]:
+  if dim>1 then dd := dd + DuDx[0,4,0,dim] + 2*DuDx[2,2,0,dim]: end if:
+  if dim>2 then dd := dd + DuDx[0,0,4,dim] + 2*DuDx[2,0,2,dim] + 2*DuDx[0,2,2,dim]: end if:
+elif k=6 then
+  # x^6+3*x^4*y^2+3*x^4*z^2+3*x^2*y^4+6*x^2*y^2*z^2+3*x^2*z^4+y^6+3*y^4*z^2+3*y^2*z^4+z^6
+  dd := DuDx[6,0,0,dim]:
+  if dim>1 then dd := dd + DuDx[0,6,0,dim] + 3*DuDx[4,2,0,dim]+ 3*DuDx[2,4,0,dim]: end if:
+  if dim>2 then dd := dd + DuDx[0,0,6,dim] + 3*DuDx[4,0,2,dim]+ 3*DuDx[2,0,4,dim] 
+                                           + 3*DuDx[0,4,2,dim]+ 3*DuDx[0,2,4,dim]: end if:
+elif k=8 then
+  # x^8 +4*x^6*y^2 +6*x^4*y^4 +4*x^2*y^6 +y^8
+  # 12*x^2*y^2*z^4  +12*x^2*y^4*z^2  +12*x^4*y^2*z^2  +4*x^6*y^2  +4*x^6*z^2  +6*x^4*y^4  +6*x^4*z^4  +4*x^2*y^6  +4*x^
+  #    2*z^6  +4*y^6*z^2  +6*y^4*z^4  +4*y^2*z^6  +x^8  +y^8  +z^8
+
+  dd := DuDx[8,0,0,dim]:
+  if dim>1 then dd := dd + DuDx[0,8,0,dim] + 4*(DuDx[2,6,0,dim]+DuDx[6,2,0,dim]) + 6*DuDx[4,4,0,dim] : end if:
+  if dim>2 then dd := dd + DuDx[0,0,8,dim] + 4*(DuDx[6,0,2,dim]+ DuDx[2,0,6,dim]+DuDx[0,6,2,dim]+DuDx[0,2,6,dim])
+                         + 6*(DuDx[4,0,4,dim]+DuDx[0,4,4,dim]) 
+                         +12*(DuDx[4,2,2,dim]+DuDx[2,4,2,dim]+DuDx[2,2,4,dim]): end if:
+end if:
+
+if dd<>0 then
+  dd := collect(dd,names):
+  dd:= sort(dd,names):
+  dd := substituteStrings(dd):
+end if:
+if k=2 then
+  # --- output the Laplacian too ---
+  fprintf(file,"  printout \"u ## Laplacian$order%d(i1,i2,i3$kd) =%s \\n\";\n",dim,convert(dd,string)):
+  # rectangular:
+  if dim=1 then
+    fprintf(file,"  printout \"u ## Laplacian$order%d ## r(i1,i2,i3$kd) =u ## xx$order(i1,i2,i3$kd) \\n\";\n",dim):
+  elif dim=2 then
+    fprintf(file,"  printout \"u ## Laplacian$order%d ## r(i1,i2,i3$kd) =u ## xx$order(i1,i2,i3$kd)+ u ## yy$order(i1,i2,i3$kd)\\n\";\n",dim):
+  else
+    fprintf(file,"  printout \"u ## Laplacian$order%d ## r(i1,i2,i3$kd) =u ## xx$order(i1,i2,i3$kd)+ u ## yy$order(i1,i2,i3$kd)+ u ## zz$order(i1,i2,i3$kd)\\n\";\n",dim):
+  end if:
+
+end if:
+if k=4 then
+  # -- output laplacian squared ---
+  fprintf(file,"  printout \"u ## LapSq$order%d(i1,i2,i3$kd) =%s \\n\";\n",dim,convert(dd,string)):
+  # rectangular:
+  fprintf(file,"  printout \"u ## LapSq$order%d ## r(i1,i2,i3$kd) =(u ## Laplacian$order%d ## r(i1,i2,i3$kd))**2 \\n\";\n",dim,dim):
+elif k=6 then
+  # -- output laplacian cubed ---
+  fprintf(file,"  printout \"u ## LapCubed$order%d(i1,i2,i3$kd) =%s \\n\";\n",dim,convert(dd,string)):
+  # rectangular:
+  fprintf(file,"  printout \"u ## LapCubed$order%d ## r(i1,i2,i3$kd) =(u ## Laplacian$order%d ## r(i1,i2,i3$kd))**3 \\n\";\n",dim,dim):
+elif k=8 then
+  # -- output laplacian quadrupled ---
+  fprintf(file,"  printout \"u ## LapQuad$order%d(i1,i2,i3$kd) =%s \\n\";\n",dim,convert(dd,string)):
+  # rectangular:
+  fprintf(file,"  printout \"u ## LapQuad$order%d ## r(i1,i2,i3$kd) =(u ## Laplacian$order%d ## r(i1,i2,i3$kd))**4 \\n\";\n",dim,dim):
+end if:
+
+fprintf(file,"  printout \"#End\\n\";\n");
+
+end do;
+
+fprintf(file,"printout \"#End\\n\";\n"):  
+fprintf(file,"print DFILE \"#End\\n\";\n"): 
+
+end do: # for dim
+
+fprintf(file,"\n\n");
+fprintf(file,"} # end sub defineDerivativesXYZ\n\n"):
+fprintf(file,"return true;\n"):
+
+fclose(file):
+fclose(dfile):
+fclose(mfile):
+
+printf(" **** statement functions output written to file [%s] ******\n",fileName);
+printf(" **** macro output written to file [%s] ******\n",mfileName);
+printf(" **** DuDx array written to file [%s] ******\n",dfileName);
+
+end if;
+# ************************* END BOGUS ****************************

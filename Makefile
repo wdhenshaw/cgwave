@@ -141,7 +141,10 @@ FNOBJO = obj/advWave.o\
          obj/advWave2dOrder4r.o obj/advWave3dOrder4r.o obj/advWave2dOrder4c.o obj/advWave3dOrder4c.o \
          obj/advWave2dOrder6r.o obj/advWave3dOrder6r.o obj/advWave2dOrder6c.o obj/advWave3dOrder6c.o \
          obj/advWave2dOrder8r.o obj/advWave3dOrder8r.o obj/advWave2dOrder8c.o obj/advWave3dOrder8c.o \
-         obj/bcOptWave.o obj/getWaveDerivatives.o
+         obj/bcOptWave.o obj/getWaveDerivatives.o obj/hierDeriv.o
+
+# New high-order accurate modified equation versions
+FNOBJO += obj/advWaveME.o obj/advWaveME2dOrder6r.o obj/advWaveME2dOrder8r.o  obj/advWaveME2dOrder6c.o obj/advWaveME2dOrder8c.o     
 
 # OBJO = obj/advWave.o\
 #         obj/advWave2dOrder2r.o obj/advWave2dOrder2c.o obj/advWave2dOrder4r.o obj/advWave2dOrder4c.o 
@@ -176,6 +179,13 @@ testQuad: $(testQuadFiles); $(CXX) $(CCFLAGS) -o bin/testQuad $(testQuadFiles) $
 
 obj/testQuad.o : src/testQuad.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 obj/getQuadratureWeights.o : src/getQuadratureWeights.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+
+# ----- test high derivatives  -----
+testHighDerivativesFiles = obj/testHighDerivatives.o obj/getWaveDerivatives.o obj/hierDeriv.o
+testHighDerivatives: $(testHighDerivativesFiles); $(CXX) $(CCFLAGS) -o bin/testHighDerivatives $(testHighDerivativesFiles) $(LIBS)
+
+obj/testHighDerivatives.o : src/testHighDerivatives.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+
 
 # --------- CgWaveHoltz ----------
 
@@ -227,12 +237,37 @@ src/advWave3dOrder8r.f90 : src/advWave.f90
 src/advWave2dOrder8c.f90 : src/advWave.f90
 src/advWave3dOrder8c.f90 : src/advWave.f90
 
+src/advWaveME.f90: src/advWaveME.bf90; @cd src; $(BPP) -clean -quiet -I$(Overture)/include advWaveME.bf90
+
+src/advWaveME2dOrder2r.f90 : src/advWaveME.f90
+src/advWaveME3dOrder2r.f90 : src/advWaveME.f90
+src/advWaveME2dOrder2c.f90 : src/advWaveME.f90
+src/advWaveME3dOrder2c.f90 : src/advWaveME.f90
+src/advWaveME2dOrder4r.f90 : src/advWaveME.f90
+src/advWaveME3dOrder4r.f90 : src/advWaveME.f90
+src/advWaveME2dOrder4c.f90 : src/advWaveME.f90
+src/advWaveME3dOrder4c.f90 : src/advWaveME.f90
+src/advWaveME2dOrder6r.f90 : src/advWaveME.f90
+src/advWaveME3dOrder6r.f90 : src/advWaveME.f90
+src/advWaveME2dOrder6c.f90 : src/advWaveME.f90
+src/advWaveME3dOrder6c.f90 : src/advWaveME.f90
+src/advWaveME2dOrder8r.f90 : src/advWaveME.f90
+src/advWaveME3dOrder8r.f90 : src/advWaveME.f90
+src/advWaveME2dOrder8c.f90 : src/advWaveME.f90
+src/advWaveME3dOrder8c.f90 : src/advWaveME.f90
+
+
+
 # -- optimized BC routine
-src/bcOptWave.f90: src/bcOptWave.bf90 src/knownSolutionMacros.h
+src/bcOptWave.f90: src/bcOptWave.bf90 src/knownSolutionMacros.h maple/defineGetDerivativesMacros.h
 	      @cd src; $(BPP) -clean -quiet -I$(Overture)/include bcOptWave.bf90	
 
 # -- optimized derivatives evaluation
 src/getWaveDerivatives.f90: src/getWaveDerivatives.bf90; @cd src; $(BPP) -clean -quiet -I$(Overture)/include getWaveDerivatives.bf90
+
+# -- hierachical derivative evalulation
+src/hierDeriv.f90: src/hierDeriv.bf90; @cd src; $(BPP) -clean -quiet -I$(Overture)/include hierDeriv.bf90
+
 
 # dependencies
 obj/getDt.o : src/getDt.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
@@ -269,7 +304,7 @@ obj/checkCheckFiles.o : src/checkCheckFiles.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 # compile f90 files optimized by default:
 $(FNOBJO) : obj/%.o : %.f90
-	$(FC) $(FFLAGSO) -ffree-line-length-none -o $@ -c $<	
+	$(FC) $(FFLAGSO) -ffree-line-length-none -finit-real=snan -o $@ -c $<	
 
 
 

@@ -33,8 +33,6 @@ void bcOptWave( const int&nd,
 int CgWave::
 applyBoundaryConditions( realCompositeGridFunction & u, real t )
 {
-    real cpu0=getCPU();
-
     const int myid = max(0,Communication_Manager::My_Process_Number);
     const int np   = max(1,Communication_Manager::numberOfProcessors());
 
@@ -87,7 +85,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
 
     Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
 
-    cpu0 = getCPU();
+    real cpu0 = getCPU();
 
   // *** Note: interpolate also does a periodic update **** 
     u.interpolate();
@@ -104,7 +102,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
         ForBoundary(side,axis) 
         {
             int bc = mg.boundaryCondition(side,axis);
-            if( !( bc<=0 || bc==dirichlet || bc==evenSymmetry || bc==neumann  ) )
+            if( !( bc<=0 || bc==dirichlet || bc==evenSymmetry || bc==neumann || bc==exactBC ) )
             {
                 printF("CgWave:applyBoundaryConditions:ERROR: grid=%i side=%i axis=%i bc=%i not implemented\n",grid,side,axis,bc);
                 printF(" You should set boundary conditions in the interactiveUpdate \n");
@@ -286,6 +284,9 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
         }
 
 
+
+        timing(timeForBoundaryConditions) += getCPU()-cpu0;
+
         return 0; 
 
     } // end for useOpt
@@ -466,6 +467,9 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
   //   u[grid].updateGhostBoundaries();
 
     timing(timeForBoundaryConditions) += getCPU()-cpu0;
+
+  // printF("\n ++++ timing(timeForBoundaryConditions) = %9.3e\n",timing(timeForBoundaryConditions));
+
         
     return 0;
 }

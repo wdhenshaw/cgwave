@@ -68,8 +68,9 @@ takeFirstStep( int cur, real t )
     bool getTimeDerivative=true; 
     getInitialConditions( prev,t,getTimeDerivative );
 
-    const Real c2=c*c, c3=c2*c, dt2=dt*dt, dt3=dt2*dt, dt4=dt3*dt; 
-    const Real cdt = c*dt, cdt2=cdt*cdt, cdt3=cdt2*cdt, cdt4=cdt3*cdt; // powers of c*dt 
+    const Real c2=c*c, c3=c2*c, c4=c2*c2, c6=c4*c2;
+    const Real dt2=dt*dt, dt3=dt2*dt, dt4=dt3*dt, dt5=dt4*dt, dt6=dt5*dt; 
+    const Real cdt = c*dt, cdt2=cdt*cdt, cdt3=cdt2*cdt, cdt4=cdt3*cdt, cdt6=cdt3*cdt3; // powers of c*dt 
 
     Index I1,I2,I3;
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
@@ -83,7 +84,7 @@ takeFirstStep( int cur, real t )
         bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
 
         Index J1,J2,J3; // add extra so we can compute Delta^2 
-        int extra=1; 
+        int extra=orderOfAccuracy/2; 
         getIndex(mg.gridIndexRange(),J1,J2,J3,extra);
         ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,J1,J2,J3);
 
@@ -92,7 +93,9 @@ takeFirstStep( int cur, real t )
         
       // --- Taylor series in time for the first step ---- **CHECK ME**
       // -- take a FORWARD STEP ---
-      // u(t-dt) = u(t) + dt*ut + (dt^2/2)*utt + (dt^3/6)*uttt + (dt^4/4!)*utttt
+      // u(t-dt) = u(t) + dt*ut + (dt^2/2)*utt + (dt^3/6)*uttt + (dt^4/4!)*utttt + (dt^5/5!)*u[5] + dt^6/6!*u[6]
+
+
       //  utt = c^2*Delta(u) + f
       //  uttt = c^2*Delta(ut) + ft 
       //  utttt = c^2*Delta(utt) + ftt
@@ -136,15 +139,15 @@ takeFirstStep( int cur, real t )
       //   e.gd( unLocal ,xLocal,mg.numberOfDimensions(),isRectangular,0,0,0,0,I1,I2,I3,C,t+dt);
       // }
 
-            if( orderOfAccuracy==4 )
+            if( orderOfAccuracy>=4 )
             { 
 
                 operators[grid].derivative(MappedGridOperators::laplacianOperator,upLocal,lap,I1,I2,I3); // Delta( ut )
                 unLocal(I1,I2,I3) += ( c2*dt3/6.)*lap(I1,I2,I3); 
 
-        // --  compute Delta^2 to second order ---
+        // --  compute Delta^2 to lower order order ---
                 RealArray lapSq(I1,I2,I3);
-                operators.setOrderOfAccuracy(2);
+                operators.setOrderOfAccuracy(orderOfAccuracy-2);
 
                 operators[grid].derivative(MappedGridOperators::laplacianOperator,ucLocal,lap  ,J1,J2,J3);   // Delta(uc) 
                 operators[grid].derivative(MappedGridOperators::laplacianOperator,lap    ,lapSq,I1,I2,I3);   // Delta^2( uc )
@@ -152,13 +155,41 @@ takeFirstStep( int cur, real t )
                 unLocal(I1,I2,I3) += ( cdt4/24. )*lapSq(I1,I2,I3); 
 
 
-                operators.setOrderOfAccuracy(4); // reset 
+                operators.setOrderOfAccuracy(orderOfAccuracy); // reset 
             }
             
-            if( orderOfAccuracy>4 )
+            if( orderOfAccuracy>=6 )
+            { 
+
+        // --  compute Delta^2 ( ut ) to fourth order ---
+        // *check me* is this stencil too wide?
+
+                RealArray lapSq(J1,J2,J3);
+                operators.setOrderOfAccuracy(orderOfAccuracy-2);
+
+                operators[grid].derivative(MappedGridOperators::laplacianOperator,upLocal,lap  ,J1,J2,J3);   // Delta( ut )
+                operators[grid].derivative(MappedGridOperators::laplacianOperator,lap    ,lapSq,I1,I2,I3);   // Delta^2( ut )
+  
+                unLocal(I1,I2,I3) += ( c2*dt5/120. )*lapSq(I1,I2,I3); 
+
+        // --  compute Delta^3( u )  to second order ---
+                operators.setOrderOfAccuracy(orderOfAccuracy-4);
+
+                operators[grid].derivative(MappedGridOperators::laplacianOperator,ucLocal,lap  ,J1,J2,J3);   // Delta(uc) 
+                operators[grid].derivative(MappedGridOperators::laplacianOperator,lap    ,lapSq,J1,J2,J3);   // Delta^2( uc )
+                operators[grid].derivative(MappedGridOperators::laplacianOperator,lapSq  ,lap  ,I1,I2,I3);   // Delta^3( uc )
+  
+                unLocal(I1,I2,I3) += ( cdt6/720. )*lap(I1,I2,I3);         
+
+
+                operators.setOrderOfAccuracy(orderOfAccuracy); // reset 
+            }
+
+
+            if( orderOfAccuracy>6 )
             {
-                printF("CgWave::takeFirstStep: orderOfAccuracy=%d not implemented. Fix me!\n",orderOfAccuracy);
-                OV_ABORT("error");
+                printF("CgWave::takeFirstStep:WARNING: orderOfAccuracy=%d not implemented. Fix me!\n",orderOfAccuracy);
+        // OV_ABORT("error");
             }
 
       // --- adjust update for any forcing ----
@@ -181,6 +212,7 @@ takeFirstStep( int cur, real t )
                     e.gd( utt,xLocal,numberOfDimensions,isRectangular,2,0,0,0,I1,I2,I3,C,t ); 
                     e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,2,0,0,I1,I2,I3,C,t ); 
                     e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,0,2,0,I1,I2,I3,C,t );
+          // ----------- CORRECT u_tt with f = ue_ttt - c^2*Lap(ue )
                     if( numberOfDimensions==2 )
                     {
                         f = (.5*dt2)*( utt - (c*c)*( uxx + uyy ) );
@@ -190,8 +222,9 @@ takeFirstStep( int cur, real t )
                         e.gd( uzz,xLocal,numberOfDimensions,isRectangular,0,0,0,2,I1,I2,I3,C,t );
                         f = (.5*dt2)*( utt - (c*c)*( uxx + uyy + uzz ) );
                     }
-                    if( orderOfAccuracy==4 )
+                    if( orderOfAccuracy>=4 )
                     {
+            // ----------- CORRECT u_ttt with ft = ue_tttt - c^2*Lap( uet )
             // Compute ft  = ( utt - (c*c)*( uxx + uyy + uzz ) ).t
                         e.gd( utt,xLocal,numberOfDimensions,isRectangular,3,0,0,0,I1,I2,I3,C,t ); // u.ttt
                         e.gd( uxx,xLocal,numberOfDimensions,isRectangular,1,2,0,0,I1,I2,I3,C,t ); // u.txx
@@ -205,65 +238,166 @@ takeFirstStep( int cur, real t )
                             e.gd( uzz,xLocal,numberOfDimensions,isRectangular,1,0,0,2,I1,I2,I3,C,t ); // u.tzz
                             f += (dt3/6.)*( utt - (c*c)*( uxx + uyy + uzz ) );
                         }  
-            // Compute ftt 
-                        e.gd( utt,xLocal,numberOfDimensions,isRectangular,4,0,0,0,I1,I2,I3,C,t ); 
-                        e.gd( uxx,xLocal,numberOfDimensions,isRectangular,2,2,0,0,I1,I2,I3,C,t ); 
-                        e.gd( uyy,xLocal,numberOfDimensions,isRectangular,2,0,2,0,I1,I2,I3,C,t );  
-                        if( numberOfDimensions==2 )
-                        {
-                            f += (dt4/24.)*( utt - (c*c)*( uxx + uyy ) );
-                        }
-                        else
-                        {
-                            e.gd( uzz,xLocal,numberOfDimensions,isRectangular,2,0,0,2,I1,I2,I3,C,t );
-                            f += (dt4/24.)*( utt - (c*c)*( uxx + uyy + uzz ) );
-                        } 
-            // compute Delta( f ) = Delta( ut.tt - c^2*Delta( ue ) )
+            // ----------- CORRECT u_tttt with  
+            //       f_tt + c^2*Lap( f ) = ue_tttt - c^4 Delta^2( ue )
+            // where 
+            //     ftt  = ue_ttttt - c^2*Lap( uett )
+            //     Lap( f )  =  Delta( ue.tt - c^2*Delta( ue ) )
+            // *new way* Feb 5, 2022 -- account for terms cancelling to simplify
+                        e.gd( utt,xLocal,numberOfDimensions,isRectangular,4,0,0,0,I1,I2,I3,C,t ); // really utttt
                         RealArray w(I1,I2,I3);
-            // utt <- Delta( utt )
-                        e.gd( utt,xLocal,numberOfDimensions,isRectangular,2,2,0,0,I1,I2,I3,C,t ); // u.ttxx
-                        e.gd(   w,xLocal,numberOfDimensions,isRectangular,2,0,2,0,I1,I2,I3,C,t ); // u.ttyy
-                        utt += w;
-                        if( numberOfDimensions==3 )
-                        {
-                            e.gd(   w,xLocal,numberOfDimensions,isRectangular,2,0,0,2,I1,I2,I3,C,t ); // uttzz
-                            utt += w;
-                        }
-            // uxx <- Delta( uxx )
                         e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,4,0,0,I1,I2,I3,C,t );  // u.xxxx
-                        e.gd(   w,xLocal,numberOfDimensions,isRectangular,0,2,2,0,I1,I2,I3,C,t );  // u.xxyy
-                        uxx += w;
+                        e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,0,4,0,I1,I2,I3,C,t );  // u.yyyy
+                        w = uxx + uyy;
+                        e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,2,2,0,I1,I2,I3,C,t );  // u.xxyy
+                        w += 2.*uxx; 
                         if( numberOfDimensions==3 )
                         {
-                            e.gd( w,xLocal,numberOfDimensions,isRectangular,0,2,0,2,I1,I2,I3,C,t );
-                            uxx += w;
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,0,4,0,I1,I2,I3,C,t ); // u.zzzz
+                            w += uxx;
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,2,0,2,I1,I2,I3,C,t ); // u.xxzz
+                            e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,0,2,2,I1,I2,I3,C,t ); // u.yyzz
+                            w += 2.*( uxx + uyy );
                         } 
-            // uyy <- Delta( uyy )
-                        e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,2,2,0,I1,I2,I3,C,t );  // u.xxyy
-                        e.gd(   w,xLocal,numberOfDimensions,isRectangular,0,0,4,0,I1,I2,I3,C,t );  // u.yyyy
-                        uyy += w;
+                        f += (dt4/24.)*( utt - c4*w );  // f += uetttt - c^4* Delta^2 ( ue )
+            // else
+            // {
+            //   // **OLD WAY** DID not account for terms cancelling
+            //   e.gd( utt,xLocal,numberOfDimensions,isRectangular,4,0,0,0,I1,I2,I3,C,t ); 
+            //   e.gd( uxx,xLocal,numberOfDimensions,isRectangular,2,2,0,0,I1,I2,I3,C,t ); 
+            //   e.gd( uyy,xLocal,numberOfDimensions,isRectangular,2,0,2,0,I1,I2,I3,C,t );  
+            //   if( numberOfDimensions==2 )
+            //   {
+            //     f += (dt4/24.)*( utt - (c*c)*( uxx + uyy ) );
+            //   }
+            //   else
+            //   {
+            //     e.gd( uzz,xLocal,numberOfDimensions,isRectangular,2,0,0,2,I1,I2,I3,C,t );
+            //     f += (dt4/24.)*( utt - (c*c)*( uxx + uyy + uzz ) );
+            //   } 
+            //   // compute Delta( f ) = Delta( ut.tt - c^2*Delta( ue ) )
+            //   RealArray w(I1,I2,I3);
+            //   // utt <- Delta( utt )
+            //   e.gd( utt,xLocal,numberOfDimensions,isRectangular,2,2,0,0,I1,I2,I3,C,t ); // u.ttxx
+            //   e.gd(   w,xLocal,numberOfDimensions,isRectangular,2,0,2,0,I1,I2,I3,C,t ); // u.ttyy
+            //   utt += w;
+            //   if( numberOfDimensions==3 )
+            //   {
+            //     e.gd(   w,xLocal,numberOfDimensions,isRectangular,2,0,0,2,I1,I2,I3,C,t ); // uttzz
+            //     utt += w;
+            //   }
+            //   // uxx <- Delta( uxx )
+            //   e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,4,0,0,I1,I2,I3,C,t );  // u.xxxx
+            //   e.gd(   w,xLocal,numberOfDimensions,isRectangular,0,2,2,0,I1,I2,I3,C,t );  // u.xxyy
+            //   uxx += w;
+            //   if( numberOfDimensions==3 )
+            //   {
+            //     e.gd( w,xLocal,numberOfDimensions,isRectangular,0,2,0,2,I1,I2,I3,C,t );
+            //     uxx += w;
+            //   } 
+            //   // uyy <- Delta( uyy )
+            //   e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,2,2,0,I1,I2,I3,C,t );  // u.xxyy
+            //   e.gd(   w,xLocal,numberOfDimensions,isRectangular,0,0,4,0,I1,I2,I3,C,t );  // u.yyyy
+            //   uyy += w;
+            //   if( numberOfDimensions==3 )
+            //   {
+            //     e.gd( w,xLocal,numberOfDimensions,isRectangular,0,0,2,2,I1,I2,I3,C,t );
+            //     uyy += w;
+            //   }  
+            //   if( numberOfDimensions==3 )
+            //   {
+            //     // uzz <- Delta( uzz )
+            //     e.gd( uzz,xLocal,numberOfDimensions,isRectangular,0,2,0,2,I1,I2,I3,C,t );  // u.xxzz
+            //     e.gd(   w,xLocal,numberOfDimensions,isRectangular,0,0,2,2,I1,I2,I3,C,t );  // u.yyzz
+            //     uzz += w;
+            //     e.gd(   w,xLocal,numberOfDimensions,isRectangular,0,0,0,4,I1,I2,I3,C,t );  // u.zzzz
+            //     uzz += w;
+            //   }                              
+            //   if( numberOfDimensions==2 )
+            //   {
+            //     f += (c*c*dt4/24.)*( utt - (c*c)*( uxx + uyy ) );  //  += (dt^4/24)*( c^2*Delta( f ) )
+            //   }
+            //   else
+            //   {
+            //     f += (c*c*dt4/24.)*( utt - (c*c)*( uxx + uyy + uzz ) );
+            //   } 
+            // }
+                    }
+                    if( orderOfAccuracy>=6 )
+                    {
+            // ----- correct D_t^5 u  ------
+            // with  D_t^5 ue - c^4 Delta^2( ue_t )
+                        e.gd( utt,xLocal,numberOfDimensions,isRectangular,5,0,0,0,I1,I2,I3,C,t ); // really uttttt
+                        RealArray w(I1,I2,I3);
+                        e.gd( uxx,xLocal,numberOfDimensions,isRectangular,1,4,0,0,I1,I2,I3,C,t );  // u.xxxxt
+                        e.gd( uyy,xLocal,numberOfDimensions,isRectangular,1,0,4,0,I1,I2,I3,C,t );  // u.yyyyt
+                        w = uxx + uyy;
+                        e.gd( uxx,xLocal,numberOfDimensions,isRectangular,1,2,2,0,I1,I2,I3,C,t );  // u.xxyyt
+                        w += 2.*uxx; 
                         if( numberOfDimensions==3 )
                         {
-                            e.gd( w,xLocal,numberOfDimensions,isRectangular,0,0,2,2,I1,I2,I3,C,t );
-                            uyy += w;
-                        }  
-                        if( numberOfDimensions==3 )
-                        {
-              // uzz <- Delta( uzz )
-                            e.gd( uzz,xLocal,numberOfDimensions,isRectangular,0,2,0,2,I1,I2,I3,C,t );  // u.xxzz
-                            e.gd(   w,xLocal,numberOfDimensions,isRectangular,0,0,2,2,I1,I2,I3,C,t );  // u.yyzz
-                            uzz += w;
-                            e.gd(   w,xLocal,numberOfDimensions,isRectangular,0,0,0,4,I1,I2,I3,C,t );  // u.zzzz
-                            uzz += w;
-                        }                              
-                        if( numberOfDimensions==2 )
-                        {
-                            f += (c*c*dt4/24.)*( utt - (c*c)*( uxx + uyy ) );  //  += (dt^4/24)*( c^2*Delta( f ) )
-                        }
-                        else
-                        {
-                            f += (c*c*dt4/24.)*( utt - (c*c)*( uxx + uyy + uzz ) );
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,1,0,4,0,I1,I2,I3,C,t ); // u.zzzzt
+                            w += uxx;
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,1,2,0,2,I1,I2,I3,C,t ); // u.xxzzt
+                            e.gd( uyy,xLocal,numberOfDimensions,isRectangular,1,0,2,2,I1,I2,I3,C,t ); // u.yyzzt
+                            w += 2.*( uxx + uyy );
                         } 
+                        f += (dt5/120.)*( utt - c4*w );  // f += uettttt - c^4* Delta^2 ( uet )
+            // ------- correct D_t^6 u with ------
+            //      D_t^6 ue - c^6 Delta^3( ue )
+                        e.gd( utt,xLocal,numberOfDimensions,isRectangular,6,0,0,0,I1,I2,I3,C,t ); // really D_t^6 u
+                        e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,6,0,0,I1,I2,I3,C,t );  // u.xxxxxx
+                        e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,0,6,0,I1,I2,I3,C,t );  // u.yyyyyy
+                        w = uxx + uyy;
+                        e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,4,2,0,I1,I2,I3,C,t );  // u.xxxxyy
+                        e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,2,4,0,I1,I2,I3,C,t );  // u.xxyyyy
+                        w += 3.*( uxx + uyy ); 
+                        if( numberOfDimensions==3 )
+                        {
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,0,0,6,I1,I2,I3,C,t ); // u.zzzzzz
+                            w += uxx;
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,4,0,2,I1,I2,I3,C,t ); // u.xxxxzz
+                            e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,2,0,4,I1,I2,I3,C,t ); // u.xxzzzz
+                            w += 3.*( uxx + uyy );
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,0,4,2,I1,I2,I3,C,t ); // u.yyyyzz
+                            e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,0,2,4,I1,I2,I3,C,t ); // u.yyzzzz
+                            w += 3.*( uxx + uyy );  
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,2,2,2,I1,I2,I3,C,t ); // u.xxyyzz
+                            w += 6.*( uxx );
+                        } 
+                        f += (dt6/720.)*( utt - c6*w );  // f +=   D_t^6 ue - c^6 Delta^3( ue )
+            // // f = ue.tt - c^2*Delta( ue )         
+            // // Compute fttt 
+            // e.gd( utt,xLocal,numberOfDimensions,isRectangular,5,0,0,0,I1,I2,I3,C,t );  // ue.ttttt
+            // e.gd( uxx,xLocal,numberOfDimensions,isRectangular,3,2,0,0,I1,I2,I3,C,t );  // ue.tttxx
+            // e.gd( uyy,xLocal,numberOfDimensions,isRectangular,3,0,2,0,I1,I2,I3,C,t );  
+            // if( numberOfDimensions==2 )
+            // {
+            //   f += (dt5/120.)*( uttt - (c*c)*( uxx + uyy ) );
+            // }
+            // else
+            // {
+            //   e.gd( uzz,xLocal,numberOfDimensions,isRectangular,3,0,0,2,I1,I2,I3,C,t );
+            //   f += (dt5/120.)*( uttt - (c*c)*( uxx + uyy + uzz ) );
+            // } 
+            // // f = ue.tt - c^2*Delta( ue )         
+            // // Compute ftttt 
+            // e.gd( utt,xLocal,numberOfDimensions,isRectangular,6,0,0,0,I1,I2,I3,C,t );  // ue.tttttt
+            // e.gd( uxx,xLocal,numberOfDimensions,isRectangular,4,2,0,0,I1,I2,I3,C,t );  // ue.ttttxx
+            // e.gd( uyy,xLocal,numberOfDimensions,isRectangular,4,0,2,0,I1,I2,I3,C,t );  
+            // if( numberOfDimensions==2 )
+            // {
+            //   f += (dt6/720.)*( uttt - (c*c)*( uxx + uyy ) );
+            // }
+            // else
+            // {
+            //   e.gd( uzz,xLocal,numberOfDimensions,isRectangular,4,0,0,2,I1,I2,I3,C,t );
+            //   f += (dt6/720.)*( uttt - (c*c)*( uxx + uyy + uzz ) );
+            // } 
+                    }
+                    if( orderOfAccuracy>=8 )
+                    {
+                        printF("\n ***** TakeFirstStep : add forcing: finish me for orderOfAccuracy=%d ***** \n\n",orderOfAccuracy);
                     }
                     unLocal(I1,I2,I3) += f;
                 }  

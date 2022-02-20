@@ -887,8 +887,8 @@ updateUserDefinedKnownSolution()
 
             m=0; n=0; amp=1.; a=1.;
             
-            printF("--- Eigenfunction for the Heat Equation in the unit disk ---\n"
-                          "    u = amp*e^{- lambda^2*t } * Jn(lambda_m*r) * cos(n*theta)  [2D, Dirichlet BCs]\n"
+            printF("--- Eigenfunction for the Wave Equation in the unit disk ---\n"
+                          "    u = cos( c*lambda_{m,n} *t ) * Jn(lambda_m*r) * cos(n*theta)  [2D, Dirichlet BCs]\n"
                           "    n = angular number, n=0,1,2,\n"
                           "    m = radial number (m'th zero of Bessel Jn(lambda*a)=0 \n"
                           "    a = radius of the disk\n"
@@ -917,8 +917,8 @@ updateUserDefinedKnownSolution()
 
             m=0; n=0; amp=1.; bcOpt=0;
             
-            printF("--- Eigenfunction for the Heat Equation in an annulus---\n"
-                          "    u = amp*e^{- lambda^2*t } * uHat(r) * cos(n*theta),\n"
+            printF("--- Eigenfunction for the Wave Equation in an annulus---\n"
+                          "    u = cos( c*lambda_{m,n} *t ) * uHat(r) * cos(n*theta),\n"
                           "    uHat(r) = c1*Jn(lambda*r) + c2*Yn(lambda*r),\n"
                           "    Annulus: ra=.5, rb=1.\n"
                           "    n = angular number, n=0,1,2,\n"

@@ -1,0 +1,95 @@
+# =============================================================
+# Evaluate the coefficients in high order accurate difference approximations
+#
+# restart; currentdir(cat(kernelopts(homedir),"/Dropbox/research/cgwave/maple")); read "highOrderDiff.maple";
+#
+# =============================================================
+#
+clear;
+
+# symbol of dx^2 D+D- = - 4 sin^2(z/2)
+
+S := series( 4*(sin(z/2))^2, z=0, 24):
+S1 := series( sin(z), z=0, 24):
+
+# u.xx = D+D-( I - b1*dx^2*D+D- + b2*(dx^2*D+D-)^2 -b3*(dx^2*D+D-)^2 + ...)
+printf("---------------- uxx ----------------\n");
+f2 := 1 - (S/z^2)*(1 + b1*S + b2*S^2 + b3*S^3+  b4*S^4 + b5*S^5  ):
+
+f2s := series( f2,z=0,24 ):
+# coeff(f2s,z^2);
+b1:=solve(coeff(f2s,z^2 )=0,b1);
+b2:=solve(coeff(f2s,z^4 )=0,b2);
+b3:=solve(coeff(f2s,z^6 )=0,b3);
+b4:=solve(coeff(f2s,z^8 )=0,b4);
+b5:=solve(coeff(f2s,z^10)=0,b5);
+
+# u.xxxx = (D+D-)^2( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
+printf("---------------- uxxxx u[4] ----------------\n");
+f2 := 1 - S^2/z^4*(1 + c1*S + c2*S^2 + c3*S^3+  c4*S^4 + c5*S^5  ):
+
+f2s := series( f2,z=0,24 ):
+# coeff(f2s,z^2);
+c1:=solve(coeff(f2s,z^2 )=0,c1);
+c2:=solve(coeff(f2s,z^4 )=0,c2);
+c3:=solve(coeff(f2s,z^6 )=0,c3);
+c4:=solve(coeff(f2s,z^8 )=0,c4);
+c5:=solve(coeff(f2s,z^10)=0,c5);
+
+# u.xxxxxx = (D+D-)^3( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
+printf("---------------- uxxxxxx u[6]  ----------------\n");
+
+c1:='c1': c2:='c2': c3:='c3': c4:='c4': c5:='c5': 
+f2 := 1 - (S^3/z^6)*(1 + c1*S + c2*S^2 + c3*S^3+  c4*S^4 + c5*S^5  ):
+
+f2s := series( f2,z=0,24 ):
+# coeff(f2s,z^2);
+c1:=solve(coeff(f2s,z^2 )=0,c1);
+c2:=solve(coeff(f2s,z^4 )=0,c2);
+c3:=solve(coeff(f2s,z^6 )=0,c3);
+c4:=solve(coeff(f2s,z^8 )=0,c4);
+c5:=solve(coeff(f2s,z^10)=0,c5);
+
+
+# u.x = (D0)( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
+printf("---------------- ux u[1] ----------------\n");
+c1:='c1': c2:='c2': c3:='c3': c4:='c4': c5:='c5': 
+f2 := 1 - (S1/(2*z))*(1 + c1*S + c2*S^2 + c3*S^3+  c4*S^4 + c5*S^5  ):
+
+f2s := series( f2,z=0,24 ):
+# coeff(f2s,z^2);
+c1:=solve(coeff(f2s,z^2 )=0,c1);
+c2:=solve(coeff(f2s,z^4 )=0,c2);
+c3:=solve(coeff(f2s,z^6 )=0,c3);
+c4:=solve(coeff(f2s,z^8 )=0,c4);
+c5:=solve(coeff(f2s,z^10)=0,c5);
+
+
+# u.xxx = (D0 D+D-)( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
+printf("---------------- uxxx u[3] ----------------\n");
+c1:='c1': c2:='c2': c3:='c3': c4:='c4': c5:='c5': 
+f2 := 1 - (S1*S/(2*z^3))*(1 + c1*S + c2*S^2 + c3*S^3+  c4*S^4 + c5*S^5  ):
+
+f2s := series( f2,z=0,24 ):
+# coeff(f2s,z^2);
+c1:=solve(coeff(f2s,z^2 )=0,c1);
+c2:=solve(coeff(f2s,z^4 )=0,c2);
+c3:=solve(coeff(f2s,z^6 )=0,c3);
+c4:=solve(coeff(f2s,z^8 )=0,c4);
+c5:=solve(coeff(f2s,z^10)=0,c5);
+
+# u.xxx = (D0 (D+D-)^2)( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
+printf("---------------- uxxxxx  u[5] ----------------\n");
+c1:='c1': c2:='c2': c3:='c3': c4:='c4': c5:='c5': 
+f2 := 1 - (S1*S^2/(2*z^5))*(1 + c1*S + c2*S^2 + c3*S^3+  c4*S^4 + c5*S^5  ):
+
+f2s := series( f2,z=0,24 ):
+# coeff(f2s,z^2);
+c1:=solve(coeff(f2s,z^2 )=0,c1);
+c2:=solve(coeff(f2s,z^4 )=0,c2);
+c3:=solve(coeff(f2s,z^6 )=0,c3);
+c4:=solve(coeff(f2s,z^8 )=0,c4);
+c5:=solve(coeff(f2s,z^10)=0,c5);
+
+
+

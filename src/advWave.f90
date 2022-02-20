@@ -42,6 +42,24 @@
 ! To include derivatives of rx use OPTION=RX
 ! To include derivatives of rx use OPTION=RX
 
+! define macros to evaluate derivatives for the 6th order method (from maple/makeGetDerivativesMacros.maple)
+! ****** File written by makeGetDerivativesMacros.maple  ******
+
+
+
+! =======================================================
+!  Macro to compute Sixth derivatives in 2 dimensions 
+!  OPTION : evalMetrics : evaluate the derivatives of the metrics
+!          (metrics need only be evaluated once when using discrete delta to get coeffs)
+! =======================================================
+
+! =======================================================
+!  Macro to compute Sixth derivatives in 3 dimensions 
+!  OPTION : evalMetrics : evaluate the derivatives of the metrics
+!          (metrics need only be evaluated once when using discrete delta to get coeffs)
+! =======================================================
+
+
 ! ======================================================================================
 !   Evaluate the TZ exact solution in 2D
 ! ======================================================================================
@@ -93,6 +111,19 @@
 ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ! Upwind (sosup) dissipation (6th-order difference used with 4th-order scheme)
 ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+! Upwind (sosup) dissipation (8th-order difference used with 6th-order scheme)
+! (x+y)^8 = x^8 + 8*x^7*y + 28*x^6*y^2 + 56*x^5*y^3 + 70*x^4*y^4 + 56*x^3*y^5 + 28*x^2*y^6 + 8*x*y^7 + y^8
+! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+! Upwind (sosup) dissipation (10th-order difference used with 8th-order scheme)
+! (x+y)^10 = x^10 + 10*x^9*y + 45*x^8*y^2 + 120*x^7*y^3 + 210*x^6*y^4 + 252*x^5*y^5 + 210*x^4*y^6 + 120*x^3*y^7 + 45*x^2*y^8 + 10*x*y^9 + y^10
+! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 ! =========================================================================================
@@ -177,7 +208,10 @@
 
   !   ORDER=6 : BC's not implemented yet
 
-  ! ORDER 8 -- finish BCs
+  ! ORDER 8 -- needed for upwinding 
+  ! buildFile(advWave3dOrder8r,3,8,rectangular)
+  ! buildFile(advWave3dOrder8c,3,8,curvilinear)
+
 
 
 
@@ -214,7 +248,8 @@
             
 !     ---- local variables -----
             integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime
-            integer addForcing,orderOfDissipation,option
+            integer addForcing,orderOfDissipation,option,addUpwinding
+      ! integer useImplicitUpwindDissipation,useUpwindDissipation
             integer useWhereMask,solveForE,solveForH,grid
             integer ex,ey,ez, hx,hy,hz
 
@@ -223,10 +258,23 @@
 !...........end   statement functions
 
 
+
       ! write(*,*) 'Inside advWave...'
 
-            gridType           =ipar(2)
-            orderOfAccuracy    =ipar(3)
+            option             = ipar( 0)
+            gridType           = ipar( 2)
+            orderOfAccuracy    = ipar( 3)
+            orderInTime        = ipar( 4)
+
+      ! useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
+      ! useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for impliciit time-stepping 
+
+            if( option.eq.1 )then 
+              addUpwinding = 1
+            else
+              addUpwinding = 0
+            end if
+
 
             if( orderOfAccuracy.eq.2 )then
 
@@ -258,9 +306,22 @@
             else if( orderOfAccuracy.eq.6 ) then
 
                 if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    call advWave2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+
+                    if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
+            ! new ME scheme (note: upwinding is still added in old scheme)
+                        call advWaveME2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                    else
+                        call advWave2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                    end if
+                    
                 else if(nd.eq.2 .and. gridType.eq.curvilinear )then
-                    call advWave2dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                  if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
+            ! new ME scheme
+                        call advWaveME2dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                    else
+                        call advWave2dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                    end if          
+                    
                 else if(  nd.eq.3 .and. gridType.eq.rectangular )then
                     call advWave3dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
@@ -272,9 +333,21 @@
             else if( orderOfAccuracy.eq.8 ) then
 
                 if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    call advWave2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                    if( addUpwinding==0 )then
+            ! new ME scheme
+                        call advWaveME2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                    else
+                        call advWave2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                    end if
+
                 else if(nd.eq.2 .and. gridType.eq.curvilinear )then
-                    call advWave2dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                  if( addUpwinding==0 )then
+            ! new ME scheme
+                        call advWaveME2dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                    else
+                        call advWave2dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                    end if  
+
                 else if(  nd.eq.3 .and. gridType.eq.rectangular )then
                     call advWave3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
                 else if(  nd.eq.3 .and. gridType.eq.curvilinear )then

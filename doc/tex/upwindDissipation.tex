@@ -1,0 +1,138 @@
+% \newcommand{\cuw}{c_{\rm uw}}
+\section{Upwind dissipation} \label{sec:upwindDissipation}
+
+Upwind dissipation for the wave equation in second-order form was first discussed in~\cite{sosup2012} and later
+extended to Maxwell's equations in~\cite{mxsosup2018}. The simplified version presented here is developed
+in a paper not yet completed~\cite{ssmx2018}. 
+
+At the continuous level, the upwind dissipation adds a term proportional to a high spatial derivative 
+of $\p_t u$, and roughly takes the form in one-dimension as 
+\ba
+   \p_t^2 u = c^2\Delta u - \nu_p \,\f{c}{\dx} (-\dx^2 \p_x^2)^q \, \p_t u ,
+\ea
+for some coefficient $\nu_q $, and where $q=p/2+1$ is defined in terms of the order of accuracy of the scheme $p$. 
+To avoid a time-step restriction, upwind dissipation is added using a predictor-corrector scheme (UWPC).
+Let us describe the approach in one space dimension. 
+The predictor consist of the usual modified equation update to determine
+the predicted value $u^p_j \approx u^{n+1}_j$,
+\ba
+   & u^p_j = 2 u_j^2 - u_j^{n-1} + \dt^2\Big( c^2 D_{h,xx} u_j^n + \ldots ), \\
+   & \text{applyBoundaryConditions}(u^p) .
+\ea
+The dissipation is added in a corrector step where $\p_t u^n$ is approximated with $D_{0t}$,
+\ba
+  & u^{n+1} = u^{p} - \nu_p \, \lambda \, (-\Delta_+\Delta_-)^q \Big( \f{u^p - u^{n-1}}{2} \Big), \\
+  & \text{applyBoundaryConditions}(u^{n+1}) ,
+\ea
+where $\nu_q$ is the coefficient of the upwind dissipation and $\lambda$ is the CFL parameter,
+\ba
+   \lambda \eqdef \f{c\dt}{\dx}.
+\ea
+
+The stability condition turns out to be~\cite{ssmx2018} **check me**
+\ba
+  &  \lambda < 1 , \\
+  & \zeta < 2, \\
+  &  \zeta \eqdef \nu_p \, \lambda\,  ( 4\sin^2(\xi/2))^q
+\ea
+which implies we need the usual CFL condition, $\lambda<1$ as well as the restriction on $\nu_p$
+\ba
+  \nu_p < \f{2}{\lambda\, 4^q} = \f{1}{\lambda\, 2^{p+1}}
+\ea
+
+In two-dimensions **check me**
+\ba
+  \zeta \eqdef \nu_p \,  \Big(  ( \lambda_x \, (4\sin^2(\xi_x/2))^q + \lambda_y (4\sin^2(\xi_y/2))^q  \Big) 
+\ea
+and we need $\zeta<2$ or 
+\ba
+   \nu_p \,  \Big(  ( \lambda_x \, (4\sin^2(\xi_x/2))^q + \lambda_y (4\sin^2(\xi_y/2))^q  \Big)  < 2, 
+\ea
+or
+\ba
+   \nu_p < \f{2}{ \lambda_x 4^q + \lambda_y 4^q } = \f{1}{2^{p+1}} \, \f{1}{\lambda_x+\lambda_y}
+\ea
+In two-dimensions the CFL condition is
+\ba
+    \lambda_x^2 + \lambda_y^2 < 1
+\ea
+which implies $\lambda_x+\lambda_y < \sqrt{2}$.
+Whence
+\ba
+   \nu_p <  \f{1}{\sqrt{2}} \, \f{1}{2^{p+1}}    
+\ea
+In three-dimensions
+\ba
+   \nu_p < \f{1}{2^{p+1}} \, \f{1}{\lambda_x+\lambda_y+\lambda_z}
+\ea
+where
+\ba
+    \lambda_x^2 + \lambda_y^2 + \lambda_z^2 < 1
+\ea
+which implies $\lambda_x+\lambda_y +\lambda+z < \sqrt{3}$ and
+\ba
+   \nu_p <  \f{1}{\sqrt{3}} \, \f{1}{2^{p+1}}    
+\ea
+
+\mni
+\textbf{Summary:} In $d$-dimensions we require
+\ba
+   \nu_p < \f{1}{\sqrt{d}} \, \f{1}{2^{p+1}}  .
+\ea
+
+\mni
+\textbf{Note.} The value of $\nu_2=1/8$ suggested in~\cite{ssmx2018} seems to be too big in 2D or 3D, instead
+we seem to need
+\ba
+  \nu_2 = \f{1}{\sqrt{d}}\, \f{1}{8}
+\ea
+in $d$-dimensions which is smaller than $1/8$ for $d=2,3$. This conclusion agrees with computations.
+
+\mni
+For fourth-order, $p=2$, we require
+\ba
+  \nu_4 <  \f{1}{\sqrt{d}}\, \f{1}{32} 
+\ea
+The suggested value for $\nu_4=5/288 = 1/(57.6)$
+Now $32\sqrt{3} \approx 55.456$ and thus this suggested value of $\nu_4=5/288$ should work in 2D or 3D. This conclusion also agrees with computations.
+
+\mni
+\textbf{Note:} We could choose $\nu_p$ from the condition $\zeta<2$ - choose a value slightly less than
+   the largest value allowed by stability.
+
+
+\bni
+An alternative scheme which allows a bigger value for $\nu_p$ is to evaluate $\Dzt U^n$ in a Gauss-Seidel fashion.
+The predictor sets a preliminary value for $u^{n+1}_j$,
+\ba
+   & u^{n+1}_j = 2 u_j^2 - u_j^{n-1} + \dt^2\Big( c^2 D_{h,xx} u_j^n + \ldots ), \\
+   & \text{applyBoundaryConditions}(u^{n+1}) .
+\ea
+The corrector adds the upwind dissipation to $u^{n+1}_j$, always using the latest value in the right-hand-side,
+\ba
+  & u_j^{n+1} \leftarrow u_j^{n+1} - \nu_p\, \lambda\, (-\Delta_+\Delta_-)^q \Big( \f{u_j^{n+1} - u_j^{n-1}}{2} \Big), \\
+  & \text{applyBoundaryConditions}(u^{n+1}) ,
+\ea
+This version is stable for $p=2$ with $\nu_2=1/8$ (found in practice, need to do the analysis). 
+This version has the advantage of not needed storage to hold $(u^p - u^{n-1})/2$.
+
+
+\bni 
+\textbf{Note:} The actual upwind scheme implemented in CgWave (and CgMx) uses a slightly modified algorithm that 
+avoids one application of the boundary conditions (applying the BCs and interface conditions in CgMx can sometimes be expensive) . 
+Instead of adding the dissipation at the end of the step to $u^{n+1}$,
+we add it at the start of the step to $u^{n}$, 
+\ba
+  & u_j^{n} \leftarrow u_j^{n} - \nu_p \,\lambda\, (-\Delta_+\Delta_-)^q \Big( \f{u_j^{n} - u_j^{n-2}}{2} \Big), 
+\ea
+and do not apply the boundary conditions 
+(this works since formally one application of the dissipation adds a small $\Oc(h^{p+2})$ correction to $u_j^n$ so the BCs will still be satisfied to the expected order of accuracy).
+This is followed by the usual update
+\ba
+   & u^{n+1}_j = 2 u_j^2 - u_j^{n-1} + \dt^2\Big( c^2 D_{h,xx} u_j^n + \ldots ), \\
+   & \text{applyBoundaryConditions}(u^{n+1}) .
+\ea
+
+
+
+

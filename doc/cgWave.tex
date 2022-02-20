@@ -59,12 +59,17 @@
     colback=blue!20, boxrule=1pt,
     #1}
 
-%\usepackage[ruled]{algorithm2e}% http://ctan.org/pkg/algorithm2e
-%\usepackage{algcompatible}
-\usepackage{algorithm}
-\usepackage[compatible]{algpseudocode}
-%\usepackage{algorithm}% http://ctan.org/pkg/algorithms
-%\usepackage{algpseudocode}% http://ctan.org/pkg/algorithmicx
+% %\usepackage[ruled]{algorithm2e}% http://ctan.org/pkg/algorithm2e
+% %\usepackage{algcompatible}
+% \usepackage{algorithm}
+% \usepackage[compatible]{algpseudocode}
+% %\usepackage{algorithm}% http://ctan.org/pkg/algorithms
+% %\usepackage{algpseudocode}% http://ctan.org/pkg/algorithmicx
+
+\usepackage{algorithm,algpseudocode}
+\usepackage{algorithmicx}
+\algrenewcommand\alglinenumber[1]{\footnotesize #1:} % Algorithm line number font size
+\newcommand{\algFontSize}{\footnotesize}
 
 \usepackage{listings}
 \usepackage{color}
@@ -176,6 +181,7 @@ Here is a citation~\cite{pog2008a}.
 \noindent\textbf{Things to do:}
 \begin{enumerate}
    \item Add 4th order compatibility conditions.
+   \item Sixth and eight-order accurate modified equation schemes.
    \item Sixth and eight-order accurate BCs.
    \item Finish 3D version of CgWave.
    \item Finish upwind-dissipation for implicit time-stepping   
@@ -219,6 +225,12 @@ where $\Delta_{ph}$ is a p-th order accurate approximation to $\Delta$.
 
 
 % -------------------------------------------------------------------------------------------------------
+\clearpage
+\input tex/highOrderModifiedEquation
+
+
+% -------------------------------------------------------------------------------------------------------
+\clearpage
 \input tex/upwindDissipation
 
 \input tex/numericalResults
