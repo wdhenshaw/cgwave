@@ -186,6 +186,20 @@ testHighDerivatives: $(testHighDerivativesFiles); $(CXX) $(CCFLAGS) -o bin/testH
 
 obj/testHighDerivatives.o : src/testHighDerivatives.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 
+# ----- test LCBC class : local compatibility boundary conditions -----
+testLCBCFiles = obj/testLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o
+testLCBC: $(testLCBCFiles); $(CXX) $(CCFLAGS) -o bin/testLCBC $(testLCBCFiles) $(LIBS)
+
+obj/testLCBC.o : src/testLCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+
+# --- LCBC files ---
+obj/LCBC.o : src/LCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+obj/LCBC1.o : src/LCBC1.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+obj/LCBC2.o : src/LCBC2.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+obj/LCBC_corner.o : src/LCBC_corner.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+obj/LCBC_vertex.o : src/LCBC_vertex.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+obj/numericalDeriv.o : src/numericalDeriv.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+obj/utility.o : src/utility.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
 
 # --------- CgWaveHoltz ----------
 

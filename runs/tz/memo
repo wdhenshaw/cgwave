@@ -1,5 +1,22 @@
+alias testLCBC $wave/bin/testLCBC
+set testLCBC = /home/henshw/Dropbox/research/cgwave/bin/testLCBC
+
 alias testHighDerivatives $wave/bin/testHighDerivatives
 set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDerivatives
+
+
+
+************************************************************************
+********* Wed March 16, 2022
+
+START TEST LCBC
+
+testLCBC -caseName=square -tz=trig -fx=2
+
+testLCBC -caseName=square -debug=3
+testLCBC -caseName=nonSquare -debug=3
+testLCBC -caseName=annulus -debug=3
+
 
 
 ************************************************************************
