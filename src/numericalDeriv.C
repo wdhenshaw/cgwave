@@ -188,7 +188,8 @@ double * NumericalDeriv::getDerivCoef(int r,int d){
         printf("Error in getDerivCoef: the stencil of derivative must be within -%d:%d stencil. To expand the stencil use NumericalDerivative member function expandSpace(%d) to get a %d:%d stencil.\n",maxRange,maxRange,r,r,r);
         exit(-1);
     }
-    double *c = nullptr;
+    // double *c = nullptr;
+    double *c = NULL; // *wdh* March 16/2022 : nullptr not known for gcc 4.85
     if(allocateSpaceFlag == false){
         allocateSpace();
         allocateSpaceFlag = true;

@@ -1,5 +1,7 @@
 #include "utility.h"
 #include <math.h>
+#include <malloc.h>  // *wdh* 2022/03/16
+#include <stdlib.h>  // *wdh* for exit
 
 #define ind2(i,j,n1,n2) (((j)*(n1))+(i))
 #define ind(I,N) (I[0] + N[0]*(I[1]+ I[2]*N[1]))
@@ -80,6 +82,7 @@ void LSsolve(double *A, double *b, double *x, int m, int n, int nrhs){
         printf( "of A is zero, so that A does not have full rank;\n" );
         printf( "the least squares solution could not be computed.\n" );
         exit( 1 );
+         
     }
     
     /* copy the values of bc into x to avoid confusion */
