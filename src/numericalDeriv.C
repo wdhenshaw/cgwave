@@ -10,6 +10,10 @@
 #define sumVectors(v1,v2) {(v1[0]+v2[0]),(v1[1]+v2[1]),(v1[2]+v2[2])}
 #define setVecTo(v) {v[0],v[1],v[2]}
 
+void NumericalDeriv::setMaxRange(int maxRangeIn){
+    maxRange = maxRangeIn;
+}
+
 void NumericalDeriv::expandSpace(int maxRangeIn){
     if(allocateSpaceFlag == false){
         maxRange = maxRangeIn;
@@ -22,6 +26,7 @@ void NumericalDeriv::expandSpace(int maxRangeIn){
 }
 
 void NumericalDeriv::allocateSpace(){
+    allocateSpaceFlag = true;
     coefVec     = (double**) malloc(0*sizeof(double*));
     coefVecLocator   = (int **) malloc((maxRange+1)*sizeof(int *));
     for(int r = 1; r<=maxRange; r++){
@@ -161,10 +166,11 @@ double NumericalDeriv::numDerivFn(double (*F) (double *), double *arg, int pos, 
         r = RANGE(d,order);
         if(r!=0){
             c = getDerivCoef(r,d);}
-        else{c = 0;}
-    }else{c = 0;}
+        else{
+            D = F(arg);;
+            return D;
+        }
     
-    if(d!=0){
         double varArg = arg[pos];
         D = 0;
         int count = 0;
@@ -185,14 +191,12 @@ double NumericalDeriv::numDerivFn(double (*F) (double *), double *arg, int pos, 
 
 double * NumericalDeriv::getDerivCoef(int r,int d){
     if(r>maxRange){
-        printf("Error in getDerivCoef: the stencil of derivative must be within -%d:%d stencil. To expand the stencil use NumericalDerivative member function expandSpace(%d) to get a %d:%d stencil.\n",maxRange,maxRange,r,r,r);
+        printf("Error in getDerivCoef: the stencil of derivative must be within -%d:%d stencil. To expand the stencil use NumericalDerivative member function expandSpace(%d) to get a -%d:%d stencil.\n",maxRange,maxRange,r,r,r);
         exit(-1);
     }
-    // double *c = nullptr;
-    double *c = NULL; // *wdh* March 16/2022 : nullptr not known for gcc 4.85
+    double *c = NULL;
     if(allocateSpaceFlag == false){
         allocateSpace();
-        allocateSpaceFlag = true;
     }
     if(coefVecLocator[r][d] == 0){
         coefVecLocator[r][d] = coefVecCount;
@@ -208,7 +212,7 @@ double * NumericalDeriv::getDerivCoef(int r,int d){
     return c;
 }
 
-void NumericalDeriv::centeredDifferenceWeights(int r, int d, double *c)
+void NumericalDeriv::centeredDifferenceWeights(int r, int d, double *&c)
 {
     // r is the stencil for the numerical derivative
     // d is the number of derivatives

@@ -5,9 +5,9 @@
 #include "LCBCmacros.h"
 #include <assert.h>
 
-void getWidth(int wth[3], int lth[3], int fixedAxis, int nu, int k, int p, int dim, int bdryRangeLth[3]);
+void getWidth(int (&wth)[3], int (&lth)[3], int fixedAxis, int nu, int k, int p, int dim, int bdryRangeLth[3]);
 
-void Lcbc::prepDataVec(double *R[], double *Rv[], double t, double dt, int axis, int side){
+void Lcbc::prepDataVec(double **R, double **&Rv, double t, double dt, int axis, int side){
     int NU = (p+1);
     int n  = (2*p+1);
     int face = ind2(side,axis,2,3);
@@ -46,7 +46,7 @@ void Lcbc::prepDataVec(double *R[], double *Rv[], double t, double dt, int axis,
     }// end of i[2] loop
 }// end of prepDataVec function
 
-void Lcbc::getFaceGhost(double *un, double *Rv[], double ***CaVec, double ***CbVec, int *eqNum, int axis, int side){
+void Lcbc::getFaceGhost(double *&un, double *Rv[], double ***CaVec, double ***CbVec, int *eqNum, int axis, int side){
     /* prepare the parameters */
     int n = 2*p+1;
     int compCondNum = (p+1)*n*dimBasedValue(dim, 1, n);
@@ -73,7 +73,7 @@ void Lcbc::getFaceGhost(double *un, double *Rv[], double ***CaVec, double ***CbV
                     double Cb_vecb  = dotProduct(CbVec[ind(i,bdryNgx)][vecNum], b, interiorEqNum);
 
                     i[axis] = (copy + ghostInd);
-                    un[ind(i,G.Ngx)] = Ca_vecRv + Cb_vecb; 
+                    un[solInd(i,G.Ngx)] = Ca_vecRv + Cb_vecb;
                     i[axis] = copy;
                     
                     vecNum++; 
@@ -81,10 +81,9 @@ void Lcbc::getFaceGhost(double *un, double *Rv[], double ***CaVec, double ***CbV
             }// end of i[0]
         }// end of i[1]
     }// end of i[2]
-
 }// end of getFaceGhost
 
-void Lcbc::getbInt(double *b, double *un, int *EqNum, int *Ind, int axis, int side){
+void Lcbc::getbInt(double b[], double *un, int *EqNum, int *Ind, int axis, int side){
     int n = (2*p+1);
     int interiorEqNum = (p+1)*n*dimBasedValue(dim, 1, n);
     int totalVarNum   = (n*n*dimBasedValue(dim, 1, n));
@@ -102,31 +101,22 @@ void Lcbc::getbInt(double *b, double *un, int *EqNum, int *Ind, int axis, int si
                
                 int u_ind[] = {(Ind[0] - p + intInd[0]),(Ind[1] - p + intInd[1]),dimBasedValue(dim, 0, (Ind[2] - p + intInd[2]))};
                 
-                b[r]  =  un[ind(u_ind,G.Ngx)];
+                b[r]  =  un[solInd(u_ind,G.Ngx)];
             }// intInd[0]
         }// intInd[1]
     }// intInd[2]
 } // end of getbInt function
 
-void Lcbc::prepDataDeriv(double *R[], double t, double dt, int axis, int side){
-
-    int NU      = p+1;
-    int face    = ind2(side,axis,2,3);
-    int faceNum = 2*dim;
-    int bdryPoints = getBdryPointsNum(axis);
-    
-    for(int nu = 0; nu<NU; nu++){
-        R[ind2(nu,face,NU,faceNum)] = new double[bdryPoints];
-    }
-    
-    getDataDeriv(R, t, dt, axis, side);
-}
-
-void Lcbc::getDataDeriv(double **R, double t, double dt, int axis, int side){
+void Lcbc::getDataDeriv(double **&R, double t, double dt, int axis, int side, double **gn, double **fn){
     int face = ind2(side,axis,2,3);
     int faceNum = 2*dim;
-    int bdryRange[3][2], bdryNgx[3]; getBdryRange(bdryRange, bdryNgx, axis, side, (-p), (+p));
+    int bdryRange[3][2], bdryNgx[3]; getDataBdryRange(bdryRange, bdryNgx, axis, side, (-p), (+p));
     int NU = (p+1), K = (p+1);
+    
+    for(int nu = 0; nu<NU; nu++){
+        R[ind2(nu,face,NU,faceNum)] = new double[(bdryNgx[0]*bdryNgx[1]*bdryNgx[2])];
+    }
+    
     double *F[NU*K];
     double *W[(K*p*p*p)];
     
@@ -136,11 +126,17 @@ void Lcbc::getDataDeriv(double **R, double t, double dt, int axis, int side){
             for(i[1] = bdryRange[1][0]; i[1]<=bdryRange[1][1]; i[1]++){
                 for(i[0] = bdryRange[0][0]; i[0]<=bdryRange[0][1]; i[0]++){
 
-                    double arg[] = {((double)(side + 2*axis)), G.x[0][i[0]], G.x[1][i[1]], G.x[2][i[2]], t};
-                    arg[(dim+1)] = t;
-                    
-                    int copy = i[axis]; i[axis] = 0;
-                    R[ind2(nu,face,NU,faceNum)][ind(i, bdryNgx)] = der.numDerivFn(Gn, arg, (dim+1), (q*nu), orderInTime, dt);
+                    int copy = i[axis];
+                    if(gn == NULL){
+                        double arg[] = {((double)(side + 2*axis)), G.x[0][i[0]], G.x[1][i[1]], G.x[2][i[2]], t};
+                        arg[(dim+1)] = t;
+                        
+                        i[axis] = 0;
+                        R[ind2(nu,face,NU,faceNum)][ind(i, bdryNgx)] = der.numDerivFn(Gn, arg, (dim+1), (q*nu), orderInTime, dt);
+                    }else{
+                        i[axis] = 0;
+                        R[ind2(nu,face,NU,faceNum)][ind(i, bdryNgx)] = gn[ind2(face,nu,faceNum,NU)][bdryInd(i,bdryNgx,axis)];
+                    }
                     i[axis] = copy;
                 }// end of i[0] loop s
             }// end of i[1] loop
@@ -149,24 +145,42 @@ void Lcbc::getDataDeriv(double **R, double t, double dt, int axis, int side){
     
     int bdryRangeLth[3];
     getBdryRange(bdryRange, bdryRangeLth, axis, side);
+    
+    
+    int fnLth[3];
+    
+    if(!(fn==NULL)){
+    fnLth[0] = (bdryRangeLth[0]  + 4*p);
+    fnLth[1] = (bdryRangeLth[1]  + 4*p);
+    fnLth[2] = dimBasedValue(dim, 1, (bdryRangeLth[2]  + 4*p));
+    fnLth[axis] = (bdryRangeLth[axis]  + 2*p);
+    }
 
     int wth[3], lth[3];
     for(int n = 0; n<=(p-1); n++){
         for(int k = 1; k<=p; k++){
             getWidth(wth, lth, axis, 0, k, p, dim, bdryRangeLth);
             assert((lth[0]*lth[1]*lth[2])>0);
-            F[ind2(0,k,NU,K)] = (double*) malloc(lth[0]*lth[1]*lth[2]*sizeof(double));
+            F[ind2(0,k,NU,K)] = new double[(lth[0]*lth[1]*lth[2])];
             
             int i[3];
             for(i[2] = 0; i[2]<lth[2]; i[2]++){
                 for(i[1] = 0; i[1]<lth[1]; i[1]++){
                     for(i[0] = 0; i[0]<lth[0]; i[0]++){
-                        double arg[] = {0,G.x[0][bdryRange[0][0]] + ((- wth[0] + i[0])*G.dx[0]),
-                                          G.x[1][bdryRange[1][0]] + ((- wth[1] + i[1])*G.dx[1]),
-                                          G.x[2][bdryRange[2][0]] + ((- wth[2] + i[2])*G.dx[2]),t};
-                        arg[(dim+1)] = t;
                         
-                        F[ind2(0,k,NU,K)][ind(i,lth)] = der.numDerivFn(Fn, arg, (dim+1), (q*n), orderInTime, dt);
+                        if(fn == NULL){
+                            double arg[] = {0,G.x[0][bdryRange[0][0]] + ((- wth[0] + i[0])*G.dx[0]),
+                                              G.x[1][bdryRange[1][0]] + ((- wth[1] + i[1])*G.dx[1]),
+                                              G.x[2][bdryRange[2][0]] + ((- wth[2] + i[2])*G.dx[2]),t};
+                            arg[(dim+1)] = t;
+                            
+                            F[ind2(0,k,NU,K)][ind(i,lth)] = der.numDerivFn(Fn, arg, (dim+1), (q*n), orderInTime, dt);
+                        }else{
+                            int Ind[3] = {(2*p-wth[0] + i[0]),(2*p-wth[1] + i[1]),dimBasedValue(dim, 0, (2*p-wth[2] + i[2]))};
+                            Ind[axis] = (p - wth[axis] + i[axis]);
+                            
+                            F[ind2(0,k,NU,K)][ind(i,lth)] = fn[ind2(face,n,faceNum,p)][ind(Ind,fnLth)];
+                        }
                     }// end of i[0]
                 }// end of i[1]
             }// end of i[2]
@@ -184,7 +198,7 @@ void Lcbc::getDataDeriv(double **R, double t, double dt, int axis, int side){
                         for(int Dx = 0; Dx<=m; Dx++){
                             for(int Dy = dimBasedValue(dim, (m - Dx), 0); Dy<=(m - Dx); Dy++){
                                 int Dz = dimBasedValue(dim, 0, (m - Dx - Dy));
-                                W[ind4(l,Dx,Dy,Dz,K,p,p,p)] = (double *) malloc((W_lth[0]*W_lth[1]*W_lth[2])*sizeof(double));
+                                W[ind4(l,Dx,Dy,Dz,K,p,p,p)] = new double[(W_lth[0]*W_lth[1]*W_lth[2])];
 
                                 int Deriv[] = {(2*Dx),(2*Dy),(2*Dz)};
                                 int i[3];
@@ -208,9 +222,9 @@ void Lcbc::getDataDeriv(double **R, double t, double dt, int axis, int side){
                 /* Here's where we apply Qf */
                 getWidth(wth, lth, axis, (nub+1), k, p, dim, bdryRangeLth);
                 assert((lth[0]*lth[1]*lth[2])>0);
-                F[ind2((nub+1),k,NU,K)] = (double *) malloc((lth[0]*lth[1]*lth[2])*sizeof(double));
+                F[ind2((nub+1),k,NU,K)] = new double[(lth[0]*lth[1]*lth[2])];
                 
-                applyQhF(F[ind2((nub+1),k,NU,K)],F[ind2(nub,k,NU,K)], W, bdryRange, bdryRangeLth, nub, k, axis);
+                applyQhF(F[ind2((nub+1),k,NU,K)], F[ind2(nub,k,NU,K)], W, bdryRange, bdryRangeLth, nub, k, axis, side);
 
                 /* Free the W variable */
                 if(k!= 1){
@@ -219,7 +233,7 @@ void Lcbc::getDataDeriv(double **R, double t, double dt, int axis, int side){
                         for(int Dx = 0; Dx<=m; Dx++){
                             for(int Dy = dimBasedValue(dim, (m-Dx), 0); Dy<=(m-Dx); Dy++){
                                 int Dz = dimBasedValue(dim, 0, (m - Dx - Dy));
-                                free(W[ind4(l,Dx,Dy,Dz,K,p,p,p)]);
+                                delete [] W[ind4(l,Dx,Dy,Dz,K,p,p,p)];
                                 W[ind4(l,Dx,Dy,Dz,K,p,p,p)]= NULL;
                             }// end of Dx[1]
                         }// end of Dx[0]
@@ -259,49 +273,62 @@ void Lcbc::getDataDeriv(double **R, double t, double dt, int axis, int side){
         
         /* free the space from F */
         for(int k = 1; k<=p; k++){
-            free(F[ind2(0,k,NU,K)]); F[ind2(0,k,NU,K)] = NULL;
+            delete [] F[ind2(0,k,NU,K)];
+            F[ind2(0,k,NU,K)] = NULL;
         }// end of k loop
         for(int nub = 0; nub<=(p-n-2); nub++){
             for(int k = 1; k<=(p-nub); k++){
-                free(F[ind2((nub+1),k,NU,K)]); F[ind2((nub+1),k,NU,K)] = NULL;
+                delete [] F[ind2((nub+1),k,NU,K)];
+                F[ind2((nub+1),k,NU,K)] = NULL;
             }// end of k loop
         }// end of nub loop
         
     }// end of n loop
 }// end of getDataDeriv function
 
-void Lcbc::applyQhF(double *QF, double *F, double **W, int bdryRange[3][2], int bdryRangeLth[3], int nu, int k, int axis){
+void Lcbc::applyQhF(double *&QF, double *F, double **W, int bdryRange[3][2], int bdryRangeLth[3], int nu, int k, int axis, int side){
+    
+    int face = side + 2*axis;
+    int faceNum = 2*dim;
     
     int newWth[3], newLth[3], oldWth[3], oldLth[3];
     getWidth(newWth, newLth, axis, (nu+1), k, p, dim, bdryRangeLth);
     getWidth(oldWth, oldLth, axis, nu, k, p, dim, bdryRangeLth);
     
     /* Get the correction terms and save them in FS */
-    double *FS[(maxCoefNum - 1)];
+    double **FS;
+    FS = new double*[(maxCoefNum - 1)];
     for(int coefNum = 0; coefNum<(maxCoefNum - 1); coefNum++){
         FS[coefNum] = new double[(oldLth[0]*oldLth[1]*oldLth[2])];
     }// end of coefNum loop
     getCorrectionTerms(FS,F, W, oldLth, k,axis);
     
-    int i[3], order[] = {2,2,2};
+    int coefLth[3]; getCoefGridLth(G.indexRange, coefLth, axis, side, dim, p);
+    int varAxis[2]; getVarAxis(varAxis, axis);
+    int v0 = varAxis[0];
+    int v1 = varAxis[1];
+    
+    int i[3], order[] = {2,2,2}; int cInd[3];
     for(i[2] = 0; i[2]<newLth[2]; i[2]++){
         for(i[1] = 0; i[1]<newLth[1]; i[1]++){
             for(i[0] = 0; i[0]<newLth[0]; i[0]++){
-                int coefInd[] = {(bdryRange[0][0] - newWth[0] + i[0]),
-                                 (bdryRange[1][0] - newWth[1] + i[1]),
-                                 (bdryRange[2][0] - newWth[2] + i[2])};
+                
+                cInd[axis] = p - newWth[axis] + i[axis];
+                cInd[v0]   = bdryRange[v0][0] + p - newWth[v0] + i[v0];
+                cInd[v1]   = dimBasedValue(dim, 0, (bdryRange[v1][0] + p - newWth[v1] + i[v1]));
+ 
                 int FInd[] = {(oldWth[0] - newWth[0] + i[0]),
                               (oldWth[1] - newWth[1] + i[1]),
                               (oldWth[2] - newWth[2] + i[2])};
                 
-                int cI  = ind(coefInd,G.Ngx);
+                int cI  = ind(cInd,coefLth);
                 int FI  = ind(FInd, oldLth);
                 int I = ind(i,newLth);
                 
                 QF[I] = 0; int coefNum = 0;
                 for(int degree = 2; degree>0; degree = degree - 1){
                     for(int d = 0; d<dim; d++){
-                        QF[I] = QF[I] + coef[coefNum][cI]*der.numDeriv(FS[coefNum], dim, FInd, d, degree,2, G.dx[d], oldLth);
+                        QF[I] = QF[I] + coef[ind2(face,coefNum,faceNum,maxCoefNum)][cI]*der.numDeriv(FS[coefNum], dim, FInd, d, degree,2, G.dx[d], oldLth);
                         coefNum++;
                     }// end of d loop
                 }// end of degree loop
@@ -309,11 +336,11 @@ void Lcbc::applyQhF(double *QF, double *F, double **W, int bdryRange[3][2], int 
                 for(int d = (2*(dim-2)); d>=0; d--){
                     int deriv[] = {1,1,1};
                     (dim>2) ? (deriv[d] = 0) : (deriv[2] = 0);
-                    QF[I] = QF[I] + 2*coef[coefNum][cI]*der.mixedNumDeriv(FS[coefNum], dim, FInd, deriv, order, G.dx, oldLth);
+                    QF[I] = QF[I] + 2*coef[ind2(face,coefNum,faceNum,maxCoefNum)][cI]*der.mixedNumDeriv(FS[coefNum], dim, FInd, deriv, order, G.dx, oldLth);
                     coefNum++;
                 }// end of d loop
                 
-                QF[I] = QF[I] + coef[coefNum][cI]*F[FI];
+                QF[I] = QF[I] + coef[ind2(face,coefNum,faceNum,maxCoefNum)][cI]*F[FI];
                 
             }// end of i[0]
         }// end of i[1]
@@ -322,10 +349,10 @@ void Lcbc::applyQhF(double *QF, double *F, double **W, int bdryRange[3][2], int 
     for(int coefNum = 0; coefNum<(maxCoefNum - 1); coefNum++){
         delete [] FS[coefNum]; FS[coefNum] = NULL;
     }// end of coefNum loop
-    
+    delete [] FS;
 }// end of applyQhF function
 
-void Lcbc::getBdryRange(int bdryRange[3][2], int bdryRangeLth[3], int fixedAxis, int fixedSide){
+void Lcbc::getBdryRange(int (&bdryRange)[3][2], int (&bdryRangeLth)[3], int fixedAxis, int fixedSide){
     for(int axis = 0; axis<3; axis++){
         for(int side = 0; side<2; side++){
             if(axis == fixedAxis){
@@ -343,7 +370,7 @@ void Lcbc::getBdryRange(int bdryRange[3][2], int bdryRangeLth[3], int fixedAxis,
     }// end of axis
 }// end of getBdryRange
 
-void getWidth(int wth[3], int lth[3], int fixedAxis, int nu, int k, int p, int dim, int bdryRangeLth[3]){
+void getWidth(int (&wth)[3], int (&lth)[3], int fixedAxis, int nu, int k, int p, int dim, int bdryRangeLth[3]){
     for(int axis = 0; axis<3; axis ++){
         if(axis<dim){
             if(axis == fixedAxis){

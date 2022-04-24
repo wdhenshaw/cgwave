@@ -4,6 +4,131 @@ set testLCBC = /home/henshw/Dropbox/research/cgwave/bin/testLCBC
 alias testHighDerivatives $wave/bin/testHighDerivatives
 set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDerivatives
 
+****************************************************
+****** Sun April 24, 2022
+
+TEST new version of LCBC that supports periodic BCs
+
+
+CIC -- looks ok 
+cgWave tz.cmd -g=cice4.order4 -upwind=0 -tz=trig -fx=1 -fy=1 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+cgWave:FD44 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 3.49e-07, ||u||= 9.51e-01, cpu= 5.31e+00(s)
+
+cgWave:FD44 t=2.000e-01 (20 steps) dt=1.000e-02 maxErr= 6.59e-07, ||u||= 3.09e-01, cpu= 5.19e+01(s)
+
+
+SIS - outer square is [-1,1]^2
+cgWave tz.cmd -g=sise8.order4 -upwind=0 -tz=trig -fx=2 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+cgWave tz.cmd -g=sise4.order4 -upwind=0 -tz=trig -fx=2 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+
+cgWave tz.cmd -g=annulus2.order4 -upwind=0 -tz=trig -orderInTime=4 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+-- looks ok
+cgWave tz.cmd -g=square32np.order4.ng3 -upwind=0 -tz=trig -fx=2 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+======= p = 2 ======
+userNumGhost = 3 and Nx = 32,32,0
+>>> getLcbcDataGrids: evaluate data at t=1.000e-01
+assignLCBC: updating 2 ghost points normal to each boundary point
+assignLCBC: t=1.000e-01, cpu = 2.595e-03 (s)
+cgWave:FD44 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 4.38e-06, ||u||= 8.09e-01, cpu= 4.05e+01(s)
+
+EXACT:
+cgWave tz.cmd -g=nonSquare16.order4 -upwind=0 -tz=poly -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+
+
+****************************************************
+****** Tues April 19, 2022
+
+TEST Lcbc with cgWave
+
+cgWave tz.cmd -g=sise4.order4 -upwind=0 -tz=trig -fx=2 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+
+cgWave tz.cmd -g=square32np.order4.ng3 -upwind=0 -tz=trig -fx=2 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+cgWave:FD44 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 1.18e-06, ||u||= 9.51e-01, cpu= 3.44e+00(s)
+
+
+
+cgWave tz.cmd -g=annulus4.order4 -upwind=0 -tz=trig -orderInTime=4 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+cgWave tz.cmd -g=annulus2.order4 -upwind=0 -tz=trig -orderInTime=4 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+G4
+cgWave:FD44 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 3.76e-06, ||u||= 9.51e-01, cpu= 6.32e+00(s)
+G2
+cgWave:FD44 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 6.10e-05, ||u||= 9.51e-01, cpu= 3.87e+00(s)
+
+FD44 : EXACT: 
+cgWave tz.cmd -g=nonSquare16.order4 -upwind=0 -tz=poly -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+cgWave tz.cmd -g=nonSquare8.order4 -upwind=0 -tz=poly -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+FD44 : EXACT: 
+cgWave tz.cmd -g=square16.order4 -upwind=0 -tz=poly -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+
+
+****************************************************
+****** Mon Apil 18, 2022
+
+Test new files from Nour for LCBC
+
+
+TRIG
+cgWave tz.cmd -g=square32.order4 -upwind=0 -tz=trig -fx=2 -orderInTime=4 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+START TEST LCBC
+
+FD44 : EXACT: 
+cgWave tz.cmd -g=square16.order4 -upwind=0 -tz=poly -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+======= p = 2 ======
+userNumGhost = 2 and Nx = 16,16,0
+>>> getLcbcDataGrids: evaluate data for t=6.000e-02
+assignLCBC: updating 2 ghost points normal to each boundary point
+assignLCBC: t=6.000e-02, cpu = 2.129e-03 (s)
+cgWave:FD44 t=6.000e-02 ( 6 steps) dt=1.000e-02 maxErr= 5.77e-15, ||u||= 4.61e+00, cpu= 6.78e+00(s)
+
+
+
+TEST degree = (2,0)
+cgWave tz.cmd -g=square16.order2 -upwind=0 -tz=poly -degreeInTime=0 -degreeInSpace=2 -orderInTime=2 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+
+cgWave tz.cmd -g=square16.order4 -upwind=0 -tz=poly -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -tf=1.0 -tp=.1 -bcApproach=lcbc -go=halt
+
+cgWave tz.cmd -g=square16.order2 -upwind=0 -tz=poly -degreeInTime=2 -degreeInSpace=2 -orderInTime=2 -tf=1.0 -tp=.01 -bcApproach=lcbc -go=halt
+
+
+testLCBC -noplot -caseName=square -tz=poly -orderInSpace=4
+
+testLCBC -noplot -caseName=square -tz=trig -fx=2 -orderInSpace=4
+
+======= LCBC Grid Resolution on Study Order 4 ======
+Nx= 8, Ny= 8, Nz= 0, MaxErr = 2.7877712389716269e-01,              cpu = 5.299e-02
+Nx=16, Ny=16, Nz= 0, MaxErr = 4.7628378830520957e-03, rate = 5.87, cpu = 1.047e-01
+Nx=32, Ny=32, Nz= 0, MaxErr = 7.6095089980521280e-05, rate = 5.97, cpu = 1.728e-01
+Nx=64, Ny=64, Nz= 0, MaxErr = 1.1956196122042684e-06, rate = 5.99, cpu = 3.504e-01
+
+testLCBC -caseName=square -tz=trig -fx=2
+
+======= LCBC Grid Resolution on Study Order 2 ======
+Nx= 8, Ny= 8, Nz= 0, MaxErr = 6.2127674882360484e-02,              cpu = 1.340e-02
+Nx=16, Ny=16, Nz= 0, MaxErr = 3.9432675791899463e-03, rate = 3.98, cpu = 6.972e-03
+Nx=32, Ny=32, Nz= 0, MaxErr = 2.4740599643313654e-04, rate = 3.99, cpu = 1.232e-02
+Nx=64, Ny=64, Nz= 0, MaxErr = 1.5477784666151351e-05, rate = 4.00, cpu = 2.353e-02
+
+
+****************************************************
+****** Wed April 13, 2022
+
+FD44
+cgWave tz.cmd -g=square16.order4 -upwind=0 -tz=poly -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -tf=1.0 -tp=.1 -bcApproach=cbc -go=halt
+
+cgWave tz.cmd -g=square16.order4 -upwind=0 -tz=trig -orderInTime=4 -tf=1.0 -tp=.1 -bcApproach=cbc -go=halt
 
 
 ************************************************************************

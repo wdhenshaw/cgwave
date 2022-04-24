@@ -12,6 +12,7 @@
 #include "OGTrigFunction.h"
 #include "DialogData.h"
 #include "Ogshow.h"
+#include "LCBC.h"
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
@@ -318,6 +319,11 @@ CgWave::
   Ogshow *& showFile = dbase.get<Ogshow*>("showFile");
   delete showFile;  
 
+  if( dbase.has_key("LCBC") )
+  {
+    delete [] dbase.get<Lcbc*>("LCBC");
+  }
+
 }
 
 // ================================================================================================
@@ -584,6 +590,14 @@ int CgWave::initialize()
     bool useStreamMode=true;  // show files will be saved compressed
     showFile = new Ogshow( nameOfShowFile,".",useStreamMode );   
     showFile->setFlushFrequency( flushFrequency ); // save this many solutions per sub-showFile
+  }
+
+
+  // --- build LCBC objects ----
+  const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
+  if( bcApproach==useLocalCompatibilityBoundaryConditions )
+  {
+    initializeLCBC();
   }
 
   // -- compute the time-step ---

@@ -7,10 +7,48 @@
 
 void getFixedAxis(int fixedAxis[2], int varAxis);
 
-void Lcbc::updateEdgeGhost(double *R[], double *unp1, double t, double dt, int approxEqNum, int side1, int side2, int varAxis){
+void Lcbc::updateEdgeGhostPeriodic(double *&unp1, int side1, int side2, int varAxis, int fixedAxis[2]){
+    int fixedSides[2] = {side1, side2};
+    int periodicAxis = -1, perAxisInd = -1;
+    for(int i = 0; i<2; i++){
+        int edgeFace = fixedSides[i] + 2*fixedAxis[i];
+        if(faceEval[edgeFace] == -1){
+            periodicAxis = fixedAxis[i];
+            perAxisInd = i;
+        }// end of faceEval
+    }// end of i
+    
+    assert(periodicAxis>=0 && perAxisInd>=0);
+    
+    int bdryRange[3][2]; getBdryRange_corner(bdryRange, fixedAxis, fixedSides, varAxis, 0, 0);
+    int perIndexRange[3][2];
+    perIndexRange[fixedAxis[0]][0] = bdryRange[fixedAxis[0]][0] + sideBasedValue(side1, (-p), 1);
+    perIndexRange[fixedAxis[0]][1] = bdryRange[fixedAxis[0]][1] + sideBasedValue(side1, (-1), p);
+    perIndexRange[fixedAxis[1]][0] = bdryRange[fixedAxis[1]][0] + sideBasedValue(side2, (-p), 1);
+    perIndexRange[fixedAxis[1]][1] = bdryRange[fixedAxis[1]][0] + sideBasedValue(side2, (-1), p);
+    perIndexRange[varAxis][0]      = bdryRange[varAxis][0];
+    perIndexRange[varAxis][1]      = bdryRange[varAxis][1];
+
+    
+    int i[3];
+    for(i[2] = perIndexRange[2][0]; i[2]<=perIndexRange[2][1]; i[2]++){
+        for(i[1] = perIndexRange[1][0]; i[1]<=perIndexRange[1][1]; i[1]++){
+            for(i[0] = perIndexRange[0][0]; i[0]<=perIndexRange[0][1]; i[0]++){
+                int I[3]; memcpy(I, i, sizeof(I));
+          
+                I[periodicAxis] = I[periodicAxis] + sideBasedValue(fixedSides[perAxisInd], G.Nx[periodicAxis], (-G.Nx[periodicAxis]));
+                
+                unp1[solInd(i, G.Ngx)] = unp1[solInd(I, G.Ngx)];
+                
+            }// end of i[0]
+        }// end of i[1]
+    }// end of i[2]
+}// end of updateEdgeGhostPeriodic
+
+void Lcbc::updateEdgeGhost(double **R, double *&unp1, double t, double dt, int approxEqNum, int side1, int side2, int varAxis){
     
     int bdryPointsNum = dimBasedValue(dim, 1, G.Ngx[varAxis]);
-    double *Rv[bdryPointsNum];
+    double **Rv = new double*[bdryPointsNum];
     
     for(int bdryPt = 0; bdryPt<bdryPointsNum; bdryPt++){
         Rv[bdryPt] = new double[approxEqNum];
@@ -33,6 +71,8 @@ void Lcbc::updateEdgeGhost(double *R[], double *unp1, double t, double dt, int a
     for(int bdryPoint = 0; bdryPoint<bdryPointsNum; bdryPoint++)
         delete [] Rv[bdryPoint];
     
+    delete [] Rv;
+    
 }// end of updateGhost function
 
 void Lcbc::prepCornerMatrix(int side1, int side2, int varAxis){
@@ -54,16 +94,16 @@ void Lcbc::prepCornerMatrix(int side1, int side2, int varAxis){
     int ghostPointsNum = unknownVarNum - 2*p;
     
     CornerMat[corner].eqNum = new int[totalVarNum];
-    CornerMat[corner].CaVec = (double***) malloc(bdryNg*sizeof(double**));
-    CornerMat[corner].CbVec = (double***) malloc(bdryNg*sizeof(double**));
+    CornerMat[corner].CaVec = new double**[bdryNg];
+    CornerMat[corner].CbVec = new double**[bdryNg];
     
     for(int bdryPoint = 0; bdryPoint<bdryNg; bdryPoint++){
-        CornerMat[corner].CaVec[bdryPoint] = (double**) malloc(ghostPointsNum*sizeof(double*));
-        CornerMat[corner].CbVec[bdryPoint] = (double**) malloc(ghostPointsNum*sizeof(double*));
+        CornerMat[corner].CaVec[bdryPoint] = new double*[ghostPointsNum];
+        CornerMat[corner].CbVec[bdryPoint] = new double*[ghostPointsNum];
         
         for(int gp = 0; gp<ghostPointsNum; gp++){
-            CornerMat[corner].CaVec[bdryPoint][gp] = (double*) malloc(approxEqNum*sizeof(double));
-            CornerMat[corner].CbVec[bdryPoint][gp] = (double*) malloc(knownVarNum*sizeof(double));
+            CornerMat[corner].CaVec[bdryPoint][gp] = new double[approxEqNum];
+            CornerMat[corner].CbVec[bdryPoint][gp] = new double[knownVarNum];
         }// end of gp loop
     }// end of bdryPoint loop
     
@@ -90,7 +130,7 @@ void Lcbc::prepCornerMatrix(int side1, int side2, int varAxis){
     getCornerMatrix(CornerMat[corner].CaVec, CornerMat[corner].CbVec, CornerMat[corner].eqNum, bdryRange, bdryNg, side1, side2, varAxis, fixedAxis);
 }// end of prepCornerMatrix
 
-void Lcbc::getCornerMatrix(double ***CaVec, double ***CbVec, int *eqNum, int bdryRange[3][2], int bdryNg, int side1, int side2, int varAxis, int fixedAxis[2]){
+void Lcbc::getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdryRange[3][2], int bdryNg, int side1, int side2, int varAxis, int fixedAxis[2]){
     
     int n = (2*p+1), NU = (p+1), MU = n;
     
@@ -212,7 +252,7 @@ void Lcbc::getCornerMatrix(double ***CaVec, double ***CbVec, int *eqNum, int bdr
     
 }// end of getCornerMatrix Function
 
-void Lcbc::getD_corner(double *D, int varAxis, int fixedAxis[2]){
+void Lcbc::getD_corner(double *&D, int varAxis, int fixedAxis[2]){
     int n = (2*p+1);
     int compCondNum    = (p+1)*n*dimBasedValue(dim,1,n);
     int auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
@@ -221,11 +261,11 @@ void Lcbc::getD_corner(double *D, int varAxis, int fixedAxis[2]){
     int NU             = (p+1);
     
     /* use the delta approach to determine D */
-    double Id[(dof*dof)];
+    double *Id = new double[(dof*dof)];
     getIDmatrix(Id, dof);
     
     /* R corresponds to derivatives of data functions on stencil. b is the RHS vector */
-    double b[(2*compCondNum)], *R[(2*NU)];
+    double b[(2*compCondNum)], **R = new double*[(2*NU)];
     
     for(int nu = 0; nu<(2*NU); nu++)
         R[nu] = new double[dof];
@@ -264,10 +304,12 @@ void Lcbc::getD_corner(double *D, int varAxis, int fixedAxis[2]){
         delete [] R[nu];
         R[nu] = NULL;
     }
+    delete [] R;
+    delete [] Id;
     
 }// end of getD function
 
-void Lcbc::getbVec_corner(double *b, double **R, int varAxis, int fixedAxis[2]){
+void Lcbc::getbVec_corner(double b[], double **R, int varAxis, int fixedAxis[2]){
     int NU = (p+1), n = (2*p+1), order;
     int MU0 = n, MU1 = dimBasedValue(dim, 1, n);
     int compCondNum = NU*MU0*MU1;
@@ -310,7 +352,7 @@ void Lcbc::getbVec_corner(double *b, double **R, int varAxis, int fixedAxis[2]){
     }// end of nu loop
 }// end of getbVec
 
-void Lcbc::fillCornerMatrix_LagrangeDeriv(double Matrix[], int *Ind, int side1, int side2, int varAxis, int fixedAxis[2], int *eqNum, int compCondNum, int auxiliaryEqNum, int totalEqNum){
+void Lcbc::fillCornerMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side1, int side2, int varAxis, int fixedAxis[2], int *eqNum, int compCondNum, int auxiliaryEqNum, int totalEqNum){
     
     int n = (2*p+1), NU = (p+1), MU = n;
     int totalVarNum = (n*n*dimBasedValue(dim, 1, n));
@@ -326,9 +368,9 @@ void Lcbc::fillCornerMatrix_LagrangeDeriv(double Matrix[], int *Ind, int side1, 
     for(LagInd[2] = 0; LagInd[2]<dimBasedValue(dim, 1, n); LagInd[2]++){
         for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
             for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
-                getLagrangeDeriv_Dirichlet(Y[ind(LagInd,LagIndLth)], Z1[ind(LagInd,LagIndLth)], Ind, LagInd, fixedAxis[0]);
+                getLagrangeDeriv_Dirichlet(Y[ind(LagInd,LagIndLth)], Z1[ind(LagInd,LagIndLth)], Ind, LagInd, fixedAxis[0], side1);
                 
-                getLagrangeDeriv_Dirichlet(Z2[ind(LagInd,LagIndLth)], Ind, LagInd, fixedAxis[1]);
+                getLagrangeDeriv_Dirichlet(Z2[ind(LagInd,LagIndLth)], Ind, LagInd, fixedAxis[1], side2);
             }// LagInd[0]
         }// LagInd[1]
     }// LagInd[2]
@@ -380,7 +422,7 @@ void Lcbc::fillCornerMatrix_LagrangeDeriv(double Matrix[], int *Ind, int side1, 
 }// end of fillMatrix_LagrangeDeriv
 
 
-void Lcbc::prepDataVec_corner(double *R[], double *Rv[], double t, double dt, int side1, int side2, int varAxis, int approxEqNum){
+void Lcbc::prepDataVec_corner(double **R, double **&Rv, double t, double dt, int side1, int side2, int varAxis, int approxEqNum){
     
     /* prepare needed parameters */
     int NU = (p+1);
@@ -433,7 +475,7 @@ void Lcbc::prepDataVec_corner(double *R[], double *Rv[], double t, double dt, in
     
 }// end of prepDataVec_corner Function
 
-void Lcbc::getCornerGhost(double *un, double *Rv[], double ***CaVec, double ***CbVec, int *eqNum, int side1, int side2, int varAxis, int approxEqNum){
+void Lcbc::getCornerGhost(double *&un, double **Rv, double ***CaVec, double ***CbVec, int *eqNum, int side1, int side2, int varAxis, int approxEqNum){
     
     /* define necessary variables */
     int interiorEqNum = (p+1)*(p+1)*dimBasedValue(dim, 1, (2*p+1));
@@ -466,7 +508,7 @@ void Lcbc::getCornerGhost(double *un, double *Rv[], double ***CaVec, double ***C
                             uInd[fixedAxis[0]] = Ind[fixedAxis[0]] + g1;
                             uInd[fixedAxis[1]] = Ind[fixedAxis[1]] + g2;
                             
-                            un[ind(uInd,G.Ngx)] = Ca_vecRv + Cb_vecb;
+                            un[solInd(uInd,G.Ngx)] = Ca_vecRv + Cb_vecb;
                             vecNum++;
                         }// end of if statement
                     }// end of g1 loop
@@ -478,7 +520,7 @@ void Lcbc::getCornerGhost(double *un, double *Rv[], double ***CaVec, double ***C
     
 }// end of getCornerGhost
 
-void Lcbc::getbInt_corner(double *b, double *un, int *eqNum, int *Ind, int side1, int side2, int fixedAxis[2]){
+void Lcbc::getbInt_corner(double b[], double *un, int *eqNum, int *Ind, int side1, int side2, int fixedAxis[2]){
     int n = (2*p+1);
     int interiorEqNum = (p+1)*(p+1)*dimBasedValue(dim, 1, n);
     int totalVarNum   = n*n*dimBasedValue(dim, 1, n);
@@ -499,7 +541,7 @@ void Lcbc::getbInt_corner(double *b, double *un, int *eqNum, int *Ind, int side1
                 
                 int u_ind[] = {(Ind[0] - p + intInd[0]),(Ind[1] - p + intInd[1]),dimBasedValue(dim, 0, (Ind[2] - p + intInd[2]))};
                 
-                b[r]  =  un[ind(u_ind,G.Ngx)];
+                b[r]  =  un[solInd(u_ind,G.Ngx)];
             }// intInd[0]
         }// intInd[1]
     }// intInd[2]
@@ -514,14 +556,19 @@ void Lcbc::getBdryRange_corner(int bdryRange[3][2], int fixedAxis[2], int fixedS
         bdryRange[fixedAxis[0]][side] = G.indexRange[fixedAxis[0]][fixedSide[0]];
         bdryRange[fixedAxis[1]][side] = G.indexRange[fixedAxis[1]][fixedSide[1]];
         if(dim == 3){
-            bdryRange[varAxis][side] = G.indexRange[varAxis][side] + (1-side)*addOnSide0 + addOnSide1*side;
+            if(faceEval[(2*varAxis)]>=0){
+                bdryRange[varAxis][side] = G.indexRange[varAxis][side] + (1-side)*addOnSide0 + addOnSide1*side;
+            }
+            else{
+                bdryRange[varAxis][side] = G.indexRange[varAxis][side];
+            }
         }else{
             bdryRange[2][side] = G.indexRange[2][side];
         }
     }
 }// end of getBdryRange_corner
 
-void getFixedAxis(int fixedAxis[2], int varAxis){
+void Lcbc::getFixedAxis(int fixedAxis[2], int varAxis){
     int cnt = 0;
     for(int axis = 0; axis<3; axis++){
         if(axis != varAxis){

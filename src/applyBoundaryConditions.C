@@ -118,6 +118,11 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
     if( useUpwindDissipation ) numGhost++;
     const int assignBCForImplicit=0; 
 
+
+
+
+
+
     bool useOpt= true; // twilightZone && true;
     
     if( debug & 4 && t<=2*dt )
@@ -132,119 +137,144 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
             isImplicit    = isImplicit || gridIsImplicit(grid); 
             isAllImplicit = isAllImplicit && gridIsImplicit(grid); 
       // +++ NOTE: BCs for implicit are done in takeImplicitTimeStep +++
+
+
+            
             if( !gridIsImplicit(grid) )
             {
-                MappedGrid & mg = cg[grid];
-        // const IntegerArray & gid = mg.gridIndexRange();
-                
-                OV_GET_SERIAL_ARRAY(Real,u[grid],uLocal);
-                OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
 
-        // get parameters for calling fortran
-                    IntegerArray indexRangeLocal(2,3), dimLocal(2,3), bcLocal(2,3);
-                    ParallelGridUtility::getLocalIndexBoundsAndBoundaryConditions( u[grid],indexRangeLocal,dimLocal,bcLocal );
-                    const bool isRectangular=mg.isRectangular();
-                    real dx[3]={1.,1.,1.};
-                    if( isRectangular )
-                        mg.getDeltaX(dx);
-          // int assignKnownSolutionAtBoundaries = 0;  // changed below 
-                    DataBase *pdb = &dbase;
-          // Real cfl1 = pdb->get<real>("cfl");
-          // printF(" CFL from pdb: cfl1=%g\n",cfl1);
-                    int knownSolutionOption=0; // no known solution
-                    if( dbase.has_key("userDefinedKnownSolutionData") )
-                    {
-                        DataBase & db =  dbase.get<DataBase>("userDefinedKnownSolutionData");
-                        const aString & userKnownSolution = db.get<aString>("userKnownSolution");
-                        if( userKnownSolution=="planeWave"  )
-                        {
-                            knownSolutionOption=1;                   // this number must match in bcOptWave.bf90
-              // assignKnownSolutionAtBoundaries=1;
-                        }
-                        else if( userKnownSolution=="gaussianPlaneWave"  ) 
-                        {
-                            knownSolutionOption=2;                   // this number must match in bcOptWave.bf90
-              // assignKnownSolutionAtBoundaries=1;  
-                        }    
-                        else if( userKnownSolution=="boxHelmholtz"  ) 
-                        {
-                            knownSolutionOption=3;                   // this number must match in bcOptWave.bf90
-              // assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
-                        }
-                        else if( userKnownSolution=="polyPeriodic"  ) 
-                        {
-                            knownSolutionOption=4;                   // this number must match in bcOptWave.bf90
-              // assignKnownSolutionAtBoundaries=1;  
-                        }    
-                    }
-                    int gridType = isRectangular ? 0 : 1;
-                    int gridIsImplicit = 0; 
-                    int numberOfComponents = 1;          // for now CgWave only has a single component 
-                    int uc = 0;                          // first component
-                    int ipar[] = {
-                        uc                  ,            // ipar( 0)
-                        numberOfComponents  ,            // ipar( 1)
-                        grid                ,            // ipar( 2)
-                        gridType            ,            // ipar( 3)
-                        orderOfAccuracy     ,            // ipar( 4)
-                        gridIsImplicit      ,            // ipar( 5)
-                        twilightZone        ,            // ipar( 6)
-                        np                  ,            // ipar( 7)
-                        debug               ,            // ipar( 8)
-                        myid                ,            // ipar( 9)
-                        applyKnownSolutionAtBoundaries,  // ipar(10)
-                        knownSolutionOption,             // ipar(11)
-                        addForcing,                      // ipar(12)
-                        forcingOption,                   // ipar(13)
-                        useUpwindDissipation,            // ipar(14)
-                        numGhost,                        // ipar(15)
-                        assignBCForImplicit,             // ipar(16)
-                        bcApproach,                      // ipar(17)
-                        numberOfFrequencies              // ipar(18)
-                                              };
-                    real rpar[] = {
-                        t                , //  rpar( 0)
-                        dt               , //  rpar( 1)
-                        dx[0]            , //  rpar( 2)
-                        dx[1]            , //  rpar( 3)
-                        dx[2]            , //  rpar( 4)
-                        mg.gridSpacing(0), //  rpar( 5)
-                        mg.gridSpacing(1), //  rpar( 6)
-                        mg.gridSpacing(2), //  rpar( 7)
-                        (real &)(dbase.get<OGFunction* >("tz")) ,        //  rpar( 8) ! pointer for exact solution -- new : 110311 
-                        REAL_MIN,         //  rpar( 9)
-                        c                 //  rpar(10)
-                                                };
-                    real *pu = uLocal.getDataPointer();
-                    int *pmask = maskLocal.getDataPointer();
-                    real temp, *pxy=&temp, *prsxy=&temp;
-                    if( !isRectangular )
-                    {
-                        mg.update(MappedGrid::THEinverseVertexDerivative);
-                        #ifdef USE_PPP
-                          prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
-                        #else
-                          prsxy=mg.inverseVertexDerivative().getDataPointer();
-                        #endif    
-                    }
-                    bool vertexNeeded = twilightZone || knownSolutionOption!=0;
-                    if( vertexNeeded )
-                    {
-                        mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
-                        #ifdef USE_PPP
-                          pxy=mg.vertex().getLocalArray().getDataPointer();
-                        #else
-                          pxy=mg.vertex().getDataPointer();
-                        #endif    
-                    }
+                if( bcApproach==useLocalCompatibilityBoundaryConditions )
+                {
+          // -- Apply local compatibility boundary conditions ---
+                    u.applyBoundaryCondition(0,BCTypes::dirichlet,dirichlet,0.,t);
 
-                int ierr=0;
-                bcOptWave(mg.numberOfDimensions(),
-                                    uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
-                                    uLocal.getBase(2),uLocal.getBound(2),
-                                    indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                                    *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
-                                    pdb, ipar[0],rpar[0], ierr );
+                    assignLCBC( u[grid], t, dt, grid );
+
+          // OV_ABORT("applyBC: FINISH ME: for bcApproach==useLocalCompatibilityBoundaryConditions");
+                    if( useUpwindDissipation )
+                    {
+                        const int ghost = orderOfAccuracy/2 + 1; // extrapolate an extra ghost
+                        bcParams.ghostLineToAssign=ghost;
+                        u.applyBoundaryCondition(0,BCTypes::extrapolate,dirichlet,0.,t,bcParams);
+                        u.applyBoundaryCondition(0,BCTypes::extrapolate,neumann  ,0.,t,bcParams);
+                        bcParams.ghostLineToAssign=1; // reset  
+                    }         
+
+                }
+                else
+                {     
+                    MappedGrid & mg = cg[grid];
+          // const IntegerArray & gid = mg.gridIndexRange();
+                    
+                    OV_GET_SERIAL_ARRAY(Real,u[grid],uLocal);
+                    OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+          // get parameters for calling fortran
+                        IntegerArray indexRangeLocal(2,3), dimLocal(2,3), bcLocal(2,3);
+                        ParallelGridUtility::getLocalIndexBoundsAndBoundaryConditions( u[grid],indexRangeLocal,dimLocal,bcLocal );
+                        const bool isRectangular=mg.isRectangular();
+                        real dx[3]={1.,1.,1.};
+                        if( isRectangular )
+                            mg.getDeltaX(dx);
+            // int assignKnownSolutionAtBoundaries = 0;  // changed below 
+                        DataBase *pdb = &dbase;
+            // Real cfl1 = pdb->get<real>("cfl");
+            // printF(" CFL from pdb: cfl1=%g\n",cfl1);
+                        int knownSolutionOption=0; // no known solution
+                        if( dbase.has_key("userDefinedKnownSolutionData") )
+                        {
+                            DataBase & db =  dbase.get<DataBase>("userDefinedKnownSolutionData");
+                            const aString & userKnownSolution = db.get<aString>("userKnownSolution");
+                            if( userKnownSolution=="planeWave"  )
+                            {
+                                knownSolutionOption=1;                   // this number must match in bcOptWave.bf90
+                // assignKnownSolutionAtBoundaries=1;
+                            }
+                            else if( userKnownSolution=="gaussianPlaneWave"  ) 
+                            {
+                                knownSolutionOption=2;                   // this number must match in bcOptWave.bf90
+                // assignKnownSolutionAtBoundaries=1;  
+                            }    
+                            else if( userKnownSolution=="boxHelmholtz"  ) 
+                            {
+                                knownSolutionOption=3;                   // this number must match in bcOptWave.bf90
+                // assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
+                            }
+                            else if( userKnownSolution=="polyPeriodic"  ) 
+                            {
+                                knownSolutionOption=4;                   // this number must match in bcOptWave.bf90
+                // assignKnownSolutionAtBoundaries=1;  
+                            }    
+                        }
+                        int gridType = isRectangular ? 0 : 1;
+                        int gridIsImplicit = 0; 
+                        int numberOfComponents = 1;          // for now CgWave only has a single component 
+                        int uc = 0;                          // first component
+                        int ipar[] = {
+                            uc                  ,            // ipar( 0)
+                            numberOfComponents  ,            // ipar( 1)
+                            grid                ,            // ipar( 2)
+                            gridType            ,            // ipar( 3)
+                            orderOfAccuracy     ,            // ipar( 4)
+                            gridIsImplicit      ,            // ipar( 5)
+                            twilightZone        ,            // ipar( 6)
+                            np                  ,            // ipar( 7)
+                            debug               ,            // ipar( 8)
+                            myid                ,            // ipar( 9)
+                            applyKnownSolutionAtBoundaries,  // ipar(10)
+                            knownSolutionOption,             // ipar(11)
+                            addForcing,                      // ipar(12)
+                            forcingOption,                   // ipar(13)
+                            useUpwindDissipation,            // ipar(14)
+                            numGhost,                        // ipar(15)
+                            assignBCForImplicit,             // ipar(16)
+                            bcApproach,                      // ipar(17)
+                            numberOfFrequencies              // ipar(18)
+                                                  };
+                        real rpar[] = {
+                            t                , //  rpar( 0)
+                            dt               , //  rpar( 1)
+                            dx[0]            , //  rpar( 2)
+                            dx[1]            , //  rpar( 3)
+                            dx[2]            , //  rpar( 4)
+                            mg.gridSpacing(0), //  rpar( 5)
+                            mg.gridSpacing(1), //  rpar( 6)
+                            mg.gridSpacing(2), //  rpar( 7)
+                            (real &)(dbase.get<OGFunction* >("tz")) ,        //  rpar( 8) ! pointer for exact solution -- new : 110311 
+                            REAL_MIN,         //  rpar( 9)
+                            c                 //  rpar(10)
+                                                    };
+                        real *pu = uLocal.getDataPointer();
+                        int *pmask = maskLocal.getDataPointer();
+                        real temp, *pxy=&temp, *prsxy=&temp;
+                        if( !isRectangular )
+                        {
+                            mg.update(MappedGrid::THEinverseVertexDerivative);
+                            #ifdef USE_PPP
+                              prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
+                            #else
+                              prsxy=mg.inverseVertexDerivative().getDataPointer();
+                            #endif    
+                        }
+                        bool vertexNeeded = twilightZone || knownSolutionOption!=0;
+                        if( vertexNeeded )
+                        {
+                            mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
+                            #ifdef USE_PPP
+                              pxy=mg.vertex().getLocalArray().getDataPointer();
+                            #else
+                              pxy=mg.vertex().getDataPointer();
+                            #endif    
+                        }
+
+                    int ierr=0;
+                    bcOptWave(mg.numberOfDimensions(),
+                                        uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
+                                        uLocal.getBase(2),uLocal.getBound(2),
+                                        indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
+                                        *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
+                                        pdb, ipar[0],rpar[0], ierr );
+                }
 
         // ...swap periodic edges 
                 u[grid].periodicUpdate();

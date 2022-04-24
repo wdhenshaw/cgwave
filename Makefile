@@ -133,7 +133,8 @@ PETScEquationSolver.o : $(Oges)/PETScEquationSolver.C; $(CXX) $(CCFLAGS) -DOVERT
 OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/userDefinedKnownSolution.o \
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
        obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
-       obj/takeFirstStep.o
+       obj/takeFirstStep.o obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o \
+       obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o
 
 # Fortran 90 (FN) object files: 
 FNOBJO = obj/advWave.o\
@@ -186,20 +187,46 @@ testHighDerivatives: $(testHighDerivativesFiles); $(CXX) $(CCFLAGS) -o bin/testH
 
 obj/testHighDerivatives.o : src/testHighDerivatives.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 
+# ----- simple test before adding LCBC  -----
+simpleTestFiles = obj/simpleTest.o
+simpleTest: $(simpleTestFiles); $(CXX) $(CCFLAGS) -o bin/simpleTest $(simpleTestFiles) $(LIBS)
+
+obj/simpleTest.o : src/simpleTest4.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+
 # ----- test LCBC class : local compatibility boundary conditions -----
-testLCBCFiles = obj/testLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o
+testLCBCFiles = obj/testLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o
+
 testLCBC: $(testLCBCFiles); $(CXX) $(CCFLAGS) -o bin/testLCBC $(testLCBCFiles) $(LIBS)
 
-obj/testLCBC.o : src/testLCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+obj/testLCBC.o : src/testLCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 # --- LCBC files ---
 obj/LCBC.o : src/LCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
-obj/LCBC1.o : src/LCBC1.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
-obj/LCBC2.o : src/LCBC2.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+obj/LCBC1.o : src/LCBC1.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/LCBC2.o : src/LCBC2.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/LCBC_corner.o : src/LCBC_corner.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
 obj/LCBC_vertex.o : src/LCBC_vertex.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
-obj/numericalDeriv.o : src/numericalDeriv.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
-obj/utility.o : src/utility.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+obj/numericalDeriv.o : src/numericalDeriv.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/utility.o : src/utility.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/LCBC_TzFnPointers.o : src/LCBC_TzFnPointers.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/LCBC_annulusMap.o : src/LCBC_annulusMap.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+
+obj/initializeLCBC.o : src/initializeLCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+
+# # ----- test LCBC class : local compatibility boundary conditions -----
+# testLCBCFiles = obj/testLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o
+# testLCBC: $(testLCBCFiles); $(CXX) $(CCFLAGS) -o bin/testLCBC $(testLCBCFiles) $(LIBS)
+
+# obj/testLCBC.o : src/testLCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+
+# # --- LCBC files ---
+# obj/LCBC.o : src/LCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+# obj/LCBC1.o : src/LCBC1.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+# obj/LCBC2.o : src/LCBC2.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+# obj/LCBC_corner.o : src/LCBC_corner.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+# obj/LCBC_vertex.o : src/LCBC_vertex.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+# obj/numericalDeriv.o : src/numericalDeriv.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
+# obj/utility.o : src/utility.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
 
 # --------- CgWaveHoltz ----------
 

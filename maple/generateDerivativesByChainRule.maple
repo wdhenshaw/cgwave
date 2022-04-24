@@ -258,7 +258,7 @@ names := convert(names,list):
 
 
 
-# ************************* START BOGUS ****************************
+# ********************************************************
 if 1=1 then
 
 ndx:=maxDerivative:  # highest x derivative

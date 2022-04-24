@@ -1,0 +1,6 @@
+Files from Nour:
+
+scp henshw@rtg1.math.rpi.edu:/home/alhasn/cgwave/src/\{testLCBC.C,utility.h,utility.C,LCBCmacros.h,LCBC_corner.C,LCBC.C,LCBC1.C,LCBC_vertex.C,LCBC.h,grid.h,LCBC2.C,LCBC_annulusMap.C,LCBC_TzFnPointers.C,LCBC_annulusMap.h,LCBC_TzFnPointers.h,numericalDeriv.h,numericalDeriv.C,testLCBC_info.txt\} ./
+
+
+testLCBC.C,utility.h,utility.C,LCBCmacros.h,LCBC_corner.C,LCBC.C,LCBC1.C,LCBC_vertex.C,LCBC.h,grid.h,LCBC2.C,LCBC_annulusMap.C,LCBC_TzFnPointers.C,LCBC_annulusMap.h,LCBC_TzFnPointers.h,numericalDeriv.h,numericalDeriv.C,testLCBC_info.txt

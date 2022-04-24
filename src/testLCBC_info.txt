@@ -1,0 +1,41 @@
+===== Information regarding testLCBC file =====
+
+testLCBC.C : 
+
+- LCBC class now supports periodic BCs with Dirichlet BCs as long as the solution is provided at the periodic boundary from ((-p), ..., (numOfGridPoints + p)). Edges and corners of two adjacent periodic faces must be updated before using LCBC (The current class does not update a periodic-periodic edge or corner.) - Apr 22, 2022 
+
+- Coefficient implementation inside LCBC class updates coefficients at physical faces only instead of all faces. - Apr 19, 2022 
+
+- Neumann Boundary support: pending... 
+- User Options for grid function data input (forcing, boundary and PDE coefficients): pending... 
+
+             
+===== Needed LCBC files =====
+
+LCBC.h              (contains the LCBC class)
+LCBC.C              (contains initialize function and updateGhost function)
+LCBC1.C             (contains functions that set up the LCBC matrices at a face)
+LCBC2.C             (contains functions that set up the RHS for the LCBC system at a face)
+LCBC_corner.C       (contains functions for the LCBC implementation at a 2D corner or 3D edge)
+LCBC_vertex.C       (contains functions for the LCBC implementation at a 3D corner)
+LCBCmacros.h        (contains the macros used in the LCBC class)
+
+grid.h              (grid class used in LCBC class)
+utility.C           (utility functions used in LCBC class)
+utility.h                
+numericalDeriv.C    (contains functions to compute numerical derivatives)
+numericalDeriv.h    (contains the numerical derivative class used in LCBC class)
+
+===== header to use LCBC class =====
+
+#include "LCBC.h"
+
+===== Note regarding annulus map (temporary) =====
+
+need the files: LCBC_annulusMap.C, LCBC_annulusMap.h            
+add the header: #include "LCBC_annulusMap.h"
+
+(I only use the function annulus_Cn which a function pointer to the coefficients of the Laplacian operator in parameter space)
+
+
+

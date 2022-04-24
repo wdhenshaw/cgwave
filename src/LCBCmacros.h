@@ -17,5 +17,16 @@
 
 #define dimBasedValue(dim,n1,n2) ((dim == 2) ? (n1) : (n2))
 
+#define EXTRA_GHOST (userNumGhost - numGhost)
+#define solInd(I,N) ((I[0] + EXTRA_GHOST) + (I[1] + EXTRA_GHOST)*(N[0] + 2*EXTRA_GHOST)+ dimBasedValue(dim,0,((I[2] + EXTRA_GHOST)*(N[0] + 2*EXTRA_GHOST)*(N[1] + 2*EXTRA_GHOST))))
+
+#define axisBasedVal(axis,fixedAxis,n1,n2) ((axis==fixedAxis)?(n1):(n2))
+
+//#define bdryInd(I,N,axis) ((I[0] + axisBasedVal(0,axis,0,EXTRA_GHOST)) + (I[1] + axisBasedVal(1,axis,0,EXTRA_GHOST))*(N[0] + axisBasedVal(0,axis,0,(2*EXTRA_GHOST)))+ dimBasedValue(dim,0,((I[2] + axisBasedVal(2,axis,0,EXTRA_GHOST))*(N[0] + axisBasedVal(0,axis,0,(2*EXTRA_GHOST)))*(N[1] + axisBasedVal(1,axis,0,(2*EXTRA_GHOST))))))
+
+#define bdryInd(I,N,axis) ind(I,N)
+
+#define coefIndAlloc(I,N) ((I[0] + coefExtraGhost) + (I[1] + coefExtraGhost)*(N[0] + 2*coefExtraGhost)+ dimBasedValue(dim,0,((I[2] + coefExtraGhost)*(N[0] + 2*coefExtraGhost)*(N[1] + 2*coefExtraGhost))))
+#define coefInd(I,N) (allocatedCoef)?(coefIndAlloc(I,N)):(solInd(I,N))
 
 #endif /* LCBCmacros_h */

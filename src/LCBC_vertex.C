@@ -5,7 +5,38 @@
 #include "utility.h"
 #include "LCBCmacros.h"
 
-void Lcbc::updateVertexGhost(double *R[], double *unp1, double t, double dt, int approxEqNum, int side0, int side1, int side2){
+void Lcbc::updateVertexGhostPeriodic(double *&unp1, int side0, int side1, int side2){
+    
+    int fixedSides[3] = {side0, side1, side2};
+    int perIndexRange[3][2];
+    for(int axis = 0; axis<3; axis++){
+        perIndexRange[axis][0] = G.indexRange[axis][fixedSides[axis]] + sideBasedValue(fixedSides[axis], (-p), 1);
+        perIndexRange[axis][1] = G.indexRange[axis][fixedSides[axis]] + sideBasedValue(fixedSides[axis], (-1), p);
+    }
+    
+    int vertices[3] = {side0, (side1 + 2), (side2 + 4)};
+
+    int i[3];
+    for(i[2] = perIndexRange[2][0]; i[2]<=perIndexRange[2][1]; i[2]++){
+        for(i[1] = perIndexRange[1][0]; i[1]<=perIndexRange[1][1]; i[1]++){
+            for(i[0] = perIndexRange[0][0]; i[0]<=perIndexRange[0][1]; i[0]++){
+                int I[3]; memcpy(I, i, sizeof(I));
+                
+                for(int axis = 0; axis<3; axis ++){
+                    if(faceEval[vertices[axis]] == -1){ // periodic boundary
+                        I[axis] = I[axis] + sideBasedValue(fixedSides[axis], G.Nx[axis], (-G.Nx[axis]));
+                    }
+                }// end of axis loop
+
+                unp1[solInd(i, G.Ngx)] = unp1[solInd(I, G.Ngx)];
+
+            }// end of i[0]
+        }// end of i[1]
+    }// end of i[2]
+}// end of updateVertexGhostPeriodic
+
+
+void Lcbc::updateVertexGhost(double **R, double *&unp1, double t, double dt, int approxEqNum, int side0, int side1, int side2){
     
     double *Rv = new double[approxEqNum];
     int vertex = ind3(side0,side1,side2,2,2,2);
@@ -75,7 +106,7 @@ void Lcbc::prepVertexMatrix(int side0, int side1, int side2){
     /* -------------- */
 }// end of prepVertexMatrix
 
-void Lcbc::getVertexMatrix(double **CaVec, double **CbVec, int *eqNum, int side0, int side1, int side2){
+void Lcbc::getVertexMatrix(double **&CaVec, double **&CbVec, int *eqNum, int side0, int side1, int side2){
     
     int n = (2*p+1), NU = (p+1);
     
@@ -186,7 +217,7 @@ void Lcbc::getVertexMatrix(double **CaVec, double **CbVec, int *eqNum, int side0
     
 }// end of getVertexMatrix
 
-void Lcbc::getD_vertex(double *D){
+void Lcbc::getD_vertex(double *&D){
 
     int n = (2*p+1);
     int compCondNum    = (p+1)*n*n;
@@ -198,11 +229,11 @@ void Lcbc::getD_vertex(double *D){
     set1DArrayToZero(D, (approxEqNum*approxEqNum));
     
     /* use the delta approach to determine D */
-    double Id[(dof*dof)];
+    double *Id = new double[(dof*dof)];
     getIDmatrix(Id, dof);
     
     /* R corresponds to derivatives of data functions on stencil. b is the RHS vector */
-    double b[(3*compCondNum)], *R[(3*NU)];
+    double b[(3*compCondNum)], **R = new double*[(3*NU)];
     
     for(int nu = 0; nu<(3*NU); nu++)
         R[nu] = new double[dof];
@@ -235,10 +266,12 @@ void Lcbc::getD_vertex(double *D){
     
     for(int nu = 0; nu<(3*NU); nu++)
         delete [] R[nu];
-
+    
+    delete [] R;
+    delete [] Id; 
 }// end of getD_vertex
 
-void Lcbc::getbVec_vertex(double *b, double **R){
+void Lcbc::getbVec_vertex(double b[], double **R){
     int NU = (p+1), n = (2*p+1), order;
     int MU0 = n, MU1 = n;
     int compCondNum = NU*MU0*MU1;
@@ -280,7 +313,7 @@ void Lcbc::getbVec_vertex(double *b, double **R){
     }// end of nu loop
 }// end of getbVec_vertex
 
-void Lcbc::fillVertexMatrix_LagrangeDeriv(double *Matrix, int *Ind, int side0, int side1, int side2, int *eqNum, int compCondNum, int auxiliaryEqNum, int totalEqNum){
+void Lcbc::fillVertexMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side0, int side1, int side2, int *eqNum, int compCondNum, int auxiliaryEqNum, int totalEqNum){
     
     int n = (2*p+1), NU = (p+1), MU = n;
     int totalVarNum = (n*n*n);
@@ -297,11 +330,11 @@ void Lcbc::fillVertexMatrix_LagrangeDeriv(double *Matrix, int *Ind, int side0, i
     for(LagInd[2] = 0; LagInd[2]<n; LagInd[2]++){
         for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
             for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
-                getLagrangeDeriv_Dirichlet(Y[ind(LagInd,LagIndLth)], Z0[ind(LagInd,LagIndLth)], Ind, LagInd,0);
+                getLagrangeDeriv_Dirichlet(Y[ind(LagInd,LagIndLth)], Z0[ind(LagInd,LagIndLth)], Ind, LagInd,0, side0);
                 
-                getLagrangeDeriv_Dirichlet(Z1[ind(LagInd,LagIndLth)], Ind, LagInd, 1);
+                getLagrangeDeriv_Dirichlet(Z1[ind(LagInd,LagIndLth)], Ind, LagInd, 1, side1);
                 
-                getLagrangeDeriv_Dirichlet(Z2[ind(LagInd,LagIndLth)], Ind, LagInd, 2);
+                getLagrangeDeriv_Dirichlet(Z2[ind(LagInd,LagIndLth)], Ind, LagInd, 2, side2);
             }// LagInd[0]
         }// LagInd[1]
     }// LagInd[2]
@@ -353,7 +386,7 @@ void Lcbc::fillVertexMatrix_LagrangeDeriv(double *Matrix, int *Ind, int side0, i
     }// end of m2 loop
 }// end of fillVertexMatrix_LagrangeDeriv
 
-void Lcbc::prepDataVec_vertex(double *R[], double *Rv, double t, double dt, int approxEqNum, int side0, int side1, int side2){
+void Lcbc::prepDataVec_vertex(double **R, double *&Rv, double t, double dt, int approxEqNum, int side0, int side1, int side2){
     
     /* prepare needed parameters */
     int NU = (p+1);
@@ -389,7 +422,7 @@ void Lcbc::prepDataVec_vertex(double *R[], double *Rv, double t, double dt, int 
     }
 }// end of prepDataVec_vertex
 
-void Lcbc::getVertexGhost(double *un, double *Rv, double **CaVec, double **CbVec, int *eqNum, int approxEqNum, int side0, int side1, int side2){
+void Lcbc::getVertexGhost(double *&un, double *Rv, double **CaVec, double **CbVec, int *eqNum, int approxEqNum, int side0, int side1, int side2){
     
     /* define parameters */
     int interiorEqNum = (p+1)*(p+1)*(p+1);
@@ -410,7 +443,7 @@ void Lcbc::getVertexGhost(double *un, double *Rv, double **CaVec, double **CbVec
                     double Cb_vecb  = dotProduct(CbVec[vecNum], b, interiorEqNum);
                     
                     int uInd[3] = sumVectors(Ind, g);
-                    un[ind(uInd,G.Ngx)] = Ca_vecRv + Cb_vecb;
+                    un[solInd(uInd,G.Ngx)] = Ca_vecRv + Cb_vecb;
                     vecNum++;
                 } // end of if conditions
             }// end of g0 loop
@@ -419,7 +452,7 @@ void Lcbc::getVertexGhost(double *un, double *Rv, double **CaVec, double **CbVec
     
 }// end of getVertexGhost
 
-void Lcbc::getbInt_vertex(double *b, double *un, int *eqNum, int *Ind, int side0, int side1, int side2){
+void Lcbc::getbInt_vertex(double b[], double *un, int *eqNum, int *Ind, int side0, int side1, int side2){
     
     int n = (2*p+1);
     int interiorEqNum = (p+1)*(p+1)*(p+1);
@@ -441,7 +474,7 @@ void Lcbc::getbInt_vertex(double *b, double *un, int *eqNum, int *Ind, int side0
                 
                 int u_ind[] = {(Ind[0] - p + intInd[0]),(Ind[1] - p + intInd[1]), (Ind[2] - p + intInd[2])};
                 
-                b[r]  =  un[ind(u_ind,G.Ngx)];
+                b[r]  =  un[solInd(u_ind,G.Ngx)];
             }// intInd[0]
         }// intInd[1]
     }// intInd[2]

@@ -1,3 +1,80 @@
+
+
+
+
+****************************************************
+****** Sun April 24, 2022
+
+++++++++++++TEST LCBC
+
+
+--> FIXED LCBC FOR UPWIND
+
+cgWave known.cmd -g=annulus4.order4 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -upwind=0 -known=annulusEig -bc=d -bcApproach=lcbc
+
+
+cgWave -noplot known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tf=10 -tp=1 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=go
+
+LCBC
+cgWave:FD44u t=0.000e+00 (   0 steps) dt=7.752e-03 maxErr= 0.00e+00, ||u||= 5.82e-01, cpu= 0.00e+00(s)
+cgWave:FD44u t=1.000e+00 ( 129 steps) dt=7.752e-03 maxErr= 1.62e-07, ||u||= 4.33e-01, cpu= 5.08e-01(s)
+cgWave:FD44u t=2.000e+00 ( 258 steps) dt=7.752e-03 maxErr= 7.95e-07, ||u||= 6.16e-02, cpu= 1.02e+00(s)
+cgWave:FD44u t=3.000e+00 ( 387 steps) dt=7.752e-03 maxErr= 1.27e-06, ||u||= 3.41e-01, cpu= 1.53e+00(s)
+cgWave:FD44u t=4.000e+00 ( 516 steps) dt=7.752e-03 maxErr= 9.51e-07, ||u||= 5.69e-01, cpu= 2.04e+00(s)
+cgWave:FD44u t=5.000e+00 ( 645 steps) dt=7.752e-03 maxErr= 4.62e-07, ||u||= 5.05e-01, cpu= 2.55e+00(s)
+cgWave:FD44u t=6.000e+00 ( 774 steps) dt=7.752e-03 maxErr= 2.10e-06, ||u||= 1.82e-01, cpu= 3.06e+00(s)
+cgWave:FD44u t=7.000e+00 ( 903 steps) dt=7.752e-03 maxErr= 3.15e-06, ||u||= 2.34e-01, cpu= 3.58e+00(s)
+cgWave:FD44u t=8.000e+00 (1032 steps) dt=7.752e-03 maxErr= 2.60e-06, ||u||= 5.30e-01, cpu= 4.09e+00(s)
+cgWave:FD44u t=9.000e+00 (1161 steps) dt=7.752e-03 maxErr= 3.12e-07, ||u||= 5.54e-01, cpu= 4.60e+00(s)
+cgWave:FD44u t=1.000e+01 (1290 steps) dt=7.752e-03 maxErr= 2.70e-06, ||u||= 2.94e-01, cpu= 5.11e+00(s)
+
+CBC
+cgWave:FD44u t=0.000e+00 (   0 steps) dt=7.752e-03 maxErr= 0.00e+00, ||u||= 5.82e-01, cpu= 0.00e+00(s)
+cgWave:FD44u t=1.000e+00 ( 129 steps) dt=7.752e-03 maxErr= 1.62e-07, ||u||= 4.33e-01, cpu= 1.88e-01(s)
+cgWave:FD44u t=2.000e+00 ( 258 steps) dt=7.752e-03 maxErr= 7.95e-07, ||u||= 6.16e-02, cpu= 3.45e-01(s)
+cgWave:FD44u t=3.000e+00 ( 387 steps) dt=7.752e-03 maxErr= 1.27e-06, ||u||= 3.41e-01, cpu= 5.03e-01(s)
+cgWave:FD44u t=4.000e+00 ( 516 steps) dt=7.752e-03 maxErr= 9.51e-07, ||u||= 5.69e-01, cpu= 6.61e-01(s)
+cgWave:FD44u t=5.000e+00 ( 645 steps) dt=7.752e-03 maxErr= 4.61e-07, ||u||= 5.05e-01, cpu= 8.19e-01(s)
+cgWave:FD44u t=6.000e+00 ( 774 steps) dt=7.752e-03 maxErr= 2.10e-06, ||u||= 1.82e-01, cpu= 9.77e-01(s)
+cgWave:FD44u t=7.000e+00 ( 903 steps) dt=7.752e-03 maxErr= 3.15e-06, ||u||= 2.34e-01, cpu= 1.13e+00(s)
+cgWave:FD44u t=8.000e+00 (1032 steps) dt=7.752e-03 maxErr= 2.60e-06, ||u||= 5.30e-01, cpu= 1.29e+00(s)
+cgWave:FD44u t=9.000e+00 (1161 steps) dt=7.752e-03 maxErr= 3.13e-07, ||u||= 5.54e-01, cpu= 1.45e+00(s)
+cgWave:FD44u t=1.000e+01 (1290 steps) dt=7.752e-03 maxErr= 2.70e-06, ||u||= 2.94e-01, cpu= 1.61e+00(s)
+
+
+cgWave -noplot known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tf=10 -tp=1 -known=diskEig -upwind=0 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=go
+
+LCBC: 
+cgWave:FD44 t=1.000e+01 (670 steps) dt=1.493e-02 maxErr= 6.74e-05, ||u||= 2.93e-01, cpu= 1.36e+00(s)
+ boundary conditions...............  1.35e+00    2.01e-03    2.11e-07    85.010   1.347e+00   1.347e+00
+
+CBC:
+cgWave:FD44 t=1.000e+01 (670 steps) dt=1.493e-02 maxErr= 6.74e-05, ||u||= 2.93e-01, cpu= 3.46e-01(s)
+  boundary conditions...............  8.55e-02    1.28e-04    1.34e-08    23.989   8.546e-02   8.546e-02
+
+
+
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tf=100 -tp=.1 -known=diskEig -upwind=0 -bcApproach=lcbc -orderInTime=4 -debug=1 
+
+cgWave:FD44 t=5.000e-01 (  35 steps) dt=1.429e-02 maxErr= 1.33e-06, ||u||= 5.42e-01, cpu= 7.74e+00(s)
+
+
+****************************************************
+****** Wed April 13, 2022
+
+FD44
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.5 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=4 -debug=1
+
+FD22
+cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.5 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=4 -debug=1
+
+
+FD44
+cgWave known.cmd -g=annulus4.order4 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=annulusEig -bc=d -bcApproach=cbc
+
+
+cgWave known.cmd -g=square128.order8.ng5 -upwind=0 -kx=2 -ky=1 -tp=1 -tf=1 -known=planeWave -bc=e -useKnownFirstStep=1 -go=halt
+
 ****************************************************
 ****** Sat Feb 19, 2022
 

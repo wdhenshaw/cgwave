@@ -84,6 +84,8 @@ int advance( int it );
 
 int applyBoundaryConditions( realCompositeGridFunction & u, real t );
 
+int assignLCBC( realMappedGridFunction & u, Real t, Real dt, int grid );
+
 int buildRunTimeDialog();
 
 void displayBoundaryConditions( FILE *file = stdout );
@@ -98,6 +100,8 @@ real getErrors( realCompositeGridFunction & u, real t );
 
 // Fill RHS for direct Helmholtz solver
 int getHelmholtzForcing( realCompositeGridFunction & f  );
+
+void getLcbcData(MappedGrid & mg, Real **&fn, Real **&gn, RealArray tmpGn[], RealArray tmpFn[], Real t );
 
 void getInitialConditions( int current, real t, bool getTimeDerivative = false );
 
@@ -116,6 +120,9 @@ int getUserDefinedKnownSolution(real t,  int grid, realArray & ua, const Index &
 
 // Initialize time-step and forcing 
 int initialize();
+
+// Initialize local compatbility boundart conditions
+int initializeLCBC();
 
 // Assign parameters 
 int interactiveUpdate();
