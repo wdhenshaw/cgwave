@@ -1,6 +1,8 @@
 #ifndef PROCESSOR_INFO_H
 #define PROCESSOR_INFO_H
 
+#include <cstdint>
+
 // ===========================================================================
 //  Class to return processor info
 // ===========================================================================
