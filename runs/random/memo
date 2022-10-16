@@ -1,0 +1,151 @@
+*********************************************
+******* Mon 13, 2022
+
+MAKE GRID PLOST FOR SSMX
+
+plotStuff plotGrid.cmd -grid=sice2.order2 -name=sicGridG2
+
+
+
+*********************************************
+******* Sat/Sun June 11/12, 2022
+
+
+#### FIX BC APPROACH ###
+
+--- PIPE ----
+pipeze2.order2.hdf
+
+cgWave random.cmd -g=pipeze4.order4.ng3.hdf -tf=10000 -tp=1 -go=halt
+
+
+---- SPHERE ----
+
+
+Sphere G4 -- Looks ok 
+cgWave random.cmd -g=spheree4.order4.ng3.hdf -tf=10000 -tp=1 -go=halt
+cgWave:FD44u t=9.900e+01 (  11286 steps) dt=8.772e-03 ||u||= 1.05e-01, cpu= 1.05e+03(s)
+cgWave:FD44u t=1.000e+02 (  11400 steps) dt=8.772e-03 ||u||= 1.13e-01, cpu= 1.06e+03(s)
+cgWave:FD44u t=1.010e+02 (  11514 steps) dt=8.772e-03 ||u||= 1.17e-01, cpu= 1.07e+03(s)
+cgWave:FD44u t=1.020e+02 (  11628 steps) dt=8.772e-03 ||u||= 1.14e-01, cpu= 1.08e+03(s)
+cgWave:FD44u t=1.030e+02 (  11742 steps) dt=8.772e-03 ||u||= 1.10e-01, cpu= 1.09e+03(s)
+cgWave:FD44u t=1.040e+02 (  11856 steps) dt=8.772e-03 ||u||= 1.30e-01, cpu= 1.10e+03(s
+
+MAYBE CELLS IN GHOST ARE BAD?
+trouble:  smooth mode blows grows ???
+cgWave random.cmd -g=spheree2.order4.ng3.hdf -tf=10000 -tp=10 -assignInterpNeighbours=interp -show=randomSphereOrder4G2.show 
+cgWave:FD44u t=1.000e+01 (   812 steps) dt=1.232e-02 ||u||= 5.70e-01, cpu= 3.38e+01(s)
+cgWave:FD44u t=2.000e+01 (  1624 steps) dt=1.232e-02 ||u||= 6.24e-01, cpu= 5.52e+01(s)
+cgWave:FD44u t=3.000e+01 (  2436 steps) dt=1.232e-02 ||u||= 5.99e-01, cpu= 7.75e+01(s)
+cgWave:FD44u t=4.000e+01 (  3248 steps) dt=1.232e-02 ||u||= 5.35e-01, cpu= 9.73e+01(s)
+cgWave:FD44u t=5.000e+01 (  4060 steps) dt=1.232e-02 ||u||= 4.60e-01, cpu= 1.17e+02(s)
+cgWave:FD44u t=6.000e+01 (  4872 steps) dt=1.232e-02 ||u||= 5.20e-01, cpu= 1.38e+02(s)
+cgWave:FD44u t=7.000e+01 (  5684 steps) dt=1.232e-02 ||u||= 6.85e-01, cpu= 1.58e+02(s)
+cgWave:FD44u t=8.000e+01 (  6496 steps) dt=1.232e-02 ||u||= 1.28e+00, cpu= 1.78e+02(s)
+cgWave:FD44u t=9.000e+01 (  7308 steps) dt=1.232e-02 ||u||= 1.31e+00, cpu= 1.98e+02(s)
+cgWave:FD44u t=1.000e+02 (  8120 steps) dt=1.232e-02 ||u||= 3.33e+00, cpu= 2.18e+02(s)
+cgWave:FD44u t=1.100e+02 (  8932 steps) dt=1.232e-02 ||u||= 3.80e+00, cpu= 2.38e+02(s)
+cgWave:FD44u t=1.200e+02 (  9744 steps) dt=1.232e-02 ||u||= 9.20e+00, cpu= 2.58e+02(s)
+cgWave:FD44u t=1.300e+02 ( 10556 steps) dt=1.232e-02 ||u||= 1.27e+01, cpu= 2.78e+02(s)
+cgWave:FD44u t=1.400e+02 ( 11368 steps) dt=1.232e-02 ||u||= 2.33e+01, cpu= 2.98e+02(s)
+cgWave:FD44u t=1.500e+02 ( 12180 steps) dt=1.232e-02 ||u||= 3.70e+01, cpu= 3.18e+02(s)
+cgWave:FD44u t=1.600e+02 ( 12992 steps) dt=1.232e-02 ||u||= 5.19e+01, cpu= 3.38e+02(s)
+cgWave:FD44u t=1.700e+02 ( 13804 steps) dt=1.232e-02 ||u||= 9.54e+01, cpu= 3.58e+02(s)
+
+
+trouble CBC
+cgWave -noplot random.cmd -g=spheree2.order4.ng3.hdf -tf=10000 -bcApproach=cbc -tp=10 -assignInterpNeighbours=interp -show=randomSphereOrder4G2.show -go=go > randomSphereOrder4G2.out
+
+SPHERE FD22 CBC
+cgWave -noplot random.cmd -g=spheree2.order2.hdf -tf=10000 -tp=10 -bcApproach=cbc -assignInterpNeighbours=interp -show=randomSphereOrder2G2.show -go=go > randomSphereOrder2G2.out 
+
+
+DISK FD66
+cgWave -noplot random.cmd -g=cice4.order6.ng4 -tf=10000 -tp=.1 -assignInterpNeighbours=interp -show=randomCICOrder6G4.show -go=go > randomCICOrder6G4.out
+
+cgWave random.cmd -g=cice4.order6.ng4 -tf=10000 -tp=.1 -bcApproach=cbc -show=randomCICOrder6G4.show -go=halt
+
+cgWave random.cmd -g=cice4.order6.ng4 -tf=10000 -tp=.1 -assignInterpNeighbours=interp -show=randomCICOrder6G4.show -go=halt
+
+InterpolatePointsOnAGrid::WARNING: optimized sparse interpolation not available for interpolation width=7
+Error occured in file pogip.C, function internalInterpolate, line 2950.
+ERROR: un-implemented interpolation width -- finish me!
+
+
+------------------- DISK ------
+
+cgWave -noplot random.cmd -g=sice4.order4.ng3 -tf=10000 -tp=100 -bcApproach=cbc -assignInterpNeighbours=interp -show=randomDiskOrder4G4.show -go=go > randomDiskOrder4G4.out
+
+cgWave -noplot random.cmd -g=sice4.order2 -tf=10000 -tp=100 -bcApproach=cbc -assignInterpNeighbours=interp -show=randomDiskOrder2G4.show -go=go > randomDiskOrder2G4.out
+
+------------------ CIRCLE IN CHANNEL ---
+cgWave -noplot random.cmd -g=cice4.order4.ng3 -tf=10000 -tp=100 -bcApproach=cbc -assignInterpNeighbours=interp -show=randomCICOrder4G4.show -go=go > randomCICOrder4G4.out
+
+cgWave -noplot random.cmd -g=cice4.order2 -tf=10000 -tp=100 -bcApproach=cbc -assignInterpNeighbours=interp -show=randomCICOrder2G4.show -go=go > randomCICOrder2G4.out
+
+*********************************************
+******* Fri June 10, 2022
+
+set ssmx = /home/henshw/Dropbox/AMP/ssmx
+
+ADD RANDOM INITIAL CONDITION
+
+
+Run for ssmx 
+
+plotStuff randomCICOrder4G4.show
+
+cgWave -noplot random.cmd -g=cice4.order4.ng3 -tf=100000 -tp=10 -assignInterpNeighbours=interp -show=randomCICOrder4G4.show -go=go > randomCICOrder4G4.out
+
+cgWave random.cmd -g=cice4.order4.ng3 -tf=10000 -tp=10 -assignInterpNeighbours=interp  -show=randomCic.show -go=halt
+
+
+cgWave -noplot random.cmd -g=twoSquaresGride.order4p.hdf -tf=1000 -tp=10 -x0=-.5 -y0=.5 -beta=20 -k0=0 -assignInterpNeighbours=interp  -show=randomTwoSquares.show -go=go > randomTwoSquares.out 
+
+
+TEST NEW INTERP INTERP NEIGHBOURS
+
+ogen -noplot twoSquaresGrid -nx1=54 -nx2=16 -xb1=.325 -xa2=.25 -order=4 -per=1 -interp=e 
+
+FD44u + INTERP : looks OK
+cgWave random.cmd -g=twoSquaresGride.order4p.hdf -tf=1000 -tp=10 -x0=-.5 -y0=.5 -beta=20 -k0=0 -assignInterpNeighbours=interp -go=og
+
+cgWave:FD44u t=9.400e+02 (43146 steps) dt=2.179e-02 ||u||= 3.31e-01, cpu= 1.13e+02(s)
+cgWave:FD44u t=9.500e+02 (43605 steps) dt=2.179e-02 ||u||= 3.31e-01, cpu= 1.14e+02(s)
+cgWave:FD44u t=9.600e+02 (44064 steps) dt=2.179e-02 ||u||= 3.30e-01, cpu= 1.14e+02(s)
+cgWave:FD44u t=9.700e+02 (44523 steps) dt=2.179e-02 ||u||= 3.30e-01, cpu= 1.14e+02(s)
+cgWave:FD44u t=9.800e+02 (44982 steps) dt=2.179e-02 ||u||= 3.29e-01, cpu= 1.15e+02(s)
+cgWave:FD44u t=9.900e+02 (45441 steps) dt=2.179e-02 ||u||= 3.29e-01, cpu= 1.15e+02(s)
+cgWave:FD44u t=1.000e+03 (45900 steps) dt=2.179e-02 ||u||= 3.29e-01, cpu= 1.15e+02(s)
+
+c
+
+
+Unstable: 
+cgWave random.cmd -g=twoSquaresGride.order4p.hdf -tf=1000 -tp=10 -x0=-.5 -y0=.5 -beta=20 -k0=0 -go=og
+
+
+*********************************************
+******* Sat May 21, 2022
+
+Start test for Allison's  unstable case
+
+Add one more point on right grid -- still bad 
+ogen -noplot twoSquaresGrid -prefix=twoSquaresNr17 -nx1=54 -nx2=17 -xb1=.325 -xa2=.25 -order=4 -per=1 -interp=e 
+cgWave random.cmd -g=twoSquaresNr17e.order4p.hdf -tf=1000 -tp=10 -x0=-.5 -y0=.5 -beta=20 -k0=0 -go=og
+
+
+ogen -noplot twoSquaresGrid -nx1=54 -nx2=16 -xb1=.325 -xa2=.25 -order=4 -per=1 -interp=e 
+
+Unstable: 
+cgWave random.cmd -g=twoSquaresGride.order4p.hdf -tf=1000 -tp=10 -x0=-.5 -y0=.5 -beta=20 -k0=0 -go=og
+
+cgWave:FD44u t=4.200e+02 (19278 steps) dt=2.179e-02 ||u||= 1.56e+02, cpu= 6.37e+01(s)
+cgWave:FD44u t=4.300e+02 (19737 steps) dt=2.179e-02 ||u||= 1.38e+02, cpu= 6.46e+01(s)
+cgWave:FD44u t=4.400e+02 (20196 steps) dt=2.179e-02 ||u||= 4.44e+01, cpu= 7.36e+01(s)
+cgWave:FD44u t=4.500e+02 (20655 steps) dt=2.179e-02 ||u||= 1.86e+02, cpu= 7.46e+01(s)
+cgWave:FD44u t=4.600e+02 (21114 steps) dt=2.179e-02 ||u||= 5.55e+02, cpu= 7.55e+01(s)
+
+
+
+cgWave random.cmd -g=twoSquaresGride.order4p.hdf -tf=10 -tp=.05 -x0=-.5 -y0=.5 -beta=20 -k0=0 -go=og

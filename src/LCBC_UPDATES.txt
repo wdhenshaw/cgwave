@@ -1,0 +1,44 @@
+===== Information regarding LCBC updates =====
+
+==== JULY 24 Update ============
+
+- LCBC class goes to order 8 in accuracy
+- LCBC class supports the input of flexible grid sizes of data grid functions (coefficients, forcing, boundary)
+- Faster implementation due to significant changes in numerical differentiation (can be made faster still)
+- LCBC class supports Neumann BCs on Cartesian Grids
+- LCBC class supports Neumann BCs on Curvilinear Grids if the boundary operator is provided as a function pointer. (Note: I plan to change this to data grid function input but this needs time. We need to decide on an appropriate time to do that)
+- Bug fix: in LCBC_data.C file, the function fixData (which extrapolates values of forcing and coefficients on extra ghost points needed) had incorrect limits in two of the for loops which caused the 6th-order LCBC implementation to gives order 5 accuracy on a box domain.
+
+====================================================================================================
+
+- LCBC class now supports periodic BCs with Dirichlet BCs as long as the solution is provided at the periodic boundary from ((-p), ..., (numOfGridPoints + p)). Edges and corners of two adjacent periodic faces must be updated before using LCBC (The current class does not update a periodic-periodic edge or corner.) - Apr 22, 2022 
+
+- Coefficient implementation inside LCBC class updates coefficients at physical faces only instead of all faces. - Apr 19, 2022 
+
+             
+===== Needed LCBC files =====
+
+LCBC.h              (contains the LCBC class)
+LCBC.C              (contains initialize function and updateGhost function)
+LCBC1.C             (contains functions that set up the LCBC matrices at a face)
+LCBC2.C             (contains functions that set up the RHS for the LCBC system at a face)
+LCBC_corner.C       (contains functions for the LCBC implementation at a 2D corner or 3D edge)
+LCBC_vertex.C       (contains functions for the LCBC implementation at a 3D corner)
+LCBC_data.C         (contains functions that handle the data functions and the LcbcData class)
+LCBCmacros.h        (contains the macros used in the LCBC class)
+
+grid.h              (grid class used in LCBC class)
+utility.C           (utility functions used in LCBC class)
+utility.h   
+
+Also needed: (WDH)
+LCBC_param.h
+LCBC_data.h             
+
+===== header to use LCBC class =====
+
+#include "LCBC.h"
+#include "LCBC_data.h"  (to define the LcbcData class in getLcbcData function)
+
+
+

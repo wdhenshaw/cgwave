@@ -1,6 +1,6 @@
 ! This file automatically generated from advWaveME.bf90 with bpp.
-    subroutine advWaveME2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
-  ! subroutine advWaveME2dOrder8r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,!                 mask,xy,rsxy,  um,u,un, f,fa, v, vh,  bc, frequencyArray, ipar, rpar, ierr )
+    subroutine advWaveME2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+  ! subroutine advWaveME2dOrder4r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,!                 mask,xy,rsxy,  um,u,un, f,fa, v, vh,  bc, frequencyArray, ipar, rpar, ierr )
  !======================================================================
  !   Advance a time step for Waves equations
  !
@@ -119,61 +119,54 @@
       real uex4y2z2
       real uex2y4z2
       real uex2y2z4
-          real cx0, cx1, cx2, cx3, cy0, cy1, cy2, cy3, cxx0, cxx1, cxx2
-          real cxx3, cyy0, cyy1, cyy2, cyy3, cxxx0, cxxx1, cxxx2, cxxx3, cyyy0, cyyy1
-          real cyyy2, cyyy3, cxxxx0, cxxxx1, cxxxx2, cxxxx3, cyyyy0, cyyyy1, cyyyy2, cyyyy3, cxxxxx0
-          real cxxxxx1, cxxxxx2, cxxxxx3, cyyyyy0, cyyyyy1, cyyyyy2, cyyyyy3, cxxxxxx0, cxxxxxx1, cxxxxxx2, cxxxxxx3
-          real cyyyyyy0, cyyyyyy1, cyyyyyy2, cyyyyyy3, cxx, cyy, czz, d200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d400(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
-          real d040(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap4h(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2hSq(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap6h(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap4hSq(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2hCubed(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d600(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d060(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2hSq200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
-          real lap2hSq020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap4h200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap4h020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h400(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h040(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d800i, d080i, lap8h, lap2hCubed200i, lap2hCubed020i, lap2h4p
-          real lap6h200i, lap6h020i, lap4h400i, lap4h040i, lap2h600i, lap2h060i, lap6hSq, lap4hSq200i, lap4hSq020i, lap2hSq400i, lap2hSq040i
-          real lap4hCubed
- ! #If (8 == 2 ) && ( 2 == 2 ) 
+          real cx0, cx1, cy0, cy1, cxx0, cxx1, cyy0, cyy1, cxx, cyy, czz
+          real d200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d400i, d040i, lap4h, lap2hSq, lap2h200i, lap2h020i
+ ! #If (4 == 2 ) && ( 2 == 2 ) 
  !   #If "rectangular" eq "rectangular"  
  !     declare2dOrder2Rectangular()
  !   #Else
  !     declare2dOrder2Curvilinear()
  !   #End
- ! #Elif (8 == 2 ) && ( 2 == 3 ) 
+ ! #Elif (4 == 2 ) && ( 2 == 3 ) 
  !   ! **NEW** Way
  !   #If "rectangular" eq "rectangular"  
  !     declare3dOrder2Rectangular()
  !   #Else
  !     declare3dOrder2Curvilinear()
  !   #End  
- ! #Elif (8 == 4 ) && ( 2 == 2 ) 
+ ! #Elif (4 == 4 ) && ( 2 == 2 ) 
  !   ! **NEW** Way
  !   #If "rectangular" eq "rectangular"  
  !     declare2dOrder4Rectangular()
  !   #Else
  !     declare2dOrder4Curvilinear()
  !   #End
- ! #Elif (8 == 4 ) && ( 2 == 3 ) 
+ ! #Elif (4 == 4 ) && ( 2 == 3 ) 
  !   ! **NEW** Way
  !   #If "rectangular" eq "rectangular"  
  !     ! declare3dOrder4Rectangular()
  !   #Else
  !     ! declare3dOrder4Curvilinear()
  !   #End  
- ! #Elif (8 == 6 ) && ( 2 == 2 ) 
+ ! #Elif (4 == 6 ) && ( 2 == 2 ) 
  !   #If "rectangular" eq "rectangular"  
  !     declare2dOrder6Rectangular()
  !   #Else
  !     declare2dOrder6Curvilinear()
  !   #End  
- ! #Elif (8 == 6 ) && ( 2 == 3 ) 
+ ! #Elif (4 == 6 ) && ( 2 == 3 ) 
  !   #If "rectangular" eq "rectangular"  
  !     declare3dOrder6Rectangular()
  !   #Else
  !     declare3dOrder6Curvilinear()
  !   #End 
- ! #Elif (8 == 8 ) && ( 2 == 2 ) 
+ ! #Elif (4 == 8 ) && ( 2 == 2 ) 
  !   #If "rectangular" eq "rectangular"  
  !     declare2dOrder8Rectangular()
  !   #Else
  !     declare2dOrder8Curvilinear()
  !   #End  
- ! #Elif (8 == 8 ) && ( 2 == 3 ) 
+ ! #Elif (4 == 8 ) && ( 2 == 3 ) 
  !   #If "rectangular" eq "rectangular"  
  !     declare3dOrder8Rectangular()
  !   #Else
@@ -375,33 +368,25 @@
         ! FD24 : second-order in time and fourth-order in space
         ! FD26 : second-order in time and sixth-order in space
                     if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
-                        write(*,'("advWaveME: ADVANCE dim=2 order=8 orderInTime=2, grid=rectangular... t=",e10.2)') t
+                        write(*,'("advWaveME: ADVANCE dim=2 order=4 orderInTime=2, grid=rectangular... t=",e10.2)') t
                     end if
                     m=0 ! component number 
                     ec = 0 ! component number 
           ! -- call the appropriate macro:
-          !  update2dOrder2Rectangular(2,8,2,rectangular)
-          !  update3dOrder6Curvilinear(2,8,2,rectangular)
+          !  update2dOrder2Rectangular(2,4,2,rectangular)
+          !  update3dOrder6Curvilinear(2,4,2,rectangular)
             ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
             ! Example: 
             ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
-cx0 = 1.; cx1 = -1/6.; cx2 = 1/30.; cx3 = -1/140.; 
-cy0 = 1.; cy1 = -1/6.; cy2 = 1/30.; cy3 = -1/140.; 
-cxx0 = 1.; cxx1 = -1/12.; cxx2 = 1/90.; cxx3 = -1/560.; 
-cyy0 = 1.; cyy1 = -1/12.; cyy2 = 1/90.; cyy3 = -1/560.; 
-cxxx0 = 1.; cxxx1 = -1/4.; cxxx2 = 7/120.; cxxx3 = -41/3024.; 
-cyyy0 = 1.; cyyy1 = -1/4.; cyyy2 = 7/120.; cyyy3 = -41/3024.; 
-cxxxx0 = 1.; cxxxx1 = -1/6.; cxxxx2 = 7/240.; cxxxx3 = -41/7560.; 
-cyyyy0 = 1.; cyyyy1 = -1/6.; cyyyy2 = 7/240.; cyyyy3 = -41/7560.; 
-cxxxxx0 = 1.; cxxxxx1 = -1/3.; cxxxxx2 = 13/144.; cxxxxx3 = -139/6048.; 
-cyyyyy0 = 1.; cyyyyy1 = -1/3.; cyyyyy2 = 13/144.; cyyyyy3 = -139/6048.; 
-cxxxxxx0 = 1.; cxxxxxx1 = -1/4.; cxxxxxx2 = 13/240.; cxxxxxx3 = -139/12096.; 
-cyyyyyy0 = 1.; cyyyyyy1 = -1/4.; cyyyyyy2 = 13/240.; cyyyyyy3 = -139/12096.; 
+cx0 = 1.; cx1 = -1/6.; 
+cy0 = 1.; cy1 = -1/6.; 
+cxx0 = 1.; cxx1 = -1/12.; 
+cyy0 = 1.; cyy1 = -1/12.; 
 cxx=1./dx(0)**2;
 cyy=1./dx(1)**2;
 czz=1./dx(2)**2;
                         fv(m)=0.
-                        numGhost1=3;
+                        numGhost1=1;
                         n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                         n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                         n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
@@ -416,52 +401,6 @@ czz=1./dx(2)**2;
                           end do
                           end do
                           end do
-                        numGhost1=2;
-                        n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                        n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                        n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                          do i3=n3a,n3b
-                          do i2=n2a,n2b
-                          do i1=n1a,n1b
-                            if( mask(i1,i2,i3).ne.0 )then
-                                d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
-                                d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
-                ! --- Laplacian to order 4 = lap2h + corrections 
-                                lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + cxx*cxx1*d400(i1,i2,i3,0) + cyy*cyy1*d040(i1,i2,i3,0)   
-                ! --- Laplacian squared to order 2:
-                                lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
-                                lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
-                                lap2hSq(i1,i2,i3,0) =                      cxx*lap2h200(i1,i2,i3,0)   + cyy*lap2h020(i1,i2,i3,0)     
-                            end if ! mask .ne. 0
-                          end do
-                          end do
-                          end do
-                        numGhost1=1;
-                        n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                        n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                        n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                          do i3=n3a,n3b
-                          do i2=n2a,n2b
-                          do i1=n1a,n1b
-                            if( mask(i1,i2,i3).ne.0 )then
-                                d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
-                                d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
-                ! --- Laplacian to order 6 = lap4h + corrections 
-                                lap6h(i1,i2,i3,0) = lap4h(i1,i2,i3,0) + cxx*cxx2*d600(i1,i2,i3,0) + cyy*cyy2*d060(i1,i2,i3,0)   
-                                lap2hSq200(i1,i2,i3,0) = lap2hSq(i1+1,i2,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1-1,i2,i3,0)
-                                lap2hSq020(i1,i2,i3,0) = lap2hSq(i1,i2+1,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1,i2-1,i3,0)
-                                lap2hCubed(i1,i2,i3,0) =                    cxx*lap2hSq200(i1,i2,i3,0) + cyy*lap2hSq020(i1,i2,i3,0)   
-                ! --- Laplacian squared to order 4 = 
-                !  lap2h*( lap4h ) + corrections*( Lap2h )
-                                lap4h200(i1,i2,i3,0) = lap4h(i1+1,i2,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1-1,i2,i3,0)
-                                lap4h020(i1,i2,i3,0) = lap4h(i1,i2+1,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2-1,i3,0)
-                                lap2h400(i1,i2,i3,0) = lap2h200(i1+1,i2,i3,0) - 2*lap2h200(i1,i2,i3,0) + lap2h200(i1-1,i2,i3,0)
-                                lap2h040(i1,i2,i3,0) = lap2h020(i1,i2+1,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1,i2-1,i3,0)
-                                lap4hSq(i1,i2,i3,0) =                                       cxx*( lap4h200(i1,i2,i3,0) + cxx1*lap2h400(i1,i2,i3,0) )  + cyy*( lap4h020(i1,i2,i3,0) + cyy1*lap2h040(i1,i2,i3,0) )    
-                            end if ! mask .ne. 0
-                          end do
-                          end do
-                          end do
             ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                         numGhost1=0;
                         n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
@@ -471,31 +410,14 @@ czz=1./dx(2)**2;
                           do i2=n2a,n2b
                           do i1=n1a,n1b
                             if( mask(i1,i2,i3).ne.0 )then
-                                d800i = d600(i1+1,i2,i3,0) - 2*d600(i1,i2,i3,0) + d600(i1-1,i2,i3,0)
-                                d080i = d060(i1,i2+1,i3,0) - 2*d060(i1,i2,i3,0) + d060(i1,i2-1,i3,0)
-                ! --- Laplacian to order 8 = lap6h + corrections 
-                                lap8h = lap6h(i1,i2,i3,0)  + cxx*cxx3*d800i  + cyy*cyy3*d080i    
-                ! --- Laplacian^4 4p (4th power) order 2: 
-                                lap2hCubed200i = lap2hCubed(i1+1,i2,i3,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1-1,i2,i3,0)
-                                lap2hCubed020i = lap2hCubed(i1,i2+1,i3,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1,i2-1,i3,0)
-                                lap2h4p =                   + cxx*lap2hCubed200i   + cyy*lap2hCubed020i     
-                ! --- Laplacian squared to order 6 :
-                !   Lap6h = Lap4h + M4  = (Lap2h) + M2 + M4 
-                !   Lap6h*Lap6h = [ (Lap2h) + M2 + M4 ] [ (Lap2h) + M2 + M4 ]
-                !               = Lap2h*Lap6h + M2*Lap4h + M4*Lap2h + O(h^6)
-                                lap6h200i = lap6h(i1+1,i2,i3,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1-1,i2,i3,0)
-                                lap6h020i = lap6h(i1,i2+1,i3,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1,i2-1,i3,0)
-                                lap4h400i = lap4h200(i1+1,i2,i3,0) - 2*lap4h200(i1,i2,i3,0) + lap4h200(i1-1,i2,i3,0)
-                                lap4h040i = lap4h020(i1,i2+1,i3,0) - 2*lap4h020(i1,i2,i3,0) + lap4h020(i1,i2-1,i3,0)
-                                lap2h600i = lap2h400(i1+1,i2,i3,0) - 2*lap2h400(i1,i2,i3,0) + lap2h400(i1-1,i2,i3,0)
-                                lap2h060i = lap2h040(i1,i2+1,i3,0) - 2*lap2h040(i1,i2,i3,0) + lap2h040(i1,i2-1,i3,0)
-                                lap6hSq =                                                    cxx*(lap6h200i + cxx1*lap4h400i + cxx2*lap2h600i ) + cyy*(lap6h020i + cyy1*lap4h040i + cyy2*lap2h060i )   
-                ! --- Laplacian CUBED to order 4 
-                                lap4hSq200i = lap4hSq(i1+1,i2,i3,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1-1,i2,i3,0)
-                                lap4hSq020i = lap4hSq(i1,i2+1,i3,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1,i2-1,i3,0)
-                                lap2hSq400i = lap2hSq200(i1+1,i2,i3,0) - 2*lap2hSq200(i1,i2,i3,0) + lap2hSq200(i1-1,i2,i3,0)
-                                lap2hSq040i = lap2hSq020(i1,i2+1,i3,0) - 2*lap2hSq020(i1,i2,i3,0) + lap2hSq020(i1,i2-1,i3,0)
-                                lap4hCubed =                                         cxx*(lap4hSq200i + cxx1*lap2hSq400i )   + cyy*(lap4hSq020i + cyy1*lap2hSq040i )     
+                                d400i = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                d040i = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                ! --- Laplacian to order 4 = lap2h + corrections 
+                                lap4h = lap2h(i1,i2,i3,0) + cxx*cxx1*d400i + cyy*cyy1*d040i   
+                ! --- Laplacian squared to order 2:
+                                lap2h200i = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
+                                lap2h020i = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
+                                lap2hSq =                      cxx*lap2h200i   + cyy*lap2h020i     
                                     if( forcingOption.eq.twilightZoneForcing )then
                                                 call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
                                                 call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
@@ -521,124 +443,116 @@ czz=1./dx(2)**2;
                                         fv(m) = f(i1,i2,i3,0)
                                   end if
                 ! --- Modified equation space-time update ----
-                                un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m)  + cdtsq*( lap8h )               + cdtPow4By12*( lap6hSq )       + cdtPow6By360*( lap4hCubed )   + cdtPow8By20160*( lap2h4p )    + dtSq*fv(m)                      
+                                un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap4h )                         + cdtPow4By12*( lap2hSq )                   + dtSq*fv(m)                             
                             end if ! mask .ne. 0
                           end do
                           end do
                           end do
-        !   #If 8 == 2
+        !   #If 4 == 2
         !     #If "rectangular" eq "rectangular"
         !       #If "2" eq "2" 
-        !         update2dOrder2Rectangular(2,8,2,rectangular)
+        !         update2dOrder2Rectangular(2,4,2,rectangular)
         !       #Elif "2" eq "3"
         !         ! stop 2222
-        !         update3dOrder2Rectangular(2,8,2,rectangular)
+        !         update3dOrder2Rectangular(2,4,2,rectangular)
         !       #Else
         !         stop 8888
         !       #End
         !     #Else
         !       #If "2" eq "2" 
-        !         update2dOrder2Curvilinear(2,8,2,rectangular)
+        !         update2dOrder2Curvilinear(2,4,2,rectangular)
         !       #Elif "2" eq "3"
         !         ! stop 7474
-        !         update3dOrder2Curvilinear(2,8,2,rectangular)
+        !         update3dOrder2Curvilinear(2,4,2,rectangular)
         !       #Else
         !         stop 8888
         !       #End        
         !     #End
-        !   #Elif 8 == 4
+        !   #Elif 4 == 4
         !     #If "rectangular" eq "rectangular"
         !       #If "2" eq "2" 
-        !         update2dOrder4Rectangular(2,8,2,rectangular)
+        !         update2dOrder4Rectangular(2,4,2,rectangular)
         !       #Elif "2" eq "3"
         !         ! stop 747
-        !         update3dOrder4Rectangular(2,8,2,rectangular)
+        !         update3dOrder4Rectangular(2,4,2,rectangular)
         !       #Else
         !         stop 8888
         !       #End
         !     #Else
         !       #If "2" eq "2" 
-        !         update2dOrder4Curvilinear(2,8,2,rectangular)
+        !         update2dOrder4Curvilinear(2,4,2,rectangular)
         !       #Elif "2" eq "3"
         !         ! stop 7474
-        !         update3dOrder4Curvilinear(2,8,2,rectangular)
+        !         update3dOrder4Curvilinear(2,4,2,rectangular)
         !       #Else
         !         stop 8888
         !       #End        
         !     #End  
-        !   #Elif 8 == 6 
+        !   #Elif 4 == 6 
         !     #If "rectangular" eq "rectangular"
         !       #If "2" eq "2" 
-        !         update2dOrder6Rectangular(2,8,2,rectangular)
+        !         update2dOrder6Rectangular(2,4,2,rectangular)
         !       #Elif "2" eq "3"
         !         ! stop 727
-        !         update3dOrder6Rectangular(2,8,2,rectangular)
+        !         update3dOrder6Rectangular(2,4,2,rectangular)
         !       #Else
         !         stop 8888
         !       #End
         !     #Else
         !       #If "2" eq "2" 
-        !         update2dOrder6Curvilinear(2,8,2,rectangular)
+        !         update2dOrder6Curvilinear(2,4,2,rectangular)
         !       #Elif "2" eq "3"
         !         ! stop 7474
-        !         update3dOrder6Curvilinear(2,8,2,rectangular)
+        !         update3dOrder6Curvilinear(2,4,2,rectangular)
         !       #Else
         !         stop 8888
         !       #End        
         !     #End 
-        !   #Elif 8 == 8 
+        !   #Elif 4 == 8 
         !     #If "rectangular" eq "rectangular"
         !       #If "2" eq "2" 
-        !         update2dOrder8Rectangular(2,8,2,rectangular)
+        !         update2dOrder8Rectangular(2,4,2,rectangular)
         !       #Elif "2" eq "3"
         !         ! stop 820
-        !         update3dOrder8Rectangular(2,8,2,rectangular)
+        !         update3dOrder8Rectangular(2,4,2,rectangular)
         !       #Else
         !         stop 8888
         !       #End
         !     #Else
         !       #If "2" eq "2" 
-        !         update2dOrder8Curvilinear(2,8,2,rectangular)
+        !         update2dOrder8Curvilinear(2,4,2,rectangular)
         !       #Elif "2" eq "3"
         !         ! stop 7474
-        !         update3dOrder8Curvilinear(2,8,2,rectangular)
+        !         update3dOrder8Curvilinear(2,4,2,rectangular)
         !       #Else
         !         stop 8888
         !       #End        
         !     #End  
         !   #Else
-        !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=2 order=8 orderInTime=2, gridType=rectangular")') 
+        !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=2 order=4 orderInTime=2, gridType=rectangular")') 
         !     stop 6666
         !   #End
               else
                       if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
-                          write(*,'("advWaveME: ADVANCE dim=2 order=8 orderInTime=8, grid=rectangular... t=",e10.2)') t
+                          write(*,'("advWaveME: ADVANCE dim=2 order=4 orderInTime=4, grid=rectangular... t=",e10.2)') t
                       end if
                       m=0 ! component number 
                       ec = 0 ! component number 
            ! -- call the appropriate macro:
-           !  update2dOrder2Rectangular(2,8,8,rectangular)
-           !  update3dOrder6Curvilinear(2,8,8,rectangular)
+           !  update2dOrder2Rectangular(2,4,4,rectangular)
+           !  update3dOrder6Curvilinear(2,4,4,rectangular)
              ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
              ! Example: 
              ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
-cx0 = 1.; cx1 = -1/6.; cx2 = 1/30.; cx3 = -1/140.; 
-cy0 = 1.; cy1 = -1/6.; cy2 = 1/30.; cy3 = -1/140.; 
-cxx0 = 1.; cxx1 = -1/12.; cxx2 = 1/90.; cxx3 = -1/560.; 
-cyy0 = 1.; cyy1 = -1/12.; cyy2 = 1/90.; cyy3 = -1/560.; 
-cxxx0 = 1.; cxxx1 = -1/4.; cxxx2 = 7/120.; cxxx3 = -41/3024.; 
-cyyy0 = 1.; cyyy1 = -1/4.; cyyy2 = 7/120.; cyyy3 = -41/3024.; 
-cxxxx0 = 1.; cxxxx1 = -1/6.; cxxxx2 = 7/240.; cxxxx3 = -41/7560.; 
-cyyyy0 = 1.; cyyyy1 = -1/6.; cyyyy2 = 7/240.; cyyyy3 = -41/7560.; 
-cxxxxx0 = 1.; cxxxxx1 = -1/3.; cxxxxx2 = 13/144.; cxxxxx3 = -139/6048.; 
-cyyyyy0 = 1.; cyyyyy1 = -1/3.; cyyyyy2 = 13/144.; cyyyyy3 = -139/6048.; 
-cxxxxxx0 = 1.; cxxxxxx1 = -1/4.; cxxxxxx2 = 13/240.; cxxxxxx3 = -139/12096.; 
-cyyyyyy0 = 1.; cyyyyyy1 = -1/4.; cyyyyyy2 = 13/240.; cyyyyyy3 = -139/12096.; 
+cx0 = 1.; cx1 = -1/6.; 
+cy0 = 1.; cy1 = -1/6.; 
+cxx0 = 1.; cxx1 = -1/12.; 
+cyy0 = 1.; cyy1 = -1/12.; 
 cxx=1./dx(0)**2;
 cyy=1./dx(1)**2;
 czz=1./dx(2)**2;
                           fv(m)=0.
-                          numGhost1=3;
+                          numGhost1=1;
                           n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                           n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                           n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
@@ -653,52 +567,6 @@ czz=1./dx(2)**2;
                             end do
                             end do
                             end do
-                          numGhost1=2;
-                          n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                          n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                          n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                            do i3=n3a,n3b
-                            do i2=n2a,n2b
-                            do i1=n1a,n1b
-                              if( mask(i1,i2,i3).ne.0 )then
-                                  d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
-                                  d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
-                 ! --- Laplacian to order 4 = lap2h + corrections 
-                                  lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + cxx*cxx1*d400(i1,i2,i3,0) + cyy*cyy1*d040(i1,i2,i3,0)   
-                 ! --- Laplacian squared to order 2:
-                                  lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
-                                  lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
-                                  lap2hSq(i1,i2,i3,0) =                      cxx*lap2h200(i1,i2,i3,0)   + cyy*lap2h020(i1,i2,i3,0)     
-                              end if ! mask .ne. 0
-                            end do
-                            end do
-                            end do
-                          numGhost1=1;
-                          n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                          n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                          n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                            do i3=n3a,n3b
-                            do i2=n2a,n2b
-                            do i1=n1a,n1b
-                              if( mask(i1,i2,i3).ne.0 )then
-                                  d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
-                                  d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
-                 ! --- Laplacian to order 6 = lap4h + corrections 
-                                  lap6h(i1,i2,i3,0) = lap4h(i1,i2,i3,0) + cxx*cxx2*d600(i1,i2,i3,0) + cyy*cyy2*d060(i1,i2,i3,0)   
-                                  lap2hSq200(i1,i2,i3,0) = lap2hSq(i1+1,i2,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1-1,i2,i3,0)
-                                  lap2hSq020(i1,i2,i3,0) = lap2hSq(i1,i2+1,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1,i2-1,i3,0)
-                                  lap2hCubed(i1,i2,i3,0) =                    cxx*lap2hSq200(i1,i2,i3,0) + cyy*lap2hSq020(i1,i2,i3,0)   
-                 ! --- Laplacian squared to order 4 = 
-                 !  lap2h*( lap4h ) + corrections*( Lap2h )
-                                  lap4h200(i1,i2,i3,0) = lap4h(i1+1,i2,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1-1,i2,i3,0)
-                                  lap4h020(i1,i2,i3,0) = lap4h(i1,i2+1,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2-1,i3,0)
-                                  lap2h400(i1,i2,i3,0) = lap2h200(i1+1,i2,i3,0) - 2*lap2h200(i1,i2,i3,0) + lap2h200(i1-1,i2,i3,0)
-                                  lap2h040(i1,i2,i3,0) = lap2h020(i1,i2+1,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1,i2-1,i3,0)
-                                  lap4hSq(i1,i2,i3,0) =                                       cxx*( lap4h200(i1,i2,i3,0) + cxx1*lap2h400(i1,i2,i3,0) )  + cyy*( lap4h020(i1,i2,i3,0) + cyy1*lap2h040(i1,i2,i3,0) )    
-                              end if ! mask .ne. 0
-                            end do
-                            end do
-                            end do
              ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                           numGhost1=0;
                           n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
@@ -708,31 +576,14 @@ czz=1./dx(2)**2;
                             do i2=n2a,n2b
                             do i1=n1a,n1b
                               if( mask(i1,i2,i3).ne.0 )then
-                                  d800i = d600(i1+1,i2,i3,0) - 2*d600(i1,i2,i3,0) + d600(i1-1,i2,i3,0)
-                                  d080i = d060(i1,i2+1,i3,0) - 2*d060(i1,i2,i3,0) + d060(i1,i2-1,i3,0)
-                 ! --- Laplacian to order 8 = lap6h + corrections 
-                                  lap8h = lap6h(i1,i2,i3,0)  + cxx*cxx3*d800i  + cyy*cyy3*d080i    
-                 ! --- Laplacian^4 4p (4th power) order 2: 
-                                  lap2hCubed200i = lap2hCubed(i1+1,i2,i3,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1-1,i2,i3,0)
-                                  lap2hCubed020i = lap2hCubed(i1,i2+1,i3,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1,i2-1,i3,0)
-                                  lap2h4p =                   + cxx*lap2hCubed200i   + cyy*lap2hCubed020i     
-                 ! --- Laplacian squared to order 6 :
-                 !   Lap6h = Lap4h + M4  = (Lap2h) + M2 + M4 
-                 !   Lap6h*Lap6h = [ (Lap2h) + M2 + M4 ] [ (Lap2h) + M2 + M4 ]
-                 !               = Lap2h*Lap6h + M2*Lap4h + M4*Lap2h + O(h^6)
-                                  lap6h200i = lap6h(i1+1,i2,i3,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1-1,i2,i3,0)
-                                  lap6h020i = lap6h(i1,i2+1,i3,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1,i2-1,i3,0)
-                                  lap4h400i = lap4h200(i1+1,i2,i3,0) - 2*lap4h200(i1,i2,i3,0) + lap4h200(i1-1,i2,i3,0)
-                                  lap4h040i = lap4h020(i1,i2+1,i3,0) - 2*lap4h020(i1,i2,i3,0) + lap4h020(i1,i2-1,i3,0)
-                                  lap2h600i = lap2h400(i1+1,i2,i3,0) - 2*lap2h400(i1,i2,i3,0) + lap2h400(i1-1,i2,i3,0)
-                                  lap2h060i = lap2h040(i1,i2+1,i3,0) - 2*lap2h040(i1,i2,i3,0) + lap2h040(i1,i2-1,i3,0)
-                                  lap6hSq =                                                    cxx*(lap6h200i + cxx1*lap4h400i + cxx2*lap2h600i ) + cyy*(lap6h020i + cyy1*lap4h040i + cyy2*lap2h060i )   
-                 ! --- Laplacian CUBED to order 4 
-                                  lap4hSq200i = lap4hSq(i1+1,i2,i3,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1-1,i2,i3,0)
-                                  lap4hSq020i = lap4hSq(i1,i2+1,i3,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1,i2-1,i3,0)
-                                  lap2hSq400i = lap2hSq200(i1+1,i2,i3,0) - 2*lap2hSq200(i1,i2,i3,0) + lap2hSq200(i1-1,i2,i3,0)
-                                  lap2hSq040i = lap2hSq020(i1,i2+1,i3,0) - 2*lap2hSq020(i1,i2,i3,0) + lap2hSq020(i1,i2-1,i3,0)
-                                  lap4hCubed =                                         cxx*(lap4hSq200i + cxx1*lap2hSq400i )   + cyy*(lap4hSq020i + cyy1*lap2hSq040i )     
+                                  d400i = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                  d040i = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                 ! --- Laplacian to order 4 = lap2h + corrections 
+                                  lap4h = lap2h(i1,i2,i3,0) + cxx*cxx1*d400i + cyy*cyy1*d040i   
+                 ! --- Laplacian squared to order 2:
+                                  lap2h200i = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
+                                  lap2h020i = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
+                                  lap2hSq =                      cxx*lap2h200i   + cyy*lap2h020i     
                                       if( forcingOption.eq.twilightZoneForcing )then
                                                   call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
                                                   call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
@@ -745,22 +596,6 @@ czz=1./dx(2)**2;
                                                     call ogDeriv(ep, 0,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxxyy(m) )
                                                     call ogDeriv(ep, 0,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyyyy(m) )
                                                 fv(m) = fv(m) + (dtSq/12.)*evtttt(m) - (cdtsq12/dtSq)*( evxxxx(m) + 2.*evxxyy(m) + evyyyy(m) )
-                        ! Correct forcing for sixth-order ME in 2D
-                                                    call ogDeriv(ep, 6,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtttttt(m) )
-                                                    call ogDeriv(ep, 0,6,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxxxxxx(m) )
-                                                    call ogDeriv(ep, 0,4,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxxxxyy(m) )
-                                                    call ogDeriv(ep, 0,2,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxxyyyy(m) )
-                                                    call ogDeriv(ep, 0,0,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyyyyyy(m) )
-                                                fv(m) = fv(m) + (dtSq**2/360.)*evtttttt(m) - (cdtPow6By360/dtSq)*( evxxxxxx(m) + evyyyyyy(m) + 3.*(evxxxxyy(m) + evxxyyyy(m) )  )
-                        ! Correct forcing for eighth-order ME in 2D
-                                                    call ogDeriv(ep, 8,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,uet8 )
-                                                    call ogDeriv(ep, 0,8,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,uex8 )
-                                                    call ogDeriv(ep, 0,6,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,uex6y2 )
-                                                    call ogDeriv(ep, 0,4,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,uex4y4 )
-                                                    call ogDeriv(ep, 0,2,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,uex2y6 )
-                                                    call ogDeriv(ep, 0,0,8,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,uey8 )
-                        ! (x*x + y*y)^4 = x^8 + 4*x^6*y^2 + 6*x^4*y^4 + 4*x^2*y^6 + y^8
-                                                fv(m) = fv(m) + (dtSq**3/20160.)*uet8 - (cdtPow8By20160/dtSq)*( uex8 + uey8   + 4.*(uex6y2 + uex2y6 ) +6.*uex4y4 )
                                     else if( forcingOption.eq.helmholtzForcing )then
                      ! forcing for solving the Helmholtz equation   
                      ! NOTE: change sign of forcing since for Helholtz we want to solve
@@ -780,93 +615,93 @@ czz=1./dx(2)**2;
                                           fv(m) = f(i1,i2,i3,0)
                                     end if
                  ! --- Modified equation space-time update ----
-                                  un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m)  + cdtsq*( lap8h )               + cdtPow4By12*( lap6hSq )       + cdtPow6By360*( lap4hCubed )   + cdtPow8By20160*( lap2h4p )    + dtSq*fv(m)                      
+                                  un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap4h )                         + cdtPow4By12*( lap2hSq )                   + dtSq*fv(m)                             
                               end if ! mask .ne. 0
                             end do
                             end do
                             end do
-         !   #If 8 == 2
+         !   #If 4 == 2
          !     #If "rectangular" eq "rectangular"
          !       #If "2" eq "2" 
-         !         update2dOrder2Rectangular(2,8,8,rectangular)
+         !         update2dOrder2Rectangular(2,4,4,rectangular)
          !       #Elif "2" eq "3"
          !         ! stop 2222
-         !         update3dOrder2Rectangular(2,8,8,rectangular)
+         !         update3dOrder2Rectangular(2,4,4,rectangular)
          !       #Else
          !         stop 8888
          !       #End
          !     #Else
          !       #If "2" eq "2" 
-         !         update2dOrder2Curvilinear(2,8,8,rectangular)
+         !         update2dOrder2Curvilinear(2,4,4,rectangular)
          !       #Elif "2" eq "3"
          !         ! stop 7474
-         !         update3dOrder2Curvilinear(2,8,8,rectangular)
+         !         update3dOrder2Curvilinear(2,4,4,rectangular)
          !       #Else
          !         stop 8888
          !       #End        
          !     #End
-         !   #Elif 8 == 4
+         !   #Elif 4 == 4
          !     #If "rectangular" eq "rectangular"
          !       #If "2" eq "2" 
-         !         update2dOrder4Rectangular(2,8,8,rectangular)
+         !         update2dOrder4Rectangular(2,4,4,rectangular)
          !       #Elif "2" eq "3"
          !         ! stop 747
-         !         update3dOrder4Rectangular(2,8,8,rectangular)
+         !         update3dOrder4Rectangular(2,4,4,rectangular)
          !       #Else
          !         stop 8888
          !       #End
          !     #Else
          !       #If "2" eq "2" 
-         !         update2dOrder4Curvilinear(2,8,8,rectangular)
+         !         update2dOrder4Curvilinear(2,4,4,rectangular)
          !       #Elif "2" eq "3"
          !         ! stop 7474
-         !         update3dOrder4Curvilinear(2,8,8,rectangular)
+         !         update3dOrder4Curvilinear(2,4,4,rectangular)
          !       #Else
          !         stop 8888
          !       #End        
          !     #End  
-         !   #Elif 8 == 6 
+         !   #Elif 4 == 6 
          !     #If "rectangular" eq "rectangular"
          !       #If "2" eq "2" 
-         !         update2dOrder6Rectangular(2,8,8,rectangular)
+         !         update2dOrder6Rectangular(2,4,4,rectangular)
          !       #Elif "2" eq "3"
          !         ! stop 727
-         !         update3dOrder6Rectangular(2,8,8,rectangular)
+         !         update3dOrder6Rectangular(2,4,4,rectangular)
          !       #Else
          !         stop 8888
          !       #End
          !     #Else
          !       #If "2" eq "2" 
-         !         update2dOrder6Curvilinear(2,8,8,rectangular)
+         !         update2dOrder6Curvilinear(2,4,4,rectangular)
          !       #Elif "2" eq "3"
          !         ! stop 7474
-         !         update3dOrder6Curvilinear(2,8,8,rectangular)
+         !         update3dOrder6Curvilinear(2,4,4,rectangular)
          !       #Else
          !         stop 8888
          !       #End        
          !     #End 
-         !   #Elif 8 == 8 
+         !   #Elif 4 == 8 
          !     #If "rectangular" eq "rectangular"
          !       #If "2" eq "2" 
-         !         update2dOrder8Rectangular(2,8,8,rectangular)
+         !         update2dOrder8Rectangular(2,4,4,rectangular)
          !       #Elif "2" eq "3"
          !         ! stop 820
-         !         update3dOrder8Rectangular(2,8,8,rectangular)
+         !         update3dOrder8Rectangular(2,4,4,rectangular)
          !       #Else
          !         stop 8888
          !       #End
          !     #Else
          !       #If "2" eq "2" 
-         !         update2dOrder8Curvilinear(2,8,8,rectangular)
+         !         update2dOrder8Curvilinear(2,4,4,rectangular)
          !       #Elif "2" eq "3"
          !         ! stop 7474
-         !         update3dOrder8Curvilinear(2,8,8,rectangular)
+         !         update3dOrder8Curvilinear(2,4,4,rectangular)
          !       #Else
          !         stop 8888
          !       #End        
          !     #End  
          !   #Else
-         !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=2 order=8 orderInTime=8, gridType=rectangular")') 
+         !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=2 order=4 orderInTime=4, gridType=rectangular")') 
          !     stop 6666
          !   #End
               end if 

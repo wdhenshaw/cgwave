@@ -1,0 +1,39 @@
+************************************************************************************************************
+************************************************************************************************************
+   This file contains performance runs 
+************************************************************************************************************
+************************************************************************************************************
+
+set perf = $wave/performance
+
+cd /Users/henshaw/Dropbox/research/cgwave/runs/performance
+
+****************************
+****** Sun July 31, 2022
+
+(1) make -s | tee perf.dat
+
+(2) getPerfArrays.p perf.dat > perfData.m
+
+
+cg6:~/runs/cgWave/performance> make -s | tee perf.dat
+  square1024 & 2 & MEHA  & 1.1M  &     9.8 &     8.6 &     5.8 &     0.0 &     1.8 &     0.0   \\
+  square1024 & 4 & MEHA  & 1.1M  &    17.4 &    16.3 &    13.4 &     0.0 &     1.9 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    37.7 &    36.4 &    32.8 &     0.0 &     2.7 &     0.1   \\
+\hline
+  nonSquare1024 & 2 & MEHA  & 1.1M  &    14.0 &    12.2 &     8.6 &     0.0 &     2.3 &     0.1   \\
+  nonSquare1024 & 4 & MEHA  & 1.1M  &    32.1 &    29.8 &    25.2 &     0.0 &     3.3 &     0.1   \\
+  nonSquare1024 & 6 & MEHA  & 1.1M  &    81.5 &    77.9 &    61.3 &     0.0 &    15.4 &     0.1   \\
+
+****************************
+****** Sat July 30, 2022
+
+START ON extracting performance data --> SEE MAKEFILE
+
+cgWave -noplot ../known/known.cmd -g=box16.order4.hdf -kx=1 -ky=1 -kz=1 -tf=.2 -tp=.2 -known=squareEig -upwind=0 -orderInTime=4 -debug=0 -meApproach=ha -bcApproach=cbc -go=go
+
+cgWave -noplot ../known/known.cmd -g=square1024.order4.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=4 -debug=0 -meApproach=ha -bcApproach=cbc -go=go > junk.out
+
+getPerfResults.p cgWave.out
+
+
