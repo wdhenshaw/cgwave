@@ -9,6 +9,8 @@
 #include "DBase.hh"
 using namespace DBase;
 
+class LcbcData;
+
 class CgWave
 {
 
@@ -30,7 +32,8 @@ enum InitialConditionOptionEnum
   zeroInitialCondition=0,
   twilightZoneInitialCondition,
   knownSolutionInitialCondition,
-  pulseInitialCondition
+  pulseInitialCondition,
+  randomInitialCondition
 };
 
 enum ForcingOptionEnum
@@ -76,6 +79,13 @@ enum BoundaryConditionApproachEnum
   useLocalCompatibilityBoundaryConditions
 };
 
+enum AssignInterpolationNeighboursEnum
+{
+  defaultAssignInterpNeighbours=0,
+  extrapolateInterpNeighbours,
+  interpolateInterpNeighbours
+};
+
 CgWave(CompositeGrid & cg, GenericGraphicsInterface & gi);
 ~CgWave();
 
@@ -101,7 +111,8 @@ real getErrors( realCompositeGridFunction & u, real t );
 // Fill RHS for direct Helmholtz solver
 int getHelmholtzForcing( realCompositeGridFunction & f  );
 
-void getLcbcData(MappedGrid & mg, Real **&fn, Real **&gn, RealArray tmpGn[], RealArray tmpFn[], Real t );
+// void getLcbcData(MappedGrid & mg, Real **&fn, Real **&gn, RealArray tmpGn[], RealArray tmpFn[], Real t );
+void getLcbcData(MappedGrid & mg, LcbcData *&fn, LcbcData *&gn, RealArray tmpGn[], RealArray tmpFn[], Real t );
 
 void getInitialConditions( int current, real t, bool getTimeDerivative = false );
 
@@ -135,6 +146,10 @@ int outputResults( int current, real t );
 int printStatistics(FILE *file = stdout );
 
 int plot( int current, real t, real dt );
+
+int saveSequenceInfo( real t0, RealArray & sequenceData );
+
+int saveSequencesToShowFile();
 
 int saveShow( int current, Real t, Real dt );
 

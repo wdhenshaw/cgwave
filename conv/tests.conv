@@ -12,11 +12,14 @@ $CGBUILDPREFIX=$ENV{CGBUILDPREFIX};
 $CGWAVE=$ENV{CGWAVE}; # directory for cgWave repo
 $cgWave = "$CGWAVE/bin/cgWave";  # command for cgWave
 $cmdDir="$CGWAVE";  
+# printf("here 1\n");
 $tf=.5; $tp=.1; $order = "2"; $ng=3; $interp="i"; $cfl=.9; $radius=.5; $bg="box";
-$bc=d"; # d or n 
+$bc="d"; # d or n 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat rectangular grids explicitly
 $kx=1; $ky=0; $kz=0; 
-$tz="poly"; $degreeInSpace=2; $degreeInTime=2; 
+# printf("here 2\n");
+$tz="poly"; $degreeInSpace=2; $degreeInTime=2; $implicitUpwind=0;
 $nBessel=1; $mTheta=1; 
 $ts="explicit"; $dtMax=1e10; 
 $orderInTime=-1;  # -1 = use default
@@ -24,13 +27,15 @@ $upwind=0;
 $errorNorm=0; $method=""; 
 $alwaysCompute=1; $saveVectorErrors=0; 
 $numberOfDimensions=2; 
+$meApproach="std";   # or "ha"
+# printf("here 3\n");
 #
 GetOptions( "name=s"=>\$name,"order=s"=>\$order,"ng=i"=>\$ng,"tf=f"=>\$tf,"interp=s"=>\$interp,\
             "fixed=s"=>\$fixed,"cfl=f"=>\$cfl,"alwaysCompute=i"=>\$alwaysCompute,"tp=f"=>\$tp,\
             "errorNorm=i"=>\$errorNorm,"cg=s"=>\$cg,"option=s"=>\$option,"upwind=i"=>\$upwind,\
             "kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,\
-            "orderInTime=i"=>\$orderInTime,"nBessel=i"=>\$nBessel,"mTheta=i"=>\$mTheta,\
-            "bcApproach=s"=>\$bcApproach,"bc=s"=>\$bc,\
+            "orderInTime=i"=>\$orderInTime,"nBessel=i"=>\$nBessel,"mTheta=i"=>\$mTheta,"implicitUpwind=i"=>\$implicitUpwind,\
+            "bcApproach=s"=>\$bcApproach,"bc=s"=>\$bc,"meApproach=s"=>\$meApproach,"rectangular=s"=>\$rectangular,\
             "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\$degreeInTime );
 # --------------------------------------------------------------------------
 $name=$option; 
@@ -46,15 +51,18 @@ if( $cg =~ /nonBoxnpp/ ){ $bg="box"; }
 # 
 if( $cg =~ /box*/ || $cg =~ /nonBox*/ || $cg =~ /unitBox*/ || $cg =~ /unitNonBox*/ || $cg =~ /refineBox*/ || $cg =~ /refineNonBox*/ ){ $numberOfDimensions=3; }
 $extraLabel ="";
-if( $bcApproach eq "cbc" ){ $extraLabel=$bcApproach; }
+if( $ts eq "implicit" && $rectangular eq "implicit" ){ $extraLabel="Implicit"; }
+if( $ts eq "implicit" && $rectangular eq "explicit" ){ $extraLabel="IMEX"; }
+if( $implicitUpwind eq "0" ){ $extraLabel .= "UWC"; }
+if( $bcApproach eq "cbc" ){ $extraLabel .=$bcApproach; }
 if( $bc eq "n" ){ $extraLabel .= "Neumann"; }
 #
 if( $errorNorm eq 0 ){ $normName = "max"; }elsif( $errorNorm eq 1 ){ $normName = "L1";}\
    elsif( $errorNorm eq 2 ){ $normName = "L2"; }else{ $normName="UnknownNorm"; }
 # 
-$outputFile="$name$method$cg$extraLabel" . "Order$order" . $normName . "NormConvTable.tex"; 
+$outputFile="$name$method$cg$extraLabel" . "Order$order" . $bcApproach . $normName . "NormConvTable.tex"; 
 #
-$caseName="$name$method$cg\Order$order";
+$caseName="$name$method$bcApproach$cg\Order$order";
 $caseName .= $normName . "Norm";
 #
 #
@@ -64,14 +72,16 @@ $numberOfComponents=1;
 $title= "grid  \& N \&  \$ u \$ ";
 #
 $labelMethod=$method;
-$caption= "\\caption\{CgWave, $name, $normName norm, order=\$$order\$, ts=$ts, orderInTime=$orderInTime, dtMax0=\$$dtMax\$, \$t=$tf\$, cfl=\$$cfl\$, upwind=$upwind, bc=$bc, bcApproach=$bcApproach, $known, kx=$kx, ky=$ky, kz=$kz, nBessel=$nBessel, mTheta=$mTheta, -tz=$tz, degreeInSpace=$degreeInSpace, -degreeInTime=$degreeInTime, $date}\\label\{table:$name" . $method . "Order$order$normName}"; 
+if( $ts eq "implicit" ){ $extraCaptions = ", -rectangular=$rectangular, -implicitUpwind=$implicitUpwind"; }
+$caption= "\\caption\{CgWave, $name, $normName norm, order=\$$order\$, ts=$ts, orderInTime=$orderInTime, dtMax0=\$$dtMax\$, \$t=$tf\$, cfl=\$$cfl\$, upwind=$upwind, bc=$bc, bcApproach=$bcApproach, meApproach=$meApproach, $known, kx=$kx, ky=$ky, kz=$kz, nBessel=$nBessel, mTheta=$mTheta, -tz=$tz, degreeInSpace=$degreeInSpace, -degreeInTime=$degreeInTime, $extraCaptions, $date}\\label\{table:$name" . $method . "Order$order$normName}"; 
 # 
-$options = "-cfl=$cfl -tf=$tf -tp=$tp -kx=$kx -ky=$ky -kz=$kz -nBessel=$nBessel -mTheta=$mTheta -ts=$ts -orderInTime=$orderInTime -upwind=$upwind -bc=$bc -bcApproach=$bcApproach $known -go=go";
+$options = "-cfl=$cfl -tf=$tf -tp=$tp -kx=$kx -ky=$ky -kz=$kz -nBessel=$nBessel -mTheta=$mTheta -ts=$ts -orderInTime=$orderInTime -upwind=$upwind -implicitUpwind=$implicitUpwind -rectangular=$rectangular -bc=$bc -bcApproach=$bcApproach -meApproach=$meApproach $known -go=go";
 if( $option eq "tz" ){ $options .= " -tz=$tz -degreeInSpace=$degreeInSpace -degreeInTime=$degreeInTime"; }
 #
 $suffix="";
 if( ($upwind == 1 ) && ($order eq 4) ){ $suffix=".ng3"; }
 if( ($upwind == 1 ) && ($order eq 6) ){ $suffix=".ng4"; }
+if( ($upwind == 1 ) && ($order eq 8) ){ $suffix=".ng5"; }
 $grid1=$cg . "2";   $gName1 = $cg . "e2.order$order$suffix"; 
 $grid2=$cg . "4";   $gName2 = $cg . "e4.order$order$suffix"; 
 $grid3=$cg . "8";   $gName3 = $cg . "e8.order$order$suffix"; 
@@ -162,7 +172,7 @@ $grid5=$cg . "32";  $gName5 = "annulus32.order$order$suffix";\
 $grid6=$cg . "64";  $gName6 = "annulus64.order$order$suffix";\
 }
 # For implicit schemes we set dtMax to be proportional to dx
-if( $ng > 0 ){ $grid=$grid1; $res=1;   $dtm=$dtMax/$res; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName1 $options -dtMax=$dtm";  }
+if( $ng > 0 ){ $grid=$grid1; $res=1;   $dtm=$dtMax/$res; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName1 $options -dtMax=$dtm";}
 if( $ng > 1 ){ $grid=$grid2; $res=2;   $dtm=$dtMax/$res; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName2 $options -dtMax=$dtm";}
 if( $ng > 2 ){ $grid=$grid3; $res=4;   $dtm=$dtMax/$res; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName3 $options -dtMax=$dtm";}
 if( $ng > 3 ){ $grid=$grid4; $res=8;   $dtm=$dtMax/$res; $cmd="$cgWave -noplot $cmdDir/$cmdFile -g=$gName4 $options -dtMax=$dtm";}

@@ -6,8 +6,6 @@
 !
 ! ==================================================================================
 
-
-
 ! From bcOptSmFOS.bf
 ! DataBase *pdb = &parameters.dbase;
 ! double precision pdb  ! pointer to data base

@@ -1,3 +1,168 @@
+
+************************************************************************
+********* Wed Aug 17, 2022
+
+START tests of implicit scheme
+
+IMEXPUC22 -- IMEX
+conv.p tests.conv -option=diskEig -cg=sic -order=2 -tf=.65 -tp=.65 -upwind=1 -cfl=.9 -ts=implicit -implicitUpwind=0 -rectangular=explicit -ng=4
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 8.70e-03 &       
+      sic4 &     2 & 1.30e-03 &  6.69 
+      sic8 &     4 & 2.92e-04 &  4.45 
+     sic16 &     8 & 7.00e-05 &  4.17 
+Convergence rates: c0=2.30
+
+
+IPUC22 -- upwinding corrector
+conv.p tests.conv -option=diskEig -cg=sic -order=2 -tf=.65 -tp=.65 -upwind=1 -cfl=.9 -ts=implicit -implicitUpwind=0 -ng=4
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 1.76e-02 &       
+      sic4 &     2 & 4.82e-03 &  3.65 
+      sic8 &     4 & 1.25e-03 &  3.86 
+     sic16 &     8 & 3.19e-04 &  3.92 
+Convergence rates: c0=1.93 
+
+ ****Output written to ./diskEigsicImplicitUWCOrder2oneSidedmaxNormConvTable.tex *****
+
+
+
+FD22 -- fully implicit
+conv.p tests.conv -option=diskEig -cg=sic -order=2 -tf=.65 -tp=.65 -upwind=1 -cfl=.9 -ts=implicit -implicitUpwind=1 -ng=4
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 5.32e-03 &       
+      sic4 &     2 & 9.80e-04 &  5.43 
+      sic8 &     4 & 1.89e-04 &  5.19 
+     sic16 &     8 & 5.19e-05 &  3.64 
+Convergence rates: c0=2.24 
+
+************************************************************************
+********* Wed Aug 10, 2022
+
+more tests of FAME scheme
+
+
+FD88
+conv.p tests.conv -option=diskEig -cg=sic -order=8 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=4
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 5.96e-08 &       
+      sic4 &     2 & 1.10e-10 &541.82 
+      sic8 &     4 & 3.54e-13 &310.73 
+Convergence rates: c0=8.68 
+
+FD66
+conv.p tests.conv -option=diskEig -cg=sic -order=6 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=4
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 1.60e-06 &       
+      sic4 &     2 & 2.02e-08 & 79.21 
+      sic8 &     4 & 2.79e-10 & 72.40 
+     sic16 &     8 & 4.10e-12 & 68.05 
+Convergence rates: c0=6.19 
+
+FD44
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=4
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 8.10e-05 &       
+      sic4 &     2 & 4.55e-06 & 17.80 
+      sic8 &     4 & 2.50e-07 & 18.20 
+     sic16 &     8 & 1.51e-08 & 16.56 
+Convergence rates: c0=4.14 
+
+************************************************************************
+********* Wed July 27, 2022
+
+FIXED COMPUTATION OF LAP COEFF
+
+
+CONT TEST ME HIERACHICAL
+
+FD66 MEHA scheme  -- *works now*
+conv.p tests.conv -option=diskEig -cg=sic -order=6 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=3
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 1.60e-06 &       
+      sic4 &     2 & 2.02e-08 & 79.21 
+      sic8 &     4 & 2.79e-10 & 72.40 
+Convergence rates: c0=6.24 
+
+
+FD44: now very close to orig
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=3
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 8.10e-05 &       
+      sic4 &     2 & 4.55e-06 & 17.80 
+      sic8 &     4 & 2.50e-07 & 18.20 
+Convergence rates: c0=4.17 
+
+************************************************************************
+********* Tues July 26, 2022
+
+START TEST ME HIERACHICAL
+
+
+FD66 MEHA scheme  -- **TROUBLE ** CHECK ME 
+conv.p tests.conv -option=diskEig -cg=sic -order=6 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=3
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 1.09e-05 &       
+      sic4 &     2 & 3.13e-06 &  3.48 
+      sic8 &     4 & 2.53e-07 & 12.37 
+Convergence rates: c0=2.71 
+
+conv.p tests.conv -option=diskEig -cg=sic -order=6 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=std -ng=3
+
+
+
+FD44 MEHA scheme  -- why not identical ??
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=3
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 8.20e-05 &       
+      sic4 &     2 & 6.25e-06 & 13.12 
+      sic8 &     4 & 3.90e-07 & 16.03 
+Convergence rates: c0=3.86 
+
+
+STANDARD
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -ng=3
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 8.09e-05 &       
+      sic4 &     2 & 4.54e-06 & 17.82 
+      sic8 &     4 & 2.50e-07 & 18.16 
+Convergence rates: c0=4.17 
+
+
+************************************************************************
+********* Wed May 25, 2022
+
+conv.p tests.conv -option=diskEig -cg=sic -order=6 -tf=.65 -tp=.65 -upwind=1 -bcApproach=cbc -cfl=.5 -ng=4
+
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -ng=4
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 8.36e-05 &       
+      sic4 &     2 & 4.64e-06 & 18.02 
+      sic8 &     4 & 2.50e-07 & 18.56 
+     sic16 &     8 & 1.51e-08 & 16.56 
+Convergence rates: c0=4.15 
+
+
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bcApproach=cbc -cfl=.9 -ng=4
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 8.34e-05 &       
+      sic4 &     2 & 4.64e-06 & 17.97 
+      sic8 &     4 & 2.50e-07 & 18.56 
+     sic16 &     8 & 1.51e-08 & 16.56 
+Convergence rates: c0=4.15 
+
+ ****Output written to ./diskEigsiccbcOrder4maxNormConvTable.tex *****
+
 ************************************************************************
 ********* Sat Feb 19, 2022
 

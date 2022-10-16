@@ -4023,104 +4023,13 @@ real uzzzzzz
   ! assignCornerGhostsMacro()
 
   ! Try this for order==6
-    if( .false. .and. orderOfAccuracy.eq.6 .and. nd.eq.2 .and. gridType.eq.rectangular )then
-        if( forcingOption.eq.noForcing )then
-        ! ---------------------------------
-        ! --- assign corners and edges: ---
-        ! ---------------------------------
-                if( nd.eq.2 )then
-          ! --- TWO DIMENSIONS ----
-                    do side2=0,1
-                    do side1=0,1
-                        if( boundaryCondition(side1,0).gt.0 .and. boundaryCondition(side2,1).gt.0 )then
-              ! **fix me** for exact BCs
-                            if( ( boundaryCondition(side1,0).ne.dirichlet .and. boundaryCondition(side1,0).ne.neumann ) .or. ( boundaryCondition(side2,1).ne.dirichlet .and. boundaryCondition(side2,1).ne.neumann ) )then
-                                write(*,*) "Un-supported corner bcs =",boundaryCondition(side1,0),boundaryCondition(side2,1)
-                                stop 2222
-                            end if
-                            symSign = +1. ! even symmetry for D-D or N-N corners
-                            if( (boundaryCondition(side1,0).eq.dirichlet .and. boundaryCondition(side2,1).eq.neumann   ) .or. (boundaryCondition(side1,0).eq.neumann   .and. boundaryCondition(side2,1).eq.dirichlet ) ) then
-                                symSign=-1.;
-                            end if
-                            is1 = 1-2*side1
-                            is2 = 1-2*side2
-                            i1 = gridIndexRange(side1,0)
-                            i2 = gridIndexRange(side2,1)
-                            i3 = gridIndexRange(    0,2)
-                            do m2=0,numGhost
-                            do m1=0,numGhost
-                                j1 = i1-is1*m1; j2=i2-is2*m2; j3=i3; ! ghost 
-                                k1 = i1+is1*m1; k2=i2+is2*m2; k3=i3; ! interior point 
-                                u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0)
-                            end do
-                            end do
-                        end if 
-                    end do
-                    end do
-                else
-          ! --- THREE DIMENSIONS ----
-                    write(*,*) "symmetry corners -- finish me in 3D"
-                    stop 9999
-                    do side3=0,1
-                    do side2=0,1
-                    do side1=0,1
-                    end do
-                    end do
-                    end do
-                end if
-        else
-        ! ---------------------------------
-        ! --- assign corners and edges: ---
-        ! ---------------------------------
-                if( nd.eq.2 )then
-          ! --- TWO DIMENSIONS ----
-                    do side2=0,1
-                    do side1=0,1
-                        if( boundaryCondition(side1,0).gt.0 .and. boundaryCondition(side2,1).gt.0 )then
-              ! **fix me** for exact BCs
-                            if( ( boundaryCondition(side1,0).ne.dirichlet .and. boundaryCondition(side1,0).ne.neumann ) .or. ( boundaryCondition(side2,1).ne.dirichlet .and. boundaryCondition(side2,1).ne.neumann ) )then
-                                write(*,*) "Un-supported corner bcs =",boundaryCondition(side1,0),boundaryCondition(side2,1)
-                                stop 2222
-                            end if
-                            symSign = +1. ! even symmetry for D-D or N-N corners
-                            if( (boundaryCondition(side1,0).eq.dirichlet .and. boundaryCondition(side2,1).eq.neumann   ) .or. (boundaryCondition(side1,0).eq.neumann   .and. boundaryCondition(side2,1).eq.dirichlet ) ) then
-                                symSign=-1.;
-                            end if
-                            is1 = 1-2*side1
-                            is2 = 1-2*side2
-                            i1 = gridIndexRange(side1,0)
-                            i2 = gridIndexRange(side2,1)
-                            i3 = gridIndexRange(    0,2)
-                            do m2=0,numGhost
-                            do m1=0,numGhost
-                                j1 = i1-is1*m1; j2=i2-is2*m2; j3=i3; ! ghost 
-                                k1 = i1+is1*m1; k2=i2+is2*m2; k3=i3; ! interior point 
-                                u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0)
-                                    if( assignTwilightZone.eq.1 )then
-                                                call ogDeriv(ep,0,0,0,0,xy(j1,j2,j3,0),xy(j1,j2,j3,1),0.,t,uc,ue1 )
-                                                call ogDeriv(ep,0,0,0,0,xy(k1,k2,k3,0),xy(k1,k2,k3,1),0.,t,uc,ue2 )
-                                        u(j1,j2,j3,0) = u(j1,j2,j3,0) + ue1 - symSign*ue2 
-                                    else
-                    ! finish me 
-                                    end if
-                            end do
-                            end do
-                        end if 
-                    end do
-                    end do
-                else
-          ! --- THREE DIMENSIONS ----
-                    write(*,*) "symmetry corners -- finish me in 3D"
-                    stop 9999
-                    do side3=0,1
-                    do side2=0,1
-                    do side1=0,1
-                    end do
-                    end do
-                    end do
-                end if
-        end if
-    end if
+  ! if( .false. .and. orderOfAccuracy.eq.6 .and. nd.eq.2 .and. gridType.eq.rectangular )then
+  !   if( forcingOption.eq.noForcing )then
+  !     assignSymmetryCornerGhost(noForcing)
+  !   else
+  !     assignSymmetryCornerGhost(forcing)
+  !   end if
+  ! end if
 
   ! ---------------------------------------------------------------------
   ! ----------- STAGE II : Neumann-like Boundary Conditions -------------
@@ -12243,7 +12152,7 @@ real uzzzzzz
       end do ! end axis
 
   !  --- Assign ghost points outside corners ---
-    if( orderOfAccuracy.eq.6 .and. nd.eq.2 .and. gridType.eq.rectangular )then
+    if( .false. .and. orderOfAccuracy.eq.6 .and. nd.eq.2 .and. gridType.eq.rectangular )then
         if( forcingOption.eq.noForcing )then
         ! ---------------------------------
         ! --- assign corners and edges: ---

@@ -91,232 +91,31 @@
 <Group hide-input="false" labelreference="L1" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"><Equation executable="true" style="2D Input" input-equation="" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYvLUkjbWlHRiQ2JVEocmVzdGFydEYnLyUnaXRhbGljR1EldHJ1ZUYnLyUsbWF0aHZhcmlhbnRHUSdpdGFsaWNGJy1JI21vR0YkNi1RIjtGJy9GM1Enbm9ybWFsRicvJSZmZW5jZUdRJmZhbHNlRicvJSpzZXBhcmF0b3JHRjEvJSlzdHJldGNoeUdGPS8lKnN5bW1ldHJpY0dGPS8lKGxhcmdlb3BHRj0vJS5tb3ZhYmxlbGltaXRzR0Y9LyUnYWNjZW50R0Y9LyUnbHNwYWNlR1EmMC4wZW1GJy8lJ3JzcGFjZUdRLDAuMjc3Nzc3OGVtRictRjY2LVEifkYnRjlGOy9GP0Y9RkBGQkZERkZGSEZKL0ZORkwtRiw2JVErY3VycmVudGRpckYnRi9GMi1JKG1mZW5jZWRHRiQ2JC1GIzYmLUYsNiVRJGNhdEYnRi9GMi1GWTYkLUYjNiktRiw2JVEra2VybmVsb3B0c0YnRi9GMi1GWTYkLUYjNiUtRiw2JVEoaG9tZWRpckYnRi9GMi8lK2V4ZWN1dGFibGVHRj1GOUY5LUY2Ni1RIixGJ0Y5RjtGPkZARkJGREZGRkhGSi9GTlEsMC4zMzMzMzMzZW1GJy1JI21zR0YkNiNRPy9Ecm9wYm94L3Jlc2VhcmNoL2Nnd2F2ZS9tYXBsZUYnLUYsNiNRIUYnRmhvRjlGOUZob0Y5RjlGNUZQLUY2Ni9RJXJlYWRGJy8lJWJvbGRHRjEvRjNRJWJvbGRGJy8lK2ZvbnR3ZWlnaHRHRlxxRjtGU0ZARkJGREZGRkhGSkZURlAtRmBwNiNRPGNoYWluUnVsZUNvZWZmaWNpZW50cy5tYXBsZUYnRjVGaG9GOQ==">LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYvLUkjbWlHRiQ2JVEocmVzdGFydEYnLyUnaXRhbGljR1EldHJ1ZUYnLyUsbWF0aHZhcmlhbnRHUSdpdGFsaWNGJy1JI21vR0YkNi1RIjtGJy9GM1Enbm9ybWFsRicvJSZmZW5jZUdRJmZhbHNlRicvJSpzZXBhcmF0b3JHRjEvJSlzdHJldGNoeUdGPS8lKnN5bW1ldHJpY0dGPS8lKGxhcmdlb3BHRj0vJS5tb3ZhYmxlbGltaXRzR0Y9LyUnYWNjZW50R0Y9LyUnbHNwYWNlR1EmMC4wZW1GJy8lJ3JzcGFjZUdRLDAuMjc3Nzc3OGVtRictRjY2LVEifkYnRjlGOy9GP0Y9RkBGQkZERkZGSEZKL0ZORkwtRiw2JVErY3VycmVudGRpckYnRi9GMi1JKG1mZW5jZWRHRiQ2JC1GIzYmLUYsNiVRJGNhdEYnRi9GMi1GWTYkLUYjNiktRiw2JVEra2VybmVsb3B0c0YnRi9GMi1GWTYkLUYjNiUtRiw2JVEoaG9tZWRpckYnRi9GMi8lK2V4ZWN1dGFibGVHRj1GOUY5LUY2Ni1RIixGJ0Y5RjtGPkZARkJGREZGRkhGSi9GTlEsMC4zMzMzMzMzZW1GJy1JI21zR0YkNiNRPy9Ecm9wYm94L3Jlc2VhcmNoL2Nnd2F2ZS9tYXBsZUYnLUYsNiNRIUYnRmhvRjlGOUZob0Y5RjlGNUZQLUY2Ni9RJXJlYWRGJy8lJWJvbGRHRjEvRjNRJWJvbGRGJy8lK2ZvbnR3ZWlnaHRHRlxxRjtGU0ZARkJGREZGRkhGSkZURlAtRmBwNiNRPGNoYWluUnVsZUNvZWZmaWNpZW50cy5tYXBsZUYnRjVGaG9GOQ==</Equation></Text-field>
 </Input>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUkjbXNHNiMvSSttb2R1bGVuYW1lRzYiSSxUeXBlc2V0dGluZ0dJKF9zeXNsaWJHRic2I1EvL1VzZXJzL2hlbnNoYXdGJw==">US8vVXNlcnMvaGVuc2hhdzYi</Equation></Text-field>
+<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUkjbXNHNiMvSSttb2R1bGVuYW1lRzYiSSxUeXBlc2V0dGluZ0dJKF9zeXNsaWJHRic2I1FNL1VzZXJzL2hlbnNoYXcvRHJvcGJveC9yZXNlYXJjaC9jZ3dhdmUvbWFwbGVGJw==">UU0vVXNlcnMvaGVuc2hhdy9Ecm9wYm94L3Jlc2VhcmNoL2Nnd2F2ZS9tYXBsZTYi</Equation></Text-field>
 </Output>
 <Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUkjbWlHNiMvSSttb2R1bGVuYW1lRzYiSSxUeXBlc2V0dGluZ0dJKF9zeXNsaWJHRic2JVEmY2xlYXJGJy8lJ2l0YWxpY0dRJXRydWVGJy8lLG1hdGh2YXJpYW50R1EnaXRhbGljRic=">SSZjbGVhckc2Ig==</Equation></Text-field>
 </Output>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYuLUkjbWlHRiQ2JVEiZkYnLyUnaXRhbGljR1EldHJ1ZUYnLyUsbWF0aHZhcmlhbnRHUSdpdGFsaWNGJy1JI21vR0YkNi1RKSZBc3NpZ247RicvRjNRJ25vcm1hbEYnLyUmZmVuY2VHUSZmYWxzZUYnLyUqc2VwYXJhdG9yR0Y9LyUpc3RyZXRjaHlHRj0vJSpzeW1tZXRyaWNHRj0vJShsYXJnZW9wR0Y9LyUubW92YWJsZWxpbWl0c0dGPS8lJ2FjY2VudEdGPS8lJ2xzcGFjZUdRLDAuMjc3Nzc3OGVtRicvJSdyc3BhY2VHRkwtRiM2Ji1JJW1zdXBHRiQ2JS1GLDYlUSNyeEYnRi9GMi1JI21uR0YkNiRRIjJGJ0Y5LyUxc3VwZXJzY3JpcHRzaGlmdEdRIjBGJy1GNjYtUTEmSW52aXNpYmxlVGltZXM7RidGOUY7Rj5GQEZCRkRGRkZIL0ZLUSYwLjBlbUYnL0ZORlxvLUYsNiVRJHVyckYnRi9GMkY5LUY2Ni1RJyZwbHVzO0YnRjlGO0Y+RkBGQkZERkZGSC9GS1EsMC4yMjIyMjIyZW1GJy9GTkZlby1GIzYqRldGaG5GVEZobi1GLDYlUSNzeEYnRi9GMkZobi1GLDYlUSR1cnNGJ0YvRjJGOUZhby1GIzYmLUZSNiVGaW9GV0ZlbkZobi1GLDYlUSR1c3NGJ0YvRjJGOUZhby1GIzYmLUYsNiVRJHJ4eEYnRi9GMkZobi1GLDYlUSN1ckYnRi9GMkY5RmFvLUYjNiYtRiw2JVEkc3h4RidGL0YyRmhuLUYsNiVRI3VzRidGL0YyRjlGOQ==">LV9JLFR5cGVzZXR0aW5nRzYkJSpwcm90ZWN0ZWRHSShfc3lzbGliRzYiSSxtcHJpbnRzbGFzaEdGKDYkNyM+SSJmR0YoLCwqJkkjcnhHRigiIiNJJHVyckdGKCIiIkYzKihGMEYzSSNzeEdGKEYzSSR1cnNHRihGM0YxKiZGNUYxSSR1c3NHRihGM0YzKiZJJHJ4eEdGKEYzSSN1ckdGKEYzRjMqJkkkc3h4R0YoRjNJI3VzR0YoRjNGMzcjRi4=</Equation></Text-field>
-</Output>
-<Output><Text-field style="Line Printed Output" layout="Line Printed Output">cxxcrr = rx^2
-cxxcrs = 2*rx*sx
-cxxcss = sx^2
-cx6cr6   = rx^6
-cx6cr5s1 = 6*rx^5*sx
-cx6cr4s2 = 15*rx^4*sx^2
-cx6cr3s3 = 20*rx^3*sx^3
-cx6cs6   = sx^6
-cx6cr1s2 = 15*rxxxx*sx^2+(30*rx*sxxxx+60*rxx*sxxx+60*rxxx*sxx)*sx+60*rx*sxx*sxxx+45*sxx^2*rxx
-</Text-field>
-</Output>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYmLUkjbWlHRiQ2JVEobmRkTW9kMkYnLyUnaXRhbGljR1EldHJ1ZUYnLyUsbWF0aHZhcmlhbnRHUSdpdGFsaWNGJy1JI21vR0YkNi1RKSZBc3NpZ247RicvRjNRJ25vcm1hbEYnLyUmZmVuY2VHUSZmYWxzZUYnLyUqc2VwYXJhdG9yR0Y9LyUpc3RyZXRjaHlHRj0vJSpzeW1tZXRyaWNHRj0vJShsYXJnZW9wR0Y9LyUubW92YWJsZWxpbWl0c0dGPS8lJ2FjY2VudEdGPS8lJ2xzcGFjZUdRLDAuMjc3Nzc3OGVtRicvJSdyc3BhY2VHRkwtSSNtbkdGJDYkUSIwRidGOUY5">LV9JLFR5cGVzZXR0aW5nRzYkJSpwcm90ZWN0ZWRHSShfc3lzbGliRzYiSSxtcHJpbnRzbGFzaEdGKDYkNyM+SShuZGRNb2QyR0YoIiIhNyNGLg==</Equation></Text-field>
-</Output>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYmLUkjbWlHRiQ2JVEkZGltRicvJSdpdGFsaWNHUSV0cnVlRicvJSxtYXRodmFyaWFudEdRJ2l0YWxpY0YnLUkjbW9HRiQ2LVEpJkFzc2lnbjtGJy9GM1Enbm9ybWFsRicvJSZmZW5jZUdRJmZhbHNlRicvJSpzZXBhcmF0b3JHRj0vJSlzdHJldGNoeUdGPS8lKnN5bW1ldHJpY0dGPS8lKGxhcmdlb3BHRj0vJS5tb3ZhYmxlbGltaXRzR0Y9LyUnYWNjZW50R0Y9LyUnbHNwYWNlR1EsMC4yNzc3Nzc4ZW1GJy8lJ3JzcGFjZUdGTC1JI21uR0YkNiRRIjJGJ0Y5Rjk=">LV9JLFR5cGVzZXR0aW5nRzYkJSpwcm90ZWN0ZWRHSShfc3lzbGliRzYiSSxtcHJpbnRzbGFzaEdGKDYkNyM+SSRkaW1HRigiIiM3I0Yu</Equation></Text-field>
-</Output>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYmLUkjbWlHRiQ2JVElbmRkM0YnLyUnaXRhbGljR1EldHJ1ZUYnLyUsbWF0aHZhcmlhbnRHUSdpdGFsaWNGJy1JI21vR0YkNi1RKSZBc3NpZ247RicvRjNRJ25vcm1hbEYnLyUmZmVuY2VHUSZmYWxzZUYnLyUqc2VwYXJhdG9yR0Y9LyUpc3RyZXRjaHlHRj0vJSpzeW1tZXRyaWNHRj0vJShsYXJnZW9wR0Y9LyUubW92YWJsZWxpbWl0c0dGPS8lJ2FjY2VudEdGPS8lJ2xzcGFjZUdRLDAuMjc3Nzc3OGVtRicvJSdyc3BhY2VHRkwtSSNtbkdGJDYkUSIwRidGOUY5">LV9JLFR5cGVzZXR0aW5nRzYkJSpwcm90ZWN0ZWRHSShfc3lzbGliRzYiSSxtcHJpbnRzbGFzaEdGKDYkNyM+SSVuZGQzR0YoIiIhNyNGLg==</Equation></Text-field>
-</Output>
-<Output><Text-field style="Line Printed Output" layout="Line Printed Output">uxxxxxx100 = rxxxxxx
-uxxxxxx200 = 6*rx*rxxxxx+15*rxx*rxxxx+10*rxxx^2
-uxxxxxx300 = 15*rx^2*rxxxx+60*rx*rxx*rxxx+15*rxx^3
-uxxxxxx400 = 20*rx^3*rxxx+45*rx^2*rxx^2
-uxxxxxx500 = 15*rx^4*rxx
-uxxxxxx600 = rx^6
-uxxxxxx010 = sxxxxxx
-uxxxxxx110 = 6*rx*sxxxxx+15*rxx*sxxxx+20*rxxx*sxxx+15*rxxxx*sxx+6*rxxxxx*sx
-uxxxxxx210 = 15*rx^2*sxxxx+(60*rxx*sxxx+60*rxxx*sxx+30*rxxxx*sx)*rx+60*rxxx*rxx*sx+45*sxx*rxx^2
-uxxxxxx310 = 20*rx^3*sxxx+(90*rxx*sxx+60*rxxx*sx)*rx^2+90*rxx^2*sx*rx
-uxxxxxx410 = 15*rx^4*sxx+60*rx^3*rxx*sx
-uxxxxxx510 = 6*rx^5*sx
-uxxxxxx020 = 6*sx*sxxxxx+15*sxx*sxxxx+10*sxxx^2
-uxxxxxx120 = 15*rxxxx*sx^2+(30*rx*sxxxx+60*rxx*sxxx+60*rxxx*sxx)*sx+60*rx*sxx*sxxx+45*sxx^2*rxx
-uxxxxxx220 = (60*rx*rxxx+45*rxx^2)*sx^2+(60*rx^2*sxxx+180*rx*rxx*sxx)*sx+45*rx^2*sxx^2
-uxxxxxx320 = 60*sx*(rx*sxx+3/2*rxx*sx)*rx^2
-uxxxxxx420 = 15*rx^4*sx^2
-uxxxxxx030 = 15*sx^2*sxxxx+60*sx*sxx*sxxx+15*sxx^3
-uxxxxxx130 = 20*rxxx*sx^3+(60*rx*sxxx+90*rxx*sxx)*sx^2+90*rx*sx*sxx^2
-uxxxxxx230 = 90*(rx*sxx+2/3*rxx*sx)*sx^2*rx
-uxxxxxx330 = 20*rx^3*sx^3
-uxxxxxx040 = 20*sx^3*sxxx+45*sx^2*sxx^2
-uxxxxxx140 = 60*rx*sx^3*sxx+15*rxx*sx^4
-uxxxxxx240 = 15*rx^2*sx^4
-uxxxxxx050 = 15*sx^4*sxx
-uxxxxxx150 = 6*rx*sx^5
-uxxxxxx060 = sx^6
-uxxxxxx = uxxxxxx100*ur+uxxxxxx200*urr+uxxxxxx300*urrr+uxxxxxx400*urrrr+uxxxxxx500*urrrrr+uxxxxxx600*urrrrrr+uxxxxxx010*us+uxxxxxx110*urs+uxxxxxx210*urrs+uxxxxxx310*urrrs+uxxxxxx410*urrrrs+uxxxxxx510*urrrrrs+uxxxxxx020*uss+uxxxxxx120*urss+uxxxxxx220*urrss+uxxxxxx320*urrrss+uxxxxxx420*urrrrss+uxxxxxx030*usss+uxxxxxx130*ursss+uxxxxxx230*urrsss+uxxxxxx330*urrrsss+uxxxxxx040*ussss+uxxxxxx140*urssss+uxxxxxx240*urrssss+uxxxxxx050*usssss+uxxxxxx150*ursssss+uxxxxxx060*ussssss
-
-uxxxxxy100 = rxxxxxy
-uxxxxxy200 = 5*rx*rxxxxy+10*rxx*rxxxy+10*rxxx*rxxy+5*rxxxx*rxy+rxxxxx*ry
-uxxxxxy300 = 10*rxxxy*rx^2+(30*rxx*rxxy+20*rxxx*rxy+5*rxxxx*ry)*rx+15*rxy*rxx^2+10*rxxx*ry*rxx
-uxxxxxy400 = 10*rx^3*rxxy+30*rx^2*rxx*rxy+10*rx^2*rxxx*ry+15*rx*rxx^2*ry
-uxxxxxy500 = 5*rx^4*rxy+10*rx^3*rxx*ry
-uxxxxxy600 = ry*rx^5
-uxxxxxy010 = sxxxxxy
-uxxxxxy110 = 5*rx*sxxxxy+10*rxx*sxxxy+10*rxxx*sxxy+5*rxxxx*sxy+rxxxxx*sy+5*rxxxxy*sx+10*rxxxy*sxx+10*rxxy*sxxx+5*rxy*sxxxx+ry*sxxxxx
-uxxxxxy210 = 10*rx^2*sxxxy+(30*rxx*sxxy+20*rxxx*sxy+5*rxxxx*sy+20*rxxxy*sx+30*rxxy*sxx+20*rxy*sxxx+5*ry*sxxxx)*rx+15*sxy*rxx^2+(10*rxxx*sy+30*rxxy*sx+30*rxy*sxx+10*ry*sxxx)*rxx+(20*rxy*sx+10*ry*sxx)*rxxx+5*rxxxx*ry*sx
-uxxxxxy310 = 10*rx^3*sxxy+(30*rxx*sxy+10*rxxx*sy+30*rxxy*sx+30*rxy*sxx+10*ry*sxxx)*rx^2+(15*rxx^2*sy+(60*rxy*sx+30*ry*sxx)*rxx+20*ry*sx*rxxx)*rx+15*rxx^2*ry*sx
-uxxxxxy410 = 5*rx^2*(rx^2*sxy+(2*rxx*sy+4*rxy*sx+2*ry*sxx)*rx+6*rxx*ry*sx)
-uxxxxxy510 = rx^5*sy+5*rx^4*ry*sx
-uxxxxxy020 = 5*sx*sxxxxy+10*sxx*sxxxy+10*sxxx*sxxy+5*sxxxx*sxy+sxxxxx*sy
-uxxxxxy120 = 10*rxxxy*sx^2+(20*rx*sxxxy+30*rxx*sxxy+20*rxxx*sxy+5*rxxxx*sy+30*rxxy*sxx+20*rxy*sxxx+5*ry*sxxxx)*sx+15*rxy*sxx^2+(30*rx*sxxy+30*rxx*sxy+10*rxxx*sy+10*ry*sxxx)*sxx+(20*rx*sxy+10*rxx*sy)*sxxx+5*rx*sxxxx*sy
-uxxxxxy220 = (30*sx*sxxy+30*sxx*sxy+10*sxxx*sy)*rx^2+(30*rxxy*sx^2+(60*rxx*sxy+20*rxxx*sy+60*rxy*sxx+20*ry*sxxx)*sx+30*rxx*sxx*sy+15*sxx^2*ry)*rx+10*((3*rxx*rxy+rxxx*ry)*sx+3*rxx*sxx*ry+3/2*rxx^2*sy)*sx
-uxxxxxy320 = 20*rx^3*sx*sxy+10*rx^3*sxx*sy+30*rx^2*rxx*sx*sy+30*rx^2*rxy*sx^2+30*rx^2*ry*sx*sxx+30*rx*rxx*ry*sx^2
-uxxxxxy420 = 5*rx^4*sx*sy+10*rx^3*ry*sx^2
-uxxxxxy030 = 10*sx^2*sxxxy+(30*sxx*sxxy+20*sxxx*sxy+5*sxxxx*sy)*sx+15*sxy*sxx^2+10*sxxx*sy*sxx
-uxxxxxy130 = 10*rxxy*sx^3+(30*rx*sxxy+30*rxx*sxy+10*rxxx*sy+30*rxy*sxx+10*ry*sxxx)*sx^2+(15*sxx^2*ry+(60*rx*sxy+30*rxx*sy)*sxx+20*rx*sxxx*sy)*sx+15*rx*sxx^2*sy
-uxxxxxy230 = 30*rx^2*sx^2*sxy+30*rx^2*sx*sxx*sy+30*rx*rxx*sx^2*sy+20*rx*rxy*sx^3+30*rx*ry*sx^2*sxx+10*rxx*ry*sx^3
-uxxxxxy330 = 10*rx^3*sx^2*sy+10*rx^2*ry*sx^3
-uxxxxxy040 = 10*sx^3*sxxy+30*sx^2*sxx*sxy+10*sx^2*sxxx*sy+15*sx*sxx^2*sy
-uxxxxxy140 = 5*rxy*sx^4+(20*rx*sxy+10*rxx*sy+10*ry*sxx)*sx^3+30*rx*sx^2*sxx*sy
-uxxxxxy240 = 10*rx^2*sx^3*sy+5*rx*ry*sx^4
-uxxxxxy050 = 5*sx^4*sxy+10*sx^3*sxx*sy
-uxxxxxy150 = 5*rx*sx^4*sy+ry*sx^5
-uxxxxxy060 = sy*sx^5
-uxxxxxy = uxxxxxy100*ur+uxxxxxy200*urr+uxxxxxy300*urrr+uxxxxxy400*urrrr+uxxxxxy500*urrrrr+uxxxxxy600*urrrrrr+uxxxxxy010*us+uxxxxxy110*urs+uxxxxxy210*urrs+uxxxxxy310*urrrs+uxxxxxy410*urrrrs+uxxxxxy510*urrrrrs+uxxxxxy020*uss+uxxxxxy120*urss+uxxxxxy220*urrss+uxxxxxy320*urrrss+uxxxxxy420*urrrrss+uxxxxxy030*usss+uxxxxxy130*ursss+uxxxxxy230*urrsss+uxxxxxy330*urrrsss+uxxxxxy040*ussss+uxxxxxy140*urssss+uxxxxxy240*urrssss+uxxxxxy050*usssss+uxxxxxy150*ursssss+uxxxxxy060*ussssss
-
-uxxxxyy100 = rxxxxyy
-uxxxxyy200 = 4*rx*rxxxyy+6*rxx*rxxyy+4*rxxx*rxyy+rxxxx*ryy+2*rxxxxy*ry+8*rxxxy*rxy+6*rxxy^2
-uxxxxyy300 = 6*rxxyy*rx^2+(12*rxx*rxyy+4*rxxx*ryy+8*rxxxy*ry+24*rxxy*rxy)*rx+3*ryy*rxx^2+(12*rxxy*ry+12*rxy^2)*rxx+rxxxx*ry^2+8*rxxx*rxy*ry
-uxxxxyy400 = (6*rxx*ryy+12*rxxy*ry+12*rxy^2)*rx^2+(24*rxx*rxy*ry+4*rxxx*ry^2)*rx+4*rxyy*rx^3+3*rxx^2*ry^2
-uxxxxyy500 = rx^4*ryy+8*rx^3*rxy*ry+6*rx^2*rxx*ry^2
-uxxxxyy600 = ry^2*rx^4
-uxxxxyy010 = sxxxxyy
-uxxxxyy110 = 4*rx*sxxxyy+6*rxx*sxxyy+4*rxxx*sxyy+rxxxx*syy+2*rxxxxy*sy+8*rxxxy*sxy+4*rxxxyy*sx+12*rxxy*sxxy+6*rxxyy*sxx+8*rxy*sxxxy+4*rxyy*sxxx+2*ry*sxxxxy+ryy*sxxxx
-uxxxxyy210 = 6*rx^2*sxxyy+(12*rxx*sxyy+4*rxxx*syy+8*rxxxy*sy+24*rxxy*sxy+12*rxxyy*sx+24*rxy*sxxy+12*rxyy*sxx+8*ry*sxxxy+4*ryy*sxxx)*rx+ry^2*sxxxx+(12*rxx*sxxy+8*rxxx*sxy+2*rxxxx*sy+8*rxxxy*sx+12*rxxy*sxx+8*rxy*sxxx)*ry+3*syy*rxx^2+(12*rxxy*sy+24*rxy*sxy+12*rxyy*sx+6*ryy*sxx)*rxx+12*rxy^2*sxx+(8*rxxx*sy+24*rxxy*sx)*rxy+4*rxxx*ryy*sx
-uxxxxyy310 = 4*rx^3*sxyy+(6*rxx*syy+12*rxxy*sy+24*rxy*sxy+12*rxyy*sx+12*ry*sxxy+6*ryy*sxx)*rx^2+(4*ry^2*sxxx+(24*rxx*sxy+8*rxxx*sy+24*rxxy*sx+24*rxy*sxx)*ry+(24*rxy*sy+12*ryy*sx)*rxx+24*sx*rxy^2)*rx+(6*rxx*sxx+4*rxxx*sx)*ry^2+(6*rxx^2*sy+24*rxx*rxy*sx)*ry
-uxxxxyy410 = (rx^3*syy+(8*rxy*sy+8*ry*sxy+4*ryy*sx)*rx^2+6*ry*(2*rxx*sy+4*rxy*sx+ry*sxx)*rx+12*rxx*ry^2*sx)*rx
-uxxxxyy510 = 2*rx^4*ry*sy+4*rx^3*ry^2*sx
-uxxxxyy020 = 4*sx*sxxxyy+6*sxx*sxxyy+4*sxxx*sxyy+sxxxx*syy+2*sxxxxy*sy+8*sxxxy*sxy+6*sxxy^2
-uxxxxyy120 = 6*rxxyy*sx^2+(12*rx*sxxyy+12*rxx*sxyy+4*rxxx*syy+8*rxxxy*sy+24*rxxy*sxy+24*rxy*sxxy+12*rxyy*sxx+8*ry*sxxxy+4*ryy*sxxx)*sx+rxxxx*sy^2+(8*rx*sxxxy+12*rxx*sxxy+8*rxxx*sxy+12*rxxy*sxx+8*rxy*sxxx+2*ry*sxxxx)*sy+3*ryy*sxx^2+(12*rx*sxyy+6*rxx*syy+24*rxy*sxy+12*ry*sxxy)*sxx+12*rxx*sxy^2+(24*rx*sxxy+8*ry*sxxx)*sxy+4*rx*sxxx*syy
-uxxxxyy220 = (12*sx*sxyy+6*sxx*syy+12*sxxy*sy+12*sxy^2)*rx^2+(12*rxyy*sx^2+(12*rxx*syy+24*rxxy*sy+48*rxy*sxy+24*ry*sxxy+12*ryy*sxx)*sx+(24*sxx*sxy+8*sxxx*sy)*ry+4*sy*(6*rxx*sxy+rxxx*sy+6*rxy*sxx))*rx+(6*rxx*ryy+12*rxxy*ry+12*rxy^2)*sx^2+(4*ry^2*sxxx+(24*rxx*sxy+8*rxxx*sy+24*rxy*sxx)*ry+24*rxy*rxx*sy)*sx+3*sxx^2*ry^2+12*rxx*sxx*sy*ry+3*rxx^2*sy^2
-uxxxxyy320 = (4*sx*syy+8*sxy*sy)*rx^3+(6*ryy*sx^2+(24*rxy*sy+24*ry*sxy)*sx+12*sxx*sy*ry+6*rxx*sy^2)*rx^2+12*ry*sx*(2*rxx*sy+2*rxy*sx+ry*sxx)*rx+6*rxx*ry^2*sx^2
-uxxxxyy420 = rx^4*sy^2+8*rx^3*ry*sx*sy+6*rx^2*ry^2*sx^2
-uxxxxyy030 = 6*sx^2*sxxyy+(12*sxx*sxyy+4*sxxx*syy+8*sxxxy*sy+24*sxxy*sxy)*sx+3*syy*sxx^2+(12*sxxy*sy+12*sxy^2)*sxx+sxxxx*sy^2+8*sxxx*sxy*sy
-uxxxxyy130 = 4*rxyy*sx^3+(12*rx*sxyy+6*rxx*syy+12*rxxy*sy+24*rxy*sxy+12*ry*sxxy+6*ryy*sxx)*sx^2+(4*rxxx*sy^2+(24*rx*sxxy+24*rxx*sxy+24*rxy*sxx+8*ry*sxxx)*sy+(12*rx*syy+24*ry*sxy)*sxx+24*rx*sxy^2)*sx+(4*rx*sxxx+6*rxx*sxx)*sy^2+(24*rx*sxx*sxy+6*ry*sxx^2)*sy
-uxxxxyy230 = (4*rx*ryy+8*rxy*ry)*sx^3+(6*rx^2*syy+(24*rxy*sy+24*ry*sxy)*rx+6*ry^2*sxx+12*ry*sy*rxx)*sx^2+24*sy*rx*(rx*sxy+ry*sxx+1/2*rxx*sy)*sx+6*rx^2*sxx*sy^2
-uxxxxyy330 = 4*rx^3*sx*sy^2+12*rx^2*ry*sx^2*sy+4*rx*ry^2*sx^3
-uxxxxyy040 = (6*sxx*syy+12*sxxy*sy+12*sxy^2)*sx^2+4*sx^3*sxyy+(24*sxx*sxy*sy+4*sxxx*sy^2)*sx+3*sxx^2*sy^2
-uxxxxyy140 = 4*(1/4*ryy*sx^3+(rx*syy+2*rxy*sy+2*ry*sxy)*sx^2+6*sy*(rx*sxy+1/2*ry*sxx+1/4*rxx*sy)*sx+3*rx*sy^2*sxx)*sx
-uxxxxyy240 = 6*rx^2*sx^2*sy^2+8*rx*ry*sx^3*sy+ry^2*sx^4
-uxxxxyy050 = sx^4*syy+8*sx^3*sxy*sy+6*sx^2*sxx*sy^2
-uxxxxyy150 = 4*rx*sx^3*sy^2+2*ry*sx^4*sy
-uxxxxyy060 = sy^2*sx^4
-uxxxxyy = uxxxxyy100*ur+uxxxxyy200*urr+uxxxxyy300*urrr+uxxxxyy400*urrrr+uxxxxyy500*urrrrr+uxxxxyy600*urrrrrr+uxxxxyy010*us+uxxxxyy110*urs+uxxxxyy210*urrs+uxxxxyy310*urrrs+uxxxxyy410*urrrrs+uxxxxyy510*urrrrrs+uxxxxyy020*uss+uxxxxyy120*urss+uxxxxyy220*urrss+uxxxxyy320*urrrss+uxxxxyy420*urrrrss+uxxxxyy030*usss+uxxxxyy130*ursss+uxxxxyy230*urrsss+uxxxxyy330*urrrsss+uxxxxyy040*ussss+uxxxxyy140*urssss+uxxxxyy240*urrssss+uxxxxyy050*usssss+uxxxxyy150*ursssss+uxxxxyy060*ussssss
-
-uxxxyyy100 = rxxxyyy
-uxxxyyy200 = 3*rx*rxxyyy+3*rxx*rxyyy+rxxx*ryyy+3*rxxxy*ryy+3*rxxxyy*ry+9*rxxy*rxyy+9*rxxyy*rxy
-uxxxyyy300 = 3*rxyyy*rx^2+(3*rxx*ryyy+9*rxxy*ryy+9*rxxyy*ry+18*rxy*rxyy)*rx+(9*rxx*rxyy+3*rxxx*ryy+18*rxxy*rxy)*ry+3*rxxxy*ry^2+9*rxx*ryy*rxy+6*rxy^3
-uxxxyyy400 = ryyy*rx^3+(9*rxy*ryy+9*rxyy*ry)*rx^2+9*ry*(rxx*ryy+rxxy*ry+2*rxy^2)*rx+rxxx*ry^3+9*rxy*rxx*ry^2
-uxxxyyy500 = 3*rx^3*ry*ryy+9*rx^2*rxy*ry^2+3*rx*rxx*ry^3
-uxxxyyy600 = rx^3*ry^3
-uxxxyyy010 = sxxxyyy
-uxxxyyy110 = 3*rx*sxxyyy+3*rxx*sxyyy+rxxx*syyy+3*rxxxy*syy+3*rxxxyy*sy+9*rxxy*sxyy+9*rxxyy*sxy+3*rxxyyy*sx+9*rxy*sxxyy+9*rxyy*sxxy+3*rxyyy*sxx+3*ry*sxxxyy+3*ryy*sxxxy+ryyy*sxxx
-uxxxyyy210 = 3*rx^2*sxyyy+(3*rxx*syyy+9*rxxy*syy+9*rxxyy*sy+18*rxy*sxyy+18*rxyy*sxy+6*rxyyy*sx+9*ry*sxxyy+9*ryy*sxxy+3*ryyy*sxx)*rx+3*ry^2*sxxxy+(9*rxx*sxyy+3*rxxx*syy+6*rxxxy*sy+18*rxxy*sxy+9*rxxyy*sx+18*rxy*sxxy+9*rxyy*sxx+3*ryy*sxxx)*ry+18*rxy^2*sxy+(9*rxx*syy+18*rxxy*sy+18*rxyy*sx+9*ryy*sxx)*rxy+(9*rxyy*sy+9*ryy*sxy+3*ryyy*sx)*rxx+3*ryy*(rxxx*sy+3*rxxy*sx)
-uxxxyyy310 = rx^3*syyy+(9*rxy*syy+9*rxyy*sy+9*ry*sxyy+9*ryy*sxy+3*ryyy*sx)*rx^2+(9*ry^2*sxxy+(9*rxx*syy+18*rxxy*sy+36*rxy*sxy+18*rxyy*sx+9*ryy*sxx)*ry+18*rxy*ryy*sx+9*sy*rxx*ryy+18*sy*rxy^2)*rx+3*ry*(1/3*ry^2*sxxx+(3*rxx*sxy+rxxx*sy+3*rxxy*sx+3*rxy*sxx)*ry+3*sx*rxx*ryy+6*sx*rxy^2+6*rxy*rxx*sy)
-uxxxyyy410 = (3*ry*syy+3*ryy*sy)*rx^3+9*ry*(2*rxy*sy+ry*sxy+ryy*sx)*rx^2+3*ry^2*(3*rxx*sy+6*rxy*sx+ry*sxx)*rx+3*rxx*sx*ry^3
-uxxxyyy510 = 3*rx^3*ry^2*sy+3*rx^2*ry^3*sx
-uxxxyyy020 = 3*sx*sxxyyy+3*sxx*sxyyy+sxxx*syyy+3*sxxxy*syy+3*sxxxyy*sy+9*sxxy*sxyy+9*sxxyy*sxy
-uxxxyyy120 = 3*rxyyy*sx^2+(6*rx*sxyyy+3*rxx*syyy+9*rxxy*syy+9*rxxyy*sy+18*rxy*sxyy+18*rxyy*sxy+9*ry*sxxyy+9*ryy*sxxy+3*ryyy*sxx)*sx+3*rxxxy*sy^2+(9*rx*sxxyy+9*rxx*sxyy+3*rxxx*syy+18*rxxy*sxy+18*rxy*sxxy+9*rxyy*sxx+6*ry*sxxxy+3*ryy*sxxx)*sy+18*rxy*sxy^2+(18*rx*sxyy+9*rxx*syy+18*ry*sxxy+9*ryy*sxx)*sxy+(3*rx*syyy+9*rxy*syy+9*ry*sxyy)*sxx+(9*rx*sxxy+3*ry*sxxx)*syy
-uxxxyyy220 = (3*sx*syyy+9*sxy*syy+9*sxyy*sy)*rx^2+((18*sx*sxyy+9*sxx*syy+18*sxxy*sy+18*sxy^2)*ry+3*ryyy*sx^2+(18*rxy*syy+18*rxyy*sy+18*ryy*sxy)*sx+9*sy*(rxx*syy+rxxy*sy+4*rxy*sxy+ryy*sxx))*rx+(9*sx*sxxy+9*sxx*sxy+3*sxxx*sy)*ry^2+(9*rxyy*sx^2+(9*rxx*syy+18*rxxy*sy+36*rxy*sxy+9*ryy*sxx)*sx+3*sy*(6*rxx*sxy+rxxx*sy+6*rxy*sxx))*ry+9*rxy*ryy*sx^2+9*sy*(rxx*ryy+2*rxy^2)*sx+9*rxy*rxx*sy^2
-uxxxyyy320 = 3*sy*syy*rx^3+((9*sx*syy+18*sxy*sy)*ry+9*ryy*sy*sx+9*rxy*sy^2)*rx^2+18*((sxy*sx+1/2*sy*sxx)*ry+1/2*ryy*sx^2+2*rxy*sy*sx+1/2*rxx*sy^2)*ry*rx+3*ry^2*sx*(3*rxx*sy+3*rxy*sx+ry*sxx)
-uxxxyyy420 = 3*rx^3*ry*sy^2+9*rx^2*ry^2*sx*sy+3*rx*ry^3*sx^2
-uxxxyyy030 = 3*sxxxy*sy^2+(3*sxx*syyy+9*sxxy*syy+9*sxxyy*sy+18*sxy*sxyy)*sx+3*sx^2*sxyyy+9*sxx*syy*sxy+(9*sxx*sxyy+3*sxxx*syy+18*sxxy*sxy)*sy+6*sxy^3
-uxxxyyy130 = ryyy*sx^3+(3*rx*syyy+9*rxy*syy+9*rxyy*sy+9*ry*sxyy+9*ryy*sxy)*sx^2+(9*rxxy*sy^2+(18*rx*sxyy+9*rxx*syy+36*rxy*sxy+18*ry*sxxy+9*ryy*sxx)*sy+18*rx*syy*sxy+9*syy*ry*sxx+18*ry*sxy^2)*sx+9*sy*(1/9*rxxx*sy^2+(rx*sxxy+1/3*ry*sxxx+rxx*sxy+rxy*sxx)*sy+rx*syy*sxx+2*rx*sxy^2+2*ry*sxx*sxy)
-uxxxyyy230 = 3*ry*ryy*sx^3+((9*rx*ryy+18*rxy*ry)*sy+9*rx*syy*ry+9*ry^2*sxy)*sx^2+9*sy*((2*rx*rxy+rxx*ry)*sy+rx^2*syy+4*ry*sxy*rx+ry^2*sxx)*sx+9*sy^2*(rx*sxy+ry*sxx+1/3*rxx*sy)*rx
-uxxxyyy330 = rx^3*sy^3+9*rx^2*ry*sx*sy^2+9*rx*ry^2*sx^2*sy+ry^3*sx^3
-uxxxyyy040 = sx^3*syyy+(9*sxy*syy+9*sxyy*sy)*sx^2+9*sy*(sxx*syy+sxxy*sy+2*sxy^2)*sx+sxxx*sy^3+9*sxx*sxy*sy^2
-uxxxyyy140 = (3*ry*syy+3*ryy*sy)*sx^3+9*sy*(rx*syy+rxy*sy+2*ry*sxy)*sx^2+(3*rxx*sy^3+(18*rx*sxy+9*ry*sxx)*sy^2)*sx+3*rx*sxx*sy^3
-uxxxyyy240 = 3*rx^2*sx*sy^3+9*rx*ry*sx^2*sy^2+3*ry^2*sx^3*sy
-uxxxyyy050 = 3*sx^3*sy*syy+9*sx^2*sxy*sy^2+3*sx*sxx*sy^3
-uxxxyyy150 = 3*rx*sx^2*sy^3+3*ry*sx^3*sy^2
-uxxxyyy060 = sx^3*sy^3
-uxxxyyy = uxxxyyy100*ur+uxxxyyy200*urr+uxxxyyy300*urrr+uxxxyyy400*urrrr+uxxxyyy500*urrrrr+uxxxyyy600*urrrrrr+uxxxyyy010*us+uxxxyyy110*urs+uxxxyyy210*urrs+uxxxyyy310*urrrs+uxxxyyy410*urrrrs+uxxxyyy510*urrrrrs+uxxxyyy020*uss+uxxxyyy120*urss+uxxxyyy220*urrss+uxxxyyy320*urrrss+uxxxyyy420*urrrrss+uxxxyyy030*usss+uxxxyyy130*ursss+uxxxyyy230*urrsss+uxxxyyy330*urrrsss+uxxxyyy040*ussss+uxxxyyy140*urssss+uxxxyyy240*urrssss+uxxxyyy050*usssss+uxxxyyy150*ursssss+uxxxyyy060*ussssss
-
-uxxyyyy100 = rxxyyyy
-uxxyyyy200 = 2*rx*rxyyyy+rxx*ryyyy+4*rxxy*ryyy+6*rxxyy*ryy+4*rxxyyy*ry+8*rxy*rxyyy+6*rxyy^2
-uxxyyyy300 = 6*rxxyy*ry^2+(8*rx*rxyyy+4*rxx*ryyy+12*rxxy*ryy+24*rxy*rxyy)*ry+3*rxx*ryy^2+(12*rx*rxyy+12*rxy^2)*ryy+ryyyy*rx^2+8*rx*rxy*ryyy
-uxxyyyy400 = (4*rx^2*ryyy+24*rx*rxy*ryy)*ry+4*rxxy*ry^3+(12*rx*rxyy+6*rxx*ryy+12*rxy^2)*ry^2+3*ryy^2*rx^2
-uxxyyyy500 = 6*rx^2*ry^2*ryy+8*rx*rxy*ry^3+rxx*ry^4
-uxxyyyy600 = rx^2*ry^4
-uxxyyyy010 = sxxyyyy
-uxxyyyy110 = 2*rx*sxyyyy+rxx*syyyy+4*rxxy*syyy+6*rxxyy*syy+4*rxxyyy*sy+8*rxy*sxyyy+12*rxyy*sxyy+8*rxyyy*sxy+2*rxyyyy*sx+4*ry*sxxyyy+6*ryy*sxxyy+4*ryyy*sxxy+ryyyy*sxx
-uxxyyyy210 = 6*ry^2*sxxyy+(8*rx*sxyyy+4*rxx*syyy+12*rxxy*syy+12*rxxyy*sy+24*rxy*sxyy+24*rxyy*sxy+8*rxyyy*sx+12*ryy*sxxy+4*ryyy*sxx)*ry+rx^2*syyyy+(8*rxy*syyy+12*rxyy*syy+8*rxyyy*sy+12*ryy*sxyy+8*ryyy*sxy+2*ryyyy*sx)*rx+3*ryy^2*sxx+(6*rxx*syy+12*rxxy*sy+24*rxy*sxy+12*rxyy*sx)*ryy+12*rxy^2*syy+(24*rxyy*sy+8*ryyy*sx)*rxy+4*rxx*ryyy*sy
-uxxyyyy310 = 4*ry^3*sxxy+(12*rx*sxyy+6*rxx*syy+12*rxxy*sy+24*rxy*sxy+12*rxyy*sx+6*ryy*sxx)*ry^2+(4*rx^2*syyy+(24*rxy*syy+24*rxyy*sy+24*ryy*sxy+8*ryyy*sx)*rx+(12*rxx*sy+24*rxy*sx)*ryy+24*sy*rxy^2)*ry+6*rx*((syy*ryy+2/3*ryyy*sy)*rx+ryy^2*sx+4*sy*rxy*ryy)
-uxxyyyy410 = 6*rx^2*ry^2*syy+12*rx^2*ry*ryy*sy+24*rx*rxy*ry^2*sy+8*rx*ry^3*sxy+12*rx*ry^2*ryy*sx+4*rxx*ry^3*sy+8*rxy*ry^3*sx+ry^4*sxx
-uxxyyyy510 = 4*rx^2*ry^3*sy+2*rx*ry^4*sx
-uxxyyyy020 = 2*sx*sxyyyy+sxx*syyyy+4*sxxy*syyy+6*sxxyy*syy+4*sxxyyy*sy+8*sxy*sxyyy+6*sxyy^2
-uxxyyyy120 = 6*rxxyy*sy^2+(8*rx*sxyyy+4*rxx*syyy+12*rxxy*syy+24*rxy*sxyy+24*rxyy*sxy+8*rxyyy*sx+12*ry*sxxyy+12*ryy*sxxy+4*ryyy*sxx)*sy+ryyyy*sx^2+(2*rx*syyyy+8*rxy*syyy+12*rxyy*syy+8*ry*sxyyy+12*ryy*sxyy+8*ryyy*sxy)*sx+3*rxx*syy^2+(12*rx*sxyy+24*rxy*sxy+12*ry*sxxy+6*ryy*sxx)*syy+12*ryy*sxy^2+(8*rx*syyy+24*ry*sxyy)*sxy+4*ry*sxx*syyy
-uxxyyyy220 = (12*sx*sxyy+6*sxx*syy+12*sxxy*sy+12*sxy^2)*ry^2+(12*rxxy*sy^2+(24*rx*sxyy+12*rxx*syy+48*rxy*sxy+24*rxyy*sx+12*ryy*sxx)*sy+(8*sx*syyy+24*sxy*syy)*rx+24*sx*(rxy*syy+1/6*ryyy*sx+ryy*sxy))*ry+(12*rx*rxyy+6*rxx*ryy+12*rxy^2)*sy^2+(4*rx^2*syyy+(24*rxy*syy+24*ryy*sxy+8*ryyy*sx)*rx+24*rxy*ryy*sx)*sy+3*syy^2*rx^2+12*ryy*syy*sx*rx+3*ryy^2*sx^2
-uxxyyyy320 = (8*sx*sxy+4*sxx*sy)*ry^3+(6*rxx*sy^2+(24*rx*sxy+24*rxy*sx)*sy+12*sx*syy*rx+6*ryy*sx^2)*ry^2+12*rx*sy*(rx*syy+2*rxy*sy+2*ryy*sx)*ry+6*ryy*rx^2*sy^2
-uxxyyyy420 = 6*rx^2*ry^2*sy^2+8*rx*ry^3*sx*sy+ry^4*sx^2
-uxxyyyy030 = 6*sxxyy*sy^2+(8*sx*sxyyy+4*sxx*syyy+12*sxxy*syy+24*sxy*sxyy)*sy+3*sxx*syy^2+(12*sx*sxyy+12*sxy^2)*syy+sx^2*syyyy+8*sx*sxy*syyy
-uxxyyyy130 = 4*rxxy*sy^3+(12*rx*sxyy+6*rxx*syy+24*rxy*sxy+12*rxyy*sx+12*ry*sxxy+6*ryy*sxx)*sy^2+(4*ryyy*sx^2+(8*rx*syyy+24*rxy*syy+24*ry*sxyy+24*ryy*sxy)*sx+(24*rx*sxy+12*ry*sxx)*syy+24*ry*sxy^2)*sy+(4*ry*syyy+6*ryy*syy)*sx^2+(6*rx*syy^2+24*ry*sxy*syy)*sx
-uxxyyyy230 = (8*rx*rxy+4*rxx*ry)*sy^3+(6*ry^2*sxx+(24*rx*sxy+24*rxy*sx)*ry+6*rx^2*syy+12*rx*sx*ryy)*sy^2+24*ry*(rx*syy+ry*sxy+1/2*ryy*sx)*sx*sy+6*ry^2*sx^2*syy
-uxxyyyy330 = 4*rx^2*ry*sy^3+12*rx*ry^2*sx*sy^2+4*ry^3*sx^2*sy
-uxxyyyy040 = 4*sxxy*sy^3+(12*sx*sxyy+6*sxx*syy+12*sxy^2)*sy^2+(4*sx^2*syyy+24*sx*sxy*syy)*sy+3*syy^2*sx^2
-uxxyyyy140 = 12*rx*sx*sy^2*syy+8*rx*sxy*sy^3+rxx*sy^4+8*rxy*sx*sy^3+12*ry*sx^2*sy*syy+24*ry*sx*sxy*sy^2+4*ry*sxx*sy^3+6*ryy*sx^2*sy^2
-uxxyyyy240 = rx^2*sy^4+8*rx*ry*sx*sy^3+6*ry^2*sx^2*sy^2
-uxxyyyy050 = 6*sx^2*sy^2*syy+8*sx*sxy*sy^3+sxx*sy^4
-uxxyyyy150 = 2*rx*sx*sy^4+4*ry*sx^2*sy^3
-uxxyyyy060 = sx^2*sy^4
-uxxyyyy = uxxyyyy100*ur+uxxyyyy200*urr+uxxyyyy300*urrr+uxxyyyy400*urrrr+uxxyyyy500*urrrrr+uxxyyyy600*urrrrrr+uxxyyyy010*us+uxxyyyy110*urs+uxxyyyy210*urrs+uxxyyyy310*urrrs+uxxyyyy410*urrrrs+uxxyyyy510*urrrrrs+uxxyyyy020*uss+uxxyyyy120*urss+uxxyyyy220*urrss+uxxyyyy320*urrrss+uxxyyyy420*urrrrss+uxxyyyy030*usss+uxxyyyy130*ursss+uxxyyyy230*urrsss+uxxyyyy330*urrrsss+uxxyyyy040*ussss+uxxyyyy140*urssss+uxxyyyy240*urrssss+uxxyyyy050*usssss+uxxyyyy150*ursssss+uxxyyyy060*ussssss
-
-uxyyyyy100 = rxyyyyy
-uxyyyyy200 = rx*ryyyyy+5*rxy*ryyyy+10*rxyy*ryyy+10*rxyyy*ryy+5*rxyyyy*ry
-uxyyyyy300 = 10*rxyyy*ry^2+(5*rx*ryyyy+20*rxy*ryyy+30*rxyy*ryy)*ry+15*rxy*ryy^2+10*ryyy*rx*ryy
-uxyyyyy400 = 10*rx*ry^2*ryyy+15*rx*ry*ryy^2+30*rxy*ry^2*ryy+10*rxyy*ry^3
-uxyyyyy500 = 10*rx*ry^3*ryy+5*rxy*ry^4
-uxyyyyy600 = rx*ry^5
-uxyyyyy010 = sxyyyyy
-uxyyyyy110 = rx*syyyyy+5*rxy*syyyy+10*rxyy*syyy+10*rxyyy*syy+5*rxyyyy*sy+5*ry*sxyyyy+10*ryy*sxyyy+10*ryyy*sxyy+5*ryyyy*sxy+ryyyyy*sx
-uxyyyyy210 = 10*ry^2*sxyyy+(5*rx*syyyy+20*rxy*syyy+30*rxyy*syy+20*rxyyy*sy+30*ryy*sxyy+20*ryyy*sxy+5*ryyyy*sx)*ry+15*ryy^2*sxy+(10*rx*syyy+30*rxy*syy+30*rxyy*sy+10*ryyy*sx)*ryy+(10*rx*syy+20*rxy*sy)*ryyy+5*rx*ryyyy*sy
-uxyyyyy310 = 10*sxyy*ry^3+(10*rx*syyy+30*rxy*syy+30*rxyy*sy+30*ryy*sxy+10*ryyy*sx)*ry^2+(15*ryy^2*sx+(30*rx*syy+60*rxy*sy)*ryy+20*rx*ryyy*sy)*ry+15*ryy^2*rx*sy
-uxyyyyy410 = 10*rx*ry^3*syy+30*rx*ry^2*ryy*sy+20*rxy*ry^3*sy+5*ry^4*sxy+10*ry^3*ryy*sx
-uxyyyyy510 = 5*rx*ry^4*sy+ry^5*sx
-uxyyyyy020 = sx*syyyyy+5*sxy*syyyy+10*sxyy*syyy+10*sxyyy*syy+5*sxyyyy*sy
-uxyyyyy120 = 10*rxyyy*sy^2+(5*rx*syyyy+20*rxy*syyy+30*rxyy*syy+20*ry*sxyyy+30*ryy*sxyy+20*ryyy*sxy+5*ryyyy*sx)*sy+15*rxy*syy^2+(10*rx*syyy+30*ry*sxyy+30*ryy*sxy+10*ryyy*sx)*syy+(20*ry*sxy+10*ryy*sx)*syyy+5*ry*sx*syyyy
-uxyyyyy220 = (10*sx*syyy+30*sxy*syy+30*sxyy*sy)*ry^2+(30*rxyy*sy^2+(20*rx*syyy+60*rxy*syy+60*ryy*sxy+20*ryyy*sx)*sy+30*ryy*syy*sx+15*syy^2*rx)*ry+10*sy*((rx*ryyy+3*rxy*ryy)*sy+3*ryy*syy*rx+3/2*ryy^2*sx)
-uxyyyyy320 = 30*rx*ry^2*sy*syy+30*rx*ry*ryy*sy^2+30*rxy*ry^2*sy^2+10*ry^3*sx*syy+20*ry^3*sxy*sy+30*ry^2*ryy*sx*sy
-uxyyyyy420 = 10*rx*ry^3*sy^2+5*ry^4*sx*sy
-uxyyyyy030 = 10*sy^2*sxyyy+(5*sx*syyyy+20*sxy*syyy+30*sxyy*syy)*sy+15*sxy*syy^2+10*sx*syyy*syy
-uxyyyyy130 = 10*rxyy*sy^3+(10*rx*syyy+30*rxy*syy+30*ry*sxyy+30*ryy*sxy+10*ryyy*sx)*sy^2+(15*syy^2*rx+(60*ry*sxy+30*ryy*sx)*syy+20*syyy*ry*sx)*sy+15*ry*sx*syy^2
-uxyyyyy230 = 30*rx*ry*sy^2*syy+10*rx*ryy*sy^3+20*rxy*ry*sy^3+30*ry^2*sx*sy*syy+30*ry^2*sxy*sy^2+30*ry*ryy*sx*sy^2
-uxyyyyy330 = 10*rx*ry^2*sy^3+10*ry^3*sx*sy^2
-uxyyyyy040 = 10*sx*sy^2*syyy+15*sx*sy*syy^2+30*sxy*sy^2*syy+10*sxyy*sy^3
-uxyyyyy140 = 10*rx*sy^3*syy+5*rxy*sy^4+30*ry*sx*sy^2*syy+20*ry*sxy*sy^3+10*ryy*sx*sy^3
-uxyyyyy240 = 5*rx*ry*sy^4+10*ry^2*sx*sy^3
-uxyyyyy050 = 10*sx*sy^3*syy+5*sxy*sy^4
-uxyyyyy150 = rx*sy^5+5*ry*sx*sy^4
-uxyyyyy060 = sx*sy^5
-uxyyyyy = uxyyyyy100*ur+uxyyyyy200*urr+uxyyyyy300*urrr+uxyyyyy400*urrrr+uxyyyyy500*urrrrr+uxyyyyy600*urrrrrr+uxyyyyy010*us+uxyyyyy110*urs+uxyyyyy210*urrs+uxyyyyy310*urrrs+uxyyyyy410*urrrrs+uxyyyyy510*urrrrrs+uxyyyyy020*uss+uxyyyyy120*urss+uxyyyyy220*urrss+uxyyyyy320*urrrss+uxyyyyy420*urrrrss+uxyyyyy030*usss+uxyyyyy130*ursss+uxyyyyy230*urrsss+uxyyyyy330*urrrsss+uxyyyyy040*ussss+uxyyyyy140*urssss+uxyyyyy240*urrssss+uxyyyyy050*usssss+uxyyyyy150*ursssss+uxyyyyy060*ussssss
-
-uyyyyyy100 = ryyyyyy
-uyyyyyy200 = 6*ry*ryyyyy+15*ryy*ryyyy+10*ryyy^2
-uyyyyyy300 = 15*ry^2*ryyyy+60*ry*ryy*ryyy+15*ryy^3
-uyyyyyy400 = 20*ry^3*ryyy+45*ry^2*ryy^2
-uyyyyyy500 = 15*ry^4*ryy
-uyyyyyy600 = ry^6
-uyyyyyy010 = syyyyyy
-uyyyyyy110 = 6*ry*syyyyy+15*ryy*syyyy+20*ryyy*syyy+15*ryyyy*syy+6*ryyyyy*sy
-uyyyyyy210 = 15*ry^2*syyyy+(60*ryy*syyy+60*ryyy*syy+30*ryyyy*sy)*ry+60*ryyy*ryy*sy+45*ryy^2*syy
-uyyyyyy310 = 20*ry^3*syyy+(90*ryy*syy+60*ryyy*sy)*ry^2+90*ryy^2*sy*ry
-uyyyyyy410 = 15*ry^4*syy+60*ry^3*ryy*sy
-uyyyyyy510 = 6*sy*ry^5
-uyyyyyy020 = 6*sy*syyyyy+15*syy*syyyy+10*syyy^2
-uyyyyyy120 = 15*ryyyy*sy^2+(30*ry*syyyy+60*ryy*syyy+60*ryyy*syy)*sy+60*ry*syy*syyy+45*syy^2*ryy
-uyyyyyy220 = (60*ry*ryyy+45*ryy^2)*sy^2+(60*ry^2*syyy+180*ry*ryy*syy)*sy+45*ry^2*syy^2
-uyyyyyy320 = 60*sy*(ry*syy+3/2*ryy*sy)*ry^2
-uyyyyyy420 = 15*ry^4*sy^2
-uyyyyyy030 = 15*sy^2*syyyy+60*sy*syy*syyy+15*syy^3
-uyyyyyy130 = 20*ryyy*sy^3+(60*ry*syyy+90*ryy*syy)*sy^2+90*ry*sy*syy^2
-uyyyyyy230 = 90*sy^2*ry*(ry*syy+2/3*ryy*sy)
-uyyyyyy330 = 20*ry^3*sy^3
-uyyyyyy040 = 20*sy^3*syyy+45*sy^2*syy^2
-uyyyyyy140 = 60*ry*sy^3*syy+15*ryy*sy^4
-uyyyyyy240 = 15*ry^2*sy^4
-uyyyyyy050 = 15*sy^4*syy
-uyyyyyy150 = 6*ry*sy^5
-uyyyyyy060 = sy^6
-uyyyyyy = uyyyyyy100*ur+uyyyyyy200*urr+uyyyyyy300*urrr+uyyyyyy400*urrrr+uyyyyyy500*urrrrr+uyyyyyy600*urrrrrr+uyyyyyy010*us+uyyyyyy110*urs+uyyyyyy210*urrs+uyyyyyy310*urrrs+uyyyyyy410*urrrrs+uyyyyyy510*urrrrrs+uyyyyyy020*uss+uyyyyyy120*urss+uyyyyyy220*urrss+uyyyyyy320*urrrss+uyyyyyy420*urrrrss+uyyyyyy030*usss+uyyyyyy130*ursss+uyyyyyy230*urrsss+uyyyyyy330*urrrsss+uyyyyyy040*ussss+uyyyyyy140*urssss+uyyyyyy240*urrssss+uyyyyyy050*usssss+uyyyyyy150*ursssss+uyyyyyy060*ussssss
-
+<Output><Text-field style="Line Printed Output" layout="Line Printed Output">Load chain rule coefficients...
+Write coeff for dim=2, deriv=1
+Write coeff for dim=2, deriv=2
+Write coeff for dim=2, deriv=3
+Write coeff for dim=2, deriv=4
+Write coeff for dim=2, deriv=5
+Write coeff for dim=2, deriv=6
+Write coeff for dim=2, deriv=7
+Write coeff for dim=2, deriv=8
+Wrote file=chainRuleCoefficientsMacro2d.h
+Wrote file=declareChainRuleCoefficients2d.h
+Write coeff for dim=3, deriv=1
+Write coeff for dim=3, deriv=2
+Write coeff for dim=3, deriv=3
+Write coeff for dim=3, deriv=4
+Write coeff for dim=3, deriv=5
+Write coeff for dim=3, deriv=6
+Write coeff for dim=3, deriv=7
+Write coeff for dim=3, deriv=8
+Wrote file=chainRuleCoefficientsMacro3d.h
+Wrote file=declareChainRuleCoefficients3d.h
 </Text-field>
 </Output>
 </Group>

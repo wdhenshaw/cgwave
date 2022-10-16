@@ -30,7 +30,7 @@
     integer ipar(0:*)
     real rpar(0:*)
  !     ---- local variables -----
-    integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt,ig
+    integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt,ig,useMask
     integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
     integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
     integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev,numberOfFrequencies
@@ -119,62 +119,11 @@
       real uex4y2z2
       real uex2y4z2
       real uex2y2z4
-          real cx0, cx1, cy0, cy1, cz0, cz1, cxx0, cxx1, cyy0, cyy1, czz0
-          real czz1, cxx, cyy, czz, d200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d002(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d400i, d040i, d004i
-          real lap4h, lap2hSq, lap2h200i, lap2h020i, lap2h002i
- ! #If (4 == 2 ) && ( 3 == 2 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare2dOrder2Rectangular()
- !   #Else
- !     declare2dOrder2Curvilinear()
- !   #End
- ! #Elif (4 == 2 ) && ( 3 == 3 ) 
- !   ! **NEW** Way
- !   #If "rectangular" eq "rectangular"  
- !     declare3dOrder2Rectangular()
- !   #Else
- !     declare3dOrder2Curvilinear()
- !   #End  
- ! #Elif (4 == 4 ) && ( 3 == 2 ) 
- !   ! **NEW** Way
- !   #If "rectangular" eq "rectangular"  
- !     declare2dOrder4Rectangular()
- !   #Else
- !     declare2dOrder4Curvilinear()
- !   #End
- ! #Elif (4 == 4 ) && ( 3 == 3 ) 
- !   ! **NEW** Way
- !   #If "rectangular" eq "rectangular"  
- !     ! declare3dOrder4Rectangular()
- !   #Else
- !     ! declare3dOrder4Curvilinear()
- !   #End  
- ! #Elif (4 == 6 ) && ( 3 == 2 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare2dOrder6Rectangular()
- !   #Else
- !     declare2dOrder6Curvilinear()
- !   #End  
- ! #Elif (4 == 6 ) && ( 3 == 3 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare3dOrder6Rectangular()
- !   #Else
- !     declare3dOrder6Curvilinear()
- !   #End 
- ! #Elif (4 == 8 ) && ( 3 == 2 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare2dOrder8Rectangular()
- !   #Else
- !     declare2dOrder8Curvilinear()
- !   #End  
- ! #Elif (4 == 8 ) && ( 3 == 3 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare3dOrder8Rectangular()
- !   #Else
- !     declare3dOrder8Curvilinear()
- !   #End   
- ! #End
- ! $$$$$$$$$$$$$$$$$$$$$$$ END OLD WAY $$$$$$$$$$$$$$$  
+          real cxx, cyy, czz, d200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d002(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), cx0, cx1, cy0, cy1, cz0
+          real cz1, cxx0, cxx1, cyy0, cyy1, czz0, czz1, cxxx0, cxxx1, cyyy0, cyyy1
+          real czzz0, czzz1, cxxxx0, cxxxx1, cyyyy0, cyyyy1, czzzz0, czzzz1, d200i, d400i, d020i
+          real d220i, d040i, d002i, d202i, d022i, d004i, uxx, uyy, uzz, uxxxx, uxxyy
+          real uyyyy, uxxzz, uyyzz, uzzzz
       integer maxDeriv,d,uc,count,numGhost1,m1,m2,m3
  ! declare coefficients in the chain rule for curvilinear grids (from cgwave/maple/chainRuleCoefficients.mw)
  ! #If "rectangular" eq "curvilinear"
@@ -246,6 +195,7 @@
       fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
    ! ** fix me ***
       timeSteppingMethod=modifiedEquationTimeStepping
+      useMask=0  ! do this for now -- do not check mask in loops, these seems faster
    ! Set dr(:) = dx(:) for 6th-order derivatives
       if( gridType.eq.rectangular )then
           do axis=0,2
@@ -376,169 +326,173 @@
           ! -- call the appropriate macro:
           !  update2dOrder2Rectangular(3,4,2,rectangular)
           !  update3dOrder6Curvilinear(3,4,2,rectangular)
-            ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
-            ! Example: 
-            ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
-cx0 = 1.; cx1 = -1/6.; 
-cy0 = 1.; cy1 = -1/6.; 
-cz0 = 1.; cz1 = -1/6.; 
-cxx0 = 1.; cxx1 = -1/12.; 
-cyy0 = 1.; cyy1 = -1/12.; 
-czz0 = 1.; czz1 = -1/12.; 
+                    if( useMask.eq.0 .and. addForcing.eq.0 )then
+            ! No-mask, no-forcing
 cxx=1./dx(0)**2;
 cyy=1./dx(1)**2;
 czz=1./dx(2)**2;
-                        fv(m)=0.
-                        numGhost1=1;
-                        n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                        n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                        n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                          do i3=n3a,n3b
-                          do i2=n2a,n2b
-                          do i1=n1a,n1b
-                            if( mask(i1,i2,i3).ne.0 )then
-                                d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
-                                d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
-                                d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
-                                lap2h(i1,i2,i3,0) = cxx*d200(i1,i2,i3,0) + cyy*d020(i1,i2,i3,0) + czz*d002(i1,i2,i3,0) 
-                            end if ! mask .ne. 0
-                          end do
-                          end do
-                          end do
-            ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
-                        numGhost1=0;
-                        n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                        n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                        n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                          do i3=n3a,n3b
-                          do i2=n2a,n2b
-                          do i1=n1a,n1b
-                            if( mask(i1,i2,i3).ne.0 )then
-                                d400i = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
-                                d040i = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
-                                d004i = d002(i1,i2,i3+1,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
-                ! --- Laplacian to order 4 = lap2h + corrections 
-                                lap4h = lap2h(i1,i2,i3,0) + cxx*cxx1*d400i + cyy*cyy1*d040i + czz*czz1*d004i     
-                ! --- Laplacian squared to order 2:
-                                lap2h200i = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
-                                lap2h020i = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
-                                lap2h002i = lap2h(i1,i2,i3+1,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2,i3-1,0)
-                                lap2hSq =                      cxx*lap2h200i   + cyy*lap2h020i   + czz*lap2h002i     
-                                    if( forcingOption.eq.twilightZoneForcing )then
-                                                call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
-                                                call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
-                                                call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
-                                                call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
-                                                call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
-                                            fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
-                                  else if( forcingOption.eq.helmholtzForcing )then
-                    ! forcing for solving the Helmholtz equation   
-                    ! NOTE: change sign of forcing since for Helholtz we want to solve
-                    !      ( omega^2 I + c^2 Delta) w = f 
-                    ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                        fv(m)=0.
-                                        do freq=0,numberOfFrequencies-1 
-                                            omega = frequencyArray(freq)
-                                            coswt = cosFreqt(freq)    
-                       ! if( i1.eq.2 .and. i2.eq.2 )then 
-                       !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
-                       ! end if
-                       ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                              fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
-                                        end do ! do freq  
-                                  else if( addForcing.ne.0 )then  
-                                        fv(m) = f(i1,i2,i3,0)
-                                  end if
-                ! --- Modified equation space-time update ----
-                                un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap4h )                         + cdtPow4By12*( lap2hSq )                   + dtSq*fv(m)                             
-                            end if ! mask .ne. 0
-                          end do
-                          end do
-                          end do
-        !   #If 4 == 2
-        !     #If "rectangular" eq "rectangular"
-        !       #If "3" eq "2" 
-        !         update2dOrder2Rectangular(3,4,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 2222
-        !         update3dOrder2Rectangular(3,4,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "3" eq "2" 
-        !         update2dOrder2Curvilinear(3,4,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 7474
-        !         update3dOrder2Curvilinear(3,4,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End
-        !   #Elif 4 == 4
-        !     #If "rectangular" eq "rectangular"
-        !       #If "3" eq "2" 
-        !         update2dOrder4Rectangular(3,4,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 747
-        !         update3dOrder4Rectangular(3,4,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "3" eq "2" 
-        !         update2dOrder4Curvilinear(3,4,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 7474
-        !         update3dOrder4Curvilinear(3,4,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End  
-        !   #Elif 4 == 6 
-        !     #If "rectangular" eq "rectangular"
-        !       #If "3" eq "2" 
-        !         update2dOrder6Rectangular(3,4,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 727
-        !         update3dOrder6Rectangular(3,4,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "3" eq "2" 
-        !         update2dOrder6Curvilinear(3,4,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 7474
-        !         update3dOrder6Curvilinear(3,4,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End 
-        !   #Elif 4 == 8 
-        !     #If "rectangular" eq "rectangular"
-        !       #If "3" eq "2" 
-        !         update2dOrder8Rectangular(3,4,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 820
-        !         update3dOrder8Rectangular(3,4,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "3" eq "2" 
-        !         update2dOrder8Curvilinear(3,4,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 7474
-        !         update3dOrder8Curvilinear(3,4,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End  
-        !   #Else
-        !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=3 order=4 orderInTime=2, gridType=rectangular")') 
-        !     stop 6666
-        !   #End
+                            numGhost1=1;
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                    d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2.*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                    d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2.*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                    d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2.*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
+                              end do
+                              end do
+                              end do
+              ! ------------ MAIN LOOP, 3D, 4 4 ----------------
+                            numGhost1=0; 
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+              ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+              ! Example: 
+              ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
+cx0 = 1./(dx(0)**1); cx1 = (-1/6.); 
+cy0 = 1./(dx(1)**1); cy1 = (-1/6.); 
+cz0 = 1./(dx(2)**1); cz1 = (-1/6.); 
+cxx0 = 1./(dx(0)**2); cxx1 = (-1/12.); 
+cyy0 = 1./(dx(1)**2); cyy1 = (-1/12.); 
+czz0 = 1./(dx(2)**2); czz1 = (-1/12.); 
+cxxx0 = 1./(dx(0)**3); cxxx1 = (-1/4.); 
+cyyy0 = 1./(dx(1)**3); cyyy1 = (-1/4.); 
+czzz0 = 1./(dx(2)**3); czzz1 = (-1/4.); 
+cxxxx0 = 1./(dx(0)**4); cxxxx1 = (-1/6.); 
+cyyyy0 = 1./(dx(1)**4); cyyyy1 = (-1/6.); 
+czzzz0 = 1./(dx(2)**4); czzzz1 = (-1/6.); 
+                            fv(m)=0.
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                  ! -- Note: Highest differences do not need to be stored in an array 
+                  ! ----- DIFFERENCES OF U -----
+                                    d200i = d200(i1,i2,i3,0)
+                                    d400i = d200(i1+1,i2,i3,0) - 2.*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                    d020i = d020(i1,i2,i3,0)
+                                    d220i = d020(i1+1,i2,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
+                                    d040i = d020(i1,i2+1,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                                    d002i = d002(i1,i2,i3,0)
+                                    d202i = d002(i1+1,i2,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
+                                    d022i = d002(i1,i2+1,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                    d004i = d002(i1,i2,i3+1,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
+                  ! ----- spatial derivatives of order 2 ----
+                                    uxx =cxx0*(d200i + cxx1*d400i)
+                                    uyy =cyy0*(d020i + cyy1*d040i)
+                                    uzz =czz0*(d002i + czz1*d004i)
+                  ! ----- spatial derivatives of order 4 ----
+                                    uxxxx =cxxxx0*(d400i)
+                                    uxxyy =cxx0*cyy0*(d220i)
+                                    uyyyy =cyyyy0*(d040i)
+                                    uxxzz =cxx0*czz0*(d202i)
+                                    uyyzz =cyy0*czz0*(d022i)
+                                    uzzzz =czzzz0*(d004i)
+                  ! ---- Modified Equation UPDATE ----- 
+                                    un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( uxx + uyy +uzz ) + cdtPow4By12*( uxxxx + uyyyy + uzzzz + 2.*(uxxyy+uxxzz+uyyzz) )  +dtSq*fv(m)  
+                              end do
+                              end do
+                              end do
+                    else
+cxx=1./dx(0)**2;
+cyy=1./dx(1)**2;
+czz=1./dx(2)**2;
+                            numGhost1=1;
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                if( mask(i1,i2,i3).ne.0 )then
+                                    d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2.*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                    d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2.*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                    d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2.*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
+                                end if ! mask .ne. 0
+                              end do
+                              end do
+                              end do
+              ! ------------ MAIN LOOP, 3D, 4 4 ----------------
+                            numGhost1=0; 
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+              ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+              ! Example: 
+              ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
+cx0 = 1./(dx(0)**1); cx1 = (-1/6.); 
+cy0 = 1./(dx(1)**1); cy1 = (-1/6.); 
+cz0 = 1./(dx(2)**1); cz1 = (-1/6.); 
+cxx0 = 1./(dx(0)**2); cxx1 = (-1/12.); 
+cyy0 = 1./(dx(1)**2); cyy1 = (-1/12.); 
+czz0 = 1./(dx(2)**2); czz1 = (-1/12.); 
+cxxx0 = 1./(dx(0)**3); cxxx1 = (-1/4.); 
+cyyy0 = 1./(dx(1)**3); cyyy1 = (-1/4.); 
+czzz0 = 1./(dx(2)**3); czzz1 = (-1/4.); 
+cxxxx0 = 1./(dx(0)**4); cxxxx1 = (-1/6.); 
+cyyyy0 = 1./(dx(1)**4); cyyyy1 = (-1/6.); 
+czzzz0 = 1./(dx(2)**4); czzzz1 = (-1/6.); 
+                            fv(m)=0.
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                if( mask(i1,i2,i3).ne.0 )then
+                  ! -- Note: Highest differences do not need to be stored in an array 
+                  ! ----- DIFFERENCES OF U -----
+                                    d200i = d200(i1,i2,i3,0)
+                                    d400i = d200(i1+1,i2,i3,0) - 2.*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                    d020i = d020(i1,i2,i3,0)
+                                    d220i = d020(i1+1,i2,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
+                                    d040i = d020(i1,i2+1,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                                    d002i = d002(i1,i2,i3,0)
+                                    d202i = d002(i1+1,i2,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
+                                    d022i = d002(i1,i2+1,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                    d004i = d002(i1,i2,i3+1,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
+                  ! ----- spatial derivatives of order 2 ----
+                                    uxx =cxx0*(d200i + cxx1*d400i)
+                                    uyy =cyy0*(d020i + cyy1*d040i)
+                                    uzz =czz0*(d002i + czz1*d004i)
+                  ! ----- spatial derivatives of order 4 ----
+                                    uxxxx =cxxxx0*(d400i)
+                                    uxxyy =cxx0*cyy0*(d220i)
+                                    uyyyy =cyyyy0*(d040i)
+                                    uxxzz =cxx0*czz0*(d202i)
+                                    uyyzz =cyy0*czz0*(d022i)
+                                    uzzzz =czzzz0*(d004i)
+                                        if( forcingOption.eq.twilightZoneForcing )then
+                                                    call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
+                                                    call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
+                                                    call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
+                                                    call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
+                                                    call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
+                                                fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
+                                      else if( forcingOption.eq.helmholtzForcing )then
+                      ! forcing for solving the Helmholtz equation   
+                      ! NOTE: change sign of forcing since for Helholtz we want to solve
+                      !      ( omega^2 I + c^2 Delta) w = f 
+                      ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                            fv(m)=0.
+                                            do freq=0,numberOfFrequencies-1 
+                                                omega = frequencyArray(freq)
+                                                coswt = cosFreqt(freq)    
+                         ! if( i1.eq.2 .and. i2.eq.2 )then 
+                         !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+                         ! end if
+                         ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                                  fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
+                                            end do ! do freq  
+                                      else if( addForcing.ne.0 )then  
+                                            fv(m) = f(i1,i2,i3,0)
+                                      end if
+                  ! ---- Modified Equation UPDATE ----- 
+                                    un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( uxx + uyy +uzz ) + cdtPow4By12*( uxxxx + uyyyy + uzzzz + 2.*(uxxyy+uxxzz+uyyzz) )  +dtSq*fv(m)  
+                                end if ! mask .ne. 0
+                              end do
+                              end do
+                              end do
+                    end if
               else
                       if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
                           write(*,'("advWaveME: ADVANCE dim=3 order=4 orderInTime=4, grid=rectangular... t=",e10.2)') t
@@ -548,178 +502,182 @@ czz=1./dx(2)**2;
            ! -- call the appropriate macro:
            !  update2dOrder2Rectangular(3,4,4,rectangular)
            !  update3dOrder6Curvilinear(3,4,4,rectangular)
-             ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
-             ! Example: 
-             ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
-cx0 = 1.; cx1 = -1/6.; 
-cy0 = 1.; cy1 = -1/6.; 
-cz0 = 1.; cz1 = -1/6.; 
-cxx0 = 1.; cxx1 = -1/12.; 
-cyy0 = 1.; cyy1 = -1/12.; 
-czz0 = 1.; czz1 = -1/12.; 
+                      if( useMask.eq.0 .and. addForcing.eq.0 )then
+             ! No-mask, no-forcing
 cxx=1./dx(0)**2;
 cyy=1./dx(1)**2;
 czz=1./dx(2)**2;
-                          fv(m)=0.
-                          numGhost1=1;
-                          n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                          n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                          n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                            do i3=n3a,n3b
-                            do i2=n2a,n2b
-                            do i1=n1a,n1b
-                              if( mask(i1,i2,i3).ne.0 )then
-                                  d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
-                                  d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
-                                  d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
-                                  lap2h(i1,i2,i3,0) = cxx*d200(i1,i2,i3,0) + cyy*d020(i1,i2,i3,0) + czz*d002(i1,i2,i3,0) 
-                              end if ! mask .ne. 0
-                            end do
-                            end do
-                            end do
-             ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
-                          numGhost1=0;
-                          n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                          n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                          n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                            do i3=n3a,n3b
-                            do i2=n2a,n2b
-                            do i1=n1a,n1b
-                              if( mask(i1,i2,i3).ne.0 )then
-                                  d400i = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
-                                  d040i = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
-                                  d004i = d002(i1,i2,i3+1,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
-                 ! --- Laplacian to order 4 = lap2h + corrections 
-                                  lap4h = lap2h(i1,i2,i3,0) + cxx*cxx1*d400i + cyy*cyy1*d040i + czz*czz1*d004i     
-                 ! --- Laplacian squared to order 2:
-                                  lap2h200i = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
-                                  lap2h020i = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
-                                  lap2h002i = lap2h(i1,i2,i3+1,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2,i3-1,0)
-                                  lap2hSq =                      cxx*lap2h200i   + cyy*lap2h020i   + czz*lap2h002i     
-                                      if( forcingOption.eq.twilightZoneForcing )then
-                                                  call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
-                                                  call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
-                                                  call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
-                                                  call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
-                                                  call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
-                                              fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
-                        ! Correct forcing for fourth-order ME in 3D
-                                                    call ogDeriv(ep, 4,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttt(m) )
-                                                    call ogDeriv(ep, 0,4,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxx(m) )
-                                                    call ogDeriv(ep, 0,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyy(m) )
-                                                    call ogDeriv(ep, 0,2,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzz(m) )
-                                                    call ogDeriv(ep, 0,0,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzz(m) )
-                                                    call ogDeriv(ep, 0,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyy(m) )
-                                                    call ogDeriv(ep, 0,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzz(m) )
-                                                fv(m) = fv(m) + (dtSq/12.)*evtttt(m) - (cdtsq12/dtSq)*( evxxxx(m) + 2.*( evxxyy(m) + evxxzz(m) + evyyzz(m) ) + evyyyy(m) + evzzzz(m) )       
-                                    else if( forcingOption.eq.helmholtzForcing )then
-                     ! forcing for solving the Helmholtz equation   
-                     ! NOTE: change sign of forcing since for Helholtz we want to solve
-                     !      ( omega^2 I + c^2 Delta) w = f 
-                     ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                          fv(m)=0.
-                                          do freq=0,numberOfFrequencies-1 
-                                              omega = frequencyArray(freq)
-                                              coswt = cosFreqt(freq)    
-                         ! Add corrections for 4th order modified equation 
-                         !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
-                                                  write(*,*) 'fix me'
-                                                  stop 4444
-                             !fv(m) = fv(m) -( f(i1,i2,i3,freq) + cdtSqBy12*( cSq*(fxx23r(i1,i2,i3,freq) + fyy23r(i1,i2,i3,freq) + fzz23r(i1,i2,i3,freq)) - omega*omega*f(i1,i2,i3,freq)) )*coswt 
-                                          end do ! do freq  
-                                    else if( addForcing.ne.0 )then  
-                                          fv(m) = f(i1,i2,i3,0)
-                                    end if
-                 ! --- Modified equation space-time update ----
-                                  un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap4h )                         + cdtPow4By12*( lap2hSq )                   + dtSq*fv(m)                             
-                              end if ! mask .ne. 0
-                            end do
-                            end do
-                            end do
-         !   #If 4 == 2
-         !     #If "rectangular" eq "rectangular"
-         !       #If "3" eq "2" 
-         !         update2dOrder2Rectangular(3,4,4,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 2222
-         !         update3dOrder2Rectangular(3,4,4,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "3" eq "2" 
-         !         update2dOrder2Curvilinear(3,4,4,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 7474
-         !         update3dOrder2Curvilinear(3,4,4,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End
-         !   #Elif 4 == 4
-         !     #If "rectangular" eq "rectangular"
-         !       #If "3" eq "2" 
-         !         update2dOrder4Rectangular(3,4,4,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 747
-         !         update3dOrder4Rectangular(3,4,4,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "3" eq "2" 
-         !         update2dOrder4Curvilinear(3,4,4,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 7474
-         !         update3dOrder4Curvilinear(3,4,4,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End  
-         !   #Elif 4 == 6 
-         !     #If "rectangular" eq "rectangular"
-         !       #If "3" eq "2" 
-         !         update2dOrder6Rectangular(3,4,4,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 727
-         !         update3dOrder6Rectangular(3,4,4,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "3" eq "2" 
-         !         update2dOrder6Curvilinear(3,4,4,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 7474
-         !         update3dOrder6Curvilinear(3,4,4,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End 
-         !   #Elif 4 == 8 
-         !     #If "rectangular" eq "rectangular"
-         !       #If "3" eq "2" 
-         !         update2dOrder8Rectangular(3,4,4,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 820
-         !         update3dOrder8Rectangular(3,4,4,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "3" eq "2" 
-         !         update2dOrder8Curvilinear(3,4,4,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 7474
-         !         update3dOrder8Curvilinear(3,4,4,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End  
-         !   #Else
-         !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=3 order=4 orderInTime=4, gridType=rectangular")') 
-         !     stop 6666
-         !   #End
+                              numGhost1=1;
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                      d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2.*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                      d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2.*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                      d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2.*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
+                                end do
+                                end do
+                                end do
+               ! ------------ MAIN LOOP, 3D, 4 4 ----------------
+                              numGhost1=0; 
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+               ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+               ! Example: 
+               ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
+cx0 = 1./(dx(0)**1); cx1 = (-1/6.); 
+cy0 = 1./(dx(1)**1); cy1 = (-1/6.); 
+cz0 = 1./(dx(2)**1); cz1 = (-1/6.); 
+cxx0 = 1./(dx(0)**2); cxx1 = (-1/12.); 
+cyy0 = 1./(dx(1)**2); cyy1 = (-1/12.); 
+czz0 = 1./(dx(2)**2); czz1 = (-1/12.); 
+cxxx0 = 1./(dx(0)**3); cxxx1 = (-1/4.); 
+cyyy0 = 1./(dx(1)**3); cyyy1 = (-1/4.); 
+czzz0 = 1./(dx(2)**3); czzz1 = (-1/4.); 
+cxxxx0 = 1./(dx(0)**4); cxxxx1 = (-1/6.); 
+cyyyy0 = 1./(dx(1)**4); cyyyy1 = (-1/6.); 
+czzzz0 = 1./(dx(2)**4); czzzz1 = (-1/6.); 
+                              fv(m)=0.
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                   ! -- Note: Highest differences do not need to be stored in an array 
+                   ! ----- DIFFERENCES OF U -----
+                                      d200i = d200(i1,i2,i3,0)
+                                      d400i = d200(i1+1,i2,i3,0) - 2.*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                      d020i = d020(i1,i2,i3,0)
+                                      d220i = d020(i1+1,i2,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
+                                      d040i = d020(i1,i2+1,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                                      d002i = d002(i1,i2,i3,0)
+                                      d202i = d002(i1+1,i2,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
+                                      d022i = d002(i1,i2+1,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                      d004i = d002(i1,i2,i3+1,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
+                   ! ----- spatial derivatives of order 2 ----
+                                      uxx =cxx0*(d200i + cxx1*d400i)
+                                      uyy =cyy0*(d020i + cyy1*d040i)
+                                      uzz =czz0*(d002i + czz1*d004i)
+                   ! ----- spatial derivatives of order 4 ----
+                                      uxxxx =cxxxx0*(d400i)
+                                      uxxyy =cxx0*cyy0*(d220i)
+                                      uyyyy =cyyyy0*(d040i)
+                                      uxxzz =cxx0*czz0*(d202i)
+                                      uyyzz =cyy0*czz0*(d022i)
+                                      uzzzz =czzzz0*(d004i)
+                   ! ---- Modified Equation UPDATE ----- 
+                                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( uxx + uyy +uzz ) + cdtPow4By12*( uxxxx + uyyyy + uzzzz + 2.*(uxxyy+uxxzz+uyyzz) )  +dtSq*fv(m)  
+                                end do
+                                end do
+                                end do
+                      else
+cxx=1./dx(0)**2;
+cyy=1./dx(1)**2;
+czz=1./dx(2)**2;
+                              numGhost1=1;
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                  if( mask(i1,i2,i3).ne.0 )then
+                                      d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2.*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                      d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2.*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                      d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2.*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
+                                  end if ! mask .ne. 0
+                                end do
+                                end do
+                                end do
+               ! ------------ MAIN LOOP, 3D, 4 4 ----------------
+                              numGhost1=0; 
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+               ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+               ! Example: 
+               ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
+cx0 = 1./(dx(0)**1); cx1 = (-1/6.); 
+cy0 = 1./(dx(1)**1); cy1 = (-1/6.); 
+cz0 = 1./(dx(2)**1); cz1 = (-1/6.); 
+cxx0 = 1./(dx(0)**2); cxx1 = (-1/12.); 
+cyy0 = 1./(dx(1)**2); cyy1 = (-1/12.); 
+czz0 = 1./(dx(2)**2); czz1 = (-1/12.); 
+cxxx0 = 1./(dx(0)**3); cxxx1 = (-1/4.); 
+cyyy0 = 1./(dx(1)**3); cyyy1 = (-1/4.); 
+czzz0 = 1./(dx(2)**3); czzz1 = (-1/4.); 
+cxxxx0 = 1./(dx(0)**4); cxxxx1 = (-1/6.); 
+cyyyy0 = 1./(dx(1)**4); cyyyy1 = (-1/6.); 
+czzzz0 = 1./(dx(2)**4); czzzz1 = (-1/6.); 
+                              fv(m)=0.
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                  if( mask(i1,i2,i3).ne.0 )then
+                   ! -- Note: Highest differences do not need to be stored in an array 
+                   ! ----- DIFFERENCES OF U -----
+                                      d200i = d200(i1,i2,i3,0)
+                                      d400i = d200(i1+1,i2,i3,0) - 2.*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                      d020i = d020(i1,i2,i3,0)
+                                      d220i = d020(i1+1,i2,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
+                                      d040i = d020(i1,i2+1,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                                      d002i = d002(i1,i2,i3,0)
+                                      d202i = d002(i1+1,i2,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
+                                      d022i = d002(i1,i2+1,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                      d004i = d002(i1,i2,i3+1,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
+                   ! ----- spatial derivatives of order 2 ----
+                                      uxx =cxx0*(d200i + cxx1*d400i)
+                                      uyy =cyy0*(d020i + cyy1*d040i)
+                                      uzz =czz0*(d002i + czz1*d004i)
+                   ! ----- spatial derivatives of order 4 ----
+                                      uxxxx =cxxxx0*(d400i)
+                                      uxxyy =cxx0*cyy0*(d220i)
+                                      uyyyy =cyyyy0*(d040i)
+                                      uxxzz =cxx0*czz0*(d202i)
+                                      uyyzz =cyy0*czz0*(d022i)
+                                      uzzzz =czzzz0*(d004i)
+                                          if( forcingOption.eq.twilightZoneForcing )then
+                                                      call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
+                                                      call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
+                                                      call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
+                                                      call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
+                                                      call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
+                                                  fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
+                          ! Correct forcing for fourth-order ME in 3D
+                                                        call ogDeriv(ep, 4,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttt(m) )
+                                                        call ogDeriv(ep, 0,4,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxx(m) )
+                                                        call ogDeriv(ep, 0,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyy(m) )
+                                                        call ogDeriv(ep, 0,2,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzz(m) )
+                                                        call ogDeriv(ep, 0,0,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzz(m) )
+                                                        call ogDeriv(ep, 0,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyy(m) )
+                                                        call ogDeriv(ep, 0,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzz(m) )
+                                                    fv(m) = fv(m) + (dtSq/12.)*evtttt(m) - (cdtsq12/dtSq)*( evxxxx(m) + 2.*( evxxyy(m) + evxxzz(m) + evyyzz(m) ) + evyyyy(m) + evzzzz(m) )       
+                                        else if( forcingOption.eq.helmholtzForcing )then
+                       ! forcing for solving the Helmholtz equation   
+                       ! NOTE: change sign of forcing since for Helholtz we want to solve
+                       !      ( omega^2 I + c^2 Delta) w = f 
+                       ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                              fv(m)=0.
+                                              do freq=0,numberOfFrequencies-1 
+                                                  omega = frequencyArray(freq)
+                                                  coswt = cosFreqt(freq)    
+                           ! Add corrections for 4th order modified equation 
+                           !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
+                                                      write(*,*) 'fix me'
+                                                      stop 4444
+                               !fv(m) = fv(m) -( f(i1,i2,i3,freq) + cdtSqBy12*( cSq*(fxx23r(i1,i2,i3,freq) + fyy23r(i1,i2,i3,freq) + fzz23r(i1,i2,i3,freq)) - omega*omega*f(i1,i2,i3,freq)) )*coswt 
+                                              end do ! do freq  
+                                        else if( addForcing.ne.0 )then  
+                                              fv(m) = f(i1,i2,i3,0)
+                                        end if
+                   ! ---- Modified Equation UPDATE ----- 
+                                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( uxx + uyy +uzz ) + cdtPow4By12*( uxxxx + uyyyy + uzzzz + 2.*(uxxyy+uxxzz+uyyzz) )  +dtSq*fv(m)  
+                                  end if ! mask .ne. 0
+                                end do
+                                end do
+                                end do
+                      end if
               end if 
       else
      ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----

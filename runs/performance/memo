@@ -9,6 +9,510 @@ set perf = $wave/performance
 cd /Users/henshaw/Dropbox/research/cgwave/runs/performance
 
 ****************************
+****** Mon Oct 3, 2022
+
+MEASURE CYCLES DIRECTLY
+
+
+
+
+>>>>>> SQUARE ORDER 6: --> more consistent results
+
+cgWave -noplot ../known/known.cmd -g=nonSquare1024.order6.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  1.18e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  1.18e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  1.17e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  1.18e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  1.18e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  1.17e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  1.18e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  1.18e+02
+
+
+cgWave -noplot ../known/known.cmd -g=nonSquare512.order6.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  1.01e+02
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  1.01e+02
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  1.05e+02
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  1.04e+02
+
+cgWave -noplot ../known/known.cmd -g=nonSquare256.order6.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+advWave: grid=0: numGridPoints=6.605e+04, cycles/grid-point =  1.14e+02
+advWave: grid=0: numGridPoints=6.605e+04, cycles/grid-point =  1.15e+02
+advWave: grid=0: numGridPoints=6.605e+04, cycles/grid-point =  1.15e+02
+advWave: grid=0: numGridPoints=6.605e+04, cycles/grid-point =  1.14e+02
+advWave: grid=0: numGridPoints=6.605e+04, cycles/grid-point =  1.14e+02
+
+>>>>>>>>> SQUARE : WHY ARE CYCLES SO DIFFERENT?? DYNAMIC ALLOCATION ??????
+
+
+
+cgWave -noplot ../known/known.cmd -g=nonSquare1024.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  6.08e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  6.17e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  6.08e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  6.15e+02
+
+
+cgWave -noplot ../known/known.cmd -g=nonSquare512.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  3.21e+02
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  3.20e+02
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  3.19e+02
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  3.17e+02
+
+cgWave -noplot ../known/known.cmd -g=nonSquare128.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+advWave: grid=0: numGridPoints=1.664e+04, cycles/grid-point =  2.87e+02
+advWave: grid=0: numGridPoints=1.664e+04, cycles/grid-point =  2.89e+02
+advWave: grid=0: numGridPoints=1.664e+04, cycles/grid-point =  2.87e+02
+cgWave:FD88 t=1.000e-01 (21 steps) dt=4.762e-03 maxErr= 3.48e-03, ||u||= 6.31e-01, cpu= 4.43e-02(s)
+
+>>>>>>>>>>>>>>>>>> BOX 
+cgWave -noplot ../known/known.cmd -g=nonBox8.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.85e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.86e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.87e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.87e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.84e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.87e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.87e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.83e+03
+
+advance curvilinear grids.........   1823.6       90.05
+
+cgWave -noplot ../known/known.cmd -g=nonBox4.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+advWave: grid=0: numGridPoints=6.892e+04, cycles/grid-point =  1.77e+03
+advWave: grid=0: numGridPoints=6.892e+04, cycles/grid-point =  1.76e+03
+advWave: grid=0: numGridPoints=6.892e+04, cycles/grid-point =  1.83e+03
+advWave: grid=0: numGridPoints=6.892e+04, cycles/grid-point =  1.77e+03
+advWave: grid=0: numGridPoints=6.892e+04, cycles/grid-point =  1.77e+03
+advWave: grid=0: numGridPoints=6.892e+04, cycles/grid-point =  1.76e+03
+
+  advance curvilinear grids.........   1741.6       72.34
+
+
+cgWave -noplot ../known/known.cmd -g=nonBox8.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.90e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.88e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.88e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.88e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.87e+03
+advWave: grid=0: numGridPoints=5.314e+05, cycles/grid-point =  1.89e+03
+
+  advance curvilinear grids.........   1847.1       90.15
+
+
+****************************
+****** Sun Oct 2, 2022
+
+**FIXED numberOfGridPoints in cgWave -- do not count ghost
+
+TEST ORDER=8 3D -- why are errors so big?
+cgWave -noplot ../known/known.cmd -g=nonBox16.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.2 -tp=.2 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+** NO GHOST: 
+ CYCLES : clock=2.70 GHz, gridpts =4.17e+06, numberOfStepsTaken =62, 
+   Timings:                        CYCLES/step/pt    % 
+total time..........................   2549.1      100.00
+setup and initialize................     31.9        1.25
+initial conditions..................     22.0        0.86
+advance.............................   2524.7       99.04
+  advance rectangular grids.........      0.0        0.00
+  advance curvilinear grids.........   2477.3       97.18
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............     31.8        1.25
+  interpolation.....................      0.0        0.00
+  update ghost (parallel)...........      0.0        0.00
+  add forcing.......................      0.0        0.00
+  get errors........................     15.6        0.61
+  plotting..........................      0.0        0.00
+output results......................      0.0        0.00
+waiting (not counted)...............      0.0        0.00
+
+ CYCLES : clock=2.70 GHz, gridpts =5.18e+06, numberOfStepsTaken =62, 
+   Timings:                        CYCLES/step/pt    % 
+total time..........................   2055.7      100.00
+setup and initialize................     25.6        1.25
+initial conditions..................     17.7        0.86
+advance.............................   2036.2       99.05
+  advance rectangular grids.........      0.0        0.00
+  advance curvilinear grids.........   1998.1       97.20
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............     25.5        1.24
+  interpolation.....................      0.0        0.00
+  update ghost (parallel)...........      0.0        0.00
+  add forcing.......................      0.0        0.00
+  get errors........................     12.5        0.61
+  plotting..........................      0.0        0.00
+output results......................      0.0        0.00
+waiting (not counted)...............      0.0        0.00
+
+cgWave -noplot ../known/known.cmd -g=nonBox8.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.5 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+ CYCLES : clock=2.70 GHz, gridpts =5.31e+05, numberOfStepsTaken =77, 
+   Timings:                        CYCLES/step/pt    % 
+total time..........................   1878.9      100.00
+setup and initialize................     28.1        1.49
+initial conditions..................     20.1        1.07
+advance.............................   1856.5       98.81
+  advance rectangular grids.........      0.0        0.00
+  advance curvilinear grids.........   1821.9       96.96
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............     17.6        0.94
+  interpolation.....................      0.4        0.02
+  update ghost (parallel)...........      0.0        0.00
+  add forcing.......................      0.0        0.00
+  get errors........................     16.2        0.86
+  plotting..........................      0.0        0.00
+output results......................      0.0        0.00
+waiting (not counted)...............      0.0        0.00
+
+cgWave -noplot ../known/known.cmd -g=nonBox8.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.2 -tp=.2 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+
+ CYCLES : clock=2.70 GHz, gridpts =5.31e+05, numberOfStepsTaken =31, 
+   Timings:                        CYCLES/step/pt    % 
+total time..........................   1988.9      100.00
+setup and initialize................     79.3        3.98
+initial conditions..................     63.8        3.21
+advance.............................   1918.0       96.44
+  advance rectangular grids.........      0.0        0.00
+  advance curvilinear grids.........   1854.1       93.22
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............     17.5        0.88
+  interpolation.....................      0.4        0.02
+  update ghost (parallel)...........      0.0        0.00
+  add forcing.......................      0.0        0.00
+  get errors........................     45.6        2.29
+  plotting..........................      0.0        0.00
+output results......................      0.0        0.00
+waiting (not counted)...............      0.0        0.00
+
+
+
+****************************
+****** Sat Oct 1, 2022
+
+ADD CLOCK SPEED 
+
+ORDER=8 NON-SQUARE
+cgWave -noplot ../known/known.cmd -g=nonSquare1024.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+ CYCLES : clock=2.70 GHz, gridpts =1.08e+06, numberOfStepsTaken =161, 
+   Timings:                        CYCLES/step/pt    % 
+total time..........................    594.5      100.00
+setup and initialize................      4.4        0.73
+initial conditions..................      4.0        0.67
+advance.............................    590.1       99.26
+  advance rectangular grids.........      0.0        0.00
+  advance curvilinear grids.........    581.2       97.76
+
+ORDER=8
+cgWave -noplot ../known/known.cmd -g=square1024.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+ CYCLES : clock=2.70 GHz, gridpts =1.08e+06, numberOfStepsTaken =161, 
+   Timings:                        CYCLES/step/pt    % 
+total time..........................    160.0      100.00
+setup and initialize................      0.3        0.20
+initial conditions..................      2.8        1.76
+advance.............................    157.0       98.13
+  advance rectangular grids.........    142.7       89.20
+  advance curvilinear grids.........      0.0        0.00
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............     11.4        7.10
+  interpolation.....................      0.2        0.12
+  update ghost (parallel)...........      0.0        0.00
+  add forcing.......................      0.0        0.00
+  get errors........................      2.6        1.60
+  plotting..........................      0.0        0.00
+output results......................      0.0        0.00
+waiting (not counted)...............      0.0        0.00
+
+
+ORDER=6
+cgWave -noplot ../known/known.cmd -g=nonSquare1024.order6.hdf -kx=1 -ky=1 -kz=1 -tf=1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bcApproach=cbc -go=go
+
+   Timings:  (clock=2.70 Ghz)        CYCLES/step/pt    % 
+total time..........................    160.0        100.00
+setup and initialize................      0.4          0.27
+initial conditions..................      0.4          0.25
+advance.............................    159.1         99.42
+  advance rectangular grids.........      0.0          0.00
+  advance curvilinear grids.........    115.4         72.11
+    implicit solve..................      0.0          0.00
+  add dissipation...................      0.0          0.00
+  boundary conditions...............     41.6         25.99
+
+cgWave -noplot ../known/known.cmd -g=nonSquare1024.order6.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bcApproach=cbc -go=go
+
+   Timings:  (clock=2.69 Ghz)          CYCLES/step/pt  
+total time..........................   168.7
+setup and initialize................     4.4
+initial conditions..................     4.0
+advance.............................   159.3
+  advance rectangular grids.........     0.0
+  advance curvilinear grids.........   114.6
+    implicit solve..................     0.0
+  add dissipation...................     0.0
+  boundary conditions...............    41.4
+
+
+ORDER=6
+cgWave -noplot ../known/known.cmd -g=square1024.order6.ng5.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bcApproach=cbc -go=go
+
+ CYCLES : clock=2.70 GHz, gridpts =1.07e+06, numberOfStepsTaken =161, 
+   Timings:                        CYCLES/step/pt    % 
+total time..........................     88.4      100.00
+setup and initialize................      0.3        0.36
+initial conditions..................      2.8        3.19
+advance.............................     84.4       95.46
+  advance rectangular grids.........     68.8       77.79
+  advance curvilinear grids.........      0.0        0.00
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............     13.0       14.66
+
+
+>>> STANDARD ME scheme
+cgWave -noplot ../known/known.cmd -g=square1024.order4.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=std -bcApproach=cbc -go=go
+
+ CYCLES : clock=2.70 GHz, gridpts =1.06e+06, numberOfStepsTaken =161, 
+   Timings:                        CYCLES/step/pt    % 
+total time..........................     46.1      100.00
+setup and initialize................      0.3        0.69
+initial conditions..................      2.7        5.88
+advance.............................     42.6       92.57
+  advance rectangular grids.........     34.3       74.50
+  advance curvilinear grids.........      0.0        0.00
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............      5.7       12.43
+  interpolation.....................      0.2        0.34
+  update ghost (parallel)...........      0.0        0.00
+  add forcing.......................      0.0        0.00
+  get errors........................      2.3        5.07
+  plotting..........................      0.0        0.00
+output results......................      0.0        0.00
+waiting (not counted)...............      0.0        0.00
+
+
+
+cgWave -noplot ../known/known.cmd -g=square1024.order4.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bcApproach=cbc -go=go
+
+
+ CYCLES : gridpts =1.05884e+06, numberOfStepsTaken =     1610, clock=2.70 GHz
+   Timings:                        CYCLES/step/pt    % 
+total time..........................     21.7      100.00
+setup and initialize................      0.0        0.15
+initial conditions..................      0.3        1.25
+advance.............................     21.3       98.42
+  advance rectangular grids.........     16.1       74.31
+  advance curvilinear grids.........      0.0        0.00
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............      4.6       21.27
+
+ CYCLES : gridpts =1.05884e+06, numberOfStepsTaken =      161, clock=2.70 GHz
+   Timings:                        CYCLES/step/pt    % 
+total time..........................     26.6      100.00
+setup and initialize................      0.3        1.19
+initial conditions..................      2.8       10.36
+advance.............................     23.2       86.98
+  advance rectangular grids.........     15.9       59.60
+  advance curvilinear grids.........      0.0        0.00
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............      4.6       17.24
+
+
+****************************
+****** Sat Sept 24, 2022
+
+RETURN TO PERFOMANCE 
+cg6:~/runs/cgWave/performance> make -s nonSquare
+  nonSquare1024 & 2 & FAME  & 1.1M  &     9.9 &     8.1 &     4.4 &     0.0 &     2.3 &     0.1   \\
+  nonSquare1024 & 4 & FAME  & 1.1M  &    23.2 &    20.9 &    16.3 &     0.0 &     3.3 &     0.1   \\
+  nonSquare1024 & 6 & FAME  & 1.1M  &    63.7 &    60.0 &    43.4 &     0.0 &    15.4 &     0.1   \\
+
+
+make -s nonBox
+~/runs/cgWave/performance> make -s nonBox
+  nonBox16 & 2 & FAME  & 4.5M  &    43.2 &    26.1 &     7.6 &     0.0 &     9.3 &     0.0   \\
+  nonBox16 & 4 & FAME  & 4.5M  &   100.6 &    69.0 &    50.5 &     0.0 &     9.3 &     0.0   \\
+  nonBox16 & 6 & FAME  & 4.8M  &   312.0 &   249.6 &   231.1 &     0.0 &     9.4 &     0.0   \\
+
+NON-BOX: 
+cgWave -noplot ../known/known.cmd -g=nonBox16.order2.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=2 -debug=0 -meApproach=ha -bc=e -go=go
+
+cgWave -noplot ../known/known.cmd -g=nonBox16.order2.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=2 -debug=0 -meApproach=ha -bcApproach=cbc -go=go
+              -------------------CgWave Summary----------------- 
+                       Sat Sep 24 08:35:11 2022
+               Grid:   /home/henshw/grids/nonBox16.order2.hdf 
+  ==== final time= 1.00e-01, numberOfStepsTaken =       31, grids=1, gridpts =4.49212e+06, interp pts=0, processors=1 ==== 
+  ==== memory per-proc: [min=926.152,ave=926.152,max=926.152](Mb), max-recorded=926.152 (Mb), total=926.152 (Mb)
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  6.82e+00    2.20e-01    4.90e-08   100.000   6.823e+00   6.823e+00
+setup and initialize................  2.70e+00    8.70e-02    1.94e-08    39.551   2.698e+00   2.698e+00
+initial conditions..................  1.83e+00    5.90e-02    1.31e-08    26.808   1.829e+00   1.829e+00
+advance.............................  4.42e+00    1.43e-01    3.18e-08    64.825   4.423e+00   4.423e+00
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  1.07e+00    3.47e-02    7.71e-09    15.745   1.074e+00   1.074e+00
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  2.11e+00    6.80e-02    1.51e-08    30.878   2.107e+00   2.107e+00
+  interpolation.....................  2.66e-03    8.59e-05    1.91e-11     0.039   2.664e-03   2.664e-03
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.30e+00    4.21e-02    9.37e-09    19.120   1.304e+00   1.304e+00
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+
+
+
+:~/runs/cgWave/performance> make -s square
+  square1024 & 2 & FAME  & 1.1M  &     5.8 &     4.6 &     1.9 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 4 & FAME  & 1.1M  &     9.7 &     8.6 &     5.9 &     0.0 &     1.7 &     0.1   \\
+  square1024 & 6 & FAME  & 1.1M  &    32.1 &    30.9 &    25.2 &     0.0 &     4.7 &     0.1   \\
+
+
+****************************
+****** Wed Aug 10, 2022
+
+MOVE TO UNDIVIDED DIFFERENCES
+cg6:~/runs/cgWave/performance> make -s square
+  square1024 & 2 & MEHA  & 1.1M  &     5.9 &     4.7 &     1.9 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 4 & MEHA  & 1.1M  &     9.7 &     8.7 &     5.9 &     0.0 &     1.7 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    20.5 &    19.3 &    15.8 &     0.0 &     2.5 &     0.1   \\
+
+
+
+cg6:~/runs/cgWave/performance> make -s box
+  box16 & 2 & MEHA  & 4.5M  &    26.8 &    18.8 &     2.1 &     0.0 &    10.5 &     0.0   \\
+  box16 & 4 & MEHA  & 4.5M  &    49.5 &    41.1 &    21.3 &     0.0 &    13.6 &     0.0   \\
+
+
+
++++++++++++++
+
+
+
+cg6:~/runs/cgWave/performance> make -s square
+  square1024 & 2 & MEHA  & 1.1M  &     5.8 &     4.7 &     1.9 &     0.0 &     1.8 &     0.0   \\
+  square1024 & 4 & MEHA  & 1.1M  &    10.7 &     9.6 &     6.9 &     0.0 &     1.7 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    21.3 &    20.1 &    16.6 &     0.0 &     2.5 &     0.1   \\
+
+
+
+++++++++++++++++ 
+make -s box  FAME-V1
+  box16 & 2 & MEHA  & 4.5M  &    26.3 &    18.7 &     2.1 &     0.0 &    10.3 &     0.0   \\
+  box16 & 4 & MEHA  & 4.5M  &    56.9 &    48.5 &    28.9 &     0.0 &    13.5 &     0.0   \\
+
+FAME-V2 for FD44
+cg6:~/runs/cgWave/performance> make -s box
+  box16 & 2 & MEHA  & 4.5M  &    26.2 &    18.7 &     2.1 &     0.0 &    10.4 &     0.0   \\
+  box16 & 4 & MEHA  & 4.5M  &    54.6 &    46.0 &    26.3 &     0.0 &    13.5 &     0.0   \\
+
+
+++++++++++++++++ 
+make -s square
+
+
+ADD COMPILE OPTION FOR MASK AND FORCING
+cg6:~/runs/cgWave/performance> make -s square
+  square1024 & 2 & MEHA  & 1.1M  &     6.5 &     5.2 &     2.1 &     0.0 &     2.0 &     0.1   \\
+  square1024 & 4 & MEHA  & 1.1M  &    10.7 &     9.7 &     6.9 &     0.0 &     1.7 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    21.2 &    20.0 &    16.5 &     0.0 &     2.5 &     0.1   \\
+
+
+
+FAMEV1 -- NO if( mask ) for O4 an d O6 **much faster***
+cg6:~/runs/cgWave/performance> make -s square
+  square1024 & 2 & MEHA  & 1.1M  &     5.8 &     4.6 &     1.9 &     0.0 &     1.8 &     0.0   \\
+  square1024 & 4 & MEHA  & 1.1M  &    10.6 &     9.6 &     6.9 &     0.0 &     1.7 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    21.4 &    20.2 &    16.7 &     0.0 &     2.5 &     0.1   \\
+
+
+
+
+FAMEV1 -- remove if mask and if forcing from loop  -- make a difference
+cg6:~/runs/cgWave/performance> make -s square
+  square1024 & 2 & MEHA  & 1.1M  &     5.9 &     4.7 &     1.9 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 4 & MEHA  & 1.1M  &    16.4 &    15.3 &    12.5 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    26.7 &    25.5 &    21.9 &     0.0 &     2.5 &     0.1   \\
+
+
+FAMEV1 for order 6 too
+cg6:~/runs/cgWave/performance> make -s square
+  square1024 & 2 & MEHA  & 1.1M  &     5.8 &     4.7 &     1.9 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 4 & MEHA  & 1.1M  &    16.5 &    15.4 &    12.6 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    32.9 &    31.7 &    28.2 &     0.0 &     2.5 &     0.1   \\
+
+
+Use FAME v1 for O4: not much diff
+cg6:~/runs/cgWave/performance> make -s square
+  square1024 & 2 & MEHA  & 1.1M  &     5.9 &     4.7 &     1.9 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 4 & MEHA  & 1.1M  &    16.4 &    15.4 &    12.6 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    36.5 &    35.2 &    31.7 &     0.0 &     2.6 &     0.1   \\
+
+
+
+****************************
+****** Fri Aug 5, 2022
+
+COMPILE WITH -O3 
+
+make -s | tee perf.dat
+
+-Ofast: seg faults in most cases!
+
+
++++ clean up FD22r -- no mask check -- much faster!
+cg6:~/runs/cgWave/performance> make -s
+  square1024 & 2 & MEHA  & 1.1M  &     6.1 &     4.8 &     1.9 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 4 & MEHA  & 1.1M  &    16.1 &    15.0 &    12.1 &     0.0 &     1.9 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    35.6 &    34.4 &    30.8 &     0.0 &     2.5 &     0.1   \\
+\hline
+  nonSquare1024 & 2 & MEHA  & 1.1M  &    12.1 &    10.3 &     6.8 &     0.0 &     2.2 &     0.1   \\
+  nonSquare1024 & 4 & MEHA  & 1.1M  &    27.6 &    25.4 &    20.9 &     0.0 &     3.2 &     0.1   \\
+  nonSquare1024 & 6 & MEHA  & 1.1M  &    75.4 &    72.0 &    55.3 &     0.0 &    15.4 &     0.1   \\
+  
+cg6:~/runs/cgWave/performance> make -s
+  square1024 & 2 & MEHA  & 1.1M  &     6.4 &     5.1 &     2.1 &     0.0 &     2.0 &     0.1   \\
+  square1024 & 4 & MEHA  & 1.1M  &    15.8 &    14.8 &    11.9 &     0.0 &     1.9 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    35.6 &    34.4 &    30.8 &     0.0 &     2.5 &     0.1   \\
+\hline
+  nonSquare1024 & 2 & MEHA  & 1.1M  &    12.2 &    10.4 &     6.8 &     0.0 &     2.2 &     0.1   \\
+  nonSquare1024 & 4 & MEHA  & 1.1M  &    28.0 &    25.7 &    21.2 &     0.0 &     3.2 &     0.1   \\
+  nonSquare1024 & 6 & MEHA  & 1.1M  &    75.3 &    71.8 &    55.1 &     0.0 &    15.5 &     0.1   \\
+
+
+
+Better, but not as fast as Nour's C code (?)
+
+cg6:~/runs/cgWave/performance> make -s
+  square1024 & 2 & MEHA  & 1.1M  &     8.4 &     7.1 &     4.1 &     0.0 &     1.9 &     0.1   \\
+  square1024 & 4 & MEHA  & 1.1M  &    16.1 &    15.0 &    12.2 &     0.0 &     1.8 &     0.1   \\
+  square1024 & 6 & MEHA  & 1.1M  &    36.3 &    35.0 &    31.4 &     0.0 &     2.5 &     0.1   \\
+\hline
+  nonSquare1024 & 2 & MEHA  & 1.1M  &    12.2 &    10.4 &     6.8 &     0.0 &     2.2 &     0.1   \\
+  nonSquare1024 & 4 & MEHA  & 1.1M  &    29.0 &    26.6 &    22.1 &     0.0 &     3.2 &     0.1   \\
+  nonSquare1024 & 6 & MEHA  & 1.1M  &    77.5 &    73.9 &    57.1 &     0.0 &    15.5 &     0.1   \\
+
+
+
+****************************
 ****** Sun July 31, 2022
 
 (1) make -s | tee perf.dat

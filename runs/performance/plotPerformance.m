@@ -9,7 +9,7 @@
 % Examples:
 %   plotPerformance -case=solve -verticalBars=0 -savePlots=0
 %   plotPerformance -case=solve -verticalBars=0 -relative=1 -savePlots=0
-%   plotPerformance -case=solve -verticalBars=0 -cpuSpeed=2.7 -savePlots=0
+%   plotPerformance -case=solve -verticalBars=0 -cpuSpeed=2.7 -savePlots=0  % Cg6 is 2.7GHtz processor
 %
 %   plotPerformance -case=ARC -verticalBars=0 -relative=1 -savePlots=0   % time for advance rect/curv only
 %   plotPerformance -case=ARC -verticalBars=0 -cpuSpeed=2.7 -savePlots=0   % time for advance rect/curv only

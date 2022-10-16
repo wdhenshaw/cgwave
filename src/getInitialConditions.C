@@ -217,6 +217,14 @@ getInitialConditions( int current, real t, bool getTimeDerivative /* = false */ 
 #undef VERTEX
 
     }
+    else if( initialConditionOption==randomInitialCondition )
+    {
+      #define myRand() (2.*rand()/RAND_MAX-1.)      
+      FOR_3D(i1,i2,i3,I1,I2,I3) // loop over all points
+      {
+        ucLocal(i1,i2,i3) = myRand();
+      }
+    }
     else
     {
       printF("CgWave::getInitialConditions: ERROR: unknown initialConditionOption=%d\n",(int)initialConditionOption);

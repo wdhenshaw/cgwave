@@ -30,7 +30,7 @@
     integer ipar(0:*)
     real rpar(0:*)
  !     ---- local variables -----
-    integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt,ig
+    integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt,ig,useMask
     integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
     integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
     integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev,numberOfFrequencies
@@ -119,62 +119,9 @@
       real uex4y2z2
       real uex2y4z2
       real uex2y2z4
-          real dr1, dr2, dr3, dr1i, dr2i, dr3i, rx, ry, sx, sy, rxi1g(-5:5)
-          real rxi2g(-5:5), rxi3g(-5:5), rxr, rxs, ryr, rys, sxr, sxs, syr, sys, rxx
+          real dr1, dr2, dr3, dr1i, dr2i, dr3i, rx, ry, sx, sy, diffOrder1
+          real diffOrder2, diffOrder3, rxr, rxs, ryr, rys, sxr, sxs, syr, sys, rxx
           real ryy, sxx, syy, d200i, d020i, lap2h, d100i, d010i, d110i
- ! #If (2 == 2 ) && ( 2 == 2 ) 
- !   #If "curvilinear" eq "rectangular"  
- !     declare2dOrder2Rectangular()
- !   #Else
- !     declare2dOrder2Curvilinear()
- !   #End
- ! #Elif (2 == 2 ) && ( 2 == 3 ) 
- !   ! **NEW** Way
- !   #If "curvilinear" eq "rectangular"  
- !     declare3dOrder2Rectangular()
- !   #Else
- !     declare3dOrder2Curvilinear()
- !   #End  
- ! #Elif (2 == 4 ) && ( 2 == 2 ) 
- !   ! **NEW** Way
- !   #If "curvilinear" eq "rectangular"  
- !     declare2dOrder4Rectangular()
- !   #Else
- !     declare2dOrder4Curvilinear()
- !   #End
- ! #Elif (2 == 4 ) && ( 2 == 3 ) 
- !   ! **NEW** Way
- !   #If "curvilinear" eq "rectangular"  
- !     ! declare3dOrder4Rectangular()
- !   #Else
- !     ! declare3dOrder4Curvilinear()
- !   #End  
- ! #Elif (2 == 6 ) && ( 2 == 2 ) 
- !   #If "curvilinear" eq "rectangular"  
- !     declare2dOrder6Rectangular()
- !   #Else
- !     declare2dOrder6Curvilinear()
- !   #End  
- ! #Elif (2 == 6 ) && ( 2 == 3 ) 
- !   #If "curvilinear" eq "rectangular"  
- !     declare3dOrder6Rectangular()
- !   #Else
- !     declare3dOrder6Curvilinear()
- !   #End 
- ! #Elif (2 == 8 ) && ( 2 == 2 ) 
- !   #If "curvilinear" eq "rectangular"  
- !     declare2dOrder8Rectangular()
- !   #Else
- !     declare2dOrder8Curvilinear()
- !   #End  
- ! #Elif (2 == 8 ) && ( 2 == 3 ) 
- !   #If "curvilinear" eq "rectangular"  
- !     declare3dOrder8Rectangular()
- !   #Else
- !     declare3dOrder8Curvilinear()
- !   #End   
- ! #End
- ! $$$$$$$$$$$$$$$$$$$$$$$ END OLD WAY $$$$$$$$$$$$$$$  
       integer maxDeriv,d,uc,count,numGhost1,m1,m2,m3
  ! declare coefficients in the chain rule for curvilinear grids (from cgwave/maple/chainRuleCoefficients.mw)
  ! #If "curvilinear" eq "curvilinear"
@@ -246,6 +193,7 @@
       fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
    ! ** fix me ***
       timeSteppingMethod=modifiedEquationTimeStepping
+      useMask=0  ! do this for now -- do not check mask in loops, these seems faster
    ! Set dr(:) = dx(:) for 6th-order derivatives
       if( gridType.eq.rectangular )then
           do axis=0,2
@@ -376,17 +324,147 @@
           ! -- call the appropriate macro:
           !  update2dOrder2Rectangular(2,2,2,curvilinear)
           !  update3dOrder6Curvilinear(2,2,2,curvilinear)
-            ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
-            ! Example: 
-            ! u.rr = D+D-( I + crr1*D+D- + crr2*(D+D-x)^2 + ...
-                        dr1=dr(0); dr1i=1./dr1;
-                        dr2=dr(1); dr2i=1./dr2;
-                        dr3=dr(2); dr3i=1./dr3;
-                        fv(m)=0.
-            ! we may need to extrapolate some metrics to extra ghost points 
-                        if( lapCoeff(0,0,0,0).le.0. )then
-              ! --- Evaluate and store coefficients in Laplacian ---
-                            write(*,*) 'ASSIGN LAP COEFF'
+                    if( useMask.eq.0 .and. addForcing.eq.0 )then
+            ! No-mask, no-forcing
+              ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+              ! Example: 
+              ! u.rr = D+D-( I + crr1*D+D- + crr2*(D+D-x)^2 + ...
+                            dr1=dr(0); dr1i=1./dr1;
+                            dr2=dr(1); dr2i=1./dr2;
+                            dr3=dr(2); dr3i=1./dr3;
+                            fv(m)=0.
+                            if( lapCoeff(0,0,0,0).le.0. )then
+                ! --- Evaluate and store coefficients in Laplacian ---
+                                write(*,*) 'ASSIGN SCALED LAPLACIAN COEFF'
+                                numGhost1=0;
+                                n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                                n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                                n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                  do i3=n3a,n3b
+                                  do i2=n2a,n2b
+                                  do i1=n1a,n1b
+                                    rx = rsxy(i1,i2,i3,0,0)
+                                    ry = rsxy(i1,i2,i3,0,1)
+                                    sx = rsxy(i1,i2,i3,1,0)
+                                    sy = rsxy(i1,i2,i3,1,1)
+                  ! --- choose order for (r,s,t) derivatives based on available ghost points, less accuracy is needed in ghost points  ---
+                                    if( (i1-1).ge.nd1a .and. (i1+1).le.nd1b )then
+                                        diffOrder1=2
+                                    else
+                                        stop 999
+                                    end if
+                                    if( (i2-1).ge.nd2a .and. (i2+1).le.nd2b )then
+                                        diffOrder2=2
+                                    else
+                                        stop 999
+                                    end if
+                                    if( diffOrder1.eq.2 )then
+                                        rxr = (rsxy(i1+1,i2,i3,0,0)-rsxy(i1-1,i2,i3,0,0))*(.5*dr1i) 
+                                        ryr = (rsxy(i1+1,i2,i3,0,1)-rsxy(i1-1,i2,i3,0,1))*(.5*dr1i) 
+                                        sxr = (rsxy(i1+1,i2,i3,1,0)-rsxy(i1-1,i2,i3,1,0))*(.5*dr1i) 
+                                        syr = (rsxy(i1+1,i2,i3,1,1)-rsxy(i1-1,i2,i3,1,1))*(.5*dr1i) 
+                                    end if
+                                    if( diffOrder2.eq.2 )then
+                                        rxs = (rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0))*(.5*dr2i) 
+                                        rys = (rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1))*(.5*dr2i) 
+                                        sxs = (rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0))*(.5*dr2i) 
+                                        sys = (rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1))*(.5*dr2i) 
+                                    end if
+                                    rxx = rx*rxr + sx*rxs 
+                                    ryy = ry*ryr + sy*rys 
+                                    sxx = rx*sxr + sx*sxs 
+                                    syy = ry*syr + sy*sys 
+                  ! -- Coefficients in the Laplacian (scaled)
+                                    lapCoeff(i1,i2,i3,0) = (rx**2 + ry**2   )*dr1i**2
+                                    lapCoeff(i1,i2,i3,2) = 2.*(rx*sx + ry*sy)*dr1i*dr2i*.25
+                                    lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2   )*dr2i**2
+                                    lapCoeff(i1,i2,i3,3) = (rxx + ryy       )*dr1i*.5
+                                    lapCoeff(i1,i2,i3,4) = (sxx + syy       )*dr2i*.5 
+                                  end do
+                                  end do
+                                  end do
+                            end if ! end assignLapCoeff
+              ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
+                            numGhost1=0;
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                    d200i = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                    d020i = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                    d100i = u(i1+1,i2,i3,0) - u(i1-1,i2,i3,0)
+                                    d010i = u(i1,i2+1,i3,0) - u(i1,i2-1,i3,0)
+                                    d110i = u(i1+1,i2+1,i3,0) - u(i1-1,i2+1,i3,0) - u(i1+1,i2-1,i3,0) + u(i1-1,i2-1,i3,0)
+                                    lap2h = lapCoeff(i1,i2,i3,0)*d200i + lapCoeff(i1,i2,i3,2)*d110i + lapCoeff(i1,i2,i3,1)*d020i +lapCoeff(i1,i2,i3,3)*d100i + lapCoeff(i1,i2,i3,4)*d010i
+                  ! --- Modified equation space-time update ----
+                                    un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         +dtSq*fv(m)                             
+                              end do
+                              end do
+                              end do
+                    else
+              ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+              ! Example: 
+              ! u.rr = D+D-( I + crr1*D+D- + crr2*(D+D-x)^2 + ...
+                            dr1=dr(0); dr1i=1./dr1;
+                            dr2=dr(1); dr2i=1./dr2;
+                            dr3=dr(2); dr3i=1./dr3;
+                            fv(m)=0.
+                            if( lapCoeff(0,0,0,0).le.0. )then
+                ! --- Evaluate and store coefficients in Laplacian ---
+                                write(*,*) 'ASSIGN SCALED LAPLACIAN COEFF'
+                                numGhost1=0;
+                                n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                                n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                                n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                  do i3=n3a,n3b
+                                  do i2=n2a,n2b
+                                  do i1=n1a,n1b
+                                    if( mask(i1,i2,i3).ne.0 )then
+                                    rx = rsxy(i1,i2,i3,0,0)
+                                    ry = rsxy(i1,i2,i3,0,1)
+                                    sx = rsxy(i1,i2,i3,1,0)
+                                    sy = rsxy(i1,i2,i3,1,1)
+                  ! --- choose order for (r,s,t) derivatives based on available ghost points, less accuracy is needed in ghost points  ---
+                                    if( (i1-1).ge.nd1a .and. (i1+1).le.nd1b )then
+                                        diffOrder1=2
+                                    else
+                                        stop 999
+                                    end if
+                                    if( (i2-1).ge.nd2a .and. (i2+1).le.nd2b )then
+                                        diffOrder2=2
+                                    else
+                                        stop 999
+                                    end if
+                                    if( diffOrder1.eq.2 )then
+                                        rxr = (rsxy(i1+1,i2,i3,0,0)-rsxy(i1-1,i2,i3,0,0))*(.5*dr1i) 
+                                        ryr = (rsxy(i1+1,i2,i3,0,1)-rsxy(i1-1,i2,i3,0,1))*(.5*dr1i) 
+                                        sxr = (rsxy(i1+1,i2,i3,1,0)-rsxy(i1-1,i2,i3,1,0))*(.5*dr1i) 
+                                        syr = (rsxy(i1+1,i2,i3,1,1)-rsxy(i1-1,i2,i3,1,1))*(.5*dr1i) 
+                                    end if
+                                    if( diffOrder2.eq.2 )then
+                                        rxs = (rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0))*(.5*dr2i) 
+                                        rys = (rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1))*(.5*dr2i) 
+                                        sxs = (rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0))*(.5*dr2i) 
+                                        sys = (rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1))*(.5*dr2i) 
+                                    end if
+                                    rxx = rx*rxr + sx*rxs 
+                                    ryy = ry*ryr + sy*rys 
+                                    sxx = rx*sxr + sx*sxs 
+                                    syy = ry*syr + sy*sys 
+                  ! -- Coefficients in the Laplacian (scaled)
+                                    lapCoeff(i1,i2,i3,0) = (rx**2 + ry**2   )*dr1i**2
+                                    lapCoeff(i1,i2,i3,2) = 2.*(rx*sx + ry*sy)*dr1i*dr2i*.25
+                                    lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2   )*dr2i**2
+                                    lapCoeff(i1,i2,i3,3) = (rxx + ryy       )*dr1i*.5
+                                    lapCoeff(i1,i2,i3,4) = (sxx + syy       )*dr2i*.5 
+                                    end if ! mask .ne. 0
+                                  end do
+                                  end do
+                                  end do
+                            end if ! end assignLapCoeff
+              ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                             numGhost1=0;
                             n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                             n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
@@ -395,162 +473,43 @@
                               do i2=n2a,n2b
                               do i1=n1a,n1b
                                 if( mask(i1,i2,i3).ne.0 )then
-                                rx = rsxy(i1,i2,i3,0,0)
-                                ry = rsxy(i1,i2,i3,0,1)
-                                sx = rsxy(i1,i2,i3,1,0)
-                                sy = rsxy(i1,i2,i3,1,1)
-                                rxr = (rsxy(i1+1,i2,i3,0,0)-rsxy(i1-1,i2,i3,0,0))*(.5*dr1i) 
-                                rxs = (rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0))*(.5*dr2i) 
-                                ryr = (rsxy(i1+1,i2,i3,0,1)-rsxy(i1-1,i2,i3,0,1))*(.5*dr1i) 
-                                rys = (rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1))*(.5*dr2i) 
-                                sxr = (rsxy(i1+1,i2,i3,1,0)-rsxy(i1-1,i2,i3,1,0))*(.5*dr1i) 
-                                sxs = (rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0))*(.5*dr2i) 
-                                syr = (rsxy(i1+1,i2,i3,1,1)-rsxy(i1-1,i2,i3,1,1))*(.5*dr1i) 
-                                sys = (rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1))*(.5*dr2i) 
-                                rxx = rx*rxr + sx*rxs 
-                                ryy = ry*ryr + sy*rys 
-                                sxx = rx*sxr + sx*sxs 
-                                syy = ry*syr + sy*sys 
-                ! -- Coefficients in the Laplacian (scaled)
-                                lapCoeff(i1,i2,i3,0) = (rx**2 + ry**2   )*dr1i**2
-                                lapCoeff(i1,i2,i3,2) = 2.*(rx*sx + ry*sy)*dr1i*dr2i*.25
-                                lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2   )*dr2i**2
-                                lapCoeff(i1,i2,i3,3) = (rxx + ryy       )*dr1i*.5
-                                lapCoeff(i1,i2,i3,4) = (sxx + syy       )*dr2i*.5 
+                                    d200i = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                    d020i = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                    d100i = u(i1+1,i2,i3,0) - u(i1-1,i2,i3,0)
+                                    d010i = u(i1,i2+1,i3,0) - u(i1,i2-1,i3,0)
+                                    d110i = u(i1+1,i2+1,i3,0) - u(i1-1,i2+1,i3,0) - u(i1+1,i2-1,i3,0) + u(i1-1,i2-1,i3,0)
+                                    lap2h = lapCoeff(i1,i2,i3,0)*d200i + lapCoeff(i1,i2,i3,2)*d110i + lapCoeff(i1,i2,i3,1)*d020i +lapCoeff(i1,i2,i3,3)*d100i + lapCoeff(i1,i2,i3,4)*d010i
+                                            if( forcingOption.eq.twilightZoneForcing )then
+                                                        call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
+                                                        call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
+                                                        call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
+                                                        call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
+                                                    fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
+                                          else if( forcingOption.eq.helmholtzForcing )then
+                        ! forcing for solving the Helmholtz equation   
+                        ! NOTE: change sign of forcing since for Helholtz we want to solve
+                        !      ( omega^2 I + c^2 Delta) w = f 
+                        ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                                fv(m)=0.
+                                                do freq=0,numberOfFrequencies-1 
+                                                    omega = frequencyArray(freq)
+                                                    coswt = cosFreqt(freq)    
+                           ! if( i1.eq.2 .and. i2.eq.2 )then 
+                           !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+                           ! end if
+                           ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                                      fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
+                                                end do ! do freq  
+                                          else if( addForcing.ne.0 )then  
+                                                fv(m) = f(i1,i2,i3,0)
+                                          end if
+                  ! --- Modified equation space-time update ----
+                                    un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         +dtSq*fv(m)                             
                                 end if ! mask .ne. 0
                               end do
                               end do
                               end do
-                        end if ! end assignLapCoeff
-            ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
-                        numGhost1=0;
-                        n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                        n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                        n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                          do i3=n3a,n3b
-                          do i2=n2a,n2b
-                          do i1=n1a,n1b
-                            if( mask(i1,i2,i3).ne.0 )then
-                                d200i = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
-                                d020i = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
-                                d100i = u(i1+1,i2,i3,0) - u(i1-1,i2,i3,0)
-                                d010i = u(i1,i2+1,i3,0) - u(i1,i2-1,i3,0)
-                                d110i = u(i1+1,i2+1,i3,0) - u(i1-1,i2+1,i3,0) - u(i1+1,i2-1,i3,0) + u(i1-1,i2-1,i3,0)
-                                lap2h = lapCoeff(i1,i2,i3,0)*d200i + lapCoeff(i1,i2,i3,2)*d110i + lapCoeff(i1,i2,i3,1)*d020i +lapCoeff(i1,i2,i3,3)*d100i + lapCoeff(i1,i2,i3,4)*d010i
-                                    if( forcingOption.eq.twilightZoneForcing )then
-                                                call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
-                                                call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
-                                                call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
-                                                call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
-                                            fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
-                                  else if( forcingOption.eq.helmholtzForcing )then
-                    ! forcing for solving the Helmholtz equation   
-                    ! NOTE: change sign of forcing since for Helholtz we want to solve
-                    !      ( omega^2 I + c^2 Delta) w = f 
-                    ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                        fv(m)=0.
-                                        do freq=0,numberOfFrequencies-1 
-                                            omega = frequencyArray(freq)
-                                            coswt = cosFreqt(freq)    
-                       ! if( i1.eq.2 .and. i2.eq.2 )then 
-                       !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
-                       ! end if
-                       ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                              fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
-                                        end do ! do freq  
-                                  else if( addForcing.ne.0 )then  
-                                        fv(m) = f(i1,i2,i3,0)
-                                  end if
-                ! --- Modified equation space-time update ----
-                                un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         + dtSq*fv(m)                             
-                            end if ! mask .ne. 0
-                          end do
-                          end do
-                          end do
-        !   #If 2 == 2
-        !     #If "curvilinear" eq "rectangular"
-        !       #If "2" eq "2" 
-        !         update2dOrder2Rectangular(2,2,2,curvilinear)
-        !       #Elif "2" eq "3"
-        !         ! stop 2222
-        !         update3dOrder2Rectangular(2,2,2,curvilinear)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "2" eq "2" 
-        !         update2dOrder2Curvilinear(2,2,2,curvilinear)
-        !       #Elif "2" eq "3"
-        !         ! stop 7474
-        !         update3dOrder2Curvilinear(2,2,2,curvilinear)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End
-        !   #Elif 2 == 4
-        !     #If "curvilinear" eq "rectangular"
-        !       #If "2" eq "2" 
-        !         update2dOrder4Rectangular(2,2,2,curvilinear)
-        !       #Elif "2" eq "3"
-        !         ! stop 747
-        !         update3dOrder4Rectangular(2,2,2,curvilinear)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "2" eq "2" 
-        !         update2dOrder4Curvilinear(2,2,2,curvilinear)
-        !       #Elif "2" eq "3"
-        !         ! stop 7474
-        !         update3dOrder4Curvilinear(2,2,2,curvilinear)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End  
-        !   #Elif 2 == 6 
-        !     #If "curvilinear" eq "rectangular"
-        !       #If "2" eq "2" 
-        !         update2dOrder6Rectangular(2,2,2,curvilinear)
-        !       #Elif "2" eq "3"
-        !         ! stop 727
-        !         update3dOrder6Rectangular(2,2,2,curvilinear)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "2" eq "2" 
-        !         update2dOrder6Curvilinear(2,2,2,curvilinear)
-        !       #Elif "2" eq "3"
-        !         ! stop 7474
-        !         update3dOrder6Curvilinear(2,2,2,curvilinear)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End 
-        !   #Elif 2 == 8 
-        !     #If "curvilinear" eq "rectangular"
-        !       #If "2" eq "2" 
-        !         update2dOrder8Rectangular(2,2,2,curvilinear)
-        !       #Elif "2" eq "3"
-        !         ! stop 820
-        !         update3dOrder8Rectangular(2,2,2,curvilinear)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "2" eq "2" 
-        !         update2dOrder8Curvilinear(2,2,2,curvilinear)
-        !       #Elif "2" eq "3"
-        !         ! stop 7474
-        !         update3dOrder8Curvilinear(2,2,2,curvilinear)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End  
-        !   #Else
-        !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=2 order=2 orderInTime=2, gridType=curvilinear")') 
-        !     stop 6666
-        !   #End
+                    end if
               else
                       if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
                           write(*,'("advWaveME: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=",e10.2)') t
@@ -560,17 +519,147 @@
            ! -- call the appropriate macro:
            !  update2dOrder2Rectangular(2,2,2,curvilinear)
            !  update3dOrder6Curvilinear(2,2,2,curvilinear)
-             ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
-             ! Example: 
-             ! u.rr = D+D-( I + crr1*D+D- + crr2*(D+D-x)^2 + ...
-                          dr1=dr(0); dr1i=1./dr1;
-                          dr2=dr(1); dr2i=1./dr2;
-                          dr3=dr(2); dr3i=1./dr3;
-                          fv(m)=0.
-             ! we may need to extrapolate some metrics to extra ghost points 
-                          if( lapCoeff(0,0,0,0).le.0. )then
-               ! --- Evaluate and store coefficients in Laplacian ---
-                              write(*,*) 'ASSIGN LAP COEFF'
+                      if( useMask.eq.0 .and. addForcing.eq.0 )then
+             ! No-mask, no-forcing
+               ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+               ! Example: 
+               ! u.rr = D+D-( I + crr1*D+D- + crr2*(D+D-x)^2 + ...
+                              dr1=dr(0); dr1i=1./dr1;
+                              dr2=dr(1); dr2i=1./dr2;
+                              dr3=dr(2); dr3i=1./dr3;
+                              fv(m)=0.
+                              if( lapCoeff(0,0,0,0).le.0. )then
+                 ! --- Evaluate and store coefficients in Laplacian ---
+                                  write(*,*) 'ASSIGN SCALED LAPLACIAN COEFF'
+                                  numGhost1=0;
+                                  n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                                  n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                                  n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                    do i3=n3a,n3b
+                                    do i2=n2a,n2b
+                                    do i1=n1a,n1b
+                                      rx = rsxy(i1,i2,i3,0,0)
+                                      ry = rsxy(i1,i2,i3,0,1)
+                                      sx = rsxy(i1,i2,i3,1,0)
+                                      sy = rsxy(i1,i2,i3,1,1)
+                   ! --- choose order for (r,s,t) derivatives based on available ghost points, less accuracy is needed in ghost points  ---
+                                      if( (i1-1).ge.nd1a .and. (i1+1).le.nd1b )then
+                                          diffOrder1=2
+                                      else
+                                          stop 999
+                                      end if
+                                      if( (i2-1).ge.nd2a .and. (i2+1).le.nd2b )then
+                                          diffOrder2=2
+                                      else
+                                          stop 999
+                                      end if
+                                      if( diffOrder1.eq.2 )then
+                                          rxr = (rsxy(i1+1,i2,i3,0,0)-rsxy(i1-1,i2,i3,0,0))*(.5*dr1i) 
+                                          ryr = (rsxy(i1+1,i2,i3,0,1)-rsxy(i1-1,i2,i3,0,1))*(.5*dr1i) 
+                                          sxr = (rsxy(i1+1,i2,i3,1,0)-rsxy(i1-1,i2,i3,1,0))*(.5*dr1i) 
+                                          syr = (rsxy(i1+1,i2,i3,1,1)-rsxy(i1-1,i2,i3,1,1))*(.5*dr1i) 
+                                      end if
+                                      if( diffOrder2.eq.2 )then
+                                          rxs = (rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0))*(.5*dr2i) 
+                                          rys = (rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1))*(.5*dr2i) 
+                                          sxs = (rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0))*(.5*dr2i) 
+                                          sys = (rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1))*(.5*dr2i) 
+                                      end if
+                                      rxx = rx*rxr + sx*rxs 
+                                      ryy = ry*ryr + sy*rys 
+                                      sxx = rx*sxr + sx*sxs 
+                                      syy = ry*syr + sy*sys 
+                   ! -- Coefficients in the Laplacian (scaled)
+                                      lapCoeff(i1,i2,i3,0) = (rx**2 + ry**2   )*dr1i**2
+                                      lapCoeff(i1,i2,i3,2) = 2.*(rx*sx + ry*sy)*dr1i*dr2i*.25
+                                      lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2   )*dr2i**2
+                                      lapCoeff(i1,i2,i3,3) = (rxx + ryy       )*dr1i*.5
+                                      lapCoeff(i1,i2,i3,4) = (sxx + syy       )*dr2i*.5 
+                                    end do
+                                    end do
+                                    end do
+                              end if ! end assignLapCoeff
+               ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
+                              numGhost1=0;
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                      d200i = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                      d020i = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                      d100i = u(i1+1,i2,i3,0) - u(i1-1,i2,i3,0)
+                                      d010i = u(i1,i2+1,i3,0) - u(i1,i2-1,i3,0)
+                                      d110i = u(i1+1,i2+1,i3,0) - u(i1-1,i2+1,i3,0) - u(i1+1,i2-1,i3,0) + u(i1-1,i2-1,i3,0)
+                                      lap2h = lapCoeff(i1,i2,i3,0)*d200i + lapCoeff(i1,i2,i3,2)*d110i + lapCoeff(i1,i2,i3,1)*d020i +lapCoeff(i1,i2,i3,3)*d100i + lapCoeff(i1,i2,i3,4)*d010i
+                   ! --- Modified equation space-time update ----
+                                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         +dtSq*fv(m)                             
+                                end do
+                                end do
+                                end do
+                      else
+               ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+               ! Example: 
+               ! u.rr = D+D-( I + crr1*D+D- + crr2*(D+D-x)^2 + ...
+                              dr1=dr(0); dr1i=1./dr1;
+                              dr2=dr(1); dr2i=1./dr2;
+                              dr3=dr(2); dr3i=1./dr3;
+                              fv(m)=0.
+                              if( lapCoeff(0,0,0,0).le.0. )then
+                 ! --- Evaluate and store coefficients in Laplacian ---
+                                  write(*,*) 'ASSIGN SCALED LAPLACIAN COEFF'
+                                  numGhost1=0;
+                                  n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                                  n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                                  n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                    do i3=n3a,n3b
+                                    do i2=n2a,n2b
+                                    do i1=n1a,n1b
+                                      if( mask(i1,i2,i3).ne.0 )then
+                                      rx = rsxy(i1,i2,i3,0,0)
+                                      ry = rsxy(i1,i2,i3,0,1)
+                                      sx = rsxy(i1,i2,i3,1,0)
+                                      sy = rsxy(i1,i2,i3,1,1)
+                   ! --- choose order for (r,s,t) derivatives based on available ghost points, less accuracy is needed in ghost points  ---
+                                      if( (i1-1).ge.nd1a .and. (i1+1).le.nd1b )then
+                                          diffOrder1=2
+                                      else
+                                          stop 999
+                                      end if
+                                      if( (i2-1).ge.nd2a .and. (i2+1).le.nd2b )then
+                                          diffOrder2=2
+                                      else
+                                          stop 999
+                                      end if
+                                      if( diffOrder1.eq.2 )then
+                                          rxr = (rsxy(i1+1,i2,i3,0,0)-rsxy(i1-1,i2,i3,0,0))*(.5*dr1i) 
+                                          ryr = (rsxy(i1+1,i2,i3,0,1)-rsxy(i1-1,i2,i3,0,1))*(.5*dr1i) 
+                                          sxr = (rsxy(i1+1,i2,i3,1,0)-rsxy(i1-1,i2,i3,1,0))*(.5*dr1i) 
+                                          syr = (rsxy(i1+1,i2,i3,1,1)-rsxy(i1-1,i2,i3,1,1))*(.5*dr1i) 
+                                      end if
+                                      if( diffOrder2.eq.2 )then
+                                          rxs = (rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0))*(.5*dr2i) 
+                                          rys = (rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1))*(.5*dr2i) 
+                                          sxs = (rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0))*(.5*dr2i) 
+                                          sys = (rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1))*(.5*dr2i) 
+                                      end if
+                                      rxx = rx*rxr + sx*rxs 
+                                      ryy = ry*ryr + sy*rys 
+                                      sxx = rx*sxr + sx*sxs 
+                                      syy = ry*syr + sy*sys 
+                   ! -- Coefficients in the Laplacian (scaled)
+                                      lapCoeff(i1,i2,i3,0) = (rx**2 + ry**2   )*dr1i**2
+                                      lapCoeff(i1,i2,i3,2) = 2.*(rx*sx + ry*sy)*dr1i*dr2i*.25
+                                      lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2   )*dr2i**2
+                                      lapCoeff(i1,i2,i3,3) = (rxx + ryy       )*dr1i*.5
+                                      lapCoeff(i1,i2,i3,4) = (sxx + syy       )*dr2i*.5 
+                                      end if ! mask .ne. 0
+                                    end do
+                                    end do
+                                    end do
+                              end if ! end assignLapCoeff
+               ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                               numGhost1=0;
                               n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                               n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
@@ -579,162 +668,43 @@
                                 do i2=n2a,n2b
                                 do i1=n1a,n1b
                                   if( mask(i1,i2,i3).ne.0 )then
-                                  rx = rsxy(i1,i2,i3,0,0)
-                                  ry = rsxy(i1,i2,i3,0,1)
-                                  sx = rsxy(i1,i2,i3,1,0)
-                                  sy = rsxy(i1,i2,i3,1,1)
-                                  rxr = (rsxy(i1+1,i2,i3,0,0)-rsxy(i1-1,i2,i3,0,0))*(.5*dr1i) 
-                                  rxs = (rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0))*(.5*dr2i) 
-                                  ryr = (rsxy(i1+1,i2,i3,0,1)-rsxy(i1-1,i2,i3,0,1))*(.5*dr1i) 
-                                  rys = (rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1))*(.5*dr2i) 
-                                  sxr = (rsxy(i1+1,i2,i3,1,0)-rsxy(i1-1,i2,i3,1,0))*(.5*dr1i) 
-                                  sxs = (rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0))*(.5*dr2i) 
-                                  syr = (rsxy(i1+1,i2,i3,1,1)-rsxy(i1-1,i2,i3,1,1))*(.5*dr1i) 
-                                  sys = (rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1))*(.5*dr2i) 
-                                  rxx = rx*rxr + sx*rxs 
-                                  ryy = ry*ryr + sy*rys 
-                                  sxx = rx*sxr + sx*sxs 
-                                  syy = ry*syr + sy*sys 
-                 ! -- Coefficients in the Laplacian (scaled)
-                                  lapCoeff(i1,i2,i3,0) = (rx**2 + ry**2   )*dr1i**2
-                                  lapCoeff(i1,i2,i3,2) = 2.*(rx*sx + ry*sy)*dr1i*dr2i*.25
-                                  lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2   )*dr2i**2
-                                  lapCoeff(i1,i2,i3,3) = (rxx + ryy       )*dr1i*.5
-                                  lapCoeff(i1,i2,i3,4) = (sxx + syy       )*dr2i*.5 
+                                      d200i = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                      d020i = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                      d100i = u(i1+1,i2,i3,0) - u(i1-1,i2,i3,0)
+                                      d010i = u(i1,i2+1,i3,0) - u(i1,i2-1,i3,0)
+                                      d110i = u(i1+1,i2+1,i3,0) - u(i1-1,i2+1,i3,0) - u(i1+1,i2-1,i3,0) + u(i1-1,i2-1,i3,0)
+                                      lap2h = lapCoeff(i1,i2,i3,0)*d200i + lapCoeff(i1,i2,i3,2)*d110i + lapCoeff(i1,i2,i3,1)*d020i +lapCoeff(i1,i2,i3,3)*d100i + lapCoeff(i1,i2,i3,4)*d010i
+                                              if( forcingOption.eq.twilightZoneForcing )then
+                                                          call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
+                                                          call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
+                                                          call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
+                                                          call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
+                                                      fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
+                                            else if( forcingOption.eq.helmholtzForcing )then
+                         ! forcing for solving the Helmholtz equation   
+                         ! NOTE: change sign of forcing since for Helholtz we want to solve
+                         !      ( omega^2 I + c^2 Delta) w = f 
+                         ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                                  fv(m)=0.
+                                                  do freq=0,numberOfFrequencies-1 
+                                                      omega = frequencyArray(freq)
+                                                      coswt = cosFreqt(freq)    
+                            ! if( i1.eq.2 .and. i2.eq.2 )then 
+                            !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+                            ! end if
+                            ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                                        fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
+                                                  end do ! do freq  
+                                            else if( addForcing.ne.0 )then  
+                                                  fv(m) = f(i1,i2,i3,0)
+                                            end if
+                   ! --- Modified equation space-time update ----
+                                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         +dtSq*fv(m)                             
                                   end if ! mask .ne. 0
                                 end do
                                 end do
                                 end do
-                          end if ! end assignLapCoeff
-             ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
-                          numGhost1=0;
-                          n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                          n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                          n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                            do i3=n3a,n3b
-                            do i2=n2a,n2b
-                            do i1=n1a,n1b
-                              if( mask(i1,i2,i3).ne.0 )then
-                                  d200i = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
-                                  d020i = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
-                                  d100i = u(i1+1,i2,i3,0) - u(i1-1,i2,i3,0)
-                                  d010i = u(i1,i2+1,i3,0) - u(i1,i2-1,i3,0)
-                                  d110i = u(i1+1,i2+1,i3,0) - u(i1-1,i2+1,i3,0) - u(i1+1,i2-1,i3,0) + u(i1-1,i2-1,i3,0)
-                                  lap2h = lapCoeff(i1,i2,i3,0)*d200i + lapCoeff(i1,i2,i3,2)*d110i + lapCoeff(i1,i2,i3,1)*d020i +lapCoeff(i1,i2,i3,3)*d100i + lapCoeff(i1,i2,i3,4)*d010i
-                                      if( forcingOption.eq.twilightZoneForcing )then
-                                                  call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
-                                                  call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
-                                                  call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
-                                                  call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
-                                              fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
-                                    else if( forcingOption.eq.helmholtzForcing )then
-                     ! forcing for solving the Helmholtz equation   
-                     ! NOTE: change sign of forcing since for Helholtz we want to solve
-                     !      ( omega^2 I + c^2 Delta) w = f 
-                     ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                          fv(m)=0.
-                                          do freq=0,numberOfFrequencies-1 
-                                              omega = frequencyArray(freq)
-                                              coswt = cosFreqt(freq)    
-                        ! if( i1.eq.2 .and. i2.eq.2 )then 
-                        !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
-                        ! end if
-                        ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                                fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
-                                          end do ! do freq  
-                                    else if( addForcing.ne.0 )then  
-                                          fv(m) = f(i1,i2,i3,0)
-                                    end if
-                 ! --- Modified equation space-time update ----
-                                  un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         + dtSq*fv(m)                             
-                              end if ! mask .ne. 0
-                            end do
-                            end do
-                            end do
-         !   #If 2 == 2
-         !     #If "curvilinear" eq "rectangular"
-         !       #If "2" eq "2" 
-         !         update2dOrder2Rectangular(2,2,2,curvilinear)
-         !       #Elif "2" eq "3"
-         !         ! stop 2222
-         !         update3dOrder2Rectangular(2,2,2,curvilinear)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "2" eq "2" 
-         !         update2dOrder2Curvilinear(2,2,2,curvilinear)
-         !       #Elif "2" eq "3"
-         !         ! stop 7474
-         !         update3dOrder2Curvilinear(2,2,2,curvilinear)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End
-         !   #Elif 2 == 4
-         !     #If "curvilinear" eq "rectangular"
-         !       #If "2" eq "2" 
-         !         update2dOrder4Rectangular(2,2,2,curvilinear)
-         !       #Elif "2" eq "3"
-         !         ! stop 747
-         !         update3dOrder4Rectangular(2,2,2,curvilinear)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "2" eq "2" 
-         !         update2dOrder4Curvilinear(2,2,2,curvilinear)
-         !       #Elif "2" eq "3"
-         !         ! stop 7474
-         !         update3dOrder4Curvilinear(2,2,2,curvilinear)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End  
-         !   #Elif 2 == 6 
-         !     #If "curvilinear" eq "rectangular"
-         !       #If "2" eq "2" 
-         !         update2dOrder6Rectangular(2,2,2,curvilinear)
-         !       #Elif "2" eq "3"
-         !         ! stop 727
-         !         update3dOrder6Rectangular(2,2,2,curvilinear)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "2" eq "2" 
-         !         update2dOrder6Curvilinear(2,2,2,curvilinear)
-         !       #Elif "2" eq "3"
-         !         ! stop 7474
-         !         update3dOrder6Curvilinear(2,2,2,curvilinear)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End 
-         !   #Elif 2 == 8 
-         !     #If "curvilinear" eq "rectangular"
-         !       #If "2" eq "2" 
-         !         update2dOrder8Rectangular(2,2,2,curvilinear)
-         !       #Elif "2" eq "3"
-         !         ! stop 820
-         !         update3dOrder8Rectangular(2,2,2,curvilinear)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "2" eq "2" 
-         !         update2dOrder8Curvilinear(2,2,2,curvilinear)
-         !       #Elif "2" eq "3"
-         !         ! stop 7474
-         !         update3dOrder8Curvilinear(2,2,2,curvilinear)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End  
-         !   #Else
-         !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=2 order=2 orderInTime=2, gridType=curvilinear")') 
-         !     stop 6666
-         !   #End
+                      end if
               end if 
       else
      ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----

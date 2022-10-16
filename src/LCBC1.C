@@ -4,18 +4,17 @@
 #include "utility.h"
 #include "LCBCmacros.h"
 
-void getWidth(int wth[3], int lth[3], int fixedAxis, int nu, int k, int p, int dim);
+void getWidth(int wth[3], int lth[3], int fixedAxis, int nu, int k, int p, int dim, int faceType);
 
-void Lcbc::updateFaceGhost(double *&unp1, double **R, double t, double dt, int approxEqNum, int axis, int side){
-
-    int bdryPointsNum = getBdryPointsNum(axis);
-    double **Rv = new double*[bdryPointsNum];
+void Lcbc::updateFaceGhost(double *&unp1, double **R, double t, double dt, int axis, int side){
     
-    for(int bdryPt = 0; bdryPt<bdryPointsNum; bdryPt++){
-        Rv[bdryPt] = new double[approxEqNum];
+    int face = side + 2*axis;
+    
+    double **Rv = new double*[faceParam[face].bdryNg];
+
+    for(int bdryPt = 0; bdryPt<faceParam[face].bdryNg; bdryPt++){
+        Rv[bdryPt] = new double[faceParam[face].approxEqNum];
     }
-    
-    int face = ind2(side, axis, 2, 3);
     
     /* prepare the LCBC matrix*/
     if(FaceMat[face].flag == false){
@@ -23,13 +22,13 @@ void Lcbc::updateFaceGhost(double *&unp1, double **R, double t, double dt, int a
     }
     
     /* prepare the RHS data vector */
-    prepDataVec(R, Rv, t, dt, axis, side);
-
+    prepDataVec(R, Rv, t, dt, faceParam[face].LcbcBdryRange, faceParam[face].bdryNgx, axis, side);
+    
     /* Evaluate the solution at the ghost points */
-    getFaceGhost(unp1, Rv, FaceMat[face].CaVec, FaceMat[face].CbVec, FaceMat[face].eqNum, axis, side);
+    getFaceGhost(unp1, Rv, FaceMat[face].CaVec, FaceMat[face].CbVec, FaceMat[face].eqNum, faceParam[face].LcbcBdryRange, faceParam[face].bdryNgx, axis, side);
     
     /* Free any allocated variables */
-    for(int bdryPoint = 0; bdryPoint<bdryPointsNum; bdryPoint++)
+    for(int bdryPoint = 0; bdryPoint<faceParam[face].bdryNg; bdryPoint++)
         delete [] Rv[bdryPoint];
     
     delete [] Rv;
@@ -37,21 +36,13 @@ void Lcbc::updateFaceGhost(double *&unp1, double **R, double t, double dt, int a
 
 void Lcbc::prepSideMatrix(int axis, int side){
     
-    int face = ind2(side,axis,2,3);
+    int face = side + 2*axis;
     FaceMat[face].flag = true;
 
-    int bdryRange[3][2], bdryNgx[3]; getBdryRange(bdryRange, bdryNgx, axis, side, p, (-p));
-    int bdryNg = bdryNgx[0]*bdryNgx[1]*bdryNgx[2];
-    
+    int bdryNg = (cstCoef)?(1):(faceParam[face].bdryNg);
     int n = (2*p+1);
-    int totalVarNum = n*n*dimBasedValue(dim, 1, n);
-    int knownVarNum   = (p+1)*n*dimBasedValue(dim, 1, n);
-    int unknownVarNum = (totalVarNum - knownVarNum);
-    int compCondNum = (p+1)*n*dimBasedValue(dim, 1, n);
-    int auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
-    int approxEqNum = compCondNum + auxiliaryEqNum; // number of equations treated via least squares
     
-    FaceMat[face].eqNum = new int[totalVarNum];
+    FaceMat[face].eqNum = new int[param.totalVarNum];
     FaceMat[face].CaVec = new double**[bdryNg];
     FaceMat[face].CbVec = new double**[bdryNg];
     
@@ -60,14 +51,14 @@ void Lcbc::prepSideMatrix(int axis, int side){
         FaceMat[face].CbVec[bdryPoint] = new double*[p];
         
         for(int k = 0; k<p; k++){
-            FaceMat[face].CaVec[bdryPoint][k] = new double[approxEqNum];
-            FaceMat[face].CbVec[bdryPoint][k] = new double[knownVarNum];
+            FaceMat[face].CaVec[bdryPoint][k] = new double[faceParam[face].approxEqNum];
+            FaceMat[face].CbVec[bdryPoint][k] = new double[param.interiorEqNum];
         }
     }
     
     /* Assign the number of equations in order in eqNum vectors */
     int k[3], lth[3] = {n,n,dimBasedValue(dim, 1, n)}, unknownVar = 0, knownVar = 0;
-
+    
     for(k[0] = 0; k[0]<n; k[0]++){
         for(k[1] = 0; k[1]<n; k[1]++){
             for(k[2] = 0; k[2]<dimBasedValue(dim, 1, n); k[2]++){
@@ -76,27 +67,28 @@ void Lcbc::prepSideMatrix(int axis, int side){
                     unknownVar++;
                 }
                 else{
-                    FaceMat[face].eqNum[ind(k,lth)] = unknownVarNum + knownVar;
+                    FaceMat[face].eqNum[ind(k,lth)] = param.unknownVarNum + knownVar;
                     knownVar++;
                 }// end of if statement
             }// end of k[0] loop
         }// end of k[1] loop
     }// end of k[2] loop
-
-    getSideMatrix(FaceMat[face].CaVec,FaceMat[face].CbVec,FaceMat[face].eqNum,bdryRange,bdryNgx,axis,side);
+    
+    getSideMatrix(FaceMat[face].CaVec,FaceMat[face].CbVec,FaceMat[face].eqNum,faceParam[face].LcbcBdryRange, faceParam[face].interiorRange,faceParam[face].bdryNgx,faceParam[face].NU,axis,side);
 }// end of prepSideMatrix
 
-void Lcbc::getSideMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdryRange[3][2], int bdryNgx[3], int axis, int side){
-
-    int n = (2*p+1), NU = (p+1), MU = n;
+void Lcbc::getSideMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdryRange[3][2], int interiorRange[3][2], int bdryNgx[3], int NU, int axis, int side){
+    
+    int n = (2*p+1);
+    int face = side + 2*axis;
     /* prepare some needed numbers */
-    int totalVarNum = (n*n*dimBasedValue(dim, 1, n));
-    int compCondNum = NU*MU*dimBasedValue(dim, 1, MU);
-    int auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
-    int interiorEqNum = (p+1)*n*dimBasedValue(dim, 1,n);
-    int approxEqNum = compCondNum + auxiliaryEqNum; // number of equations treated via least squares
+    int totalVarNum = param.totalVarNum;
+    int compCondNum = faceParam[face].compCondNum;
+    int auxiliaryEqNum = param.auxiliaryEqNum;
+    int interiorEqNum = param.interiorEqNum;
+    int approxEqNum = faceParam[face].approxEqNum; // number of equations treated via least squares
     int totalEqNum  = approxEqNum + interiorEqNum;
-    int unknownVarNum = totalVarNum - interiorEqNum;
+    int unknownVarNum = param.unknownVarNum;
     
     /* define needed variables */
     double A_scale[approxEqNum];
@@ -107,23 +99,21 @@ void Lcbc::getSideMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdr
     /* Prepare the D matrix */
     double *D = new double[(approxEqNum*approxEqNum)];
     set1DArrayToZero(D, (approxEqNum*approxEqNum));
-    getD(D, axis);
-    
-    int interiorRange[3][2] = {{0,(2*p)},{0,(2*p)},{0,dimBasedValue(dim,0,(2*p))}};
-    interiorRange[axis][0] = sideBasedValue(side, p, 0); // if side = 0, choose p else choose 0
-    interiorRange[axis][1] = sideBasedValue(side, (2*p), p);
+    getD(D, axis, side);
+
     int eqNumLth[] = {n,n,dimBasedValue(dim,1,n)}, intInd[3];
     int eqNumInd[] = {p,p,dimBasedValue(dim, 0, p)};
- 
+    
     int Ind[3];
     for(Ind[2] = bdryRange[2][0]; Ind[2]<=bdryRange[2][1]; Ind[2]++){
         for(Ind[1] = bdryRange[1][0]; Ind[1]<=bdryRange[1][1]; Ind[1]++){
             for(Ind[0] = bdryRange[0][0]; Ind[0]<=bdryRange[0][1]; Ind[0]++){
-
-                fillMatrix_LagrangeDeriv(A, totalEqNum, compCondNum, auxiliaryEqNum, Ind, axis, side, eqNum);
-
+            
+                set1DArrayToZero(A,(totalEqNum*totalVarNum));
+                fillMatrix_LagrangeDeriv(A, totalEqNum, compCondNum, auxiliaryEqNum, Ind, axis, side, eqNum, NU);
+                
                 int row = approxEqNum;
-
+                
                 for(intInd[0] = interiorRange[0][0]; intInd[0]<=interiorRange[0][1]; intInd[0]++){
                     for(intInd[1] = interiorRange[1][0]; intInd[1]<=interiorRange[1][1]; intInd[1]++){
                         for(intInd[2] = interiorRange[2][0]; intInd[2]<=interiorRange[2][1]; intInd[2]++){
@@ -133,58 +123,68 @@ void Lcbc::getSideMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdr
                         }// intInd[0]
                     }// intInd[1]
                 }// intInd[2]
-
+                
                 /* scale the matrix A */
                 scaleRows(A, A_scale, approxEqNum, totalEqNum, totalVarNum);
-
+                                
                 /* extract the matrix A11 */
                 int A11_extractRows[]  = {0,approxEqNum};
                 int A11_extractColms[] = {0,unknownVarNum};
                 extractBlocks(A, A11, totalEqNum, totalVarNum, A11_extractRows, A11_extractColms, 1);
-            
+                
                 /* extract the matrix A12 */
                 int A12_extractRows[]  = {0,approxEqNum};
                 int A12_extractColms[] = {unknownVarNum,totalVarNum};
                 extractBlocks(A, A12, totalEqNum, totalVarNum, A12_extractRows, A12_extractColms, (-1));
-            
+                
                 /* Scale the D matrix */
                 double *D_scaled = new double[(approxEqNum*approxEqNum)];
                 scaleD(D_scaled, D, A_scale, approxEqNum);
-
+                
                 /* do a LS solve to obtain Ca and Cb */
                 int copy = Ind[axis]; Ind[axis] = 0;
+                int cVecInd = (cstCoef)?(0):(ind(Ind,bdryNgx)); // index of CaVec and CbVec
                 double *Ca = new double[(unknownVarNum*approxEqNum)];
                 double *Cb = new double[(unknownVarNum*interiorEqNum)];
                 LSsolve(A11, D_scaled, Ca, approxEqNum, unknownVarNum, approxEqNum);
                 LSsolve(A11,A12,Cb,approxEqNum,unknownVarNum,interiorEqNum);
-
+                
                 delete [] D_scaled;
-
+                
                 int vecNum = 0;
                 for(int ghostInd = sideBasedValue(side, 0, (1+p)); ghostInd<=sideBasedValue(side, (p-1), (2*p)); ghostInd++){
                     eqNumInd[axis] = ghostInd;
                     int k = eqNum[ind(eqNumInd,eqNumLth)];
-
+                    
                     /* extract the kth row from C_alpha */
                     int Ca_extractedRows[] = {k,(k+1)};
                     int Ca_extractedColms[] = {0,approxEqNum};
-                    extractBlocks(Ca, CaVec[ind(Ind,bdryNgx)][vecNum], unknownVarNum, approxEqNum, Ca_extractedRows, Ca_extractedColms, 1);
-
+                    extractBlocks(Ca, CaVec[cVecInd][vecNum], unknownVarNum, approxEqNum, Ca_extractedRows, Ca_extractedColms, 1);
+                    
                     /* extract the kth row from Cbeta */
                     int Cb_extractedRows[] = {k,(k+1)};
                     int Cb_extractedColms[] = {0,interiorEqNum};
-                    extractBlocks(Cb, CbVec[ind(Ind,bdryNgx)][vecNum], unknownVarNum, interiorEqNum, Cb_extractedRows, Cb_extractedColms, 1);
+                    extractBlocks(Cb, CbVec[cVecInd][vecNum], unknownVarNum, interiorEqNum, Cb_extractedRows, Cb_extractedColms, 1);
                     vecNum++;
                 }// end of ghostVal
                 
                 delete [] Ca;
-                delete [] Cb; 
-
+                delete [] Cb;
+                
                 Ind[axis] = copy;
+                
+                /* If cstCoef, break out of the loops */
+                if(cstCoef){
+                    for(int ax = 0; ax<3; ax++){
+                        Ind[ax] = bdryRange[ax][1];
+                    }// end ax loop (short for axis)
+                }//end if cstCoef
+                /*------------------------------------*/
+                
             }// Ind[0] loop
         }// Ind[1] loop
     }// Ind[2] loop
-
+    
     delete [] A;
     delete [] A11;
     delete [] A12;
@@ -192,24 +192,24 @@ void Lcbc::getSideMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdr
     
 }// end of getSideMatrix
 
-void Lcbc::getD(double *&D, int axis){
-
+void Lcbc::getD(double *&D, int axis, int side){
+    
+    int face = side + 2*axis;
+    int NU = faceParam[face].NU;
+    int compCondNum = faceParam[face].compCondNum;
+    int approxEqNum = faceParam[face].approxEqNum;
     int n = (2*p+1);
-    int compCondNum    = (p+1)*n*dimBasedValue(dim,1,n);
-    int auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
-    int approxEqNum    = compCondNum + auxiliaryEqNum;
-    int dof            = (n*dimBasedValue(dim, 1, n));
-    int NU             = (p+1);
-
+    int dof = (n*dimBasedValue(dim, 1, n));
+    
     /* use the delta approach to determine D */
     double *Id = new double[(dof*dof)];
     getIDmatrix(Id, dof);
-
+    
     double *b = new double[compCondNum], **R = new double*[NU];
-
+    
     for(int nu = 0; nu<NU; nu++)
         R[nu] = new double[dof];
-
+    
     int colm = 0;
     for(int nu = 0; nu<NU; nu++){
         set2DArrayToZero(R, NU, dof);
@@ -221,7 +221,7 @@ void Lcbc::getD(double *&D, int axis){
                     row++;
                 }// end of i loop
             }// end of j loop
-            getbVec(b, R, axis);
+            getbVec(b, R, axis, side);
             for(int k = 0; k<compCondNum; k++){
                 D[ind2(k,colm,approxEqNum,approxEqNum)] = b[k];
             }// end of k loop
@@ -238,29 +238,31 @@ void Lcbc::getD(double *&D, int axis){
     delete [] b;
 }// end of getD function
 
-void Lcbc::getbVec(double *&b, double **R, int axis){
-    int NU = (p+1), n = (2*p+1), order;
+void Lcbc::getbVec(double *&b, double **R, int axis, int side){
+    int n = (2*p+1), k;
+    int face = side + 2*axis;
+    int NU = faceParam[face].NU;
+    int compCondNum = faceParam[face].compCondNum;
     int MU0 = n, MU1 = dimBasedValue(dim, 1, n);
-    int compCondNum = NU*MU0*MU1;
     memset(b, 0, (compCondNum*sizeof(double)));
-
-    int varAxis[2]; getVarAxis(varAxis, axis);
+    
+    int varAxis[2] = {faceParam[face].otherAxis[0],faceParam[face].otherAxis[1]};
     int Ind[] = {p,dimBasedValue(dim,0,p),0};
     int sizeRnu[] = {n,dimBasedValue(dim, 1, n),1};
     double hx[] = {G.dx[varAxis[0]], G.dx[varAxis[1]],0};
-
+    
     int eqnNum = 0, mu[3] = {0,0,0};
     for(int nu = 0; nu<NU; nu++){
-        (nu == 0) ? (order = 2*p) : (order = (-2*nu + 2*p + 2));
-
-        int ord[] = {order,dimBasedValue(dim,0,order),0};
-
+        k = (nu == 0)?(p):(NU - nu);
+        int ord[] = {(2*k),dimBasedValue(dim,0,(2*k)),0};
+        
         for(mu[1] = 0; mu[1]<MU1; mu[1]++){
             for(mu[0] = 0; mu[0]<MU0; mu[0]++){
-
-                b[eqnNum] = der.mixedNumDeriv(R[nu], 2, Ind, mu, ord, hx, sizeRnu);
+        
+                b[eqnNum] = mixedDeriv(R[nu], Ind, mu, hx, ord, sizeRnu);
+                
                 eqnNum++;
-
+                
                 if( (mu[0]!=0) && (mu[0]%2)==0 && ord[0]>2 ){
                     ord[0] = ord[0] - 2;
                 }// end of if mu0
@@ -281,10 +283,10 @@ void Lcbc::scaleD(double *&D_scaled, double *D, double *S, int D_size){
     return;
 }
 
-void Lcbc::fillMatrix_LagrangeDeriv(double *&Matrix, int totalEqNum, int compCondNum, int auxiliaryEqNum, int *Ind, int axis, int side, int *eqNum){
+void Lcbc::fillMatrix_LagrangeDeriv(double *&Matrix, int totalEqNum, int compCondNum, int auxiliaryEqNum, int *Ind, int axis, int side, int *eqNum, int NU){
     
-    int n = (2*p+1), NU = (p+1), MU = n;
-    int totalVarNum = (n*n*dimBasedValue(dim, 1, n));
+    int n = (2*p+1), MU = n;
+    int totalVarNum = param.totalVarNum;
     
     /* Prepare Variables that will hold the Lagrange derivative information */
     double Z[totalVarNum][compCondNum];
@@ -296,7 +298,7 @@ void Lcbc::fillMatrix_LagrangeDeriv(double *&Matrix, int totalEqNum, int compCon
     for(LagInd[2] = 0; LagInd[2]<dimBasedValue(dim, 1, n); LagInd[2]++){
         for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
             for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
-                getLagrangeDeriv_Dirichlet(Y[ind(LagInd,LagIndLth)], Z[ind(LagInd,LagIndLth)], Ind, LagInd, axis, side);
+                getLagrangeDeriv(Y[ind(LagInd,LagIndLth)], Z[ind(LagInd,LagIndLth)], Ind, LagInd, axis, side);
             }// LagInd[0]
         }// LagInd[1]
     }// LagInd[2]
@@ -310,7 +312,7 @@ void Lcbc::fillMatrix_LagrangeDeriv(double *&Matrix, int totalEqNum, int compCon
                     for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
                         for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
                             int colm = eqNum[ind(LagInd,LagIndLth)];
-                            Matrix[ind2(row,colm,totalEqNum,totalVarNum)] =     Z[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU,MU,dimBasedValue(dim, 1, MU))];
+                            Matrix[ind2(row,colm,totalEqNum,totalVarNum)] = Z[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU,MU,dimBasedValue(dim, 1, MU))];
                         }// LagInd[0]
                     }// LagInd[1]
                 }// LagInd[2]
@@ -343,22 +345,27 @@ void Lcbc::fillMatrix_LagrangeDeriv(double *&Matrix, int totalEqNum, int compCon
     }// end of m2 loop
 }// end of fillMatrix_LagrangeDeriv
 
-void Lcbc::getLagrangeDeriv_Dirichlet(double Y[], double Z[], int *Ind, int *LInd, int axis, int side){
+void Lcbc::getLagrangeDeriv(double Y[], double Z[], int *Ind, int *LInd, int axis, int side, bool evaluateY){
     /* This function finds and saves derivatives of the Lagrange polynomial centered at a boundary point [Ind] */
     
-    int NU = (p+1), K = (p+1), MU = 2*p+1;
-    int varAxis[2]; getVarAxis(varAxis, axis);
+    int face = side + 2*axis;
+    int NU = faceParam[face].NU;
+    int NUm = param.NU;
+    int faceType = faceEval[face];
     
-    double *V[(NU*K)]; // V[nu,k][Grid_index]
+    int K = (p+1), MU = 2*p+1;
+    int varAxis[2] = {faceParam[face].otherAxis[0], faceParam[face].otherAxis[1]};
+    
+    double *V[(NUm*K)]; // V[nu,k][Grid_index]
     double *W[(K*p*p*p)];
-
+    
     int wth[3], lth[3];
     int nu = 0; int ll = LagrangeData_center, Lw = (2*ll + 1);
     
     for(int k = 1; k<=p; k++){
-        getWidth(wth, lth, axis, nu, k, p, dim);
+        getWidth(wth, lth, axis, nu, k, p, dim, faceType);
         
-        V[ind2(nu,k,NU,K)] = new double[(lth[0]*lth[1]*lth[2])];
+        V[ind2(nu,k,NUm,K)] = new double[(lth[0]*lth[1]*lth[2])];
         int i[3];
         for(i[2] = -wth[2]; i[2]<=wth[2]; i[2]++){
             for(i[1] = -wth[1]; i[1]<=wth[1]; i[1]++){
@@ -368,197 +375,58 @@ void Lcbc::getLagrangeDeriv_Dirichlet(double Y[], double Z[], int *Ind, int *LIn
                         Ln = Ln*LagrangeData[ind2(LInd[d],(ll+i[d]),(2*p+1),Lw)];
                     }
                     int V_ind[] = sumVectors(wth, i);
-                    V[ind2(nu,k,NU,K)][ind(V_ind,lth)] = Ln;
+                    V[ind2(nu,k,NUm,K)][ind(V_ind,lth)] = Ln;
                 }// end of i0
             }// end of i1
         }// end of i2
     }// end of k
     
     int ord[] = {2,2,dimBasedValue(dim, 0, 2)};
-
+    
     int V_wth[3], V_lth[3];
     for(int nu = 0; nu<=(p-1); nu++){
         for(int k = 1; k<=(p-nu); k++){
             if(k != 1){
-                getWidth(wth, lth, axis, nu, k, p, dim);
+                getWidth(wth, lth, axis, nu, k, p, dim, faceType);
                 for(int l = 1; l<=(k-1); l++){
-                    getWidth(V_wth, V_lth, axis, nu, l, p, dim);
-
+                    getWidth(V_wth, V_lth, axis, nu, l, p, dim, faceType);
+                    
                     int m = (k-l);
                     for(int Dx = 0; Dx<=m; Dx++){
                         for(int Dy = dimBasedValue(dim, (m-Dx), 0); Dy<=(m-Dx); Dy++){
                             int Dz = dimBasedValue(dim, 0, (m - Dx - Dy));
                             W[ind4(l,Dx,Dy,Dz,K,p,p,p)] = new double[(lth[0]*lth[1]*lth[2])];
-
-                                    int Deriv[] = {(2*Dx),(2*Dy),(2*Dz)};
-                                    int i[3];
-                                        for(i[2] = (-wth[2]); i[2]<=(wth[2]); i[2]++){
-                                            for(i[1] = (-wth[1]); i[1]<=(wth[1]); i[1]++){
-                                                for(i[0] = (-wth[0]); i[0]<=(wth[0]); i[0]++){
-                                                    int V_ind[] = sumVectors(V_wth, i);
-                                                    int W_ind[] = sumVectors(wth, i);
-
-                                                    W[ind4(l,Dx,Dy,Dz,K,p,p,p)][ind(W_ind,lth)] = der.mixedNumDeriv(V[ind2(nu,l,NU,K)], 3, V_ind, Deriv, ord, G.dx, V_lth);
-                                                }// end of i0 loop
-                                            }// end of i1 loop
-                                        }// end of i2 loop
-
-                        }// end of Dy
-                    }// end of Dx
-                }// end of l loop
-            }// end of if k statement
-            getWidth(wth, lth, axis, (nu+1), k, p, dim);
-            V[ind2((nu+1),k,NU,K)] = new double[(lth[0]*lth[1]*lth[2])];
-
-            applyQh(V[ind2((nu+1),k,NU,K)], V[ind2(nu,k,NU,K)], W, Ind, nu, k, axis, side);
-
-            if(k!= 1){
-                for(int l = 1; l<=(k-1); l++){
-                    int m = (k-l);
-                    for(int Dx = 0; Dx<=m; Dx++){
-                        for(int Dy = dimBasedValue(dim, (m-Dx), 0); Dy<=(m-Dx); Dy++){
-                            int Dz = dimBasedValue(dim, 0, (m - Dx - Dy));
-                            delete [] W[ind4(l,Dx,Dy,Dz,K,p,p,p)];
-                            W[ind4(l,Dx,Dy,Dz,K,p,p,p)]= NULL;
-                        }// end of Dx[1]
-                    }// end of Dx[0]
-                }// end of l loop
-            }// end of if k statement
-
-        }// end of k loop
-    }// end of nu loop
-
-    /* Calculate \partial_z^{mu1}\partial_y^{mu0}Q^{nu}L_iL_jL_k evaluted at boundary point */
-    int MU0 = MU, MU1 = dimBasedValue(dim, 1, MU), k, mu[2]; double *Vcopy;
-
-    int Deriv[] = {0,0,0}, order[3] = {0,0,0};
-    for(int nu = 0; nu<NU; nu++){
-        (nu == 0) ? (k = p):(k = (p+1-nu));
-        getWidth(wth, lth, axis, nu, k, p, dim);
-
-        Vcopy = V[ind2(nu,k,NU,K)];
-
-        int kappa[2] = {k,k};
-
-        for(mu[1] = 0; mu[1]<MU1; mu[1]++ ){
-            for(mu[0] = 0; mu[0]<MU0; mu[0]++){
-
-                for(int l = 0; l<2; l++){
-                    Deriv[varAxis[l]] = mu[l];
-                    order[varAxis[l]] = 2*kappa[l];
-                }
-
-                Z[ind3(nu,mu[0],mu[1],NU,MU0,MU1)] = der.mixedNumDeriv(Vcopy, 3, wth, Deriv, order, G.dx, lth);
-
-                if( (mu[0]!=0) && (mu[0]%2)==0 && kappa[0]>1 ){
-                    kappa[0] = kappa[0] - 1;
-                }// end of if mu0
-            }// end of mu1 loop
-            if( (mu[1]!=0) && (mu[1]%2)==0 && kappa[1]>1 ){
-                kappa[1] = kappa[1] - 1;
-            }// end of if mu1
-        }// end of mu1
-    }// end of nu loop
-
-    /* Calculate \partial_x^{m1}\partial_y^{m2}L_iL_j evaluated at boundary point when (m1+m2)>(2p) */
-    int cnt = 0, m[3], M_lth[3] ={MU,MU,dimBasedValue(dim, 1, MU)};
-    getWidth(wth, lth, axis, 0, 1, p, dim);
-    for(m[2] = 0; m[2]<M_lth[2]; m[2]++){
-        for(m[1] = 0; m[1]<M_lth[1]; m[1]++){
-            for(m[0] = 0; m[0]<M_lth[0]; m[0]++){
-                if((m[0] + m[1] + m[2])>(2*p)){
-                    int order[] = {2*getOrder(m[0],p),2*getOrder(m[1],p),0};
-                    (dim == 3) ? (order[2] = (2*getOrder(m[2], p))) : (order[2] = 0);
-                    Y[cnt] = der.mixedNumDeriv(V[ind2(0,1,NU,K)], 3, wth, m, order, G.dx, lth);
-                    cnt = cnt + 1;
-                }// end if statement
-            }// end m[0] loop
-        }// end m[1] loop
-    }// end m[2] loop
-    
-    /* free all the pointers allocated in this function */
-    for(int k = 1; k<=p; k++){
-        delete [] V[ind2(0,k,NU,K)];
-        V[ind2(0,k,NU,K)] = NULL;
-    }
-    for(int nu = 0; nu<=(p-1); nu++){
-        for(int k = 1; k<=(p-nu); k++){
-            delete [] V[ind2((nu+1),k,NU,K)];
-            V[ind2((nu+1),k,NU,K)] = NULL;
-        }// end of k loop
-    }// end of nu loop
-    /* end of pointer freeing */
-}// end of Dirichlet_LagrangeDer3 function
-
-void Lcbc::getLagrangeDeriv_Dirichlet(double Z[], int *Ind, int *LInd, int axis, int side){
-    /* This function finds and saves derivatives of the Lagrange polynomial centered at a boundary point [Ind] */
-    
-    int NU = (p+1), K = (p+1), MU = 2*p+1;
-    int varAxis[2]; getVarAxis(varAxis, axis);
-    
-    double *V[(NU*K)]; // V[nu,k][Grid_index]
-    double *W[(K*p*p*p)];
-
-    int wth[3], lth[3];
-    int nu = 0; int ll = LagrangeData_center, Lw = (2*ll + 1);
-    
-    for(int k = 1; k<=p; k++){
-        getWidth(wth, lth, axis, nu, k, p, dim);
-        
-        V[ind2(nu,k,NU,K)] = new double[(lth[0]*lth[1]*lth[2])];
-        int i[3];
-        for(i[2] = -wth[2]; i[2]<=wth[2]; i[2]++){
-            for(i[1] = -wth[1]; i[1]<=wth[1]; i[1]++){
-                for(i[0] = -wth[0]; i[0]<=wth[0]; i[0]++){
-                    double Ln = 1;
-                    for(int d = 0; d<dim; d++){
-                        Ln = Ln*LagrangeData[ind2(LInd[d],(ll+i[d]),(2*p+1),Lw)];
-                    }
-                    int V_ind[] = sumVectors(wth, i);
-                    V[ind2(nu,k,NU,K)][ind(V_ind,lth)] = Ln;
-                }// end of i0
-            }// end of i1
-        }// end of i2
-    }// end of k
-    
-    int ord[] = {2,2,dimBasedValue(dim, 0, 2)};
-    
-    int V_wth[3], V_lth[3];
-    for(int nu = 0; nu<=(p-1); nu++){
-        for(int k = 1; k<=(p-nu); k++){
-            if(k != 1){
-                getWidth(wth, lth, axis, nu, k, p, dim);
-                for(int l = 1; l<=(k-1); l++){
-                    getWidth(V_wth, V_lth, axis, nu, l, p, dim);
-
-                    int m = (k-l);
-                    for(int Dx = 0; Dx<=m; Dx++){
-                        for(int Dy = dimBasedValue(dim, (m-Dx), 0); Dy<=(m-Dx); Dy++){
-                            int Dz = dimBasedValue(dim, 0, (m - Dx - Dy));
-                                    W[ind4(l,Dx,Dy,Dz,K,p,p,p)] = new double[(lth[0]*lth[1]*lth[2])];
                             
-                                    int Deriv[] = {(2*Dx),(2*Dy),(2*Dz)};
-                                    int i[3];
-                                        for(i[2] = (-wth[2]); i[2]<=(wth[2]); i[2]++){
-                                            for(i[1] = (-wth[1]); i[1]<=(wth[1]); i[1]++){
-                                                for(i[0] = (-wth[0]); i[0]<=(wth[0]); i[0]++){
-                                                    int V_ind[] = sumVectors(V_wth, i);
-                                                    int W_ind[] = sumVectors(wth, i);
-
-                                                    W[ind4(l,Dx,Dy,Dz,K,p,p,p)][ind(W_ind,lth)] = der.mixedNumDeriv(V[ind2(nu,l,NU,K)], 3, V_ind, Deriv, ord, G.dx, V_lth);
-                                                }// end of i0 loop
-                                            }// end of i1 loop
-                                        }// end of i2 loop
-
+                            int deriv[] = {(2*Dx),(2*Dy),(2*Dz)};
+                            int i[3];
+                            for(i[2] = (-wth[2]); i[2]<=(wth[2]); i[2]++){
+                                for(i[1] = (-wth[1]); i[1]<=(wth[1]); i[1]++){
+                                    for(i[0] = (-wth[0]); i[0]<=(wth[0]); i[0]++){
+                                        int V_ind[] = sumVectors(V_wth, i);
+                                        int W_ind[] = sumVectors(wth, i);
+                                        
+                                        W[ind4(l,Dx,Dy,Dz,K,p,p,p)][ind(W_ind,lth)] = mixedDeriv(V[ind2(nu,l,NUm,K)], V_ind, deriv, G.dx, ord, V_lth);
+                                        
+                                    }// end of i0 loop
+                                }// end of i1 loop
+                            }// end of i2 loop
+                            
                         }// end of Dy
                     }// end of Dx
                 }// end of l loop
             }// end of if k statement
-            getWidth(wth, lth, axis, (nu+1), k, p, dim);
-            V[ind2((nu+1),k,NU,K)] = new double[(lth[0]*lth[1]*lth[2])];
             
-            applyQh(V[ind2((nu+1),k,NU,K)], V[ind2(nu,k,NU,K)], W, Ind, nu, k, axis, side);
-
+            int oldWth[3], oldLth[3];
+            getWidth(oldWth, oldLth, axis, nu, k, p, dim, faceType);
+            
+            getWidth(wth, lth, axis, (nu+1), k, p, dim, faceType);
+            V[ind2((nu+1),k,NUm,K)] = new double[(lth[0]*lth[1]*lth[2])];
+            
+            if(k<(p-nu) || faceType == 1){
+                applyQh(V[ind2((nu+1),k,NUm,K)], V[ind2(nu,k,NUm,K)], W, Ind, nu, k, wth, lth, oldWth, oldLth, axis, side);
+            }else{
+                applyDh(V[ind2((nu+1),k,NUm,K)], V[ind2(nu,k,NUm,K)], W, Ind, nu, k, wth, lth, oldWth, oldLth, axis, side);
+            }
             if(k!= 1){
                 for(int l = 1; l<=(k-1); l++){
                     int m = (k-l);
@@ -571,19 +439,47 @@ void Lcbc::getLagrangeDeriv_Dirichlet(double Z[], int *Ind, int *LInd, int axis,
                     }// end of Dx[0]
                 }// end of l loop
             }// end of if k statement
-  
+            
         }// end of k loop
     }// end of nu loop
     
     /* Calculate \partial_z^{mu1}\partial_y^{mu0}Q^{nu}L_iL_jL_k evaluted at boundary point */
-    int MU0 = MU, MU1 = dimBasedValue(dim, 1, MU), k, mu[2]; double *Vcopy;
+    int MU0 = MU, MU1 = dimBasedValue(dim, 1, MU), k, mu[2];
     
-    int Deriv[] = {0,0,0}, order[3] = {0,0,0};
+    /* Create an array that will hold the values of du/dn or u */
+    int V1_lth[] = {(2*p+1),(2*p+1),dimBasedValue(dim, 1, (2*p+1))};
+    int V1_wth[] = {p,p,dimBasedValue(dim, 0, p)};
+    V1_lth[axis] = 1; V1_wth[axis] = 0;
+    double *V1 = new double[(V1_lth[0]*V1_lth[1]*V1_lth[2])];
+    
+    int deriv[] = {0,0,0}, order[3] = {0,0,0};
     for(int nu = 0; nu<NU; nu++){
-        (nu == 0) ? (k = p):(k = (p+1-nu));
-        getWidth(wth, lth, axis, nu, k, p, dim);
         
-        Vcopy = V[ind2(nu,k,NU,K)];
+        k = (nu == 0)?(p):(NU - nu);
+        
+        if(faceType == 1){
+            getWidth(wth, lth, axis, nu, k, p, dim, faceType);
+        }else{
+            getWidth(wth, lth, axis, (nu+1), k, p, dim, faceType);
+        }
+        
+        int i[3];
+        for(i[2] = 0; i[2]<V1_lth[2]; i[2]++){
+            for(i[1] = 0; i[1]<V1_lth[1]; i[1]++){
+                for(i[0] = 0; i[0]<V1_lth[0]; i[0]++){
+                    int vInd[3];
+                    vInd[axis] = wth[axis];
+                    vInd[varAxis[0]] = wth[varAxis[0]] - p + i[varAxis[0]];
+                    vInd[varAxis[1]] = dimBasedValue(dim, 0, (wth[varAxis[1]] - p + i[varAxis[1]]));
+                    if(faceEval[face] == 2){
+                        V1[ind(i,V1_lth)] = V[ind2((nu+1),k,NUm,K)][ind(vInd,lth)];
+                    }// end of Neumann condition
+                    else if(faceEval[face] == 1){
+                        V1[ind(i,V1_lth)] = V[ind2(nu,k,NUm,K)][ind(vInd,lth)];
+                    }// end of Dirichlet condition
+                }// end of i[0]
+            }// end of i[1]
+        }// end of i[2]
         
         int kappa[2] = {k,k};
         
@@ -591,12 +487,12 @@ void Lcbc::getLagrangeDeriv_Dirichlet(double Z[], int *Ind, int *LInd, int axis,
             for(mu[0] = 0; mu[0]<MU0; mu[0]++){
                 
                 for(int l = 0; l<2; l++){
-                    Deriv[varAxis[l]] = mu[l];
+                    deriv[varAxis[l]] = mu[l];
                     order[varAxis[l]] = 2*kappa[l];
-                }
-                
-                Z[ind3(nu,mu[0],mu[1],NU,MU0,MU1)] = der.mixedNumDeriv(Vcopy, 3, wth, Deriv, order, G.dx, lth);
-                
+                }// end of l loop
+
+                Z[ind3(nu,mu[0],mu[1],NU,MU0,MU1)] = mixedDeriv(V1, V1_wth, deriv, G.dx, order, V1_lth);
+
                 if( (mu[0]!=0) && (mu[0]%2)==0 && kappa[0]>1 ){
                     kappa[0] = kappa[0] - 1;
                 }// end of if mu0
@@ -606,29 +502,46 @@ void Lcbc::getLagrangeDeriv_Dirichlet(double Z[], int *Ind, int *LInd, int axis,
             }// end of if mu1
         }// end of mu1
     }// end of nu loop
-
+    
+    delete [] V1;
+    
+    /* Calculate \partial_x^{m1}\partial_y^{m2}L_iL_j evaluated at boundary point when (m1+m2)>(2p) */
+    if(evaluateY){
+        int cnt = 0, m[3], M_lth[3] ={MU,MU,dimBasedValue(dim, 1, MU)};
+        int order[3];
+        getWidth(wth, lth, axis, 0, 1, p, dim, faceType);
+        for(m[2] = 0; m[2]<M_lth[2]; m[2]++){
+            for(m[1] = 0; m[1]<M_lth[1]; m[1]++){
+                for(m[0] = 0; m[0]<M_lth[0]; m[0]++){
+                    if((m[0] + m[1] + m[2])>(2*p)){
+                        order[0] = (m[0]!=0)?(2*getOrder(m[0],p)):(0);
+                        order[1] = (m[1]!=0)?(2*getOrder(m[1],p)):(0);
+                        order[2] = (m[2]!=0)?(2*getOrder(m[2],p)):(0);
+                        Y[cnt] =mixedDeriv(V[ind2(0,1,NUm,K)], wth, m, G.dx, order, lth);
+                        cnt = cnt + 1;
+                    }// end if statement
+                }// end m[0] loop
+            }// end m[1] loop
+        }// end m[2] loop
+    }// end if evaluateY
+    
     /* free all the pointers allocated in this function */
     for(int k = 1; k<=p; k++){
-        delete [] V[ind2(0,k,NU,K)];
-        V[ind2(0,k,NU,K)] = NULL;
+        delete [] V[ind2(0,k,NUm,K)];
+        V[ind2(0,k,NUm,K)] = NULL;
     }
     for(int nu = 0; nu<=(p-1); nu++){
-        for(int k = 1; k<=(p-nu); k++){
-            delete [] V[ind2((nu+1),k,NU,K)];
-            V[ind2((nu+1),k,NU,K)] = NULL;
+        for(int k = 1; k<=(p - nu); k++){
+            delete [] V[ind2((nu+1),k,NUm,K)];
+            V[ind2((nu+1),k,NUm,K)] = NULL;
         }// end of k loop
     }// end of nu loop
     /* end of pointer freeing */
 }// end of Dirichlet_LagrangeDer3 function
 
-void Lcbc::applyQh(double *&QV, double *V, double **W, int *Ind, int nu, int k, int axis, int side){
+void Lcbc::applyQh(double *&QV, double *V, double **W, int *Ind, int nu, int k, int newWth[3], int newLth[3], int oldWth[3], int oldLth[3], int axis, int side){
     
     int face = side + 2*axis;
-    int faceNum = 2*dim;
-    
-    int newWth[3], newLth[3], oldWth[3], oldLth[3];
-    getWidth(newWth, newLth, axis, (nu+1), k, p, dim);
-    getWidth(oldWth, oldLth, axis, nu, k, p, dim);
     
     /* Get the correction terms and save them in VS */
     double **VS;
@@ -638,42 +551,48 @@ void Lcbc::applyQh(double *&QV, double *V, double **W, int *Ind, int nu, int k, 
     }
     getCorrectionTerms(VS,V, W, oldLth, k,axis);
     
-    int coefLth[3]; getCoefGridLth(G.indexRange, coefLth, axis, side, dim, p);
-    int varAxis[2]; getVarAxis(varAxis, axis);
-    int v0 = varAxis[0];
-    int v1 = varAxis[1];
-
+    int v0 = faceParam[face].otherAxis[0];
+    int v1 = faceParam[face].otherAxis[1];
+    int cI = 0;
+    
     /* Find Qh of V */
     int i[3], order[] = {2,2,2}; int cInd[3];
     for(i[2] = (-newWth[2]); i[2]<=newWth[2]; i[2]++){
         for(i[1] = (-newWth[1]); i[1]<=newWth[1]; i[1]++){
             for(i[0] = (-newWth[0]); i[0]<=newWth[0]; i[0]++){
-                cInd[axis] = p + i[axis];
-                cInd[v0] = Ind[v0] + p + i[v0];
-                cInd[v1] = dimBasedValue(dim, 0, (Ind[v1] + p + i[v1]));
+                
+                if(!cstCoef){
+                    cInd[axis] = coef[face].wth[axis] + i[axis];
+                    cInd[v0] = Ind[v0] -p + coef[face].wth[v0] + i[v0];
+                    cInd[v1] = dimBasedValue(dim, 0, (Ind[v1] - p + coef[face].wth[v1] + i[v1]));
+                    cI = ind(cInd, coef[face].lth);
+                }
+                
                 int vInd[] = sumVectors(oldWth, i);
                 int qInd[] = sumVectors(newWth,i);
-                
-                int cI = ind(cInd,coefLth);
-                int qI = ind(qInd,newLth);
 
+                int qI = ind(qInd,newLth);
+                
                 QV[qI] = 0; int coefNum = 0;
                 for(int degree = 2; degree>0; degree = degree - 1){
                     for(int d = 0; d<dim; d++){
-                        QV[qI] = QV[qI] + coef[ind2(face,coefNum,faceNum,maxCoefNum)][cI]*der.numDeriv(VS[coefNum], dim, vInd, d, degree,2, G.dx[d], oldLth);
+                        
+                        QV[qI] = QV[qI] + coef[face].Fn[coefNum][cI]*Deriv(VS[coefNum], vInd, d, degree, G.dx[d], 2, oldLth);
+                        
                         coefNum++;
                     }
                 }
-
+                
                 for(int d = (2*(dim-2)); d>=0; d--){
                     int deriv[] = {1,1,1};
                     (dim>2) ? (deriv[d] = 0) : (deriv[2] = 0);
-                    QV[qI] = QV[qI] + 2*coef[ind2(face,coefNum,faceNum,maxCoefNum)][cI]*der.mixedNumDeriv(VS[coefNum], dim, vInd, deriv, order, G.dx, oldLth);
+                
+                    QV[qI] = QV[qI] + 2.0*coef[face].Fn[coefNum][cI]*mixedDeriv(VS[coefNum], vInd, deriv, G.dx, order, oldLth);
+
                     coefNum++;
                 }
-
-                QV[qI] = QV[qI] + coef[ind2(face,coefNum,faceNum,maxCoefNum)][cI]*V[ind(vInd,oldLth)];
-
+                QV[qI] = QV[qI] + coef[face].Fn[coefNum][cI]*V[ind(vInd,oldLth)];
+                
             }// end of i[0] loop
         }// end of i[1] loop
     }// end of i[2] loop
@@ -686,13 +605,57 @@ void Lcbc::applyQh(double *&QV, double *V, double **W, int *Ind, int nu, int k, 
     delete [] VS;
 }
 
+void Lcbc::applyDh(double *&QV, double *V, double **W, int *Ind, int nu, int k, int newWth[3], int newLth[3], int oldWth[3], int oldLth[3], int axis, int side){
+    
+    int face = side + 2*axis;
+    /* Get the correction terms and save them in VS */
+    double **VS;
+    VS = new double*[dim];
+    for(int axisNum = 0; axisNum<dim; axisNum++){
+        VS[axisNum] = new double[(oldLth[0]*oldLth[1]*oldLth[2])];
+    }
+    getCorrectionTermsForDh(VS,V, W, oldLth, k,axis);
+
+    /* Find Qh of V */
+    int i[3];
+    for(i[2] = (-newWth[2]); i[2]<=newWth[2]; i[2]++){
+        for(i[1] = (-newWth[1]); i[1]<=newWth[1]; i[1]++){
+            for(i[0] = (-newWth[0]); i[0]<=newWth[0]; i[0]++){
+                
+                int vInd[] = sumVectors(oldWth,i);
+                int qInd[] = sumVectors(newWth,i);
+                int qI = ind(qInd,newLth);
+                
+                double arg[] = {(double)face, (G.x[0][Ind[0]] + i[0]*G.dx[0]), (G.x[1][Ind[1]] + i[1]*G.dx[1]), (G.x[2][Ind[2]] + i[2]*G.dx[2])};
+                
+                double bn_vec[3];
+                bn(bn_vec, arg);
+                
+                QV[qI] =  bn_vec[0]*Deriv(VS[0], vInd, 0, 1, G.dx[0], 2, oldLth)
+                        + bn_vec[1]*Deriv(VS[1], vInd, 1, 1, G.dx[1], 2, oldLth);
+                
+                if(dim == 3){
+                    QV[qI] = QV[qI] + bn_vec[2]*Deriv(VS[2], vInd, 2, 1, G.dx[2], 2, oldLth);
+                }// end of if dim=3
+                
+            }// end of i[0] loop
+        }// end of i[1] loop
+    }// end of i[2] loop
+    
+    /* Free the pointers */
+    for(int i = 0; i<dim; i++){
+        delete [] VS[i];
+        VS[i] = NULL;
+    }
+    delete [] VS;
+}
 
 void Lcbc::getCorrectionTerms(double **&VS, double *V, double **W, int *lth, int k, int axis){
     /* Note that 0,1,2,3,4 correspond to c11, c22, c1, c2, c12 correction terms */
 #define coefVec(num) ((num < dim) ? (a) : (b))
     
-    double a[] = {0,(-1.0/12.0),(1.0/90.0)};
-    double b[] = {(1.0),(-1.0/6.0),(1.0/30.0)};
+    double a[] = {0,(-1.0/12.0),(1.0/90.0), (1.0/560.0), (1.0/3150.0)};
+    double b[] = {(1.0),(-1.0/6.0),(1.0/30.0), (1.0/140.0), (1.0/630.0)};
     
     int i[3];
     
@@ -718,12 +681,12 @@ void Lcbc::getCorrectionTerms(double **&VS, double *V, double **W, int *lth, int
                     for(int d2 = (d1+1); d2<dim; d2++){
                         VS[coefNum][ind(i,lth)] = 0;
                         int m[] = {0,0,0};
-
+                        
                         for(int n = 1; n<=(k-1); n++){
                             for(int l=0; l<=n; l++){
                                 m[d1] = l;
                                 m[d2] = (n-l);
-
+                                
                                 VS[coefNum][ind(i,lth)] = VS[coefNum][ind(i,lth)] + (b[l]*b[n-l]*(pow(G.dx[d1],((double)(2.0*l))))*(pow(G.dx[d2],((double) 2.0*(n-l)))))*W[ind4((k-n),m[0],m[1],m[2],(p+1),p,p,p)][ind(i,lth)];
                             }// end of l loop
                         }// end of n loop
@@ -734,11 +697,37 @@ void Lcbc::getCorrectionTerms(double **&VS, double *V, double **W, int *lth, int
             }// end of i[0] loop
         }// end of i[1] loop
     } // end of i[2] loop
-    
-    
 }// end of getCorrectionTerms
 
-void getWidth(int wth[3], int lth[3], int fixedAxis, int nu, int k, int p, int dim){
+void Lcbc::getCorrectionTermsForDh(double **&VS, double *V, double **W, int *lth, int k, int axis){
+    /* Note that 0,1,2,3,4 correspond to c11, c22, c1, c2, c12 correction terms */
+    
+    double b[] = {(1.0),(-1.0/6.0),(1.0/30.0)};
+    
+    int i[3];
+    
+    for(i[2] = 0; i[2]<lth[2]; i[2]++){
+        for(i[1] = 0; i[1]<lth[1]; i[1]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
+                
+                for(int var = 0; var<dim; var++){
+                    int m[] = {0,0,0};
+                    VS[var][ind(i,lth)] = 0;
+                    for(int n = 1; n<=(k-1); n++){
+                        m[var] = n;
+                        VS[var][ind(i,lth)] = VS[var][ind(i,lth)] + b[n]*pow(G.dx[var],((double) (2.0*n)))*W[ind4((k-n),m[0],m[1],m[2],(p+1),p,p,p)][ind(i,lth)];
+                    }// end of n loop
+                    VS[var][ind(i,lth)] = VS[var][ind(i,lth)] + V[ind(i,lth)];
+                }// end of var loop
+                
+            }// end of i[0] loop
+        }// end of i[1] loop
+    } // end of i[2] loop
+}// end of getCorrectionTermsForDh
+
+
+void getWidth(int wth[3], int lth[3], int fixedAxis, int nu, int k, int p, int dim, int faceType){
+    
     for(int axis = 0; axis<3; axis ++){
         if(axis<dim){
             if(axis == fixedAxis){
@@ -752,52 +741,4 @@ void getWidth(int wth[3], int lth[3], int fixedAxis, int nu, int k, int p, int d
         }
         lth[axis] = (2*wth[axis] + 1);
     }
-}
-
-void Lcbc::getDataBdryRange(int bdryRange[3][2], int bdryNgx[3], int fixedAxis, int fixedSide, int addOnSide0, int addOnSide1){
-    for(int axis = 0; axis<3; axis++){
-        for(int side = 0; side<2; side++){
-            if(axis == fixedAxis){
-                bdryRange[axis][side] = G.indexRange[fixedAxis][fixedSide];
-                bdryNgx[axis] = 1;
-            }
-            else{
-                if(axis<dim){
-                    bdryRange[axis][side] = G.indexRange[axis][side] + (1-side)*addOnSide0 + addOnSide1*side;
-                }else{
-                    bdryRange[axis][side] = G.indexRange[axis][side];
-                }
-                bdryNgx[axis] = G.Ngx[axis];
-            }// end of if axis
-        }// end of side
-    }// end of axis
-}// end of getDataBdryRange
-
-void Lcbc::getBdryRange(int bdryRange[3][2], int bdryNgx[3], int fixedAxis, int fixedSide, int addOnSide0, int addOnSide1){
-    for(int axis = 0; axis<3; axis++){
-        for(int side = 0; side<2; side++){
-            if(axis == fixedAxis){
-                bdryRange[axis][side] = G.indexRange[fixedAxis][fixedSide];
-                bdryNgx[axis] = 1;
-            }
-            else{
-                if(axis<dim && (faceEval[(2*axis)]>=0)){
-                    bdryRange[axis][side] = G.indexRange[axis][side] + (1-side)*addOnSide0 + addOnSide1*side;
-                }else{
-                    bdryRange[axis][side] = G.indexRange[axis][side];
-                }
-                bdryNgx[axis] = G.Ngx[axis];
-            }// end of if axis
-        }// end of side
-    }// end of axis
-}// end of getBdryRange
-
-int Lcbc::getBdryPointsNum(int fixedAxis){
-    int bdryNg = 1;
-    for(int axis = 0; axis<3; axis++){
-            if(axis != fixedAxis){
-                bdryNg = bdryNg*G.Ngx[axis];
-            }// end of if axis
-    }// end of axis
-    return bdryNg;
-}// end of getBdryPointsNum
+}// end of getWidth

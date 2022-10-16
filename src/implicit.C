@@ -47,21 +47,20 @@ int CgWave::takeImplicitStep( Real t )
         formImplicitTimeSteppingMatrix();
     }
 
-    const int & debug           = dbase.get<int>("debug");
-    FILE *& debugFile           = dbase.get<FILE*>("debugFile");
-    FILE *& pDebugFile          = dbase.get<FILE*>("pDebugFile");
+    const int & debug                = dbase.get<int>("debug");
+    FILE *& debugFile                = dbase.get<FILE*>("debugFile");
+    FILE *& pDebugFile               = dbase.get<FILE*>("pDebugFile");
 
-    const Real & c              = dbase.get<real>("c");
-    const real & dt             = dbase.get<real>("dt");
-    const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
+    const Real & c                   = dbase.get<real>("c");
+    const real & dt                  = dbase.get<real>("dt");
+    const int & orderOfAccuracy      = dbase.get<int>("orderOfAccuracy");
 
-    const int & numberOfFrequencies     = dbase.get<int>("numberOfFrequencies");
-    const RealArray & frequencyArray    = dbase.get<RealArray>("frequencyArray");
+    const int & numberOfFrequencies  = dbase.get<int>("numberOfFrequencies");
+    const RealArray & frequencyArray = dbase.get<RealArray>("frequencyArray");
 
-    const int & upwind           = dbase.get<int>("upwind");
-  // const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
-  // bool useUpwindDissipation   = ad4  > 0.;
-    bool useUpwindDissipation   = upwind;
+    const int & upwind               = dbase.get<int>("upwind");
+    const int & implicitUpwind       = dbase.get<int>("implicitUpwind");
+    bool useUpwindDissipation        = upwind;
 
     const int & addForcing                  = dbase.get<int>("addForcing");
     const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
@@ -84,7 +83,7 @@ int CgWave::takeImplicitStep( Real t )
   // --- Fill in the RHS for implicit boundary conditions ----
 
     int numGhost = orderOfAccuracy/2;
-    if( useUpwindDissipation ) numGhost++; 
+    if( useUpwindDissipation && implicitUpwind ) numGhost++; 
 
     const int assignBCForImplicit = 1;  
 
@@ -286,10 +285,9 @@ int CgWave::formImplicitTimeSteppingMatrix()
     const IntegerArray & gridIsImplicit  = dbase.get<IntegerArray>("gridIsImplicit");
 
     const int & upwind                   = dbase.get<int>("upwind");
-  // const real & ad4                     = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
+    const int & implicitUpwind           = dbase.get<int>("implicitUpwind");
 
-    bool addUpwinding = upwind;
-  // bool addUpwinding = ad4>0.;
+    const bool addUpwinding = upwind && implicitUpwind;
 
     const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
 

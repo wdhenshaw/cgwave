@@ -36,18 +36,28 @@ void Lcbc::updateVertexGhostPeriodic(double *&unp1, int side0, int side1, int si
 }// end of updateVertexGhostPeriodic
 
 
-void Lcbc::updateVertexGhost(double **R, double *&unp1, double t, double dt, int approxEqNum, int side0, int side1, int side2){
+void Lcbc::updateVertexGhost(double **R, double *&unp1, double t, double dt, int side0, int side1, int side2){
+    
+    int face[] = {(side0), (side1+2), (side2+4)};
+    int NU[3], n = (2*p+1), compCondNum[3];
+    for(int axis = 0; axis<3; axis++){
+        NU[axis] = (faceEval[face[axis]] == 1)?(p+1):(p);
+        compCondNum[axis] = NU[axis]*n*n;
+    }// end of axis loop
+    
+    int auxiliaryEqNum = (p*(2*p+1)*(10*p+7))/3;
+    int approxEqNum    = compCondNum[0] + compCondNum[1] + compCondNum[2] + auxiliaryEqNum;
     
     double *Rv = new double[approxEqNum];
     int vertex = ind3(side0,side1,side2,2,2,2);
     
     /* prepare the matrix for a vertex */
     if(VertexMat[vertex].flag == false){
-        prepVertexMatrix(side0,side1,side2);
+        prepVertexMatrix(side0,side1,side2, NU, compCondNum, approxEqNum);
     }
     
     /* prepare the RHS vector for a vertex*/
-    prepDataVec_vertex(R, Rv, t, dt, approxEqNum, side0, side1, side2);
+    prepDataVec_vertex(R, Rv, t, dt, approxEqNum, side0, side1, side2, NU);
     
     /* evaluate the ghost points */
     getVertexGhost(unp1, Rv, VertexMat[vertex].CaVec[0], VertexMat[vertex].CbVec[0], VertexMat[vertex].eqNum, approxEqNum, side0, side1, side2);
@@ -56,7 +66,8 @@ void Lcbc::updateVertexGhost(double **R, double *&unp1, double t, double dt, int
     delete [] Rv;
 }// end of updateVertexGhost
 
-void Lcbc::prepVertexMatrix(int side0, int side1, int side2){
+void Lcbc::prepVertexMatrix(int side0, int side1, int side2, int NU[3], int compCondNum[3], int approxEqNum){
+    
     int vertex = ind3(side0,side1,side2,2,2,2);
     VertexMat[vertex].flag = true;
     
@@ -64,9 +75,6 @@ void Lcbc::prepVertexMatrix(int side0, int side1, int side2){
     int totalVarNum   = n*n*n;
     int knownVarNum   = (p+1)*(p+1)*(p+1);
     int unknownVarNum = (totalVarNum - knownVarNum);
-    int compCondNum   = (p+1)*n*n;
-    int auxiliaryEqNum = (p*(2*p+1)*(10*p+7))/3;
-    int approxEqNum = 3*compCondNum + auxiliaryEqNum; // number of equations treated via least squares
     int ghostPointsNum = unknownVarNum - 3*p;
     
     VertexMat[vertex].eqNum = new int[totalVarNum];
@@ -102,22 +110,21 @@ void Lcbc::prepVertexMatrix(int side0, int side1, int side2){
     }// end of k[2] loop
     
     /* get the vertex Matrix */
-    getVertexMatrix(VertexMat[vertex].CaVec[0], VertexMat[vertex].CbVec[0], VertexMat[vertex].eqNum, side0, side1, side2);
+    getVertexMatrix(VertexMat[vertex].CaVec[0], VertexMat[vertex].CbVec[0], VertexMat[vertex].eqNum, side0, side1, side2, NU, compCondNum);
     /* -------------- */
 }// end of prepVertexMatrix
 
-void Lcbc::getVertexMatrix(double **&CaVec, double **&CbVec, int *eqNum, int side0, int side1, int side2){
+void Lcbc::getVertexMatrix(double **&CaVec, double **&CbVec, int *eqNum, int side0, int side1, int side2, int NU[3], int compCondNum[3]){
     
-    int n = (2*p+1), NU = (p+1);
+    int n = (2*p+1);
     
     /* prepare needed parameters */
-    int totalVarNum = (n*n*n);
-    int compCondNum = NU*n*n;
+    int totalVarNum    = (n*n*n);
     int auxiliaryEqNum = (p*(2*p+1)*(10*p+7))/3;
-    int interiorEqNum = (p+1)*(p+1)*(p+1);
-    int approxEqNum = (3*compCondNum + auxiliaryEqNum);
-    int totalEqNum  = approxEqNum + interiorEqNum;
-    int unknownVarNum = totalVarNum - interiorEqNum;
+    int interiorEqNum  = (p+1)*(p+1)*(p+1);
+    int approxEqNum    = (compCondNum[0] + compCondNum[1] + compCondNum[2] + auxiliaryEqNum);
+    int totalEqNum     = approxEqNum + interiorEqNum;
+    int unknownVarNum  = totalVarNum - interiorEqNum;
     
     /* define the LCBC matrix and its blocks */
     double *A = new double[(totalEqNum*totalVarNum)];
@@ -127,8 +134,8 @@ void Lcbc::getVertexMatrix(double **&CaVec, double **&CbVec, int *eqNum, int sid
     
     /* prepare the D matrix here */
     double *D = new double[(approxEqNum*approxEqNum)];
-    getD_vertex(D);
-    
+    getD_vertex(D, NU, compCondNum, approxEqNum);
+        
     /* prepare the interior indices 2D array */
     int interiorRange[3][2], side[] = {side0,side1,side2};
     for(int axis = 0; axis<3; axis++){
@@ -139,7 +146,9 @@ void Lcbc::getVertexMatrix(double **&CaVec, double **&CbVec, int *eqNum, int sid
     int Ind[3] = {G.indexRange[0][side0], G.indexRange[1][side1], G.indexRange[2][side2]};
     
     /* fill the Vertex Matrix by the derivatives of Lagrange polynomials */
-    fillVertexMatrix_LagrangeDeriv(A, Ind, side0, side1, side2, eqNum, compCondNum, auxiliaryEqNum, totalEqNum);
+    set1DArrayToZero(A,(totalEqNum*totalVarNum));
+    set1DArrayToZero(A_scale, approxEqNum);
+    fillVertexMatrix_LagrangeDeriv(A, Ind, side0, side1, side2, eqNum, NU, compCondNum, auxiliaryEqNum, totalEqNum);
     
     int row = approxEqNum;
     
@@ -217,14 +226,12 @@ void Lcbc::getVertexMatrix(double **&CaVec, double **&CbVec, int *eqNum, int sid
     
 }// end of getVertexMatrix
 
-void Lcbc::getD_vertex(double *&D){
+void Lcbc::getD_vertex(double *&D, int NU[3], int compCondNum[3], int approxEqNum){
 
     int n = (2*p+1);
-    int compCondNum    = (p+1)*n*n;
-    int auxiliaryEqNum = (p*(2*p+1)*(10*p+7))/3;
-    int approxEqNum    = 3*compCondNum + auxiliaryEqNum;
-    int dof            = (n*n);
-    int NU             = (p+1);
+    int dof = (n*n);
+    int totalCompCondNum = compCondNum[0] + compCondNum[1] + compCondNum[2];
+    int totalNuNum = NU[0] + NU[1] + NU[2];
     
     set1DArrayToZero(D, (approxEqNum*approxEqNum));
     
@@ -233,14 +240,14 @@ void Lcbc::getD_vertex(double *&D){
     getIDmatrix(Id, dof);
     
     /* R corresponds to derivatives of data functions on stencil. b is the RHS vector */
-    double b[(3*compCondNum)], **R = new double*[(3*NU)];
+    double b[totalCompCondNum], **R = new double*[totalNuNum];
     
-    for(int nu = 0; nu<(3*NU); nu++)
+    for(int nu = 0; nu<(totalNuNum); nu++)
         R[nu] = new double[dof];
     
     int colm = 0;
-    for(int nu = 0; nu<(3*NU); nu++){
-        set2DArrayToZero(R, (3*NU), dof);
+    for(int nu = 0; nu<(totalNuNum); nu++){
+        set2DArrayToZero(R, (totalNuNum), dof);
         for(int l = 0; l<dof; l++){
             int row = 0;
             
@@ -252,9 +259,9 @@ void Lcbc::getD_vertex(double *&D){
                 }// end of i loop
             }// end of j loop
             
-            getbVec_vertex(b, R);
+            getbVec_vertex(b, R, NU, totalCompCondNum);
             
-            for(int k = 0; k<(3*compCondNum); k++){
+            for(int k = 0; k<(totalCompCondNum); k++){
                 D[ind2(k,colm,approxEqNum,approxEqNum)] = b[k];
             }// end of k loop
             colm++;
@@ -264,18 +271,17 @@ void Lcbc::getD_vertex(double *&D){
 
     /* delete variables */
     
-    for(int nu = 0; nu<(3*NU); nu++)
+    for(int nu = 0; nu<totalNuNum; nu++)
         delete [] R[nu];
     
     delete [] R;
     delete [] Id; 
 }// end of getD_vertex
 
-void Lcbc::getbVec_vertex(double b[], double **R){
-    int NU = (p+1), n = (2*p+1), order;
+void Lcbc::getbVec_vertex(double b[], double **R, int NU[3], int totalCompCondNum){
+    int n = (2*p+1), order[3], ordVec[3][3];
     int MU0 = n, MU1 = n;
-    int compCondNum = NU*MU0*MU1;
-    memset(b, 0, (3*compCondNum*sizeof(double)));
+    memset(b, 0, (totalCompCondNum*sizeof(double)));
 
     int Ind[] = {p,p,0};
     int sizeRnu[] = {n,n,1};
@@ -285,43 +291,58 @@ void Lcbc::getbVec_vertex(double b[], double **R){
     double hx2[] = {G.dx[0], G.dx[1],0}; // axis 2 fixed
     
     int eqnNum = 0, mu[3] = {0,0,0};
-    for(int nu = 0; nu<NU; nu++){
-        (nu == 0) ? (order = 2*p) : (order = (-2*nu + 2*p + 2));
+    for(int nu = 0; nu<(p+1); nu++){
         
-        int ord[] = {order,dimBasedValue(dim,0,order),0};
+        for(int axis = 0; axis<3; axis++){
+            order[axis] = (nu==0)?(2*p):(2*(NU[axis] - nu));
+            
+            ordVec[axis][0] = order[axis];
+            ordVec[axis][1] = order[axis];
+            ordVec[axis][2] = 0;
+        }
         
         for(mu[1] = 0; mu[1]<MU1; mu[1]++){
             for(mu[0] = 0; mu[0]<MU0; mu[0]++){
+                if(nu<NU[0]){
+                    b[eqnNum] = mixedDeriv(R[nu], Ind, mu, hx0, ordVec[0], sizeRnu);
+                    eqnNum++;
+                }
                 
-                b[eqnNum] = der.mixedNumDeriv(R[ind2(nu,0,NU,2)], 2, Ind, mu, ord, hx0, sizeRnu);
-                eqnNum++;
+                if(nu<NU[1]){
+                    b[eqnNum] = mixedDeriv(R[(nu + NU[0])], Ind, mu, hx1, ordVec[1], sizeRnu);
+                    eqnNum++;
+                }
                 
-                b[eqnNum] = der.mixedNumDeriv(R[ind2(nu,1,NU,2)], 2, Ind, mu, ord, hx1, sizeRnu);
-                eqnNum++;
+                if(nu<NU[2]){
+                    b[eqnNum] = mixedDeriv(R[(nu + NU[0] + NU[1])], Ind, mu, hx2, ordVec[2], sizeRnu);
+                    eqnNum++;
+                }
                 
-                b[eqnNum] = der.mixedNumDeriv(R[ind2(nu,2,NU,2)], 2, Ind, mu, ord, hx2, sizeRnu);
-                eqnNum++;
-                
-                if( (mu[0]!=0) && (mu[0]%2)==0 && ord[0]>2 ){
-                    ord[0] = ord[0] - 2;
+                if( (mu[0]!=0) && (mu[0]%2)==0 ){
+                    for(int axis = 0; axis<3; axis++){
+                        if(ordVec[axis][0]>2){ordVec[axis][0] = ordVec[axis][0] - 2;}
+                    }
                 }// end of if mu0
             }// end of mu0 loop
-            if( (mu[1]!=0) && (mu[1]%2)==0 && ord[1]>2 ){
-                ord[1] = ord[1] - 2;
+            if( (mu[1]!=0) && (mu[1]%2)==0 ){
+                for(int axis = 0; axis<3; axis++){
+                    if(ordVec[axis][1]>2){ordVec[axis][1] = ordVec[axis][1] - 2;}
+                }
             }// end of if mu1
         }// end of mu1 loop
     }// end of nu loop
 }// end of getbVec_vertex
 
-void Lcbc::fillVertexMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side0, int side1, int side2, int *eqNum, int compCondNum, int auxiliaryEqNum, int totalEqNum){
+void Lcbc::fillVertexMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side0, int side1, int side2, int *eqNum, int NU[3], int compCondNum[3], int auxiliaryEqNum, int totalEqNum){
     
-    int n = (2*p+1), NU = (p+1), MU = n;
+    int n = (2*p+1), MU = n;
     int totalVarNum = (n*n*n);
+    int NUmax = (p+1);
     
     /* Prepare Variables that will hold the Lagrange derivative information */
-    double Z0[totalVarNum][compCondNum];
-    double Z1[totalVarNum][compCondNum];
-    double Z2[totalVarNum][compCondNum];
+    double Z0[totalVarNum][compCondNum[0]];
+    double Z1[totalVarNum][compCondNum[1]];
+    double Z2[totalVarNum][compCondNum[2]];
     double Y[totalVarNum][auxiliaryEqNum];
     
     /* Fill Z and Y with appropriate values */
@@ -330,34 +351,55 @@ void Lcbc::fillVertexMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side0, 
     for(LagInd[2] = 0; LagInd[2]<n; LagInd[2]++){
         for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
             for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
-                getLagrangeDeriv_Dirichlet(Y[ind(LagInd,LagIndLth)], Z0[ind(LagInd,LagIndLth)], Ind, LagInd,0, side0);
+                getLagrangeDeriv(Y[ind(LagInd,LagIndLth)], Z0[ind(LagInd,LagIndLth)], Ind, LagInd, 0, side0);
                 
-                getLagrangeDeriv_Dirichlet(Z1[ind(LagInd,LagIndLth)], Ind, LagInd, 1, side1);
+                getLagrangeDeriv(Y[ind(LagInd,LagIndLth)], Z1[ind(LagInd,LagIndLth)], Ind, LagInd, 1, side1, false);
                 
-                getLagrangeDeriv_Dirichlet(Z2[ind(LagInd,LagIndLth)], Ind, LagInd, 2, side2);
+                getLagrangeDeriv(Y[ind(LagInd,LagIndLth)], Z2[ind(LagInd,LagIndLth)], Ind, LagInd, 2, side2, false);
             }// LagInd[0]
         }// LagInd[1]
     }// LagInd[2]
     
     int row = 0;
-    for(int nu = 0; nu<NU; nu++){
+    for(int nu = 0; nu<NUmax; nu++){
         for(int mu1 = 0; mu1<MU; mu1++){
             for(int mu0 = 0; mu0<MU; mu0++){
                 
-                for(LagInd[2] = 0; LagInd[2]<n; LagInd[2]++){
-                    for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
-                        for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
-                            
-                            int colm = eqNum[ind(LagInd,LagIndLth)];
-                            Matrix[ind2((row  ),colm,totalEqNum,totalVarNum)] = Z0[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU,MU,MU)];
-                            
-                            Matrix[ind2((row+1),colm,totalEqNum,totalVarNum)] = Z1[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU,MU,MU)];
-                            
-                            Matrix[ind2((row+2),colm,totalEqNum,totalVarNum)] = Z2[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU,MU,MU)];
-                        }// LagInd[0]
-                    }// LagInd[1]
-                }// LagInd[2]
-                row = row + 3;
+                if(nu<NU[0]){
+                    for(LagInd[2] = 0; LagInd[2]<n; LagInd[2]++){
+                        for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
+                            for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
+                                int colm = eqNum[ind(LagInd,LagIndLth)];
+                                    Matrix[ind2(row,colm,totalEqNum,totalVarNum)] = Z0[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU[0],MU,MU)];
+                            }// LagInd[0]
+                        }// LagInd[1]
+                    }// LagInd[2]
+                    row++;
+                }// end of if nu<NU[0]
+                
+                if(nu<NU[1]){
+                    for(LagInd[2] = 0; LagInd[2]<n; LagInd[2]++){
+                        for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
+                            for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
+                                int colm = eqNum[ind(LagInd,LagIndLth)];
+                                Matrix[ind2(row,colm,totalEqNum,totalVarNum)] = Z1[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU[1],MU,MU)];
+                            }// LagInd[0]
+                        }// LagInd[1]
+                    }// LagInd[2]
+                    row++;
+                }// end of if nu<NU[1]
+                
+                if(nu<NU[2]){
+                    for(LagInd[2] = 0; LagInd[2]<n; LagInd[2]++){
+                        for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
+                            for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
+                                int colm = eqNum[ind(LagInd,LagIndLth)];
+                                Matrix[ind2(row,colm,totalEqNum,totalVarNum)] = Z2[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU[2],MU,MU)];
+                            }// LagInd[0]
+                        }// LagInd[1]
+                    }// LagInd[2]
+                    row++;
+                }// end of if nu<NU[2]
             }// mu0 loop
         }// mu1 loop
     }// end of nu loop
@@ -386,10 +428,9 @@ void Lcbc::fillVertexMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side0, 
     }// end of m2 loop
 }// end of fillVertexMatrix_LagrangeDeriv
 
-void Lcbc::prepDataVec_vertex(double **R, double *&Rv, double t, double dt, int approxEqNum, int side0, int side1, int side2){
+void Lcbc::prepDataVec_vertex(double **R, double *&Rv, double t, double dt, int approxEqNum, int side0, int side1, int side2, int NU[3]){
     
     /* prepare needed parameters */
-    int NU = (p+1);
     int face[] = {ind2(side0,0,2,3), ind2(side1,1,2,3), ind2(side2,2,2,3)};
     
     int Ind[3] = {G.indexRange[0][side0], G.indexRange[1][side1], G.indexRange[2][side2]};
@@ -403,13 +444,13 @@ void Lcbc::prepDataVec_vertex(double **R, double *&Rv, double t, double dt, int 
         int facePoints[3] = {G.Ngx[0],G.Ngx[1],G.Ngx[2]};
         facePoints[axis] = 1;
         
-        for(int nu = 0; nu<NU; nu++){
+        for(int nu = 0; nu<NU[axis]; nu++){
             for(stenInd[varAxis[1]] = (-p); stenInd[varAxis[1]]<=p; stenInd[varAxis[1]]++){
                 for(stenInd[varAxis[0]] = (-p); stenInd[varAxis[0]]<=p; stenInd[varAxis[0]]++){
                     
                     int Rind[] = sumVectors(Ind, stenInd);
                     Rind[axis] = 0;
-                    Rv[r] =  R[ind2(nu,face[axis],NU,6)][ind(Rind, facePoints)];
+                    Rv[r] =  R[ind2(nu,face[axis],(p+1),6)][ind(Rind, facePoints)];
                     r++;
                 }// end of stenInd0 loop
             }// end of stenInd1 loop

@@ -4,10 +4,414 @@ set testLCBC = /home/henshw/Dropbox/research/cgwave/bin/testLCBC
 alias testHighDerivatives $wave/bin/testHighDerivatives
 set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDerivatives
 
+
+****************************************************
+****** Sun Aug 14, 2022
+
+START ADDING IPCU -- implicit PC upwinding 
+
+NEED TO EXTRAP EXTRA GHOST IN applyBC for IPCU
+
+IU=0: *NOT EXACT** ...--> FIXED 
+cgWave tz.cmd -g=square32.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.05 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=2 -debug=1 -upwind=1 -go=halt
++++ extrap extra ghost for IPCU scheme
++++ extrap extra ghost for IPCU scheme
++++ extrap extra ghost for IPCU scheme
+cgWave:FD22u t=1.500e-01 ( 9 steps) dt=1.667e-02 maxErr= 3.42e-14, ||u||= 3.00e+00, cpu= 3.04e+01(s)
+
+
+NO upwind : exact 
+cgWave tz.cmd -g=square32.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.05 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=2 -debug=1 -upwind=0 -go=halt
+
+cgWave:FD22u t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 4.25e-02, ||u||= 2.92e+00, cpu= 8.38e+00(s)
+cgWave:FD22u t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 3.29e-02, ||u||= 3.08e+00, cpu= 1.76e+01(s)
+
+
+EXACT: IU=1 
+cgWave tz.cmd -g=square32.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.1 -ts=implicit -implicitUpwind=1 -dtMax=.1 -orderInTime=2 -debug=1 -upwind=1 -go=halt
+
+
+
+****************************************************
+****** Thurs Aug 11, 2022
+
+test new FAME-v1
+
+
+*exact* (but degree=6)
+cgWave tz.cmd -g=square16.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=-1 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+*exact* after fixes
+cgWave tz.cmd -g=square16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=-1 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+*exact*
+cgWave tz.cmd -g=square8.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=-1 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave tz.cmd -g=square8.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -orderInTime=-1 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+
+****************************************************
+****** Wed Aug 3, 2022
+
+Test partially periodic 
+
+FD88 -- valgrind warnings: 
+valgrind --track-origins=yes $cgWave -noplot tz.cmd -g=sice2.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=.02 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=go
+==16578== Conditional jump or move depends on uninitialised value(s)
+==16578==    at 0x1BD8ED: rowMaxNorm(double*, int, int, int) (utility.C:122)
+==16578==    by 0x1BD762: scaleRows(double*&, double*, int, int, int) (utility.C:106)
+==16578==    by 0x1A7957: Lcbc::getSideMatrix(double***&, double***&, int*, int (*) [2], int (*) [2], int*, int, int, int) (LCBC1.C:128)
+==16578==    by 0x1A73D2: Lcbc::prepSideMatrix(int, int) (LCBC1.C:77)
+==16578==    by 0x1A6BB6: Lcbc::updateFaceGhost(double*&, double**, double, double, int, int) (LCBC1.C:21)
+==16578==    by 0x1A1E80: Lcbc::updateGhost(double*&, double, double, LcbcData*&, LcbcData*&) (LCBC.C:166)
+==16578==    by 0x1A07D3: CgWave::assignLCBC(doubleMappedGridFunction&, double, double, int) (initializeLCBC.C:799)
+==16578==    by 0x15FF9F: CgWave::applyBoundaryConditions(doubleCompositeGridFunction&, double) (applyBoundaryConditions.C:155)
+==16578==    by 0x158F1D: CgWave::advance(int) (advance.C:1069)
+==16578==    by 0x127966: main (cgWaveMain.C:285)
+==16578== 
+==16578== Conditional jump or move depends on uninitialised value(s)
+==16578==    at 0x1BD78B: scaleRows(double*&, double*, int, int, int) (utility.C:107)
+==16578==    by 0x1A7957: Lcbc::getSideMatrix(double***&, double***&, int*, int (*) [2], int (*) [2], int*, int, int, int) (LCBC1.C:128)
+==16578==    by 0x1A73D2: Lcbc::prepSideMatrix(int, int) (LCBC1.C:77)
+==16578==    by 0x1A6BB6: Lcbc::updateFaceGhost(double*&, double**, double, double, int, int) (LCBC1.C:21)
+==16578==    by 0x1A1E80: Lcbc::updateGhost(double*&, double, double, LcbcData*&, LcbcData*&) (LCBC.C:166)
+==16578==    by 0x1A07D3: CgWave::assignLCBC(doubleMappedGridFunction&, double, double, int) (initializeLCBC.C:799)
+==16578==    by 0x15FF9F: CgWave::applyBoundaryConditions(doubleCompositeGridFunction&, double) (applyBoundaryConditions.C:155)
+==16578==    by 0x158F1D: CgWave::advance(int) (advance.C:1069)
+
+
+
+
+FD66 CLEAN: 
+valgrind $cgWave -noplot tz.cmd -g=sice2.order6.ng4 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=.05 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=go
+
+
+
+ANNULUS: looks OK
+cgWave tz.cmd -g=annulus2.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=.5 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+SIC looks OK
+cgWave tz.cmd -g=sice2.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=.5 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+*trouble on ghost at branch cut
+cgWave tz.cmd -g=cice2.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=.5 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+try this -bc=e seems ok
+cgWave tz.cmd -g=cice2.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=e -tf=.5 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+nonSquare: looks OK
+cgWave tz.cmd -g=nonSquare16np.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=.5 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+
+looks OK: 
+cgWave tz.cmd -g=square16np.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=.5 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+cgWave tz.cmd -g=square16np.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.5 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+
+****************************************************
+****** Tues Aug 2, 2022
+
+TEST LCBC -- order=8
+
+*trouble**
+cgWave tz.cmd -g=rsise4.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+*trouble:
+cgWave tz.cmd -g=rsise4.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+*core dumped: BC=E --> in LCBC
+cgWave tz.cmd -g=rsise4.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+FD88 CBC -bc=E *trouble near interp points
+cgWave tz.cmd -g=rsise4.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+valgrind $cgWave -noplot tz.cmd -g=rsise4.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=.05 -tp=.01 -bcApproach=cbc -meApproach=ha -go=go
+
+cgWave tz.cmd -g=rsise2.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+
+*ok*
+cgWave tz.cmd -g=sise4.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+OK
+cgWave tz.cmd -g=sise4.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+
+*ok*
+cgWave tz.cmd -g=nonSquare16.order8 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+
+OK:
+cgWave tz.cmd -g=square16.order8 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+
+
+****************************************************
+****** Sat July 30, 2022
+
+TEST NEW LCBC AND MEHA
+
+*** TROUBLE: LCBC partially periodic:
+
+cgWave -noplot tz.cmd -g=square16np.order4.ng3 -upwind=0 -tz=trig -orderInTime=4 -bc=d -tf=.5 -tp=.01 -bcApproach=lcbc -go=halt
+
+cgWave:FD44 t=4.900e-01 (49 steps) dt=1.000e-02 maxErr=3.29e+239, ||u||=3.29e+239, cpu= 8.68e-02(s)
+assignLCBC: t=5.000e-01, cpu = 4.980e-04 (s)
+cgWave:FD44 t=5.000e-01 (50 steps) dt=1.000e-02 maxErr=3.60e+239, ||u||=3.60e+239, cpu= 8.86e-02(s)
+
+
+
+cgWave tz.cmd -g=square16np.order4.ng3 -upwind=0 -tz=trig -orderInTime=4 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+...but std is OK? .. sometimes
+cgWave tz.cmd -g=square16np.order4.ng3 -upwind=0 -tz=trig -orderInTime=4 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=std -go=halt
+
+valgrind $cgWave -noplot tz.cmd -g=square16np.order4.ng3 -upwind=0 -tz=trig -orderInTime=4 -bc=d -tf=.05 -tp=.01 -bcApproach=lcbc -meApproach=std -go=go
+
+
+OK LCBC
+cgWave tz.cmd -g=square16p.order4 -upwind=0 -tz=trig -orderInTime=4 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+OK
+cgWave tz.cmd -g=square16p.order4 -upwind=0 -tz=trig -orderInTime=4 -bc=d -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+TRY ORDER=8 *OK*
+cgWave tz.cmd -g=square16p.order8 -upwind=0 -tz=trig -orderInTime=8 -bc=d -tf=1 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+assignLCBC: t=2.000e-02, cpu = 1.150e-04 (s)
+cgWave:FD88 t=2.000e-02 ( 2 steps) dt=1.000e-02 maxErr= 1.27e-09, ||u||= 9.92e-01, cpu= 9.35e+00(s)
+assignLCBC: t=3.000e-02, cpu = 1.110e-04 (s)
+cgWave:FD88 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 3.79e-09, ||u||= 9.82e-01, cpu= 1.20e+01(s)
+assignLCBC: t=4.000e-02, cpu = 1.090e-04 (s)
+
+
+****************************************************
+****** Fri July 29, 2022
+
+--- NEW VERSIONS OF MEHA schemes 
+
+
++++ CURVILINEAR 3d: all *EXACT*
+cgWave tz.cmd -g=nonBox2.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=8 -bc=e -tf=1 -tp=.01 -meApproach=ha -go=halt
+
+cgWave tz.cmd -g=nonBox2.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=6 -bc=e -tf=1 -tp=.01 -meApproach=ha -go=halt
+
+cgWave tz.cmd -g=nonBox2.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave tz.cmd -g=nonBox2.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -orderInTime=2 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
++++ CURVILINEAR 2d: all *exact*
+cgWave tz.cmd -g=nonSquare16.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=8 -bc=e -tf=1 -tp=.01 -meApproach=ha -go=halt
+
+cgWave:FD88 t=2.000e-02 ( 2 steps) dt=1.000e-02 maxErr= 1.33e-15, ||u||= 6.21e+00, cpu= 2.90e+00(s)
+cgWave:FD88 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 2.66e-15, ||u||= 6.24e+00, cpu= 3.66e+00(s)
+cgWave:FD88 t=4.000e-02 ( 4 steps) dt=1.000e-02 maxErr= 3.55e-15, ||u||= 6.27e+00, cpu= 4.29e+00(s)
+cgWave:FD88 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 4.44e-15, ||u||= 6.30e+00, cpu= 4.87e+00(s)
+cgWave:FD88 t=6.000e-02 ( 6 steps) dt=1.000e-02 maxErr= 3.55e-15, ||u||= 6.33e+00, cpu= 5.26e+00(s)
+
+cgWave tz.cmd -g=nonSquare16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=6 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave tz.cmd -g=nonSquare8.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave tz.cmd -g=nonSquare8.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -orderInTime=2 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+****************************************************
+****** Wed July 27, 2022
+
+TEST ORDER=2 MEHA
+
+cgWave tz.cmd -g=nonSquare8.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -orderInTime=2 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave tz.cmd -g=nonSquare8.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+
+****************************************************
+****** Tues July 26, 2022
+
+MORE WORK ON HIERARCHICAL ME SCHEME
+
+FD66 *exact**
+cgWave tz.cmd -g=nonSquare16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=6 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+FD88 Broken: 
+cgWave tz.cmd -g=nonSquare16.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=8 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+
+test *new* Order=8 curvilinear
+
+FD88 - exact for degree (6,6)
+cgWave tz.cmd -g=nonSquare16.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=8 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave:FD88 t=2.000e-02 ( 2 steps) dt=1.000e-02 maxErr= 1.33e-15, ||u||= 6.21e+00, cpu= 9.45e+00(s)
+cgWave:FD88 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 2.66e-15, ||u||= 6.24e+00, cpu= 1.02e+01(s)
+cgWave:FD88 t=4.000e-02 ( 4 steps) dt=1.000e-02 maxErr= 3.55e-15, ||u||= 6.27e+00, cpu= 1.08e+01(s)
+cgWave:FD88 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 5.33e-15, ||u||= 6.30e+00, cpu= 1.14e+01(s)
+
+
+****************************************************
+****** Sun July 24, 2022
+
+MORE WORK ON HIERARCHICAL ME SCHEME
+
+cgWave tz.cmd -g=nonSquare8.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=8 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+****************************************************
+****** Fri July 22, 2022
+
+MORE WORK ON HIERARCHICAL ME SCHEME
+
++++++++ ORDER=8:
+FD88c : nonSquare : *exact*
+cgWave tz.cmd -g=nonBox2.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=8 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave:FD88 t=2.000e-02 ( 2 steps) dt=1.000e-02 maxErr= 5.33e-15, ||u||= 1.51e+01, cpu= 4.75e+00(s)
+cgWave:FD88 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 1.07e-14, ||u||= 1.52e+01, cpu= 6.53e+00(s)
+cgWave:FD88 t=4.000e-02 ( 4 steps) dt=1.000e-02 maxErr= 1.60e-14, ||u||= 1.53e+01, cpu= 7.57e+00(s)
+cgWave:FD88 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 2.49e-14, ||u||= 1.53e+01, cpu= 8.60e+00(s)
+cgWave:FD88 t=6.000e-02 ( 6 steps) dt=1.000e-02 maxErr= 4.62e-14, ||u||= 1.54e+01, cpu= 9.63e+00(s)
+
+
+FD88c : nonSquare : *exact*
+cgWave tz.cmd -g=nonSquare16.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=8 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave:FD88 t=2.000e-02 ( 2 steps) dt=1.000e-02 maxErr= 1.33e-15, ||u||= 6.21e+00, cpu= 4.50e+00(s)
+cgWave:FD88 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 2.66e-15, ||u||= 6.24e+00, cpu= 5.34e+00(s)
+cgWave:FD88 t=4.000e-02 ( 4 steps) dt=1.000e-02 maxErr= 3.55e-15, ||u||= 6.27e+00, cpu= 6.03e+00(s)
+cgWave:FD88 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 5.33e-15, ||u||= 6.30e+00, cpu= 6.89e+00(s)
+
+
++++++++ ORDER=6:
+FD66c : nonSquare : *exact*
+cgWave tz.cmd -g=nonBox2.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=6 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+FD66c : nonSquare : *exact*
+cgWave tz.cmd -g=nonSquare16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=6 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+****************************************************
+****** Thurs July 21, 2022
+
+MORE WORK ON HIERARCHICAL ME SCHEME
+
+
++++++++ ORDER=6:
+FD66c : nonSquare : *exact*
+cgWave tz.cmd -g=nonBox2.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=6 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+FD66c : nonSquare : *exact*
+cgWave tz.cmd -g=nonSquare16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=6 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+TEST new versions: ORDER=4
+
+FD44 - nonBox: **exact**
+cgWave tz.cmd -g=nonBox2.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+FD44 : exact
+cgWave tz.cmd -g=box2.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+FD44 : nonSquare : *exact*
+cgWave tz.cmd -g=nonSquare16.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+****************************************************
+****** Sat July 16, 2022
+
+MORE WORK ON HIERARCHICAL ME SCHEME
+
+*bug fixed* - first step TZ
+
+**MISSING**** OGPOLY -- degree 8 poly's not implemented 
+
+
+FD88 HA 3D: *exact* (use bc=e, trouble with cbc and lcbc )
+cgWave tz.cmd -g=box2.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=8 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave:FD88 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 1.07e-14, ||u||= 1.52e+01, cpu= 5.52e+00(s)
+cgWave:FD88 t=4.000e-02 ( 4 steps) dt=1.000e-02 maxErr= 1.78e-14, ||u||= 1.53e+01, cpu= 6.30e+00(s)
+cgWave:FD88 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 2.49e-14, ||u||= 1.53e+01, cpu= 6.91e+00(s)
+cgWave:FD88 t=6.000e-02 ( 6 steps) dt=1.000e-02 maxErr= 4.62e-14, ||u||= 1.54e+01, cpu= 7.42e+00(s)
+
+
+
+FD66 HA 3D: *exact* (use bc=e, trouble with cbc and lcbc )
+cgWave tz.cmd -g=box2.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=6 -bc=e -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave:FD66 t=2.000e-02 ( 2 steps) dt=1.000e-02 maxErr= 7.11e-15, ||u||= 1.51e+01, cpu= 4.19e+00(s)
+cgWave:FD66 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 1.07e-14, ||u||= 1.52e+01, cpu= 4.79e+00(s)
+cgWave:FD66 t=4.000e-02 ( 4 steps) dt=1.000e-02 maxErr= 1.42e-14, ||u||= 1.53e+01, cpu= 5.44e+00(s)
+
+
+
+****************************************************
+****** Fri July 15, 2022
+
+MORE WORK ON HIERARCHICAL ME SCHEME
+
+HA 3D: *exact*
+cgWave tz.cmd -g=box2.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=d -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+hierarchical ME: order=4 : exact
+cgWave tz.cmd -g=square32.order4.ng3 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=d -tf=1 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+
+standard ME:
+cgWave tz.cmd -g=square32.order4.ng3 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=d -tf=1 -tp=.01 -bcApproach=cbc -meApproach=std -go=halt
+
+****************************************************
+****** Tues July 5, 2022
+
+++bug found, TZ forcing +++
+
+FD44c *EXACT**
+cgWave tz.cmd -g=nonBox1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=d -tf=1 -tp=.01 -bcApproach=cbc -go=halt
+
+
+FD44 *EXACT**
+cgWave tz.cmd -g=box1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=d -tf=1 -tp=.01 -bcApproach=cbc -go=halt
+
+cgWave:FD44 t=2.000e-02 ( 2 steps) dt=1.000e-02 maxErr= 2.66e-15, ||u||= 8.81e+00, cpu= 3.75e+00(s)
+cgWave:FD44 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 4.44e-15, ||u||= 8.85e+00, cpu= 4.44e+00(s)
+cgWave:FD44 t=4.000e-02 ( 4 steps) dt=1.000e-02 maxErr= 7.11e-15, ||u||= 8.90e+00, cpu= 5.05e+00(s)
+
+****************************************************
+****** Mon July 4, 2022
+
+
+TEST 3D
+
+Ok, not exact?
+cgWave tz.cmd -g=nonBox1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -bc=d -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+cgWave:FD44 t=1.000e-01 ( 2 steps) dt=5.000e-02 maxErr= 3.05e-07, ||u||= 9.18e+00, cpu= 2.01e+00(s)
+cgWave:FD44 t=2.000e-01 ( 4 steps) dt=5.000e-02 maxErr= 6.03e-07, ||u||= 9.73e+00, cpu= 3.48e+00(s)
+cgWave:FD44 t=3.000e-01 ( 6 steps) dt=5.000e-02 maxErr= 9.00e-07, ||u||= 1.04e+01, cpu= 4.14e+00(s)
+
+
+FD44 bc=n *trouble*
+cgWave tz.cmd -g=nonBox1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=4 -bc=n -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+FD44 *NOT EXACT**
+cgWave tz.cmd -g=box1.order4 -upwind=0 -degreeInTime=3 -degreeInSpace=4 -orderInTime=4 -bc=d -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+FD22 exact
+cgWave tz.cmd -g=nonBox1.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -bc=d -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+FD22: exact
+cgWave tz.cmd -g=box1.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -bc=d -tf=1 -tp=.1 -bcApproach=cbc -go=halt
+
+
 ****************************************************
 ****** Sun April 24, 2022
 
 TEST new version of LCBC that supports periodic BCs
+
+CIC -- 
+cgWave tz.cmd -g=cice4.order4 -upwind=0 -tz=trig -fx=1 -fy=1 -tf=10 -tp=.1 -bcApproach=lcbc -go=halt
 
 
 CIC -- looks ok 

@@ -17,97 +17,170 @@ with(StringTools):
 kernelopts(printbytes=false): # turn off memory used messages
 
 
-# read in the DuDx array of derivative definitions:
-read "derivativesByChainRule.TEMP.maple":
+printf("Load chain rule coefficients...\n");
+# read in the DuDx array of derivative definitions: (from generateDerivativesByChainRule.maple)
+# read "derivativesByChainRule.TEMP.maple":
+read "derivativesByChainRule.FIXED.maple":
 
 # DuDx[2,0,0,2]:=rx^2*urr+2*rx*sx*urs+sx^2*uss+rxx*ur+sxx*us:
 
-f := DuDx[2,0,0,2];
-printf("cxxcrr = %s\n",convert(coeff(f,urr),string));
-printf("cxxcrs = %s\n",convert(coeff(f,urs),string));
-printf("cxxcss = %s\n",convert(coeff(f,uss),string));
-f := DuDx[6,0,0,2]:
-printf("cx6cr6   = %s\n",convert(coeff(subs(urrrrrr=q,f),q),string));
-printf("cx6cr5s1 = %s\n",convert(coeff(f,urrrrrs),string));
-printf("cx6cr4s2 = %s\n",convert(coeff(f,urrrrss),string));
-printf("cx6cr3s3 = %s\n",convert(coeff(f,urrrsss),string));
-printf("cx6cs6   = %s\n",convert(coeff(f,ussssss),string));
-printf("cx6cr1s2 = %s\n",convert(simplify(coeff(f,urss)),string));
+if 1=0 then
+  f := DuDx[2,0,0,2];
+  printf("cxxcrr = %s\n",convert(coeff(f,urr),string));
+  printf("cxxcrs = %s\n",convert(coeff(f,urs),string));
+  printf("cxxcss = %s\n",convert(coeff(f,uss),string));
+  f := DuDx[6,0,0,2]:
+  printf("cx6cr6   = %s\n",convert(coeff(subs(urrrrrr=q,f),q),string));
+  printf("cx6cr5s1 = %s\n",convert(coeff(f,urrrrrs),string));
+  printf("cx6cr4s2 = %s\n",convert(coeff(f,urrrrss),string));
+  printf("cx6cr3s3 = %s\n",convert(coeff(f,urrrsss),string));
+  printf("cx6cs6   = %s\n",convert(coeff(f,ussssss),string));
+  printf("cx6cr1s2 = %s\n",convert(simplify(coeff(f,urss)),string));
+end if:
 
 # f := DuDx[6,0,0,2];
 
 # coeff(f,urs);
 # coeff(f,uss);
 
-ndd := 3: dName:="Third":  maxOrder:=4: 
-ndd := 4: dName:="Fourth": maxOrder:=4:
-ndd := 8;
+# ndd := 3: dName:="Third":  maxOrder:=4: 
+# ndd := 4: dName:="Fourth": maxOrder:=4:
+# ndd := 8;
 # ndd := 6: dName:="Sixth":  maxOrder:=6:
 # ndd := 8: dName:="Eight":  maxOrder:=6:
 
 # ndd :=4; 
 
 #   # Here are final spatial derivatives of u by the chain rule: 
-nddMod2 := modp(ndd,2);  
+# nddMod2 := modp(ndd,2);  
 #   fprintf(mfile,"\n! ---------- %s spatial derivatives of u ---------\n",dName):
 
-dim:=2;
+orderStart:=1: orderEnd:=6:  # order of derivatives
+dimStart:=2:   dimEnd:=3:    # space dimensions
 
-if dim=2 then ndd3:=0; else ndd3:=ndd; end if;
-for iz from 0 to ndd3 do 
-for iy from 0 to ndd do 
-for ix from 0 to ndd do 
-  # printf("?? ndv=%d: ix=%d, iy=%d, iz=%d, nddMod2=%d modp(iy,2)=%d modp(iz,2)=%d\n",ndv, ix,iy,iz,nddMod2,modp(iy,2),modp(iz,2));
+for dim from dimStart to dimEnd do 
 
-  # if (ix+iy+iz) >0 and (ix+iy+iz)<=ndd and modp(ix,2)=nddMod2 and modp(iy,2)=nddMod2 and modp(iz,2)=nddMod2 then
-  if (ix+iy+iz) >0 and (ix+iy+iz)=ndd  then
+  # --- open a file to hold the macro ----
+  macroFileName := sprintf("chainRuleCoefficientsMacro%dd.h",dim):
+  mapleFileName := sprintf("chainRuleCoefficientsDefinitions%dd.maple",dim):
+  dFileName := sprintf("declareChainRuleCoefficients%dd.h",dim):
+
+  file := open(macroFileName, WRITE);
+  mfile := open(mapleFileName, WRITE);
+  dfile := open(dFileName, WRITE);
+
+  fprintf(file,"! =============================================================================\n"):
+  fprintf(file,"!  -- Get coefficients in the derivatives on a CURVILINEAR GRID --\n"):
+  fprintf(file,"!\n"):
+  fprintf(file,"! DERIV : 2,3,4,5,6,7,8\n"):
+  fprintf(file,"!\n"):
+  fprintf(file,"! This file was written by chainRuleCoefficients.maple\n"):
+  fprintf(file,"! =============================================================================\n"):
+  fprintf(file,"#beginMacro getDerivCoeff%dd(DERIV)\n",dim):
+
+  fprintf(mfile,"# =============================================================================\n"):
+  fprintf(mfile,"#  -- Define coefficients in the derivatives on a CURVILINEAR GRID --\n"):
+  fprintf(mfile,"#\n"):
+  fprintf(mfile,"# DERIV : 2,3,4,5,6,7,8\n"):
+  fprintf(mfile,"#\n"):
+  fprintf(mfile,"# This file was written by chainRuleCoefficients.maple\n"):
+  fprintf(mfile,"# =============================================================================\n"):
+
+  fprintf(dile,"! =============================================================================\n"):
+  fprintf(dile,"!  -- Declare coefficients in the derivatives on a CURVILINEAR GRID -- \n"):
+  fprintf(dile,"! This file was written by chainRuleCoefficients.maple\n"):
+  fprintf(dile,"! =============================================================================\n"):  
+
+  for ndd from orderStart to orderEnd do  # order of derivative
+
+    printf("Write coeff for dim=%d, deriv=%d\n",dim,ndd):
+
+    if ndd=orderStart then
+      fprintf(file,"\n#If DERIV == %d\n\n",ndd):
+    else
+      fprintf(file,"\n#Elif DERIV == %d\n\n",ndd):
+    end if:
+
+    if dim=2 then ndd3:=0; else ndd3:=ndd; end if;
+    for iz from 0 to ndd3 do 
+    for iy from 0 to ndd do 
+    for ix from 0 to ndd do 
+      # printf("?? ndv=%d: ix=%d, iy=%d, iz=%d, nddMod2=%d modp(iy,2)=%d modp(iz,2)=%d\n",ndv, ix,iy,iz,nddMod2,modp(iy,2),modp(iz,2));
+
+      # if (ix+iy+iz) >0 and (ix+iy+iz)<=ndd and modp(ix,2)=nddMod2 and modp(iy,2)=nddMod2 and modp(iz,2)=nddMod2 then
+      if (ix+iy+iz) >0 and (ix+iy+iz)=ndd  then
 
 
-    derivName := "u"; # name of derivative: "uxxx", "uxyy", etc. 
-    for jx from 1 to ix do derivName := cat(derivName,"x"); end do;
-    for jy from 1 to iy do derivName := cat(derivName,"y"); end do;
-    for jz from 1 to iz do derivName := cat(derivName,"z"); end do;
+        derivName := "u"; # name of derivative: "uxxx", "uxyy", etc. 
+        for jx from 1 to ix do derivName := cat(derivName,"x"); end do;
+        for jy from 1 to iy do derivName := cat(derivName,"y"); end do;
+        for jz from 1 to iz do derivName := cat(derivName,"z"); end do;
 
-    printf("! ------ Coefficients in expansion for %s ------\n",derivName);
-    uds := DuDx[ix,iy,iz,dim];
-    udExpression :="";
-    for jt from 0 to ndd3 do   # t derivatives 
-    for js from 0 to ndd do    # s derivatives 
-      for jr from 0 to ndd do  # r derivatives
-        # Define all even or odd derivatives up to order ndd 
-        # if (jr+js+jt) >0 and (jr+js+jt)<=ndd and modp(jr,2)=nddMod2 and modp(js,2)=nddMod2 and modp(jt,2)=nddMod2 then
-        if (jr+js+jt) >0 and (jr+js+jt)<=ndd then
-          urName:=u; 
-          for kr from 1 by 1 to jr do urName := cat(urName,r); end do;
-          for ks from 1 by 1 to js do urName := cat(urName,s); end do;
-          for kt from 1 by 1 to jt do urName := cat(urName,t); end do;
+        fprintf(file,"! ------ Coefficients in expansion for %s ------\n",derivName);
+        uds := DuDx[ix,iy,iz,dim];
+        udExpression :="";
+        for jt from 0 to ndd3 do   # t derivatives 
+        for js from 0 to ndd do    # s derivatives 
+          for jr from 0 to ndd do  # r derivatives
+            # Define all even or odd derivatives up to order ndd 
+            # if (jr+js+jt) >0 and (jr+js+jt)<=ndd and modp(jr,2)=nddMod2 and modp(js,2)=nddMod2 and modp(jt,2)=nddMod2 then
 
-          # printf("cx%dy%dz%dr%ds%dt%d = %s\n",ix,iy,iz,jr,js,jt,convert(simplify(coeff(uds,urName)),string));
-          coeffExpression := convert(simplify(coeff(uds,urName)),string); # coeff of urrr, urss, etc.
+            if (jr+js+jt) >0 and (jr+js+jt)<=ndd then
+              urName:=u; 
+              for kr from 1 by 1 to jr do urName := cat(urName,r); end do;
+              for ks from 1 by 1 to js do urName := cat(urName,s); end do;
+              for kt from 1 by 1 to jt do urName := cat(urName,t); end do;
 
-          # coeffExpression := RegSubs("([^\\^][0-9])\\*"="\\1.*",coeffExpression);   # add a decimal point to 2*rx --> 2.*rx  
-          coeffExpression := RegSubs("([0-9])\\*"="\\1.*",coeffExpression);   # add a decimal point to 2*rx --> 2.*rx  
-          coeffExpression := SubstituteAll( coeffExpression,"^","**");      # convert power symbol "^" to "**"
+              # printf("cx%dy%dz%dr%ds%dt%d = %s\n",ix,iy,iz,jr,js,jt,convert(simplify(coeff(uds,urName)),string));
+              coeffExpression := convert(simplify(coeff(uds,urName)),string); # coeff of urrr, urss, etc.
 
-          coeffName := sprintf("c%s%d%d%d",derivName,jr,js,jt);            # variable name for this coeff
-          printf("%s = %s\n",coeffName,coeffExpression);
+              # coeffExpression := RegSubs("([^\\^][0-9])\\*"="\\1.*",coeffExpression);   # add a decimal point to 2*rx --> 2.*rx  
+              coeffExpression := RegSubs("([0-9])\\*"="\\1.*",coeffExpression);   # add a decimal point to 2*rx --> 2.*rx  
+              coeffExpression := SubstituteAll( coeffExpression,"^","**");      # convert power symbol "^" to "**"
 
-          if( udExpression = "" )then 
-            udExpression := cat(udExpression,coeffName,"*",urName);
-          else
-            udExpression := cat(udExpression,"+",coeffName,"*",urName);
-          end if;
+              coeffName := sprintf("c%s%d%d%d",derivName,jr,js,jt);            # variable name for this coeff
+              fprintf(file,"%s = %s\n",coeffName,coeffExpression);
 
-        end if;
-      end do;
+              fprintf(mfile,"%s := ""%s"":\n",coeffName,coeffExpression);   # write to maple file
+
+              fprintf(dfile,"real %s\n",coeffName);
+
+              if( udExpression = "" )then 
+                udExpression := cat(udExpression,coeffName,"*",urName);
+              else
+                udExpression := cat(udExpression,"+",coeffName,"*",urName);
+              end if;
+
+            end if;
+          end do;
+        end do;
+        end do;
+
+        fprintf(file,"\n! Here is how to evaluate the derivative:\n");
+        fprintf(file,"! %s = %s\n\n",derivName,udExpression);
+      end if;
     end do;
     end do;
+    end do;
 
-    printf("%s = %s\n\n",derivName,udExpression);
-  end if;
-end do;
-end do;
-end do;
+  end do: # end order of derivative
+
+  fprintf(file,"#Else\n"):
+  fprintf(file,"  write(*,*) 'ERROR: getDerivCoeff%d : invalid derivative=[DERIV]'\n",dim):
+  fprintf(file,"  stop 8765\n");
+  fprintf(file,"#End\n"):
+  fprintf(file,"#endMacro\n"):
+  close(file);
+  printf("Wrote file=%s\n", macroFileName);
+  close(dfile);
+  printf("Wrote file=%s\n", dFileName);
+  close(mfile);
+  printf("Wrote file=%s\n", mapleFileName);  
+
+end do: # end dim 
+
+
+
 
 
 #       uds := convert(uds,string);

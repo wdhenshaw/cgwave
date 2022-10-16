@@ -7,13 +7,13 @@
 #include "CgWave.h"
 
 #include "Ogshow.h"  
-// #include "CompositeGridOperators.h"
+#include "CompositeGridOperators.h"
 #include "PlotStuff.h"
 #include "display.h"
 // #include "ParallelOverlappingGridInterpolator.h"
 #include "ParallelUtility.h"
 #include "LoadBalancer.h"
-// #include "gridFunctionNorms.h"
+#include "gridFunctionNorms.h"
 
 
 
@@ -220,6 +220,7 @@ main(int argc, char *argv[])
 
   aString pbLabels[] = {
                         "solve",
+                        "check known solution",
                         "change parameters",
                         "contour",
                         "grid",
@@ -283,6 +284,78 @@ main(int argc, char *argv[])
        
       cgWave.advance(it);
     }
+
+    else if( answer=="check known solution" )
+    {
+      printF("cgWaveMain: check known solution\n");
+      // OV_ABORT("finish me");
+      Range all;
+      realCompositeGridFunction u(cg), res(cg), w(cg,all,all,all,2);
+      w.setName("u",0);
+      w.setName("res",1);
+
+      res=0.;
+
+      CompositeGridOperators cgop(cg);
+      const int orderOfAccuracy = cgWave.dbase.get<int>("orderOfAccuracy");
+      cgop.setOrderOfAccuracy( orderOfAccuracy ); 
+
+      Index I1,I2,I3;
+      int numberOfComponents=1;
+      Range C(0,0); // components
+      Real t=0.0;   // check this time
+      Real omega= 4.4934094579090642; // FIX ME 
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      {
+        MappedGrid & mg = cg[grid];
+        mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter | MappedGrid::THEmask | MappedGrid::THEinverseVertexDerivative );
+        MappedGridOperators & op = cgop[grid];
+
+ 
+        getIndex(mg.dimension(),I1,I2,I3);
+        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+        OV_GET_SERIAL_ARRAY(real,u[grid],uLocal);
+        OV_GET_SERIAL_ARRAY(real,w[grid],wLocal);
+        OV_GET_SERIAL_ARRAY(real,res[grid],resLocal);
+
+        int numberOfTimeDerivatives=0;
+        cgWave.getUserDefinedKnownSolution(t, grid, uLocal,I1,I2,I3,numberOfTimeDerivatives);
+
+        int extra=-1; // skip boundaries -- *fix* me for Neumann BCs
+        getIndex( mg.gridIndexRange(),I1,I2,I3,extra ); 
+         
+        RealArray uLap(I1,I2,I3,C);
+        op.derivative( MappedGridOperators::laplacianOperator,uLocal, uLap,I1,I2,I3,C );
+
+        where( maskLocal(I1,I2,I3)>0 )
+          resLocal(I1,I2,I3,C) = SQR(omega)*uLocal(I1,I2,I3,C) + uLap(I1,I2,I3,C); 
+
+
+        getIndex(mg.dimension(),I1,I2,I3);
+        wLocal(I1,I2,I3,0) = uLocal(I1,I2,I3);
+        wLocal(I1,I2,I3,1) = resLocal(I1,I2,I3);
+      }
+
+      printF("============= residual norms: omega=%12.6e =============\n",omega);
+      for( int m=0; m<numberOfComponents; m++ )
+      {
+        Real maxRes = maxNorm(res,m);
+        Real l2Res = l2Norm(res,m);
+
+        printF("testExact: equation %d:  max-res=%9.3e, l2-res=%9.3e\n",m,maxRes,l2Res);
+
+      }      
+
+
+      ps.erase();
+      psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
+      psp.set(GI_TOP_LABEL,sPrintF("Known solution at t=%9.3e",t));
+      PlotIt::contour(ps,w,psp);
+      psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);              
+
+
+    }
+
     else if( answer=="contour" )
     {
       if( false )

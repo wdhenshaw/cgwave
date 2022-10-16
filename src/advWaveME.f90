@@ -331,10 +331,6 @@
 
 
 
-
-
-
-
 ! --------- include macros ORDER=2 --------
 ! ===========================================================================
 !   Modified Equation : order=2, DIMENSIONS=2, gridType=Rectangular
@@ -344,6 +340,8 @@
 ! ===========================================================================
 !   Modified Equation : order=2, DIMENSIONS=2, gridType=Rectangular
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -351,17 +349,11 @@
 !  Macro to DECLARE VARIABLES
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
 ! ===========================================================================
-! -----------------------------------------------------------------------
-! Macro to assign neighbours of metric terms when comuputing derivatives:
-!   rxi1g(-2), rxi1g(-1), rxi1g(1), rxi1g(2) (2 ghost)
-!   rxi2g(-2), rxi2g(-1), rxi2g(1), rxi2g(2) (2 ghost)
-!   rxi3g(-2), rxi3g(-1), rxi3g(1), rxi3g(2) (2 ghost, 3d)
-! Extrapolate when necessary
-! -----------------------------------------------------------------------
-
 ! ===========================================================================
 !   Modified Equation : order=2, DIMENSIONS=2, gridType=Curvilinear
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -372,6 +364,8 @@
 ! ===========================================================================
 !   Modified Equation : order=2, DIMENSIONS=3, gridType=Rectangular
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -379,22 +373,18 @@
 !  Macro to DECLARE VARIABLES
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
 ! ===========================================================================
-! -----------------------------------------------------------------------
-! Macro to assign neighbours of metric terms when comuputing derivatives:
-!   rxi1g(-2), rxi1g(-1), rxi1g(1), rxi1g(2) (2 ghost)
-!   rxi2g(-2), rxi2g(-1), rxi2g(1), rxi2g(2) (2 ghost)
-!   rxi3g(-2), rxi3g(-1), rxi3g(1), rxi3g(2) (2 ghost, 3d)
-! Extrapolate when necessary
-! -----------------------------------------------------------------------
-
 ! ===========================================================================
 !   Modified Equation : order=2, DIMENSIONS=3, gridType=Curvilinear
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
-
 
 
 ! --------- include macros ORDER=4 --------
+! #Include "../maple/declare2dOrder4Rectangular.h"
+! #Include "../maple/update2dOrder4Rectangular.h"
+
 ! ===========================================================================
 !   Modified Equation : order=4, DIMENSIONS=2, gridType=Rectangular
 !  Macro to DECLARE VARIABLES
@@ -403,6 +393,8 @@
 ! ===========================================================================
 !   Modified Equation : order=4, DIMENSIONS=2, gridType=Rectangular
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -410,19 +402,15 @@
 !  Macro to DECLARE VARIABLES
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
 ! ===========================================================================
-! -----------------------------------------------------------------------
-! Macro to assign neighbours of metric terms when comuputing derivatives:
-!   rxi1g(-2), rxi1g(-1), rxi1g(1), rxi1g(2) (2 ghost)
-!   rxi2g(-2), rxi2g(-1), rxi2g(1), rxi2g(2) (2 ghost)
-!   rxi3g(-2), rxi3g(-1), rxi3g(1), rxi3g(2) (2 ghost, 3d)
-! Extrapolate when necessary
-! -----------------------------------------------------------------------
-
 ! ===========================================================================
 !   Modified Equation : order=4, DIMENSIONS=2, gridType=Curvilinear
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
+! #Include "../maple/declare3dOrder4Rectangular.h"
+! #Include "../maple/update3dOrder4Rectangular.h"
 ! ===========================================================================
 !   Modified Equation : order=4, DIMENSIONS=3, gridType=Rectangular
 !  Macro to DECLARE VARIABLES
@@ -431,6 +419,8 @@
 ! ===========================================================================
 !   Modified Equation : order=4, DIMENSIONS=3, gridType=Rectangular
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -438,21 +428,18 @@
 !  Macro to DECLARE VARIABLES
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
 ! ===========================================================================
-! -----------------------------------------------------------------------
-! Macro to assign neighbours of metric terms when comuputing derivatives:
-!   rxi1g(-2), rxi1g(-1), rxi1g(1), rxi1g(2) (2 ghost)
-!   rxi2g(-2), rxi2g(-1), rxi2g(1), rxi2g(2) (2 ghost)
-!   rxi3g(-2), rxi3g(-1), rxi3g(1), rxi3g(2) (2 ghost, 3d)
-! Extrapolate when necessary
-! -----------------------------------------------------------------------
-
 ! ===========================================================================
 !   Modified Equation : order=4, DIMENSIONS=3, gridType=Curvilinear
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 
 ! --------- include macros ORDER=6 --------
+! #Include "../maple/declare2dOrder6Rectangular.h"
+! #Include "../maple/update2dOrder6Rectangular.h"
+
 ! ===========================================================================
 !   Modified Equation : order=6, DIMENSIONS=2, gridType=Rectangular
 !  Macro to DECLARE VARIABLES
@@ -461,6 +448,8 @@
 ! ===========================================================================
 !   Modified Equation : order=6, DIMENSIONS=2, gridType=Rectangular
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -468,17 +457,11 @@
 !  Macro to DECLARE VARIABLES
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
 ! ===========================================================================
-! -----------------------------------------------------------------------
-! Macro to assign neighbours of metric terms when comuputing derivatives:
-!   rxi1g(-2), rxi1g(-1), rxi1g(1), rxi1g(2) (2 ghost)
-!   rxi2g(-2), rxi2g(-1), rxi2g(1), rxi2g(2) (2 ghost)
-!   rxi3g(-2), rxi3g(-1), rxi3g(1), rxi3g(2) (2 ghost, 3d)
-! Extrapolate when necessary
-! -----------------------------------------------------------------------
-
 ! ===========================================================================
 !   Modified Equation : order=6, DIMENSIONS=2, gridType=Curvilinear
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -489,6 +472,8 @@
 ! ===========================================================================
 !   Modified Equation : order=6, DIMENSIONS=3, gridType=Rectangular
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -496,17 +481,11 @@
 !  Macro to DECLARE VARIABLES
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
 ! ===========================================================================
-! -----------------------------------------------------------------------
-! Macro to assign neighbours of metric terms when comuputing derivatives:
-!   rxi1g(-2), rxi1g(-1), rxi1g(1), rxi1g(2) (2 ghost)
-!   rxi2g(-2), rxi2g(-1), rxi2g(1), rxi2g(2) (2 ghost)
-!   rxi3g(-2), rxi3g(-1), rxi3g(1), rxi3g(2) (2 ghost, 3d)
-! Extrapolate when necessary
-! -----------------------------------------------------------------------
-
 ! ===========================================================================
 !   Modified Equation : order=6, DIMENSIONS=3, gridType=Curvilinear
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! --------- include macros ORDER=8 --------
@@ -518,6 +497,8 @@
 ! ===========================================================================
 !   Modified Equation : order=8, DIMENSIONS=2, gridType=Rectangular
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -525,17 +506,11 @@
 !  Macro to DECLARE VARIABLES
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
 ! ===========================================================================
-! -----------------------------------------------------------------------
-! Macro to assign neighbours of metric terms when comuputing derivatives:
-!   rxi1g(-2), rxi1g(-1), rxi1g(1), rxi1g(2) (2 ghost)
-!   rxi2g(-2), rxi2g(-1), rxi2g(1), rxi2g(2) (2 ghost)
-!   rxi3g(-2), rxi3g(-1), rxi3g(1), rxi3g(2) (2 ghost, 3d)
-! Extrapolate when necessary
-! -----------------------------------------------------------------------
-
 ! ===========================================================================
 !   Modified Equation : order=8, DIMENSIONS=2, gridType=Curvilinear
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -546,6 +521,8 @@
 ! ===========================================================================
 !   Modified Equation : order=8, DIMENSIONS=3, gridType=Rectangular
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
 ! ===========================================================================
@@ -553,22 +530,12 @@
 !  Macro to DECLARE VARIABLES
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
 ! ===========================================================================
-! -----------------------------------------------------------------------
-! Macro to assign neighbours of metric terms when comuputing derivatives:
-!   rxi1g(-2), rxi1g(-1), rxi1g(1), rxi1g(2) (2 ghost)
-!   rxi2g(-2), rxi2g(-1), rxi2g(1), rxi2g(2) (2 ghost)
-!   rxi3g(-2), rxi3g(-1), rxi3g(1), rxi3g(2) (2 ghost, 3d)
-! Extrapolate when necessary
-! -----------------------------------------------------------------------
-
 ! ===========================================================================
 !   Modified Equation : order=8, DIMENSIONS=3, gridType=Curvilinear
 !  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
-
-
-
-
 
 
 ! =========================================================================================
@@ -580,6 +547,7 @@
 !   ORDERINTIME : 2 or 4 
 !   GRIDTYPE : rectangular or curvilinear
 ! ========================================================================================
+
 
 
 
@@ -598,7 +566,6 @@
 ! ==============================================
 ! ============== CONSTRUCT A FILE ==============
 ! ==============================================
-
 
 
 

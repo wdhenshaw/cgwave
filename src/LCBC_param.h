@@ -271,10 +271,16 @@ public:
                     bdryNgx[axis] = 1;
                 }
                 else{
-                    if(axis<dim && (faceEval[(2*axis)]>=0)){
+                    if(axis<dim){
                         bdryRange[axis][side]     = indexRange[axis][side];
-                        LcbcBdryRange[axis][side] = indexRange[axis][side] + (1-side)*(p) + (-p)*side;
                         bdryRangeExt[axis][side]  = indexRange[axis][side] + (1-side)*(-p) + (p)*side;
+                        
+                        if(faceEval[(2*axis)]>=0){
+                            LcbcBdryRange[axis][side] = indexRange[axis][side] + (1-side)*(p) + (-p)*side;
+                        }else{
+                            LcbcBdryRange[axis][side] = indexRange[axis][side];
+                        }
+                      
                     }else{
                         bdryRange[axis][side]     = indexRange[axis][side];
                         LcbcBdryRange[axis][side] = indexRange[axis][side];

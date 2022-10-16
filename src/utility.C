@@ -1,231 +1,8 @@
 #include "utility.h"
-#include <math.h>
+#include <string.h>
+#include <assert.h>
 #include <malloc.h>  // *wdh* 2022/03/16
 #include <stdlib.h>  // *wdh* for exit
-#include <string.h>
-#include "LCBCmacros.h"
-
-double extrapolate(double *gridFn, int index[3], int lth[3], int axis, int sign, int order){
-    
-    double E = 0;
-    
-    if(order == 2){
-        int i1[3]; memcpy(i1, index, sizeof(i1)); i1[axis] = i1[axis] + sign*1;
-        int i2[3]; memcpy(i2, index, sizeof(i1)); i2[axis] = i2[axis] + sign*2;
-        int i3[3]; memcpy(i3, index, sizeof(i1)); i3[axis] = i3[axis] + sign*3;
-        
-        E = 3.0*gridFn[ind(i1,lth)]
-        -3.0*gridFn[ind(i2,lth)]
-        +1.0*gridFn[ind(i3,lth)];
-    }
-    
-    else if(order == 4){
-        
-        int i1[3]; memcpy(i1, index, sizeof(i1)); i1[axis] = i1[axis] + sign*1;
-        int i2[3]; memcpy(i2, index, sizeof(i1)); i2[axis] = i2[axis] + sign*2;
-        int i3[3]; memcpy(i3, index, sizeof(i1)); i3[axis] = i3[axis] + sign*3;
-        int i4[3]; memcpy(i4, index, sizeof(i1)); i4[axis] = i4[axis] + sign*4;
-        int i5[3]; memcpy(i5, index, sizeof(i1)); i5[axis] = i5[axis] + sign*5;
-        
-        E =  5.0*gridFn[ind(i1,lth)]
-        -10.0*gridFn[ind(i2,lth)]
-        +10.0*gridFn[ind(i3,lth)]
-        -5.0*gridFn[ind(i4,lth)]
-        +1.0*gridFn[ind(i5,lth)];
-    }
-    
-    else if(order == 6){
-        int i1[3]; memcpy(i1, index, sizeof(i1)); i1[axis] = i1[axis] + sign*1;
-        int i2[3]; memcpy(i2, index, sizeof(i1)); i2[axis] = i2[axis] + sign*2;
-        int i3[3]; memcpy(i3, index, sizeof(i1)); i3[axis] = i3[axis] + sign*3;
-        int i4[3]; memcpy(i4, index, sizeof(i1)); i4[axis] = i4[axis] + sign*4;
-        int i5[3]; memcpy(i5, index, sizeof(i1)); i5[axis] = i5[axis] + sign*5;
-        int i6[3]; memcpy(i6, index, sizeof(i1)); i6[axis] = i6[axis] + sign*6;
-        int i7[3]; memcpy(i7, index, sizeof(i1)); i7[axis] = i7[axis] + sign*7;
-        
-        E = 7.0*gridFn[ind(i1,lth)]
-        -21.0*gridFn[ind(i2,lth)]
-        +35.0*gridFn[ind(i3,lth)]
-        -35.0*gridFn[ind(i4,lth)]
-        +21.0*gridFn[ind(i5,lth)]
-        -7.0*gridFn[ind(i6,lth)]
-        +1.0*gridFn[ind(i7,lth)];
-        
-    }else{
-        printf("Extrapolation order %d is not supported (extrapolation/utility.C)\n",order);
-        exit(-1);
-    }
-    
-    return E;
-}
-
-void getForcingGridLth(int indexRange[3][2], int lth[3], int wth[3], int bdryRange[3][2], int fixedAxis, int fixedSide, int dim, int p){
-    for(int axis = 0; axis<3; axis++){
-        wth[axis] = ((axis==fixedAxis)?(p):(2*p));
-        if(axis==dim){
-            wth[axis] = 0;
-        }
-        for(int side = 0; side<2; side++){
-            if(axis == fixedAxis){
-                bdryRange[axis][side] = indexRange[fixedAxis][fixedSide];
-            }
-            else{
-                bdryRange[axis][side] = indexRange[axis][side];
-            }// end of if axis
-        }// end of side
-        int bdryRangeLth = bdryRange[axis][1] - bdryRange[axis][0] + 1;
-        lth[axis] = (2*wth[axis] + bdryRangeLth);
-    }// end of axis
-}
-
-void fixCoefGridFunctions(double **&coef, int indexRange[3][2], int dim, int p, int *faceEval){
-    
-    int faceNum = 2*dim;
-    int maxCoefNum = ((dim+1)*(dim + 2))/2;
-    
-    for(int axis = 0; axis<dim; axis++){
-        int varAxis[2]; getVarAxis(varAxis, axis);
-        int v0 = varAxis[0], v1 = varAxis[1];
-        
-        for(int side = 0; side<2; side++){
-            int face = (side + 2*axis);
-            if(faceEval[face]>0){
-                int bdryRange[3][2],lth[3], wth[3]; getForcingGridLth(indexRange, lth, wth, bdryRange, axis, side, dim, p);
-                
-                int i[3];
-                for(int coefNum = 0; coefNum<maxCoefNum; coefNum++){
-                    
-                    /* LOWER y axis over partial z axis */
-                    for(i[v0] = (p-1); i[v0]>=0; i[v0]--){
-                        for(i[v1] = dimBasedValue(dim, 0, p); i[v1]<dimBasedValue(dim, 1, (lth[v1]-p)); i[v1]++){
-                            for(i[axis] = 0; i[axis]<lth[axis]; i[axis]++){
-                                
-                                coef[ind2(face,coefNum,faceNum,maxCoefNum)][ind(i,lth)] = extrapolate(coef[ind2(face,coefNum,faceNum,maxCoefNum)], i, lth, v0, 1, (2*p));
-                                
-                            }// end of i[0] loop
-                        }// end of i[1] loop
-                    }// end of i[2] loop
-                    
-                    /* Upper y axis over partial z axis */
-                    for(i[v0] = (lth[v0]-p); i[v0]<lth[v0]; i[v0]++){
-                        for(i[v1] = dimBasedValue(dim, 0, p); i[v1]<dimBasedValue(dim, 1, (lth[v1]-p)); i[v1]++){
-                            for(i[axis] = 0; i[axis]<lth[axis]; i[axis]++){
-                                
-                                coef[ind2(face,coefNum,faceNum,maxCoefNum)][ind(i,lth)] = extrapolate(coef[ind2(face,coefNum,faceNum,maxCoefNum)], i, lth, v0, (-1), (2*p));
-                                
-                            }// end of i[0] loop
-                        }// end of i[1] loop
-                    }// end of i[2] loop
-                    
-                    if(dim == 3){
-                        /* Lower z */
-                        for(i[v1] = (p-1); i[v1]>=0; i[v1]--){
-                            for(i[v0] = 0; i[v0]<lth[v0]; i[v0]++){
-                                for(i[axis] = 0; i[axis]<lth[axis]; i[axis]++){
-                                    
-                                    coef[ind2(face,coefNum,faceNum,maxCoefNum)][ind(i,lth)] = extrapolate(coef[ind2(face,coefNum,faceNum,maxCoefNum)], i, lth, v1, 1, (2*p));
-                                    
-                                }// end of i[axis]
-                            }// end of i[v0]
-                        }// end of i[v1]
-                        
-                        /* Upper z */
-                        for(i[v1] = (lth[v1]-p); i[v1]< lth[v1]; i[v1]++){
-                            for(i[v0] = 0; i[v0]<lth[v0]; i[v0]++){
-                                for(i[axis] = 0; i[axis]<lth[axis]; i[axis]++){
-                                    
-                                    coef[ind2(face,coefNum,faceNum,maxCoefNum)][ind(i,lth)] = extrapolate(coef[ind2(face,coefNum,faceNum,maxCoefNum)], i, lth, v1, (-1), (2*p));
-                                    
-                                }// end of i[axis]
-                            }// end of i[v0]
-                        }// end of i[v1]
-                    }// end of if dim statment
-                    
-                }// end of nu loop
-            }// end of if faceEval
-        }// end of side loop
-    }// end of axis loop
-    
-    
-}// getBdryGridFunctions
-
-void fixForcingGridFunctions(double **&fn, int indexRange[3][2], int dim, int p, int *faceEval){
-    
-    int faceNum = 2*dim;
-    int NU= p;
-    
-    for(int axis = 0; axis<dim; axis++){
-        int varAxis[2]; getVarAxis(varAxis, axis);
-        int v0 = varAxis[0], v1 = varAxis[1];
-        
-        for(int side = 0; side<2; side++){
-            int face = (side + 2*axis);
-            if(faceEval[face]>0){
-                int bdryRange[3][2],lth[3], wth[3]; getForcingGridLth(indexRange, lth, wth, bdryRange, axis, side, dim, p);
-                
-                int i[3];
-                for(int nu = 0; nu<NU; nu++){
-                    
-                    /* LOWER y axis over partial z axis */
-                    for(i[v0] = (p-1); i[v0]>=0; i[v0]--){
-                        for(i[v1] = dimBasedValue(dim, 0, p); i[v1]<dimBasedValue(dim, 1, (lth[v1]-p)); i[v1]++){
-                            for(i[axis] = 0; i[axis]<lth[axis]; i[axis]++){
-                                
-                                fn[ind2(face,nu,faceNum,NU)][ind(i,lth)] = extrapolate(fn[ind2(face,nu,faceNum,NU)], i, lth, v0, 1, (2*p));
-                                
-                            }// end of i[0] loop
-                        }// end of i[1] loop
-                    }// end of i[2] loop
-                    
-                    /* Upper y axis over partial z axis */
-                    for(i[v0] = (lth[v0]-p); i[v0]<lth[v0]; i[v0]++){
-                        for(i[v1] = dimBasedValue(dim, 0, p); i[v1]<dimBasedValue(dim, 1, (lth[v1]-p)); i[v1]++){
-                            for(i[axis] = 0; i[axis]<lth[axis]; i[axis]++){
-                                
-                                fn[ind2(face,nu,faceNum,NU)][ind(i,lth)] = extrapolate(fn[ind2(face,nu,faceNum,NU)], i, lth, v0, (-1), (2*p));
-                                
-                            }// end of i[0] loop
-                        }// end of i[1] loop
-                    }// end of i[2] loop
-                    
-                    if(dim == 3){
-                        /* Lower z */
-                        for(i[v1] = (p-1); i[v1]>=0; i[v1]--){
-                            for(i[v0] = 0; i[v0]<lth[v0]; i[v0]++){
-                                for(i[axis] = 0; i[axis]<lth[axis]; i[axis]++){
-                                    
-                                    fn[ind2(face,nu,faceNum,NU)][ind(i,lth)] = extrapolate(fn[ind2(face,nu,faceNum,NU)], i, lth, v1, 1, (2*p));
-                                    
-                                }// end of i[axis]
-                            }// end of i[v0]
-                        }// end of i[v1]
-                        
-                        /* Upper z */
-                        for(i[v1] = (lth[v1]-p); i[v1]< lth[v1]; i[v1]++){
-                            for(i[v0] = 0; i[v0]<lth[v0]; i[v0]++){
-                                for(i[axis] = 0; i[axis]<lth[axis]; i[axis]++){
-                                    
-                                    fn[ind2(face,nu,faceNum,NU)][ind(i,lth)] = extrapolate(fn[ind2(face,nu,faceNum,NU)], i, lth, v1, (-1), (2*p));
-                                    
-                                }// end of i[axis]
-                            }// end of i[v0]
-                        }// end of i[v1]
-                    }// end of if dim statment
-                    
-                }// end of nu loop
-            }// end of if faceEval
-        }// end of side loop
-    }// end of axis loop
-    
-}// getBdryGridFunctions
-
-double dotProduct(double *v1, double *v2, int lth){
-    double dotProduct = 0;
-    for(int i = 0; i<lth; i++){
-        dotProduct = dotProduct + v1[i]*v2[i];
-    }// end of i loop
-    return dotProduct;
-}// end of dotProduct
 
 void getVarAxis(int varAxis[2], int fixedAxis){
     int cnt = 0;
@@ -351,11 +128,22 @@ double rowMaxNorm(double *Mat, int row, int numRows, int numColms){
 void print2Darray(double *arr, int s1, int s2){
     for(int i = 0; i<s1; i++){
         for(int j = 0; j<s2; j++){
-            printf("%1.5f|",arr[ind2(i,j,s1,s2)]);
+            printf("%1.4f|",arr[ind2(i,j,s1,s2)]);
         }
         printf("\n");
     }
     printf("\n");
+}
+
+void print1Darray(double *arr, int s){
+    for(int i = 0; i<s; i++){
+        printf("%1.4f\n",arr[i]);
+    }
+    printf("\n");
+}
+
+void stopHere(){
+    printf("\n STOP HERE \n"); 
 }
 
 void partialPrint_3Darray(double *arr, int *Lth, int fixedInd){
@@ -380,3 +168,5 @@ void print2Darray2(double *arr, int rowNum, int colmNum, int r1, int r2, int c1,
     }// end of i loop
     printf("\n");
 }
+
+

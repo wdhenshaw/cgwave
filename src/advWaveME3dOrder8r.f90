@@ -30,7 +30,7 @@
     integer ipar(0:*)
     real rpar(0:*)
  !     ---- local variables -----
-    integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt,ig
+    integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt,ig,useMask
     integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
     integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
     integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev,numberOfFrequencies
@@ -119,71 +119,23 @@
       real uex4y2z2
       real uex2y4z2
       real uex2y2z4
+          real cxx, cyy, czz, d200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d002(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d400(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d220(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d040(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d202(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d022(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
+          real d004(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d600(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d420(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d240(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d060(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d402(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d222(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d042(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d204(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d024(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d006(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
           real cx0, cx1, cx2, cx3, cy0, cy1, cy2, cy3, cz0, cz1, cz2
           real cz3, cxx0, cxx1, cxx2, cxx3, cyy0, cyy1, cyy2, cyy3, czz0, czz1
           real czz2, czz3, cxxx0, cxxx1, cxxx2, cxxx3, cyyy0, cyyy1, cyyy2, cyyy3, czzz0
           real czzz1, czzz2, czzz3, cxxxx0, cxxxx1, cxxxx2, cxxxx3, cyyyy0, cyyyy1, cyyyy2, cyyyy3
           real czzzz0, czzzz1, czzzz2, czzzz3, cxxxxx0, cxxxxx1, cxxxxx2, cxxxxx3, cyyyyy0, cyyyyy1, cyyyyy2
           real cyyyyy3, czzzzz0, czzzzz1, czzzzz2, czzzzz3, cxxxxxx0, cxxxxxx1, cxxxxxx2, cxxxxxx3, cyyyyyy0, cyyyyyy1
-          real cyyyyyy2, cyyyyyy3, czzzzzz0, czzzzzz1, czzzzzz2, czzzzzz3, cxx, cyy, czz, d200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
-          real d002(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d400(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d040(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d004(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap4h(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2hSq(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h002(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap6h(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
-          real lap4hSq(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2hCubed(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d600(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d060(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d006(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2hSq200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2hSq020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2hSq002(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap4h200(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap4h020(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap4h002(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
-          real lap2h400(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h040(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), lap2h004(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0), d800i, d080i, d008i, lap8h, lap2hCubed200i, lap2hCubed020i, lap2hCubed002i, lap2h4p
-          real lap6h200i, lap6h020i, lap6h002i, lap4h400i, lap4h040i, lap4h004i, lap2h600i, lap2h060i, lap2h006i, lap6hSq, lap4hSq200i
-          real lap4hSq020i, lap4hSq002i, lap2hSq400i, lap2hSq040i, lap2hSq004i, lap4hCubed
- ! #If (8 == 2 ) && ( 3 == 2 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare2dOrder2Rectangular()
- !   #Else
- !     declare2dOrder2Curvilinear()
- !   #End
- ! #Elif (8 == 2 ) && ( 3 == 3 ) 
- !   ! **NEW** Way
- !   #If "rectangular" eq "rectangular"  
- !     declare3dOrder2Rectangular()
- !   #Else
- !     declare3dOrder2Curvilinear()
- !   #End  
- ! #Elif (8 == 4 ) && ( 3 == 2 ) 
- !   ! **NEW** Way
- !   #If "rectangular" eq "rectangular"  
- !     declare2dOrder4Rectangular()
- !   #Else
- !     declare2dOrder4Curvilinear()
- !   #End
- ! #Elif (8 == 4 ) && ( 3 == 3 ) 
- !   ! **NEW** Way
- !   #If "rectangular" eq "rectangular"  
- !     ! declare3dOrder4Rectangular()
- !   #Else
- !     ! declare3dOrder4Curvilinear()
- !   #End  
- ! #Elif (8 == 6 ) && ( 3 == 2 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare2dOrder6Rectangular()
- !   #Else
- !     declare2dOrder6Curvilinear()
- !   #End  
- ! #Elif (8 == 6 ) && ( 3 == 3 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare3dOrder6Rectangular()
- !   #Else
- !     declare3dOrder6Curvilinear()
- !   #End 
- ! #Elif (8 == 8 ) && ( 3 == 2 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare2dOrder8Rectangular()
- !   #Else
- !     declare2dOrder8Curvilinear()
- !   #End  
- ! #Elif (8 == 8 ) && ( 3 == 3 ) 
- !   #If "rectangular" eq "rectangular"  
- !     declare3dOrder8Rectangular()
- !   #Else
- !     declare3dOrder8Curvilinear()
- !   #End   
- ! #End
- ! $$$$$$$$$$$$$$$$$$$$$$$ END OLD WAY $$$$$$$$$$$$$$$  
+          real cyyyyyy2, cyyyyyy3, czzzzzz0, czzzzzz1, czzzzzz2, czzzzzz3, cxxxxxxx0, cxxxxxxx1, cxxxxxxx2, cxxxxxxx3, cyyyyyyy0
+          real cyyyyyyy1, cyyyyyyy2, cyyyyyyy3, czzzzzzz0, czzzzzzz1, czzzzzzz2, czzzzzzz3, cxxxxxxxx0, cxxxxxxxx1, cxxxxxxxx2, cxxxxxxxx3
+          real cyyyyyyyy0, cyyyyyyyy1, cyyyyyyyy2, cyyyyyyyy3, czzzzzzzz0, czzzzzzzz1, czzzzzzzz2, czzzzzzzz3, d200i, d400i, d600i
+          real d800i, d020i, d220i, d420i, d620i, d040i, d240i, d440i, d060i, d260i, d080i
+          real d002i, d202i, d402i, d602i, d022i, d222i, d422i, d042i, d242i, d062i, d004i
+          real d204i, d404i, d024i, d224i, d044i, d006i, d206i, d026i, d008i, uxx, uyy
+          real uzz, uxxxx, uxxyy, uyyyy, uxxzz, uyyzz, uzzzz, uxxxxxx, uxxxxyy, uxxyyyy, uyyyyyy
+          real uxxxxzz, uxxyyzz, uyyyyzz, uxxzzzz, uyyzzzz, uzzzzzz, uxxxxxxxx, uxxxxxxyy, uxxxxyyyy, uxxyyyyyy, uyyyyyyyy
+          real uxxxxxxzz, uxxxxyyzz, uxxyyyyzz, uyyyyyyzz, uxxxxzzzz, uxxyyzzzz, uyyyyzzzz, uxxzzzzzz, uyyzzzzzz, uzzzzzzzz
       integer maxDeriv,d,uc,count,numGhost1,m1,m2,m3
  ! declare coefficients in the chain rule for curvilinear grids (from cgwave/maple/chainRuleCoefficients.mw)
  ! #If "rectangular" eq "curvilinear"
@@ -255,6 +207,7 @@
       fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
    ! ** fix me ***
       timeSteppingMethod=modifiedEquationTimeStepping
+      useMask=0  ! do this for now -- do not check mask in loops, these seems faster
    ! Set dr(:) = dx(:) for 6th-order derivatives
       if( gridType.eq.rectangular )then
           do axis=0,2
@@ -385,255 +338,377 @@
           ! -- call the appropriate macro:
           !  update2dOrder2Rectangular(3,8,2,rectangular)
           !  update3dOrder6Curvilinear(3,8,2,rectangular)
-            ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
-            ! Example: 
-            ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
-cx0 = 1.; cx1 = -1/6.; cx2 = 1/30.; cx3 = -1/140.; 
-cy0 = 1.; cy1 = -1/6.; cy2 = 1/30.; cy3 = -1/140.; 
-cz0 = 1.; cz1 = -1/6.; cz2 = 1/30.; cz3 = -1/140.; 
-cxx0 = 1.; cxx1 = -1/12.; cxx2 = 1/90.; cxx3 = -1/560.; 
-cyy0 = 1.; cyy1 = -1/12.; cyy2 = 1/90.; cyy3 = -1/560.; 
-czz0 = 1.; czz1 = -1/12.; czz2 = 1/90.; czz3 = -1/560.; 
-cxxx0 = 1.; cxxx1 = -1/4.; cxxx2 = 7/120.; cxxx3 = -41/3024.; 
-cyyy0 = 1.; cyyy1 = -1/4.; cyyy2 = 7/120.; cyyy3 = -41/3024.; 
-czzz0 = 1.; czzz1 = -1/4.; czzz2 = 7/120.; czzz3 = -41/3024.; 
-cxxxx0 = 1.; cxxxx1 = -1/6.; cxxxx2 = 7/240.; cxxxx3 = -41/7560.; 
-cyyyy0 = 1.; cyyyy1 = -1/6.; cyyyy2 = 7/240.; cyyyy3 = -41/7560.; 
-czzzz0 = 1.; czzzz1 = -1/6.; czzzz2 = 7/240.; czzzz3 = -41/7560.; 
-cxxxxx0 = 1.; cxxxxx1 = -1/3.; cxxxxx2 = 13/144.; cxxxxx3 = -139/6048.; 
-cyyyyy0 = 1.; cyyyyy1 = -1/3.; cyyyyy2 = 13/144.; cyyyyy3 = -139/6048.; 
-czzzzz0 = 1.; czzzzz1 = -1/3.; czzzzz2 = 13/144.; czzzzz3 = -139/6048.; 
-cxxxxxx0 = 1.; cxxxxxx1 = -1/4.; cxxxxxx2 = 13/240.; cxxxxxx3 = -139/12096.; 
-cyyyyyy0 = 1.; cyyyyyy1 = -1/4.; cyyyyyy2 = 13/240.; cyyyyyy3 = -139/12096.; 
-czzzzzz0 = 1.; czzzzzz1 = -1/4.; czzzzzz2 = 13/240.; czzzzzz3 = -139/12096.; 
+                    if( useMask.eq.0 .and. addForcing.eq.0 )then
+            ! No-mask, no-forcing
 cxx=1./dx(0)**2;
 cyy=1./dx(1)**2;
 czz=1./dx(2)**2;
-                        fv(m)=0.
-                        numGhost1=3;
-                        n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                        n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                        n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                          do i3=n3a,n3b
-                          do i2=n2a,n2b
-                          do i1=n1a,n1b
-                            if( mask(i1,i2,i3).ne.0 )then
-                                d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
-                                d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
-                                d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
-                                lap2h(i1,i2,i3,0) = cxx*d200(i1,i2,i3,0) + cyy*d020(i1,i2,i3,0) + czz*d002(i1,i2,i3,0) 
-                            end if ! mask .ne. 0
-                          end do
-                          end do
-                          end do
-                        numGhost1=2;
-                        n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                        n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                        n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                          do i3=n3a,n3b
-                          do i2=n2a,n2b
-                          do i1=n1a,n1b
-                            if( mask(i1,i2,i3).ne.0 )then
-                                d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
-                                d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
-                                d004(i1,i2,i3,0) = d002(i1,i2,i3+1,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
-                ! --- Laplacian to order 4 = lap2h + corrections 
-                                lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + cxx*cxx1*d400(i1,i2,i3,0) + cyy*cyy1*d040(i1,i2,i3,0) + czz*czz1*d004(i1,i2,i3,0)     
-                ! --- Laplacian squared to order 2:
-                                lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
-                                lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
-                                lap2h002(i1,i2,i3,0) = lap2h(i1,i2,i3+1,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2,i3-1,0)
-                                lap2hSq(i1,i2,i3,0) =                      cxx*lap2h200(i1,i2,i3,0)   + cyy*lap2h020(i1,i2,i3,0)   + czz*lap2h002(i1,i2,i3,0)     
-                            end if ! mask .ne. 0
-                          end do
-                          end do
-                          end do
-                        numGhost1=1;
-                        n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                        n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                        n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                          do i3=n3a,n3b
-                          do i2=n2a,n2b
-                          do i1=n1a,n1b
-                            if( mask(i1,i2,i3).ne.0 )then
-                                d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
-                                d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
-                                d006(i1,i2,i3,0) = d004(i1,i2,i3+1,0) - 2*d004(i1,i2,i3,0) + d004(i1,i2,i3-1,0)
-                ! --- Laplacian to order 6 = lap4h + corrections 
-                                lap6h(i1,i2,i3,0) = lap4h(i1,i2,i3,0) + cxx*cxx2*d600(i1,i2,i3,0) + cyy*cyy2*d060(i1,i2,i3,0) + czz*czz2*d006(i1,i2,i3,0)   
-                                lap2hSq200(i1,i2,i3,0) = lap2hSq(i1+1,i2,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1-1,i2,i3,0)
-                                lap2hSq020(i1,i2,i3,0) = lap2hSq(i1,i2+1,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1,i2-1,i3,0)
-                                lap2hSq002(i1,i2,i3,0) = lap2hSq(i1,i2,i3+1,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1,i2,i3-1,0)
-                                lap2hCubed(i1,i2,i3,0) =                    cxx*lap2hSq200(i1,i2,i3,0)  + cyy*lap2hSq020(i1,i2,i3,0)  + czz*lap2hSq020(i1,i2,i3,0)    
-                ! --- Laplacian squared to order 4 = 
-                !  lap2h*( lap4h ) + corrections*( Lap2h )
-                                lap4h200(i1,i2,i3,0) = lap4h(i1+1,i2,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1-1,i2,i3,0)
-                                lap4h020(i1,i2,i3,0) = lap4h(i1,i2+1,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2-1,i3,0)
-                                lap4h002(i1,i2,i3,0) = lap4h(i1,i2,i3+1,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2,i3-1,0)
-                                lap2h400(i1,i2,i3,0) = lap2h200(i1+1,i2,i3,0) - 2*lap2h200(i1,i2,i3,0) + lap2h200(i1-1,i2,i3,0)
-                                lap2h040(i1,i2,i3,0) = lap2h020(i1,i2+1,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1,i2-1,i3,0)
-                                lap2h004(i1,i2,i3,0) = lap2h002(i1,i2,i3+1,0) - 2*lap2h002(i1,i2,i3,0) + lap2h002(i1,i2,i3-1,0)
-                                lap4hSq(i1,i2,i3,0) =                                       cxx*( lap4h200(i1,i2,i3,0) + cxx1*lap2h400(i1,i2,i3,0) )  + cyy*( lap4h020(i1,i2,i3,0) + cyy1*lap2h040(i1,i2,i3,0) )  + czz*( lap4h002(i1,i2,i3,0) + czz1*lap2h004(i1,i2,i3,0) )    
-                            end if ! mask .ne. 0
-                          end do
-                          end do
-                          end do
-            ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
-                        numGhost1=0;
-                        n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                        n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                        n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                          do i3=n3a,n3b
-                          do i2=n2a,n2b
-                          do i1=n1a,n1b
-                            if( mask(i1,i2,i3).ne.0 )then
-                                d800i = d600(i1+1,i2,i3,0) - 2*d600(i1,i2,i3,0) + d600(i1-1,i2,i3,0)
-                                d080i = d060(i1,i2+1,i3,0) - 2*d060(i1,i2,i3,0) + d060(i1,i2-1,i3,0)
-                                d008i = d006(i1,i2,i3+1,0) - 2*d006(i1,i2,i3,0) + d006(i1,i2,i3-1,0)
-                ! --- Laplacian to order 8 = lap6h + corrections 
-                                lap8h = lap6h(i1,i2,i3,0)  + cxx*cxx3*d800i  + cyy*cyy3*d080i  + czz*czz3*d008i    
-                ! --- Laplacian^4 4p (4th power) order 2: 
-                                lap2hCubed200i = lap2hCubed(i1+1,i2,i3,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1-1,i2,i3,0)
-                                lap2hCubed020i = lap2hCubed(i1,i2+1,i3,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1,i2-1,i3,0)
-                                lap2hCubed002i = lap2hCubed(i1,i2,i3+1,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1,i2,i3-1,0)
-                                lap2h4p =                   + cxx*lap2hCubed200i   + cyy*lap2hCubed020i   + czz*lap2hCubed002i     
-                ! --- Laplacian squared to order 6 :
-                !   Lap6h = Lap4h + M4  = (Lap2h) + M2 + M4 
-                !   Lap6h*Lap6h = [ (Lap2h) + M2 + M4 ] [ (Lap2h) + M2 + M4 ]
-                !               = Lap2h*Lap6h + M2*Lap4h + M4*Lap2h + O(h^6)
-                                lap6h200i = lap6h(i1+1,i2,i3,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1-1,i2,i3,0)
-                                lap6h020i = lap6h(i1,i2+1,i3,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1,i2-1,i3,0)
-                                lap6h002i = lap6h(i1,i2,i3+1,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1,i2,i3-1,0)
-                                lap4h400i = lap4h200(i1+1,i2,i3,0) - 2*lap4h200(i1,i2,i3,0) + lap4h200(i1-1,i2,i3,0)
-                                lap4h040i = lap4h020(i1,i2+1,i3,0) - 2*lap4h020(i1,i2,i3,0) + lap4h020(i1,i2-1,i3,0)
-                                lap4h004i = lap4h002(i1,i2,i3+1,0) - 2*lap4h002(i1,i2,i3,0) + lap4h002(i1,i2,i3-1,0)
-                                lap2h600i = lap2h400(i1+1,i2,i3,0) - 2*lap2h400(i1,i2,i3,0) + lap2h400(i1-1,i2,i3,0)
-                                lap2h060i = lap2h040(i1,i2+1,i3,0) - 2*lap2h040(i1,i2,i3,0) + lap2h040(i1,i2-1,i3,0)
-                                lap2h006i = lap2h004(i1,i2,i3+1,0) - 2*lap2h004(i1,i2,i3,0) + lap2h004(i1,i2,i3-1,0)
-                                lap6hSq =                                                    cxx*(lap6h200i + cxx1*lap4h400i + cxx2*lap2h600i ) + cyy*(lap6h020i + cyy1*lap4h040i + cyy2*lap2h060i ) + czz*(lap6h002i + czz1*lap4h004i + czz2*lap2h006i )   
-                ! --- Laplacian CUBED to order 4 
-                                lap4hSq200i = lap4hSq(i1+1,i2,i3,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1-1,i2,i3,0)
-                                lap4hSq020i = lap4hSq(i1,i2+1,i3,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1,i2-1,i3,0)
-                                lap4hSq002i = lap4hSq(i1,i2,i3+1,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1,i2,i3-1,0)
-                                lap2hSq400i = lap2hSq200(i1+1,i2,i3,0) - 2*lap2hSq200(i1,i2,i3,0) + lap2hSq200(i1-1,i2,i3,0)
-                                lap2hSq040i = lap2hSq020(i1,i2+1,i3,0) - 2*lap2hSq020(i1,i2,i3,0) + lap2hSq020(i1,i2-1,i3,0)
-                                lap2hSq004i = lap2hSq002(i1,i2,i3+1,0) - 2*lap2hSq002(i1,i2,i3,0) + lap2hSq002(i1,i2,i3-1,0)
-                                lap4hCubed =                                         cxx*(lap4hSq200i + cxx1*lap2hSq400i )   + cyy*(lap4hSq020i + cyy1*lap2hSq040i )   + czz*(lap4hSq002i + czz1*lap2hSq004i )     
-                                    if( forcingOption.eq.twilightZoneForcing )then
-                                                call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
-                                                call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
-                                                call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
-                                                call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
-                                                call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
-                                            fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
-                                  else if( forcingOption.eq.helmholtzForcing )then
-                    ! forcing for solving the Helmholtz equation   
-                    ! NOTE: change sign of forcing since for Helholtz we want to solve
-                    !      ( omega^2 I + c^2 Delta) w = f 
-                    ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                        fv(m)=0.
-                                        do freq=0,numberOfFrequencies-1 
-                                            omega = frequencyArray(freq)
-                                            coswt = cosFreqt(freq)    
-                       ! if( i1.eq.2 .and. i2.eq.2 )then 
-                       !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
-                       ! end if
-                       ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                              fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
-                                        end do ! do freq  
-                                  else if( addForcing.ne.0 )then  
-                                        fv(m) = f(i1,i2,i3,0)
-                                  end if
-                ! --- Modified equation space-time update ----
-                                un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m)  + cdtsq*( lap8h )               + cdtPow4By12*( lap6hSq )       + cdtPow6By360*( lap4hCubed )   + cdtPow8By20160*( lap2h4p )    + dtSq*fv(m)                      
-                            end if ! mask .ne. 0
-                          end do
-                          end do
-                          end do
-        !   #If 8 == 2
-        !     #If "rectangular" eq "rectangular"
-        !       #If "3" eq "2" 
-        !         update2dOrder2Rectangular(3,8,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 2222
-        !         update3dOrder2Rectangular(3,8,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "3" eq "2" 
-        !         update2dOrder2Curvilinear(3,8,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 7474
-        !         update3dOrder2Curvilinear(3,8,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End
-        !   #Elif 8 == 4
-        !     #If "rectangular" eq "rectangular"
-        !       #If "3" eq "2" 
-        !         update2dOrder4Rectangular(3,8,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 747
-        !         update3dOrder4Rectangular(3,8,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "3" eq "2" 
-        !         update2dOrder4Curvilinear(3,8,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 7474
-        !         update3dOrder4Curvilinear(3,8,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End  
-        !   #Elif 8 == 6 
-        !     #If "rectangular" eq "rectangular"
-        !       #If "3" eq "2" 
-        !         update2dOrder6Rectangular(3,8,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 727
-        !         update3dOrder6Rectangular(3,8,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "3" eq "2" 
-        !         update2dOrder6Curvilinear(3,8,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 7474
-        !         update3dOrder6Curvilinear(3,8,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End 
-        !   #Elif 8 == 8 
-        !     #If "rectangular" eq "rectangular"
-        !       #If "3" eq "2" 
-        !         update2dOrder8Rectangular(3,8,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 820
-        !         update3dOrder8Rectangular(3,8,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End
-        !     #Else
-        !       #If "3" eq "2" 
-        !         update2dOrder8Curvilinear(3,8,2,rectangular)
-        !       #Elif "3" eq "3"
-        !         ! stop 7474
-        !         update3dOrder8Curvilinear(3,8,2,rectangular)
-        !       #Else
-        !         stop 8888
-        !       #End        
-        !     #End  
-        !   #Else
-        !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=3 order=8 orderInTime=2, gridType=rectangular")') 
-        !     stop 6666
-        !   #End
+                            numGhost1=3;
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                    d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2.*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                    d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2.*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                    d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2.*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
+                              end do
+                              end do
+                              end do
+                            numGhost1=2;
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                    d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2.*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                    d220(i1,i2,i3,0) = d020(i1+1,i2,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
+                                    d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                                    d202(i1,i2,i3,0) = d002(i1+1,i2,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
+                                    d022(i1,i2,i3,0) = d002(i1,i2+1,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                    d004(i1,i2,i3,0) = d002(i1,i2,i3+1,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
+                              end do
+                              end do
+                              end do
+                            numGhost1=1;
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                    d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2.*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
+                                    d420(i1,i2,i3,0) = d220(i1+1,i2,i3,0) - 2.*d220(i1,i2,i3,0) + d220(i1-1,i2,i3,0)
+                                    d240(i1,i2,i3,0) = d040(i1+1,i2,i3,0) - 2.*d040(i1,i2,i3,0) + d040(i1-1,i2,i3,0)
+                                    d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2.*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
+                                    d402(i1,i2,i3,0) = d202(i1+1,i2,i3,0) - 2.*d202(i1,i2,i3,0) + d202(i1-1,i2,i3,0)
+                                    d222(i1,i2,i3,0) = d022(i1+1,i2,i3,0) - 2.*d022(i1,i2,i3,0) + d022(i1-1,i2,i3,0)
+                                    d042(i1,i2,i3,0) = d022(i1,i2+1,i3,0) - 2.*d022(i1,i2,i3,0) + d022(i1,i2-1,i3,0)
+                                    d204(i1,i2,i3,0) = d004(i1+1,i2,i3,0) - 2.*d004(i1,i2,i3,0) + d004(i1-1,i2,i3,0)
+                                    d024(i1,i2,i3,0) = d004(i1,i2+1,i3,0) - 2.*d004(i1,i2,i3,0) + d004(i1,i2-1,i3,0)
+                                    d006(i1,i2,i3,0) = d004(i1,i2,i3+1,0) - 2.*d004(i1,i2,i3,0) + d004(i1,i2,i3-1,0)
+                              end do
+                              end do
+                              end do
+              ! ------------ MAIN LOOP, 3D, 8 8 ----------------
+                            numGhost1=0; 
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+              ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+              ! Example: 
+              ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
+cx0 = 1./(dx(0)**1); cx1 = (-1/6.); cx2 = (1/30.); cx3 = (-1/140.); 
+cy0 = 1./(dx(1)**1); cy1 = (-1/6.); cy2 = (1/30.); cy3 = (-1/140.); 
+cz0 = 1./(dx(2)**1); cz1 = (-1/6.); cz2 = (1/30.); cz3 = (-1/140.); 
+cxx0 = 1./(dx(0)**2); cxx1 = (-1/12.); cxx2 = (1/90.); cxx3 = (-1/560.); 
+cyy0 = 1./(dx(1)**2); cyy1 = (-1/12.); cyy2 = (1/90.); cyy3 = (-1/560.); 
+czz0 = 1./(dx(2)**2); czz1 = (-1/12.); czz2 = (1/90.); czz3 = (-1/560.); 
+cxxx0 = 1./(dx(0)**3); cxxx1 = (-1/4.); cxxx2 = (7/120.); cxxx3 = (-41/3024.); 
+cyyy0 = 1./(dx(1)**3); cyyy1 = (-1/4.); cyyy2 = (7/120.); cyyy3 = (-41/3024.); 
+czzz0 = 1./(dx(2)**3); czzz1 = (-1/4.); czzz2 = (7/120.); czzz3 = (-41/3024.); 
+cxxxx0 = 1./(dx(0)**4); cxxxx1 = (-1/6.); cxxxx2 = (7/240.); cxxxx3 = (-41/7560.); 
+cyyyy0 = 1./(dx(1)**4); cyyyy1 = (-1/6.); cyyyy2 = (7/240.); cyyyy3 = (-41/7560.); 
+czzzz0 = 1./(dx(2)**4); czzzz1 = (-1/6.); czzzz2 = (7/240.); czzzz3 = (-41/7560.); 
+cxxxxx0 = 1./(dx(0)**5); cxxxxx1 = (-1/3.); cxxxxx2 = (13/144.); cxxxxx3 = (-139/6048.); 
+cyyyyy0 = 1./(dx(1)**5); cyyyyy1 = (-1/3.); cyyyyy2 = (13/144.); cyyyyy3 = (-139/6048.); 
+czzzzz0 = 1./(dx(2)**5); czzzzz1 = (-1/3.); czzzzz2 = (13/144.); czzzzz3 = (-139/6048.); 
+cxxxxxx0 = 1./(dx(0)**6); cxxxxxx1 = (-1/4.); cxxxxxx2 = (13/240.); cxxxxxx3 = (-139/12096.); 
+cyyyyyy0 = 1./(dx(1)**6); cyyyyyy1 = (-1/4.); cyyyyyy2 = (13/240.); cyyyyyy3 = (-139/12096.); 
+czzzzzz0 = 1./(dx(2)**6); czzzzzz1 = (-1/4.); czzzzzz2 = (13/240.); czzzzzz3 = (-139/12096.); 
+cxxxxxxx0 = 1./(dx(0)**7); cxxxxxxx1 = (0.); cxxxxxxx2 = (0.); cxxxxxxx3 = (0.); 
+cyyyyyyy0 = 1./(dx(1)**7); cyyyyyyy1 = (0.); cyyyyyyy2 = (0.); cyyyyyyy3 = (0.); 
+czzzzzzz0 = 1./(dx(2)**7); czzzzzzz1 = (0.); czzzzzzz2 = (0.); czzzzzzz3 = (0.); 
+cxxxxxxxx0 = 1./(dx(0)**8); cxxxxxxxx1 = (0.); cxxxxxxxx2 = (0.); cxxxxxxxx3 = (0.); 
+cyyyyyyyy0 = 1./(dx(1)**8); cyyyyyyyy1 = (0.); cyyyyyyyy2 = (0.); cyyyyyyyy3 = (0.); 
+czzzzzzzz0 = 1./(dx(2)**8); czzzzzzzz1 = (0.); czzzzzzzz2 = (0.); czzzzzzzz3 = (0.); 
+                            fv(m)=0.
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                  ! -- Note: Highest differences do not need to be stored in an array 
+                  ! ----- DIFFERENCES OF U -----
+                                    d200i = d200(i1,i2,i3,0)
+                                    d400i = d400(i1,i2,i3,0)
+                                    d600i = d600(i1,i2,i3,0)
+                                    d800i = d600(i1+1,i2,i3,0) - 2.*d600(i1,i2,i3,0) + d600(i1-1,i2,i3,0)
+                                    d020i = d020(i1,i2,i3,0)
+                                    d220i = d220(i1,i2,i3,0)
+                                    d420i = d420(i1,i2,i3,0)
+                                    d620i = d420(i1+1,i2,i3,0) - 2.*d420(i1,i2,i3,0) + d420(i1-1,i2,i3,0)
+                                    d040i = d040(i1,i2,i3,0)
+                                    d240i = d240(i1,i2,i3,0)
+                                    d440i = d240(i1+1,i2,i3,0) - 2.*d240(i1,i2,i3,0) + d240(i1-1,i2,i3,0)
+                                    d060i = d060(i1,i2,i3,0)
+                                    d260i = d060(i1+1,i2,i3,0) - 2.*d060(i1,i2,i3,0) + d060(i1-1,i2,i3,0)
+                                    d080i = d060(i1,i2+1,i3,0) - 2.*d060(i1,i2,i3,0) + d060(i1,i2-1,i3,0)
+                                    d002i = d002(i1,i2,i3,0)
+                                    d202i = d202(i1,i2,i3,0)
+                                    d402i = d402(i1,i2,i3,0)
+                                    d602i = d402(i1+1,i2,i3,0) - 2.*d402(i1,i2,i3,0) + d402(i1-1,i2,i3,0)
+                                    d022i = d022(i1,i2,i3,0)
+                                    d222i = d222(i1,i2,i3,0)
+                                    d422i = d222(i1+1,i2,i3,0) - 2.*d222(i1,i2,i3,0) + d222(i1-1,i2,i3,0)
+                                    d042i = d042(i1,i2,i3,0)
+                                    d242i = d042(i1+1,i2,i3,0) - 2.*d042(i1,i2,i3,0) + d042(i1-1,i2,i3,0)
+                                    d062i = d042(i1,i2+1,i3,0) - 2.*d042(i1,i2,i3,0) + d042(i1,i2-1,i3,0)
+                                    d004i = d004(i1,i2,i3,0)
+                                    d204i = d204(i1,i2,i3,0)
+                                    d404i = d204(i1+1,i2,i3,0) - 2.*d204(i1,i2,i3,0) + d204(i1-1,i2,i3,0)
+                                    d024i = d024(i1,i2,i3,0)
+                                    d224i = d024(i1+1,i2,i3,0) - 2.*d024(i1,i2,i3,0) + d024(i1-1,i2,i3,0)
+                                    d044i = d024(i1,i2+1,i3,0) - 2.*d024(i1,i2,i3,0) + d024(i1,i2-1,i3,0)
+                                    d006i = d006(i1,i2,i3,0)
+                                    d206i = d006(i1+1,i2,i3,0) - 2.*d006(i1,i2,i3,0) + d006(i1-1,i2,i3,0)
+                                    d026i = d006(i1,i2+1,i3,0) - 2.*d006(i1,i2,i3,0) + d006(i1,i2-1,i3,0)
+                                    d008i = d006(i1,i2,i3+1,0) - 2.*d006(i1,i2,i3,0) + d006(i1,i2,i3-1,0)
+                  ! ----- spatial derivatives of order 2 ----
+                                    uxx =cxx0*(d200i + cxx1*d400i + cxx2*d600i + cxx3*d800i)
+                                    uyy =cyy0*(d020i + cyy1*d040i + cyy2*d060i + cyy3*d080i)
+                                    uzz =czz0*(d002i + czz1*d004i + czz2*d006i + czz3*d008i)
+                  ! ----- spatial derivatives of order 4 ----
+                                    uxxxx =cxxxx0*(d400i + cxxxx1*d600i + cxxxx2*d800i)
+                                    uxxyy =cxx0*cyy0*(d220i + cxx1*d420i + cxx2*d620i + cyy1*d240i + cxx1*cyy1*d440i + cyy2*d260i)
+                                    uyyyy =cyyyy0*(d040i + cyyyy1*d060i + cyyyy2*d080i)
+                                    uxxzz =cxx0*czz0*(d202i + cxx1*d402i + cxx2*d602i + czz1*d204i + cxx1*czz1*d404i + czz2*d206i)
+                                    uyyzz =cyy0*czz0*(d022i + cyy1*d042i + cyy2*d062i + czz1*d024i + cyy1*czz1*d044i + czz2*d026i)
+                                    uzzzz =czzzz0*(d004i + czzzz1*d006i + czzzz2*d008i)
+                  ! ----- spatial derivatives of order 6 ----
+                                    uxxxxxx =cxxxxxx0*(d600i + cxxxxxx1*d800i)
+                                    uxxxxyy =cxxxx0*cyy0*(d420i + cxxxx1*d620i + cyy1*d440i)
+                                    uxxyyyy =cxx0*cyyyy0*(d240i + cxx1*d440i + cyyyy1*d260i)
+                                    uyyyyyy =cyyyyyy0*(d060i + cyyyyyy1*d080i)
+                                    uxxxxzz =cxxxx0*czz0*(d402i + cxxxx1*d602i + czz1*d404i)
+                                    uxxyyzz =cxx0*cyy0*czz0*(d222i + cxx1*d422i + cyy1*d242i + czz1*d224i)
+                                    uyyyyzz =cyyyy0*czz0*(d042i + cyyyy1*d062i + czz1*d044i)
+                                    uxxzzzz =cxx0*czzzz0*(d204i + cxx1*d404i + czzzz1*d206i)
+                                    uyyzzzz =cyy0*czzzz0*(d024i + cyy1*d044i + czzzz1*d026i)
+                                    uzzzzzz =czzzzzz0*(d006i + czzzzzz1*d008i)
+                  ! ----- spatial derivatives of order 8 ----
+                                    uxxxxxxxx =cxxxxxxxx0*(d800i)
+                                    uxxxxxxyy =cxxxxxx0*cyy0*(d620i)
+                                    uxxxxyyyy =cxxxx0*cyyyy0*(d440i)
+                                    uxxyyyyyy =cxx0*cyyyyyy0*(d260i)
+                                    uyyyyyyyy =cyyyyyyyy0*(d080i)
+                                    uxxxxxxzz =cxxxxxx0*czz0*(d602i)
+                                    uxxxxyyzz =cxxxx0*cyy0*czz0*(d422i)
+                                    uxxyyyyzz =cxx0*cyyyy0*czz0*(d242i)
+                                    uyyyyyyzz =cyyyyyy0*czz0*(d062i)
+                                    uxxxxzzzz =cxxxx0*czzzz0*(d404i)
+                                    uxxyyzzzz =cxx0*cyy0*czzzz0*(d224i)
+                                    uyyyyzzzz =cyyyy0*czzzz0*(d044i)
+                                    uxxzzzzzz =cxx0*czzzzzz0*(d206i)
+                                    uyyzzzzzz =cyy0*czzzzzz0*(d026i)
+                                    uzzzzzzzz =czzzzzzzz0*(d008i)
+                  ! ---- Modified Equation UPDATE ----- 
+                                    un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( uxx + uyy +uzz ) + cdtPow4By12*( uxxxx + uyyyy + uzzzz + 2.*(uxxyy+uxxzz+uyyzz) )  + cdtPow6By360*( uxxxxxx + uyyyyyy + uzzzzzz + 3.*( uxxxxyy + uxxyyyy + uxxxxzz + uxxzzzz + uyyyyzz + uyyzzzz ) + 6.*(  uxxyyzz  ) ) + cdtPow8By20160*( uxxxxxxxx + uyyyyyyyy + uzzzzzzzz + 4.*( uxxxxxxyy + uxxyyyyyy + uxxxxxxzz + uxxzzzzzz + uyyyyyyzz + uyyzzzzzz ) + 6.*( uxxxxyyyy + uxxxxzzzz + uyyyyzzzz ) +12.*( uxxxxyyzz + uxxyyyyzz + uxxyyzzzz ) )+dtSq*fv(m)  
+                              end do
+                              end do
+                              end do
+                    else
+cxx=1./dx(0)**2;
+cyy=1./dx(1)**2;
+czz=1./dx(2)**2;
+                            numGhost1=3;
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                if( mask(i1,i2,i3).ne.0 )then
+                                    d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2.*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                    d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2.*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                    d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2.*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
+                                end if ! mask .ne. 0
+                              end do
+                              end do
+                              end do
+                            numGhost1=2;
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                if( mask(i1,i2,i3).ne.0 )then
+                                    d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2.*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                    d220(i1,i2,i3,0) = d020(i1+1,i2,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
+                                    d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                                    d202(i1,i2,i3,0) = d002(i1+1,i2,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
+                                    d022(i1,i2,i3,0) = d002(i1,i2+1,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                    d004(i1,i2,i3,0) = d002(i1,i2,i3+1,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
+                                end if ! mask .ne. 0
+                              end do
+                              end do
+                              end do
+                            numGhost1=1;
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                if( mask(i1,i2,i3).ne.0 )then
+                                    d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2.*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
+                                    d420(i1,i2,i3,0) = d220(i1+1,i2,i3,0) - 2.*d220(i1,i2,i3,0) + d220(i1-1,i2,i3,0)
+                                    d240(i1,i2,i3,0) = d040(i1+1,i2,i3,0) - 2.*d040(i1,i2,i3,0) + d040(i1-1,i2,i3,0)
+                                    d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2.*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
+                                    d402(i1,i2,i3,0) = d202(i1+1,i2,i3,0) - 2.*d202(i1,i2,i3,0) + d202(i1-1,i2,i3,0)
+                                    d222(i1,i2,i3,0) = d022(i1+1,i2,i3,0) - 2.*d022(i1,i2,i3,0) + d022(i1-1,i2,i3,0)
+                                    d042(i1,i2,i3,0) = d022(i1,i2+1,i3,0) - 2.*d022(i1,i2,i3,0) + d022(i1,i2-1,i3,0)
+                                    d204(i1,i2,i3,0) = d004(i1+1,i2,i3,0) - 2.*d004(i1,i2,i3,0) + d004(i1-1,i2,i3,0)
+                                    d024(i1,i2,i3,0) = d004(i1,i2+1,i3,0) - 2.*d004(i1,i2,i3,0) + d004(i1,i2-1,i3,0)
+                                    d006(i1,i2,i3,0) = d004(i1,i2,i3+1,0) - 2.*d004(i1,i2,i3,0) + d004(i1,i2,i3-1,0)
+                                end if ! mask .ne. 0
+                              end do
+                              end do
+                              end do
+              ! ------------ MAIN LOOP, 3D, 8 8 ----------------
+                            numGhost1=0; 
+                            n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                            n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                            n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+              ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+              ! Example: 
+              ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
+cx0 = 1./(dx(0)**1); cx1 = (-1/6.); cx2 = (1/30.); cx3 = (-1/140.); 
+cy0 = 1./(dx(1)**1); cy1 = (-1/6.); cy2 = (1/30.); cy3 = (-1/140.); 
+cz0 = 1./(dx(2)**1); cz1 = (-1/6.); cz2 = (1/30.); cz3 = (-1/140.); 
+cxx0 = 1./(dx(0)**2); cxx1 = (-1/12.); cxx2 = (1/90.); cxx3 = (-1/560.); 
+cyy0 = 1./(dx(1)**2); cyy1 = (-1/12.); cyy2 = (1/90.); cyy3 = (-1/560.); 
+czz0 = 1./(dx(2)**2); czz1 = (-1/12.); czz2 = (1/90.); czz3 = (-1/560.); 
+cxxx0 = 1./(dx(0)**3); cxxx1 = (-1/4.); cxxx2 = (7/120.); cxxx3 = (-41/3024.); 
+cyyy0 = 1./(dx(1)**3); cyyy1 = (-1/4.); cyyy2 = (7/120.); cyyy3 = (-41/3024.); 
+czzz0 = 1./(dx(2)**3); czzz1 = (-1/4.); czzz2 = (7/120.); czzz3 = (-41/3024.); 
+cxxxx0 = 1./(dx(0)**4); cxxxx1 = (-1/6.); cxxxx2 = (7/240.); cxxxx3 = (-41/7560.); 
+cyyyy0 = 1./(dx(1)**4); cyyyy1 = (-1/6.); cyyyy2 = (7/240.); cyyyy3 = (-41/7560.); 
+czzzz0 = 1./(dx(2)**4); czzzz1 = (-1/6.); czzzz2 = (7/240.); czzzz3 = (-41/7560.); 
+cxxxxx0 = 1./(dx(0)**5); cxxxxx1 = (-1/3.); cxxxxx2 = (13/144.); cxxxxx3 = (-139/6048.); 
+cyyyyy0 = 1./(dx(1)**5); cyyyyy1 = (-1/3.); cyyyyy2 = (13/144.); cyyyyy3 = (-139/6048.); 
+czzzzz0 = 1./(dx(2)**5); czzzzz1 = (-1/3.); czzzzz2 = (13/144.); czzzzz3 = (-139/6048.); 
+cxxxxxx0 = 1./(dx(0)**6); cxxxxxx1 = (-1/4.); cxxxxxx2 = (13/240.); cxxxxxx3 = (-139/12096.); 
+cyyyyyy0 = 1./(dx(1)**6); cyyyyyy1 = (-1/4.); cyyyyyy2 = (13/240.); cyyyyyy3 = (-139/12096.); 
+czzzzzz0 = 1./(dx(2)**6); czzzzzz1 = (-1/4.); czzzzzz2 = (13/240.); czzzzzz3 = (-139/12096.); 
+cxxxxxxx0 = 1./(dx(0)**7); cxxxxxxx1 = (0.); cxxxxxxx2 = (0.); cxxxxxxx3 = (0.); 
+cyyyyyyy0 = 1./(dx(1)**7); cyyyyyyy1 = (0.); cyyyyyyy2 = (0.); cyyyyyyy3 = (0.); 
+czzzzzzz0 = 1./(dx(2)**7); czzzzzzz1 = (0.); czzzzzzz2 = (0.); czzzzzzz3 = (0.); 
+cxxxxxxxx0 = 1./(dx(0)**8); cxxxxxxxx1 = (0.); cxxxxxxxx2 = (0.); cxxxxxxxx3 = (0.); 
+cyyyyyyyy0 = 1./(dx(1)**8); cyyyyyyyy1 = (0.); cyyyyyyyy2 = (0.); cyyyyyyyy3 = (0.); 
+czzzzzzzz0 = 1./(dx(2)**8); czzzzzzzz1 = (0.); czzzzzzzz2 = (0.); czzzzzzzz3 = (0.); 
+                            fv(m)=0.
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                if( mask(i1,i2,i3).ne.0 )then
+                  ! -- Note: Highest differences do not need to be stored in an array 
+                  ! ----- DIFFERENCES OF U -----
+                                    d200i = d200(i1,i2,i3,0)
+                                    d400i = d400(i1,i2,i3,0)
+                                    d600i = d600(i1,i2,i3,0)
+                                    d800i = d600(i1+1,i2,i3,0) - 2.*d600(i1,i2,i3,0) + d600(i1-1,i2,i3,0)
+                                    d020i = d020(i1,i2,i3,0)
+                                    d220i = d220(i1,i2,i3,0)
+                                    d420i = d420(i1,i2,i3,0)
+                                    d620i = d420(i1+1,i2,i3,0) - 2.*d420(i1,i2,i3,0) + d420(i1-1,i2,i3,0)
+                                    d040i = d040(i1,i2,i3,0)
+                                    d240i = d240(i1,i2,i3,0)
+                                    d440i = d240(i1+1,i2,i3,0) - 2.*d240(i1,i2,i3,0) + d240(i1-1,i2,i3,0)
+                                    d060i = d060(i1,i2,i3,0)
+                                    d260i = d060(i1+1,i2,i3,0) - 2.*d060(i1,i2,i3,0) + d060(i1-1,i2,i3,0)
+                                    d080i = d060(i1,i2+1,i3,0) - 2.*d060(i1,i2,i3,0) + d060(i1,i2-1,i3,0)
+                                    d002i = d002(i1,i2,i3,0)
+                                    d202i = d202(i1,i2,i3,0)
+                                    d402i = d402(i1,i2,i3,0)
+                                    d602i = d402(i1+1,i2,i3,0) - 2.*d402(i1,i2,i3,0) + d402(i1-1,i2,i3,0)
+                                    d022i = d022(i1,i2,i3,0)
+                                    d222i = d222(i1,i2,i3,0)
+                                    d422i = d222(i1+1,i2,i3,0) - 2.*d222(i1,i2,i3,0) + d222(i1-1,i2,i3,0)
+                                    d042i = d042(i1,i2,i3,0)
+                                    d242i = d042(i1+1,i2,i3,0) - 2.*d042(i1,i2,i3,0) + d042(i1-1,i2,i3,0)
+                                    d062i = d042(i1,i2+1,i3,0) - 2.*d042(i1,i2,i3,0) + d042(i1,i2-1,i3,0)
+                                    d004i = d004(i1,i2,i3,0)
+                                    d204i = d204(i1,i2,i3,0)
+                                    d404i = d204(i1+1,i2,i3,0) - 2.*d204(i1,i2,i3,0) + d204(i1-1,i2,i3,0)
+                                    d024i = d024(i1,i2,i3,0)
+                                    d224i = d024(i1+1,i2,i3,0) - 2.*d024(i1,i2,i3,0) + d024(i1-1,i2,i3,0)
+                                    d044i = d024(i1,i2+1,i3,0) - 2.*d024(i1,i2,i3,0) + d024(i1,i2-1,i3,0)
+                                    d006i = d006(i1,i2,i3,0)
+                                    d206i = d006(i1+1,i2,i3,0) - 2.*d006(i1,i2,i3,0) + d006(i1-1,i2,i3,0)
+                                    d026i = d006(i1,i2+1,i3,0) - 2.*d006(i1,i2,i3,0) + d006(i1,i2-1,i3,0)
+                                    d008i = d006(i1,i2,i3+1,0) - 2.*d006(i1,i2,i3,0) + d006(i1,i2,i3-1,0)
+                  ! ----- spatial derivatives of order 2 ----
+                                    uxx =cxx0*(d200i + cxx1*d400i + cxx2*d600i + cxx3*d800i)
+                                    uyy =cyy0*(d020i + cyy1*d040i + cyy2*d060i + cyy3*d080i)
+                                    uzz =czz0*(d002i + czz1*d004i + czz2*d006i + czz3*d008i)
+                  ! ----- spatial derivatives of order 4 ----
+                                    uxxxx =cxxxx0*(d400i + cxxxx1*d600i + cxxxx2*d800i)
+                                    uxxyy =cxx0*cyy0*(d220i + cxx1*d420i + cxx2*d620i + cyy1*d240i + cxx1*cyy1*d440i + cyy2*d260i)
+                                    uyyyy =cyyyy0*(d040i + cyyyy1*d060i + cyyyy2*d080i)
+                                    uxxzz =cxx0*czz0*(d202i + cxx1*d402i + cxx2*d602i + czz1*d204i + cxx1*czz1*d404i + czz2*d206i)
+                                    uyyzz =cyy0*czz0*(d022i + cyy1*d042i + cyy2*d062i + czz1*d024i + cyy1*czz1*d044i + czz2*d026i)
+                                    uzzzz =czzzz0*(d004i + czzzz1*d006i + czzzz2*d008i)
+                  ! ----- spatial derivatives of order 6 ----
+                                    uxxxxxx =cxxxxxx0*(d600i + cxxxxxx1*d800i)
+                                    uxxxxyy =cxxxx0*cyy0*(d420i + cxxxx1*d620i + cyy1*d440i)
+                                    uxxyyyy =cxx0*cyyyy0*(d240i + cxx1*d440i + cyyyy1*d260i)
+                                    uyyyyyy =cyyyyyy0*(d060i + cyyyyyy1*d080i)
+                                    uxxxxzz =cxxxx0*czz0*(d402i + cxxxx1*d602i + czz1*d404i)
+                                    uxxyyzz =cxx0*cyy0*czz0*(d222i + cxx1*d422i + cyy1*d242i + czz1*d224i)
+                                    uyyyyzz =cyyyy0*czz0*(d042i + cyyyy1*d062i + czz1*d044i)
+                                    uxxzzzz =cxx0*czzzz0*(d204i + cxx1*d404i + czzzz1*d206i)
+                                    uyyzzzz =cyy0*czzzz0*(d024i + cyy1*d044i + czzzz1*d026i)
+                                    uzzzzzz =czzzzzz0*(d006i + czzzzzz1*d008i)
+                  ! ----- spatial derivatives of order 8 ----
+                                    uxxxxxxxx =cxxxxxxxx0*(d800i)
+                                    uxxxxxxyy =cxxxxxx0*cyy0*(d620i)
+                                    uxxxxyyyy =cxxxx0*cyyyy0*(d440i)
+                                    uxxyyyyyy =cxx0*cyyyyyy0*(d260i)
+                                    uyyyyyyyy =cyyyyyyyy0*(d080i)
+                                    uxxxxxxzz =cxxxxxx0*czz0*(d602i)
+                                    uxxxxyyzz =cxxxx0*cyy0*czz0*(d422i)
+                                    uxxyyyyzz =cxx0*cyyyy0*czz0*(d242i)
+                                    uyyyyyyzz =cyyyyyy0*czz0*(d062i)
+                                    uxxxxzzzz =cxxxx0*czzzz0*(d404i)
+                                    uxxyyzzzz =cxx0*cyy0*czzzz0*(d224i)
+                                    uyyyyzzzz =cyyyy0*czzzz0*(d044i)
+                                    uxxzzzzzz =cxx0*czzzzzz0*(d206i)
+                                    uyyzzzzzz =cyy0*czzzzzz0*(d026i)
+                                    uzzzzzzzz =czzzzzzzz0*(d008i)
+                                        if( forcingOption.eq.twilightZoneForcing )then
+                                                    call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
+                                                    call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
+                                                    call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
+                                                    call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
+                                                    call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
+                                                fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
+                                      else if( forcingOption.eq.helmholtzForcing )then
+                      ! forcing for solving the Helmholtz equation   
+                      ! NOTE: change sign of forcing since for Helholtz we want to solve
+                      !      ( omega^2 I + c^2 Delta) w = f 
+                      ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                            fv(m)=0.
+                                            do freq=0,numberOfFrequencies-1 
+                                                omega = frequencyArray(freq)
+                                                coswt = cosFreqt(freq)    
+                         ! if( i1.eq.2 .and. i2.eq.2 )then 
+                         !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+                         ! end if
+                         ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                                  fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
+                                            end do ! do freq  
+                                      else if( addForcing.ne.0 )then  
+                                            fv(m) = f(i1,i2,i3,0)
+                                      end if
+                  ! ---- Modified Equation UPDATE ----- 
+                                    un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( uxx + uyy +uzz ) + cdtPow4By12*( uxxxx + uyyyy + uzzzz + 2.*(uxxyy+uxxzz+uyyzz) )  + cdtPow6By360*( uxxxxxx + uyyyyyy + uzzzzzz + 3.*( uxxxxyy + uxxyyyy + uxxxxzz + uxxzzzz + uyyyyzz + uyyzzzz ) + 6.*(  uxxyyzz  ) ) + cdtPow8By20160*( uxxxxxxxx + uyyyyyyyy + uzzzzzzzz + 4.*( uxxxxxxyy + uxxyyyyyy + uxxxxxxzz + uxxzzzzzz + uyyyyyyzz + uyyzzzzzz ) + 6.*( uxxxxyyyy + uxxxxzzzz + uyyyyzzzz ) +12.*( uxxxxyyzz + uxxyyyyzz + uxxyyzzzz ) )+dtSq*fv(m)  
+                                end if ! mask .ne. 0
+                              end do
+                              end do
+                              end do
+                    end if
               else
                       if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
                           write(*,'("advWaveME: ADVANCE dim=3 order=8 orderInTime=8, grid=rectangular... t=",e10.2)') t
@@ -643,296 +718,418 @@ czz=1./dx(2)**2;
            ! -- call the appropriate macro:
            !  update2dOrder2Rectangular(3,8,8,rectangular)
            !  update3dOrder6Curvilinear(3,8,8,rectangular)
-             ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
-             ! Example: 
-             ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
-cx0 = 1.; cx1 = -1/6.; cx2 = 1/30.; cx3 = -1/140.; 
-cy0 = 1.; cy1 = -1/6.; cy2 = 1/30.; cy3 = -1/140.; 
-cz0 = 1.; cz1 = -1/6.; cz2 = 1/30.; cz3 = -1/140.; 
-cxx0 = 1.; cxx1 = -1/12.; cxx2 = 1/90.; cxx3 = -1/560.; 
-cyy0 = 1.; cyy1 = -1/12.; cyy2 = 1/90.; cyy3 = -1/560.; 
-czz0 = 1.; czz1 = -1/12.; czz2 = 1/90.; czz3 = -1/560.; 
-cxxx0 = 1.; cxxx1 = -1/4.; cxxx2 = 7/120.; cxxx3 = -41/3024.; 
-cyyy0 = 1.; cyyy1 = -1/4.; cyyy2 = 7/120.; cyyy3 = -41/3024.; 
-czzz0 = 1.; czzz1 = -1/4.; czzz2 = 7/120.; czzz3 = -41/3024.; 
-cxxxx0 = 1.; cxxxx1 = -1/6.; cxxxx2 = 7/240.; cxxxx3 = -41/7560.; 
-cyyyy0 = 1.; cyyyy1 = -1/6.; cyyyy2 = 7/240.; cyyyy3 = -41/7560.; 
-czzzz0 = 1.; czzzz1 = -1/6.; czzzz2 = 7/240.; czzzz3 = -41/7560.; 
-cxxxxx0 = 1.; cxxxxx1 = -1/3.; cxxxxx2 = 13/144.; cxxxxx3 = -139/6048.; 
-cyyyyy0 = 1.; cyyyyy1 = -1/3.; cyyyyy2 = 13/144.; cyyyyy3 = -139/6048.; 
-czzzzz0 = 1.; czzzzz1 = -1/3.; czzzzz2 = 13/144.; czzzzz3 = -139/6048.; 
-cxxxxxx0 = 1.; cxxxxxx1 = -1/4.; cxxxxxx2 = 13/240.; cxxxxxx3 = -139/12096.; 
-cyyyyyy0 = 1.; cyyyyyy1 = -1/4.; cyyyyyy2 = 13/240.; cyyyyyy3 = -139/12096.; 
-czzzzzz0 = 1.; czzzzzz1 = -1/4.; czzzzzz2 = 13/240.; czzzzzz3 = -139/12096.; 
+                      if( useMask.eq.0 .and. addForcing.eq.0 )then
+             ! No-mask, no-forcing
 cxx=1./dx(0)**2;
 cyy=1./dx(1)**2;
 czz=1./dx(2)**2;
-                          fv(m)=0.
-                          numGhost1=3;
-                          n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                          n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                          n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                            do i3=n3a,n3b
-                            do i2=n2a,n2b
-                            do i1=n1a,n1b
-                              if( mask(i1,i2,i3).ne.0 )then
-                                  d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
-                                  d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
-                                  d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
-                                  lap2h(i1,i2,i3,0) = cxx*d200(i1,i2,i3,0) + cyy*d020(i1,i2,i3,0) + czz*d002(i1,i2,i3,0) 
-                              end if ! mask .ne. 0
-                            end do
-                            end do
-                            end do
-                          numGhost1=2;
-                          n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                          n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                          n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                            do i3=n3a,n3b
-                            do i2=n2a,n2b
-                            do i1=n1a,n1b
-                              if( mask(i1,i2,i3).ne.0 )then
-                                  d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
-                                  d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
-                                  d004(i1,i2,i3,0) = d002(i1,i2,i3+1,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
-                 ! --- Laplacian to order 4 = lap2h + corrections 
-                                  lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + cxx*cxx1*d400(i1,i2,i3,0) + cyy*cyy1*d040(i1,i2,i3,0) + czz*czz1*d004(i1,i2,i3,0)     
-                 ! --- Laplacian squared to order 2:
-                                  lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
-                                  lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
-                                  lap2h002(i1,i2,i3,0) = lap2h(i1,i2,i3+1,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2,i3-1,0)
-                                  lap2hSq(i1,i2,i3,0) =                      cxx*lap2h200(i1,i2,i3,0)   + cyy*lap2h020(i1,i2,i3,0)   + czz*lap2h002(i1,i2,i3,0)     
-                              end if ! mask .ne. 0
-                            end do
-                            end do
-                            end do
-                          numGhost1=1;
-                          n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                          n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                          n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                            do i3=n3a,n3b
-                            do i2=n2a,n2b
-                            do i1=n1a,n1b
-                              if( mask(i1,i2,i3).ne.0 )then
-                                  d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
-                                  d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
-                                  d006(i1,i2,i3,0) = d004(i1,i2,i3+1,0) - 2*d004(i1,i2,i3,0) + d004(i1,i2,i3-1,0)
-                 ! --- Laplacian to order 6 = lap4h + corrections 
-                                  lap6h(i1,i2,i3,0) = lap4h(i1,i2,i3,0) + cxx*cxx2*d600(i1,i2,i3,0) + cyy*cyy2*d060(i1,i2,i3,0) + czz*czz2*d006(i1,i2,i3,0)   
-                                  lap2hSq200(i1,i2,i3,0) = lap2hSq(i1+1,i2,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1-1,i2,i3,0)
-                                  lap2hSq020(i1,i2,i3,0) = lap2hSq(i1,i2+1,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1,i2-1,i3,0)
-                                  lap2hSq002(i1,i2,i3,0) = lap2hSq(i1,i2,i3+1,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1,i2,i3-1,0)
-                                  lap2hCubed(i1,i2,i3,0) =                    cxx*lap2hSq200(i1,i2,i3,0)  + cyy*lap2hSq020(i1,i2,i3,0)  + czz*lap2hSq020(i1,i2,i3,0)    
-                 ! --- Laplacian squared to order 4 = 
-                 !  lap2h*( lap4h ) + corrections*( Lap2h )
-                                  lap4h200(i1,i2,i3,0) = lap4h(i1+1,i2,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1-1,i2,i3,0)
-                                  lap4h020(i1,i2,i3,0) = lap4h(i1,i2+1,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2-1,i3,0)
-                                  lap4h002(i1,i2,i3,0) = lap4h(i1,i2,i3+1,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2,i3-1,0)
-                                  lap2h400(i1,i2,i3,0) = lap2h200(i1+1,i2,i3,0) - 2*lap2h200(i1,i2,i3,0) + lap2h200(i1-1,i2,i3,0)
-                                  lap2h040(i1,i2,i3,0) = lap2h020(i1,i2+1,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1,i2-1,i3,0)
-                                  lap2h004(i1,i2,i3,0) = lap2h002(i1,i2,i3+1,0) - 2*lap2h002(i1,i2,i3,0) + lap2h002(i1,i2,i3-1,0)
-                                  lap4hSq(i1,i2,i3,0) =                                       cxx*( lap4h200(i1,i2,i3,0) + cxx1*lap2h400(i1,i2,i3,0) )  + cyy*( lap4h020(i1,i2,i3,0) + cyy1*lap2h040(i1,i2,i3,0) )  + czz*( lap4h002(i1,i2,i3,0) + czz1*lap2h004(i1,i2,i3,0) )    
-                              end if ! mask .ne. 0
-                            end do
-                            end do
-                            end do
-             ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
-                          numGhost1=0;
-                          n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
-                          n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
-                          n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                            do i3=n3a,n3b
-                            do i2=n2a,n2b
-                            do i1=n1a,n1b
-                              if( mask(i1,i2,i3).ne.0 )then
-                                  d800i = d600(i1+1,i2,i3,0) - 2*d600(i1,i2,i3,0) + d600(i1-1,i2,i3,0)
-                                  d080i = d060(i1,i2+1,i3,0) - 2*d060(i1,i2,i3,0) + d060(i1,i2-1,i3,0)
-                                  d008i = d006(i1,i2,i3+1,0) - 2*d006(i1,i2,i3,0) + d006(i1,i2,i3-1,0)
-                 ! --- Laplacian to order 8 = lap6h + corrections 
-                                  lap8h = lap6h(i1,i2,i3,0)  + cxx*cxx3*d800i  + cyy*cyy3*d080i  + czz*czz3*d008i    
-                 ! --- Laplacian^4 4p (4th power) order 2: 
-                                  lap2hCubed200i = lap2hCubed(i1+1,i2,i3,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1-1,i2,i3,0)
-                                  lap2hCubed020i = lap2hCubed(i1,i2+1,i3,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1,i2-1,i3,0)
-                                  lap2hCubed002i = lap2hCubed(i1,i2,i3+1,0) - 2*lap2hCubed(i1,i2,i3,0) + lap2hCubed(i1,i2,i3-1,0)
-                                  lap2h4p =                   + cxx*lap2hCubed200i   + cyy*lap2hCubed020i   + czz*lap2hCubed002i     
-                 ! --- Laplacian squared to order 6 :
-                 !   Lap6h = Lap4h + M4  = (Lap2h) + M2 + M4 
-                 !   Lap6h*Lap6h = [ (Lap2h) + M2 + M4 ] [ (Lap2h) + M2 + M4 ]
-                 !               = Lap2h*Lap6h + M2*Lap4h + M4*Lap2h + O(h^6)
-                                  lap6h200i = lap6h(i1+1,i2,i3,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1-1,i2,i3,0)
-                                  lap6h020i = lap6h(i1,i2+1,i3,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1,i2-1,i3,0)
-                                  lap6h002i = lap6h(i1,i2,i3+1,0) - 2*lap6h(i1,i2,i3,0) + lap6h(i1,i2,i3-1,0)
-                                  lap4h400i = lap4h200(i1+1,i2,i3,0) - 2*lap4h200(i1,i2,i3,0) + lap4h200(i1-1,i2,i3,0)
-                                  lap4h040i = lap4h020(i1,i2+1,i3,0) - 2*lap4h020(i1,i2,i3,0) + lap4h020(i1,i2-1,i3,0)
-                                  lap4h004i = lap4h002(i1,i2,i3+1,0) - 2*lap4h002(i1,i2,i3,0) + lap4h002(i1,i2,i3-1,0)
-                                  lap2h600i = lap2h400(i1+1,i2,i3,0) - 2*lap2h400(i1,i2,i3,0) + lap2h400(i1-1,i2,i3,0)
-                                  lap2h060i = lap2h040(i1,i2+1,i3,0) - 2*lap2h040(i1,i2,i3,0) + lap2h040(i1,i2-1,i3,0)
-                                  lap2h006i = lap2h004(i1,i2,i3+1,0) - 2*lap2h004(i1,i2,i3,0) + lap2h004(i1,i2,i3-1,0)
-                                  lap6hSq =                                                    cxx*(lap6h200i + cxx1*lap4h400i + cxx2*lap2h600i ) + cyy*(lap6h020i + cyy1*lap4h040i + cyy2*lap2h060i ) + czz*(lap6h002i + czz1*lap4h004i + czz2*lap2h006i )   
-                 ! --- Laplacian CUBED to order 4 
-                                  lap4hSq200i = lap4hSq(i1+1,i2,i3,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1-1,i2,i3,0)
-                                  lap4hSq020i = lap4hSq(i1,i2+1,i3,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1,i2-1,i3,0)
-                                  lap4hSq002i = lap4hSq(i1,i2,i3+1,0) - 2*lap4hSq(i1,i2,i3,0) + lap4hSq(i1,i2,i3-1,0)
-                                  lap2hSq400i = lap2hSq200(i1+1,i2,i3,0) - 2*lap2hSq200(i1,i2,i3,0) + lap2hSq200(i1-1,i2,i3,0)
-                                  lap2hSq040i = lap2hSq020(i1,i2+1,i3,0) - 2*lap2hSq020(i1,i2,i3,0) + lap2hSq020(i1,i2-1,i3,0)
-                                  lap2hSq004i = lap2hSq002(i1,i2,i3+1,0) - 2*lap2hSq002(i1,i2,i3,0) + lap2hSq002(i1,i2,i3-1,0)
-                                  lap4hCubed =                                         cxx*(lap4hSq200i + cxx1*lap2hSq400i )   + cyy*(lap4hSq020i + cyy1*lap2hSq040i )   + czz*(lap4hSq002i + czz1*lap2hSq004i )     
-                                      if( forcingOption.eq.twilightZoneForcing )then
-                                                  call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
-                                                  call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
-                                                  call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
-                                                  call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
-                                                  call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
-                                              fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
-                        ! Correct forcing for fourth-order ME in 3D
-                                                    call ogDeriv(ep, 4,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttt(m) )
-                                                    call ogDeriv(ep, 0,4,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxx(m) )
-                                                    call ogDeriv(ep, 0,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyy(m) )
-                                                    call ogDeriv(ep, 0,2,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzz(m) )
-                                                    call ogDeriv(ep, 0,0,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzz(m) )
-                                                    call ogDeriv(ep, 0,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyy(m) )
-                                                    call ogDeriv(ep, 0,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzz(m) )
-                                                fv(m) = fv(m) + (dtSq/12.)*evtttt(m) - (cdtsq12/dtSq)*( evxxxx(m) + 2.*( evxxyy(m) + evxxzz(m) + evyyzz(m) ) + evyyyy(m) + evzzzz(m) )       
-                        ! Correct forcing for sixth-order ME in 3D
-                                                    call ogDeriv(ep, 6,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttttt(m) )
-                                                    call ogDeriv(ep, 0,6,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxxx(m) )
-                                                    call ogDeriv(ep, 0,0,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyyy(m) )
-                                                    call ogDeriv(ep, 0,0,0,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzzzz(m) )
-                                                    call ogDeriv(ep, 0,4,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxyy(m) )
-                                                    call ogDeriv(ep, 0,2,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyyy(m) )
-                                                    call ogDeriv(ep, 0,4,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxzz(m) )
-                                                    call ogDeriv(ep, 0,2,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzzzz(m) )
-                                                    call ogDeriv(ep, 0,0,4,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyzz(m) )
-                                                    call ogDeriv(ep, 0,0,2,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzzzz(m) )
-                                                    call ogDeriv(ep, 0,2,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyzz(m) )
-                                                fv(m) = fv(m) + (dtSq**2/360.)*evtttttt(m) - (cdtPow6By360/dtSq)*( evxxxxxx(m) + evyyyyyy(m) + evzzzzzz(m) + 3.*(evxxxxyy(m) + evxxyyyy(m) + evxxxxzz(m) + evxxzzzz(m) + evyyyyzz(m) + evyyzzzz(m) ) + 6.*evxxyyzz(m)  )
-                        ! Correct forcing for eighth-order ME in 3D
-                                                    call ogDeriv(ep, 8,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uet8 )
-                                                    call ogDeriv(ep, 0,8,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex8 )
-                                                    call ogDeriv(ep, 0,0,8,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey8 )
-                                                    call ogDeriv(ep, 0,0,0,8, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uez8 )
-                                                    call ogDeriv(ep, 0,6,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex6y2 )
-                                                    call ogDeriv(ep, 0,4,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4y4 )
-                                                    call ogDeriv(ep, 0,2,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y6 )
-                                                    call ogDeriv(ep, 0,6,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex6z2 )
-                                                    call ogDeriv(ep, 0,4,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4z4 )
-                                                    call ogDeriv(ep, 0,2,0,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2z6 )
-                                                    call ogDeriv(ep, 0,0,6,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey6z2 )
-                                                    call ogDeriv(ep, 0,0,4,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey4z4 )
-                                                    call ogDeriv(ep, 0,0,2,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey2z6 )
-                                                    call ogDeriv(ep, 0,4,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4y2z2 )
-                                                    call ogDeriv(ep, 0,2,4,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y4z2 )
-                                                    call ogDeriv(ep, 0,2,2,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y2z4 )
-                        ! ( x*x _ y*y + z*z )^4 = x^8 + 4*x^6*y^2 + 4*x^6*z^2 + 6*x^4*y^4 + 12*x^4*y^2*z^2 + 6*x^4*z^4 + 4*x^2*y^6 + 12*x^2*y^4*z^2 + 12*x^2*y^2*z^4 + 4*x^2*z^6 + y^8 + 4*y^6*z^2 + 6*y^4*z^4 + 4*y^2*z^6 + z^8 
-                                                fv(m) = fv(m) + (dtSq**3/20160.)*uet8       - (cdtPow8By20160/dtSq)*( uex8 +       uey8 +       uez8         +  4.*(uex6y2 +    uex2y6 +    uex6z2 +    uex2z6 +    uey6z2 +    uey2z6 )    +  6.*( uex4y4 +   uex4z4 +   uey4z4 )   + 12.*( uex4y2z2 + uex2y4z2 + uex2y2z4 ) )
-                                    else if( forcingOption.eq.helmholtzForcing )then
-                     ! forcing for solving the Helmholtz equation   
-                     ! NOTE: change sign of forcing since for Helholtz we want to solve
-                     !      ( omega^2 I + c^2 Delta) w = f 
-                     ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                          fv(m)=0.
-                                          do freq=0,numberOfFrequencies-1 
-                                              omega = frequencyArray(freq)
-                                              coswt = cosFreqt(freq)    
-                         ! Add corrections for 4th order modified equation 
-                         !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
-                                                  write(*,*) 'fix me'
-                                                  stop 4444
-                             !fv(m) = fv(m) -( f(i1,i2,i3,freq) + cdtSqBy12*( cSq*(fxx23r(i1,i2,i3,freq) + fyy23r(i1,i2,i3,freq) + fzz23r(i1,i2,i3,freq)) - omega*omega*f(i1,i2,i3,freq)) )*coswt 
-                                          end do ! do freq  
-                                    else if( addForcing.ne.0 )then  
-                                          fv(m) = f(i1,i2,i3,0)
-                                    end if
-                 ! --- Modified equation space-time update ----
-                                  un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m)  + cdtsq*( lap8h )               + cdtPow4By12*( lap6hSq )       + cdtPow6By360*( lap4hCubed )   + cdtPow8By20160*( lap2h4p )    + dtSq*fv(m)                      
-                              end if ! mask .ne. 0
-                            end do
-                            end do
-                            end do
-         !   #If 8 == 2
-         !     #If "rectangular" eq "rectangular"
-         !       #If "3" eq "2" 
-         !         update2dOrder2Rectangular(3,8,8,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 2222
-         !         update3dOrder2Rectangular(3,8,8,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "3" eq "2" 
-         !         update2dOrder2Curvilinear(3,8,8,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 7474
-         !         update3dOrder2Curvilinear(3,8,8,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End
-         !   #Elif 8 == 4
-         !     #If "rectangular" eq "rectangular"
-         !       #If "3" eq "2" 
-         !         update2dOrder4Rectangular(3,8,8,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 747
-         !         update3dOrder4Rectangular(3,8,8,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "3" eq "2" 
-         !         update2dOrder4Curvilinear(3,8,8,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 7474
-         !         update3dOrder4Curvilinear(3,8,8,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End  
-         !   #Elif 8 == 6 
-         !     #If "rectangular" eq "rectangular"
-         !       #If "3" eq "2" 
-         !         update2dOrder6Rectangular(3,8,8,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 727
-         !         update3dOrder6Rectangular(3,8,8,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "3" eq "2" 
-         !         update2dOrder6Curvilinear(3,8,8,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 7474
-         !         update3dOrder6Curvilinear(3,8,8,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End 
-         !   #Elif 8 == 8 
-         !     #If "rectangular" eq "rectangular"
-         !       #If "3" eq "2" 
-         !         update2dOrder8Rectangular(3,8,8,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 820
-         !         update3dOrder8Rectangular(3,8,8,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End
-         !     #Else
-         !       #If "3" eq "2" 
-         !         update2dOrder8Curvilinear(3,8,8,rectangular)
-         !       #Elif "3" eq "3"
-         !         ! stop 7474
-         !         update3dOrder8Curvilinear(3,8,8,rectangular)
-         !       #Else
-         !         stop 8888
-         !       #End        
-         !     #End  
-         !   #Else
-         !     write(*,'("advWaveME: error - no hierarchical ME scheme yet for dim=3 order=8 orderInTime=8, gridType=rectangular")') 
-         !     stop 6666
-         !   #End
+                              numGhost1=3;
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                      d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2.*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                      d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2.*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                      d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2.*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
+                                end do
+                                end do
+                                end do
+                              numGhost1=2;
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                      d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2.*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                      d220(i1,i2,i3,0) = d020(i1+1,i2,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
+                                      d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                                      d202(i1,i2,i3,0) = d002(i1+1,i2,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
+                                      d022(i1,i2,i3,0) = d002(i1,i2+1,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                      d004(i1,i2,i3,0) = d002(i1,i2,i3+1,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
+                                end do
+                                end do
+                                end do
+                              numGhost1=1;
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                      d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2.*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
+                                      d420(i1,i2,i3,0) = d220(i1+1,i2,i3,0) - 2.*d220(i1,i2,i3,0) + d220(i1-1,i2,i3,0)
+                                      d240(i1,i2,i3,0) = d040(i1+1,i2,i3,0) - 2.*d040(i1,i2,i3,0) + d040(i1-1,i2,i3,0)
+                                      d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2.*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
+                                      d402(i1,i2,i3,0) = d202(i1+1,i2,i3,0) - 2.*d202(i1,i2,i3,0) + d202(i1-1,i2,i3,0)
+                                      d222(i1,i2,i3,0) = d022(i1+1,i2,i3,0) - 2.*d022(i1,i2,i3,0) + d022(i1-1,i2,i3,0)
+                                      d042(i1,i2,i3,0) = d022(i1,i2+1,i3,0) - 2.*d022(i1,i2,i3,0) + d022(i1,i2-1,i3,0)
+                                      d204(i1,i2,i3,0) = d004(i1+1,i2,i3,0) - 2.*d004(i1,i2,i3,0) + d004(i1-1,i2,i3,0)
+                                      d024(i1,i2,i3,0) = d004(i1,i2+1,i3,0) - 2.*d004(i1,i2,i3,0) + d004(i1,i2-1,i3,0)
+                                      d006(i1,i2,i3,0) = d004(i1,i2,i3+1,0) - 2.*d004(i1,i2,i3,0) + d004(i1,i2,i3-1,0)
+                                end do
+                                end do
+                                end do
+               ! ------------ MAIN LOOP, 3D, 8 8 ----------------
+                              numGhost1=0; 
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+               ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+               ! Example: 
+               ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
+cx0 = 1./(dx(0)**1); cx1 = (-1/6.); cx2 = (1/30.); cx3 = (-1/140.); 
+cy0 = 1./(dx(1)**1); cy1 = (-1/6.); cy2 = (1/30.); cy3 = (-1/140.); 
+cz0 = 1./(dx(2)**1); cz1 = (-1/6.); cz2 = (1/30.); cz3 = (-1/140.); 
+cxx0 = 1./(dx(0)**2); cxx1 = (-1/12.); cxx2 = (1/90.); cxx3 = (-1/560.); 
+cyy0 = 1./(dx(1)**2); cyy1 = (-1/12.); cyy2 = (1/90.); cyy3 = (-1/560.); 
+czz0 = 1./(dx(2)**2); czz1 = (-1/12.); czz2 = (1/90.); czz3 = (-1/560.); 
+cxxx0 = 1./(dx(0)**3); cxxx1 = (-1/4.); cxxx2 = (7/120.); cxxx3 = (-41/3024.); 
+cyyy0 = 1./(dx(1)**3); cyyy1 = (-1/4.); cyyy2 = (7/120.); cyyy3 = (-41/3024.); 
+czzz0 = 1./(dx(2)**3); czzz1 = (-1/4.); czzz2 = (7/120.); czzz3 = (-41/3024.); 
+cxxxx0 = 1./(dx(0)**4); cxxxx1 = (-1/6.); cxxxx2 = (7/240.); cxxxx3 = (-41/7560.); 
+cyyyy0 = 1./(dx(1)**4); cyyyy1 = (-1/6.); cyyyy2 = (7/240.); cyyyy3 = (-41/7560.); 
+czzzz0 = 1./(dx(2)**4); czzzz1 = (-1/6.); czzzz2 = (7/240.); czzzz3 = (-41/7560.); 
+cxxxxx0 = 1./(dx(0)**5); cxxxxx1 = (-1/3.); cxxxxx2 = (13/144.); cxxxxx3 = (-139/6048.); 
+cyyyyy0 = 1./(dx(1)**5); cyyyyy1 = (-1/3.); cyyyyy2 = (13/144.); cyyyyy3 = (-139/6048.); 
+czzzzz0 = 1./(dx(2)**5); czzzzz1 = (-1/3.); czzzzz2 = (13/144.); czzzzz3 = (-139/6048.); 
+cxxxxxx0 = 1./(dx(0)**6); cxxxxxx1 = (-1/4.); cxxxxxx2 = (13/240.); cxxxxxx3 = (-139/12096.); 
+cyyyyyy0 = 1./(dx(1)**6); cyyyyyy1 = (-1/4.); cyyyyyy2 = (13/240.); cyyyyyy3 = (-139/12096.); 
+czzzzzz0 = 1./(dx(2)**6); czzzzzz1 = (-1/4.); czzzzzz2 = (13/240.); czzzzzz3 = (-139/12096.); 
+cxxxxxxx0 = 1./(dx(0)**7); cxxxxxxx1 = (0.); cxxxxxxx2 = (0.); cxxxxxxx3 = (0.); 
+cyyyyyyy0 = 1./(dx(1)**7); cyyyyyyy1 = (0.); cyyyyyyy2 = (0.); cyyyyyyy3 = (0.); 
+czzzzzzz0 = 1./(dx(2)**7); czzzzzzz1 = (0.); czzzzzzz2 = (0.); czzzzzzz3 = (0.); 
+cxxxxxxxx0 = 1./(dx(0)**8); cxxxxxxxx1 = (0.); cxxxxxxxx2 = (0.); cxxxxxxxx3 = (0.); 
+cyyyyyyyy0 = 1./(dx(1)**8); cyyyyyyyy1 = (0.); cyyyyyyyy2 = (0.); cyyyyyyyy3 = (0.); 
+czzzzzzzz0 = 1./(dx(2)**8); czzzzzzzz1 = (0.); czzzzzzzz2 = (0.); czzzzzzzz3 = (0.); 
+                              fv(m)=0.
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                   ! -- Note: Highest differences do not need to be stored in an array 
+                   ! ----- DIFFERENCES OF U -----
+                                      d200i = d200(i1,i2,i3,0)
+                                      d400i = d400(i1,i2,i3,0)
+                                      d600i = d600(i1,i2,i3,0)
+                                      d800i = d600(i1+1,i2,i3,0) - 2.*d600(i1,i2,i3,0) + d600(i1-1,i2,i3,0)
+                                      d020i = d020(i1,i2,i3,0)
+                                      d220i = d220(i1,i2,i3,0)
+                                      d420i = d420(i1,i2,i3,0)
+                                      d620i = d420(i1+1,i2,i3,0) - 2.*d420(i1,i2,i3,0) + d420(i1-1,i2,i3,0)
+                                      d040i = d040(i1,i2,i3,0)
+                                      d240i = d240(i1,i2,i3,0)
+                                      d440i = d240(i1+1,i2,i3,0) - 2.*d240(i1,i2,i3,0) + d240(i1-1,i2,i3,0)
+                                      d060i = d060(i1,i2,i3,0)
+                                      d260i = d060(i1+1,i2,i3,0) - 2.*d060(i1,i2,i3,0) + d060(i1-1,i2,i3,0)
+                                      d080i = d060(i1,i2+1,i3,0) - 2.*d060(i1,i2,i3,0) + d060(i1,i2-1,i3,0)
+                                      d002i = d002(i1,i2,i3,0)
+                                      d202i = d202(i1,i2,i3,0)
+                                      d402i = d402(i1,i2,i3,0)
+                                      d602i = d402(i1+1,i2,i3,0) - 2.*d402(i1,i2,i3,0) + d402(i1-1,i2,i3,0)
+                                      d022i = d022(i1,i2,i3,0)
+                                      d222i = d222(i1,i2,i3,0)
+                                      d422i = d222(i1+1,i2,i3,0) - 2.*d222(i1,i2,i3,0) + d222(i1-1,i2,i3,0)
+                                      d042i = d042(i1,i2,i3,0)
+                                      d242i = d042(i1+1,i2,i3,0) - 2.*d042(i1,i2,i3,0) + d042(i1-1,i2,i3,0)
+                                      d062i = d042(i1,i2+1,i3,0) - 2.*d042(i1,i2,i3,0) + d042(i1,i2-1,i3,0)
+                                      d004i = d004(i1,i2,i3,0)
+                                      d204i = d204(i1,i2,i3,0)
+                                      d404i = d204(i1+1,i2,i3,0) - 2.*d204(i1,i2,i3,0) + d204(i1-1,i2,i3,0)
+                                      d024i = d024(i1,i2,i3,0)
+                                      d224i = d024(i1+1,i2,i3,0) - 2.*d024(i1,i2,i3,0) + d024(i1-1,i2,i3,0)
+                                      d044i = d024(i1,i2+1,i3,0) - 2.*d024(i1,i2,i3,0) + d024(i1,i2-1,i3,0)
+                                      d006i = d006(i1,i2,i3,0)
+                                      d206i = d006(i1+1,i2,i3,0) - 2.*d006(i1,i2,i3,0) + d006(i1-1,i2,i3,0)
+                                      d026i = d006(i1,i2+1,i3,0) - 2.*d006(i1,i2,i3,0) + d006(i1,i2-1,i3,0)
+                                      d008i = d006(i1,i2,i3+1,0) - 2.*d006(i1,i2,i3,0) + d006(i1,i2,i3-1,0)
+                   ! ----- spatial derivatives of order 2 ----
+                                      uxx =cxx0*(d200i + cxx1*d400i + cxx2*d600i + cxx3*d800i)
+                                      uyy =cyy0*(d020i + cyy1*d040i + cyy2*d060i + cyy3*d080i)
+                                      uzz =czz0*(d002i + czz1*d004i + czz2*d006i + czz3*d008i)
+                   ! ----- spatial derivatives of order 4 ----
+                                      uxxxx =cxxxx0*(d400i + cxxxx1*d600i + cxxxx2*d800i)
+                                      uxxyy =cxx0*cyy0*(d220i + cxx1*d420i + cxx2*d620i + cyy1*d240i + cxx1*cyy1*d440i + cyy2*d260i)
+                                      uyyyy =cyyyy0*(d040i + cyyyy1*d060i + cyyyy2*d080i)
+                                      uxxzz =cxx0*czz0*(d202i + cxx1*d402i + cxx2*d602i + czz1*d204i + cxx1*czz1*d404i + czz2*d206i)
+                                      uyyzz =cyy0*czz0*(d022i + cyy1*d042i + cyy2*d062i + czz1*d024i + cyy1*czz1*d044i + czz2*d026i)
+                                      uzzzz =czzzz0*(d004i + czzzz1*d006i + czzzz2*d008i)
+                   ! ----- spatial derivatives of order 6 ----
+                                      uxxxxxx =cxxxxxx0*(d600i + cxxxxxx1*d800i)
+                                      uxxxxyy =cxxxx0*cyy0*(d420i + cxxxx1*d620i + cyy1*d440i)
+                                      uxxyyyy =cxx0*cyyyy0*(d240i + cxx1*d440i + cyyyy1*d260i)
+                                      uyyyyyy =cyyyyyy0*(d060i + cyyyyyy1*d080i)
+                                      uxxxxzz =cxxxx0*czz0*(d402i + cxxxx1*d602i + czz1*d404i)
+                                      uxxyyzz =cxx0*cyy0*czz0*(d222i + cxx1*d422i + cyy1*d242i + czz1*d224i)
+                                      uyyyyzz =cyyyy0*czz0*(d042i + cyyyy1*d062i + czz1*d044i)
+                                      uxxzzzz =cxx0*czzzz0*(d204i + cxx1*d404i + czzzz1*d206i)
+                                      uyyzzzz =cyy0*czzzz0*(d024i + cyy1*d044i + czzzz1*d026i)
+                                      uzzzzzz =czzzzzz0*(d006i + czzzzzz1*d008i)
+                   ! ----- spatial derivatives of order 8 ----
+                                      uxxxxxxxx =cxxxxxxxx0*(d800i)
+                                      uxxxxxxyy =cxxxxxx0*cyy0*(d620i)
+                                      uxxxxyyyy =cxxxx0*cyyyy0*(d440i)
+                                      uxxyyyyyy =cxx0*cyyyyyy0*(d260i)
+                                      uyyyyyyyy =cyyyyyyyy0*(d080i)
+                                      uxxxxxxzz =cxxxxxx0*czz0*(d602i)
+                                      uxxxxyyzz =cxxxx0*cyy0*czz0*(d422i)
+                                      uxxyyyyzz =cxx0*cyyyy0*czz0*(d242i)
+                                      uyyyyyyzz =cyyyyyy0*czz0*(d062i)
+                                      uxxxxzzzz =cxxxx0*czzzz0*(d404i)
+                                      uxxyyzzzz =cxx0*cyy0*czzzz0*(d224i)
+                                      uyyyyzzzz =cyyyy0*czzzz0*(d044i)
+                                      uxxzzzzzz =cxx0*czzzzzz0*(d206i)
+                                      uyyzzzzzz =cyy0*czzzzzz0*(d026i)
+                                      uzzzzzzzz =czzzzzzzz0*(d008i)
+                   ! ---- Modified Equation UPDATE ----- 
+                                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( uxx + uyy +uzz ) + cdtPow4By12*( uxxxx + uyyyy + uzzzz + 2.*(uxxyy+uxxzz+uyyzz) )  + cdtPow6By360*( uxxxxxx + uyyyyyy + uzzzzzz + 3.*( uxxxxyy + uxxyyyy + uxxxxzz + uxxzzzz + uyyyyzz + uyyzzzz ) + 6.*(  uxxyyzz  ) ) + cdtPow8By20160*( uxxxxxxxx + uyyyyyyyy + uzzzzzzzz + 4.*( uxxxxxxyy + uxxyyyyyy + uxxxxxxzz + uxxzzzzzz + uyyyyyyzz + uyyzzzzzz ) + 6.*( uxxxxyyyy + uxxxxzzzz + uyyyyzzzz ) +12.*( uxxxxyyzz + uxxyyyyzz + uxxyyzzzz ) )+dtSq*fv(m)  
+                                end do
+                                end do
+                                end do
+                      else
+cxx=1./dx(0)**2;
+cyy=1./dx(1)**2;
+czz=1./dx(2)**2;
+                              numGhost1=3;
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                  if( mask(i1,i2,i3).ne.0 )then
+                                      d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2.*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+                                      d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2.*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+                                      d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2.*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
+                                  end if ! mask .ne. 0
+                                end do
+                                end do
+                                end do
+                              numGhost1=2;
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                  if( mask(i1,i2,i3).ne.0 )then
+                                      d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2.*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                                      d220(i1,i2,i3,0) = d020(i1+1,i2,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
+                                      d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2.*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                                      d202(i1,i2,i3,0) = d002(i1+1,i2,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
+                                      d022(i1,i2,i3,0) = d002(i1,i2+1,i3,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                      d004(i1,i2,i3,0) = d002(i1,i2,i3+1,0) - 2.*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
+                                  end if ! mask .ne. 0
+                                end do
+                                end do
+                                end do
+                              numGhost1=1;
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                  if( mask(i1,i2,i3).ne.0 )then
+                                      d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2.*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
+                                      d420(i1,i2,i3,0) = d220(i1+1,i2,i3,0) - 2.*d220(i1,i2,i3,0) + d220(i1-1,i2,i3,0)
+                                      d240(i1,i2,i3,0) = d040(i1+1,i2,i3,0) - 2.*d040(i1,i2,i3,0) + d040(i1-1,i2,i3,0)
+                                      d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2.*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
+                                      d402(i1,i2,i3,0) = d202(i1+1,i2,i3,0) - 2.*d202(i1,i2,i3,0) + d202(i1-1,i2,i3,0)
+                                      d222(i1,i2,i3,0) = d022(i1+1,i2,i3,0) - 2.*d022(i1,i2,i3,0) + d022(i1-1,i2,i3,0)
+                                      d042(i1,i2,i3,0) = d022(i1,i2+1,i3,0) - 2.*d022(i1,i2,i3,0) + d022(i1,i2-1,i3,0)
+                                      d204(i1,i2,i3,0) = d004(i1+1,i2,i3,0) - 2.*d004(i1,i2,i3,0) + d004(i1-1,i2,i3,0)
+                                      d024(i1,i2,i3,0) = d004(i1,i2+1,i3,0) - 2.*d004(i1,i2,i3,0) + d004(i1,i2-1,i3,0)
+                                      d006(i1,i2,i3,0) = d004(i1,i2,i3+1,0) - 2.*d004(i1,i2,i3,0) + d004(i1,i2,i3-1,0)
+                                  end if ! mask .ne. 0
+                                end do
+                                end do
+                                end do
+               ! ------------ MAIN LOOP, 3D, 8 8 ----------------
+                              numGhost1=0; 
+                              n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+                              n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+                              n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+               ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+               ! Example: 
+               ! u.xx = D+D-( I + cxx1*D+D- + cxx2*(D+D-x)^2 + ...
+cx0 = 1./(dx(0)**1); cx1 = (-1/6.); cx2 = (1/30.); cx3 = (-1/140.); 
+cy0 = 1./(dx(1)**1); cy1 = (-1/6.); cy2 = (1/30.); cy3 = (-1/140.); 
+cz0 = 1./(dx(2)**1); cz1 = (-1/6.); cz2 = (1/30.); cz3 = (-1/140.); 
+cxx0 = 1./(dx(0)**2); cxx1 = (-1/12.); cxx2 = (1/90.); cxx3 = (-1/560.); 
+cyy0 = 1./(dx(1)**2); cyy1 = (-1/12.); cyy2 = (1/90.); cyy3 = (-1/560.); 
+czz0 = 1./(dx(2)**2); czz1 = (-1/12.); czz2 = (1/90.); czz3 = (-1/560.); 
+cxxx0 = 1./(dx(0)**3); cxxx1 = (-1/4.); cxxx2 = (7/120.); cxxx3 = (-41/3024.); 
+cyyy0 = 1./(dx(1)**3); cyyy1 = (-1/4.); cyyy2 = (7/120.); cyyy3 = (-41/3024.); 
+czzz0 = 1./(dx(2)**3); czzz1 = (-1/4.); czzz2 = (7/120.); czzz3 = (-41/3024.); 
+cxxxx0 = 1./(dx(0)**4); cxxxx1 = (-1/6.); cxxxx2 = (7/240.); cxxxx3 = (-41/7560.); 
+cyyyy0 = 1./(dx(1)**4); cyyyy1 = (-1/6.); cyyyy2 = (7/240.); cyyyy3 = (-41/7560.); 
+czzzz0 = 1./(dx(2)**4); czzzz1 = (-1/6.); czzzz2 = (7/240.); czzzz3 = (-41/7560.); 
+cxxxxx0 = 1./(dx(0)**5); cxxxxx1 = (-1/3.); cxxxxx2 = (13/144.); cxxxxx3 = (-139/6048.); 
+cyyyyy0 = 1./(dx(1)**5); cyyyyy1 = (-1/3.); cyyyyy2 = (13/144.); cyyyyy3 = (-139/6048.); 
+czzzzz0 = 1./(dx(2)**5); czzzzz1 = (-1/3.); czzzzz2 = (13/144.); czzzzz3 = (-139/6048.); 
+cxxxxxx0 = 1./(dx(0)**6); cxxxxxx1 = (-1/4.); cxxxxxx2 = (13/240.); cxxxxxx3 = (-139/12096.); 
+cyyyyyy0 = 1./(dx(1)**6); cyyyyyy1 = (-1/4.); cyyyyyy2 = (13/240.); cyyyyyy3 = (-139/12096.); 
+czzzzzz0 = 1./(dx(2)**6); czzzzzz1 = (-1/4.); czzzzzz2 = (13/240.); czzzzzz3 = (-139/12096.); 
+cxxxxxxx0 = 1./(dx(0)**7); cxxxxxxx1 = (0.); cxxxxxxx2 = (0.); cxxxxxxx3 = (0.); 
+cyyyyyyy0 = 1./(dx(1)**7); cyyyyyyy1 = (0.); cyyyyyyy2 = (0.); cyyyyyyy3 = (0.); 
+czzzzzzz0 = 1./(dx(2)**7); czzzzzzz1 = (0.); czzzzzzz2 = (0.); czzzzzzz3 = (0.); 
+cxxxxxxxx0 = 1./(dx(0)**8); cxxxxxxxx1 = (0.); cxxxxxxxx2 = (0.); cxxxxxxxx3 = (0.); 
+cyyyyyyyy0 = 1./(dx(1)**8); cyyyyyyyy1 = (0.); cyyyyyyyy2 = (0.); cyyyyyyyy3 = (0.); 
+czzzzzzzz0 = 1./(dx(2)**8); czzzzzzzz1 = (0.); czzzzzzzz2 = (0.); czzzzzzzz3 = (0.); 
+                              fv(m)=0.
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                  if( mask(i1,i2,i3).ne.0 )then
+                   ! -- Note: Highest differences do not need to be stored in an array 
+                   ! ----- DIFFERENCES OF U -----
+                                      d200i = d200(i1,i2,i3,0)
+                                      d400i = d400(i1,i2,i3,0)
+                                      d600i = d600(i1,i2,i3,0)
+                                      d800i = d600(i1+1,i2,i3,0) - 2.*d600(i1,i2,i3,0) + d600(i1-1,i2,i3,0)
+                                      d020i = d020(i1,i2,i3,0)
+                                      d220i = d220(i1,i2,i3,0)
+                                      d420i = d420(i1,i2,i3,0)
+                                      d620i = d420(i1+1,i2,i3,0) - 2.*d420(i1,i2,i3,0) + d420(i1-1,i2,i3,0)
+                                      d040i = d040(i1,i2,i3,0)
+                                      d240i = d240(i1,i2,i3,0)
+                                      d440i = d240(i1+1,i2,i3,0) - 2.*d240(i1,i2,i3,0) + d240(i1-1,i2,i3,0)
+                                      d060i = d060(i1,i2,i3,0)
+                                      d260i = d060(i1+1,i2,i3,0) - 2.*d060(i1,i2,i3,0) + d060(i1-1,i2,i3,0)
+                                      d080i = d060(i1,i2+1,i3,0) - 2.*d060(i1,i2,i3,0) + d060(i1,i2-1,i3,0)
+                                      d002i = d002(i1,i2,i3,0)
+                                      d202i = d202(i1,i2,i3,0)
+                                      d402i = d402(i1,i2,i3,0)
+                                      d602i = d402(i1+1,i2,i3,0) - 2.*d402(i1,i2,i3,0) + d402(i1-1,i2,i3,0)
+                                      d022i = d022(i1,i2,i3,0)
+                                      d222i = d222(i1,i2,i3,0)
+                                      d422i = d222(i1+1,i2,i3,0) - 2.*d222(i1,i2,i3,0) + d222(i1-1,i2,i3,0)
+                                      d042i = d042(i1,i2,i3,0)
+                                      d242i = d042(i1+1,i2,i3,0) - 2.*d042(i1,i2,i3,0) + d042(i1-1,i2,i3,0)
+                                      d062i = d042(i1,i2+1,i3,0) - 2.*d042(i1,i2,i3,0) + d042(i1,i2-1,i3,0)
+                                      d004i = d004(i1,i2,i3,0)
+                                      d204i = d204(i1,i2,i3,0)
+                                      d404i = d204(i1+1,i2,i3,0) - 2.*d204(i1,i2,i3,0) + d204(i1-1,i2,i3,0)
+                                      d024i = d024(i1,i2,i3,0)
+                                      d224i = d024(i1+1,i2,i3,0) - 2.*d024(i1,i2,i3,0) + d024(i1-1,i2,i3,0)
+                                      d044i = d024(i1,i2+1,i3,0) - 2.*d024(i1,i2,i3,0) + d024(i1,i2-1,i3,0)
+                                      d006i = d006(i1,i2,i3,0)
+                                      d206i = d006(i1+1,i2,i3,0) - 2.*d006(i1,i2,i3,0) + d006(i1-1,i2,i3,0)
+                                      d026i = d006(i1,i2+1,i3,0) - 2.*d006(i1,i2,i3,0) + d006(i1,i2-1,i3,0)
+                                      d008i = d006(i1,i2,i3+1,0) - 2.*d006(i1,i2,i3,0) + d006(i1,i2,i3-1,0)
+                   ! ----- spatial derivatives of order 2 ----
+                                      uxx =cxx0*(d200i + cxx1*d400i + cxx2*d600i + cxx3*d800i)
+                                      uyy =cyy0*(d020i + cyy1*d040i + cyy2*d060i + cyy3*d080i)
+                                      uzz =czz0*(d002i + czz1*d004i + czz2*d006i + czz3*d008i)
+                   ! ----- spatial derivatives of order 4 ----
+                                      uxxxx =cxxxx0*(d400i + cxxxx1*d600i + cxxxx2*d800i)
+                                      uxxyy =cxx0*cyy0*(d220i + cxx1*d420i + cxx2*d620i + cyy1*d240i + cxx1*cyy1*d440i + cyy2*d260i)
+                                      uyyyy =cyyyy0*(d040i + cyyyy1*d060i + cyyyy2*d080i)
+                                      uxxzz =cxx0*czz0*(d202i + cxx1*d402i + cxx2*d602i + czz1*d204i + cxx1*czz1*d404i + czz2*d206i)
+                                      uyyzz =cyy0*czz0*(d022i + cyy1*d042i + cyy2*d062i + czz1*d024i + cyy1*czz1*d044i + czz2*d026i)
+                                      uzzzz =czzzz0*(d004i + czzzz1*d006i + czzzz2*d008i)
+                   ! ----- spatial derivatives of order 6 ----
+                                      uxxxxxx =cxxxxxx0*(d600i + cxxxxxx1*d800i)
+                                      uxxxxyy =cxxxx0*cyy0*(d420i + cxxxx1*d620i + cyy1*d440i)
+                                      uxxyyyy =cxx0*cyyyy0*(d240i + cxx1*d440i + cyyyy1*d260i)
+                                      uyyyyyy =cyyyyyy0*(d060i + cyyyyyy1*d080i)
+                                      uxxxxzz =cxxxx0*czz0*(d402i + cxxxx1*d602i + czz1*d404i)
+                                      uxxyyzz =cxx0*cyy0*czz0*(d222i + cxx1*d422i + cyy1*d242i + czz1*d224i)
+                                      uyyyyzz =cyyyy0*czz0*(d042i + cyyyy1*d062i + czz1*d044i)
+                                      uxxzzzz =cxx0*czzzz0*(d204i + cxx1*d404i + czzzz1*d206i)
+                                      uyyzzzz =cyy0*czzzz0*(d024i + cyy1*d044i + czzzz1*d026i)
+                                      uzzzzzz =czzzzzz0*(d006i + czzzzzz1*d008i)
+                   ! ----- spatial derivatives of order 8 ----
+                                      uxxxxxxxx =cxxxxxxxx0*(d800i)
+                                      uxxxxxxyy =cxxxxxx0*cyy0*(d620i)
+                                      uxxxxyyyy =cxxxx0*cyyyy0*(d440i)
+                                      uxxyyyyyy =cxx0*cyyyyyy0*(d260i)
+                                      uyyyyyyyy =cyyyyyyyy0*(d080i)
+                                      uxxxxxxzz =cxxxxxx0*czz0*(d602i)
+                                      uxxxxyyzz =cxxxx0*cyy0*czz0*(d422i)
+                                      uxxyyyyzz =cxx0*cyyyy0*czz0*(d242i)
+                                      uyyyyyyzz =cyyyyyy0*czz0*(d062i)
+                                      uxxxxzzzz =cxxxx0*czzzz0*(d404i)
+                                      uxxyyzzzz =cxx0*cyy0*czzzz0*(d224i)
+                                      uyyyyzzzz =cyyyy0*czzzz0*(d044i)
+                                      uxxzzzzzz =cxx0*czzzzzz0*(d206i)
+                                      uyyzzzzzz =cyy0*czzzzzz0*(d026i)
+                                      uzzzzzzzz =czzzzzzzz0*(d008i)
+                                          if( forcingOption.eq.twilightZoneForcing )then
+                                                      call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
+                                                      call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
+                                                      call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
+                                                      call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
+                                                      call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
+                                                  fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
+                          ! Correct forcing for fourth-order ME in 3D
+                                                        call ogDeriv(ep, 4,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttt(m) )
+                                                        call ogDeriv(ep, 0,4,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxx(m) )
+                                                        call ogDeriv(ep, 0,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyy(m) )
+                                                        call ogDeriv(ep, 0,2,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzz(m) )
+                                                        call ogDeriv(ep, 0,0,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzz(m) )
+                                                        call ogDeriv(ep, 0,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyy(m) )
+                                                        call ogDeriv(ep, 0,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzz(m) )
+                                                    fv(m) = fv(m) + (dtSq/12.)*evtttt(m) - (cdtsq12/dtSq)*( evxxxx(m) + 2.*( evxxyy(m) + evxxzz(m) + evyyzz(m) ) + evyyyy(m) + evzzzz(m) )       
+                          ! Correct forcing for sixth-order ME in 3D
+                                                        call ogDeriv(ep, 6,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttttt(m) )
+                                                        call ogDeriv(ep, 0,6,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxxx(m) )
+                                                        call ogDeriv(ep, 0,0,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyyy(m) )
+                                                        call ogDeriv(ep, 0,0,0,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzzzz(m) )
+                                                        call ogDeriv(ep, 0,4,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxyy(m) )
+                                                        call ogDeriv(ep, 0,2,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyyy(m) )
+                                                        call ogDeriv(ep, 0,4,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxzz(m) )
+                                                        call ogDeriv(ep, 0,2,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzzzz(m) )
+                                                        call ogDeriv(ep, 0,0,4,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyzz(m) )
+                                                        call ogDeriv(ep, 0,0,2,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzzzz(m) )
+                                                        call ogDeriv(ep, 0,2,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyzz(m) )
+                                                    fv(m) = fv(m) + (dtSq**2/360.)*evtttttt(m) - (cdtPow6By360/dtSq)*( evxxxxxx(m) + evyyyyyy(m) + evzzzzzz(m) + 3.*(evxxxxyy(m) + evxxyyyy(m) + evxxxxzz(m) + evxxzzzz(m) + evyyyyzz(m) + evyyzzzz(m) ) + 6.*evxxyyzz(m)  )
+                          ! Correct forcing for eighth-order ME in 3D
+                                                        call ogDeriv(ep, 8,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uet8 )
+                                                        call ogDeriv(ep, 0,8,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex8 )
+                                                        call ogDeriv(ep, 0,0,8,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey8 )
+                                                        call ogDeriv(ep, 0,0,0,8, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uez8 )
+                                                        call ogDeriv(ep, 0,6,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex6y2 )
+                                                        call ogDeriv(ep, 0,4,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4y4 )
+                                                        call ogDeriv(ep, 0,2,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y6 )
+                                                        call ogDeriv(ep, 0,6,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex6z2 )
+                                                        call ogDeriv(ep, 0,4,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4z4 )
+                                                        call ogDeriv(ep, 0,2,0,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2z6 )
+                                                        call ogDeriv(ep, 0,0,6,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey6z2 )
+                                                        call ogDeriv(ep, 0,0,4,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey4z4 )
+                                                        call ogDeriv(ep, 0,0,2,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey2z6 )
+                                                        call ogDeriv(ep, 0,4,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4y2z2 )
+                                                        call ogDeriv(ep, 0,2,4,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y4z2 )
+                                                        call ogDeriv(ep, 0,2,2,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y2z4 )
+                          ! ( x*x _ y*y + z*z )^4 = x^8 + 4*x^6*y^2 + 4*x^6*z^2 + 6*x^4*y^4 + 12*x^4*y^2*z^2 + 6*x^4*z^4 + 4*x^2*y^6 + 12*x^2*y^4*z^2 + 12*x^2*y^2*z^4 + 4*x^2*z^6 + y^8 + 4*y^6*z^2 + 6*y^4*z^4 + 4*y^2*z^6 + z^8 
+                                                    fv(m) = fv(m) + (dtSq**3/20160.)*uet8       - (cdtPow8By20160/dtSq)*( uex8 +       uey8 +       uez8         +  4.*(uex6y2 +    uex2y6 +    uex6z2 +    uex2z6 +    uey6z2 +    uey2z6 )    +  6.*( uex4y4 +   uex4z4 +   uey4z4 )   + 12.*( uex4y2z2 + uex2y4z2 + uex2y2z4 ) )
+                                        else if( forcingOption.eq.helmholtzForcing )then
+                       ! forcing for solving the Helmholtz equation   
+                       ! NOTE: change sign of forcing since for Helholtz we want to solve
+                       !      ( omega^2 I + c^2 Delta) w = f 
+                       ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                                              fv(m)=0.
+                                              do freq=0,numberOfFrequencies-1 
+                                                  omega = frequencyArray(freq)
+                                                  coswt = cosFreqt(freq)    
+                           ! Add corrections for 4th order modified equation 
+                           !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
+                                                      write(*,*) 'fix me'
+                                                      stop 4444
+                               !fv(m) = fv(m) -( f(i1,i2,i3,freq) + cdtSqBy12*( cSq*(fxx23r(i1,i2,i3,freq) + fyy23r(i1,i2,i3,freq) + fzz23r(i1,i2,i3,freq)) - omega*omega*f(i1,i2,i3,freq)) )*coswt 
+                                              end do ! do freq  
+                                        else if( addForcing.ne.0 )then  
+                                              fv(m) = f(i1,i2,i3,0)
+                                        end if
+                   ! ---- Modified Equation UPDATE ----- 
+                                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( uxx + uyy +uzz ) + cdtPow4By12*( uxxxx + uyyyy + uzzzz + 2.*(uxxyy+uxxzz+uyyzz) )  + cdtPow6By360*( uxxxxxx + uyyyyyy + uzzzzzz + 3.*( uxxxxyy + uxxyyyy + uxxxxzz + uxxzzzz + uyyyyzz + uyyzzzz ) + 6.*(  uxxyyzz  ) ) + cdtPow8By20160*( uxxxxxxxx + uyyyyyyyy + uzzzzzzzz + 4.*( uxxxxxxyy + uxxyyyyyy + uxxxxxxzz + uxxzzzzzz + uyyyyyyzz + uyyzzzzzz ) + 6.*( uxxxxyyyy + uxxxxzzzz + uyyyyzzzz ) +12.*( uxxxxyyzz + uxxyyyyzz + uxxyyzzzz ) )+dtSq*fv(m)  
+                                  end if ! mask .ne. 0
+                                end do
+                                end do
+                                end do
+                      end if
               end if 
       else
      ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----

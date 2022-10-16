@@ -1,5 +1,40 @@
 
 
+**************************************************
+**** Sat Aug 13, 2022
+
+REVISIT IMPLICIT TIME-STEPPING
+
+-rectangular=[implicit|explicit]
+
+RPI
+cgWave gaussian.cmd -g=rpiGride4.order2 -beta=80 -x0=5 -y0=-1.5 -omega=10 -amp=1000 -upwind=1 -tf=100 -tp=.1 -ts=implicit -orderInTime=2 -dtMax=.05 -cfl=.9 -rectangular=explicit -go=halt
+
+CgWave::getTimeStep: c=1, cfl=0.9, timeSteppingMethod=1
+getTimeStep: grid=0 : dx= 2.50e-02, dy= 2.50e-02, dt=1.591e-02
+getTimeStep: grid=1, dxMin= 5.47e-03, dxMax= 1.59e-02, dt=4.920e-03
+getTimeStep: grid=2, dxMin= 8.67e-03, dxMax= 1.59e-02, dt=7.807e-03
+getTimeStep: grid=3, dxMin= 6.14e-03, dxMax= 1.58e-02, dt=5.525e-03
+cgWave::getTimeStep: cfl=0.9, explicit dt= 4.92e-03, implicit dt= 1.59e-02, ratio=  3.23
+CgWave::initialize: dt=0.0159099
+
+
+SEMI-IMPLICIT Look OK: 
+cgWave gaussian.cmd -g=shapese8.order2 -beta=80 -x0=.25 -y0=-.6 -omega=10 -amp=1000 -upwind=1 -tf=100 -tp=.1 -ts=implicit -orderInTime=2 -dtMax=.05 -cfl=.9 -rectangular=explicit -go=halt
+
+
+cgWave gaussian.cmd -g=shapese4.order2 -beta=40 -x0=.25 -y0=-.6 -omega=5 -amp=1000 -upwind=1 -tf=100 -tp=.5 -ts=implicit -orderInTime=2 -dtMax=.05 -cfl=.9 -rectangular=explicit -go=halt
+
+
+cgWave gaussian.cmd -g=shapese4.order2 -beta=40 -x0=.25 -y0=-.6 -omega=5 -amp=1000 -upwind=1 -tf=100 -tp=.5 -ts=implicit -orderInTime=2 -dtMax=.05 -cfl=10 -go=halt
+
+
+OK
+cgWave gaussian.cmd -g=cice4.order2 -beta=40 -x0=1.0 -y0=1.0 -omega=5 -amp=1000 -upwind=1 -tf=100 -tp=.5 -ts=implicit -orderInTime=2 -dtMax=.05 -cfl=10 -go=halt
+
+
+*BROKEN**
+cgWave gaussian.cmd -g=cice4.order4.ng3 -beta=40 -x0=1.0 -y0=1.0 -omega=5 -amp=1000 -upwind=1 -tf=100 -tp=.5 -ts=implicit -orderInTime=2 -dtMax=.05 -cfl=10 -go=halt 
 
 
 

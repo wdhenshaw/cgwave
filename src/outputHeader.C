@@ -19,10 +19,14 @@ outputHeader()
   // const real & ad4                          = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
   const int & dissipationFrequency          = dbase.get<int>("dissipationFrequency");
   const int & preComputeUpwindUt             = dbase.get<int>("preComputeUpwindUt");
+  const AssignInterpolationNeighboursEnum & assignInterpNeighbours = 
+                             dbase.get<AssignInterpolationNeighboursEnum>("assignInterpNeighbours");
+  const int & implicitUpwind                = dbase.get<int>("implicitUpwind");
       
   const int & orderOfAccuracy               = dbase.get<int>("orderOfAccuracy");
   const int & orderOfAccuracyInTime         = dbase.get<int>("orderOfAccuracyInTime");
   const real & dt                           = dbase.get<real>("dt");
+  const int & modifiedEquationApproach      = dbase.get<int>("modifiedEquationApproach");
       
   int & addForcing                          = dbase.get<int>("addForcing");
   ForcingOptionEnum & forcingOption         = dbase.get<ForcingOptionEnum>("forcingOption");
@@ -53,7 +57,13 @@ outputHeader()
 
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
   {
-    numberOfGridPoints+=cg[grid].mask().elementCount();
+    // numberOfGridPoints+=cg[grid].mask().elementCount();  // old way
+
+    // Oct 2, 2022 : just count interior and boundary points
+    MappedGrid & mg = cg[grid];
+    const IntegerArray & gid = mg.gridIndexRange();
+    numberOfGridPoints += (gid(1,0)-gid(0,0)+1)*(gid(1,1)-gid(0,1)+1)*(gid(1,2)-gid(0,2)+1);
+
   }
 
 
@@ -71,6 +81,9 @@ outputHeader()
     fPrintF(file," tFinal=%f, dt=%9.3e, tPlot=%9.3e cfl=%3.2f\n",tFinal,dt,tPlot,cfl );
     fPrintF(file," timeSteppingMethod = %s\n",(timeSteppingMethod==explicitTimeStepping ? "explicit (modified equation)" :
                                                timeSteppingMethod==implicitTimeStepping ? "implicit" : "unknown") );
+    fPrintF(file," modifiedEquationApproach = %s\n",
+          (modifiedEquationApproach==0 ? "standard modified equation" : 
+                                          "hierarchical modified equation" ));
     fPrintF(file," implicit time-stepping weights: cImp(-1,0)=%g, cImp(0,0)=%g, cImp(1,0)=%g (2nd-order term)\n",cImp(-1,0),cImp(0,0),cImp(1,0));
     fPrintF(file,"                               : cImp(-1,1)=%g, cImp(0,1)=%g, cImp(1,1)=%g (4th-order term)\n",cImp(-1,1),cImp(0,1),cImp(1,1));
     fPrintF(file," chooseImplicitTimeStepFromCFL=%d (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
@@ -80,6 +93,11 @@ outputHeader()
     fPrintF(file," upwind dissipation: preComputeUpwindUt=%i \n"
                  "                     true=precompute Ut in upwind dissipation,\n"
                  "                     false=compute Ut inline in Gauss-Seidel fashion)\n",preComputeUpwindUt);
+    fPrintF(file," implicitUpwind=%d : if true, include upwinding in implicit matrix when implicit time-stepping.\n",implicitUpwind);
+    fPrintF(file," assignInterpNeighbours = %s (for wider upwind stencil)\n",
+        (assignInterpNeighbours==interpolateInterpNeighbours ? "interpolate" : 
+         assignInterpNeighbours==extrapolateInterpNeighbours ? "extrapolate" :
+                                                               "interpolate" )); // default 
     
     fPrintF(file," adjust Helmholtz for upwinding=%d\n",adjustHelmholtzForUpwinding);
     fPrintF(file," forcingOption=%s.\n",(forcingOption==noForcing           ? "noForcing"           :
@@ -131,10 +149,10 @@ outputHeader()
     char buff[180];
     sPrintF(buff,"%%4i: %%%is   ([%%2i:%%5i],[%%2i:%%5i],[%%2i:%%5i])  %%12g   %%8.2e %%8.2e    %%s\n",maxNameLength);
     real maxMax=0.,maxMin=0.,minMin=REAL_MAX;
-    numberOfGridPoints=0.; // this is a global value 
+    // numberOfGridPoints=0.; 
     for( grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
-      MappedGrid & c = cg[grid];
+      MappedGrid & mg = cg[grid];
       real & hMin = dxMinMax(grid,0);
       real & hMax = dxMinMax(grid,1);
       
@@ -142,15 +160,17 @@ outputHeader()
       maxMin=max(maxMin,hMin);
       minMin=min(minMin,hMin);
     
-      real numGridPoints = c.mask().elementCount();
+      // real numGridPoints = c.mask().elementCount();
+      const IntegerArray & gid = mg.gridIndexRange();
+      real numGridPoints = (gid(1,0)-gid(0,0)+1)*(gid(1,1)-gid(0,1)+1)*(gid(1,2)-gid(0,2)+1);
     
       // fPrintF(file,"%4i: %20s ([%2i:%5i],[%2i:%5i],[%2i:%5i])  %8i   %8.2e %8.2e \n",
       fPrintF(file,buff,grid, (const char *)cg[grid].getName(),
-	      c.gridIndexRange(Start,axis1),c.gridIndexRange(End,axis1),
-	      c.gridIndexRange(Start,axis2),c.gridIndexRange(End,axis2),
-	      c.gridIndexRange(Start,axis3),c.gridIndexRange(End,axis3),
+	      mg.gridIndexRange(Start,axis1),mg.gridIndexRange(End,axis1),
+	      mg.gridIndexRange(Start,axis2),mg.gridIndexRange(End,axis2),
+	      mg.gridIndexRange(Start,axis3),mg.gridIndexRange(End,axis3),
 	      numGridPoints,hMax,hMin, (gridIsImplicit(grid) ? "implicit" : "explicit") );
-      numberOfGridPoints+=numGridPoints;
+      // numberOfGridPoints+=numGridPoints;
     }
     fPrintF(file," total number of grid points =%g, min(hmn)=%6.2e, max(hmn)=%6.2e, max(hmx)=%6.2e,  \n\n",
 	    numberOfGridPoints,minMin,maxMin,maxMax);

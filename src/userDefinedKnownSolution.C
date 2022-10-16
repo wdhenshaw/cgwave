@@ -2,12 +2,33 @@
 #include "CgWave.h"
 #include "GenericGraphicsInterface.h"
 #include "ParallelUtility.h"
+// #include <cmath>
 
+
+
+#define rjbesl EXTERN_C_NAME(rjbesl)
+extern "C"
+{
+    void rjbesl( const real & ka, const real & alpha, const int & nb, real & jnka, int & ncalc);
+}
 
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3)                                       int I1Base =I1.getBase(),   I2Base =I2.getBase(),  I3Base =I3.getBase(); int I1Bound=I1.getBound(),  I2Bound=I2.getBound(), I3Bound=I3.getBound(); for(i3=I3Base; i3<=I3Bound; i3++)                                       for(i2=I2Base; i2<=I2Bound; i2++)                                     for(i1=I1Base; i1<=I1Bound; i1++)
 
 typedef ::real LocalReal;
+
+// --------------------------------------------------------------------
+// Macro to evaluate the spherical Bessel function near the origin
+// Input: n,x
+// Output : R 
+// -------------------------------------------------------------------
+
+// --------------------------------------------------------------------
+// Macro to evaluate the associated Legendre function
+//  n = mPhi   : degree
+//  k = mTheta : order 
+// -------------------------------------------------------------------
+
 
 // Macro to get the vertex array
 #define GET_VERTEX_ARRAY(x)                                     mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter);       OV_GET_SERIAL_ARRAY_CONST(real,mg.vertex(),x);       
@@ -434,6 +455,75 @@ getUserDefinedKnownSolution(real t,  int grid,
 
     }
 
+    else if( userKnownSolution=="squareEigenfunction" )
+    {
+
+        const Real kx  = rpar[0]*twoPi;
+        const Real ky  = rpar[1]*twoPi;
+        const Real kz  = rpar[2]*twoPi;
+
+        Real omega;
+        if( numberOfDimensions==2 )
+            omega = c*sqrt( kx*kx + ky*ky );
+        else      
+            omega = c*sqrt( kx*kx + ky*ky +kz*kz );
+
+        if( t<=2*dt )
+        {
+            printf("Eval square eigenfuction: t=%12.3e, [kx,ky,kz]=[%g,%g,%g]\n",t,rpar[0],rpar[1],rpar[2]);
+        }
+
+        Real coswt;
+        if( numberOfTimeDerivatives==0 )
+            coswt = cos(omega*t);
+        else if( numberOfTimeDerivatives==1 )
+            coswt = -omega*sin(omega*t);
+        else
+        {
+            OV_ABORT("UDKS: numberOfTimeDerivatives");
+        }      
+        real x,y,z;
+        if( numberOfDimensions==2 )
+        {
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            {
+                if( !isRectangular )
+                {
+                    x= xLocal(i1,i2,i3,0);
+                    y= xLocal(i1,i2,i3,1);
+                }
+                else
+                {
+                    x=XC(iv,0);
+                    y=XC(iv,1);
+                }
+                uLocal(i1,i2,i3,0) = sin( kx*x )*sin( ky*y )*coswt;  // fix for Neumann BC
+            }
+        }
+        else
+        {
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            {
+                if( !isRectangular )
+                {
+                    x= xLocal(i1,i2,i3,0);
+                    y= xLocal(i1,i2,i3,1);
+                    z= xLocal(i1,i2,i3,2);
+                }
+                else
+                {
+                    x=XC(iv,0);
+                    y=XC(iv,1);
+                    z=XC(iv,2);
+                }
+                uLocal(i1,i2,i3,0) = sin( kx*x )*sin( ky*y )*sin( kz*z )*coswt;        
+
+
+            }
+        }
+        
+    }
+
     else if( userKnownSolution=="diskEigenfunction" )
     {
     // --- Eigenfunction for the wave equation in a disk ---
@@ -569,6 +659,185 @@ getUserDefinedKnownSolution(real t,  int grid,
     }
 
 
+    else if( userKnownSolution=="sphereEigenfunction" )
+    {
+    // --- Eigen function for the wave equation in a SOLID SPHERE ---
+
+    // --- we could avoid building the vertex array on Cartesian grids ---
+        GET_VERTEX_ARRAY(x);
+
+        const int & mTheta  = ipar[0];
+        const int & mPhi    = ipar[1];
+        const int & mr      = ipar[2];
+        const int & bcOpt   = ipar[3];      
+
+        const Real & a   = rpar[0];
+        const Real & amp = rpar[1];
+
+        const int maxBesselOrder=10;
+        assert( mPhi<maxBesselOrder );
+        Real jnka[maxBesselOrder]; 
+  
+
+        Real lambda; 
+        if( bcOpt==0 )
+        {
+      // DIRICHLET BC
+      // #include "src/sphereEigenvalueDirichletRoots.h"    
+
+      // do this for now 
+            const int mPhiMax =4, mThetaMax=4, mrMax=4;
+      // n = mPhi, m=mr 
+            Real omegaArray[]={
+          // n=0, m=1,2,..,4
+                    3.1415926535897932e+00, 6.2831853071795865e+00, 9.4247779607693797e+00, 1.2566370614359173e+01,
+          // n=1, m=1,2,..,4
+                    4.4934094579090642e+00, 7.7252518369377072e+00, 1.0904121659428900e+01, 1.4066193912831473e+01,
+          // n=2, m=1,2,..,4
+                    5.7634591968945498e+00, 9.0950113304763552e+00, 1.2322940970566582e+01, 1.5514603010886748e+01,
+          // n=3, m=1,2,..,4
+                    6.9879320005005200e+00, 1.0417118547379365e+01, 1.3698023153249249e+01, 1.6923621285213840e+01,
+            };
+            #define omegaRoot(n,m) omegaArray[(m-1)+4*(n-0)]
+
+            assert( mPhi<mPhiMax &&  mr<mrMax );
+
+            lambda= omegaRoot(mPhi,mr)/a;
+
+            if( false && t<=0 )
+            {
+        // Check the Dirichlet BC:
+                Real mSB = mPhi+.5; 
+                Real ua = jn(mSB,lambda*a); // jn  DOES NOT WORK !  MAYBE REQUIRES INTEGER ARGUMENT
+
+                int nb = mPhi+1; // nterm+1  ! eval J0, J1, ... J(nb)  -- compute one extra 
+                Real ka=lambda*a; 
+                Real alpha=0.5;    // fractional part of Bessel order
+                int ncalc; 
+                rjbesl(ka, alpha, nb, jnka[0], ncalc);
+
+        // Real ub = std::sph_bessel(mPhi,lambda*a);
+
+                
+                printF("UDKS: sphere: mPhi=%d, mr=%d, a=%g, lambda=%12.4e, jn(r=a)=%12.4e, jnka=%12.4e (=0?)\n",mPhi,mr,a,lambda,ua,jnka[mPhi]);
+                ka=0.;
+                rjbesl(ka, alpha, nb, jnka[0], ncalc);
+                printF(" -> origin:  jn(0)=%12.4e\n",jnka[mPhi]);
+            }
+        }
+        else
+        {
+              OV_ABORT("finish me");
+        }
+          
+
+        if( t<=3.*dt )
+            printF("UDKS: Sphere solution: a=%g, mPhi=%i, mTheta=%i, mr=%d, lambda=%e, bcOpt=%d \n",a,mPhi,mTheta,mr,lambda,bcOpt);
+
+        const Real omega = c*lambda;  
+        Real coswt;
+        if( numberOfTimeDerivatives==0 )
+            coswt = cos(omega*t);
+        else if( numberOfTimeDerivatives==1 )
+            coswt = -omega*sin(omega*t); 
+        else  
+        {
+            OV_ABORT("UDKS: sphere: unexpected numberOfTimeDerivatives");
+        }    
+
+        const Real rTol = 1e-3; 
+        const Real phiTol= REAL_EPSILON*1000.; // what should this be ?
+        const Real epsx= REAL_EPSILON*100.;
+        const int nb = mPhi+1; // nterm+1  ! eval J0, J1, ... J(nb)  -- 
+        const Real alpha=0.5;    // fractional part of Bessel order
+        int ncalc;         // output flag
+        Real sphericalBessel; 
+
+        FOR_3D(i1,i2,i3,I1,I2,I3)
+        { 
+  
+            Real xd = x(i1,i2,i3,0), yd = x(i1,i2,i3,1), zd = x(i1,i2,i3,2);
+            if( abs(xd)<epsx && abs(yd)<epsx )
+            {
+                xd=epsx;  //  avoid atan2(0,0)
+                yd=epsx;
+            }
+            const Real theta = atan2(yd,xd);
+            Real r = sqrt( xd*xd + yd*yd + zd*zd );
+
+      // const Real cosphi = (abs(r)<tol) ? (zd/tol) : (zd/r);
+            const Real cosphi = fabs(r)<phiTol ? 1.0 : zd/r;
+
+            Real Pnk; 
+                if( mPhi == 1 && mTheta == 0 )
+                {
+                    Pnk = cosphi;
+                }
+                else if( mPhi == 2 && mTheta == 0 )
+                {
+                    Pnk = (3.0*cosphi*cosphi - 1.0)/2.0;
+                }
+                else if( mPhi == 2 && mTheta == 1 )
+                {
+                    Pnk = 3.0*cosphi*sqrt(1 - cosphi*cosphi);
+                }
+                else if( mPhi == 3 && mTheta == 0 )
+                {
+                    Pnk = (5.0*cosphi*cosphi*cosphi - 3.0*cosphi)/2.0;
+                }
+                else if( mPhi == 3 && mTheta == 1 )
+                {
+                    Pnk = sqrt(1 - cosphi*cosphi)*(15.0*cosphi*cosphi-3)/2.0;
+                }
+                else if( mPhi == 3 && mTheta == 2 )
+                {
+                    Pnk = 15.0*cosphi*(1.0-cosphi*cosphi);
+                }
+                else
+                {
+                    printF("associatedLegendreFunctions ERROR: mPhi=%d, mTheta=%d no supported.\n",mPhi,mTheta);
+                    OV_ABORT("ERROR");
+                }
+
+            Real kr=lambda*r; 
+            if( fabs(r)<rTol )
+            {
+        // Use Small r approximations for the spherical Bessel: 
+                    if( mPhi == 0 )
+                    {
+                        sphericalBessel = 1.0 - (1.0/6.0)*(kr*kr) + (1.0/120.0)*(kr*kr*kr*kr);
+                    }
+                    else if( mPhi == 1 )
+                    {
+                        sphericalBessel = (1.0/3.0)*kr - (1.0/30.0)*(kr*kr*kr) + (1.0/840.0)*(kr*kr*kr*kr*kr);
+                    }
+                    else if( mPhi == 2 )
+                    {
+                        sphericalBessel = (1.0/15.0)*(kr*kr) - (1.0/210.0)*(kr*kr*kr*kr);
+                    }
+                    else if( mPhi == 3 )
+                    {
+                        sphericalBessel = (1.0/105.0)*(kr*kr*kr) - (1.0/1890.0)*(kr*kr*kr*kr*kr);
+                    }
+                    else
+                    {
+                        printF("sphericalBesselFunctions ERROR: mPhi > 4 is not defined\mPhi");
+                        OV_ABORT("ERROR");
+                    }
+            }
+            else
+            {
+                rjbesl(kr, alpha, nb, jnka[0], ncalc); // this computes jn_0, jn_1, ..., jn_{nb-1}
+                sphericalBessel = sqrt(Pi/(2.0*r))*jnka[mPhi]; 
+            }
+
+            uLocal(i1,i2,i3,0) = sphericalBessel*cos(mTheta*theta)*Pnk*coswt;
+
+        }
+
+    }
+
+
     else
     {
         printF("getUserDefinedKnownSolution:ERROR: unknown value for userDefinedKnownSolution=%s\n",
@@ -647,6 +916,8 @@ updateUserDefinedKnownSolution()
                                                 "modulated Gaussian",
                                                 "disk eigenfunction",
                                                 "annulus eigenfunction",
+                                                "square eigenfunction",
+                                                "sphere eigenfunction",
                                                 "done",    
                                                 ""};
     int numRows=3;
@@ -874,6 +1145,22 @@ updateUserDefinedKnownSolution()
             }
 
         }
+
+        else if( answer=="square eigenfunction" ) 
+        {
+            printF("----------------- Eigenfunction on a square or box -----------------\n"
+                          "The solution is of the form: \n"
+                          "     u(x,y,z,t) = sin(kx*2*pi*x)*sin(ky*2*pi*y)*sin(kz*2*pi*z)*cos(omega*t)*\n");
+            
+            userKnownSolution="squareEigenfunction";
+            dbase.get<bool>("knownSolutionIsTimeDependent")=true;  // known solution depends on time
+            
+            gi.inputString(answer,"Enter kx,ky,kz");
+            sScanF(answer,"%e %e %e",&rpar[0],&rpar[1],&rpar[2]);
+            printF(" Setting [kx,ky,kz]=[%g,%g,%g]\n",rpar[0],rpar[1],rpar[2]);
+
+        }
+
         else if( answer=="disk eigenfunction" )
         {
             userKnownSolution="diskEigenfunction";
@@ -935,6 +1222,41 @@ updateUserDefinedKnownSolution()
             dbase.get<bool>("knownSolutionIsTimeDependent")= true;  // known solution is time dependent
 
         } 
+
+        else if( answer=="sphere eigenfunction" )
+        {
+            userKnownSolution="sphereEigenfunction";
+
+            int & mTheta  = ipar[0];
+            int & mPhi    = ipar[1];
+            int & mr      = ipar[2];
+            int & bcOpt   = ipar[3];      
+
+            Real & a   = rpar[0];
+            Real & amp = rpar[1];
+
+            mPhi=1; mTheta=1; mr=0; amp=1.; a=1.;
+            
+            printF("--- Eigenfunction for the Wave Equation on a Solid Sphere ---\n"
+                          "    u  = (sqrt(pi/2*r))*jn((mPhi+0.5),lambda*r)*cos(mTheta*theta)*Pnk(mPhi,mTheta,cosphi)*coswt \n"
+                          "                                                                                                \n"
+                          "    mPhi   = angular number in phi, mPhi=0,1,2, (degree of the associated Legendre function)\n"
+                          "    mTheta = angular number in theta, mTheta=0,1,..,mPhi, (order of the associated Legendre function)\n"
+                          "    mr     = radial number (mr'th zero of determinant condition), mr=0,1,2,... \n"
+                          "    a      = radius of the sphere\n"
+                          "    amp    = amplitude\n"
+                          "    bcOpt : 0=Dirichlet, 1=Neumann BCs on the sphere.\n"             
+                );
+            
+            gi.inputString(answer,"Enter mPhi,mTheta,mr,a,amp,bcOpt for the exact solution");
+            sScanF(answer,"%i %i %i %e %e %i",&mPhi,&mTheta,&mr,&a,&amp,&bcOpt);
+
+            printF("Sphere eigenfuncton: mPhi=%i, mTheta=%i, mr=%i, a=%g, amp=%g, bcOpt=%d\n",
+                          mPhi,mTheta,mr,a,amp,bcOpt);
+
+            dbase.get<bool>("knownSolutionIsTimeDependent")= true;  // known solution is time dependent
+
+        }  
 
 
         else if( dialog.getTextValue(answer,"beta:","%e",beta) )

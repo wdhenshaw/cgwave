@@ -1,9 +1,11 @@
 #
 #  cgWave: Compute to some "known" solutions
 #
-#   cgWave [-noplot] known.cmd -g=<grid-name> -known=[pw|gpw|boxHelmholtz|polyPeriodic|diskEig|annulusEig] 
+#   cgWave [-noplot] known.cmd -g=<grid-name> -known=[pw|gpw|boxHelmholtz|polyPeriodic|squareEig|diskEig|annulusEig] 
 #           -upwind=[0|1] -computeErrors=[0|1]
-#           -setKnownOnBoundaries=[0|1] -bcApproach=[cbc|lcbc|oneSided]
+#           -setKnownOnBoundaries=[0|1] -bcApproach=[cbc|lcbc|oneSided] -assignInterpNeighbours=[extrap|interp]
+#           -meApproach=[std,ha]
+#           -ts=[explicit|implicit] -rectangular=[implicit|explicit]
 #
 #   pw = plane wave 
 #   gpw = Gaussian plane wave 
@@ -14,21 +16,27 @@ $beta=20; $x0=.5; $y0=.0; $z0=.0; $k0=0.; # for Gaussian plane wave
 $upwind=0; 
 $debug=3;  $go="halt"; $bc="d"; $dissFreq=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
-$useKnownFirstStep=0; 
+$useKnownFirstStep=0; $checkKnown=0; 
 $computeErrors=1; $setKnownOnBoundaries=1; 
 $tf=5.; $tp=.05; $cfl=.9; 
-$ts="explicit"; $dtMax=1e10; 
+$ts="explicit"; $dtMax=1e10; $implicitUpwind=0; 
+$rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat rectangular grids explicitly
+$beta2=.5; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping 
+$meApproach="std"; # or "ha"
 $orderInTime=-1;  # -1 = use default
 $degreeInSpace=2; $degreeInTime=2; 
+$assignInterpNeighbours="extrap"; # by default extrap interp neighbours 
 $nBessel=1; $mTheta=1; 
+$mPhi=1; $mr=1; 
 $show=""; $flushFrequency=10; 
 GetOptions( "cfl=f"=>\$cfl,"amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"debug=i"=>\$debug,\
             "tf=f"=>\$tf,"tp=f"=>\$tp,"bc=s"=>\$bc,"dissFreq=i"=>\$dissFreq,"omega=f"=>\$omega,\
             "known=s"=>\$known,"orderInTime=i"=>\$orderInTime,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,"upwind=i"=>\$upwind,\
             "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"k0=f"=>\$k0,"beta=f"=>\$beta,"computeErrors=i"=>\$computeErrors,\
             "setKnownOnBoundaries=s"=>\$setKnownOnBoundaries,"show=s"=>\$show,"useKnownFirstStep=i"=>\$useKnownFirstStep,\
-            "flushFrequency=i"=>\$flushFrequency,"bcApproach=s"=>\$bcApproach,"nBessel=i"=>\$nBessel,"mTheta=i"=>\$mTheta,\
-            "go=s"=>\$go );
+            "flushFrequency=i"=>\$flushFrequency,"bcApproach=s"=>\$bcApproach,"meApproach=s"=>\$meApproach,\
+            "nBessel=i"=>\$nBessel,"mPhi=i"=>\$mPhi,"mTheta=i"=>\$mTheta,"mr=i"=>\$mr,"rectangular=s"=>\$rectangular,\
+            "assignInterpNeighbours=s"=>\$assignInterpNeighbours,"checkKnown=s"=>\$checkKnown,"implicitUpwind=i"=>\$implicitUpwind,"go=s"=>\$go );
 # 
 #
 if( $bc eq "d" ){ $bc="dirichlet"; }
@@ -36,8 +44,9 @@ if( $bc eq "n" ){ $bc="neumann"; }
 if( $bc eq "e" ){ $bc="exact"; }
 # if( $bc eq "e" ){ $bc="evenSymmetry"; }
 if( $bc eq "r" ){ $bc="radiation"; }
-if( $known eq "diskEig" ){ $setKnownOnBoundaries=0; }
+if( $known eq "diskEig" || $known eq "squareEig" ){ $setKnownOnBoundaries=0; }
 if( $known eq "annulusEig" ){ $setKnownOnBoundaries=0; }
+if( $known eq "sphereEig" ){ $setKnownOnBoundaries=0; }
 # time-stepping: (explicit or implicit)
 $ts
 # pause
@@ -63,6 +72,19 @@ $cmd
 #
 bc=$bc
 #
+$cmd="#";
+if( $meApproach eq "std" ){ $cmd="standard modified equation"; }
+if( $meApproach eq "ha" ){ $cmd="hierarchical modified equation"; }
+$cmd
+#
+if( $ts eq "implicit" ){ $cmd="choose grids for implicit\n  rectangular=$rectangular\n done"; }else{ $cmd="#"; }
+$cmd
+# implicitUpwind = 1 : include upwinding in implicit matrix
+implicit upwind $implicitUpwind
+#
+if( $assignInterpNeighbours eq "interp" ){ $cmd="interpolateInterpNeighbours"; }else{ $cmd="#"; }
+$cmd
+#
 if( $known eq "boxHelmholtz" ){ $cmd="helmholtzForcing\n user defined forcing...\n box Helmholtz\n exit"; }else{ $cmd="#"; }
 if( $known eq "polyPeriodic" ){ $cmd="helmholtzForcing\n user defined forcing...\n poly periodic\n exit"; }
 $cmd
@@ -79,6 +101,8 @@ user defined known solution...
   if( $bc eq "dirichlet" ){ $bcOpt=0; }else{ $bcOpt=1; } 
   if( $known eq "diskEig" ){ $cmd="disk eigenfunction\n $nBessel $mTheta $rad $amp $bcOpt"; }  
   if( $known eq "annulusEig" ){ $cmd="annulus eigenfunction\n $nBessel $mTheta $amp $bcOpt"; }  
+  if( $known eq "sphereEig" ){ $cmd="sphere eigenfunction\n $mPhi $mTheta $mr $rad $amp $bcOpt"; }  
+  if( $known eq "squareEig" ){ $cmd="square eigenfunction\n $kx $ky $kz"; }  
   $cmd
 done
 #
@@ -87,6 +111,8 @@ upwind dissipation $upwind
 # artificial dissipation $ad4
 dissipation frequency $dissFreq
 exit
+if( $checkKnown eq "1" ){ $cmd="check known solution\n "; }else{ $cmd="#"; }
+$cmd
 #
 solve
 #

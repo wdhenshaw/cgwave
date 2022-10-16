@@ -1,5 +1,5 @@
 ! This file automatically generated from advWave.bf90 with bpp.
-        subroutine advWave2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+        subroutine advWave2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
     ! subroutine advWave2dOrder4r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,!                 mask,xy,rsxy,  um,u,un, f,fa, v, vh,  bc, frequencyArray, ipar, rpar, ierr )
    !======================================================================
    !   Advance a time step for Waves equations
@@ -21,6 +21,7 @@
         real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
         real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
         real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+        real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
         real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
         integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
         integer bc(0:1,0:2),ierr
@@ -30,7 +31,7 @@
    !     ---- local variables -----
         integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt
         integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
-        integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
+        integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt,modifiedEquationApproach
         integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev,numberOfFrequencies
         real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz
     ! ,adc,adcdt,add,adddt
@@ -43,6 +44,7 @@
         real dx12i,dy12i,dz12i,dxsq12i,dysq12i,dzsq12i,dxy4i,dxz4i,dyz4,time0,time1
         real dxi4,dyi4,dzi4,dxdyi2,dxdzi2,dydzi2
         real c0,c1,csq,dtsq,cdtsq,cdtsq12,cdtSqBy12
+        real gridCFL
         integer maxOrderOfAccuracy
         parameter( maxOrderOfAccuracy=12 )
     ! Coefficients in the implicit scheme
@@ -3450,6 +3452,7 @@ real uzzzzzz
           bImp( 1)       = rpar(13) ! beta4 : coefficient for implicit time-stepping
           bImp( 2)       = rpar(14) ! beta6 (for future)
           bImp( 3)       = rpar(15) ! beta8 (for future)
+          gridCFL        = rpar(16)
           dy=dx(1)  ! Are these needed?
           dz=dx(2)
           option                       = ipar( 0)
@@ -3464,12 +3467,13 @@ real uzzzzzz
           debug                        = ipar( 9)
           gridIsImplicit               = ipar(10)
           useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
-          useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for impliciit time-stepping
+          useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for implicit time-stepping
           preComputeUpwindUt           = ipar(13)
           numberOfFrequencies          = ipar(14)
           adjustOmega                  = ipar(15)
           solveHelmholtz               = ipar(16)
           adjustHelmholtzForUpwinding  = ipar(17)
+          modifiedEquationApproach     = ipar(18)
           fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
           fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
      ! ** fix me ***
@@ -3559,13 +3563,13 @@ real uzzzzzz
                   stop 2222
               end if
             end if
-          if( (.false. .or. debug.gt.1) .and. t.le.dt )then
+          if( (.false. .or. debug.gt.1) .and. t.le.3*dt )then
               write(*,'("advWave: option=",i4," grid=",i4)') option,grid
               write(*,'("advWave: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
               write(*,'("advWave: addForcing=",i2," forcingOption=",i2)') addForcing,forcingOption
               write(*,'("advWave: useUpwindDissipation=",i2," (explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
               write(*,'("advWave: useSosupDissipation=",i2," (1= add upwind dissipation in this stage)")') useSosupDissipation
-              write(*,'("advWave: t,dt,c,omega=",4e10.2)') t,dt,cc,omega 
+              write(*,'("advWave: t,dt,c,omega,gridCFL=",5(1pe10.2,1x))') t,dt,cc,omega,gridCFL
               write(*,'("advWave: gridIsImplicit=",i2," adjustOmega=",i2," solveHelmholtz=",i2)') gridIsImplicit,adjustOmega,solveHelmholtz
               if( forcingOption.eq.helmholtzForcing )then
                   write(*,'("advWave: numberOfFrequencies=",i2)') numberOfFrequencies
@@ -3637,6 +3641,10 @@ real uzzzzzz
               uDotFactor=.5  ! By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
        ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
               adSosup=sosupParameter*adSosup
+              if( gridIsImplicit.ne.0 )then
+                  write(*,'("advWave: gridIsImplicit: REDUCE UPWIND DISS COEFF by gridCFL=",e10.2)') gridCFL
+                  adSosup = adSosup/gridCFL 
+              end if
               if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
                   write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useImplicitUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useImplicitUpwindDissipation
                   write(*,'("         : t,dt,adSosup=",3e10.2," adSosup/(c*dt)=",e12.4)')t,dt,adSosup,adSosup/(cc*dt)
@@ -4176,7 +4184,7 @@ real uzzzzzz
        !                      false=compute Ut inline in Gauss-Seidel fashion 
               if( preComputeUpwindUt.eq.1 )then
          ! precompute Ut in upwind dissipation,  (uses v=uDot computed above)
-                      if( debug.gt.3 .and. t.lt.2*dt )then
+                      if( debug.gt.3 .and. t.lt.4*dt )then
                           write(*,'("addUpwindDiss: UPWIND DISS using u.t=v dim=2 order=4 grid=rectangular... t=",e10.2)') t
                           write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
                       end if
@@ -4195,7 +4203,7 @@ real uzzzzzz
                           end do
               else
          ! compute Ut inline in Gauss-Seidel fashion (this is more stable)
-                      if( debug.gt.3 .and. t.lt.2*dt )then
+                      if( debug.gt.3 .and. t.lt.4*dt )then
                           write(*,'("addUpwindDiss: UPWIND DISS using u.t=Dztu dim=2 order=4 grid=rectangular... t=",e10.2)') t
                           write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
                       end if

@@ -3454,13 +3454,13 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
   ! assignCornerGhostsMacro()
 
   ! Try this for order==6
-  if( .false. .and. orderOfAccuracy.eq.6 .and. nd.eq.2 .and. gridType.eq.rectangular )then
-    if( forcingOption.eq.noForcing )then
-      assignSymmetryCornerGhost(noForcing)
-    else
-      assignSymmetryCornerGhost(forcing)
-    end if
-  end if
+  ! if( .false. .and. orderOfAccuracy.eq.6 .and. nd.eq.2 .and. gridType.eq.rectangular )then
+  !   if( forcingOption.eq.noForcing )then
+  !     assignSymmetryCornerGhost(noForcing)
+  !   else
+  !     assignSymmetryCornerGhost(forcing)
+  !   end if
+  ! end if
 
   ! ---------------------------------------------------------------------
   ! ----------- STAGE II : Neumann-like Boundary Conditions -------------
@@ -3549,7 +3549,7 @@ subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
   endLoopOverSides()
 
   !  --- Assign ghost points outside corners ---
-  if( orderOfAccuracy.eq.6 .and. nd.eq.2 .and. gridType.eq.rectangular )then
+  if( .false. .and. orderOfAccuracy.eq.6 .and. nd.eq.2 .and. gridType.eq.rectangular )then
     if( forcingOption.eq.noForcing )then
       assignSymmetryCornerGhost(noForcing)
     else

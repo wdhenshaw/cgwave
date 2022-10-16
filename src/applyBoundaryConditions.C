@@ -5,6 +5,7 @@
 #include "display.h"
 #include "ParallelUtility.h"
 #include "ParallelGridUtility.h"
+#include "AssignInterpNeighbours.h"
 
 // -------- function prototypes for Fortran routines --------
 #define bcOptWave EXTERN_C_NAME(bcoptwave)
@@ -27,6 +28,11 @@ void bcOptWave( const int&nd,
 // =======================================================================================
 
 
+// ============================================================================
+// For upwind dissipation we assign another line of points next to interpolation points
+// to support the wider upwind stencil
+// ============================================================================
+
 // ======================================================================================================
 /// \brief apply boundary conditions
 // ======================================================================================================
@@ -44,54 +50,48 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
   // realCompositeGridFunction *& ucg = dbase.get<realCompositeGridFunction*>("ucg");
   // realCompositeGridFunction & u = ucg[current];
 
-    const int & orderOfAccuracy   = dbase.get<int>("orderOfAccuracy");
-    const Real & c                = dbase.get<real>("c");
-    const real & dt               = dbase.get<real>("dt");
-  // const real & ad4              = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
-  // bool useUpwindDissipation     = ad4  > 0.;
-    const int & upwind                = dbase.get<int>("upwind");
-    bool useUpwindDissipation     = upwind!=0;
-    const int & solveHelmholtz    = dbase.get<int>("solveHelmholtz");
-    IntegerArray & gridIsImplicit = dbase.get<IntegerArray>("gridIsImplicit");
+    const int & orderOfAccuracy      = dbase.get<int>("orderOfAccuracy");
+    const Real & c                   = dbase.get<real>("c");
+    const real & dt                  = dbase.get<real>("dt");
+    const int & upwind               = dbase.get<int>("upwind");
+    const int & implicitUpwind       = dbase.get<int>("implicitUpwind");
 
-    const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption"); 
+    bool useUpwindDissipation        = upwind!=0;
 
+    const int & solveHelmholtz       = dbase.get<int>("solveHelmholtz");
+    IntegerArray & gridIsImplicit    = dbase.get<IntegerArray>("gridIsImplicit");
+
+    const aString & knownSolutionOption       = dbase.get<aString>("knownSolutionOption"); 
     const int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
 
     const int & addForcing                  = dbase.get<int>("addForcing");
     const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
-    const bool twilightZone = forcingOption==twilightZoneForcing; 
+    const bool twilightZone                 = forcingOption==twilightZoneForcing; 
 
-    const int & numberOfFrequencies     = dbase.get<int>("numberOfFrequencies");
-    const RealArray & frequencyArray    = dbase.get<RealArray>("frequencyArray");  
+    const int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
+    const RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");  
 
     const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
+
+    const AssignInterpolationNeighboursEnum & assignInterpNeighbours = 
+                                                          dbase.get<AssignInterpolationNeighboursEnum>("assignInterpNeighbours");
 
     BoundaryConditionParameters bcParams;
     bcParams.orderOfExtrapolation=orderOfAccuracy+1;
 
-  // if( false )
-  // {
-  //   // Is this needed ?
-  //   if( cg.numberOfComponentGrids()>1 )
-  //   {
-  //     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-  //     {
-  //    u[grid].updateGhostBoundaries();
-  //     }
-  //   } 
-  // }
-    
 
     Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
 
+  // printF("Call interpolate...\n");
     real cpu0 = getCPU();
 
   // *** Note: interpolate also does a periodic update **** 
+
     u.interpolate();
 
     real cpu1 = getCPU();
     timing(timeForInterpolate)+= cpu1-cpu0;
+  // printF("Done interpolate.\n");
     
     cpu0=cpu1;
 
@@ -119,11 +119,14 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
     const int assignBCForImplicit=0; 
 
 
-
-
-
-
     bool useOpt= true; // twilightZone && true;
+
+    bool isAllImplicit = true;  // all grids are implicit
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    {
+    // +++ NOTE: BCs for implicit are done in takeImplicitTimeStep +++
+        isAllImplicit = isAllImplicit && gridIsImplicit(grid);
+    }   
     
     if( debug & 4 && t<=2*dt )
         printF("CgWave: applyBC: useOpt=%d\n",(int)useOpt);
@@ -131,17 +134,18 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
     {
     // ----- Optimized Boundary Conditions ------
         bool isImplicit    = false; // at least one grid is implicit
-        bool isAllImplicit = true;  // all grids are implicit
+    // bool isAllImplicit = true;  // all grids are implicit
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
             isImplicit    = isImplicit || gridIsImplicit(grid); 
-            isAllImplicit = isAllImplicit && gridIsImplicit(grid); 
-      // +++ NOTE: BCs for implicit are done in takeImplicitTimeStep +++
+      // isAllImplicit = isAllImplicit && gridIsImplicit(grid);
 
+      // +++ NOTE: BCs for implicit are done in takeImplicitTimeStep +++
 
             
             if( !gridIsImplicit(grid) )
             {
+        // --------- EXPLICIT GRID ------------
 
                 if( bcApproach==useLocalCompatibilityBoundaryConditions )
                 {
@@ -280,25 +284,79 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
                 u[grid].periodicUpdate();
                 u[grid].updateGhostBoundaries();
             }
+            else
+            {
+        // -------- IMPLICIT GRID ------
+                if( useUpwindDissipation && !implicitUpwind )
+                {
+          // IPCU -- upwinding added in an explicit step 
+                    if( debug & 4 && t<=2*dt )
+                    {
+                        printF("+++ extrap extra ghost for IPCU scheme\n");
+                    }
+
+                    const int ghost = orderOfAccuracy/2 + 1; // extrapolate an extra ghost
+                    bcParams.ghostLineToAssign=ghost;
+                    u.applyBoundaryCondition(0,BCTypes::extrapolate,dirichlet,0.,t,bcParams);
+                    u.applyBoundaryCondition(0,BCTypes::extrapolate,neumann  ,0.,t,bcParams);
+                    bcParams.ghostLineToAssign=1; // reset  
+                } 
+
+            }
+
+
 
         } // end for grid 
 
-        if( useUpwindDissipation )
-        {
-      // For upwind dissipation we should assign another line of points next to interpolation points
-      // to support the wider upwind stencil
 
-            if( !isAllImplicit )
-                u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t,bcParams);
-            else
+    // For upwind dissipation we should assign another line of points next to interpolation points
+    // to support the wider upwind stencil
+            if( useUpwindDissipation )
             {
-                if( isImplicit && !isAllImplicit )
+                if( assignInterpNeighbours==interpolateInterpNeighbours ||
+                        assignInterpNeighbours==defaultAssignInterpNeighbours  )
                 {
-                    printF("applyBoundaryConditions: t=%9.3e: FIX ME: extrapolateInterpolationNeighbours for PARTIALY IMPLICIT time-stepping\n"); 
-                    OV_ABORT("error");
+          // --- Interpolate interp neighbours *new* June 10, 2022
+          // printF("Call assignInterpolationNeighbours...\n");
+                    if( !dbase.has_key("interpNeighbours") )
+                    {
+                        AssignInterpNeighbours & interpNeighbours = dbase.put<AssignInterpNeighbours>("interpNeighbours");
+                        interpNeighbours.setAssignmentType( AssignInterpNeighbours::interpolateInterpolationNeighbours );
+            // Interpolation width: This could potentially be 1 less than the normal interp width: 
+                        const int interpolationWidth = orderOfAccuracy+1;  
+                        interpNeighbours.setInterpolationWidth( interpolationWidth );
+                    }   
+                    AssignInterpNeighbours & interpNeighbours = dbase.get<AssignInterpNeighbours>("interpNeighbours");
+                    const int numberOfComponents=1;  // ** FIX ME **
+                    Range C = numberOfComponents;
+          // We could pass the TZ function for checking errors 
+                    OGFunction* pExact = NULL; // twilightZone ? dbase.get<OGFunction* >("tz") : NULL;
+                    if( debug & 8 )
+                        printf("++++ CgWave::applyBC: interpolate Interpolation Neighbours at t=%9.3e\n",t);
+                    interpNeighbours.assignInterpolationNeighbours( u, C, pExact, t  );
+          // printF("Done call assignInterpolationNeighbours.\n");
+                }
+                else
+                {
+                    assert( assignInterpNeighbours==extrapolateInterpNeighbours );
+                    if( !isAllImplicit )
+                    {
+                        printF("Call extrapolateInterpolationNeighbours...\n");
+                        u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t,bcParams);
+                        printF("Done call extrapolateInterpolationNeighbours.\n");
+                    }
+                    else
+                    {
+                        if( isImplicit && !isAllImplicit )
+                        {
+                            printF("applyBoundaryConditions: t=%9.3e: FIX ME: extrapolateInterpolationNeighbours for PARTIALY IMPLICIT time-stepping\n"); 
+                            OV_ABORT("error");
+                        }
+                    }      
                 }
             }
-        }
+
+
 
     // ** TESTING ***
         if( false )
@@ -420,37 +478,45 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
 
     if( useUpwindDissipation )
     {
-    // For upwind dissipation we should assign another line of points next to interpolation points
+    // For upwind dissipation we assign another line of points next to interpolation points
     // to support the wider upwind stencil
 
-          // extrapParams.orderOfExtrapolation=dbase.get<int>("orderOfExtrapolationForInterpolationNeighbours");
-          // if( debug & 4 )
-          //   printf("***advanceStructured: orderOfExtrapolationForInterpolationNeighbours=%i\n",
-          //          dbase.get<int>("orderOfExtrapolationForInterpolationNeighbours"));
-        
-          // // MappedGridOperators & mgop = mgp!=NULL ? *op : (*cgop)[grid];
-          // // fieldNext.setOperators(mgop);
-          // fieldNext.applyBoundaryCondition(Ca,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t+dt,
-          //                                  extrapParams,grid);
+        if( assignInterpNeighbours==interpolateInterpNeighbours ||
+                assignInterpNeighbours==defaultAssignInterpNeighbours )
+        {
+      // --- Interpolate interp neighbours *new* June 10, 2022
+            if( !dbase.has_key("interpNeighbours") )
+            {
+                AssignInterpNeighbours & interpNeighbours = dbase.put<AssignInterpNeighbours>("interpNeighbours");
+                interpNeighbours.setAssignmentType( AssignInterpNeighbours::interpolateInterpolationNeighbours );
 
-        u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t,bcParams);
+        // Interpolation width: This could potentially be 1 less than the normal interp width: 
+                const int interpolationWidth = orderOfAccuracy+1;  
+                interpNeighbours.setInterpolationWidth( interpolationWidth );
+            }   
+
+            AssignInterpNeighbours & interpNeighbours = dbase.get<AssignInterpNeighbours>("interpNeighbours");
+
+            const int numberOfComponents=1;  // ** FIX ME **
+            Range C = numberOfComponents;
+
+      // We could pass the TZ function for checking errors 
+            OGFunction* pExact = NULL; // twilightZone ? dbase.get<OGFunction* >("tz") : NULL;
+
+      // printf("++++ CgWave::applyBC: interpolate Interpolation Neighbours at t=%9.3\n",t);
+
+            interpNeighbours.assignInterpolationNeighbours( u, C, pExact, t  );
+        }
+        else
+        {
+      // -- extrapolate interpolation neighbours
+            assert( assignInterpNeighbours==extrapolateInterpNeighbours );
+
+            u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t,bcParams);
+        }
     }
-    
-/* -----
-      if( boundaryCondition!=BCTypes::evenSymmetry && (orderOfAccuracy==4 || ad4!=0.) )
-      { // extrapolate 2nd ghostline for 4th order when the grid only supports second order
-      if( secondOrderGrid )
-      {
-      bcParams.ghostLineToAssign=2;
-      bcParams.orderOfExtrapolation=4;
-      u.applyBoundaryCondition(0,BCTypes::extrapolate,BCTypes::allBoundaries,0.,t,bcParams);
-   // also extrapolate unused points next to interpolation points -- this allows us to
-   // avoid making a grid with 2 lines of interpolation.
-      u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours);
-      }
-      }
-      ---- */
-        
+
+
   // ------ Zero out unused ghost points -----
   // May be needed for CgWaveHoltz and PETSc solver 
   // Do we need to use Overture's sero put unused to get other unused points ??

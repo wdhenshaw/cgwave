@@ -3,7 +3,7 @@
 # 
 #     cgwave gaussian.cmd -g=<grid-name> -x0=<f> -y0=<f> -omega=<f> -tol=<f> -tp=<f> ...
 #                         -kx=<f> -ky=<f> -kz=<f> -forcing=[gaussian|sine] -upwind=[0|1] -imode=[0|1] 
-#                         -bcApproach=[cbc|lcbc|oneSided] -go=[go|og|halt]
+#                         -bcApproach=[cbc|lcbc|oneSided] -meApproach=[std,ha] -rectangular=[implicit|explicit] -go=[go|og|halt]
 #
 #   -imode=1 : do not wait in cgWave
 #
@@ -14,15 +14,18 @@ $upwind=1; # new way
 $tf=5.; $tp=.5; $imode=0; 
 $kx=1; $ky=1; $kz=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$meApproach="std"; # or "ha"
 $matlab="cgWave"; $show="gaussian.show"; 
 $cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1; 
+$rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat rectangular grids explicitly
 $orderInTime=-1;  # -1 = use default
+$chooseImplicitTimeStepFromCFL=1; 
 GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"numPeriods=i"=>\$numPeriods,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"ad4=f"=>\$ad4,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"tf=f"=>\$tf,"iMode=i"=>\$imode,\
             "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,\
             "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,\
             "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f"=>\$amp,"show=s"=>\$show,"upwind=i"=>\$upwind,\
-            "debug=i"=>\$debug,"bcApproach=s"=>\$bcApproach );
+            "debug=i"=>\$debug,"bcApproach=s"=>\$bcApproach,"meApproach=s"=>\$meApproach,"rectangular=s"=>\$rectangular );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -35,6 +38,8 @@ $ts
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
 dtMax $dtMax
+if( $rectangular eq "explicit" ){ $chooseImplicitTimeStepFromCFL=0; }
+choose implicit dt from cfl $chooseImplicitTimeStepFromCFL 
 cfl $cfl
 interactiveMode $imode 
 debug $debug
@@ -48,6 +53,14 @@ if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
 $cmd
 # -- 
 bc=$bc
+$cmd="#";
+if( $meApproach eq "std" ){ $cmd="standard modified equation"; }
+if( $meApproach eq "ha" ){ $cmd="hierarchical modified equation"; }
+$cmd
+#
+if( $ts eq "implicit" ){ $cmd="choose grids for implicit\n  rectangular=$rectangular\n done"; }else{ $cmd="#"; }
+$cmd
+#
 #
 if( $ad4>0. ){ $upwind=1; }# for backward compatibility
 upwind dissipation $upwind

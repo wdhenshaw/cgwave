@@ -10,6 +10,7 @@
 #include "LoadBalancer.h"
 #include "gridFunctionNorms.h"
 #include "OGPolyFunction.h"
+#include "ProcessorInfo.h"
 
 
 #define FOR_3(i1,i2,i3,I1,I2,I3) for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  
@@ -50,7 +51,7 @@ extern "C"
             const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
             const int&nd4a,const int&nd4b,
             const int&mask,const real&xy, const real&rx,    
-            const real&um, const real&u, real&un, const real&f, const real&fa, const real& v, const real& vh,
+            const real&um, const real&u, real&un, const real&f, const real&fa, const real& v, const real& vh, real & lapCoeffPtr,
             const int&bc, const real & frequencyArray, const int&ipar, const real&rpar, int&ierr );
 
 }
@@ -92,14 +93,16 @@ advance( int it )
     Real & dtMax                      = dbase.get<Real>("dtMax"); 
 
     const int & upwind                = dbase.get<int>("upwind");
-  // real & ad4                        = dbase.get<real>("ad4"); // coeff of the artificial dissipation. **OLD**
+    const int & implicitUpwind        = dbase.get<int>("implicitUpwind");
+
     const int & dissipationFrequency  = dbase.get<int>("dissipationFrequency");
   // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
   //                      false=compute Ut inline in Gauss-Seidel fashion  
     int & preComputeUpwindUt = dbase.get<int>("preComputeUpwindUt");
-
+                                                
 
     real & dt                         = dbase.get<real>("dt");
+    RealArray & gridCFL               = dbase.get<RealArray>("gridCFL");
     const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
     const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");
     int & interactiveMode             = dbase.get<int>("interactiveMode");
@@ -135,6 +138,7 @@ advance( int it )
     const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep");
 
     const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+    const int & modifiedEquationApproach             = dbase.get<int>("modifiedEquationApproach");
 
     IntegerArray & gridIsImplicit     = dbase.get<IntegerArray>("gridIsImplicit");
     const RealArray & bImp            = dbase.get<RealArray>("bImp");
@@ -156,6 +160,41 @@ advance( int it )
     
     BCTypes::BCNames boundaryCondition=BCTypes::evenSymmetry; 
   // BCTypes::BCNames boundaryCondition=BCTypes::dirichlet;
+
+    Index I1,I2,I3;
+
+    if( modifiedEquationApproach==1 )
+    {
+    // -- We compute and save the coefficients in the Laplacian for the hierachical approach --
+
+        if( orderOfAccuracy!=orderOfAccuracyInTime )
+        {
+            printF("ERROR: modified equation hierachical scheme currently needs orderOfAccuracy=orderOfAccuracyInTime,\n");
+            printF("   *but*  orderOfAccuracy=%d, orderOfAccuracyInTime=%d\n",orderOfAccuracy,orderOfAccuracyInTime);
+            OV_ABORT("error");
+        }
+        
+        if( !dbase.has_key("lapCoeff") )
+        {
+            RealArray *& lapCoeff = dbase.put<RealArray*>("lapCoeff");
+            lapCoeff = new RealArray[cg.numberOfComponentGrids()];            // ***** DELETE ME *****
+      // 2D: c200, c110, c020, c100, c010
+      // 3D: c200, c020, c002, c110, c101, c011, c100, c010, c001
+            const int numCoeff = cg.numberOfDimensions()==2 ? 5 : 9;    
+            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+            {
+                lapCoeff[grid]=NULL;
+                const bool isRectangular = cg[grid].isRectangular();
+                if( !isRectangular )
+                {
+                    getIndex(cg[grid].dimension(),I1,I2,I3);
+                    lapCoeff[grid].redim(I1,I2,I3,numCoeff);
+                    lapCoeff[grid]=-1.; // this means the coefficients have not yet been set
+                }
+            }
+        }
+    }
+    RealArray *lapCoeff = modifiedEquationApproach==0 ? NULL : dbase.get<RealArray*>("lapCoeff");
 
     real t=0.;
   // real dtSquared = SQR(dt);
@@ -186,7 +225,7 @@ advance( int it )
     }
 
     
-    Index I1,I2,I3;
+
 
   // estimated number of time steps: (for output)
   // int numberOfTimeSteps=int( tFinal/dt+.5);
@@ -634,9 +673,9 @@ advance( int it )
               const int useUpwindDissipation = upwind;  
        // const int useUpwindDissipation = ad4>0.;  // ** OLD **
     
-       // useUpwindDissipation : true if grid is implicit AND upwind dissipation in ON 
+       // useUpwindDissipation : true if grid is implicit AND upwind dissipation in ON AND implicitUpwind=1
               int useImplicitUpwindDissipation=false;
-              if( gridIsImplicit(grid) && upwind )
+              if( gridIsImplicit(grid) && upwind && implicitUpwind )
                   useImplicitUpwindDissipation=true;
     
     
@@ -660,7 +699,7 @@ advance( int it )
         // Note: Add upwinding at least 2 steps in a row 
                 bool startUpwinding = (takeForwardInitialStep && step>1) || (!takeForwardInitialStep && step>0); 
                 if( startUpwinding && useUpwindDissipation &&
-               !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added added with option=0 below
+               !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added with option=0 below
                               ( (step % dissipationFrequency)==0 ) ||
                               ( (step % dissipationFrequency)==1 ) )
                 {
@@ -707,7 +746,8 @@ advance( int it )
                                                 numberOfFrequencies,           // ipar[14]
                                                 adjustOmega,
                                                 solveHelmholtz,                // ipar[16]
-                                                adjustHelmholtzForUpwinding    // ipar[17]
+                                                adjustHelmholtzForUpwinding,   // ipar[17]
+                                                modifiedEquationApproach      // ipar[18]
                                                                         };  //
                         real dx[3]={1.,1.,1.};
                         if( isRectangular )
@@ -729,6 +769,7 @@ advance( int it )
                         rpar[13]=bImp(1);
                         rpar[14]=bImp(2);
                         rpar[15]=bImp(3);
+                        rpar[16]=gridCFL(grid);
                         intArray & mask = mg.mask();
                         OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
                         int *maskptr = maskLocal.getDataPointer(); 
@@ -784,7 +825,14 @@ advance( int it )
                             { // --- Pointer to current Helmholtz solution ----
                                 vhptr = vOldLocal.getDataPointer(); 
                             }
+                            real *lapCoeffptr= vptr;
+                            if( modifiedEquationApproach==1 && !isRectangular )
+                            {
+                                assert( lapCoeff !=NULL );
+                                lapCoeffptr = lapCoeff[grid].getDataPointer();
+                            }
                             int ierr;
+                            Real cyclesStart = ProcessorInfo::getCycles();
                             advWave(mg.numberOfDimensions(),
                                             I1.getBase(),I1.getBound(),I2.getBase(),I2.getBound(),I3.getBase(),I3.getBound(),
                                             uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
@@ -795,7 +843,12 @@ advance( int it )
                                             *faptr,  // forcing at multiple time levels 
                                             *vptr,   // to hold uDot 
                                             *vhptr,  // Pointer to current Helmholtz solution
+                                            *lapCoeffptr, // coefficients in Laplacian for HA scheme are stored here
                                             mg.boundaryCondition(0,0), frequencyArray(0), ipar[0], rpar[0], ierr );
+                            Real cycles = ProcessorInfo::getCycles() - cyclesStart;
+                            const IntegerArray & gid = mg.gridIndexRange();
+                            Real numGridPoints = (gid(1,0)-gid(0,0)+1)*(gid(1,1)-gid(0,1)+1)*(gid(1,2)-gid(0,2)+1);
+                            printF("advWave: grid=%d: numGridPoints=%9.3e, cycles/grid-point = %9.2e\n",grid,numGridPoints,cycles/numGridPoints);
                             if( false && option==0 )
                             {
                                 ::display(uDot,"v=Lap2h(u)","%8.2e ");
@@ -874,7 +927,8 @@ advance( int it )
                                             numberOfFrequencies,           // ipar[14]
                                             adjustOmega,
                                             solveHelmholtz,                // ipar[16]
-                                            adjustHelmholtzForUpwinding    // ipar[17]
+                                            adjustHelmholtzForUpwinding,   // ipar[17]
+                                            modifiedEquationApproach      // ipar[18]
                                                                     };  //
                     real dx[3]={1.,1.,1.};
                     if( isRectangular )
@@ -896,6 +950,7 @@ advance( int it )
                     rpar[13]=bImp(1);
                     rpar[14]=bImp(2);
                     rpar[15]=bImp(3);
+                    rpar[16]=gridCFL(grid);
                     intArray & mask = mg.mask();
                     OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
                     int *maskptr = maskLocal.getDataPointer(); 
@@ -951,7 +1006,14 @@ advance( int it )
                         { // --- Pointer to current Helmholtz solution ----
                             vhptr = vOldLocal.getDataPointer(); 
                         }
+                        real *lapCoeffptr= vptr;
+                        if( modifiedEquationApproach==1 && !isRectangular )
+                        {
+                            assert( lapCoeff !=NULL );
+                            lapCoeffptr = lapCoeff[grid].getDataPointer();
+                        }
                         int ierr;
+                        Real cyclesStart = ProcessorInfo::getCycles();
                         advWave(mg.numberOfDimensions(),
                                         I1.getBase(),I1.getBound(),I2.getBase(),I2.getBound(),I3.getBase(),I3.getBound(),
                                         uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
@@ -962,7 +1024,12 @@ advance( int it )
                                         *faptr,  // forcing at multiple time levels 
                                         *vptr,   // to hold uDot 
                                         *vhptr,  // Pointer to current Helmholtz solution
+                                        *lapCoeffptr, // coefficients in Laplacian for HA scheme are stored here
                                         mg.boundaryCondition(0,0), frequencyArray(0), ipar[0], rpar[0], ierr );
+                        Real cycles = ProcessorInfo::getCycles() - cyclesStart;
+                        const IntegerArray & gid = mg.gridIndexRange();
+                        Real numGridPoints = (gid(1,0)-gid(0,0)+1)*(gid(1,1)-gid(0,1)+1)*(gid(1,2)-gid(0,2)+1);
+                        printF("advWave: grid=%d: numGridPoints=%9.3e, cycles/grid-point = %9.2e\n",grid,numGridPoints,cycles/numGridPoints);
                         if( false && option==0 )
                         {
                             ::display(uDot,"v=Lap2h(u)","%8.2e ");
@@ -1113,6 +1180,8 @@ advance( int it )
     
     timing(totalTime) += getCPU()-time0;
             
+    saveSequencesToShowFile(); // June 10, 2020
+
     if( !solveHelmholtz )
         printStatistics();
     

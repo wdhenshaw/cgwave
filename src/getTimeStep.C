@@ -33,16 +33,53 @@ getTimeStep()
 
   printF("CgWave::getTimeStep: c=%g, cfl=%g, timeSteppingMethod=%d\n",c,cfl,(int)timeSteppingMethod);
 
+  Real stabilityBound=1.; 
+  if( orderOfAccuracyInTime==2 )
+  {
 
+    // if( orderOfAccuracy==2 && useUpwindDissipation )
+    // {
+    //   stabilityBound=.7; // *************** TEMPORARY: FD22s needs cfl=.7 for some reason ... FIX ME 
+    // }
+
+    if( orderOfAccuracy==4  )
+    {
+      // Scheme FD24 has a smaller stability region
+      stabilityBound = sqrt(3)/2.; // = .8660... check me 
+    }
+    else if( orderOfAccuracy==6 )
+    {
+      stabilityBound = .6; // FIX ME -- JUST A GUESS
+    }
+    else if( orderOfAccuracy==8 )
+    {
+      stabilityBound = .4; // FIX ME -- JUST A GUESS
+    }      
+    else if( orderOfAccuracy!=2 )
+    {
+      printF("cgWave::getTimeStep: ERROR: unexpected orderOfAccuracy=%d\n",orderOfAccuracy);
+      OV_ABORT("ERROR");
+    }
+  }
 
   dt              = REAL_MAX;   // actual time-step
   Real dtExplicit = REAL_MAX;   // dtExplicit : time-step when all grids are treated explicitly
   
   int numberOfDimensions = cg.numberOfDimensions();
 
-  // Holds min/max grid spacing for eacg grid 
+  // Holds min/max grid spacing for each grid 
   RealArray & dxMinMax = dbase.get<RealArray>("dxMinMax");
   dxMinMax.redim(cg.numberOfComponentGrids(),2);
+
+  // gridCFL(grid) = effective CFL number for each grid 
+  if( !dbase.has_key("gridCFL") )
+  {
+    RealArray & gridCFL = dbase.put<RealArray>("gridCFL");
+    gridCFL.redim(cg.numberOfComponentGrids());
+    gridCFL=-1.;
+
+  }
+  RealArray & gridCFL = dbase.get<RealArray>("gridCFL");
 
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
   {
@@ -65,6 +102,8 @@ getTimeStep()
 
       dxMinMax(grid,0)= numberOfDimensions == 2? min(dx[0],dx[1]) : min(dx[0],dx[1],dx[2]);
       dxMinMax(grid,1)= numberOfDimensions == 2? min(dx[0],dx[1]) : max(dx[0],dx[1],dx[2]);
+
+      gridCFL(grid)=dtGrid; // adjusted below 
     }
     else
     {
@@ -178,40 +217,18 @@ getTimeStep()
 
         dtGrid = (cfl/c) * dxMin;
 
+        gridCFL(grid)=dtGrid; // adjusted below 
+
         printF("getTimeStep: grid=%d, dxMin=%9.2e, dxMax=%9.2e, dt=%9.3e\n",grid,dxMin,dxMax,dtGrid);        
       }
         
-    }
+    } // end curvilinear grid
 
     if( orderOfAccuracyInTime==2 )
     {
-      Real stabilityBound=1.; 
-
-      // if( orderOfAccuracy==2 && useUpwindDissipation )
-      // {
-      //   stabilityBound=.7; // *************** TEMPORARY: FD22s needs cfl=.7 for some reason ... FIX ME 
-      // }
-
-      if( orderOfAccuracy==4  )
-      {
-        // Scheme FD24 has a smaller stability region
-        stabilityBound = sqrt(3)/2.; // = .8660... check me 
-      }
-      else if( orderOfAccuracy==6 )
-      {
-        stabilityBound = .6; // FIX ME -- JUST A GUESS
-      }
-      else if( orderOfAccuracy==8 )
-      {
-        stabilityBound = .4; // FIX ME -- JUST A GUESS
-      }      
-      else if( orderOfAccuracy!=2 )
-      {
-        printF("cgWave::getTimeStep: ERROR: unexpected orderOfAccuracy=%d\n",orderOfAccuracy);
-        OV_ABORT("ERROR");
-      }
+      // ----- order in time =2 may have a smaller stability bound ----
       dtGrid *= stabilityBound; 
-
+      gridCFL(grid) *= stabilityBound;
     }    
 
     dtExplicit = min(dtExplicit,dtGrid);
@@ -238,12 +255,18 @@ getTimeStep()
          cfl,dtExplicit,dt,dt/dtExplicit);
     if( chooseImplicitTimeStepFromCFL )
     {
-      // --- choose the implciit dt based on the CFL parameter (which can be large) ----
+      // --- choose the implicit dt based on the CFL parameter (which can be large) ----
       dt=dtExplicit;
       printF("cgWave:chooseTimeStep: chooseImplicitTimeStepFromCFL : setting dt=%9.2e, cfl=%g\n",dt,cfl);
     }
   }
 
+  // Save the grid CFL number (used for variable coefficient upwinding)
+  gridCFL = cfl*( dt/gridCFL );   //  **check me : should be adjust this if dtMax is chosen ?? ++++++++++++++++++++=
+  for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+  {
+    printF("getTimeStep: grid=%d: gridCFL=%10.2e\n",grid,gridCFL(grid));
+  }
 
 
   return 0;

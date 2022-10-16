@@ -28,12 +28,23 @@ else
   PETSC_LIBS = 
 endif
 
-
+# optimization flag:
+#  -Ofast = -O3 + disregards strict standard compliance 
+# OPTFLAG = -O
+OPTFLAG = -O3
+# OPTFLAG = -Ofast
 
 
 CCFLAGS = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG)
 CCFLAGS += $(PETSC_INCLUDE)
 CFLAGS = $(OV_CC_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include
+
+# Some C++ files we compile optimized by default
+ifeq ($(COMPILE),dbg)
+  CCFLAGSO = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG) -g -w
+else
+  CCFLAGSO = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG) $(OPTFLAG)
+endif
 
 # Fortran flags, not optimzed unless COMPILE set to opt
 FFLAGS  = $(OV_FORTRAN_FLAGS) $(OV_AUTO_DOUBLE_FLAGS) 
@@ -48,13 +59,13 @@ FFLAGSG = $(OV_FORTRAN_FLAGS) $(OV_AUTO_DOUBLE_FLAGS) -g
 FFLAGSSO = $(OV_FORTRAN_FLAGS)
 
 ifeq ($(COMPILE),opt)
-  CCFLAGS += -w -O 
-  FFLAGS  += -O
-  FFLAGSSO += -O
+  CCFLAGS += $(OPTFLAG)
+  FFLAGS  += $(OPTFLAG)
+  FFLAGSSO += $(OPTFLAG)
 else
 	ifeq ($(COMPILE),dbg)
     # debug:
-    CCFLAGS += -w -g
+    CCFLAGS += -w -g -finit-real=snan
     FFLAGS  += -g
     FFLAGSO += -g
     FFLAGSSO += g   
@@ -62,9 +73,9 @@ else
     # default case:
     CCFLAGS += -w -g 
     FFLAGS  += -g 
-    FFLAGSO += -O 
+    FFLAGSO += $(OPTFLAG) 
     FFLAGSG += -g
-    FFLAGSSO += O   
+    FFLAGSSO += $(OPTFLAG)   
   endif
 endif
 
@@ -134,7 +145,9 @@ OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/u
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
        obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
        obj/takeFirstStep.o obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o \
-       obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o
+       obj/LCBC_corner.o obj/LCBC_vertex.o obj/LCBC_data.o \
+       obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o \
+       obj/rjbesl.o obj/rybesl.o
 
 # Fortran 90 (FN) object files: 
 FNOBJO = obj/advWave.o\
@@ -145,7 +158,11 @@ FNOBJO = obj/advWave.o\
          obj/bcOptWave.o obj/getWaveDerivatives.o obj/hierDeriv.o
 
 # New high-order accurate modified equation versions
-FNOBJO += obj/advWaveME.o obj/advWaveME2dOrder6r.o obj/advWaveME2dOrder8r.o  obj/advWaveME2dOrder6c.o obj/advWaveME2dOrder8c.o     
+FNOBJO += obj/advWaveME.o \
+          obj/advWaveME2dOrder2r.o obj/advWaveME2dOrder2c.o  obj/advWaveME3dOrder2r.o obj/advWaveME3dOrder2c.o   \
+          obj/advWaveME2dOrder4r.o obj/advWaveME2dOrder4c.o  obj/advWaveME3dOrder4r.o obj/advWaveME3dOrder4c.o   \
+          obj/advWaveME2dOrder6r.o obj/advWaveME2dOrder6c.o  obj/advWaveME3dOrder6r.o obj/advWaveME3dOrder6c.o   \
+          obj/advWaveME2dOrder8r.o obj/advWaveME2dOrder8c.o  obj/advWaveME3dOrder8r.o obj/advWaveME3dOrder8c.o     
 
 # OBJO = obj/advWave.o\
 #         obj/advWave2dOrder2r.o obj/advWave2dOrder2c.o obj/advWave2dOrder4r.o obj/advWave2dOrder4c.o 
@@ -200,18 +217,19 @@ testLCBC: $(testLCBCFiles); $(CXX) $(CCFLAGS) -o bin/testLCBC $(testLCBCFiles) $
 
 obj/testLCBC.o : src/testLCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
-# --- LCBC files ---
-obj/LCBC.o : src/LCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
-obj/LCBC1.o : src/LCBC1.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/LCBC2.o : src/LCBC2.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/LCBC_corner.o : src/LCBC_corner.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
-obj/LCBC_vertex.o : src/LCBC_vertex.C; $(CXX) $(CCFLAGS) -o $*.o -c $< 
-obj/numericalDeriv.o : src/numericalDeriv.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/utility.o : src/utility.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/LCBC_TzFnPointers.o : src/LCBC_TzFnPointers.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/LCBC_annulusMap.o : src/LCBC_annulusMap.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+# --- LCBC files - compile opt by default  ---
+obj/LCBC.o : src/LCBC.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
+obj/LCBC1.o : src/LCBC1.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/LCBC2.o : src/LCBC2.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/LCBC_corner.o : src/LCBC_corner.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
+obj/LCBC_vertex.o : src/LCBC_vertex.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
+obj/LCBC_data.o : src/LCBC_data.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
+obj/numericalDeriv.o : src/numericalDeriv.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/utility.o : src/utility.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/LCBC_TzFnPointers.o : src/LCBC_TzFnPointers.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/LCBC_annulusMap.o : src/LCBC_annulusMap.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 
-obj/initializeLCBC.o : src/initializeLCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/initializeLCBC.o : src/initializeLCBC.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 
 # # ----- test LCBC class : local compatibility boundary conditions -----
 # testLCBCFiles = obj/testLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o
@@ -284,14 +302,17 @@ src/advWaveME2dOrder2r.f90 : src/advWaveME.f90
 src/advWaveME3dOrder2r.f90 : src/advWaveME.f90
 src/advWaveME2dOrder2c.f90 : src/advWaveME.f90
 src/advWaveME3dOrder2c.f90 : src/advWaveME.f90
+
 src/advWaveME2dOrder4r.f90 : src/advWaveME.f90
 src/advWaveME3dOrder4r.f90 : src/advWaveME.f90
 src/advWaveME2dOrder4c.f90 : src/advWaveME.f90
 src/advWaveME3dOrder4c.f90 : src/advWaveME.f90
+
 src/advWaveME2dOrder6r.f90 : src/advWaveME.f90
 src/advWaveME3dOrder6r.f90 : src/advWaveME.f90
 src/advWaveME2dOrder6c.f90 : src/advWaveME.f90
 src/advWaveME3dOrder6c.f90 : src/advWaveME.f90
+
 src/advWaveME2dOrder8r.f90 : src/advWaveME.f90
 src/advWaveME3dOrder8r.f90 : src/advWaveME.f90
 src/advWaveME2dOrder8c.f90 : src/advWaveME.f90
@@ -336,6 +357,9 @@ obj/getInitialConditions.o : src/getInitialConditions.C src/CgWave.h; $(CXX) $(C
 obj/saveShow.o : src/saveShow.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getErrors.o : src/getErrors.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/takeFirstStep.o : src/takeFirstStep.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
+
+obj/rjbesl.o : src/rjbesl.f; $(FC) $(FFLAGSO) -o $@ -c $<  
+obj/rybesl.o : src/rybesl.f; $(FC) $(FFLAGSO) -o $@ -c $<  
 
 # For regression testing:
 obj/checkCheckFiles.o : src/checkCheckFiles.C; $(CXX) $(CCFLAGS) -o $*.o -c $<

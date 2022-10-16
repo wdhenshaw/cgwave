@@ -7,6 +7,9 @@
 #
 clear;
 
+maxOrder:=8: maxDeriv:=6;
+dw := array(0..maxOrder,1..maxDeriv):
+
 # symbol of dx^2 D+D- = - 4 sin^2(z/2)
 
 S := series( 4*(sin(z/2))^2, z=0, 24):
@@ -24,6 +27,13 @@ b3:=solve(coeff(f2s,z^6 )=0,b3);
 b4:=solve(coeff(f2s,z^8 )=0,b4);
 b5:=solve(coeff(f2s,z^10)=0,b5);
 
+dw[0,2]:=1;
+dw[1,2]:=-b1;
+dw[2,2]:= b2;
+dw[3,2]:=-b3;
+dw[4,2]:= b4;
+dw[5,2]:=-b5;
+
 # u.xxxx = (D+D-)^2( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
 printf("---------------- uxxxx u[4] ----------------\n");
 f2 := 1 - S^2/z^4*(1 + c1*S + c2*S^2 + c3*S^3+  c4*S^4 + c5*S^5  ):
@@ -35,6 +45,13 @@ c2:=solve(coeff(f2s,z^4 )=0,c2);
 c3:=solve(coeff(f2s,z^6 )=0,c3);
 c4:=solve(coeff(f2s,z^8 )=0,c4);
 c5:=solve(coeff(f2s,z^10)=0,c5);
+
+dw[0,4]:=1;
+dw[1,4]:=-c1;
+dw[2,4]:= c2;
+dw[3,4]:=-c3;
+dw[4,4]:= c4;
+dw[5,4]:=-c5;
 
 # u.xxxxxx = (D+D-)^3( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
 printf("---------------- uxxxxxx u[6]  ----------------\n");
@@ -50,6 +67,12 @@ c3:=solve(coeff(f2s,z^6 )=0,c3);
 c4:=solve(coeff(f2s,z^8 )=0,c4);
 c5:=solve(coeff(f2s,z^10)=0,c5);
 
+dw[0,6]:=1; 
+dw[1,6]:=-c1;
+dw[2,6]:= c2;
+dw[3,6]:=-c3;
+dw[4,6]:= c4;
+dw[5,6]:=-c5;
 
 # u.x = (D0)( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
 printf("---------------- ux u[1] ----------------\n");
@@ -64,6 +87,12 @@ c3:=solve(coeff(f2s,z^6 )=0,c3);
 c4:=solve(coeff(f2s,z^8 )=0,c4);
 c5:=solve(coeff(f2s,z^10)=0,c5);
 
+dw[0,1]:=1; 
+dw[1,1]:=-c1;
+dw[2,1]:= c2;
+dw[3,1]:=-c3;
+dw[4,1]:= c4;
+dw[5,1]:=-c5;
 
 # u.xxx = (D0 D+D-)( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
 printf("---------------- uxxx u[3] ----------------\n");
@@ -78,7 +107,14 @@ c3:=solve(coeff(f2s,z^6 )=0,c3);
 c4:=solve(coeff(f2s,z^8 )=0,c4);
 c5:=solve(coeff(f2s,z^10)=0,c5);
 
-# u.xxx = (D0 (D+D-)^2)( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
+dw[0,3]:=1; 
+dw[1,3]:=-c1;
+dw[2,3]:= c2;
+dw[3,3]:=-c3;
+dw[4,3]:= c4;
+dw[5,3]:=-c5;
+
+# u.xxxxx = (D0 (D+D-)^2)( I - c1*dx^2*D+D- + c2*(dx^2*D+D-)^2 -c3*(dx^2*D+D-)^2 + ...)
 printf("---------------- uxxxxx  u[5] ----------------\n");
 c1:='c1': c2:='c2': c3:='c3': c4:='c4': c5:='c5': 
 f2 := 1 - (S1*S^2/(2*z^5))*(1 + c1*S + c2*S^2 + c3*S^3+  c4*S^4 + c5*S^5  ):
@@ -91,5 +127,19 @@ c3:=solve(coeff(f2s,z^6 )=0,c3);
 c4:=solve(coeff(f2s,z^8 )=0,c4);
 c5:=solve(coeff(f2s,z^10)=0,c5);
 
+dw[0,5]:=1; 
+dw[1,5]:=-c1;
+dw[2,5]:= c2;
+dw[3,5]:=-c3;
+dw[4,5]:= c4;
+dw[5,5]:=-c5;
+
+for d from 1 to 6 do
+  printf("# Weights in deriv %d\n",d);
+  for ord from 0 to 5 do
+    printf("dw[%d,%d]:=%s; ",ord,d,convert(dw[ord,d],string));
+  end do;
+  printf("\n");
+end do;
 
 

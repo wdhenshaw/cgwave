@@ -209,13 +209,11 @@
   !   ORDER=6 : BC's not implemented yet
 
   ! ORDER 8 -- needed for upwinding 
-  ! buildFile(advWave3dOrder8r,3,8,rectangular)
-  ! buildFile(advWave3dOrder8c,3,8,curvilinear)
 
 
 
 
-            subroutine advWave( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+            subroutine advWave( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
 !======================================================================
 !   Advance a time step for Maxwells eqution
 !     OPTIMIZED version for rectangular grids.
@@ -234,6 +232,7 @@
             real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
             real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
             real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+            real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds current Helmholtz solutions
 
             real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
             real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
@@ -248,7 +247,7 @@
             
 !     ---- local variables -----
             integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime
-            integer addForcing,orderOfDissipation,option,addUpwinding
+            integer addForcing,orderOfDissipation,option,addUpwinding,modifiedEquationApproach
       ! integer useImplicitUpwindDissipation,useUpwindDissipation
             integer useWhereMask,solveForE,solveForH,grid
             integer ex,ey,ez, hx,hy,hz
@@ -260,11 +259,12 @@
 
 
       ! write(*,*) 'Inside advWave...'
-
-            option             = ipar( 0)
-            gridType           = ipar( 2)
-            orderOfAccuracy    = ipar( 3)
-            orderInTime        = ipar( 4)
+              
+            option                    = ipar( 0)
+            gridType                  = ipar( 2)
+            orderOfAccuracy           = ipar( 3)
+            orderInTime               = ipar( 4)
+            modifiedEquationApproach  = ipar(18)
 
       ! useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
       ! useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for impliciit time-stepping 
@@ -278,83 +278,214 @@
 
             if( orderOfAccuracy.eq.2 )then
 
-                if( nd.eq.2 .and. gridType.eq.rectangular ) then
-                    call advWave2dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                else if( nd.eq.2 .and. gridType.eq.curvilinear ) then
-                    call advWave2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                else if( nd.eq.3 .and. gridType.eq.rectangular ) then
-                    call advWave3dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                else if( nd.eq.3 .and. gridType.eq.curvilinear ) then
-                    call advWave3dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                else
-                    stop 2271
+                if( modifiedEquationApproach.eq.0 .or. addUpwinding.ne.0 )then
+          ! standard ME scheme, or upwind stage
+                    if( nd.eq.2 .and. gridType.eq.rectangular )then
+                        call advWave2dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+                        call advWave2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+                        call advWave3dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+                        call advWave3dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else
+                      stop 8843
+                    end if
+                else if( modifiedEquationApproach.eq.1 ) then
+          ! new Hierarchical scheme
+                    if( nd.eq.2 .and. gridType.eq.rectangular )then
+                        call advWaveME2dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+                        call advWaveME2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+                        call advWaveME3dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+                        call advWaveME3dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else
+                      stop 8843
+                    end if          
+                else  
+                    write(*,'("Unknown modifiedEquationApproach=",i6)') modifiedEquationApproach
+                    stop 1111
                 end if
 
+        ! if( nd.eq.2 .and. gridType.eq.rectangular ) then
+        !   call advWave2dOrder2r( ARGLIST() )
+        ! else if( nd.eq.2 .and. gridType.eq.curvilinear ) then
+        !   call advWave2dOrder2c( ARGLIST() )
+        ! else if( nd.eq.3 .and. gridType.eq.rectangular ) then
+        !   call advWave3dOrder2r( ARGLIST() )
+        ! else if( nd.eq.3 .and. gridType.eq.curvilinear ) then
+        !   call advWave3dOrder2c( ARGLIST() )
+        ! else
+        !   stop 2271
+        ! end if
+
             else if( orderOfAccuracy.eq.4 ) then
-                if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    call advWave2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                else if(nd.eq.2 .and. gridType.eq.curvilinear )then
-                    call advWave2dOrder4c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-                    call advWave3dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
-                    call advWave3dOrder4c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-              else
-                  stop 8843
-              end if
+
+                if( modifiedEquationApproach.eq.0 .or. addUpwinding.ne.0 )then
+          ! standard ME scheme, or upwind stage
+                    if( nd.eq.2 .and. gridType.eq.rectangular )then
+                        call advWave2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+                        call advWave2dOrder4c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+                        call advWave3dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+                        call advWave3dOrder4c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else
+                      stop 8843
+                    end if
+                else if( modifiedEquationApproach.eq.1 ) then
+          ! new Hierarchical scheme
+                    if( nd.eq.2 .and. gridType.eq.rectangular )then
+                        call advWaveME2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+                        call advWaveME2dOrder4c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+                        call advWaveME3dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+                        call advWaveME3dOrder4c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else
+                      stop 8843
+                    end if          
+                else  
+                    write(*,'("Unknown modifiedEquationApproach=",i6)') modifiedEquationApproach
+                    stop 1111
+                end if
 
             else if( orderOfAccuracy.eq.6 ) then
 
-                if( nd.eq.2 .and. gridType.eq.rectangular )then
-
-                    if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
-            ! new ME scheme (note: upwinding is still added in old scheme)
-                        call advWaveME2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                if( modifiedEquationApproach.eq.0 .or. addUpwinding.ne.0 )then
+          ! standard ME scheme, or upwind stage
+                    if( nd.eq.2 .and. gridType.eq.rectangular )then
+                        call advWave2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+                        call advWave2dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+                        call advWave3dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+                        call advWave3dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
                     else
-                        call advWave2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                      stop 8843
                     end if
-                    
-                else if(nd.eq.2 .and. gridType.eq.curvilinear )then
-                  if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
-            ! new ME scheme
-                        call advWaveME2dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                else if( modifiedEquationApproach.eq.1 ) then
+          ! new Hierarchical scheme
+                    if( nd.eq.2 .and. gridType.eq.rectangular )then
+                        call advWaveME2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+                        call advWaveME2dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+                        call advWaveME3dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+                        call advWaveME3dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
                     else
-                        call advWave2dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                      stop 8843
                     end if          
+                else  
+                    write(*,'("Unknown modifiedEquationApproach=",i6)') modifiedEquationApproach
+                    stop 1111
+                end if
+
+
+       !  if( nd.eq.2 .and. gridType.eq.rectangular )then
+
+       !    if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
+       !      ! new ME scheme (note: upwinding is still added in old scheme)
+       !      call advWaveME2dOrder6r( ARGLIST() )
+       !    else
+       !      call advWave2dOrder6r( ARGLIST() )
+       !    end if
                     
-                else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-                    call advWave3dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
-                    call advWave3dOrder6c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-              else
-                  stop 8843
-              end if
+       !  else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+
+       !   if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
+       !      ! new ME scheme
+       !      call advWaveME2dOrder6c( ARGLIST() )
+       !    else
+       !      call advWave2dOrder6c( ARGLIST() )
+       !    end if          
+                    
+       !  else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+
+       !   ! if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
+       !   !    ! new ME scheme
+       !   !    call advWaveME3dOrder6r( ARGLIST() )
+       !   !  else
+       !   !    call advWave23Order6r( ARGLIST() )
+       !   !  end if   
+
+       !    call advWave3dOrder6r( ARGLIST() )
+       !  else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+       !    ! if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
+       !    !   ! new ME scheme
+       !    !   call advWaveME3dOrder6c( ARGLIST() )
+       !    ! else
+       !    !   call advWave23Order6c( ARGLIST() )
+       !    ! end if           
+       !    call advWave3dOrder6c( ARGLIST() )
+
+       ! else
+       !   stop 8843
+       ! end if
 
             else if( orderOfAccuracy.eq.8 ) then
 
-                if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    if( addUpwinding==0 )then
-            ! new ME scheme
-                        call advWaveME2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+            if( modifiedEquationApproach.eq.0 .or. addUpwinding.ne.0 )then
+          ! standard ME scheme, or upwind stage
+                    if( nd.eq.2 .and. gridType.eq.rectangular )then
+                        call advWave2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+                        call advWave2dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+                        call advWave3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+                        call advWave3dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
                     else
-                        call advWave2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                      stop 8843
                     end if
-
-                else if(nd.eq.2 .and. gridType.eq.curvilinear )then
-                  if( addUpwinding==0 )then
-            ! new ME scheme
-                        call advWaveME2dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+                else if( modifiedEquationApproach.eq.1 ) then
+          ! new Hierarchical scheme
+                    if( nd.eq.2 .and. gridType.eq.rectangular )then
+                        call advWaveME2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+                        call advWaveME2dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+                        call advWaveME3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+                    else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+                        call advWaveME3dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
                     else
-                        call advWave2dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                    end if  
+                      stop 8843
+                    end if          
+                else  
+                    write(*,'("Unknown modifiedEquationApproach=",i6)') modifiedEquationApproach
+                    stop 1111
+                end if
 
-                else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-                    call advWave3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-                else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
-                    call advWave3dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
-              else
-                  stop 8843
-              end if
+
+       !  if( nd.eq.2 .and. gridType.eq.rectangular )then
+       !    if( addUpwinding==0 )then
+       !      ! new ME scheme
+       !      call advWaveME2dOrder8r( ARGLIST() )
+       !    else
+       !      call advWave2dOrder8r( ARGLIST() )
+       !    end if
+
+       !  else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+       !   if( addUpwinding==0 )then
+       !      ! new ME scheme
+       !      call advWaveME2dOrder8c( ARGLIST() )
+       !    else
+       !      call advWave2dOrder8c( ARGLIST() )
+       !    end if  
+
+       !  else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+       !    call advWave3dOrder8r( ARGLIST() )
+       !  else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+       !    call advWave3dOrder8c( ARGLIST() )
+       ! else
+       !   stop 8843
+       ! end if
 
 
 

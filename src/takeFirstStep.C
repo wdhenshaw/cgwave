@@ -253,7 +253,7 @@ takeFirstStep( int cur, real t )
                         w += 2.*uxx; 
                         if( numberOfDimensions==3 )
                         {
-                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,0,4,0,I1,I2,I3,C,t ); // u.zzzz
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,0,0,4,I1,I2,I3,C,t ); // u.zzzz
                             w += uxx;
                             e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,2,0,2,I1,I2,I3,C,t ); // u.xxzz
                             e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,0,2,2,I1,I2,I3,C,t ); // u.yyzz
@@ -336,7 +336,7 @@ takeFirstStep( int cur, real t )
                         w += 2.*uxx; 
                         if( numberOfDimensions==3 )
                         {
-                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,1,0,4,0,I1,I2,I3,C,t ); // u.zzzzt
+                            e.gd( uxx,xLocal,numberOfDimensions,isRectangular,1,0,0,4,I1,I2,I3,C,t ); // u.zzzzt
                             w += uxx;
                             e.gd( uxx,xLocal,numberOfDimensions,isRectangular,1,2,0,2,I1,I2,I3,C,t ); // u.xxzzt
                             e.gd( uyy,xLocal,numberOfDimensions,isRectangular,1,0,2,2,I1,I2,I3,C,t ); // u.yyzzt

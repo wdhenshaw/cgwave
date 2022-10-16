@@ -67,6 +67,10 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
   //                      false=compute Ut inline in Gauss-Seidel fashion  
   dbase.put<int>("preComputeUpwindUt")= false;  
+  dbase.put<int>("implicitUpwind") = false; // if true, include upwinding in implicit matrix when implicit time-stepping
+
+  // For upwind schemes with wider stencils we can extrap or interp unused points next to interpolation points 
+  dbase.put<AssignInterpolationNeighboursEnum>("assignInterpNeighbours")=defaultAssignInterpNeighbours;
 
   dbase.put<int>("computeErrors") = 1;                  // by default, compute errors for TZ or a known solution
   dbase.put<int>("applyKnownSolutionAtBoundaries") = 0; // by default, do NOT apply known solution at boundaries
@@ -82,6 +86,11 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("debug")=0;
 
   dbase.put<TimeSteppingMethodEnum>("timeSteppingMethod")=explicitTimeStepping;
+
+  // We have different versions of modified equation time-stepping
+  //   0 = standard
+  //   1 = hierachical (faster but more memory)
+  dbase.put<int>("modifiedEquationApproach")=0;
 
   // coefficients in implicit time-stepping  
   //  D+t D-t u =              c^2 Delta( cImp(1,0) *u^{n+1} + cImp(0,0) *u^n + cImp(-1,0)* u^{n-1} )   :  second-order coeff cImp(-1:1,0)
@@ -174,6 +183,11 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   realCompositeGridFunction *& ucg = dbase.put<realCompositeGridFunction*>("ucg");
   ucg = new realCompositeGridFunction[numberOfTimeLevelsStored];
+  for( int n=0; n<numberOfTimeLevelsStored; n++ )
+  {
+    ucg[n].setName("u");
+    ucg[n].setName("u",0);
+  }
  
   dbase.put<realCompositeGridFunction>("f");  // source term 
 
@@ -244,6 +258,10 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<aString>("nameOfShowFile")="cgWave.show"; // name of the show file
   dbase.put<Ogshow*>("showFile")      =NULL;
   dbase.put<int>("flushFrequency")    =10;  // number of solutions per sub-showFile
+  dbase.put<int>("numberOfSequences") =1;   // for sequences in the show file
+  dbase.put<int>("sequenceCount")     =0;   // for sequences in the show file
+  dbase.put<RealArray>("timeSequence");
+  dbase.put<RealArray>("sequence");
 
   // enum TimingEnum
   // { 
@@ -324,6 +342,11 @@ CgWave::
     delete [] dbase.get<Lcbc*>("LCBC");
   }
 
+  if( dbase.has_key("lapCoeff") )
+  { // coefficients in the Laplacian for HA scheme
+    delete [] dbase.get<RealArray*>("lapCoeff");
+  }
+
 }
 
 // ================================================================================================
@@ -359,6 +382,7 @@ int CgWave::initialize()
   const int & numberOfFrequencies  = dbase.get<int>("numberOfFrequencies");
   printF("CgWave::initialize and assign forcing... numberOfFrequencies=%d\n",numberOfFrequencies);
 
+  const int & modifiedEquationApproach = dbase.get<int>("modifiedEquationApproach");
 
   const int & addForcing = dbase.get<int>("addForcing");
   const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
@@ -371,6 +395,7 @@ int CgWave::initialize()
   const real & omega     = dbase.get<real>("omega");
   const real & cfl       = dbase.get<real>("cfl");
   const real & dt        = dbase.get<real>("dt");
+
 
   const int & orderOfAccuracy      = dbase.get<int>("orderOfAccuracy");
 
@@ -642,10 +667,13 @@ int CgWave::interactiveUpdate()
   RealArray & periodArray              = dbase.get<RealArray>("periodArray");  
 
   int & upwind                         = dbase.get<int>("upwind");
+  int & implicitUpwind                 = dbase.get<int>("implicitUpwind");
   real & ad4                           = dbase.get<real>("ad4"); // coeff of the artificial dissipation. (*old*)
   int & dissipationFrequency           = dbase.get<int>("dissipationFrequency");
   int & preComputeUpwindUt             = dbase.get<int>("preComputeUpwindUt");
   int & adjustHelmholtzForUpwinding    = dbase.get<int>("adjustHelmholtzForUpwinding");
+
+  int & modifiedEquationApproach      = dbase.get<int>("modifiedEquationApproach");
        
   int & computeErrors                  = dbase.get<int>("computeErrors");                         // by default, compute errors for TZ or a known solution
   int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
@@ -683,6 +711,8 @@ int CgWave::interactiveUpdate()
 
   InitialConditionOptionEnum & initialConditionOption = dbase.get<InitialConditionOptionEnum>("initialConditionOption");
 
+  AssignInterpolationNeighboursEnum & assignInterpNeighbours = 
+                             dbase.get<AssignInterpolationNeighboursEnum>("assignInterpNeighbours");
   const int & numberOfBCNames = dbase.get<int>("numberOfBCNames");
   aString *& bcNames = dbase.get<aString*>("bcNames");
 
@@ -707,7 +737,12 @@ int CgWave::interactiveUpdate()
 //   pulseInitialCondition
 // };
 
-  aString initialConditionLabel[] = {"zero initial condition", "twilightZone initial condition", "known solution initial condition", "pulse initial condition", "" };
+  aString initialConditionLabel[] = {"zero initial condition", 
+                                     "twilightZone initial condition", 
+                                     "known solution initial condition", 
+                                     "pulse initial condition", 
+                                     "random initial condition", 
+                                     "" };
   dialog.addOptionMenu("Initial conndtions:", initialConditionLabel, initialConditionLabel, (int)initialConditionOption );
 
   aString forcingLabel[] = {"no forcing", "twilightZoneForcing", "userForcing", "helmholtzForcing", "" };
@@ -718,6 +753,19 @@ int CgWave::interactiveUpdate()
 
   aString bcApproachLabel[] = {"useDefaultApproachForBCs", "useOneSidedBCs", "useCompatibilityBCs", "useLocalCompatibilityBCs", "" };
   dialog.addOptionMenu("BC approach:", bcApproachLabel, bcApproachLabel, (int)bcApproach );
+
+  aString assignInterpNeighboursLabel[] = {"defaultAssignInterpNeighbours", 
+                                           "extrapolateInterpNeighbours", 
+                                           "interpolateInterpNeighbours", "" };
+  dialog.addOptionMenu("Interp neighbours:", assignInterpNeighboursLabel, assignInterpNeighboursLabel, 
+                       (int)assignInterpNeighbours );
+
+ aString modifiedEquationApproachLabel[] = {"standard modified equation", 
+                                            "hierarchical modified equation", 
+                                             "" };
+  dialog.addOptionMenu("ME variation:", modifiedEquationApproachLabel, modifiedEquationApproachLabel, 
+                       (int)modifiedEquationApproach );
+
 
   aString pbLabels[] = {
                         "user defined known solution...",
@@ -742,18 +790,20 @@ int CgWave::interactiveUpdate()
                           "set known on boundaries",
                           "choose implicit dt from cfl",
                           "use known for first step",
+                          "implicit upwind",
                             ""};
   int tbState[15];
-  tbState[0] = saveShowFile;
-  tbState[1] = upwind;
-  tbState[2] = addForcing;
-  tbState[3] = computeErrors;
-  tbState[4] = solveHelmholtz;
-  tbState[5] = adjustHelmholtzForUpwinding;
-  tbState[6] = computeTimeIntegral;
-  tbState[7] = preComputeUpwindUt;
-  tbState[8] = applyKnownSolutionAtBoundaries;
-  tbState[9] = chooseImplicitTimeStepFromCFL;
+  tbState[ 0] = saveShowFile;
+  tbState[ 1] = upwind;
+  tbState[ 2] = addForcing;
+  tbState[ 3] = computeErrors;
+  tbState[ 4] = solveHelmholtz;
+  tbState[ 5] = adjustHelmholtzForUpwinding;
+  tbState[ 6] = computeTimeIntegral;
+  tbState[ 7] = preComputeUpwindUt;
+  tbState[ 8] = applyKnownSolutionAtBoundaries;
+  tbState[ 9] = chooseImplicitTimeStepFromCFL;
+  tbState[10] = implicitUpwind;
 
   int numColumns=1;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -1008,6 +1058,10 @@ int CgWave::interactiveUpdate()
       printF("Setting chooseImplicitTimeStepFromCFL=%i (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
     }
      
+    else if( dialog.getToggleValue(answer,"implicit upwind",implicitUpwind) )
+    {
+      printF("Setting implicitUpwind=%i (1=include upwinding in implicit matrix when implicit time-stepping\n",implicitUpwind);
+    }     
 
     else if( answer=="explicit" || answer=="implicit" )
     {
@@ -1043,12 +1097,14 @@ int CgWave::interactiveUpdate()
     else if( answer=="zero initial condition"           || 
              answer=="twilightZone initial condition"   || 
              answer=="known solution initial condition" || 
-             answer=="pulse initial condition" )
+             answer=="pulse initial condition"          ||
+             answer=="random initial condition" )
     {
       initialConditionOption = ( answer=="zero initial condition"           ? zeroInitialCondition :
                                  answer=="twilightZone initial condition"   ? twilightZoneInitialCondition :
                                  answer=="known solution initial condition" ? knownSolutionInitialCondition :
                                  answer=="pulse initial condition"          ? pulseInitialCondition : 
+                                 answer=="random initial condition"         ? randomInitialCondition : 
                                                                               zeroInitialCondition );
     }
 
@@ -1088,6 +1144,36 @@ int CgWave::interactiveUpdate()
                                                           defaultBoundaryConditionApproach );
       printF("Setting approach for boundary conditions to %s\n",(const char *)answer);
     }
+
+    else if( answer=="defaultAssignInterpNeighbours" || 
+             answer=="extrapolateInterpNeighbours" || 
+             answer=="interpolateInterpNeighbours" )
+    {
+      // For upwind schemes with wider stencils we can extrap or interp unused points next to interpolation points 
+      assignInterpNeighbours = ( answer=="defaultAssignInterpNeighbours" ? defaultAssignInterpNeighbours :
+                                 answer=="extrapolateInterpNeighbours"   ? extrapolateInterpNeighbours :
+                                                                           interpolateInterpNeighbours );
+      aString assignType;
+      if( assignInterpNeighbours==interpolateInterpNeighbours ) 
+        assignType = "interpolated";
+      else if( assignInterpNeighbours==extrapolateInterpNeighbours )
+        assignType = "extrapolated"; 
+      else
+        assignType = "interpolated"; // new default July 4, 2022
+
+      printF("Interpolation neighbours will be %s for upwind schemes with wider stencils.\n",assignType );
+    }
+
+    else if( answer=="standard modified equation" || 
+             answer=="hierarchical modified equation" )
+    {
+      // For upwind schemes with wider stencils we can extrap or interp unused points next to interpolation points 
+      modifiedEquationApproach = ( answer=="standard modified equation"     ? 0 :
+                                    answer=="hierarchical modified equation" ? 1 :
+                                                                               0 );
+      printF("Setting modifiedEquationApproach=%s\n",(const char*)answer );
+    }
+
 
     else if( len=answer.matches("tPlot") )
     {
@@ -1749,6 +1835,9 @@ outputResults( int current, real t )
   }
   fPrintF(checkFile,"\n");
 
+  RealArray solutionNormVector(1);
+  solutionNormVector(0)=solutionNorm;
+  saveSequenceInfo( t, solutionNormVector );
 
   return 0;
 }

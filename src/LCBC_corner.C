@@ -45,7 +45,18 @@ void Lcbc::updateEdgeGhostPeriodic(double *&unp1, int side1, int side2, int varA
     }// end of i[2]
 }// end of updateEdgeGhostPeriodic
 
-void Lcbc::updateEdgeGhost(double **R, double *&unp1, double t, double dt, int approxEqNum, int side1, int side2, int varAxis){
+void Lcbc::updateEdgeGhost(double **R, double *&unp1, double t, double dt, int side1, int side2, int varAxis){
+
+    int fixedAxis[2]; getFixedAxis(fixedAxis, varAxis);
+    int face1 = side1 + 2*fixedAxis[0];
+    int face2 = side2 + 2*fixedAxis[1];
+
+    int NU1 = faceParam[face1].NU;
+    int NU2 = faceParam[face2].NU;
+    int auxiliaryEqNum = param.auxiliaryEqNum;
+    int compCondNum1   = faceParam[face1].compCondNum;
+    int compCondNum2   = faceParam[face2].compCondNum;
+    int approxEqNum    = compCondNum1 + compCondNum2 + auxiliaryEqNum;
     
     int bdryPointsNum = dimBasedValue(dim, 1, G.Ngx[varAxis]);
     double **Rv = new double*[bdryPointsNum];
@@ -58,11 +69,11 @@ void Lcbc::updateEdgeGhost(double **R, double *&unp1, double t, double dt, int a
     
     /* prepare the matrices for the corner */
     if(CornerMat[corner].flag == false){
-        prepCornerMatrix(side1, side2, varAxis);
+        prepCornerMatrix(side1, side2, varAxis, approxEqNum, NU1, NU2);
     }
     
     /* prepare the RHS vector for the corner */
-    prepDataVec_corner(R, Rv, t, dt, side1, side2, varAxis, approxEqNum);
+    prepDataVec_corner(R, Rv, t, dt, side1, side2, varAxis, approxEqNum, NU1, NU2);
     
     /* evaluate the ghost points */
     getCornerGhost(unp1, Rv, CornerMat[corner].CaVec, CornerMat[corner].CbVec, CornerMat[corner].eqNum, side1, side2, varAxis, approxEqNum);
@@ -75,9 +86,9 @@ void Lcbc::updateEdgeGhost(double **R, double *&unp1, double t, double dt, int a
     
 }// end of updateGhost function
 
-void Lcbc::prepCornerMatrix(int side1, int side2, int varAxis){
+void Lcbc::prepCornerMatrix(int side1, int side2, int varAxis, int approxEqNum, int NU1, int NU2){
     int corner = ind3(side1,side2,dimBasedValue(dim, 0, varAxis),2,2,3);
-    int bdryNg = dimBasedValue(dim, 1, G.Ngx[varAxis]);
+    int bdryNg = (cstCoef)?(1):(dimBasedValue(dim, 1, G.Ngx[varAxis]));
     CornerMat[corner].flag = true;
     
     int fixedSides[] = {side1, side2};
@@ -88,9 +99,6 @@ void Lcbc::prepCornerMatrix(int side1, int side2, int varAxis){
     int totalVarNum = n*n*dimBasedValue(dim, 1, n);
     int knownVarNum   = (p+1)*(p+1)*dimBasedValue(dim, 1, n);
     int unknownVarNum = (totalVarNum - knownVarNum);
-    int compCondNum = (p+1)*n*dimBasedValue(dim, 1, n);
-    int auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
-    int approxEqNum = 2*compCondNum + auxiliaryEqNum; // number of equations treated via least squares
     int ghostPointsNum = unknownVarNum - 2*p;
     
     CornerMat[corner].eqNum = new int[totalVarNum];
@@ -113,8 +121,7 @@ void Lcbc::prepCornerMatrix(int side1, int side2, int varAxis){
     
     for(k[2] = 0; k[2]<dimBasedValue(dim, 1, n); k[2]++){
         for(k[1] = 0; k[1]<n; k[1]++){
-            for(k[0] = 0; k[0]<n; k[0]++){
-                
+        for(k[0] = 0; k[0]<n; k[0]++){
                 if((COND(k[fixedAxis[0]],side1)||COND(k[fixedAxis[1]],side2))){
                     CornerMat[corner].eqNum[ind(k,lth)] = unknownVar;
                     unknownVar++;
@@ -127,19 +134,20 @@ void Lcbc::prepCornerMatrix(int side1, int side2, int varAxis){
         }// end of k[1] loop
     }// end of k[2] loop
     
-    getCornerMatrix(CornerMat[corner].CaVec, CornerMat[corner].CbVec, CornerMat[corner].eqNum, bdryRange, bdryNg, side1, side2, varAxis, fixedAxis);
+    getCornerMatrix(CornerMat[corner].CaVec, CornerMat[corner].CbVec, CornerMat[corner].eqNum, bdryRange, bdryNg, side1, side2, varAxis, fixedAxis, NU1, NU2);
 }// end of prepCornerMatrix
 
-void Lcbc::getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdryRange[3][2], int bdryNg, int side1, int side2, int varAxis, int fixedAxis[2]){
+void Lcbc::getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdryRange[3][2], int bdryNg, int side1, int side2, int varAxis, int fixedAxis[2], int NU1, int NU2){
     
-    int n = (2*p+1), NU = (p+1), MU = n;
+    int n = (2*p+1), MU = n;
     
     /* Some needed numbers */
     int totalVarNum = (n*n*dimBasedValue(dim, 1, n));
-    int compCondNum = NU*MU*dimBasedValue(dim, 1, MU);
+    int compCondNum1 = NU1*MU*dimBasedValue(dim, 1, MU);
+    int compCondNum2 = NU2*MU*dimBasedValue(dim, 1, MU);
     int auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
     int interiorEqNum = (p+1)*(p+1)*dimBasedValue(dim, 1,n);
-    int approxEqNum = (2*compCondNum + auxiliaryEqNum);
+    int approxEqNum = (compCondNum1 + compCondNum2 + auxiliaryEqNum);
     int totalEqNum  = approxEqNum + interiorEqNum;
     int unknownVarNum = totalVarNum - interiorEqNum;
     
@@ -152,7 +160,7 @@ void Lcbc::getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int b
     /* Prepare the D matrix */
     double *D = new double[(approxEqNum*approxEqNum)];
     set1DArrayToZero(D, (approxEqNum*approxEqNum));
-    getD_corner(D, varAxis, fixedAxis);
+    getD_corner(D, varAxis, fixedAxis, NU1, NU2);
     
     /* prepare some values for the interior */
     int interiorRange[3][2] = {{0,(2*p)},{0,(2*p)},{0,dimBasedValue(dim,0,(2*p))}};
@@ -169,8 +177,10 @@ void Lcbc::getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int b
         for(Ind[1] = bdryRange[1][0]; Ind[1]<=bdryRange[1][1]; Ind[1]++){
             for(Ind[0] = bdryRange[0][0]; Ind[0]<=bdryRange[0][1]; Ind[0]++){
                 
+                set1DArrayToZero(A,(totalEqNum*totalVarNum)); 
+                
                 /* Assign the matrix part corresponding to approximated equations */
-                fillCornerMatrix_LagrangeDeriv(A, Ind, side1, side2, varAxis, fixedAxis, eqNum, compCondNum, auxiliaryEqNum,totalEqNum);
+                fillCornerMatrix_LagrangeDeriv(A, Ind, side1, side2, varAxis, fixedAxis, eqNum, NU1, NU2, compCondNum1, compCondNum2, auxiliaryEqNum,totalEqNum);
                 
                 int row = approxEqNum;
                 
@@ -205,6 +215,7 @@ void Lcbc::getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int b
                 scaleD(D_scaled, D, A_scale, approxEqNum);
                 
                 /* Work out Ca and Cb via LS */
+                int cVecInd = (cstCoef)?(0):(Ind[varAxis]); // index of CaVec and CbVec
                 double *Ca = new double[(unknownVarNum*approxEqNum)];
                 double *Cb = new double[(unknownVarNum*interiorEqNum)];
                 LSsolve(A11, D_scaled, Ca, approxEqNum, unknownVarNum, approxEqNum);
@@ -225,12 +236,12 @@ void Lcbc::getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int b
                             /* extract the kth row from C_alpha */
                             int Ca_extractedRows[] = {k,(k+1)};
                             int Ca_extractedColms[] = {0,approxEqNum};
-                            extractBlocks(Ca, CaVec[Ind[varAxis]][vecNum], unknownVarNum, approxEqNum, Ca_extractedRows, Ca_extractedColms, 1);
+                            extractBlocks(Ca, CaVec[cVecInd][vecNum], unknownVarNum, approxEqNum, Ca_extractedRows, Ca_extractedColms, 1);
                             
                             /* extract the kth row from Cbeta */
                             int Cb_extractedRows[] = {k,(k+1)};
                             int Cb_extractedColms[] = {0,interiorEqNum};
-                            extractBlocks(Cb, CbVec[Ind[varAxis]][vecNum], unknownVarNum, interiorEqNum, Cb_extractedRows, Cb_extractedColms, 1);
+                            extractBlocks(Cb, CbVec[cVecInd][vecNum], unknownVarNum, interiorEqNum, Cb_extractedRows, Cb_extractedColms, 1);
                             
                             vecNum++;
                         }// end of if statement
@@ -240,9 +251,17 @@ void Lcbc::getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int b
                 delete [] Ca;
                 delete [] Cb;
                 
+                /* If cstCoef, break out of the loops */
+                if(cstCoef){
+                    for(int ax = 0; ax<3; ax++){
+                        Ind[ax] = bdryRange[ax][1];
+                    }// end ax loop (short for axis)
+                }//end if cstCoef
+                /*------------------------------------*/
+                
             }// end of Ind[0] loop
-        }// end of Ind[0] loop
-    }// end of Ind[0] loop
+        }// end of Ind[1] loop
+    }// end of Ind[2] loop
     
     delete [] A;
     delete [] A_scale;
@@ -252,30 +271,31 @@ void Lcbc::getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int b
     
 }// end of getCornerMatrix Function
 
-void Lcbc::getD_corner(double *&D, int varAxis, int fixedAxis[2]){
+void Lcbc::getD_corner(double *&D, int varAxis, int fixedAxis[2], int NU1, int NU2){
     int n = (2*p+1);
-    int compCondNum    = (p+1)*n*dimBasedValue(dim,1,n);
+    int compCondNum1   = NU1*n*dimBasedValue(dim,1,n);
+    int compCondNum2   = NU2*n*dimBasedValue(dim,1,n);
     int auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
-    int approxEqNum    = 2*compCondNum + auxiliaryEqNum;
+    int approxEqNum    = compCondNum1 + compCondNum2 + auxiliaryEqNum;
     int dof            = (n*dimBasedValue(dim, 1, n));
-    int NU             = (p+1);
+    int NU[] = {NU1, NU2};
     
     /* use the delta approach to determine D */
     double *Id = new double[(dof*dof)];
     getIDmatrix(Id, dof);
     
     /* R corresponds to derivatives of data functions on stencil. b is the RHS vector */
-    double b[(2*compCondNum)], **R = new double*[(2*NU)];
+    double b[(compCondNum1 + compCondNum2)], **R = new double*[(NU1 + NU2)];
     
-    for(int nu = 0; nu<(2*NU); nu++)
+    for(int nu = 0; nu<(NU1 + NU2); nu++)
         R[nu] = new double[dof];
     
     int colm = 0;
     for(int fixedAxisInd = 0; fixedAxisInd<2; fixedAxisInd++){
         int Rlth[] = {n,n,dimBasedValue(dim, 1, n)}; // this is a vector that carries the length of R in each axis
         Rlth[fixedAxis[fixedAxisInd]] = 1;
-        for(int nu = 0; nu<NU; nu++){
-            set2DArrayToZero(R, (2*NU), dof);
+        for(int nu = 0; nu<NU[fixedAxisInd]; nu++){
+            set2DArrayToZero(R, (NU1 + NU2), dof);
             
             for(int l = 0; l<dof; l++){
                 int row = 0;
@@ -283,15 +303,15 @@ void Lcbc::getD_corner(double *&D, int varAxis, int fixedAxis[2]){
                 for(stenInd[varAxis] = 0; stenInd[varAxis]<dimBasedValue(dim, 1, n); stenInd[varAxis]++){
                     for(stenInd[fixedAxis[(1-fixedAxisInd)]] = 0; stenInd[fixedAxis[(1-fixedAxisInd)]]<n; stenInd[fixedAxis[(1-fixedAxisInd)]]++){
         
-                        R[ind2(nu,fixedAxisInd,NU,2)][ind(stenInd,Rlth)] = Id[ind2(row,l,dof,dof)];
+                        R[ind2(nu,fixedAxisInd,NU[0],2)][ind(stenInd,Rlth)] = Id[ind2(row,l,dof,dof)];
                         
                         row++;
                     }// end of i loop
                 }// end of j loop
                 
-                getbVec_corner(b, R, varAxis, fixedAxis);
+                getbVec_corner(b, R, varAxis, fixedAxis, NU1, NU2);
                 
-                for(int k = 0; k<(2*compCondNum); k++){
+                for(int k = 0; k<(compCondNum1 + compCondNum2); k++){
                     D[ind2(k,colm,approxEqNum,approxEqNum)] = b[k];
                 }// end of k loop
                 colm++;
@@ -300,7 +320,7 @@ void Lcbc::getD_corner(double *&D, int varAxis, int fixedAxis[2]){
         }// end of nu loop
     }// end of fixedAxisInd loop
     
-    for(int nu = 0; nu<(2*NU); nu++){
+    for(int nu = 0; nu<(NU1 + NU2); nu++){
         delete [] R[nu];
         R[nu] = NULL;
     }
@@ -309,11 +329,13 @@ void Lcbc::getD_corner(double *&D, int varAxis, int fixedAxis[2]){
     
 }// end of getD function
 
-void Lcbc::getbVec_corner(double b[], double **R, int varAxis, int fixedAxis[2]){
-    int NU = (p+1), n = (2*p+1), order;
+void Lcbc::getbVec_corner(double b[], double **R, int varAxis, int fixedAxis[2], int NU1, int NU2){
+    int NU = (p+1), n = (2*p+1), order1, order2;
     int MU0 = n, MU1 = dimBasedValue(dim, 1, n);
-    int compCondNum = NU*MU0*MU1;
-    memset(b, 0, (2*compCondNum*sizeof(double)));
+    int compCondNum1 = NU1*MU0*MU1;
+    int compCondNum2 = NU2*MU0*MU1;
+    int compCondNum  = compCondNum1 + compCondNum2;
+    memset(b, 0, (compCondNum*sizeof(double)));
 
     int Ind[] = {p,dimBasedValue(dim,0,p),0};
     int sizeRnu[] = {n,dimBasedValue(dim, 1, n),1};
@@ -328,38 +350,46 @@ void Lcbc::getbVec_corner(double b[], double **R, int varAxis, int fixedAxis[2])
     
     int eqnNum = 0, mu[3] = {0,0,0};
     for(int nu = 0; nu<NU; nu++){
-        (nu == 0) ? (order = 2*p) : (order = (-2*nu + 2*p + 2));
+        order1 = (nu == 0)?(2*p):(2*(NU1 - nu));
+        order2 = (nu == 0)?(2*p):(2*(NU2 - nu));
         
-        int ord[] = {order,dimBasedValue(dim,0,order),0};
+        int ord1[] = {order1,dimBasedValue(dim,0,order1),0};
+        int ord2[] = {order2,dimBasedValue(dim,0,order2),0};
         
         for(mu[1] = 0; mu[1]<MU1; mu[1]++){
             for(mu[0] = 0; mu[0]<MU0; mu[0]++){
                 
-                b[eqnNum] = der.mixedNumDeriv(R[ind2(nu,0,NU,2)], 2, Ind, mu, ord, hx0, sizeRnu);
-                eqnNum++;
+                if(nu<NU1){
+                    b[eqnNum] = mixedDeriv(R[ind2(nu,0,NU1,2)], Ind, mu, hx0, ord1, sizeRnu);
+                    eqnNum++;
+                }
                 
-                b[eqnNum] = der.mixedNumDeriv(R[ind2(nu,1,NU,2)], 2, Ind, mu, ord, hx1, sizeRnu);
-                eqnNum++;
+                if(nu<NU2){
+                    b[eqnNum] =mixedDeriv(R[ind2(nu,1,NU1,2)], Ind, mu, hx1, ord2, sizeRnu);
+                    eqnNum++;
+                }
                 
-                if( (mu[0]!=0) && (mu[0]%2)==0 && ord[0]>2 ){
-                    ord[0] = ord[0] - 2;
+                if( (mu[0]!=0) && (mu[0]%2)==0){
+                    if(ord1[0]>2){ ord1[0] = ord1[0] - 2;}
+                    if(ord2[0]>2){ ord2[0] = ord2[0] - 2;}
                 }// end of if mu0
             }// end of mu0 loop
-            if( (mu[1]!=0) && (mu[1]%2)==0 && ord[1]>2 ){
-                ord[1] = ord[1] - 2;
+            if( (mu[1]!=0) && (mu[1]%2)==0){
+                if(ord1[1]>2){ ord1[1] = ord1[1] - 2;}
+                if(ord2[1]>2){ ord2[1] = ord2[1] - 2;}
             }// end of if mu1
         }// end of mu1 loop
     }// end of nu loop
 }// end of getbVec
 
-void Lcbc::fillCornerMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side1, int side2, int varAxis, int fixedAxis[2], int *eqNum, int compCondNum, int auxiliaryEqNum, int totalEqNum){
+void Lcbc::fillCornerMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side1, int side2, int varAxis, int fixedAxis[2], int *eqNum, int NU1, int NU2, int compCondNum1, int compCondNum2, int auxiliaryEqNum, int totalEqNum){
     
     int n = (2*p+1), NU = (p+1), MU = n;
     int totalVarNum = (n*n*dimBasedValue(dim, 1, n));
     
     /* Prepare Variables that will hold the Lagrange derivative information */
-    double Z1[totalVarNum][compCondNum];
-    double Z2[totalVarNum][compCondNum];
+    double Z1[totalVarNum][compCondNum1];
+    double Z2[totalVarNum][compCondNum2];
     double Y[totalVarNum][auxiliaryEqNum];
     
     /* Fill Z and Y with appropriate values */
@@ -368,9 +398,9 @@ void Lcbc::fillCornerMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side1, 
     for(LagInd[2] = 0; LagInd[2]<dimBasedValue(dim, 1, n); LagInd[2]++){
         for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
             for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
-                getLagrangeDeriv_Dirichlet(Y[ind(LagInd,LagIndLth)], Z1[ind(LagInd,LagIndLth)], Ind, LagInd, fixedAxis[0], side1);
+                getLagrangeDeriv(Y[ind(LagInd,LagIndLth)], Z1[ind(LagInd,LagIndLth)], Ind, LagInd, fixedAxis[0], side1);
                 
-                getLagrangeDeriv_Dirichlet(Z2[ind(LagInd,LagIndLth)], Ind, LagInd, fixedAxis[1], side2);
+                getLagrangeDeriv(Y[ind(LagInd,LagIndLth)], Z2[ind(LagInd,LagIndLth)], Ind, LagInd, fixedAxis[1], side2,false);
             }// LagInd[0]
         }// LagInd[1]
     }// LagInd[2]
@@ -380,18 +410,29 @@ void Lcbc::fillCornerMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side1, 
         for(int mu1 = 0; mu1<dimBasedValue(dim,1,MU); mu1++){
             for(int mu0 = 0; mu0<MU; mu0++){
                 
-                for(LagInd[2] = 0; LagInd[2]<dimBasedValue(dim,1,n); LagInd[2]++){
-                    for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
+                if(nu<NU1){
+                    for(LagInd[2] = 0; LagInd[2]<dimBasedValue(dim,1,n); LagInd[2]++){
+                        for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
                         for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
-                            
-                            int colm = eqNum[ind(LagInd,LagIndLth)];
-                            Matrix[ind2(row,colm,totalEqNum,totalVarNum)] = Z1[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU,MU,dimBasedValue(dim, 1, MU))];
-                            
-                            Matrix[ind2((row+1),colm,totalEqNum,totalVarNum)] =     Z2[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU,MU,dimBasedValue(dim, 1, MU))];
-                        }// LagInd[0]
-                    }// LagInd[1]
-                }// LagInd[2]
-                row = row + 2;
+                                int colm = eqNum[ind(LagInd,LagIndLth)];
+                                Matrix[ind2(row,colm,totalEqNum,totalVarNum)] = Z1[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU1,MU,dimBasedValue(dim, 1, MU))];
+                            }// LagInd[0]
+                        }// LagInd[1]
+                    }// LagInd[2]
+                    row++;
+                }
+                
+                if(nu<NU2){
+                    for(LagInd[2] = 0; LagInd[2]<dimBasedValue(dim,1,n); LagInd[2]++){
+                        for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
+                        for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
+                                int colm = eqNum[ind(LagInd,LagIndLth)];
+                                    Matrix[ind2(row,colm,totalEqNum,totalVarNum)] =     Z2[ind(LagInd,LagIndLth)][ind3(nu,mu0,mu1,NU2,MU,dimBasedValue(dim, 1, MU))];
+                            }// LagInd[0]
+                        }// LagInd[1]
+                    }// LagInd[2]
+                    row++;
+                }
             }// mu0 loop
         }// mu1 loop
     }// end of nu loop
@@ -404,8 +445,7 @@ void Lcbc::fillCornerMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side1, 
                     
                     for(LagInd[2] = 0; LagInd[2]<dimBasedValue(dim,1,n); LagInd[2]++){
                         for(LagInd[1] = 0; LagInd[1]<n; LagInd[1]++){
-                            for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
-                                
+                        for(LagInd[0] = 0; LagInd[0]<n; LagInd[0]++){
                                 int colm = eqNum[ind(LagInd,LagIndLth)];
                                 Matrix[ind2(row,colm,totalEqNum,totalVarNum)] = Y[ind(LagInd,LagIndLth)][auxEqNum];
                                 
@@ -418,14 +458,13 @@ void Lcbc::fillCornerMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side1, 
             }// end of m0 loop
         }// end of m1 loop
     }// end of m2 loop
-    
 }// end of fillMatrix_LagrangeDeriv
 
 
-void Lcbc::prepDataVec_corner(double **R, double **&Rv, double t, double dt, int side1, int side2, int varAxis, int approxEqNum){
+void Lcbc::prepDataVec_corner(double **R, double **&Rv, double t, double dt, int side1, int side2, int varAxis, int approxEqNum, int NU1, int NU2){
     
     /* prepare needed parameters */
-    int NU = (p+1);
+    int NU[] = {NU1, NU2};
     int fixedAxis[2]; getFixedAxis(fixedAxis, varAxis);
     int fixedSide[] = {side1, side2};
     int fixedFace[] = {ind2(side1,fixedAxis[0],2,3), ind2(side2,fixedAxis[1],2,3)};
@@ -450,7 +489,7 @@ void Lcbc::prepDataVec_corner(double **R, double **&Rv, double t, double dt, int
                 int r = 0;
                 
                 for(int fixedAxisInd = 0; fixedAxisInd<2; fixedAxisInd++){
-                    for(int nu = 0; nu<NU; nu++){
+                    for(int nu = 0; nu<NU[fixedAxisInd]; nu++){
                         int stenInd[3] = {0,0,0};
                         for(stenInd[varAxis] = dimBasedValue(dim, 0, (-p)); stenInd[varAxis]<= dimBasedValue(dim, 0, p); stenInd[varAxis]++){
                             
@@ -458,7 +497,7 @@ void Lcbc::prepDataVec_corner(double **R, double **&Rv, double t, double dt, int
   
                                 int Rind[] = sumVectors(Ind, stenInd);
                                 Rind[fixedAxis[fixedAxisInd]] = 0;
-                                Rv[Ind[varAxis]][r] =  R[ind2(nu,fixedFace[fixedAxisInd],NU,6)][ind(Rind,faceBdryPts[fixedAxisInd])];
+                                Rv[Ind[varAxis]][r] =  R[ind2(nu,fixedFace[fixedAxisInd],(p+1),6)][ind(Rind,faceBdryPts[fixedAxisInd])];
                                 r++;
                             }// end of stenInd loop
                         }// end of stenInd loop
@@ -469,6 +508,7 @@ void Lcbc::prepDataVec_corner(double **R, double **&Rv, double t, double dt, int
                 for(int row = r; row<approxEqNum; row++){
                     Rv[Ind[varAxis]][row] = 0;
                 }
+                
             }// end of Ind[0] loop
         }// end of Ind[1] loop
     }// end of Ind[2] loop
@@ -497,12 +537,14 @@ void Lcbc::getCornerGhost(double *&un, double **Rv, double ***CaVec, double ***C
                 
                 int vecNum = 0;
                 
+                int cVecInd = (cstCoef)?(0):(Ind[varAxis]);
+                
                 for(int g2 = sideBasedValue(side2, (-p), (-p+1)); g2<=sideBasedValue(side2, (p-1), p); g2++){
                     for(int g1 = sideBasedValue(side1, (-p), (-p+1)); g1<=sideBasedValue(side1, (p-1), p); g1++){
                         if((COND((g1+p), side1)||COND((g2+p), side2))){
                             
-                            double Ca_vecRv = dotProduct(CaVec[Ind[varAxis]][vecNum], Rv[Ind[varAxis]], approxEqNum);
-                            double Cb_vecb  = dotProduct(CbVec[Ind[varAxis]][vecNum], b, interiorEqNum);
+                            double Ca_vecRv = dotProduct(CaVec[cVecInd][vecNum], Rv[Ind[varAxis]], approxEqNum);
+                            double Cb_vecb  = dotProduct(CbVec[cVecInd][vecNum], b, interiorEqNum);
                             
                             int uInd[3]; uInd[varAxis] = Ind[varAxis];
                             uInd[fixedAxis[0]] = Ind[fixedAxis[0]] + g1;

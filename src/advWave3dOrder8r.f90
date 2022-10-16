@@ -1,5 +1,5 @@
 ! This file automatically generated from advWave.bf90 with bpp.
-        subroutine advWave3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,bc,frequencyArray,ipar,rpar,ierr )
+        subroutine advWave3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
     ! subroutine advWave3dOrder8r(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,!                 mask,xy,rsxy,  um,u,un, f,fa, v, vh,  bc, frequencyArray, ipar, rpar, ierr )
    !======================================================================
    !   Advance a time step for Waves equations
@@ -21,6 +21,7 @@
         real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
         real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
         real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+        real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
         real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
         integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
         integer bc(0:1,0:2),ierr
@@ -30,7 +31,7 @@
    !     ---- local variables -----
         integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt
         integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
-        integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
+        integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt,modifiedEquationApproach
         integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev,numberOfFrequencies
         real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz
     ! ,adc,adcdt,add,adddt
@@ -43,6 +44,7 @@
         real dx12i,dy12i,dz12i,dxsq12i,dysq12i,dzsq12i,dxy4i,dxz4i,dyz4,time0,time1
         real dxi4,dyi4,dzi4,dxdyi2,dxdzi2,dydzi2
         real c0,c1,csq,dtsq,cdtsq,cdtsq12,cdtSqBy12
+        real gridCFL
         integer maxOrderOfAccuracy
         parameter( maxOrderOfAccuracy=12 )
     ! Coefficients in the implicit scheme
@@ -1402,7 +1404,856 @@
             real vyz82r
             real vlaplacian82r
             real vlaplacian83r
-        real cdt4by360,cdt6by20160
+    ! define variables for getDerivatives macros
+! ****** File written by makeGetDerivativesMacros.maple  ******
+real ur
+real urr
+real urrr
+real urrrr
+real urrrrr
+real urrrrrr
+real us
+real urs
+real urrs
+real urrrs
+real urrrrs
+real urrrrrs
+real uss
+real urss
+real urrss
+real urrrss
+real urrrrss
+real usss
+real ursss
+real urrsss
+real urrrsss
+real ussss
+real urssss
+real urrssss
+real usssss
+real ursssss
+real ussssss
+real ut
+real urt
+real urrt
+real urrrt
+real urrrrt
+real urrrrrt
+real ust
+real urst
+real urrst
+real urrrst
+real urrrrst
+real usst
+real ursst
+real urrsst
+real urrrsst
+real ussst
+real urssst
+real urrssst
+real usssst
+real ursssst
+real ussssst
+real utt
+real urtt
+real urrtt
+real urrrtt
+real urrrrtt
+real ustt
+real urstt
+real urrstt
+real urrrstt
+real usstt
+real ursstt
+real urrsstt
+real ussstt
+real urssstt
+real usssstt
+real uttt
+real urttt
+real urrttt
+real urrrttt
+real usttt
+real ursttt
+real urrsttt
+real ussttt
+real urssttt
+real usssttt
+real utttt
+real urtttt
+real urrtttt
+real ustttt
+real urstttt
+real usstttt
+real uttttt
+real urttttt
+real usttttt
+real utttttt
+real rxr
+real rxrr
+real rxrrr
+real rxrrrr
+real rxrrrrr
+real rxs
+real rxrs
+real rxrrs
+real rxrrrs
+real rxrrrrs
+real rxss
+real rxrss
+real rxrrss
+real rxrrrss
+real rxsss
+real rxrsss
+real rxrrsss
+real rxssss
+real rxrssss
+real rxsssss
+real rxt
+real rxrt
+real rxrrt
+real rxrrrt
+real rxrrrrt
+real rxst
+real rxrst
+real rxrrst
+real rxrrrst
+real rxsst
+real rxrsst
+real rxrrsst
+real rxssst
+real rxrssst
+real rxsssst
+real rxtt
+real rxrtt
+real rxrrtt
+real rxrrrtt
+real rxstt
+real rxrstt
+real rxrrstt
+real rxsstt
+real rxrsstt
+real rxssstt
+real rxttt
+real rxrttt
+real rxrrttt
+real rxsttt
+real rxrsttt
+real rxssttt
+real rxtttt
+real rxrtttt
+real rxstttt
+real rxttttt
+real ryr
+real ryrr
+real ryrrr
+real ryrrrr
+real ryrrrrr
+real rys
+real ryrs
+real ryrrs
+real ryrrrs
+real ryrrrrs
+real ryss
+real ryrss
+real ryrrss
+real ryrrrss
+real rysss
+real ryrsss
+real ryrrsss
+real ryssss
+real ryrssss
+real rysssss
+real ryt
+real ryrt
+real ryrrt
+real ryrrrt
+real ryrrrrt
+real ryst
+real ryrst
+real ryrrst
+real ryrrrst
+real rysst
+real ryrsst
+real ryrrsst
+real ryssst
+real ryrssst
+real rysssst
+real rytt
+real ryrtt
+real ryrrtt
+real ryrrrtt
+real rystt
+real ryrstt
+real ryrrstt
+real rysstt
+real ryrsstt
+real ryssstt
+real ryttt
+real ryrttt
+real ryrrttt
+real rysttt
+real ryrsttt
+real ryssttt
+real rytttt
+real ryrtttt
+real rystttt
+real ryttttt
+real sxr
+real sxrr
+real sxrrr
+real sxrrrr
+real sxrrrrr
+real sxs
+real sxrs
+real sxrrs
+real sxrrrs
+real sxrrrrs
+real sxss
+real sxrss
+real sxrrss
+real sxrrrss
+real sxsss
+real sxrsss
+real sxrrsss
+real sxssss
+real sxrssss
+real sxsssss
+real sxt
+real sxrt
+real sxrrt
+real sxrrrt
+real sxrrrrt
+real sxst
+real sxrst
+real sxrrst
+real sxrrrst
+real sxsst
+real sxrsst
+real sxrrsst
+real sxssst
+real sxrssst
+real sxsssst
+real sxtt
+real sxrtt
+real sxrrtt
+real sxrrrtt
+real sxstt
+real sxrstt
+real sxrrstt
+real sxsstt
+real sxrsstt
+real sxssstt
+real sxttt
+real sxrttt
+real sxrrttt
+real sxsttt
+real sxrsttt
+real sxssttt
+real sxtttt
+real sxrtttt
+real sxstttt
+real sxttttt
+real syr
+real syrr
+real syrrr
+real syrrrr
+real syrrrrr
+real sys
+real syrs
+real syrrs
+real syrrrs
+real syrrrrs
+real syss
+real syrss
+real syrrss
+real syrrrss
+real sysss
+real syrsss
+real syrrsss
+real syssss
+real syrssss
+real sysssss
+real syt
+real syrt
+real syrrt
+real syrrrt
+real syrrrrt
+real syst
+real syrst
+real syrrst
+real syrrrst
+real sysst
+real syrsst
+real syrrsst
+real syssst
+real syrssst
+real sysssst
+real sytt
+real syrtt
+real syrrtt
+real syrrrtt
+real systt
+real syrstt
+real syrrstt
+real sysstt
+real syrsstt
+real syssstt
+real syttt
+real syrttt
+real syrrttt
+real systtt
+real syrsttt
+real syssttt
+real sytttt
+real syrtttt
+real systttt
+real syttttt
+real rzr
+real rzrr
+real rzrrr
+real rzrrrr
+real rzrrrrr
+real rzs
+real rzrs
+real rzrrs
+real rzrrrs
+real rzrrrrs
+real rzss
+real rzrss
+real rzrrss
+real rzrrrss
+real rzsss
+real rzrsss
+real rzrrsss
+real rzssss
+real rzrssss
+real rzsssss
+real rzt
+real rzrt
+real rzrrt
+real rzrrrt
+real rzrrrrt
+real rzst
+real rzrst
+real rzrrst
+real rzrrrst
+real rzsst
+real rzrsst
+real rzrrsst
+real rzssst
+real rzrssst
+real rzsssst
+real rztt
+real rzrtt
+real rzrrtt
+real rzrrrtt
+real rzstt
+real rzrstt
+real rzrrstt
+real rzsstt
+real rzrsstt
+real rzssstt
+real rzttt
+real rzrttt
+real rzrrttt
+real rzsttt
+real rzrsttt
+real rzssttt
+real rztttt
+real rzrtttt
+real rzstttt
+real rzttttt
+real szr
+real szrr
+real szrrr
+real szrrrr
+real szrrrrr
+real szs
+real szrs
+real szrrs
+real szrrrs
+real szrrrrs
+real szss
+real szrss
+real szrrss
+real szrrrss
+real szsss
+real szrsss
+real szrrsss
+real szssss
+real szrssss
+real szsssss
+real szt
+real szrt
+real szrrt
+real szrrrt
+real szrrrrt
+real szst
+real szrst
+real szrrst
+real szrrrst
+real szsst
+real szrsst
+real szrrsst
+real szssst
+real szrssst
+real szsssst
+real sztt
+real szrtt
+real szrrtt
+real szrrrtt
+real szstt
+real szrstt
+real szrrstt
+real szsstt
+real szrsstt
+real szssstt
+real szttt
+real szrttt
+real szrrttt
+real szsttt
+real szrsttt
+real szssttt
+real sztttt
+real szrtttt
+real szstttt
+real szttttt
+real txr
+real txrr
+real txrrr
+real txrrrr
+real txrrrrr
+real txs
+real txrs
+real txrrs
+real txrrrs
+real txrrrrs
+real txss
+real txrss
+real txrrss
+real txrrrss
+real txsss
+real txrsss
+real txrrsss
+real txssss
+real txrssss
+real txsssss
+real txt
+real txrt
+real txrrt
+real txrrrt
+real txrrrrt
+real txst
+real txrst
+real txrrst
+real txrrrst
+real txsst
+real txrsst
+real txrrsst
+real txssst
+real txrssst
+real txsssst
+real txtt
+real txrtt
+real txrrtt
+real txrrrtt
+real txstt
+real txrstt
+real txrrstt
+real txsstt
+real txrsstt
+real txssstt
+real txttt
+real txrttt
+real txrrttt
+real txsttt
+real txrsttt
+real txssttt
+real txtttt
+real txrtttt
+real txstttt
+real txttttt
+real tyr
+real tyrr
+real tyrrr
+real tyrrrr
+real tyrrrrr
+real tys
+real tyrs
+real tyrrs
+real tyrrrs
+real tyrrrrs
+real tyss
+real tyrss
+real tyrrss
+real tyrrrss
+real tysss
+real tyrsss
+real tyrrsss
+real tyssss
+real tyrssss
+real tysssss
+real tyt
+real tyrt
+real tyrrt
+real tyrrrt
+real tyrrrrt
+real tyst
+real tyrst
+real tyrrst
+real tyrrrst
+real tysst
+real tyrsst
+real tyrrsst
+real tyssst
+real tyrssst
+real tysssst
+real tytt
+real tyrtt
+real tyrrtt
+real tyrrrtt
+real tystt
+real tyrstt
+real tyrrstt
+real tysstt
+real tyrsstt
+real tyssstt
+real tyttt
+real tyrttt
+real tyrrttt
+real tysttt
+real tyrsttt
+real tyssttt
+real tytttt
+real tyrtttt
+real tystttt
+real tyttttt
+real tzr
+real tzrr
+real tzrrr
+real tzrrrr
+real tzrrrrr
+real tzs
+real tzrs
+real tzrrs
+real tzrrrs
+real tzrrrrs
+real tzss
+real tzrss
+real tzrrss
+real tzrrrss
+real tzsss
+real tzrsss
+real tzrrsss
+real tzssss
+real tzrssss
+real tzsssss
+real tzt
+real tzrt
+real tzrrt
+real tzrrrt
+real tzrrrrt
+real tzst
+real tzrst
+real tzrrst
+real tzrrrst
+real tzsst
+real tzrsst
+real tzrrsst
+real tzssst
+real tzrssst
+real tzsssst
+real tztt
+real tzrtt
+real tzrrtt
+real tzrrrtt
+real tzstt
+real tzrstt
+real tzrrstt
+real tzsstt
+real tzrsstt
+real tzssstt
+real tzttt
+real tzrttt
+real tzrrttt
+real tzsttt
+real tzrsttt
+real tzssttt
+real tztttt
+real tzrtttt
+real tzstttt
+real tzttttt
+real rxi
+real ryi
+real sxi
+real syi
+real rzi
+real szi
+real txi
+real tyi
+real tzi
+real rxx
+real rxy
+real rxz
+real ryy
+real ryz
+real rzz
+real sxx
+real sxy
+real sxz
+real syy
+real syz
+real szz
+real txx
+real txy
+real txz
+real tyy
+real tyz
+real tzz
+real rxxx
+real rxxy
+real rxyy
+real rxxz
+real rxyz
+real rxzz
+real ryyy
+real ryyz
+real ryzz
+real rzzz
+real sxxx
+real sxxy
+real sxyy
+real sxxz
+real sxyz
+real sxzz
+real syyy
+real syyz
+real syzz
+real szzz
+real txxx
+real txxy
+real txyy
+real txxz
+real txyz
+real txzz
+real tyyy
+real tyyz
+real tyzz
+real tzzz
+real rxxxx
+real rxxxy
+real rxxyy
+real rxyyy
+real rxxxz
+real rxxyz
+real rxyyz
+real rxxzz
+real rxyzz
+real rxzzz
+real ryyyy
+real ryyyz
+real ryyzz
+real ryzzz
+real rzzzz
+real sxxxx
+real sxxxy
+real sxxyy
+real sxyyy
+real sxxxz
+real sxxyz
+real sxyyz
+real sxxzz
+real sxyzz
+real sxzzz
+real syyyy
+real syyyz
+real syyzz
+real syzzz
+real szzzz
+real txxxx
+real txxxy
+real txxyy
+real txyyy
+real txxxz
+real txxyz
+real txyyz
+real txxzz
+real txyzz
+real txzzz
+real tyyyy
+real tyyyz
+real tyyzz
+real tyzzz
+real tzzzz
+real rxxxxx
+real rxxxxy
+real rxxxyy
+real rxxyyy
+real rxyyyy
+real rxxxxz
+real rxxxyz
+real rxxyyz
+real rxyyyz
+real rxxxzz
+real rxxyzz
+real rxyyzz
+real rxxzzz
+real rxyzzz
+real rxzzzz
+real ryyyyy
+real ryyyyz
+real ryyyzz
+real ryyzzz
+real ryzzzz
+real rzzzzz
+real sxxxxx
+real sxxxxy
+real sxxxyy
+real sxxyyy
+real sxyyyy
+real sxxxxz
+real sxxxyz
+real sxxyyz
+real sxyyyz
+real sxxxzz
+real sxxyzz
+real sxyyzz
+real sxxzzz
+real sxyzzz
+real sxzzzz
+real syyyyy
+real syyyyz
+real syyyzz
+real syyzzz
+real syzzzz
+real szzzzz
+real txxxxx
+real txxxxy
+real txxxyy
+real txxyyy
+real txyyyy
+real txxxxz
+real txxxyz
+real txxyyz
+real txyyyz
+real txxxzz
+real txxyzz
+real txyyzz
+real txxzzz
+real txyzzz
+real txzzzz
+real tyyyyy
+real tyyyyz
+real tyyyzz
+real tyyzzz
+real tyzzzz
+real tzzzzz
+real rxxxxxx
+real rxxxxxy
+real rxxxxyy
+real rxxxyyy
+real rxxyyyy
+real rxyyyyy
+real rxxxxxz
+real rxxxxyz
+real rxxxyyz
+real rxxyyyz
+real rxyyyyz
+real rxxxxzz
+real rxxxyzz
+real rxxyyzz
+real rxyyyzz
+real rxxxzzz
+real rxxyzzz
+real rxyyzzz
+real rxxzzzz
+real rxyzzzz
+real rxzzzzz
+real ryyyyyy
+real ryyyyyz
+real ryyyyzz
+real ryyyzzz
+real ryyzzzz
+real ryzzzzz
+real rzzzzzz
+real sxxxxxx
+real sxxxxxy
+real sxxxxyy
+real sxxxyyy
+real sxxyyyy
+real sxyyyyy
+real sxxxxxz
+real sxxxxyz
+real sxxxyyz
+real sxxyyyz
+real sxyyyyz
+real sxxxxzz
+real sxxxyzz
+real sxxyyzz
+real sxyyyzz
+real sxxxzzz
+real sxxyzzz
+real sxyyzzz
+real sxxzzzz
+real sxyzzzz
+real sxzzzzz
+real syyyyyy
+real syyyyyz
+real syyyyzz
+real syyyzzz
+real syyzzzz
+real syzzzzz
+real szzzzzz
+real txxxxxx
+real txxxxxy
+real txxxxyy
+real txxxyyy
+real txxyyyy
+real txyyyyy
+real txxxxxz
+real txxxxyz
+real txxxyyz
+real txxyyyz
+real txyyyyz
+real txxxxzz
+real txxxyzz
+real txxyyzz
+real txyyyzz
+real txxxzzz
+real txxyzzz
+real txyyzzz
+real txxzzzz
+real txyzzzz
+real txzzzzz
+real tyyyyyy
+real tyyyyyz
+real tyyyyzz
+real tyyyzzz
+real tyyzzzz
+real tyzzzzz
+real tzzzzzz
+real uxx
+real uxxxx
+real uxxxxxx
+real uyy
+real uxxyy
+real uxxxxyy
+real uyyyy
+real uxxyyyy
+real uyyyyyy
+real uzz
+real uxxzz
+real uxxxxzz
+real uyyzz
+real uxxyyzz
+real uyyyyzz
+real uzzzz
+real uxxzzzz
+real uyyzzzz
+real uzzzzzz
+    ! real cdt4by360,cdt6by20160
+        real cdtPow4By12,cdtPow6By360
         real lap2d2,lap3d2,lap2d4,lap3d4,lap2d6,lap3d6,lap2d8,lap3d8,lap2d2Pow2,lap3d2Pow2,lap2d2Pow3,lap3d2Pow3,lap2d2Pow4,lap3d2Pow4,lap2d4Pow2,lap3d4Pow2,lap2d4Pow3,lap3d4Pow3,lap2d6Pow2,lap3d6Pow2
         real lap2d2m,lap3d2m
         real du,fd22d,fd23d,fd42d,fd43d,fd62d,fd63d,fd82d,fd83d
@@ -1417,6 +2268,17 @@
         real ep 
         real fv(0:1) , ev(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1)
         real evxxxx(0:1), evxxyy(0:1), evyyyy(0:1), evxxzz(0:1), evyyzz(0:1), evzzzz(0:1), evtttt(0:1)
+        real evtttttt(0:1)
+        real evxxxxxx(0:1)
+        real evyyyyyy(0:1)
+        real evzzzzzz(0:1)       
+        real evxxyyyy(0:1)
+        real evxxxxyy(0:1)
+        real evxxxxzz(0:1)
+        real evxxzzzz(0:1)
+        real evyyyyzz(0:1)
+        real evyyzzzz(0:1)
+        real evxxyyzz(0:1)
         real omega, coswt
         integer maxFreq
         parameter( maxFreq=500 )
@@ -2590,6 +3452,7 @@
           bImp( 1)       = rpar(13) ! beta4 : coefficient for implicit time-stepping
           bImp( 2)       = rpar(14) ! beta6 (for future)
           bImp( 3)       = rpar(15) ! beta8 (for future)
+          gridCFL        = rpar(16)
           dy=dx(1)  ! Are these needed?
           dz=dx(2)
           option                       = ipar( 0)
@@ -2604,16 +3467,23 @@
           debug                        = ipar( 9)
           gridIsImplicit               = ipar(10)
           useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
-          useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for impliciit time-stepping
+          useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for implicit time-stepping
           preComputeUpwindUt           = ipar(13)
           numberOfFrequencies          = ipar(14)
           adjustOmega                  = ipar(15)
           solveHelmholtz               = ipar(16)
           adjustHelmholtzForUpwinding  = ipar(17)
+          modifiedEquationApproach     = ipar(18)
           fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
           fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
      ! ** fix me ***
           timeSteppingMethod=modifiedEquationTimeStepping
+     ! Set dr(:) = dx(:) for 6th-order derivatives
+          if( gridType.eq.rectangular )then
+              do axis=0,2
+                  dr(axis)=dx(axis)
+              end do
+          end if
      ! ---- Compute the coefficients in the implicit time-stepping scheme ----
           beta2=bImp(0)
           beta4=bImp(1)
@@ -2634,9 +3504,12 @@
           dtsq=dt**2
           cdtsq=(cc**2)*(dt**2)
           cdt=cc*dt
-          cdtsq12=cdtsq*cdtsq/12.  ! c^4 dt^4 /14 
-          cdt4by360=(cdt)**4/360.
-          cdt6by20160=cdt**6/(8.*7.*6.*5.*4.*3.)
+     ! new: 
+          cdtPow4By12  = cdt**4/12.
+          cdtPow6By360 = cdt**6/360 
+          cdtsq12=cdtsq*cdtsq/12.  ! c^4 dt^4 /12 
+     ! cdt4by360=(cdt)**4/360.  ! (c*dt)^4/360 
+     ! cdt6by20160=cdt**6/(8.*7.*6.*5.*4.*3.)
           cdtSqBy12= cdtsq/12.   ! c^2*dt*2/12
           dt4by12=dtsq*dtsq/12.
           cdtdx = (cc*dt/dx(0))**2
@@ -2690,13 +3563,13 @@
                   stop 2222
               end if
             end if
-          if( (.false. .or. debug.gt.1) .and. t.le.dt )then
+          if( (.false. .or. debug.gt.1) .and. t.le.3*dt )then
               write(*,'("advWave: option=",i4," grid=",i4)') option,grid
               write(*,'("advWave: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
               write(*,'("advWave: addForcing=",i2," forcingOption=",i2)') addForcing,forcingOption
-              write(*,'("advWave: useUpwindDissipation=",i2,"(explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
-              write(*,'("advWave: useSosupDissipation=",i2,"(1= add upwind dissipation in this stage)")') useSosupDissipation
-              write(*,'("advWave: t,dt,c,omega=",4e10.2)') t,dt,cc,omega 
+              write(*,'("advWave: useUpwindDissipation=",i2," (explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
+              write(*,'("advWave: useSosupDissipation=",i2," (1= add upwind dissipation in this stage)")') useSosupDissipation
+              write(*,'("advWave: t,dt,c,omega,gridCFL=",5(1pe10.2,1x))') t,dt,cc,omega,gridCFL
               write(*,'("advWave: gridIsImplicit=",i2," adjustOmega=",i2," solveHelmholtz=",i2)') gridIsImplicit,adjustOmega,solveHelmholtz
               if( forcingOption.eq.helmholtzForcing )then
                   write(*,'("advWave: numberOfFrequencies=",i2)') numberOfFrequencies
@@ -2735,35 +3608,43 @@
           if( useSosupDissipation.ne.0 .or. useImplicitUpwindDissipation.eq.1 )then
        ! ---- coefficients of upwind dissipation ---
        !   **NOTE**: These must match the values in implicit.bC 
-              if( .true. )then
-         ! *new* way to define coefficients: (see cgWave.pdf)
-                  adSosup = cc*dt/( sqrt(1.*nd) * 2**(orderOfAccuracy+1) ) 
-                  if( mod(orderOfAccuracy/2,2).eq.1 )then
-                      adSosup = - adSosup  ! negative for orders 2,6,10, ...
-                  end if
-              else 
-         ! **** OLD WAY ****
-         ! Coefficients in the sosup dissipation from Jordan Angel
-                  if( orderOfAccuracy.eq.2 )then
-                    adSosup=-cc*dt*1./8.
-                    if( preComputeUpwindUt.eq.1 )then
-            ! We need to reduce the upwind coefficient for stability if we pre-compute uDot: (see CgWave documentation)
-                        adSosup=adSosup/sqrt(1.*nd)
-                    end if 
-                  else if( orderOfAccuracy.eq.4 )then 
-                      adSosup=cc*dt*5./288.
-                      if( .false. )then 
-                            adSosup = adSosup*.5 ! ****TEST****
-                      end if
-                  else if( orderOfAccuracy.eq.6 )then 
-                      adSosup=-cc*dt*31./8640.
-                  else
-                      stop 1005
-                  end if
-              end if
+       ! if( .true. )then
+       ! *new* way to define coefficients: (see cgWave.pdf)
+              adSosup = cc*dt/( sqrt(1.*nd) * 2**(orderOfAccuracy+1) ) 
+       ! if( orderOfAccuracy.eq.6 )then
+       !   adSosup = adSosup*.5     ! *** TEMP : ME66 seems to be unstable at cfl=.9 and original adSosup
+       ! end if
+         ! upwinding always takes a positive coefficient now *wdh* Feb 5, 2022
+         ! if( mod(orderOfAccuracy/2,2).eq.1 )then
+         !   adSosup = - adSosup  ! negative for orders 2,6,10, ...
+         ! end if
+       ! else 
+       !   ! **** OLD WAY ****
+       !   ! Coefficients in the sosup dissipation from Jordan Angel
+       !   if( orderOfAccuracy.eq.2 )then
+       !    adSosup=-cc*dt*1./8.
+       !    if( preComputeUpwindUt.eq.1 )then
+       !      ! We need to reduce the upwind coefficient for stability if we pre-compute uDot: (see CgWave documentation)
+       !      adSosup=adSosup/sqrt(1.*nd)
+       !    end if 
+       !   else if( orderOfAccuracy.eq.4 )then 
+       !     adSosup=cc*dt*5./288.
+       !     if( .false. )then 
+       !        adSosup = adSosup*.5 ! ****TEST****
+       !     end if
+       !   else if( orderOfAccuracy.eq.6 )then 
+       !     adSosup=-cc*dt*31./8640.
+       !   else
+       !     stop 1005
+       !   end if
+       ! end if
               uDotFactor=.5  ! By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
        ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
               adSosup=sosupParameter*adSosup
+              if( gridIsImplicit.ne.0 )then
+                  write(*,'("advWave: gridIsImplicit: REDUCE UPWIND DISS COEFF by gridCFL=",e10.2)') gridCFL
+                  adSosup = adSosup/gridCFL 
+              end if
               if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
                   write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useImplicitUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useImplicitUpwindDissipation
                   write(*,'("         : t,dt,adSosup=",3e10.2," adSosup/(c*dt)=",e12.4)')t,dt,adSosup,adSosup/(cc*dt)
@@ -3008,6 +3889,28 @@
                                                   call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
                                               fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
                                         end if
+                        ! Correct forcing for fourth-order ME in 3D
+                                                    call ogDeriv(ep, 4,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttt(m) )
+                                                    call ogDeriv(ep, 0,4,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxx(m) )
+                                                    call ogDeriv(ep, 0,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyy(m) )
+                                                    call ogDeriv(ep, 0,2,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzz(m) )
+                                                    call ogDeriv(ep, 0,0,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzz(m) )
+                                                    call ogDeriv(ep, 0,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyy(m) )
+                                                    call ogDeriv(ep, 0,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzz(m) )
+                                                fv(m) = fv(m) + (dtSq/12.)*evtttt(m) - (cdtsq12/dtSq)*( evxxxx(m) + 2.*( evxxyy(m) + evxxzz(m) + evyyzz(m) ) + evyyyy(m) + evzzzz(m) )       
+                        ! Correct forcing for sixth-order ME in 3D
+                                                    call ogDeriv(ep, 6,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttttt(m) )
+                                                    call ogDeriv(ep, 0,6,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxxx(m) )
+                                                    call ogDeriv(ep, 0,0,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyyy(m) )
+                                                    call ogDeriv(ep, 0,0,0,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzzzz(m) )
+                                                    call ogDeriv(ep, 0,4,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxyy(m) )
+                                                    call ogDeriv(ep, 0,2,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyyy(m) )
+                                                    call ogDeriv(ep, 0,4,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxzz(m) )
+                                                    call ogDeriv(ep, 0,2,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzzzz(m) )
+                                                    call ogDeriv(ep, 0,0,4,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyzz(m) )
+                                                    call ogDeriv(ep, 0,0,2,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzzzz(m) )
+                                                    call ogDeriv(ep, 0,2,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyzz(m) )
+                                                fv(m) = fv(m) + (dtSq**2/360.)*evtttttt(m) - (cdtPow6By360/dtSq)*( evxxxxxx(m) + evyyyyyy(m) + evzzzzzz(m) + 3.*(evxxxxyy(m) + evxxyyyy(m) + evyyyyyy(m) + evyyyyzz(m) + evyyzzzz(m) )  + 6.*evxxyyzz(m)  )
                                     else if( forcingOption.eq.helmholtzForcing )then
                      ! forcing for solving the Helmholtz equation   
                      ! NOTE: change sign of forcing since for Helholtz we want to solve
@@ -3217,7 +4120,7 @@
        !                      false=compute Ut inline in Gauss-Seidel fashion 
               if( preComputeUpwindUt.eq.1 )then
          ! precompute Ut in upwind dissipation,  (uses v=uDot computed above)
-                      if( debug.gt.3 .and. t.lt.2*dt )then
+                      if( debug.gt.3 .and. t.lt.4*dt )then
                           write(*,'("addUpwindDiss: UPWIND DISS using u.t=v dim=3 order=8 grid=rectangular... t=",e10.2)') t
                           write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
                       end if
@@ -3227,16 +4130,16 @@
                           do i2=n2a,n2b
                           do i1=n1a,n1b
                               if( mask(i1,i2,i3).gt.0 )then
-              ! --- -FOURTH 8 ---
+              ! ---- EIGHTH 8 ---
                 ! --- THREE DIMENSIONS ---
-                                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+(-20.*v(i1,i2,i3,ec)+15.*(v(i1+1,i2,i3,ec)+v(i1-1,i2,i3,ec))-6.*(v(i1+2,i2,i3,ec)+v(i1-2,i2,i3,ec))+(v(i1+3,i2,i3,ec)+v(i1-3,i2,i3,ec)))*adxSosup(0)+(-20.*v(i1,i2,i3,ec)+15.*(v(i1,i2+1,i3,ec)+v(i1,i2-1,i3,ec))-6.*(v(i1,i2+2,i3,ec)+v(i1,i2-2,i3,ec))+(v(i1,i2+3,i3,ec)+v(i1,i2-3,i3,ec)))*adxSosup(1)+(-20.*v(i1,i2,i3,ec)+15.*(v(i1,i2,i3+1,ec)+v(i1,i2,i3-1,ec))-6.*(v(i1,i2,i3+2,ec)+v(i1,i2,i3-2,ec))+(v(i1,i2,i3+3,ec)+v(i1,i2,i3-3,ec)))*adxSosup(2)
+                                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+(-252.*v(i1,i2,i3,ec)+210.*(v(i1+1,i2,i3,ec)+v(i1-1,i2,i3,ec))-120.*(v(i1+2,i2,i3,ec)+v(i1-2,i2,i3,ec))+45.*(v(i1+3,i2,i3,ec)+v(i1-3,i2,i3,ec))-10.*(v(i1+4,i2,i3,ec)+v(i1-4,i2,i3,ec))+(v(i1+5,i2,i3,ec)+v(i1-5,i2,i3,ec)))*adxSosup(0)+(-252.*v(i1,i2,i3,ec)+210.*(v(i1,i2+1,i3,ec)+v(i1,i2-1,i3,ec))-120.*(v(i1,i2+2,i3,ec)+v(i1,i2-2,i3,ec))+45.*(v(i1,i2+3,i3,ec)+v(i1,i2-3,i3,ec))-10.*(v(i1,i2+4,i3,ec)+v(i1,i2-4,i3,ec))+(v(i1,i2+5,i3,ec)+v(i1,i2-5,i3,ec)))*adxSosup(1)+(-252.*v(i1,i2,i3,ec)+210.*(v(i1,i2,i3+1,ec)+v(i1,i2,i3-1,ec))-120.*(v(i1,i2,i3+2,ec)+v(i1,i2,i3-2,ec))+45.*(v(i1,i2,i3+3,ec)+v(i1,i2,i3-3,ec))-10.*(v(i1,i2,i3+4,ec)+v(i1,i2,i3-4,ec))+(v(i1,i2,i3+5,ec)+v(i1,i2,i3-5,ec)))*adxSosup(2)
                               end if
                           end do
                           end do
                           end do
               else
          ! compute Ut inline in Gauss-Seidel fashion (this is more stable)
-                      if( debug.gt.3 .and. t.lt.2*dt )then
+                      if( debug.gt.3 .and. t.lt.4*dt )then
                           write(*,'("addUpwindDiss: UPWIND DISS using u.t=Dztu dim=3 order=8 grid=rectangular... t=",e10.2)') t
                           write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
                       end if
@@ -3246,9 +4149,9 @@
                           do i2=n2a,n2b
                           do i1=n1a,n1b
                               if( mask(i1,i2,i3).gt.0 )then
-              ! --- -FOURTH 8 ---
+              ! ---- EIGHTH 8 ---
                 ! --- THREE DIMENSIONS ---
-                                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+(-20.*Dztu(i1,i2,i3,ec)+15.*(Dztu(i1+1,i2,i3,ec)+Dztu(i1-1,i2,i3,ec))-6.*(Dztu(i1+2,i2,i3,ec)+Dztu(i1-2,i2,i3,ec))+(Dztu(i1+3,i2,i3,ec)+Dztu(i1-3,i2,i3,ec)))*adxSosup(0)+(-20.*Dztu(i1,i2,i3,ec)+15.*(Dztu(i1,i2+1,i3,ec)+Dztu(i1,i2-1,i3,ec))-6.*(Dztu(i1,i2+2,i3,ec)+Dztu(i1,i2-2,i3,ec))+(Dztu(i1,i2+3,i3,ec)+Dztu(i1,i2-3,i3,ec)))*adxSosup(1)+(-20.*Dztu(i1,i2,i3,ec)+15.*(Dztu(i1,i2,i3+1,ec)+Dztu(i1,i2,i3-1,ec))-6.*(Dztu(i1,i2,i3+2,ec)+Dztu(i1,i2,i3-2,ec))+(Dztu(i1,i2,i3+3,ec)+Dztu(i1,i2,i3-3,ec)))*adxSosup(2)
+                                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+(-252.*Dztu(i1,i2,i3,ec)+210.*(Dztu(i1+1,i2,i3,ec)+Dztu(i1-1,i2,i3,ec))-120.*(Dztu(i1+2,i2,i3,ec)+Dztu(i1-2,i2,i3,ec))+45.*(Dztu(i1+3,i2,i3,ec)+Dztu(i1-3,i2,i3,ec))-10.*(Dztu(i1+4,i2,i3,ec)+Dztu(i1-4,i2,i3,ec))+(Dztu(i1+5,i2,i3,ec)+Dztu(i1-5,i2,i3,ec)))*adxSosup(0)+(-252.*Dztu(i1,i2,i3,ec)+210.*(Dztu(i1,i2+1,i3,ec)+Dztu(i1,i2-1,i3,ec))-120.*(Dztu(i1,i2+2,i3,ec)+Dztu(i1,i2-2,i3,ec))+45.*(Dztu(i1,i2+3,i3,ec)+Dztu(i1,i2-3,i3,ec))-10.*(Dztu(i1,i2+4,i3,ec)+Dztu(i1,i2-4,i3,ec))+(Dztu(i1,i2+5,i3,ec)+Dztu(i1,i2-5,i3,ec)))*adxSosup(1)+(-252.*Dztu(i1,i2,i3,ec)+210.*(Dztu(i1,i2,i3+1,ec)+Dztu(i1,i2,i3-1,ec))-120.*(Dztu(i1,i2,i3+2,ec)+Dztu(i1,i2,i3-2,ec))+45.*(Dztu(i1,i2,i3+3,ec)+Dztu(i1,i2,i3-3,ec))-10.*(Dztu(i1,i2,i3+4,ec)+Dztu(i1,i2,i3-4,ec))+(Dztu(i1,i2,i3+5,ec)+Dztu(i1,i2,i3-5,ec)))*adxSosup(2)
                               end if
                           end do
                           end do

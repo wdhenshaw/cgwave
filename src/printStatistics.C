@@ -1,5 +1,6 @@
 #include "CgWave.h"
 #include "ParallelUtility.h"
+#include "ProcessorInfo.h"
 
 int CgWave::
 printStatistics(FILE *file /* = stdout */)
@@ -17,6 +18,11 @@ printStatistics(FILE *file /* = stdout */)
   const real & tFinal             = dbase.get<real>("tFinal");
   const real & numberOfGridPoints = dbase.get<real>("numberOfGridPoints");
   const int & numberOfStepsTaken  = dbase.get<int>("numberOfStepsTaken");
+  const int & orderOfAccuracy               = dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracyInTime         = dbase.get<int>("orderOfAccuracyInTime");
+
+  const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+  const int & modifiedEquationApproach              = dbase.get<int>("modifiedEquationApproach");
 
   int numberOfInterpolationPoints=0;
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
@@ -35,6 +41,8 @@ printStatistics(FILE *file /* = stdout */)
 
   // GenericMappedGridOperators::printBoundaryConditionStatistics(logFile);
   
+  const Real clockSpeed = ProcessorInfo::getClockSpeed()/1000.; // clock speed in GHz
+
   for( int i=0; i<maximumNumberOfTimings; i++ )
     timing(i) =ParallelUtility::getMaxValue(timing(i),0);  // get max over processors -- results only go to processor=0
 
@@ -80,12 +88,12 @@ printStatistics(FILE *file /* = stdout */)
             "              -------------------CgWave Summary----------------- \n"
             "                       %s" 
             "               Grid:   %s \n" 
-            "  ==== final time=%9.2e, numberOfStepsTaken =%9i, grids=%i, gridpts =%g, interp pts=%i, processors=%i ==== \n"
+            "  ==== final time=%9.2e, numberOfStepsTaken =%9i, grids=%i, gridpts =%g, interp pts=%i, processors=%i, clock=%.2f GHz ==== \n"
             "  ==== memory per-proc: [min=%g,ave=%g,max=%g](Mb), max-recorded=%g (Mb), total=%g (Mb)\n"
             "   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %%     [max-s/proc] [min-s/proc]\n",
             dateString,(const char*)nameOfGridFile,
             tFinal,numberOfStepsTaken,cg.numberOfComponentGrids(),numberOfGridPoints,numberOfInterpolationPoints,
-            np,minMem,aveMem,maxMem,maxMemRecorded,totalMem);
+            np,clockSpeed,minMem,aveMem,maxMem,maxMemRecorded,totalMem);
     
   
     int nSpace=35;
@@ -110,6 +118,26 @@ printStatistics(FILE *file /* = stdout */)
     fPrintF(output,"--------------------------------------------------------------------------------------------------------\n");
 
     cg.displayDistribution("CgWave",output);
+
+    // ----- Output CYCLES -------
+    fPrintF(output,"\n CYCLES : clock=%.2f GHz, gridpts =%.3g, numberOfStepsTaken =%g, \n",clockSpeed,numberOfGridPoints,(Real)numberOfStepsTaken);
+    fPrintF(output,"   Timings:                        CYCLES/step/pt    %% \n",clockSpeed);
+    for( int i=0; i<maximumNumberOfTimings; i++ )
+    {
+      // if( timingName[i]!="" && timing(i)>0. )    
+      if( timingName[i]!="" )
+      {
+        Real myCycles = ( aveTiming(i)/numberOfStepsTaken/numberOfGridPoints ) *( clockSpeed * 1e9 ); // Ghz = 10^9 
+        fPrintF(output,"%s%s",(const char*)timingName[i],
+                (const char*)dots(0,max(0,nSpace-timingName[i].length())));
+        if( myCycles<100000 )
+          fPrintF(output,"%9.1f",myCycles);
+        else
+          fPrintF(output,"%10.2e",myCycles);
+        fPrintF(output,"      %6.2f\n",100.*aveTiming(i)/aveTiming(0));
+      }
+      
+    }
 
     if( fileio==0 )
     {
@@ -142,6 +170,58 @@ printStatistics(FILE *file /* = stdout */)
               "\\label{tab:%s}\n"
               "\\end{table}\n", (const char*)nameOfGridFile,numberOfGridPoints,numberOfInterpolationPoints,
               numberOfStepsTaken,Communication_Manager::numberOfProcessors(),(const char*)nameOfGridFile );
+
+      int firstChar=0; 
+      for( int i=nameOfGridFile.length()-1; i>=0; i-- )
+      {
+        if( nameOfGridFile[i]=='/' ){ firstChar=i+1; break; } // start from end, work backwards and look for a directory symbol
+      }
+      aString gridNameNoPrefix = nameOfGridFile(firstChar,nameOfGridFile.length()-1);
+
+      const Real timeForAdvGrids = timing(timeForAdvanceRectangularGrids) + timing(timeForAdvanceCurvilinearGrids);
+      // real timeForAdvGrids = timing(timeForAdvanceRectangularGrids) + timing(timeForAdvanceCurvilinearGrids)+ timing(timeForUp); 
+
+      const Real nanoSecondsPerSecond=1e9; // 1 ns = 1e-9 s 
+      const real scaleFactor = 1./numberOfStepsTaken/numberOfGridPoints*nanoSecondsPerSecond;
+
+      aString blanks="                                                                 ";
+      int numBlanks = max(0,min(30,gridNameNoPrefix.length()-1 -7));
+
+      aString method="ME";                              // modified equation time stepping 
+      if( modifiedEquationApproach==1 ) method = "FAME"; // factored (hierachical)
+      if( orderOfAccuracyInTime==2 )    method + "T2";  // 2nd-order in time
+
+      fPrintF(output,"\n\nSummary info for a performance table see cgwave/doc/performance.tex:\n");
+      fPrintF(output,"            &        &     &       & \\multicolumn{3}{|c|}{CPU ns/step/pt}  \\\\\n",(const char*)blanks(0,numBlanks)); 
+      fPrintF(output,"   Grid  %s & scheme & ord & pts   & total   &  adv    & arc  &   up  &  bc  & interp \\\\\n",(const char*)blanks(0,numBlanks)); 
+      fPrintF(output,"  %s & %d & %s  & %.2gM  & %7.1f & %7.1f & %7.1f & %7.1f & %7.1f & %7.1f   \\\\ % PerfInfo\n",
+           (const char*)gridNameNoPrefix,
+           orderOfAccuracy,
+           (const char*)method,
+           numberOfGridPoints/1e6,
+           timing(0)*scaleFactor,               // total time 
+           timing(timeForAdvance)*scaleFactor,
+           timeForAdvGrids*scaleFactor,         // time to advance rectangular and curvilinear grids 
+           timing(timeForDissipation)*scaleFactor,
+           timing(timeForBoundaryConditions)*scaleFactor,
+           timing(timeForInterpolate)*scaleFactor
+            );
+
+      // fPrintF(output,"   Grid    & ord &   Solver          &    pts  & its  & $\\|{\\rm res}\\|_\\infty$ & total        & setup     & solve & reals/pt \\\\ \n");
+
+      // fPrintF(output," %s &  %d  &  %s   &   %.2gM  & %4d  &   %8.1e       & %7.2f  & %7.2f  & %7.2f  & %7.1f \\\\ % PerfInfo\n",
+      //    (const char*)gridNameNoPrefix,
+      //    orderOfAccuracy,
+      //    (const char*)solverLabel,
+      //    numberOfGridPoints/1e6,
+      //    numIts,
+      //    maximumResidual,
+      //    tm[timeForSolve]+tm[timeForInitialize],
+      //    tm[timeForInitialize],
+      //    tm[timeForSolve],
+      //    realsPerGridPoint
+      //    );
+
     }
     
     

@@ -41,7 +41,7 @@ planeWaveCicOrder4.check ../runs/known/planeWave.cmd -g=cice2.order4.ng3 -upwind
 # disk eigenfunction : CBC conditions
 diskEig2.check ../runs/known/known.cmd -g=sice2.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
 diskEig4.check ../runs/known/known.cmd -g=sice2.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
-diskEig6.check ../runs/known/known.cmd -g=sice2.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -cfl=.5 -go=go
+# diskEig6.check ../runs/known/known.cmd -g=sice2.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -cfl=.5 -go=go
 #
 # Forced Helmholtz solve
 helmHoltzCicOrder2.check ../cmd/helmholtz.cmd -g=cice2.order2 -upwind=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
