@@ -37,6 +37,9 @@ OPTFLAG = -O3
 
 CCFLAGS = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG)
 CCFLAGS += $(PETSC_INCLUDE)
+# for rtg1 which has an older compiler (Processor.h)
+CCFLAGS += -std=c++11
+
 CFLAGS = $(OV_CC_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include
 
 # Some C++ files we compile optimized by default

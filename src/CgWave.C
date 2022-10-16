@@ -1161,7 +1161,7 @@ int CgWave::interactiveUpdate()
       else
         assignType = "interpolated"; // new default July 4, 2022
 
-      printF("Interpolation neighbours will be %s for upwind schemes with wider stencils.\n",assignType );
+      printF("Interpolation neighbours will be %s for upwind schemes with wider stencils.\n",(const char*)assignType );
     }
 
     else if( answer=="standard modified equation" || 
