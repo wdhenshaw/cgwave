@@ -136,6 +136,17 @@
           real lap2h330i, lap6hSq, lap4hSq200i, lap4hSq020i, lap4hSq100i, lap4hSq010i, lap4hSq110i, lap2hSq400i, lap2hSq040i, lap2hSq300i, lap2hSq030i
           real lap2hSq310i, lap2hSq130i, lap4hCubed
       integer maxDeriv,d,uc,count,numGhost1,m1,m2,m3
+
+    ! integer md1a,md1b,md2a,md2b,md3a,md3b
+    ! parameter( md1a=-5,md1b=1024+5, md2a=-5,md2b=1024+5, md3a=0, md3b=0)
+    ! real sxs, syr, sys, rxx, ryy, sxx, syy, d200(md1a:md1b,md2a:md2b,md3a:md3b,0:0), d020(md1a:md1b,md2a:md2b,md3a:md3b,0:0), lap2h(md1a:md1b,md2a:md2b,md3a:md3b,0:0), d100i
+    ! save d200, d020, lap2h
+
+    ! real d010i, d110i, d400(md1a:md1b,md2a:md2b,md3a:md3b,0:0), d040(md1a:md1b,md2a:md2b,md3a:md3b,0:0), lap4h(md1a:md1b,md2a:md2b,md3a:md3b,0:0), lap2hSq(md1a:md1b,md2a:md2b,md3a:md3b,0:0), d220(md1a:md1b,md2a:md2b,md3a:md3b,0:0), d300i, d030i, d310i, d130i
+    ! save d010i, d110i, d400, d040, lap4h, lap2hSq, d220, d300i, d030i, d310i, d130i
+
+        
+      
  ! declare coefficients in the chain rule for curvilinear grids (from cgwave/maple/chainRuleCoefficients.mw)
  ! #If "curvilinear" eq "curvilinear"
  !   #If 2 == 2
@@ -716,6 +727,8 @@ cssssss0 = 1.; cssssss1 = -1/4.; cssssss2 = 13/240.; cssssss3 = -139/12096.;
                                   end do
                                   end do
                             end if ! end assignLapCoeff
+
+
                             numGhost1=3;
                             n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                             n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
@@ -806,6 +819,7 @@ cssssss0 = 1.; cssssss1 = -1/4.; cssssss2 = 13/240.; cssssss3 = -139/12096.;
                               end do
                               end do
                               end do
+
               ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                             numGhost1=0;
                             n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
@@ -1022,6 +1036,7 @@ cssssss0 = 1.; cssssss1 = -1/4.; cssssss2 = 13/240.; cssssss3 = -139/12096.;
                                     end do
                                     end do
                               end if ! end assignLapCoeff
+
                               numGhost1=3;
                               n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                               n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
@@ -1042,6 +1057,7 @@ cssssss0 = 1.; cssssss1 = -1/4.; cssssss2 = 13/240.; cssssss3 = -139/12096.;
                               n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                               n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                               n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+
                                 do i3=n3a,n3b
                                 do i2=n2a,n2b
                                 do i1=n1a,n1b
@@ -1055,6 +1071,29 @@ cssssss0 = 1.; cssssss1 = -1/4.; cssssss2 = 13/240.; cssssss3 = -139/12096.;
                    ! --- Laplacian to order 4 = lap2h + corrections 
                                       lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + lapCoeff(i1,i2,i3,0)*crr1*d400(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*(cr1*d310i + cs1*d130i) + lapCoeff(i1,i2,i3,1)*css1*d040(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*cr1 *d300i + lapCoeff(i1,i2,i3,4)*cs1 *d030i 
                    ! --- Laplacian squared to order 2:
+                                      ! lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
+                                      ! lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
+                                      ! lap2h100i = lap2h(i1+1,i2,i3,0) - lap2h(i1-1,i2,i3,0)
+                                      ! lap2h010i = lap2h(i1,i2+1,i3,0) - lap2h(i1,i2-1,i3,0)
+                                      ! lap2h110i = lap2h(i1+1,i2+1,i3,0) - lap2h(i1-1,i2+1,i3,0) - lap2h(i1+1,i2-1,i3,0) + lap2h(i1-1,i2-1,i3,0)
+                                      ! lap2hSq(i1,i2,i3,0) =  lapCoeff(i1,i2,i3,0)*lap2h200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*lap2h020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2h110i  + lapCoeff(i1,i2,i3,3)*lap2h100i  + lapCoeff(i1,i2,i3,4)*lap2h010i    
+                                end do
+                                end do
+                                end do
+
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                   !                    d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
+                   !                    d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
+                   !                    d220(i1,i2,i3,0) = d020(i1+1,i2,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
+                   !                    d300i = d200(i1+1,i2,i3,0) - d200(i1-1,i2,i3,0)
+                   !                    d030i = d020(i1,i2+1,i3,0) - d020(i1,i2-1,i3,0)
+                   !                    d310i = d200(i1+1,i2+1,i3,0) - d200(i1-1,i2+1,i3,0) - d200(i1+1,i2-1,i3,0) + d200(i1-1,i2-1,i3,0)
+                   !                    d130i = d020(i1+1,i2+1,i3,0) - d020(i1-1,i2+1,i3,0) - d020(i1+1,i2-1,i3,0) + d020(i1-1,i2-1,i3,0)
+                   ! ! --- Laplacian to order 4 = lap2h + corrections 
+                   !                    lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + lapCoeff(i1,i2,i3,0)*crr1*d400(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*(cr1*d310i + cs1*d130i) + lapCoeff(i1,i2,i3,1)*css1*d040(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*cr1 *d300i + lapCoeff(i1,i2,i3,4)*cs1 *d030i 
+                   ! --- Laplacian squared to order 2:
                                       lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
                                       lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
                                       lap2h100i = lap2h(i1+1,i2,i3,0) - lap2h(i1-1,i2,i3,0)
@@ -1064,10 +1103,13 @@ cssssss0 = 1.; cssssss1 = -1/4.; cssssss2 = 13/240.; cssssss3 = -139/12096.;
                                 end do
                                 end do
                                 end do
+
                               numGhost1=1;
                               n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                               n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                               n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+
+
                                 do i3=n3a,n3b
                                 do i2=n2a,n2b
                                 do i1=n1a,n1b
@@ -1075,6 +1117,85 @@ cssssss0 = 1.; cssssss1 = -1/4.; cssssss2 = 13/240.; cssssss3 = -139/12096.;
                                       d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
                                       d420(i1,i2,i3,0) = d220(i1+1,i2,i3,0) - 2*d220(i1,i2,i3,0) + d220(i1-1,i2,i3,0)
                                       d240(i1,i2,i3,0) = d040(i1+1,i2,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1-1,i2,i3,0)
+                   !                    d500i = d400(i1+1,i2,i3,0) - d400(i1-1,i2,i3,0)
+                   !                    d050i = d040(i1,i2+1,i3,0) - d040(i1,i2-1,i3,0)
+                   !                    d510i = d400(i1+1,i2+1,i3,0) - d400(i1-1,i2+1,i3,0) - d400(i1+1,i2-1,i3,0) + d400(i1-1,i2-1,i3,0)
+                   !                    d150i = d040(i1+1,i2+1,i3,0) - d040(i1-1,i2+1,i3,0) - d040(i1+1,i2-1,i3,0) + d040(i1-1,i2-1,i3,0)
+                   !                    d330i = d220(i1+1,i2+1,i3,0) - d220(i1-1,i2+1,i3,0) - d220(i1+1,i2-1,i3,0) + d220(i1-1,i2-1,i3,0)
+                   ! ! --- Laplacian to order 6 = lap4h + corrections 
+                   !                    lap6h(i1,i2,i3,0) = lap4h(i1,i2,i3,0) + lapCoeff(i1,i2,i3,0)*crr2*d600(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*(cr2*d510i + cs2*d150i + cr1*cs1*d330i ) + lapCoeff(i1,i2,i3,1)*css2*d060(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*cr2 *d500i + lapCoeff(i1,i2,i3,4)*cs2 *d050i 
+                   !                    lap2hSq200(i1,i2,i3,0) = lap2hSq(i1+1,i2,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1-1,i2,i3,0)
+                   !                    lap2hSq020(i1,i2,i3,0) = lap2hSq(i1,i2+1,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1,i2-1,i3,0)
+                   !                    lap2hSq100i = lap2hSq(i1+1,i2,i3,0) - lap2hSq(i1-1,i2,i3,0)
+                   !                    lap2hSq010i = lap2hSq(i1,i2+1,i3,0) - lap2hSq(i1,i2-1,i3,0)
+                   !                    lap2hSq110i = lap2hSq(i1+1,i2+1,i3,0) - lap2hSq(i1-1,i2+1,i3,0) - lap2hSq(i1+1,i2-1,i3,0) + lap2hSq(i1-1,i2-1,i3,0)
+                   !                    lap2hCubed(i1,i2,i3,0) =  + lapCoeff(i1,i2,i3,0)*lap2hSq200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2hSq110i  + lapCoeff(i1,i2,i3,1)*lap2hSq020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2hSq100i  + lapCoeff(i1,i2,i3,4)*lap2hSq010i   
+                   ! ! --- Laplacian squared to order 4 = 
+                   ! !  lap2h*( lap4h ) + corrections*( Lap2h )
+                                   !!   lap4h200(i1,i2,i3,0) = lap4h(i1+1,i2,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1-1,i2,i3,0)
+                                   !!   lap4h020(i1,i2,i3,0) = lap4h(i1,i2+1,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2-1,i3,0)
+                                   !!   lap2h400(i1,i2,i3,0) = lap2h200(i1+1,i2,i3,0) - 2*lap2h200(i1,i2,i3,0) + lap2h200(i1-1,i2,i3,0)
+                                   !!   lap2h040(i1,i2,i3,0) = lap2h020(i1,i2+1,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1,i2-1,i3,0)
+                                   !!   lap2h220(i1,i2,i3,0) = lap2h020(i1+1,i2,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1-1,i2,i3,0)
+                   !                    lap4h100i = lap4h(i1+1,i2,i3,0) - lap4h(i1-1,i2,i3,0)
+                   !                    lap4h010i = lap4h(i1,i2+1,i3,0) - lap4h(i1,i2-1,i3,0)
+                   !                    lap4h110i = lap4h(i1+1,i2+1,i3,0) - lap4h(i1-1,i2+1,i3,0) - lap4h(i1+1,i2-1,i3,0) + lap4h(i1-1,i2-1,i3,0)
+                   !                    lap2h300i = lap2h200(i1+1,i2,i3,0) - lap2h200(i1-1,i2,i3,0)
+                   !                    lap2h030i = lap2h020(i1,i2+1,i3,0) - lap2h020(i1,i2-1,i3,0)
+                   !                    lap2h310i = lap2h200(i1+1,i2+1,i3,0) - lap2h200(i1-1,i2+1,i3,0) - lap2h200(i1+1,i2-1,i3,0) + lap2h200(i1-1,i2-1,i3,0)
+                   !                    lap2h130i = lap2h020(i1+1,i2+1,i3,0) - lap2h020(i1-1,i2+1,i3,0) - lap2h020(i1+1,i2-1,i3,0) + lap2h020(i1-1,i2-1,i3,0)
+                   !                    lap4hSq(i1,i2,i3,0) =     lapCoeff(i1,i2,i3,0)*( lap4h200(i1,i2,i3,0) + crr1*lap2h400(i1,i2,i3,0) )    + lapCoeff(i1,i2,i3,2)*( lap4h110i + cr1*lap2h310i + cs1*lap2h130i ) + lapCoeff(i1,i2,i3,1)*( lap4h020(i1,i2,i3,0) + css1*lap2h040(i1,i2,i3,0) )     + lapCoeff(i1,i2,i3,3)*( lap4h100i + cr1 *lap2h300i )    + lapCoeff(i1,i2,i3,4)*( lap4h010i + cs1 *lap2h030i )      
+                                end do
+                                end do
+                                end do
+
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                  !!    d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
+                                  !!    d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
+                                  !!    d420(i1,i2,i3,0) = d220(i1+1,i2,i3,0) - 2*d220(i1,i2,i3,0) + d220(i1-1,i2,i3,0)
+                                  !!    d240(i1,i2,i3,0) = d040(i1+1,i2,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1-1,i2,i3,0)
+                   !                    d500i = d400(i1+1,i2,i3,0) - d400(i1-1,i2,i3,0)
+                   !                    d050i = d040(i1,i2+1,i3,0) - d040(i1,i2-1,i3,0)
+                   !                    d510i = d400(i1+1,i2+1,i3,0) - d400(i1-1,i2+1,i3,0) - d400(i1+1,i2-1,i3,0) + d400(i1-1,i2-1,i3,0)
+                   !                    d150i = d040(i1+1,i2+1,i3,0) - d040(i1-1,i2+1,i3,0) - d040(i1+1,i2-1,i3,0) + d040(i1-1,i2-1,i3,0)
+                   !                    d330i = d220(i1+1,i2+1,i3,0) - d220(i1-1,i2+1,i3,0) - d220(i1+1,i2-1,i3,0) + d220(i1-1,i2-1,i3,0)
+                   ! ! --- Laplacian to order 6 = lap4h + corrections 
+                   !                    lap6h(i1,i2,i3,0) = lap4h(i1,i2,i3,0) + lapCoeff(i1,i2,i3,0)*crr2*d600(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*(cr2*d510i + cs2*d150i + cr1*cs1*d330i ) + lapCoeff(i1,i2,i3,1)*css2*d060(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*cr2 *d500i + lapCoeff(i1,i2,i3,4)*cs2 *d050i 
+                   !                    lap2hSq200(i1,i2,i3,0) = lap2hSq(i1+1,i2,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1-1,i2,i3,0)
+                   !                    lap2hSq020(i1,i2,i3,0) = lap2hSq(i1,i2+1,i3,0) - 2*lap2hSq(i1,i2,i3,0) + lap2hSq(i1,i2-1,i3,0)
+                   !                    lap2hSq100i = lap2hSq(i1+1,i2,i3,0) - lap2hSq(i1-1,i2,i3,0)
+                   !                    lap2hSq010i = lap2hSq(i1,i2+1,i3,0) - lap2hSq(i1,i2-1,i3,0)
+                   !                    lap2hSq110i = lap2hSq(i1+1,i2+1,i3,0) - lap2hSq(i1-1,i2+1,i3,0) - lap2hSq(i1+1,i2-1,i3,0) + lap2hSq(i1-1,i2-1,i3,0)
+                   !                    lap2hCubed(i1,i2,i3,0) =  + lapCoeff(i1,i2,i3,0)*lap2hSq200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2hSq110i  + lapCoeff(i1,i2,i3,1)*lap2hSq020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2hSq100i  + lapCoeff(i1,i2,i3,4)*lap2hSq010i   
+                   ! ! --- Laplacian squared to order 4 = 
+                   ! !  lap2h*( lap4h ) + corrections*( Lap2h )
+                                      lap4h200(i1,i2,i3,0) = lap4h(i1+1,i2,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1-1,i2,i3,0)
+                                      lap4h020(i1,i2,i3,0) = lap4h(i1,i2+1,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2-1,i3,0)
+                                      lap2h400(i1,i2,i3,0) = lap2h200(i1+1,i2,i3,0) - 2*lap2h200(i1,i2,i3,0) + lap2h200(i1-1,i2,i3,0)
+                                      lap2h040(i1,i2,i3,0) = lap2h020(i1,i2+1,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1,i2-1,i3,0)
+                                      lap2h220(i1,i2,i3,0) = lap2h020(i1+1,i2,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1-1,i2,i3,0)
+                   !                    lap4h100i = lap4h(i1+1,i2,i3,0) - lap4h(i1-1,i2,i3,0)
+                   !                    lap4h010i = lap4h(i1,i2+1,i3,0) - lap4h(i1,i2-1,i3,0)
+                   !                    lap4h110i = lap4h(i1+1,i2+1,i3,0) - lap4h(i1-1,i2+1,i3,0) - lap4h(i1+1,i2-1,i3,0) + lap4h(i1-1,i2-1,i3,0)
+                   !                    lap2h300i = lap2h200(i1+1,i2,i3,0) - lap2h200(i1-1,i2,i3,0)
+                   !                    lap2h030i = lap2h020(i1,i2+1,i3,0) - lap2h020(i1,i2-1,i3,0)
+                   !                    lap2h310i = lap2h200(i1+1,i2+1,i3,0) - lap2h200(i1-1,i2+1,i3,0) - lap2h200(i1+1,i2-1,i3,0) + lap2h200(i1-1,i2-1,i3,0)
+                   !                    lap2h130i = lap2h020(i1+1,i2+1,i3,0) - lap2h020(i1-1,i2+1,i3,0) - lap2h020(i1+1,i2-1,i3,0) + lap2h020(i1-1,i2-1,i3,0)
+                   !                    lap4hSq(i1,i2,i3,0) =     lapCoeff(i1,i2,i3,0)*( lap4h200(i1,i2,i3,0) + crr1*lap2h400(i1,i2,i3,0) )    + lapCoeff(i1,i2,i3,2)*( lap4h110i + cr1*lap2h310i + cs1*lap2h130i ) + lapCoeff(i1,i2,i3,1)*( lap4h020(i1,i2,i3,0) + css1*lap2h040(i1,i2,i3,0) )     + lapCoeff(i1,i2,i3,3)*( lap4h100i + cr1 *lap2h300i )    + lapCoeff(i1,i2,i3,4)*( lap4h010i + cs1 *lap2h030i )      
+                                end do
+                                end do
+                                end do
+
+
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                      ! d600(i1,i2,i3,0) = d400(i1+1,i2,i3,0) - 2*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
+                                      ! d060(i1,i2,i3,0) = d040(i1,i2+1,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
+                                      ! d420(i1,i2,i3,0) = d220(i1+1,i2,i3,0) - 2*d220(i1,i2,i3,0) + d220(i1-1,i2,i3,0)
+                                      ! d240(i1,i2,i3,0) = d040(i1+1,i2,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1-1,i2,i3,0)
                                       d500i = d400(i1+1,i2,i3,0) - d400(i1-1,i2,i3,0)
                                       d050i = d040(i1,i2+1,i3,0) - d040(i1,i2-1,i3,0)
                                       d510i = d400(i1+1,i2+1,i3,0) - d400(i1-1,i2+1,i3,0) - d400(i1+1,i2-1,i3,0) + d400(i1-1,i2-1,i3,0)
@@ -1090,11 +1211,11 @@ cssssss0 = 1.; cssssss1 = -1/4.; cssssss2 = 13/240.; cssssss3 = -139/12096.;
                                       lap2hCubed(i1,i2,i3,0) =  + lapCoeff(i1,i2,i3,0)*lap2hSq200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2hSq110i  + lapCoeff(i1,i2,i3,1)*lap2hSq020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2hSq100i  + lapCoeff(i1,i2,i3,4)*lap2hSq010i   
                    ! --- Laplacian squared to order 4 = 
                    !  lap2h*( lap4h ) + corrections*( Lap2h )
-                                      lap4h200(i1,i2,i3,0) = lap4h(i1+1,i2,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1-1,i2,i3,0)
-                                      lap4h020(i1,i2,i3,0) = lap4h(i1,i2+1,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2-1,i3,0)
-                                      lap2h400(i1,i2,i3,0) = lap2h200(i1+1,i2,i3,0) - 2*lap2h200(i1,i2,i3,0) + lap2h200(i1-1,i2,i3,0)
-                                      lap2h040(i1,i2,i3,0) = lap2h020(i1,i2+1,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1,i2-1,i3,0)
-                                      lap2h220(i1,i2,i3,0) = lap2h020(i1+1,i2,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1-1,i2,i3,0)
+                                      ! lap4h200(i1,i2,i3,0) = lap4h(i1+1,i2,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1-1,i2,i3,0)
+                                      ! lap4h020(i1,i2,i3,0) = lap4h(i1,i2+1,i3,0) - 2*lap4h(i1,i2,i3,0) + lap4h(i1,i2-1,i3,0)
+                                      ! lap2h400(i1,i2,i3,0) = lap2h200(i1+1,i2,i3,0) - 2*lap2h200(i1,i2,i3,0) + lap2h200(i1-1,i2,i3,0)
+                                      ! lap2h040(i1,i2,i3,0) = lap2h020(i1,i2+1,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1,i2-1,i3,0)
+                                      ! lap2h220(i1,i2,i3,0) = lap2h020(i1+1,i2,i3,0) - 2*lap2h020(i1,i2,i3,0) + lap2h020(i1-1,i2,i3,0)
                                       lap4h100i = lap4h(i1+1,i2,i3,0) - lap4h(i1-1,i2,i3,0)
                                       lap4h010i = lap4h(i1,i2+1,i3,0) - lap4h(i1,i2-1,i3,0)
                                       lap4h110i = lap4h(i1+1,i2+1,i3,0) - lap4h(i1-1,i2+1,i3,0) - lap4h(i1+1,i2-1,i3,0) + lap4h(i1-1,i2-1,i3,0)
@@ -1106,6 +1227,8 @@ cssssss0 = 1.; cssssss1 = -1/4.; cssssss2 = 13/240.; cssssss3 = -139/12096.;
                                 end do
                                 end do
                                 end do
+
+
                ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                               numGhost1=0;
                               n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);

@@ -617,7 +617,7 @@
 !...........end   statement functions
 
 
-      ! write(*,*) 'Inside advWave...'
+      ! write(*,*) 'Inside advWaveME...'
 
             gridType           =ipar(2)
             orderOfAccuracy    =ipar(3)

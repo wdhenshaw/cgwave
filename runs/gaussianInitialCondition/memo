@@ -3,6 +3,14 @@
 ****** Sat Aug 13, 2022
 
 
+cgWave -noplot gaussianIC.cmd -g=square512.order4.ng3 -tf=10 -tp=.05 -x0=.4 -y0=.4 -beta=50 -k0=0 -go=og
+
+
+
+****************************************************
+****** Sat Aug 13, 2022
+
+
 cgWave -noplot gaussianIC.cmd -g=square64.order2 -tf=10 -tp=.05 -x0=.5 -y0=.5 -beta=20 -k0=0 -go=og
 
 

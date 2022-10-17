@@ -8,6 +8,52 @@ set perf = $wave/performance
 
 cd /Users/henshaw/Dropbox/research/cgwave/runs/performance
 
+
+****************************
+****** Mon Oct 17, 2022
+
+REVISIT CYCLES: 
+
+cgWave -noplot ../known/known.cmd -g=nonSquare1024.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+Third split
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  4.65e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  4.75e+02
+
+Another split: 
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  4.52e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  4.50e+02
+
+Split 2nd-last loop into 2: 
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  5.33e+02
+
+
+
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  6.19e+02
+advWave: grid=0: numGridPoints=1.051e+06, cycles/grid-point =  6.12e+02
+
+ advance curvilinear grids.........  3.81e+01    2.37e-01    2.25e-07    97.799   3.811e+01   3.811e+01
+
+
+cgWave -noplot ../known/known.cmd -g=nonSquare512.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  3.19e+02
+advWave: grid=0: numGridPoints=2.632e+05, cycles/grid-point =  3.19e+02
+
+  advance curvilinear grids.........  2.49e+00    3.07e-02    1.17e-07    92.006   2.490e+00   2.490e+00
+
+>>> ORDER=4 : consistent cycles
+
+cgWave -noplot ../known/known.cmd -g=nonSquare1024.order4.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+  advance curvilinear grids.........     43.4       74.63
+
+cgWave -noplot ../known/known.cmd -g=nonSquare256.order4.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+  advance curvilinear grids.........     43.2       43.12
+
+
+
 ****************************
 ****** Mon Oct 3, 2022
 

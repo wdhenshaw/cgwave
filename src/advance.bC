@@ -208,9 +208,13 @@ extern "C"
             mg.boundaryCondition(0,0), frequencyArray(0), ipar[0], rpar[0], ierr );
 
     Real cycles = ProcessorInfo::getCycles() - cyclesStart;
-    const IntegerArray & gid = mg.gridIndexRange();
-    Real numGridPoints = (gid(1,0)-gid(0,0)+1)*(gid(1,1)-gid(0,1)+1)*(gid(1,2)-gid(0,2)+1);
-    printF("advWave: grid=%d: numGridPoints=%9.3e, cycles/grid-point = %9.2e\n",grid,numGridPoints,cycles/numGridPoints);
+
+    if( false )
+    { // print cycles:
+      const IntegerArray & gid = mg.gridIndexRange();
+      Real numGridPoints = (gid(1,0)-gid(0,0)+1)*(gid(1,1)-gid(0,1)+1)*(gid(1,2)-gid(0,2)+1);
+      printF("advWave: grid=%d: numGridPoints=%9.3e, cycles/grid-point = %9.2e\n",grid,numGridPoints,cycles/numGridPoints);
+   }
     if( false && option==0 )
     {
       ::display(uDot,"v=Lap2h(u)","%8.2e ");
