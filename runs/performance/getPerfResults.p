@@ -3,33 +3,50 @@ if 0;
 #!/usr/bin/perl
 # perl program to exttract the performance results from CgWave output
 #  usage: 
-#         getPerfResults file
+#         getPerfResults [-cycles] file
 # 
 
 @fileNames = @ARGV;
 
+$perfData=0; # extract CPU data 
 foreach $fileName ( @fileNames )  # process all files
 {
-  
+  if( $fileName =~ /-cycles/ )
+  {
+    $perfData=1; 
+    next;
+  }
+
   open(FILE,"$fileName") || die "cannot open file $fileName!" ;
   # open(OUTFILE,">junk.X") || die "cannot open output file junk.X!" ;
   
   while( <FILE> )
   {
     $line = $_;
-    if( $line =~ /\% PerfInfo/ )
+    if( $perfData==0 )
     {
-      # printf("%s",$line);
-      # Clean up the line : 
-      $line =~ s/ \% PerfInfo//;
-      $line =~ s/\.order..*\.hdf//;  # remove .order*.hdf 
-      # $line =~ s/(Ogmg[^&]*)/\1    /;                    # add some spaces to solver name to line up with others
-      # $line =~ s/PETSc.*hypre[^&]*/AMG               /;  # shorten name to AMG
-      # $line =~ s/PETSc.*bi-conjugate gradient stabilized.*(ILU\(.\))[^&]*/Bi-CG-Stab \1 /; # shorten name to Bi-CG-Stab
-      # $line =~ s/PETSc.*generalized minimal residual.*(ILU\(.\))[^&]*/GMRES \1      /;
+      if( $line =~ /\% PerfInfo/ )
+      {
+        # printf("%s",$line);
+        # Clean up the line : 
+        $line =~ s/ \% PerfInfo//;
+        $line =~ s/\.order..*\.hdf//;  # remove .order*.hdf 
 
-      printf("%s",$line);
+        printf("%s",$line);
 
+      }
+    }
+    else
+    {
+      if( $line =~ /\% CyclesPerfInfo/ )
+      {
+        # printf("%s",$line);
+        # Clean up the line : 
+        $line =~ s/ \% CyclesPerfInfo//;
+        $line =~ s/\.order..*\.hdf//;  # remove .order*.hdf 
+
+        printf("%s",$line);  
+      }    
     }
 
   }

@@ -50,9 +50,9 @@ if( c200(0,0,0).le.0. )then
   n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
   n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
   n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-  beginLoops3d()
+beginLoops3d()
   #If #MASK eq "USEMASK" 
-    if( mask(i1,i2,i3).ne.0 )then
+  if( mask(i1,i2,i3).ne.0 )then
   #End 
     rx = rsxy(i1,i2,i3,0,0)
     ry = rsxy(i1,i2,i3,0,1)
@@ -240,9 +240,9 @@ beginLoops3d()
          c010(i1,i2,i3)*d010i + \
          c001(i1,i2,i3)*d001i
   #If #MASK eq "USEMASK" 
-  end if ! mask .ne. 0
+    end if ! mask .ne. 0
   #End 
-endLoops3d() 
+  endLoops3d() 
 
 numGhost1=1;
 n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
@@ -301,9 +301,9 @@ beginLoops3d()
           + c010(i1,i2,i3)*lap2h010i  \
           + c001(i1,i2,i3)*lap2h001i    
   #If #MASK eq "USEMASK" 
-  end if ! mask .ne. 0
+    end if ! mask .ne. 0
   #End 
-endLoops3d() 
+  endLoops3d() 
 
 ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
 
@@ -406,7 +406,7 @@ beginLoops3d()
              + cdtPow6By360*( lap2hCubed )   \
              FV(m)                    
   #If #MASK eq "USEMASK" 
-  end if ! mask .ne. 0
+    end if ! mask .ne. 0
   #End 
-endLoops3d() 
+  endLoops3d() 
 #endMacro

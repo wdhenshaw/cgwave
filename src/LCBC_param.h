@@ -16,7 +16,7 @@ public:
     Param(){
     }
     
-    void initialize(int dim, int p){
+    void initialize(int dim, int p, bool addAuxEqns){
         if(!exists){
             faceNum = 2*dim;
             NU = p+1;
@@ -25,7 +25,11 @@ public:
             totalVarNum    = n*n*dimBasedValue(dim, 1, n);
             interiorEqNum  = (p+1)*n*dimBasedValue(dim, 1, n);
             unknownVarNum  = (totalVarNum - interiorEqNum);
-            auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
+            if(addAuxEqns)
+                auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
+            else
+                auxiliaryEqNum = 0;
+            
             getDerivCoef(p);
             exists = true;
             
@@ -243,12 +247,17 @@ public:
     
     FaceParam(){}
     
-    void initialize(int axis, int side, int indexRange[3][2], int Ngx[3], int p, int dim, int faceEval[]){
+    void initialize(int axis, int side, int indexRange[3][2], int Ngx[3], int p, int dim, int faceEval[], bool addAuxEqns){
         if(!exists){
             int n = (2*p+1);
             int face = side + 2*axis;
             NU = (faceEval[face] == 1)?(p+1):(p);
-            auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
+            
+            if(addAuxEqns)
+                auxiliaryEqNum = (p*(2*p+1)*dimBasedValue(dim, 1, (10*p+7)))/dimBasedValue(dim, 1,3);
+            else
+                auxiliaryEqNum = 0;
+            
             compCondNum = NU*n*dimBasedValue(dim, 1, n);
             approxEqNum = compCondNum + auxiliaryEqNum;
             getBdryRange(indexRange, Ngx, axis, side, faceEval, dim, p);
@@ -320,6 +329,8 @@ public:
     ~FaceParam(){}
     
 };
+
+
 
 
 

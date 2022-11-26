@@ -4,6 +4,25 @@
 #include <malloc.h>  // *wdh* 2022/03/16
 #include <stdlib.h>  // *wdh* for exit
 
+//void multiplyMatrices(double *&C, double *A, double *B, int R1, int C1, int R2, int C2, double s) {
+////    if (C1 != R2) {
+////        printf("Matrices are incompatible for multiplication\n");
+////        exit(EXIT_FAILURE);
+////    }
+////    else{
+//        for (int i = 0; i < R1; i++) {
+//            for (int j = 0; j < C2; j++) {
+//                C[ind2(i,j,R1,C2)] = 0;
+//
+//                for (int k = 0; k < R2; k++) {
+//                    C[ind2(i,j,R1,C2)] += s*A[ind2(i,k,R1,C1)]*B[ind2(k,j,R2,C2)];
+//                }// end of k loop
+//            }// end of j loop
+//        }// end of i loop
+//        return;
+////    }
+//}// end of function
+
 void getVarAxis(int varAxis[2], int fixedAxis){
     int cnt = 0;
     for(int d  = 0; d<3; d++){
@@ -36,32 +55,45 @@ void set2DArrayToZero(double **&A, int s1, int s2){
     }
 }
 
-void set1DArrayToZero(double *&A, int s){
-    for(int i = 0; i<s; i++){
-        A[i] = 0;
-    }
-}
-
-void LSsolve(double *A, double *b, double *&x, int m, int n, int nrhs){
+void LSsolve(double *A, double *b, double *&x, int m, int n, int nrhs, char trans){
+    int M = m;
+    int N = n;
+    int NRHS = nrhs;
+    int b_rows = (trans == 'N')?(m):(n);
+    
+    int LDA = m; // length of the first dimension of A
+    int maxDim = MAX(m,n);
+    int LDB = MAX(1,maxDim);
+    int info, lwork;
+    
+    double *Q = new double[(LDA*N)];    // vector to store A values
+    double *B = new double[(LDB*NRHS)]; // vector to store b
     
     /* copy A and b into new locations */
-    double *Q = new double[(m*n)];
-    for(int i = 0; i<(m*n); i++){
+    for(int i = 0; i<(LDA*N); i++){
         Q[i] = A[i];
     }
     
-    /* allocate work space */
-    int lda = m, ldb = m, info, lwork;
+    for(int j = 0; j<nrhs; j++){
+        for(int i = 0; i<b_rows; i++){
+            B[ind2(i,j,LDB,nrhs)] = b[ind2(i,j,b_rows,nrhs)];
+        }
+        for(int i = b_rows; i<LDB; i++){
+            B[ind2(i,j,LDB,nrhs)] = 0.0;
+        }
+    }
+    
+//    print2Darray(B, LDB, NRHS);
+
     double wkopt;
     double* work;
     lwork = -1;
-    char prop[] = "No transpose";
-    dgels_(prop, &m, &n, &nrhs, Q, &lda, b, &ldb, &wkopt, &lwork, &info );
+    dgels_(&trans, &M, &N, &NRHS, Q, &LDA, B, &LDB, &wkopt, &lwork, &info );
     lwork = (int)wkopt;
     work  = (double*)malloc( lwork*sizeof(double) );
-    
+
     /* Solve the equations A*X = B */
-    dgels_(prop, &m, &n, &nrhs, Q, &lda, b, &ldb, work, &lwork, &info );
+    dgels_(&trans, &M, &N, &NRHS, Q, &LDA, B, &LDB, work, &lwork, &info );
     /* the function above returns A as its QR factorization and b as the solution of Ax = b */
     
     /* double check that the matrix is not rank deficient */
@@ -73,14 +105,17 @@ void LSsolve(double *A, double *b, double *&x, int m, int n, int nrhs){
     }
     
     /* copy the values of bc into x to avoid confusion */
-    for(int i = 0; i<n; i++){
+    
+    int rowsOfx = (trans == 'N')?(n):(m);
+    for(int i = 0; i<rowsOfx ; i++){
         for(int j = 0; j<nrhs; j++){
-            x[ind2(i,j,n,nrhs)] = b[ind2(i,j,m,nrhs)];
+            x[ind2(i,j,rowsOfx ,nrhs)] = B[ind2(i,j,LDB,nrhs)];
         }
     }
     
     free( (void*)work );
     delete [] Q;
+    delete [] B;
 }
 
 void extractBlocks(double *Mat, double *&Block, int MatRowNum, int MatColmNum, int extractRows[2], int extractColms[2], int scale){
@@ -117,11 +152,11 @@ void scaleRows(double *&Mat, double scale[], int numScaledRows, int numRows, int
 double rowMaxNorm(double *Mat, int row, int numRows, int numColms){
     /* this functions finds the maximum of the absolute values of rows of a matrix Mat */
     double max = Mat[ind2(row,0,numRows,numColms)];
-    
+
     for(int colm = 1; colm<numColms; colm++){
         max = MAX(max,fabs(Mat[ind2(row,colm,numRows,numColms)]));
     } // end of j loop
-    
+
     return max;
 }// end of function
 

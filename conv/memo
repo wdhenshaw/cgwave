@@ -1,5 +1,38 @@
 
 ************************************************************************
+********* Fri Nov 25, 2022
+
+--- update for new LCBC files ---
+
+FD88 MEHA scheme  
+conv.p tests.conv -option=diskEig -cg=sic -order=8 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=3
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 5.89e-08 &       
+      sic4 &     2 & 1.09e-10 &540.37 
+      sic8 &     4 & 3.54e-13 &307.91 
+Convergence rates: c0=8.67 
+
+FD66 MEHA scheme  
+conv.p tests.conv -option=diskEig -cg=sic -order=6 -tf=.65 -tp=.65 -upwind=1 -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=3
+
+NEW: 
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 1.60e-06 &       
+      sic4 &     2 & 2.02e-08 & 79.21 
+      sic8 &     4 & 2.79e-10 & 72.40 
+Convergence rates: c0=6.24 
+
+
+OLD: 
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 1.60e-06 &       
+      sic4 &     2 & 2.02e-08 & 79.21 
+      sic8 &     4 & 2.79e-10 & 72.40 
+Convergence rates: c0=6.24 
+
+
+************************************************************************
 ********* Wed Aug 17, 2022
 
 START tests of implicit scheme

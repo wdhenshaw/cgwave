@@ -182,7 +182,6 @@ printStatistics(FILE *file /* = stdout */)
       // real timeForAdvGrids = timing(timeForAdvanceRectangularGrids) + timing(timeForAdvanceCurvilinearGrids)+ timing(timeForUp); 
 
       const Real nanoSecondsPerSecond=1e9; // 1 ns = 1e-9 s 
-      const real scaleFactor = 1./numberOfStepsTaken/numberOfGridPoints*nanoSecondsPerSecond;
 
       aString blanks="                                                                 ";
       int numBlanks = max(0,min(30,gridNameNoPrefix.length()-1 -7));
@@ -192,20 +191,36 @@ printStatistics(FILE *file /* = stdout */)
       if( orderOfAccuracyInTime==2 )    method + "T2";  // 2nd-order in time
 
       fPrintF(output,"\n\nSummary info for a performance table see cgwave/doc/performance.tex:\n");
-      fPrintF(output,"            &        &     &       & \\multicolumn{3}{|c|}{CPU ns/step/pt}  \\\\\n",(const char*)blanks(0,numBlanks)); 
-      fPrintF(output,"   Grid  %s & scheme & ord & pts   & total   &  adv    & arc  &   up  &  bc  & interp \\\\\n",(const char*)blanks(0,numBlanks)); 
-      fPrintF(output,"  %s & %d & %s  & %.2gM  & %7.1f & %7.1f & %7.1f & %7.1f & %7.1f & %7.1f   \\\\ % PerfInfo\n",
-           (const char*)gridNameNoPrefix,
-           orderOfAccuracy,
-           (const char*)method,
-           numberOfGridPoints/1e6,
-           timing(0)*scaleFactor,               // total time 
-           timing(timeForAdvance)*scaleFactor,
-           timeForAdvGrids*scaleFactor,         // time to advance rectangular and curvilinear grids 
-           timing(timeForDissipation)*scaleFactor,
-           timing(timeForBoundaryConditions)*scaleFactor,
-           timing(timeForInterpolate)*scaleFactor
-            );
+      for( int ii=0; ii<2; ii++ ) // output type base on CPU or CYCLES 
+      {
+        aString myLabel;
+        real scaleFactor = 1./numberOfStepsTaken/numberOfGridPoints*nanoSecondsPerSecond;
+        if( ii==0 )
+        {
+          myLabel="PerfInfo";
+          fPrintF(output,"            &       &     &       & \\multicolumn{3}{|c|}{CPU ns/step/pt}  \\\\\n",(const char*)blanks(0,numBlanks)); 
+        }
+        else
+        {
+          myLabel="CyclesPerfInfo";
+          scaleFactor *= clockSpeed; 
+          fPrintF(output,"            &       &     &       & \\multicolumn{3}{|c|}{CYCLES/step/pt}  \\\\\n",(const char*)blanks(0,numBlanks)); 
+        }
+        fPrintF(output,"   Grid  %s  & ord  & scheme & pts   & total   &  adv    & adv-r-c  &   up  &  bc  & interp \\\\\n",(const char*)blanks(0,numBlanks)); 
+        fPrintF(output,"  %s & %d & %s  & %.2gM  & %7.1f & %7.1f & %7.1f & %7.1f & %7.1f & %7.1f   \\\\ %% %s\n",
+             (const char*)gridNameNoPrefix,
+             orderOfAccuracy,
+             (const char*)method,
+             numberOfGridPoints/1e6,
+             timing(0)*scaleFactor,               // total time 
+             timing(timeForAdvance)*scaleFactor,
+             timeForAdvGrids*scaleFactor,         // time to advance rectangular and curvilinear grids 
+             timing(timeForDissipation)*scaleFactor,
+             timing(timeForBoundaryConditions)*scaleFactor,
+             timing(timeForInterpolate)*scaleFactor,
+             (const char*)myLabel
+              );
+      }
 
       // fPrintF(output,"   Grid    & ord &   Solver          &    pts  & its  & $\\|{\\rm res}\\|_\\infty$ & total        & setup     & solve & reals/pt \\\\ \n");
 

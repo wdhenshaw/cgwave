@@ -42,7 +42,7 @@ void Lcbc::prepDataVec(double **R, double **&Rv, double t, double dt, int LcbcBd
     }// end of i[2] loop
 }// end of prepDataVec function
 
-void Lcbc::getFaceGhost(double *&un, double *Rv[], double ***CaVec, double ***CbVec, int *eqNum, int LcbcBdryRange[3][2], int bdryNgx[3], int axis, int side){
+void Lcbc::getFaceGhost(double *&un, double *Rv[], double **CaVec, double **CbVec, int *eqNum, int LcbcBdryRange[3][2], int bdryNgx[3], int axis, int side){
     
     /* prepare the parameters */
     int face = side + 2*axis;
@@ -66,8 +66,8 @@ void Lcbc::getFaceGhost(double *&un, double *Rv[], double ***CaVec, double ***Cb
                 int vecNum = 0;
                 for(int ghostInd = sideBasedValue(side, (-p), 1); ghostInd<=sideBasedValue(side, (-1), p); ghostInd++){
 
-                    double Ca_vecRv = dotProduct(CaVec[cVecInd][vecNum], Rv[bdInd], approxEqNum);
-                    double Cb_vecb  = dotProduct(CbVec[cVecInd][vecNum], b, interiorEqNum);
+                    double Ca_vecRv = dotProduct(CaVec[cVecInd], Rv[bdInd], vecNum, p, approxEqNum);
+                    double Cb_vecb  = dotProduct(CbVec[cVecInd], b, vecNum, p, interiorEqNum);
 
                     i[axis] = (copy + ghostInd);
                     un[solInd(i,G.Ngx)] = Ca_vecRv + Cb_vecb;
@@ -338,7 +338,7 @@ void Lcbc::applyQhF(double *&QF, double *F, double **W, int bdryRange[3][2], int
                     int deriv[] = {1,1,1};
                     (dim>2) ? (deriv[d] = 0) : (deriv[2] = 0);
                     
-                    QF[I] = QF[I] + 2*coef[face].Fn[coefNum][cI]*mixedDeriv(FS[coefNum], FInd, deriv, G.dx, order, oldLth);
+                    QF[I] = QF[I] + coef[face].Fn[coefNum][cI]*mixedDeriv(FS[coefNum], FInd, deriv, G.dx, order, oldLth);
                     
                     coefNum++;
                 }// end of d loop

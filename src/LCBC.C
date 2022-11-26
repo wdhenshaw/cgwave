@@ -24,7 +24,7 @@ void Lcbc::initialize(int dimIn, int orderInSpace, int orderInTimeIn, int *numGr
     
     orderInTime = orderInTimeIn;
     dim = dimIn;
-    param.initialize(dim, p);
+    param.initialize(dim, p, addAuxEqns);
     getLagrangeData();
     G.prepareGrid(numGridPoints,numGhost,dim);
     
@@ -89,8 +89,18 @@ void Lcbc::initialize(int dimIn, int orderInSpace, int orderInTimeIn, int *numGr
         checkUserData(coef, coefIn, G.Nx, G.Ngx, faceEval, dim, p, extraDataGhost, coefficient, fix, overRideCheck);
     }// end of else
     
+    /* prepare the LCBC data functions */
     forcingData = new LcbcData[(2*dim)];
     bdryData = new LcbcData[(2*dim)];
+    
+    /* prepare memory for the 8th-order accurate scheme here */
+    if(dim == 3){
+        memoryComponents = 32 + 26;
+        int componentSize = (4*p + 1)*(4*p + 1)*(2*p + 1);
+        preallocateMemory(memoryComponents, componentSize);
+        preallocatedMemory = true;
+    }
+    
 }// end of initialize
 
 void Lcbc::analyzeUserInput(LcbcData *gn, LcbcData *fn){
@@ -128,7 +138,6 @@ void Lcbc::updateGhost(double *&unp1, double t, double dt, LcbcData *&gn, LcbcDa
     
     if(!analyzedUserData)
         analyzeUserInput(gn, fn);
-    
     /* ================================================== */
 
     int NU = param.NU;
@@ -160,19 +169,20 @@ void Lcbc::updateGhost(double *&unp1, double t, double dt, LcbcData *&gn, LcbcDa
                 }
                 
                 if(!(faceParam[face].exists))
-                    faceParam[face].initialize(axis, side, G.indexRange, G.Ngx, p, dim, faceEval);
+                    faceParam[face].initialize(axis, side, G.indexRange, G.Ngx, p, dim, faceEval, addAuxEqns);
                 
                 getDataDeriv(R, t, dt, axis, side, bdryData[face], forcingData[face]);
                 updateFaceGhost(unp1, R, t, dt, axis, side);
+                
             }// end if faceEval
         }// end side loop
     }// end axis loop
     
-    /* Update the 2D corners or 3D edges */
+//     Update the 2D corners or 3D edges
         for(int varAxis = dimBasedValue(dim, 2, 0); varAxis<3; varAxis++){
-            
+
             int fixedAxis[2]; getFixedAxis(fixedAxis, varAxis);
-            
+
             for(int side1 = 0; side1<2; side1++){
                 for(int side2 = 0; side2<2; side2++){
                     int edgeFace1 = side1 + 2*fixedAxis[0];
@@ -190,8 +200,8 @@ void Lcbc::updateGhost(double *&unp1, double t, double dt, LcbcData *&gn, LcbcDa
                 }// end of side2
             }// end of side1
         }// end of varAxis loop
-    
-    /* Update the 3D vertices */
+
+//     Update the 3D vertices
     if(dim == 3){
         for(int side2 = 0; side2<2; side2++){
             for(int side1 = 0; side1<2; side1++){
@@ -372,6 +382,23 @@ void Lcbc::getCoefGridLth(int indexRange[3][2], int lth[3], int wth[3], int fixe
     getCoefGridLth(indexRange, lth, wth, bdryRange, fixedAxis, fixedSide, dim, p);
 }
 
+/// preallocateMemory: allocates space in 'memory' double pointer to be used in the interior schemes to prevent dynamic allocation at each time-step
+void Lcbc::preallocateMemory(int components, int componentSize){
+    memory = new char*[components];
+    for(int i = 0; i<components; i++){
+        memory[i] = new char[(sizeof(double)*componentSize)];
+    }
+}
+
+/// deleteMemory: deletes the preallocated memory when time-stepping is finished
+void Lcbc::deleteMemory(int components){
+    for(int i = 0; i<components; i++){
+       delete [] memory[i];
+    }// end of i loop
+    
+    delete [] memory;
+}
+
 
 void Lcbc::freeVariables(){
     
@@ -387,21 +414,18 @@ void Lcbc::freeVariables(){
     if(zeroBCnewed)
         delete [] zeroBC;
     
+    if(preallocatedMemory)
+        deleteMemory(memoryComponents);
+    
 }// end of freeVariables
 
 void Lcbc::freeFaceVariables(){
     for(int axis = 0; axis<dim; axis++){
-        int bdryNg = (cstCoef)?(1):(faceParam[(2*axis)].bdryNg);
         for(int side = 0; side<2; side++){
             int face = ind2(side,axis,2,3);
+            int bdryNg = (cstCoef)?(1):(faceParam[face].bdryNg);
             if(FaceMat[face].flag){
                 for(int bdryPoint = 0; bdryPoint<bdryNg; bdryPoint++){
-                    for(int vecNum = 0; vecNum<p; vecNum++){
-                        delete [] FaceMat[face].CaVec[bdryPoint][vecNum];
-                        delete [] FaceMat[face].CbVec[bdryPoint][vecNum];
-                        FaceMat[face].CaVec[bdryPoint][vecNum] = NULL;
-                        FaceMat[face].CbVec[bdryPoint][vecNum] = NULL;
-                    }
                     delete [] FaceMat[face].CaVec[bdryPoint]; FaceMat[face].CaVec[bdryPoint] = NULL;
                     delete [] FaceMat[face].CbVec[bdryPoint]; FaceMat[face].CbVec[bdryPoint] = NULL;
                 }
@@ -419,7 +443,6 @@ void Lcbc::freeCornerVariables(){
     int interiorEqNum = (p+1)*(p+1)*dimBasedValue(dim, 1, (2*p+1));
     int totalVarNum   = param.totalVarNum;
     int unknownVarNum = totalVarNum - interiorEqNum;
-    int gpNum = unknownVarNum - 2*p;
     
     for(int varAxis = dimBasedValue(dim, 2, 0); varAxis<=2; varAxis++){
         
@@ -433,11 +456,6 @@ void Lcbc::freeCornerVariables(){
                 if(CornerMat[corner].flag){
                     
                     for(int bdryPt = 0; bdryPt<bdryNg; bdryPt++){
-                        
-                        for(int gp = 0; gp<gpNum; gp++){
-                            delete [] CornerMat[corner].CaVec[bdryPt][gp];
-                            delete [] CornerMat[corner].CbVec[bdryPt][gp];
-                        }// end of gp loop
                         delete [] CornerMat[corner].CaVec[bdryPt];
                         delete [] CornerMat[corner].CbVec[bdryPt];
                     }// end of bdryPt loop
@@ -453,12 +471,6 @@ void Lcbc::freeCornerVariables(){
 }// end of freeCornerVariables
 
 void Lcbc::freeVertexVariables(){
-    
-    int totalVarNum   = (2*p+1)*(2*p+1)*(2*p+1);
-    int knownVarNum   = (p+1)*(p+1)*(p+1);
-    int unknownVarNum = (totalVarNum - knownVarNum);
-    int ghostPointsNum = unknownVarNum - 3*p;
-    
     for(int side2 = 0; side2<2; side2++){
         for(int side1 = 0; side1<2; side1++){
             for(int side0 = 0; side0<2; side0++){
@@ -466,11 +478,6 @@ void Lcbc::freeVertexVariables(){
                 
                 if(VertexMat[vertex].flag){
                     delete [] VertexMat[vertex].eqNum;
-                    
-                    for(int gp = 0; gp<ghostPointsNum; gp++){
-                        delete [] VertexMat[vertex].CaVec[0][gp];
-                        delete [] VertexMat[vertex].CbVec[0][gp];
-                    }// end of gp loop
                     
                     delete [] VertexMat[vertex].CaVec[0];
                     delete [] VertexMat[vertex].CbVec[0];
@@ -483,3 +490,4 @@ void Lcbc::freeVertexVariables(){
         }// end of side1
     }// end of side2
 }// end of freeVertexVariables
+

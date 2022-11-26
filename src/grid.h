@@ -1,6 +1,8 @@
 #ifndef grid_h
 #define grid_h
 
+/// Grid: is a class that holds all the parameters related to the grid and its construction
+
 class Grid{
 public:
     static const int MaxDim = 3;

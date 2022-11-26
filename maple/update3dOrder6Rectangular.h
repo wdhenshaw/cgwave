@@ -44,9 +44,9 @@ beginLoops3d()
     d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
     lap2h(i1,i2,i3,0) = cxx*d200(i1,i2,i3,0) + cyy*d020(i1,i2,i3,0) + czz*d002(i1,i2,i3,0) 
   #If #MASK eq "USEMASK" 
-  end if ! mask .ne. 0
+    end if ! mask .ne. 0
   #End 
-endLoops3d() 
+  endLoops3d() 
 
 numGhost1=1;
 n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
@@ -75,9 +75,9 @@ beginLoops3d()
            + cyy*lap2h020(i1,i2,i3,0)   \
            + czz*lap2h002(i1,i2,i3,0)     
   #If #MASK eq "USEMASK" 
-  end if ! mask .ne. 0
+    end if ! mask .ne. 0
   #End 
-endLoops3d() 
+  endLoops3d() 
 
 ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
 
@@ -129,7 +129,7 @@ beginLoops3d()
              + cdtPow6By360*( lap2hCubed )   \
              FV(m)                    
   #If #MASK eq "USEMASK" 
-  end if ! mask .ne. 0
+    end if ! mask .ne. 0
   #End 
-endLoops3d() 
+  endLoops3d() 
 #endMacro

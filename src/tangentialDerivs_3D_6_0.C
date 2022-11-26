@@ -1,0 +1,457 @@
+double d20[Lth], d02[Lth], d22[Lth], d00[Lth];
+double d40[Lth], d04[Lth];
+double d24[Lth], d42[Lth], d44[Lth];
+double d10, d30, d50, d60, d01, d11, d21, d31, d41, d51, d61, d12, d32, d52, d62, d03, d13, d23, d33, d43, d53, d63, d14, d34, d54, d64, d05, d15, d25, d35, d45, d55, d65, d06, d16, d26, d36, d46, d56, d66;
+int j[3] = {wth[0],wth[1],wth[2]};
+
+int nu = 0, k = 1;
+for(j[2] = (wth[2]-2); j[2]<=(wth[2]+2); j[2]++){
+    for(j[1] = (wth[1]-2); j[1]<=(wth[1]+2); j[1]++){
+        int J = ind(j,lth);
+        d00[J] = Q[ind2(nu,k,NU,K)][J];
+        d20[J] = DERIV020(Q[ind2(nu,k,NU,K)], j, lth, dx);
+        d02[J] = DERIV002(Q[ind2(nu,k,NU,K)], j, lth, dx);
+        d22[J] = DERIV022(Q[ind2(nu,k,NU,K)], j, lth, dx);
+    }
+}
+for(j[2] = (wth[2]-1); j[2]<=(wth[2]+1); j[2]++){
+    for(j[1] = (wth[1]-1); j[1]<=(wth[1]+1); j[1]++){
+        int J = ind(j,lth);
+        d40[J] = DERIV020(d20, j, lth, dx);
+        d04[J] = DERIV002(d02, j, lth, dx);
+        d24[J] = DERIV022(d02, j, lth, dx);
+        d42[J] = DERIV022(d20, j, lth, dx);
+        d44[J] = DERIV022(d22, j, lth, dx);
+    }
+}
+
+int J = ind(wth,lth);
+
+d10=DERIV010(d00,wth,lth,dx);
+d30=DERIV010(d20,wth,lth,dx);
+d50=DERIV010(d40,wth,lth,dx);
+d60=DERIV020(d40,wth,lth,dx);
+d01=DERIV001(d00,wth,lth,dx);
+d11=DERIV011(d00,wth,lth,dx);
+d21=DERIV001(d20,wth,lth,dx);
+d31=DERIV011(d20,wth,lth,dx);
+d41=DERIV021(d20,wth,lth,dx);
+d51=DERIV011(d40,wth,lth,dx);
+d61=DERIV021(d40,wth,lth,dx);
+d12=DERIV010(d02,wth,lth,dx);
+d32=DERIV010(d22,wth,lth,dx);
+d52=DERIV010(d42,wth,lth,dx);
+d62=DERIV020(d42,wth,lth,dx);
+d03=DERIV001(d02,wth,lth,dx);
+d13=DERIV011(d02,wth,lth,dx);
+d23=DERIV001(d22,wth,lth,dx);
+d33=DERIV011(d22,wth,lth,dx);
+d43=DERIV021(d22,wth,lth,dx);
+d53=DERIV011(d42,wth,lth,dx);
+d63=DERIV021(d42,wth,lth,dx);
+d14=DERIV012(d02,wth,lth,dx);
+d34=DERIV012(d22,wth,lth,dx);
+d54=DERIV012(d42,wth,lth,dx);
+d64=DERIV022(d42,wth,lth,dx);
+d05=DERIV001(d04,wth,lth,dx);
+d15=DERIV011(d04,wth,lth,dx);
+d25=DERIV001(d24,wth,lth,dx);
+d35=DERIV011(d24,wth,lth,dx);
+d45=DERIV021(d24,wth,lth,dx);
+d55=DERIV011(d44,wth,lth,dx);
+d65=DERIV021(d44,wth,lth,dx);
+d06=DERIV002(d04,wth,lth,dx);
+d16=DERIV012(d04,wth,lth,dx);
+d26=DERIV002(d24,wth,lth,dx);
+d36=DERIV012(d24,wth,lth,dx);
+d46=DERIV022(d24,wth,lth,dx);
+d56=DERIV012(d44,wth,lth,dx);
+d66=DERIV022(d44,wth,lth,dx);
+
+Z[ind3(0,1,0,NU,MU,MU)] = d10+((-1.0/6.0)*(dx[1]*dx[1])*d30+(1.0/30.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d50);
+Z[ind3(0,2,0,NU,MU,MU)] = d20[J]+((-1.0/12.0)*(dx[1]*dx[1])*d40[J]+(1.0/90.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d60);
+Z[ind3(0,3,0,NU,MU,MU)] = d30+((-1.0/4.0)*(dx[1]*dx[1])*d50);
+Z[ind3(0,4,0,NU,MU,MU)] = d40[J]+((-1.0/6.0)*(dx[1]*dx[1])*d60);
+Z[ind3(0,5,0,NU,MU,MU)] = d50;
+Z[ind3(0,6,0,NU,MU,MU)] = d60;
+Z[ind3(0,0,1,NU,MU,MU)] = d01+((-1.0/6.0)*(dx[2]*dx[2])*d03+(1.0/30.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d05);
+Z[ind3(0,1,1,NU,MU,MU)] = d11+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d13+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d31+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d15+(-1.0/6.0)*(-1.0/6.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d33+(1.0/30.0)*1.0*(dx[1]*dx[1]*dx[1]*dx[1])*(1.0)*d51);
+Z[ind3(0,2,1,NU,MU,MU)] = d21+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d23+(-1.0/12.0)*1.0*(dx[1]*dx[1])*(1.0)*d41+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d25+(-1.0/12.0)*(-1.0/6.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d43+(1.0/90.0)*1.0*(dx[1]*dx[1]*dx[1]*dx[1])*(1.0)*d61);
+Z[ind3(0,3,1,NU,MU,MU)] = d31+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d33+(-1.0/4.0)*1.0*(dx[1]*dx[1])*(1.0)*d51+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d35+(-1.0/4.0)*(-1.0/6.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d53);
+Z[ind3(0,4,1,NU,MU,MU)] = d41+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d43+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d61+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d45+(-1.0/6.0)*(-1.0/6.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d63);
+Z[ind3(0,5,1,NU,MU,MU)] = d51+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d53+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d55);
+Z[ind3(0,6,1,NU,MU,MU)] = d61+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d63+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d65);
+Z[ind3(0,0,2,NU,MU,MU)] = d02[J]+((-1.0/12.0)*(dx[2]*dx[2])*d04[J]+(1.0/90.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d06);
+Z[ind3(0,1,2,NU,MU,MU)] = d12+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d14+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d32+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d16+(-1.0/6.0)*(-1.0/12.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d34+(1.0/30.0)*1.0*(dx[1]*dx[1]*dx[1]*dx[1])*(1.0)*d52);
+Z[ind3(0,2,2,NU,MU,MU)] = d22[J]+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d24[J]+(-1.0/12.0)*1.0*(dx[1]*dx[1])*(1.0)*d42[J]+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d26+(-1.0/12.0)*(-1.0/12.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d44[J]+(1.0/90.0)*1.0*(dx[1]*dx[1]*dx[1]*dx[1])*(1.0)*d62);
+Z[ind3(0,3,2,NU,MU,MU)] = d32+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d34+(-1.0/4.0)*1.0*(dx[1]*dx[1])*(1.0)*d52+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d36+(-1.0/4.0)*(-1.0/12.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d54);
+Z[ind3(0,4,2,NU,MU,MU)] = d42[J]+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d44[J]+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d62+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d46+(-1.0/6.0)*(-1.0/12.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d64);
+Z[ind3(0,5,2,NU,MU,MU)] = d52+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d54+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d56);
+Z[ind3(0,6,2,NU,MU,MU)] = d62+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d64+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d66);
+Z[ind3(0,0,3,NU,MU,MU)] = d03+((-1.0/4.0)*(dx[2]*dx[2])*d05);
+Z[ind3(0,1,3,NU,MU,MU)] = d13+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d33+(-1.0/4.0)*1.0*(dx[2]*dx[2])*(1.0)*d15+1.0*(1.0/30.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d53+(-1.0/4.0)*(-1.0/6.0)*(dx[2]*dx[2])*(dx[1]*dx[1])*d35);
+Z[ind3(0,2,3,NU,MU,MU)] = d23+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d43+(-1.0/4.0)*1.0*(dx[2]*dx[2])*(1.0)*d25+1.0*(1.0/90.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d63+(-1.0/4.0)*(-1.0/12.0)*(dx[2]*dx[2])*(dx[1]*dx[1])*d45);
+Z[ind3(0,3,3,NU,MU,MU)] = d33+(1.0*(-1.0/4.0)*(1.0)*(dx[2]*dx[2])*d35+(-1.0/4.0)*1.0*(dx[1]*dx[1])*(1.0)*d53);
+Z[ind3(0,4,3,NU,MU,MU)] = d43+(1.0*(-1.0/4.0)*(1.0)*(dx[2]*dx[2])*d45+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d63);
+Z[ind3(0,5,3,NU,MU,MU)] = d53+(1.0*(-1.0/4.0)*(1.0)*(dx[2]*dx[2])*d55);
+Z[ind3(0,6,3,NU,MU,MU)] = d63+(1.0*(-1.0/4.0)*(1.0)*(dx[2]*dx[2])*d65);
+Z[ind3(0,0,4,NU,MU,MU)] = d04[J]+((-1.0/6.0)*(dx[2]*dx[2])*d06);
+Z[ind3(0,1,4,NU,MU,MU)] = d14+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d34+(-1.0/6.0)*1.0*(dx[2]*dx[2])*(1.0)*d16+1.0*(1.0/30.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d54+(-1.0/6.0)*(-1.0/6.0)*(dx[2]*dx[2])*(dx[1]*dx[1])*d36);
+Z[ind3(0,2,4,NU,MU,MU)] = d24[J]+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d44[J]+(-1.0/6.0)*1.0*(dx[2]*dx[2])*(1.0)*d26+1.0*(1.0/90.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d64+(-1.0/6.0)*(-1.0/12.0)*(dx[2]*dx[2])*(dx[1]*dx[1])*d46);
+Z[ind3(0,3,4,NU,MU,MU)] = d34+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d36+(-1.0/4.0)*1.0*(dx[1]*dx[1])*(1.0)*d54);
+Z[ind3(0,4,4,NU,MU,MU)] = d44[J]+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d46+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d64);
+Z[ind3(0,5,4,NU,MU,MU)] = d54+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d56);
+Z[ind3(0,6,4,NU,MU,MU)] = d64+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d66);
+Z[ind3(0,0,5,NU,MU,MU)] = d05;
+Z[ind3(0,1,5,NU,MU,MU)] = d15+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d35+1.0*(1.0/30.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d55);
+Z[ind3(0,2,5,NU,MU,MU)] = d25+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d45+1.0*(1.0/90.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d65);
+Z[ind3(0,3,5,NU,MU,MU)] = d35+(1.0*(-1.0/4.0)*(1.0)*(dx[1]*dx[1])*d55);
+Z[ind3(0,4,5,NU,MU,MU)] = d45+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d65);
+Z[ind3(0,5,5,NU,MU,MU)] = d55;
+Z[ind3(0,6,5,NU,MU,MU)] = d65;
+Z[ind3(0,0,6,NU,MU,MU)] = d06;
+Z[ind3(0,1,6,NU,MU,MU)] = d16+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d36+1.0*(1.0/30.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d56);
+Z[ind3(0,2,6,NU,MU,MU)] = d26+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d46+1.0*(1.0/90.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d66);
+Z[ind3(0,3,6,NU,MU,MU)] = d36+(1.0*(-1.0/4.0)*(1.0)*(dx[1]*dx[1])*d56);
+Z[ind3(0,4,6,NU,MU,MU)] = d46+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d66);
+Z[ind3(0,5,6,NU,MU,MU)] = d56;
+Z[ind3(0,6,6,NU,MU,MU)] = d66;
+
+nu = 1; k = 3;
+for(j[2] = (wth[2]-2); j[2]<=(wth[2]+2); j[2]++){
+    for(j[1] = (wth[1]-2); j[1]<=(wth[1]+2); j[1]++){
+        int J = ind(j,lth);
+        d00[J] = Q[ind2(nu,k,NU,K)][J];
+        d20[J] = DERIV020(Q[ind2(nu,k,NU,K)], j, lth, dx);
+        d02[J] = DERIV002(Q[ind2(nu,k,NU,K)], j, lth, dx);
+        d22[J] = DERIV022(Q[ind2(nu,k,NU,K)], j, lth, dx);
+    }
+}
+for(j[2] = (wth[2]-1); j[2]<=(wth[2]+1); j[2]++){
+    for(j[1] = (wth[1]-1); j[1]<=(wth[1]+1); j[1]++){
+        int J = ind(j,lth);
+        d40[J] = DERIV020(d20, j, lth, dx);
+        d04[J] = DERIV002(d02, j, lth, dx);
+        d24[J] = DERIV022(d02, j, lth, dx);
+        d42[J] = DERIV022(d20, j, lth, dx);
+        d44[J] = DERIV022(d22, j, lth, dx);
+    }
+}
+
+J = ind(wth,lth);
+
+d10=DERIV010(d00,wth,lth,dx);
+d30=DERIV010(d20,wth,lth,dx);
+d50=DERIV010(d40,wth,lth,dx);
+d60=DERIV020(d40,wth,lth,dx);
+d01=DERIV001(d00,wth,lth,dx);
+d11=DERIV011(d00,wth,lth,dx);
+d21=DERIV001(d20,wth,lth,dx);
+d31=DERIV011(d20,wth,lth,dx);
+d41=DERIV021(d20,wth,lth,dx);
+d51=DERIV011(d40,wth,lth,dx);
+d61=DERIV021(d40,wth,lth,dx);
+d12=DERIV010(d02,wth,lth,dx);
+d32=DERIV010(d22,wth,lth,dx);
+d52=DERIV010(d42,wth,lth,dx);
+d62=DERIV020(d42,wth,lth,dx);
+d03=DERIV001(d02,wth,lth,dx);
+d13=DERIV011(d02,wth,lth,dx);
+d23=DERIV001(d22,wth,lth,dx);
+d33=DERIV011(d22,wth,lth,dx);
+d43=DERIV021(d22,wth,lth,dx);
+d53=DERIV011(d42,wth,lth,dx);
+d63=DERIV021(d42,wth,lth,dx);
+d14=DERIV012(d02,wth,lth,dx);
+d34=DERIV012(d22,wth,lth,dx);
+d54=DERIV012(d42,wth,lth,dx);
+d64=DERIV022(d42,wth,lth,dx);
+d05=DERIV001(d04,wth,lth,dx);
+d15=DERIV011(d04,wth,lth,dx);
+d25=DERIV001(d24,wth,lth,dx);
+d35=DERIV011(d24,wth,lth,dx);
+d45=DERIV021(d24,wth,lth,dx);
+d55=DERIV011(d44,wth,lth,dx);
+d65=DERIV021(d44,wth,lth,dx);
+d06=DERIV002(d04,wth,lth,dx);
+d16=DERIV012(d04,wth,lth,dx);
+d26=DERIV002(d24,wth,lth,dx);
+d36=DERIV012(d24,wth,lth,dx);
+d46=DERIV022(d24,wth,lth,dx);
+d56=DERIV012(d44,wth,lth,dx);
+d66=DERIV022(d44,wth,lth,dx);
+
+Z[ind3(1,1,0,NU,MU,MU)] = d10+((-1.0/6.0)*(dx[1]*dx[1])*d30+(1.0/30.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d50);
+Z[ind3(1,2,0,NU,MU,MU)] = d20[J]+((-1.0/12.0)*(dx[1]*dx[1])*d40[J]+(1.0/90.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d60);
+Z[ind3(1,3,0,NU,MU,MU)] = d30+((-1.0/4.0)*(dx[1]*dx[1])*d50);
+Z[ind3(1,4,0,NU,MU,MU)] = d40[J]+((-1.0/6.0)*(dx[1]*dx[1])*d60);
+Z[ind3(1,5,0,NU,MU,MU)] = d50;
+Z[ind3(1,6,0,NU,MU,MU)] = d60;
+Z[ind3(1,0,1,NU,MU,MU)] = d01+((-1.0/6.0)*(dx[2]*dx[2])*d03+(1.0/30.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d05);
+Z[ind3(1,1,1,NU,MU,MU)] = d11+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d13+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d31+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d15+(-1.0/6.0)*(-1.0/6.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d33+(1.0/30.0)*1.0*(dx[1]*dx[1]*dx[1]*dx[1])*(1.0)*d51);
+Z[ind3(1,2,1,NU,MU,MU)] = d21+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d23+(-1.0/12.0)*1.0*(dx[1]*dx[1])*(1.0)*d41+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d25+(-1.0/12.0)*(-1.0/6.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d43+(1.0/90.0)*1.0*(dx[1]*dx[1]*dx[1]*dx[1])*(1.0)*d61);
+Z[ind3(1,3,1,NU,MU,MU)] = d31+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d33+(-1.0/4.0)*1.0*(dx[1]*dx[1])*(1.0)*d51+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d35+(-1.0/4.0)*(-1.0/6.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d53);
+Z[ind3(1,4,1,NU,MU,MU)] = d41+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d43+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d61+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d45+(-1.0/6.0)*(-1.0/6.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d63);
+Z[ind3(1,5,1,NU,MU,MU)] = d51+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d53+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d55);
+Z[ind3(1,6,1,NU,MU,MU)] = d61+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d63+1.0*(1.0/30.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d65);
+Z[ind3(1,0,2,NU,MU,MU)] = d02[J]+((-1.0/12.0)*(dx[2]*dx[2])*d04[J]+(1.0/90.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d06);
+Z[ind3(1,1,2,NU,MU,MU)] = d12+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d14+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d32+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d16+(-1.0/6.0)*(-1.0/12.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d34+(1.0/30.0)*1.0*(dx[1]*dx[1]*dx[1]*dx[1])*(1.0)*d52);
+Z[ind3(1,2,2,NU,MU,MU)] = d22[J]+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d24[J]+(-1.0/12.0)*1.0*(dx[1]*dx[1])*(1.0)*d42[J]+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d26+(-1.0/12.0)*(-1.0/12.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d44[J]+(1.0/90.0)*1.0*(dx[1]*dx[1]*dx[1]*dx[1])*(1.0)*d62);
+Z[ind3(1,3,2,NU,MU,MU)] = d32+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d34+(-1.0/4.0)*1.0*(dx[1]*dx[1])*(1.0)*d52+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d36+(-1.0/4.0)*(-1.0/12.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d54);
+Z[ind3(1,4,2,NU,MU,MU)] = d42[J]+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d44[J]+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d62+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d46+(-1.0/6.0)*(-1.0/12.0)*(dx[1]*dx[1])*(dx[2]*dx[2])*d64);
+Z[ind3(1,5,2,NU,MU,MU)] = d52+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d54+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d56);
+Z[ind3(1,6,2,NU,MU,MU)] = d62+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d64+1.0*(1.0/90.0)*(1.0)*(dx[2]*dx[2]*dx[2]*dx[2])*d66);
+Z[ind3(1,0,3,NU,MU,MU)] = d03+((-1.0/4.0)*(dx[2]*dx[2])*d05);
+Z[ind3(1,1,3,NU,MU,MU)] = d13+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d33+(-1.0/4.0)*1.0*(dx[2]*dx[2])*(1.0)*d15+1.0*(1.0/30.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d53+(-1.0/4.0)*(-1.0/6.0)*(dx[2]*dx[2])*(dx[1]*dx[1])*d35);
+Z[ind3(1,2,3,NU,MU,MU)] = d23+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d43+(-1.0/4.0)*1.0*(dx[2]*dx[2])*(1.0)*d25+1.0*(1.0/90.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d63+(-1.0/4.0)*(-1.0/12.0)*(dx[2]*dx[2])*(dx[1]*dx[1])*d45);
+Z[ind3(1,3,3,NU,MU,MU)] = d33+(1.0*(-1.0/4.0)*(1.0)*(dx[2]*dx[2])*d35+(-1.0/4.0)*1.0*(dx[1]*dx[1])*(1.0)*d53);
+Z[ind3(1,4,3,NU,MU,MU)] = d43+(1.0*(-1.0/4.0)*(1.0)*(dx[2]*dx[2])*d45+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d63);
+Z[ind3(1,5,3,NU,MU,MU)] = d53+(1.0*(-1.0/4.0)*(1.0)*(dx[2]*dx[2])*d55);
+Z[ind3(1,6,3,NU,MU,MU)] = d63+(1.0*(-1.0/4.0)*(1.0)*(dx[2]*dx[2])*d65);
+Z[ind3(1,0,4,NU,MU,MU)] = d04[J]+((-1.0/6.0)*(dx[2]*dx[2])*d06);
+Z[ind3(1,1,4,NU,MU,MU)] = d14+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d34+(-1.0/6.0)*1.0*(dx[2]*dx[2])*(1.0)*d16+1.0*(1.0/30.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d54+(-1.0/6.0)*(-1.0/6.0)*(dx[2]*dx[2])*(dx[1]*dx[1])*d36);
+Z[ind3(1,2,4,NU,MU,MU)] = d24[J]+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d44[J]+(-1.0/6.0)*1.0*(dx[2]*dx[2])*(1.0)*d26+1.0*(1.0/90.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d64+(-1.0/6.0)*(-1.0/12.0)*(dx[2]*dx[2])*(dx[1]*dx[1])*d46);
+Z[ind3(1,3,4,NU,MU,MU)] = d34+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d36+(-1.0/4.0)*1.0*(dx[1]*dx[1])*(1.0)*d54);
+Z[ind3(1,4,4,NU,MU,MU)] = d44[J]+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d46+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d64);
+Z[ind3(1,5,4,NU,MU,MU)] = d54+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d56);
+Z[ind3(1,6,4,NU,MU,MU)] = d64+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d66);
+Z[ind3(1,0,5,NU,MU,MU)] = d05;
+Z[ind3(1,1,5,NU,MU,MU)] = d15+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d35+1.0*(1.0/30.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d55);
+Z[ind3(1,2,5,NU,MU,MU)] = d25+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d45+1.0*(1.0/90.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d65);
+Z[ind3(1,3,5,NU,MU,MU)] = d35+(1.0*(-1.0/4.0)*(1.0)*(dx[1]*dx[1])*d55);
+Z[ind3(1,4,5,NU,MU,MU)] = d45+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d65);
+Z[ind3(1,5,5,NU,MU,MU)] = d55;
+Z[ind3(1,6,5,NU,MU,MU)] = d65;
+Z[ind3(1,0,6,NU,MU,MU)] = d06;
+Z[ind3(1,1,6,NU,MU,MU)] = d16+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d36+1.0*(1.0/30.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d56);
+Z[ind3(1,2,6,NU,MU,MU)] = d26+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d46+1.0*(1.0/90.0)*(1.0)*(dx[1]*dx[1]*dx[1]*dx[1])*d66);
+Z[ind3(1,3,6,NU,MU,MU)] = d36+(1.0*(-1.0/4.0)*(1.0)*(dx[1]*dx[1])*d56);
+Z[ind3(1,4,6,NU,MU,MU)] = d46+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d66);
+Z[ind3(1,5,6,NU,MU,MU)] = d56;
+Z[ind3(1,6,6,NU,MU,MU)] = d66;
+
+nu = 2; k = 2;
+for(j[2] = (wth[2]-2); j[2]<=(wth[2]+2); j[2]++){
+    for(j[1] = (wth[1]-2); j[1]<=(wth[1]+2); j[1]++){
+        int J = ind(j,lth);
+        d00[J] = Q[ind2(nu,k,NU,K)][J];
+        d20[J] = DERIV020(Q[ind2(nu,k,NU,K)], j, lth, dx);
+        d02[J] = DERIV002(Q[ind2(nu,k,NU,K)], j, lth, dx);
+        d22[J] = DERIV022(Q[ind2(nu,k,NU,K)], j, lth, dx);
+    }
+}
+for(j[2] = (wth[2]-1); j[2]<=(wth[2]+1); j[2]++){
+    for(j[1] = (wth[1]-1); j[1]<=(wth[1]+1); j[1]++){
+        int J = ind(j,lth);
+        d40[J] = DERIV020(d20, j, lth, dx);
+        d04[J] = DERIV002(d02, j, lth, dx);
+        d24[J] = DERIV022(d02, j, lth, dx);
+        d42[J] = DERIV022(d20, j, lth, dx);
+        d44[J] = DERIV022(d22, j, lth, dx);
+    }
+}
+
+J = ind(wth,lth);
+
+d10=DERIV010(d00,wth,lth,dx);
+d30=DERIV010(d20,wth,lth,dx);
+d50=DERIV010(d40,wth,lth,dx);
+d60=DERIV020(d40,wth,lth,dx);
+d01=DERIV001(d00,wth,lth,dx);
+d11=DERIV011(d00,wth,lth,dx);
+d21=DERIV001(d20,wth,lth,dx);
+d31=DERIV011(d20,wth,lth,dx);
+d41=DERIV021(d20,wth,lth,dx);
+d51=DERIV011(d40,wth,lth,dx);
+d61=DERIV021(d40,wth,lth,dx);
+d12=DERIV010(d02,wth,lth,dx);
+d32=DERIV010(d22,wth,lth,dx);
+d52=DERIV010(d42,wth,lth,dx);
+d62=DERIV020(d42,wth,lth,dx);
+d03=DERIV001(d02,wth,lth,dx);
+d13=DERIV011(d02,wth,lth,dx);
+d23=DERIV001(d22,wth,lth,dx);
+d33=DERIV011(d22,wth,lth,dx);
+d43=DERIV021(d22,wth,lth,dx);
+d53=DERIV011(d42,wth,lth,dx);
+d63=DERIV021(d42,wth,lth,dx);
+d14=DERIV012(d02,wth,lth,dx);
+d34=DERIV012(d22,wth,lth,dx);
+d54=DERIV012(d42,wth,lth,dx);
+d64=DERIV022(d42,wth,lth,dx);
+d05=DERIV001(d04,wth,lth,dx);
+d15=DERIV011(d04,wth,lth,dx);
+d25=DERIV001(d24,wth,lth,dx);
+d35=DERIV011(d24,wth,lth,dx);
+d45=DERIV021(d24,wth,lth,dx);
+d55=DERIV011(d44,wth,lth,dx);
+d65=DERIV021(d44,wth,lth,dx);
+d06=DERIV002(d04,wth,lth,dx);
+d16=DERIV012(d04,wth,lth,dx);
+d26=DERIV002(d24,wth,lth,dx);
+d36=DERIV012(d24,wth,lth,dx);
+d46=DERIV022(d24,wth,lth,dx);
+d56=DERIV012(d44,wth,lth,dx);
+d66=DERIV022(d44,wth,lth,dx);
+
+Z[ind3(2,1,0,NU,MU,MU)] = d10+((-1.0/6.0)*(dx[1]*dx[1])*d30);
+Z[ind3(2,2,0,NU,MU,MU)] = d20[J]+((-1.0/12.0)*(dx[1]*dx[1])*d40[J]);
+Z[ind3(2,3,0,NU,MU,MU)] = d30;
+Z[ind3(2,4,0,NU,MU,MU)] = d40[J];
+Z[ind3(2,5,0,NU,MU,MU)] = d50;
+Z[ind3(2,6,0,NU,MU,MU)] = d60;
+Z[ind3(2,0,1,NU,MU,MU)] = d01+((-1.0/6.0)*(dx[2]*dx[2])*d03);
+Z[ind3(2,1,1,NU,MU,MU)] = d11+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d13+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d31);
+Z[ind3(2,2,1,NU,MU,MU)] = d21+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d23+(-1.0/12.0)*1.0*(dx[1]*dx[1])*(1.0)*d41);
+Z[ind3(2,3,1,NU,MU,MU)] = d31+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d33);
+Z[ind3(2,4,1,NU,MU,MU)] = d41+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d43);
+Z[ind3(2,5,1,NU,MU,MU)] = d51+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d53);
+Z[ind3(2,6,1,NU,MU,MU)] = d61+(1.0*(-1.0/6.0)*(1.0)*(dx[2]*dx[2])*d63);
+Z[ind3(2,0,2,NU,MU,MU)] = d02[J]+((-1.0/12.0)*(dx[2]*dx[2])*d04[J]);
+Z[ind3(2,1,2,NU,MU,MU)] = d12+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d14+(-1.0/6.0)*1.0*(dx[1]*dx[1])*(1.0)*d32);
+Z[ind3(2,2,2,NU,MU,MU)] = d22[J]+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d24[J]+(-1.0/12.0)*1.0*(dx[1]*dx[1])*(1.0)*d42[J]);
+Z[ind3(2,3,2,NU,MU,MU)] = d32+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d34);
+Z[ind3(2,4,2,NU,MU,MU)] = d42[J]+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d44[J]);
+Z[ind3(2,5,2,NU,MU,MU)] = d52+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d54);
+Z[ind3(2,6,2,NU,MU,MU)] = d62+(1.0*(-1.0/12.0)*(1.0)*(dx[2]*dx[2])*d64);
+Z[ind3(2,0,3,NU,MU,MU)] = d03;
+Z[ind3(2,1,3,NU,MU,MU)] = d13+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d33);
+Z[ind3(2,2,3,NU,MU,MU)] = d23+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d43);
+Z[ind3(2,3,3,NU,MU,MU)] = d33;
+Z[ind3(2,4,3,NU,MU,MU)] = d43;
+Z[ind3(2,5,3,NU,MU,MU)] = d53;
+Z[ind3(2,6,3,NU,MU,MU)] = d63;
+Z[ind3(2,0,4,NU,MU,MU)] = d04[J];
+Z[ind3(2,1,4,NU,MU,MU)] = d14+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d34);
+Z[ind3(2,2,4,NU,MU,MU)] = d24[J]+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d44[J]);
+Z[ind3(2,3,4,NU,MU,MU)] = d34;
+Z[ind3(2,4,4,NU,MU,MU)] = d44[J];
+Z[ind3(2,5,4,NU,MU,MU)] = d54;
+Z[ind3(2,6,4,NU,MU,MU)] = d64;
+Z[ind3(2,0,5,NU,MU,MU)] = d05;
+Z[ind3(2,1,5,NU,MU,MU)] = d15+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d35);
+Z[ind3(2,2,5,NU,MU,MU)] = d25+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d45);
+Z[ind3(2,3,5,NU,MU,MU)] = d35;
+Z[ind3(2,4,5,NU,MU,MU)] = d45;
+Z[ind3(2,5,5,NU,MU,MU)] = d55;
+Z[ind3(2,6,5,NU,MU,MU)] = d65;
+Z[ind3(2,0,6,NU,MU,MU)] = d06;
+Z[ind3(2,1,6,NU,MU,MU)] = d16+(1.0*(-1.0/6.0)*(1.0)*(dx[1]*dx[1])*d36);
+Z[ind3(2,2,6,NU,MU,MU)] = d26+(1.0*(-1.0/12.0)*(1.0)*(dx[1]*dx[1])*d46);
+Z[ind3(2,3,6,NU,MU,MU)] = d36;
+Z[ind3(2,4,6,NU,MU,MU)] = d46;
+Z[ind3(2,5,6,NU,MU,MU)] = d56;
+Z[ind3(2,6,6,NU,MU,MU)] = d66;
+
+nu = 3; k = 1;
+for(j[2] = (wth[2]-2); j[2]<=(wth[2]+2); j[2]++){
+    for(j[1] = (wth[1]-2); j[1]<=(wth[1]+2); j[1]++){
+        int J = ind(j,lth);
+        d00[J] = Q[ind2(nu,k,NU,K)][J];
+        d20[J] = DERIV020(Q[ind2(nu,k,NU,K)], j, lth, dx);
+        d02[J] = DERIV002(Q[ind2(nu,k,NU,K)], j, lth, dx);
+        d22[J] = DERIV022(Q[ind2(nu,k,NU,K)], j, lth, dx);
+    }
+}
+for(j[2] = (wth[2]-1); j[2]<=(wth[2]+1); j[2]++){
+    for(j[1] = (wth[1]-1); j[1]<=(wth[1]+1); j[1]++){
+        int J = ind(j,lth);
+        d40[J] = DERIV020(d20, j, lth, dx);
+        d04[J] = DERIV002(d02, j, lth, dx);
+        d24[J] = DERIV022(d02, j, lth, dx);
+        d42[J] = DERIV022(d20, j, lth, dx);
+        d44[J] = DERIV022(d22, j, lth, dx);
+    }
+}
+
+J = ind(wth,lth);
+
+d10=DERIV010(d00,wth,lth,dx);
+d30=DERIV010(d20,wth,lth,dx);
+d50=DERIV010(d40,wth,lth,dx);
+d60=DERIV020(d40,wth,lth,dx);
+d01=DERIV001(d00,wth,lth,dx);
+d11=DERIV011(d00,wth,lth,dx);
+d21=DERIV001(d20,wth,lth,dx);
+d31=DERIV011(d20,wth,lth,dx);
+d41=DERIV021(d20,wth,lth,dx);
+d51=DERIV011(d40,wth,lth,dx);
+d61=DERIV021(d40,wth,lth,dx);
+d12=DERIV010(d02,wth,lth,dx);
+d32=DERIV010(d22,wth,lth,dx);
+d52=DERIV010(d42,wth,lth,dx);
+d62=DERIV020(d42,wth,lth,dx);
+d03=DERIV001(d02,wth,lth,dx);
+d13=DERIV011(d02,wth,lth,dx);
+d23=DERIV001(d22,wth,lth,dx);
+d33=DERIV011(d22,wth,lth,dx);
+d43=DERIV021(d22,wth,lth,dx);
+d53=DERIV011(d42,wth,lth,dx);
+d63=DERIV021(d42,wth,lth,dx);
+d14=DERIV012(d02,wth,lth,dx);
+d34=DERIV012(d22,wth,lth,dx);
+d54=DERIV012(d42,wth,lth,dx);
+d64=DERIV022(d42,wth,lth,dx);
+d05=DERIV001(d04,wth,lth,dx);
+d15=DERIV011(d04,wth,lth,dx);
+d25=DERIV001(d24,wth,lth,dx);
+d35=DERIV011(d24,wth,lth,dx);
+d45=DERIV021(d24,wth,lth,dx);
+d55=DERIV011(d44,wth,lth,dx);
+d65=DERIV021(d44,wth,lth,dx);
+d06=DERIV002(d04,wth,lth,dx);
+d16=DERIV012(d04,wth,lth,dx);
+d26=DERIV002(d24,wth,lth,dx);
+d36=DERIV012(d24,wth,lth,dx);
+d46=DERIV022(d24,wth,lth,dx);
+d56=DERIV012(d44,wth,lth,dx);
+d66=DERIV022(d44,wth,lth,dx);
+
+Z[ind3(3,1,0,NU,MU,MU)] = d10;
+Z[ind3(3,2,0,NU,MU,MU)] = d20[J];
+Z[ind3(3,3,0,NU,MU,MU)] = d30;
+Z[ind3(3,4,0,NU,MU,MU)] = d40[J];
+Z[ind3(3,5,0,NU,MU,MU)] = d50;
+Z[ind3(3,6,0,NU,MU,MU)] = d60;
+Z[ind3(3,0,1,NU,MU,MU)] = d01;
+Z[ind3(3,1,1,NU,MU,MU)] = d11;
+Z[ind3(3,2,1,NU,MU,MU)] = d21;
+Z[ind3(3,3,1,NU,MU,MU)] = d31;
+Z[ind3(3,4,1,NU,MU,MU)] = d41;
+Z[ind3(3,5,1,NU,MU,MU)] = d51;
+Z[ind3(3,6,1,NU,MU,MU)] = d61;
+Z[ind3(3,0,2,NU,MU,MU)] = d02[J];
+Z[ind3(3,1,2,NU,MU,MU)] = d12;
+Z[ind3(3,2,2,NU,MU,MU)] = d22[J];
+Z[ind3(3,3,2,NU,MU,MU)] = d32;
+Z[ind3(3,4,2,NU,MU,MU)] = d42[J];
+Z[ind3(3,5,2,NU,MU,MU)] = d52;
+Z[ind3(3,6,2,NU,MU,MU)] = d62;
+Z[ind3(3,0,3,NU,MU,MU)] = d03;
+Z[ind3(3,1,3,NU,MU,MU)] = d13;
+Z[ind3(3,2,3,NU,MU,MU)] = d23;
+Z[ind3(3,3,3,NU,MU,MU)] = d33;
+Z[ind3(3,4,3,NU,MU,MU)] = d43;
+Z[ind3(3,5,3,NU,MU,MU)] = d53;
+Z[ind3(3,6,3,NU,MU,MU)] = d63;
+Z[ind3(3,0,4,NU,MU,MU)] = d04[J];
+Z[ind3(3,1,4,NU,MU,MU)] = d14;
+Z[ind3(3,2,4,NU,MU,MU)] = d24[J];
+Z[ind3(3,3,4,NU,MU,MU)] = d34;
+Z[ind3(3,4,4,NU,MU,MU)] = d44[J];
+Z[ind3(3,5,4,NU,MU,MU)] = d54;
+Z[ind3(3,6,4,NU,MU,MU)] = d64;
+Z[ind3(3,0,5,NU,MU,MU)] = d05;
+Z[ind3(3,1,5,NU,MU,MU)] = d15;
+Z[ind3(3,2,5,NU,MU,MU)] = d25;
+Z[ind3(3,3,5,NU,MU,MU)] = d35;
+Z[ind3(3,4,5,NU,MU,MU)] = d45;
+Z[ind3(3,5,5,NU,MU,MU)] = d55;
+Z[ind3(3,6,5,NU,MU,MU)] = d65;
+Z[ind3(3,0,6,NU,MU,MU)] = d06;
+Z[ind3(3,1,6,NU,MU,MU)] = d16;
+Z[ind3(3,2,6,NU,MU,MU)] = d26;
+Z[ind3(3,3,6,NU,MU,MU)] = d36;
+Z[ind3(3,4,6,NU,MU,MU)] = d46;
+Z[ind3(3,5,6,NU,MU,MU)] = d56;
+Z[ind3(3,6,6,NU,MU,MU)] = d66;

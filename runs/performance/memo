@@ -10,7 +10,170 @@ cd /Users/henshaw/Dropbox/research/cgwave/runs/performance
 
 
 ****************************
+****** Thurs Oct 20, 2022
+
+**make s a small difference to shorten code 
+
+cgWave -noplot ../known/known.cmd -g=nonBox16.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go > junk.out ; getPerfResults.p -cycles cgWave.out
+  nonBox16 & 8 & FAME  & 4.2M  &  2409.3 &  2360.1 &  2297.1 &     0.0 &    31.6 &     0.0   \\
+
+cgWave -noplot ../known/known.cmd -g=nonBox8.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go > junk.out ; getPerfResults.p -cycles cgWave.out
+
+ nonBox8 & 8 & FAME  & 0.53M  &  1782.1 &  1673.5 &  1578.8 &     0.0 &    17.0 &     0.4   \\
+
+  nonBox8 & 8 & FAME  & 0.53M  &  1868.1 &  1741.3 &  1645.6 &     0.0 &    17.4 &     0.4   \\
+
+
+****************************
+****** Tues Oct 18, 2022
+
+GET RESULTS FOR STFD SCHEME:
+
+make -s nonBoxCycles
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonBox8 & 2 & ME  & 0.53M  &   317.9 &   231.9 &   161.2 &     0.0 &    11.0 &     0.4   \\
+  nonBox8 & 4 & ME  & 0.53M  &  1076.2 &   912.3 &   841.0 &     0.0 &    11.5 &     0.4   \\
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonBox16 & 2 & ME  & 4.2M  &   268.5 &   222.5 &   169.3 &     0.0 &    26.7 &     0.1   \\
+  nonBox16 & 4 & ME  & 4.2M  &  1023.5 &   937.4 &   884.6 &     0.0 &    26.4 &     0.1   \\
+
+make -s boxCycles
+
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  box8 & 2 & ME  & 0.53M  &   141.0 &    81.2 &    17.2 &     0.0 &     8.3 &     0.2   \\
+  box8 & 4 & ME  & 0.53M  &   151.5 &   101.9 &    51.9 &     0.0 &     7.1 &     0.2   \\
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  box16 & 2 & ME  & 4.2M  &    82.5 &    58.7 &    13.4 &     0.0 &    26.8 &     0.1   \\
+  box16 & 4 & ME  & 4.2M  &   120.3 &    96.3 &    50.9 &     0.0 &    27.1 &     0.1   \\
+
+make -s nonSquareCycles
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonSquare1024 & 2 & ME  & 1.1M  &    66.2 &    61.6 &    52.9 &     0.0 &     5.1 &     0.2   \\
+  nonSquare1024 & 4 & ME  & 1.1M  &   191.1 &   185.1 &   176.6 &     0.0 &     4.9 &     0.2   \\
+
+make -s squareCycles
+
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  square1024 & 2 & ME  & 1.1M  &    22.9 &    19.6 &    11.7 &     0.0 &     4.9 &     0.2   \\
+  square1024 & 4 & ME  & 1.1M  &    44.4 &    41.5 &    34.1 &     0.0 &     4.8 &     0.2   \\
+
+
+>>>>> ORDER 6 3D
+
+cgWave -noplot ../known/known.cmd -g=nonBox16.order6.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go > junk.out; getPerfResults.p -cycles cgWave.out
+cgWave -noplot ../known/known.cmd -g=nonBox8.order6.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go > junk.out; getPerfResults.p -cycles cgWave.out
+
+  nonBox16 & 6 & FAME  & 4.2M  &   965.5 &   776.7 &   718.4 &     0.0 &    29.9 &     0.1   \\
+  nonBox8 & 6 & FAME  & 0.53M  &  1066.9 &   703.3 &   621.3 &     0.0 &    14.4 &     0.4   \\
+
+
+>>>>>>> ORDER 8 
+make -s nonSquareCycles
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonSquare1024 & 2 & FAME  & 1.1M  &    25.9 &    21.0 &    12.4 &     0.0 &     5.0 &     0.2   \\
+  nonSquare1024 & 4 & FAME  & 1.1M  &    58.4 &    52.2 &    43.8 &     0.0 &     4.8 &     0.2   \\
+  nonSquare1024 & 6 & FAME  & 1.1M  &   139.6 &   130.1 &   121.5 &     0.0 &     5.0 &     0.2   \\
+  nonSquare1024 & 8 & FAME  & 1.1M  &   404.4 &   399.9 &   390.8 &     0.0 &     5.5 &     0.2   \\
+
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonSquare1024 & 2 & FAME  & 1.1M  &    29.7 &    23.4 &    13.5 &     0.0 &     5.8 &     0.2   \\
+  nonSquare1024 & 4 & FAME  & 1.1M  &    57.5 &    51.2 &    42.8 &     0.0 &     4.8 &     0.2   \\
+  nonSquare1024 & 6 & FAME  & 1.1M  &   135.4 &   125.9 &   117.2 &     0.0 &     5.1 &     0.2   \\
+  nonSquare1024 & 8 & FAME  & 1.1M  &   385.6 &   381.0 &   371.9 &     0.0 &     5.4 &     0.2   \\  
+
+
+cgWave -noplot ../known/known.cmd -g=nonSquare1024.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go > junk.out; getPerfResults.p -cycles cgWave.out
+cgWave -noplot ../known/known.cmd -g=nonSquare512.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go > junk.out; getPerfResults.p -cycles cgWave.out
+
+  nonSquare512 & 8 & FAME  & 0.26M  &   349.8 &   338.3 &   321.7 &     0.0 &     7.3 &     0.8   \\
+  nonSquare1024 & 8 & FAME  & 1.1M  &   454.8 &   450.3 &   441.2 &     0.0 &     5.5 &     0.2   \\
+
+
+SPLIT OF Q^2 to order 4 
+  nonSquare512 & 8 & FAME  & 0.26M  &   315.7 &   304.7 &   289.2 &     0.0 &     7.2 &     0.8   \\
+  nonSquare1024 & 8 & FAME  & 1.1M  &   386.2 &   380.4 &   370.9 &     0.0 &     5.4 &     0.2   \\
+
+Early splits increase cycles...
+
+ORDER 8 BASELINE: no loop splits: 
+  nonSquare1024 & 8 & FAME  & 1.1M  &   621.0 &   615.2 &   606.0 &     0.0 &     5.4 &     0.2   \\
+
+
+NON-BOX
+make -s nonBoxCycles
+after split one loop: 
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonBox16 & 2 & FAME  & 4.2M  &   125.7 &    76.1 &    22.5 &     0.0 &    27.1 &     0.1   \\
+  nonBox16 & 4 & FAME  & 4.2M  &   290.3 &   199.8 &   146.2 &     0.0 &    27.2 &     0.1   \\
+  nonBox16 & 6 & FAME  & 4.2M  &   967.8 &   775.9 &   717.7 &     0.0 &    29.8 &     0.1   \\
+  nonBox16 & 8 & FAME  & 4.2M  &  2411.0 &  2362.1 &  2299.6 &     0.0 &    31.1 &     0.1   \\
+
+G16 
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonBox16 & 2 & FAME  & 4.2M  &   125.7 &    76.1 &    22.5 &     0.0 &    27.1 &     0.1   \\
+  nonBox16 & 4 & FAME  & 4.2M  &   290.3 &   199.8 &   146.2 &     0.0 &    27.2 &     0.1   \\
+  nonBox16 & 6 & FAME  & 4.2M  &   967.8 &   775.9 &   717.7 &     0.0 &    29.8 &     0.1   \\
+  nonBox16 & 8 & FAME  & 4.2M  &  2411.0 &  2362.1 &  2299.6 &     0.0 &    31.1 &     0.1   \\
+G8 
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonBox8 & 2 & FAME  & 0.53M  &   200.1 &   107.0 &    36.5 &     0.0 &    10.4 &     0.4   \\
+  nonBox8 & 4 & FAME  & 0.53M  &   365.6 &   193.3 &   122.7 &     0.0 &    10.9 &     0.4   \\
+  nonBox8 & 6 & FAME  & 0.53M  &  1083.8 &   704.0 &   621.5 &     0.0 &    14.6 &     0.4   \\
+  nonBox8 & 8 & FAME  & 0.53M  &  2000.3 &  1890.9 &  1796.6 &     0.0 &    16.6 &     0.4   \\
+
+
+
+BOX 
+make -s boxCycles
+G16
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  box16 & 2 & FAME  & 4.2M  &    78.5 &    51.8 &     6.0 &     0.0 &    27.2 &     0.1   \\
+  box16 & 4 & FAME  & 4.2M  &   128.8 &   104.7 &    59.5 &     0.0 &    26.8 &     0.1   \\
+  box16 & 6 & FAME  & 4.2M  &   270.6 &   240.7 &   191.7 &     0.0 &    29.4 &     0.1   \\
+  box16 & 8 & FAME  & 4.2M  &   637.5 &   616.1 &   562.4 &     0.0 &    31.5 &     0.0   \\
+
+G8
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  box8 & 2 & FAME  & 0.53M  &   118.4 &    58.6 &     5.3 &     0.0 &     6.6 &     0.2   \\
+  box8 & 4 & FAME  & 0.53M  &   127.5 &    77.6 &    27.0 &     0.0 &     7.4 &     0.2   \\
+  box8 & 6 & FAME  & 0.53M  &   224.4 &   161.4 &    99.0 &     0.0 &    12.0 &     0.4   \\
+  box8 & 8 & FAME  & 0.53M  &   378.6 &   322.5 &   249.9 &     0.0 &    15.7 &     0.4   \\
+
+
+****************************
 ****** Mon Oct 17, 2022
+
+START ON SCRIPT TO EXTRACT CYCLE RESULTS
+
+START : ORDER=8 results 
+  **NOTE** STILL NEED TO WORK ON SPLITTING LOOPS FOR ORDER=8 -- this version may actually split some loops
+
+OLD VERSION? new is about 4X faster at order=4  175 veruses 43 
+  nonSquare1024 & 4 & ME  & 1.1M  &    71.8 &    69.6 &    65.1 &     0.0 &     3.2 &     0.1   \\
+  nonSquare1024 & 4 & ME  & 1.1M  &   193.8 &   187.9 &   175.7 &     0.0 &     8.6 &     0.2   \\Cycles
+
+
+make -s nonSquareCycles
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonSquare1024 & 2 & FAME  & 1.1M  &    25.6 &    20.7 &    12.1 &     0.0 &     5.0 &     0.2   \\
+  nonSquare1024 & 4 & FAME  & 1.1M  &    57.5 &    51.1 &    42.7 &     0.0 &     4.8 &     0.2   \\
+  nonSquare1024 & 6 & FAME  & 1.1M  &   137.5 &   128.1 &   119.4 &     0.0 &     5.1 &     0.2   \\
+  nonSquare1024 & 8 & FAME  & 1.1M  &   444.6 &   440.1 &   431.0 &     0.0 &     5.5 &     0.2   \\
+
+make -s squareCycles
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  square1024 & 2 & FAME  & 1.1M  &    18.1 &    14.7 &     6.2 &     0.0 &     5.4 &     0.2   \\
+  square1024 & 4 & FAME  & 1.1M  &    25.3 &    22.5 &    16.1 &     0.0 &     3.7 &     0.2   \\
+  square1024 & 6 & FAME  & 1.1M  &    86.5 &    83.2 &    69.4 &     0.0 &    11.0 &     0.2   \\
+  square1024 & 8 & FAME  & 1.1M  &   162.7 &   160.3 &   145.9 &     0.0 &    11.6 &     0.2   \\
+
+
+
+cgWave -noplot ../known/known.cmd -g=nonSquare512.order8.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+cgWave -noplot ../known/known.cmd -g=nonSquare512.order6.hdf -kx=1 -ky=1 -kz=1 -tf=.1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -bc=e -go=go
+
+
 
 REVISIT CYCLES: 
 

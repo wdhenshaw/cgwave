@@ -3,9 +3,9 @@
 ****** Sat Aug 13, 2022
 
 
-cgWave -noplot gaussianIC.cmd -g=square512.order4.ng3 -tf=10 -tp=.05 -x0=.4 -y0=.4 -beta=50 -k0=0 -go=og
+cgWave gaussianIC.cmd -g=square512.order4.ng3.hdf -tf=10 -tp=.05 -x0=.4 -y0=.4 -beta=50 -k0=0 -go=halt
 
-
+cgWave gaussianIC.cmd -g=quare512.order4.ng3.hdf -tf=10 -tp=.05 -x0=.4 -y0=.4 -beta=50 -k0=0 -go=halt
 
 ****************************************************
 ****** Sat Aug 13, 2022

@@ -626,7 +626,6 @@ int CgWave::initializeLCBC()
         if( debug & 4 )
             printf("initializeLCBC:userNumGhost = %d and Nx = %d,%d,%d\n", userNumGhost,  Nx[0], Nx[1], Nx[2]);
         
-        
         IntegerArray & faceEval = dbase.get<IntegerArray>("faceEval");
         ForBoundary(side,axis)
         {

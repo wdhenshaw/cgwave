@@ -365,9 +365,9 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                 n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                                 n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                                 n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                                  do i3=n3a,n3b
-                                  do i2=n2a,n2b
-                                  do i1=n1a,n1b
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
                                     rx = rsxy(i1,i2,i3,0,0)
                                     ry = rsxy(i1,i2,i3,0,1)
                                     rz = rsxy(i1,i2,i3,0,2)
@@ -531,6 +531,7 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
                                     d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
                                     d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
+
                                     d100i = u(i1+1,i2,i3,0) - u(i1-1,i2,i3,0)
                                     d010i = u(i1,i2+1,i3,0) - u(i1,i2-1,i3,0)
                                     d110i = u(i1+1,i2+1,i3,0) - u(i1-1,i2+1,i3,0) - u(i1+1,i2-1,i3,0) + u(i1-1,i2-1,i3,0)
@@ -538,9 +539,9 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     d101i = u(i1+1,i2,i3+1,0) - u(i1-1,i2,i3+1,0) - u(i1+1,i2,i3-1,0) + u(i1-1,i2,i3-1,0)
                                     d011i = u(i1,i2+1,i3+1,0) - u(i1,i2-1,i3+1,0) - u(i1,i2+1,i3-1,0) + u(i1,i2-1,i3-1,0)
                                     lap2h(i1,i2,i3,0) = lapCoeff(i1,i2,i3,0)*d200(i1,i2,i3,0) +lapCoeff(i1,i2,i3,1)*d020(i1,i2,i3,0) +lapCoeff(i1,i2,i3,2)*d002(i1,i2,i3,0) +lapCoeff(i1,i2,i3,3)*d110i + lapCoeff(i1,i2,i3,4)*d101i + lapCoeff(i1,i2,i3,5)*d011i + lapCoeff(i1,i2,i3,6)*d100i + lapCoeff(i1,i2,i3,7)*d010i + lapCoeff(i1,i2,i3,8)*d001i
-                              end do
-                              end do
-                              end do
+                                  end do
+                                  end do
+                                  end do
                             numGhost1=1;
                             n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                             n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
@@ -565,6 +566,13 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     d013i = d002(i1,i2+1,i3+1,0) - d002(i1,i2-1,i3+1,0) - d002(i1,i2+1,i3-1,0) + d002(i1,i2-1,i3-1,0)
                   ! --- Laplacian to order 4 = lap2h + corrections 
                                     lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + lapCoeff(i1,i2,i3,0)*crr1*d400(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*css1*d040(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*ctt1*d004(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*(cr1*d310i + cs1*d130i) + lapCoeff(i1,i2,i3,4)*(cr1*d301i + ct1*d103i) + lapCoeff(i1,i2,i3,5)*(cs1*d031i + ct1*d013i) + lapCoeff(i1,i2,i3,6)*cr1 *d300i + lapCoeff(i1,i2,i3,7)*cs1 *d030i + lapCoeff(i1,i2,i3,8)*ct1 *d003i 
+                                    lap2hSq(i1,i2,i3,0) =  lapCoeff(i1,i2,i3,0)*lap2h200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*lap2h020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2h002(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2h110i  + lapCoeff(i1,i2,i3,4)*lap2h101i  + lapCoeff(i1,i2,i3,5)*lap2h011i  + lapCoeff(i1,i2,i3,6)*lap2h100i  + lapCoeff(i1,i2,i3,7)*lap2h010i  + lapCoeff(i1,i2,i3,8)*lap2h001i    
+                                  end do
+                                  end do
+                                  end do                  
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b                  
                   ! --- Laplacian squared to order 2:
                                     lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
                                     lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
@@ -576,9 +584,9 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     lap2h101i = lap2h(i1+1,i2,i3+1,0) - lap2h(i1-1,i2,i3+1,0) - lap2h(i1+1,i2,i3-1,0) + lap2h(i1-1,i2,i3-1,0)
                                     lap2h011i = lap2h(i1,i2+1,i3+1,0) - lap2h(i1,i2-1,i3+1,0) - lap2h(i1,i2+1,i3-1,0) + lap2h(i1,i2-1,i3-1,0)
                                     lap2hSq(i1,i2,i3,0) =  lapCoeff(i1,i2,i3,0)*lap2h200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*lap2h020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2h002(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2h110i  + lapCoeff(i1,i2,i3,4)*lap2h101i  + lapCoeff(i1,i2,i3,5)*lap2h011i  + lapCoeff(i1,i2,i3,6)*lap2h100i  + lapCoeff(i1,i2,i3,7)*lap2h010i  + lapCoeff(i1,i2,i3,8)*lap2h001i    
-                              end do
-                              end do
-                              end do
+                                  end do
+                                  end do
+                                  end do
               ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                             numGhost1=0;
                             n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
@@ -640,9 +648,9 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     lap4hSq =     lapCoeff(i1,i2,i3,0)*( lap4h200i + crr1*lap2h400i )    + lapCoeff(i1,i2,i3,1)*( lap4h020i + css1*lap2h040i )     + lapCoeff(i1,i2,i3,2)*( lap4h002i + ctt1*lap2h004i )     + lapCoeff(i1,i2,i3,3)*( lap4h110i + cr1*lap2h310i + cs1*lap2h130i ) + lapCoeff(i1,i2,i3,4)*( lap4h101i + cr1*lap2h301i + ct1*lap2h103i ) + lapCoeff(i1,i2,i3,5)*( lap4h011i + cs1*lap2h031i + ct1*lap2h013i ) + lapCoeff(i1,i2,i3,6)*( lap4h100i + cr1 *lap2h300i )    + lapCoeff(i1,i2,i3,7)*( lap4h010i + cs1 *lap2h030i )    + lapCoeff(i1,i2,i3,8)*( lap4h001i + ct1 *lap2h003i )      
                   ! --- Modified equation space-time update ----
                                     un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m)  + cdtsq*( lap6h )               + cdtPow4By12*( lap4hSq )       + cdtPow6By360*( lap2hCubed )   +dtSq*fv(m)                    
-                              end do
-                              end do
-                              end do
+                                  end do
+                                  end do
+                                  end do
                     else
               ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
               ! Example: 
@@ -670,10 +678,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                 n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                                 n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                                 n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                                  do i3=n3a,n3b
-                                  do i2=n2a,n2b
-                                  do i1=n1a,n1b
-                                    if( mask(i1,i2,i3).ne.0 )then
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                if( mask(i1,i2,i3).ne.0 )then
                                     rx = rsxy(i1,i2,i3,0,0)
                                     ry = rsxy(i1,i2,i3,0,1)
                                     rz = rsxy(i1,i2,i3,0,2)
@@ -846,10 +854,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     d101i = u(i1+1,i2,i3+1,0) - u(i1-1,i2,i3+1,0) - u(i1+1,i2,i3-1,0) + u(i1-1,i2,i3-1,0)
                                     d011i = u(i1,i2+1,i3+1,0) - u(i1,i2-1,i3+1,0) - u(i1,i2+1,i3-1,0) + u(i1,i2-1,i3-1,0)
                                     lap2h(i1,i2,i3,0) = lapCoeff(i1,i2,i3,0)*d200(i1,i2,i3,0) +lapCoeff(i1,i2,i3,1)*d020(i1,i2,i3,0) +lapCoeff(i1,i2,i3,2)*d002(i1,i2,i3,0) +lapCoeff(i1,i2,i3,3)*d110i + lapCoeff(i1,i2,i3,4)*d101i + lapCoeff(i1,i2,i3,5)*d011i + lapCoeff(i1,i2,i3,6)*d100i + lapCoeff(i1,i2,i3,7)*d010i + lapCoeff(i1,i2,i3,8)*d001i
-                                end if ! mask .ne. 0
-                              end do
-                              end do
-                              end do
+                                    end if ! mask .ne. 0
+                                  end do
+                                  end do
+                                  end do
                             numGhost1=1;
                             n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                             n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
@@ -857,13 +865,21 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                               do i3=n3a,n3b
                               do i2=n2a,n2b
                               do i1=n1a,n1b
-                                if( mask(i1,i2,i3).ne.0 )then
+                                ! if( mask(i1,i2,i3).ne.0 )then
                                     d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
                                     d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
                                     d004(i1,i2,i3,0) = d002(i1,i2,i3+1,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
                                     d220(i1,i2,i3,0) = d020(i1+1,i2,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
                                     d202(i1,i2,i3,0) = d002(i1+1,i2,i3,0) - 2*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
                                     d022(i1,i2,i3,0) = d002(i1,i2+1,i3,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                 ! end if
+                                  end do
+                                  end do
+                                  end do                  
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b  
+                                !if( mask(i1,i2,i3).ne.0 )then                                                                  
                                     d300i = d200(i1+1,i2,i3,0) - d200(i1-1,i2,i3,0)
                                     d030i = d020(i1,i2+1,i3,0) - d020(i1,i2-1,i3,0)
                                     d003i = d002(i1,i2,i3+1,0) - d002(i1,i2,i3-1,0)
@@ -886,10 +902,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     lap2h101i = lap2h(i1+1,i2,i3+1,0) - lap2h(i1-1,i2,i3+1,0) - lap2h(i1+1,i2,i3-1,0) + lap2h(i1-1,i2,i3-1,0)
                                     lap2h011i = lap2h(i1,i2+1,i3+1,0) - lap2h(i1,i2-1,i3+1,0) - lap2h(i1,i2+1,i3-1,0) + lap2h(i1,i2-1,i3-1,0)
                                     lap2hSq(i1,i2,i3,0) =  lapCoeff(i1,i2,i3,0)*lap2h200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*lap2h020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2h002(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2h110i  + lapCoeff(i1,i2,i3,4)*lap2h101i  + lapCoeff(i1,i2,i3,5)*lap2h011i  + lapCoeff(i1,i2,i3,6)*lap2h100i  + lapCoeff(i1,i2,i3,7)*lap2h010i  + lapCoeff(i1,i2,i3,8)*lap2h001i    
-                                end if ! mask .ne. 0
-                              end do
-                              end do
-                              end do
+                                    ! end if ! mask .ne. 0
+                                  end do
+                                  end do
+                                  end do
               ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                             numGhost1=0;
                             n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
@@ -898,7 +914,7 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                               do i3=n3a,n3b
                               do i2=n2a,n2b
                               do i1=n1a,n1b
-                                if( mask(i1,i2,i3).ne.0 )then
+                                ! if( mask(i1,i2,i3).ne.0 )then
                                     d600i = d400(i1+1,i2,i3,0) - 2*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
                                     d060i = d040(i1,i2+1,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
                                     d006i = d004(i1,i2,i3+1,0) - 2*d004(i1,i2,i3,0) + d004(i1,i2,i3-1,0)
@@ -977,10 +993,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                           end if
                   ! --- Modified equation space-time update ----
                                     un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m)  + cdtsq*( lap6h )               + cdtPow4By12*( lap4hSq )       + cdtPow6By360*( lap2hCubed )   +dtSq*fv(m)                    
-                                end if ! mask .ne. 0
-                              end do
-                              end do
-                              end do
+                                   ! end if ! mask .ne. 0
+                                  end do
+                                  end do
+                                  end do
                     end if
               else
                       if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
@@ -1019,9 +1035,9 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                   n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                                   n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                                   n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                                    do i3=n3a,n3b
-                                    do i2=n2a,n2b
-                                    do i1=n1a,n1b
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
                                       rx = rsxy(i1,i2,i3,0,0)
                                       ry = rsxy(i1,i2,i3,0,1)
                                       rz = rsxy(i1,i2,i3,0,2)
@@ -1192,9 +1208,9 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       d101i = u(i1+1,i2,i3+1,0) - u(i1-1,i2,i3+1,0) - u(i1+1,i2,i3-1,0) + u(i1-1,i2,i3-1,0)
                                       d011i = u(i1,i2+1,i3+1,0) - u(i1,i2-1,i3+1,0) - u(i1,i2+1,i3-1,0) + u(i1,i2-1,i3-1,0)
                                       lap2h(i1,i2,i3,0) = lapCoeff(i1,i2,i3,0)*d200(i1,i2,i3,0) +lapCoeff(i1,i2,i3,1)*d020(i1,i2,i3,0) +lapCoeff(i1,i2,i3,2)*d002(i1,i2,i3,0) +lapCoeff(i1,i2,i3,3)*d110i + lapCoeff(i1,i2,i3,4)*d101i + lapCoeff(i1,i2,i3,5)*d011i + lapCoeff(i1,i2,i3,6)*d100i + lapCoeff(i1,i2,i3,7)*d010i + lapCoeff(i1,i2,i3,8)*d001i
-                                end do
-                                end do
-                                end do
+                                    end do
+                                    end do
+                                    end do
                               numGhost1=1;
                               n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                               n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
@@ -1208,6 +1224,12 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       d220(i1,i2,i3,0) = d020(i1+1,i2,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
                                       d202(i1,i2,i3,0) = d002(i1+1,i2,i3,0) - 2*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
                                       d022(i1,i2,i3,0) = d002(i1,i2+1,i3,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
+                                    end do
+                                    end do
+                                    end do
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b                                       
                                       d300i = d200(i1+1,i2,i3,0) - d200(i1-1,i2,i3,0)
                                       d030i = d020(i1,i2+1,i3,0) - d020(i1,i2-1,i3,0)
                                       d003i = d002(i1,i2,i3+1,0) - d002(i1,i2,i3-1,0)
@@ -1219,6 +1241,15 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       d013i = d002(i1,i2+1,i3+1,0) - d002(i1,i2-1,i3+1,0) - d002(i1,i2+1,i3-1,0) + d002(i1,i2-1,i3-1,0)
                    ! --- Laplacian to order 4 = lap2h + corrections 
                                       lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + lapCoeff(i1,i2,i3,0)*crr1*d400(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*css1*d040(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*ctt1*d004(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*(cr1*d310i + cs1*d130i) + lapCoeff(i1,i2,i3,4)*(cr1*d301i + ct1*d103i) + lapCoeff(i1,i2,i3,5)*(cs1*d031i + ct1*d013i) + lapCoeff(i1,i2,i3,6)*cr1 *d300i + lapCoeff(i1,i2,i3,7)*cs1 *d030i + lapCoeff(i1,i2,i3,8)*ct1 *d003i 
+                   
+
+                                    end do
+                                    end do
+                                    end do
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b 
+
                    ! --- Laplacian squared to order 2:
                                       lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
                                       lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
@@ -1230,9 +1261,9 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       lap2h101i = lap2h(i1+1,i2,i3+1,0) - lap2h(i1-1,i2,i3+1,0) - lap2h(i1+1,i2,i3-1,0) + lap2h(i1-1,i2,i3-1,0)
                                       lap2h011i = lap2h(i1,i2+1,i3+1,0) - lap2h(i1,i2-1,i3+1,0) - lap2h(i1,i2+1,i3-1,0) + lap2h(i1,i2-1,i3-1,0)
                                       lap2hSq(i1,i2,i3,0) =  lapCoeff(i1,i2,i3,0)*lap2h200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*lap2h020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2h002(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2h110i  + lapCoeff(i1,i2,i3,4)*lap2h101i  + lapCoeff(i1,i2,i3,5)*lap2h011i  + lapCoeff(i1,i2,i3,6)*lap2h100i  + lapCoeff(i1,i2,i3,7)*lap2h010i  + lapCoeff(i1,i2,i3,8)*lap2h001i    
-                                end do
-                                end do
-                                end do
+                                    end do
+                                    end do
+                                    end do
                ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                               numGhost1=0;
                               n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
@@ -1294,9 +1325,9 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       lap4hSq =     lapCoeff(i1,i2,i3,0)*( lap4h200i + crr1*lap2h400i )    + lapCoeff(i1,i2,i3,1)*( lap4h020i + css1*lap2h040i )     + lapCoeff(i1,i2,i3,2)*( lap4h002i + ctt1*lap2h004i )     + lapCoeff(i1,i2,i3,3)*( lap4h110i + cr1*lap2h310i + cs1*lap2h130i ) + lapCoeff(i1,i2,i3,4)*( lap4h101i + cr1*lap2h301i + ct1*lap2h103i ) + lapCoeff(i1,i2,i3,5)*( lap4h011i + cs1*lap2h031i + ct1*lap2h013i ) + lapCoeff(i1,i2,i3,6)*( lap4h100i + cr1 *lap2h300i )    + lapCoeff(i1,i2,i3,7)*( lap4h010i + cs1 *lap2h030i )    + lapCoeff(i1,i2,i3,8)*( lap4h001i + ct1 *lap2h003i )      
                    ! --- Modified equation space-time update ----
                                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m)  + cdtsq*( lap6h )               + cdtPow4By12*( lap4hSq )       + cdtPow6By360*( lap2hCubed )   +dtSq*fv(m)                    
-                                end do
-                                end do
-                                end do
+                                    end do
+                                    end do
+                                    end do
                       else
                ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
                ! Example: 
@@ -1324,10 +1355,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                   n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                                   n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                                   n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                                    do i3=n3a,n3b
-                                    do i2=n2a,n2b
-                                    do i1=n1a,n1b
-                                      if( mask(i1,i2,i3).ne.0 )then
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                  if( mask(i1,i2,i3).ne.0 )then
                                       rx = rsxy(i1,i2,i3,0,0)
                                       ry = rsxy(i1,i2,i3,0,1)
                                       rz = rsxy(i1,i2,i3,0,2)
@@ -1500,10 +1531,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       d101i = u(i1+1,i2,i3+1,0) - u(i1-1,i2,i3+1,0) - u(i1+1,i2,i3-1,0) + u(i1-1,i2,i3-1,0)
                                       d011i = u(i1,i2+1,i3+1,0) - u(i1,i2-1,i3+1,0) - u(i1,i2+1,i3-1,0) + u(i1,i2-1,i3-1,0)
                                       lap2h(i1,i2,i3,0) = lapCoeff(i1,i2,i3,0)*d200(i1,i2,i3,0) +lapCoeff(i1,i2,i3,1)*d020(i1,i2,i3,0) +lapCoeff(i1,i2,i3,2)*d002(i1,i2,i3,0) +lapCoeff(i1,i2,i3,3)*d110i + lapCoeff(i1,i2,i3,4)*d101i + lapCoeff(i1,i2,i3,5)*d011i + lapCoeff(i1,i2,i3,6)*d100i + lapCoeff(i1,i2,i3,7)*d010i + lapCoeff(i1,i2,i3,8)*d001i
-                                  end if ! mask .ne. 0
-                                end do
-                                end do
-                                end do
+                                      end if ! mask .ne. 0
+                                    end do
+                                    end do
+                                    end do
                               numGhost1=1;
                               n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                               n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
@@ -1540,10 +1571,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       lap2h101i = lap2h(i1+1,i2,i3+1,0) - lap2h(i1-1,i2,i3+1,0) - lap2h(i1+1,i2,i3-1,0) + lap2h(i1-1,i2,i3-1,0)
                                       lap2h011i = lap2h(i1,i2+1,i3+1,0) - lap2h(i1,i2-1,i3+1,0) - lap2h(i1,i2+1,i3-1,0) + lap2h(i1,i2-1,i3-1,0)
                                       lap2hSq(i1,i2,i3,0) =  lapCoeff(i1,i2,i3,0)*lap2h200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*lap2h020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2h002(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2h110i  + lapCoeff(i1,i2,i3,4)*lap2h101i  + lapCoeff(i1,i2,i3,5)*lap2h011i  + lapCoeff(i1,i2,i3,6)*lap2h100i  + lapCoeff(i1,i2,i3,7)*lap2h010i  + lapCoeff(i1,i2,i3,8)*lap2h001i    
-                                  end if ! mask .ne. 0
-                                end do
-                                end do
-                                end do
+                                      end if ! mask .ne. 0
+                                    end do
+                                    end do
+                                    end do
                ! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
                               numGhost1=0;
                               n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
@@ -1653,10 +1684,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                             end if
                    ! --- Modified equation space-time update ----
                                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m)  + cdtsq*( lap6h )               + cdtPow4By12*( lap4hSq )       + cdtPow6By360*( lap2hCubed )   +dtSq*fv(m)                    
-                                  end if ! mask .ne. 0
-                                end do
-                                end do
-                                end do
+                                      end if ! mask .ne. 0
+                                    end do
+                                    end do
+                                    end do
                       end if
               end if 
       else

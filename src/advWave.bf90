@@ -2020,8 +2020,6 @@ end if
   buildFile(advWave3dOrder8c,3,8,curvilinear)
 
 
-
-
       subroutine advWave( ARGLIST() )
 !======================================================================
 !   Advance a time step for Maxwells eqution

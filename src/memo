@@ -1,3 +1,50 @@
+*******************************************************
+*********** Nov 25, 2022
+
+FILES FROM NOUR (rtg1)
+
+
+get initializeLCBC.C             (file created by Prof. Henshaw to run LCBC files in CgWave)
+get LagrangeDerivFunctions.C/.h (contains the functions that generate derivatives of Lagrange Polynomials)
+get LCBC.h                      (contains the LCBC class)
+get LCBC.C                      (contains initialize function and updateGhost function)
+get LCBC1.C                     (contains functions that set up the LCBC matrices at a face)
+get LCBC2.C                     (contains functions that set up the RHS for the LCBC system at a face)
+get LCBC_corner.C               (contains functions for the LCBC implementation at a 2D corner or 3D edge)
+get LCBC_vertex.C               (contains functions for the LCBC implementation at a 3D corner)
+get LCBC_data.C/.h              (contains functions that handle the data functions and the LcbcData class)
+get LCBCmacros.h                (contains the macros used in the LCBC class)
+get LCBC_newFun.C               (contains new functions that form the LCBC matrices: faces, edges and corners)
+get LCBC_param.h                (contains classes to define common parameters used in the LCBC class)
+get derivatives.h               (contains macros that compute needed finite difference approximations of derivatives)
+get grid.h                      (grid class used in LCBC class to form a grid)
+get utility.C/.h                (utility functions used in LCBC class) 
+
+FILES INCLUDED IN LagrangeDerivFunctions.C
+
+tangentialDerivs_3D_2_0.C     (to compute tangential derivatives needed in the LCBC procedure at boundary where x axis is fixed, order 2)
+tangentialDerivs_3D_2_1.C     (to compute tangential derivatives needed in the LCBC procedure at boundary where y axis is fixed, order 2)
+tangentialDerivs_3D_2_2.C     (to compute tangential derivatives needed in the LCBC procedure at boundary where z axis is fixed, order 2)
+tangentialDerivs_3D_4_0.C     (... same as above to order 4 ...)
+tangentialDerivs_3D_4_1.C
+tangentialDerivs_3D_4_2.C
+tangentialDerivs_3D_6_0.C     (... same as above to order 6 ...)   
+tangentialDerivs_3D_6_1.C
+tangentialDerivs_3D_6_2.C
+tangentialDerivs_3D_8_0.C     (... same as above to order 8 ...) 
+tangentialDerivs_3D_8_1.C
+tangentialDerivs_3D_8_2.C
+
+FILES DELETED
+
+numericalDeriv.C            (files to compute numerical difference of any derivative, to any order of accuracy including mixed derivatives)
+numericalDeriv.h
+
+
+
+
+
+******************************************************************
 Files from Nour:
 
 scp henshw@rtg1.math.rpi.edu:/home/alhasn/cgwave/src/\{LCBC1.C} ./

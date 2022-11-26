@@ -1,7 +1,7 @@
 #
 #  cgWave: Compute to some "known" solutions
 #
-#   cgWave [-noplot] known.cmd -g=<grid-name> -known=[pw|gpw|boxHelmholtz|polyPeriodic|squareEig|diskEig|annulusEig] 
+#   cgWave [-noplot] known.cmd -g=<grid-name> -known=[pw|gpw|boxHelmholtz|polyPeriodic|squareEig|diskEig|annulusEig|sphereEig] 
 #           -upwind=[0|1] -computeErrors=[0|1]
 #           -setKnownOnBoundaries=[0|1] -bcApproach=[cbc|lcbc|oneSided] -assignInterpNeighbours=[extrap|interp]
 #           -meApproach=[std,ha]
@@ -99,6 +99,7 @@ user defined known solution...
   # n,m,a,amp,bcOpt 
   $rad=1; 
   if( $bc eq "dirichlet" ){ $bcOpt=0; }else{ $bcOpt=1; } 
+  if( $bc eq "exact" ){ $bcOpt=0; }
   if( $known eq "diskEig" ){ $cmd="disk eigenfunction\n $nBessel $mTheta $rad $amp $bcOpt"; }  
   if( $known eq "annulusEig" ){ $cmd="annulus eigenfunction\n $nBessel $mTheta $amp $bcOpt"; }  
   if( $known eq "sphereEig" ){ $cmd="sphere eigenfunction\n $mPhi $mTheta $mr $rad $amp $bcOpt"; }  

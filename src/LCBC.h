@@ -7,7 +7,6 @@
 #include <math.h>
 #include "grid.h"
 #include "LCBC_param.h"
-#include "LCBCmacros.h"
 #include "LCBC_data.h"
 
 typedef double (*F1)(double *);
@@ -16,19 +15,28 @@ typedef void (*F2)(double[3], double *);
 struct LcbcMat{
     bool flag = false;
     int *eqNum;
-    double ***CaVec;
-    double ***CbVec;
+    double **CaVec;
+    double **CbVec;
 };
 
 class Lcbc{
 public:
+    
+    /* New functions */
+    void preallocateMemory(int components, int componentSize);
+    void deleteMemory(int components);
+    void getSideMatrix(double **&CaVec, double **&CbVec, int *eqNum, int bdryRange[3][2], int bdryNgx[3], int NU, int axis, int side);
+    void getBlockMatrices(double *&A11, double *&A12, int approxEqNum, int interiorEqNum, int compCondNum, int auxiliaryEqNum, int *Ind, int axis, int side, int *eqNum, int NU, LagrangeDerivFun LagrangeDeriv);
+    void getCornerMatrix(double **&CaVec, double **&CbVec, int *eqNum, int bdryRange[3][2], int NU1, int NU2, int varAxis, int fixedAxis[2], int side1, int side2);
+    void getBlockMatrices_edge(double *&A11, double *&A12, int approxEqNum, int interiorEqNum, int unknownVarNum, int compCondNum1, int compCondNum2, int auxiliaryEqNum, int *Ind, int fixedAxis[2], int side1, int side2, int *eqNum, int NU1, int NU2, LagrangeDerivFun LagrangeDeriv1, LagrangeDerivFun LagrangeDeriv2);
+    void getVertexMatrix(double *&CaVec, double *&CbVec, int *eqNum, int side0, int side1, int side2, int NU[3], int compCondNum[3]);
+    void getBlockMatrices_vertex(double *&A11, double *&A12, int *Ind, int side0, int side1, int side2, int *eqNum, int NU[3], int compCondNum[3], int auxiliaryEqNum, int totalEqNum, int approxEqNum, int unknownVarNum, LagrangeDerivFun LagrangeDeriv0, LagrangeDerivFun LagrangeDeriv1, LagrangeDerivFun LagrangeDeriv2); 
     
     /* TESTING */
     
     double mixedDeriv(double *u, int index[3], int deriv[3], double dx[3], int order[3], int size[3]);
     double Deriv(double *u, int index[3], int pos, int deriv, double dx, int order, int size[3]);
     double Deriv(double (*F) (double *), double *arg, int pos, int deriv, double dx, int order);
-    double dotProduct(double *v1, double *v2, int lth);
     
     /* Main Function to update ghost */
     void updateGhost(double *&unp1, double t, double dt, LcbcData *&gn, LcbcData *&fn);
@@ -37,12 +45,11 @@ public:
     void updateVertexGhost(double **R, double *&unp1, double t, double dt, int side0, int side1, int side2);
     void updateVertexGhostPeriodic(double *&unp1, int side0, int side1, int side2);
     void prepVertexMatrix(int side0, int side1, int side2, int NU[3], int compCondNum[3], int approxEqNum);
-    void getVertexMatrix(double **&CaVec, double **&CbVec, int *eqNum, int side0, int side1, int side2, int NU[3], int compCondNum[3]);
     void fillVertexMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side0, int side1, int side2, int *eqNum, int NU[3], int compCondNum[3], int auxiliaryEqNum, int totalEqNum);
     void getD_vertex(double *&D, int NU[3], int compCondNum[3], int approxEqNum);
     void getbVec_vertex(double b[], double **R, int NU[3], int totalCompCondNum);
     void prepDataVec_vertex(double **R, double *&Rv, double t, double dt, int approxEqNum, int side0, int side1, int side2, int NU[3]);
-    void getVertexGhost(double *&un, double *Rv, double **CaVec, double **CbVec, int *eqNum, int approxEqNum, int side0, int side1, int side2);
+    void getVertexGhost(double *&un, double *Rv, double *CaVec, double *CbVec, int *eqNum, int approxEqNum, int side0, int side1, int side2);
     void getbInt_vertex(double b[], double *un, int *eqNum, int *Ind, int side0, int side1, int side2);
     void freeVertexVariables();
     /* --------------------------------------*/
@@ -51,12 +58,11 @@ public:
     void updateEdgeGhost(double **R, double *&unp1, double t, double dt, int side1, int side2, int varAxis);
     void updateEdgeGhostPeriodic(double *&unp1, int side1, int side2, int varAxis, int fixedAxis[2]);
     void prepCornerMatrix(int side1, int side2, int varAxis, int approxEqNum, int NU1, int NU2);
-    void getCornerMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdryRange[3][2], int bdryNg, int side1, int side2, int varAxis, int fixedAxis[2], int NU1, int NU2);
     void getD_corner(double *&D, int varAxis, int fixedAxis[2], int NU1, int NU2);
     void getbVec_corner(double b[], double **R, int varAxis, int fixedAxis[2], int NU1, int NU2);
     void fillCornerMatrix_LagrangeDeriv(double *&Matrix, int *Ind, int side1, int side2, int varAxis, int fixedAxis[2], int *eqNum, int NU1, int NU2, int compCondNum1, int compCondNum2, int auxiliaryEqNum, int totalEqNum);
     void prepDataVec_corner(double **R, double **&Rv, double t, double dt, int side1, int side2, int varAxis, int approxEqNum, int NU1, int NU2);
-    void getCornerGhost(double *&un, double **Rv, double ***CaVec, double ***CbVec, int *eqNum, int side1, int side2, int varAxis, int approxEqNum);
+    void getCornerGhost(double *&un, double **Rv, double **CaVec, double **CbVec, int *eqNum, int side1, int side2, int varAxis, int approxEqNum);
     void getbInt_corner(double b[], double *un, int *eqNum, int *Ind, int side1, int side2, int fixedAxis[2]);
     void getBdryRange_corner(int bdryRange[3][2], int fixedAxis[2], int fixedSide[2], int varAxis, int addOnSide0, int addOnSide1);
     void getFixedAxis(int fixedAxis[2], int varAxis);
@@ -67,12 +73,12 @@ public:
     /* part 1: matrix preparation */
     void updateFaceGhost(double *&unp1, double **R, double t, double dt, int axis, int side);
     void prepSideMatrix(int axis, int side);
-    void getSideMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdryRange[3][2], int interiorRange[3][2], int bdryNgx[3], int NU, int axis, int side);
+//    void getSideMatrix(double ***&CaVec, double ***&CbVec, int *eqNum, int bdryRange[3][2], int interiorRange[3][2], int bdryNgx[3], int NU, int axis, int side);
     void getD(double *&D, int axis, int side);
     void getbVec(double *&b, double **R, int axis, int side);
     void scaleD(double *&D_scaled, double *D, double *S, int D_size);
     void fillMatrix_LagrangeDeriv(double *&Matrix, int totalEqNum, int compCondNum, int auxiliaryEqNum, int *Ind, int axis, int side, int *eqNum, int NU);
-    void getLagrangeDeriv(double Y[], double Z[], int *Ind, int *LInd, int axis, int side, bool evaluateY = true);
+    void getLagrangeDeriv(double Y[], double Z[], int *Ind, int *LInd, int axis, int side, bool evaluateY = true); 
     void applyQh(double *&QV, double *V, double **W, int *Ind, int nu, int k, int newWth[3], int newLth[3], int oldWth[3], int oldLth[3], int axis, int side);
     void applyDh(double *&QV, double *V, double **W, int *Ind, int nu, int k, int newWth[3], int newLth[3], int oldWth[3], int oldLth[3], int axis, int side);
     void getCorrectionTerms(double **&VS, double *V, double **W, int *lth, int k, int axis);
@@ -80,7 +86,7 @@ public:
 
     /* part2: rhs preparation */
     void prepDataVec(double **R, double **&Rv, double t, double dt, int bdryRange[3][2], int bdryNgx[3], int axis, int side);
-    void getFaceGhost(double *&un, double *Rv[], double ***CaVec, double ***CbVec, int *eqNum, int LcbcBdryRange[3][2], int bdryNgx[3], int axis, int side);
+    void getFaceGhost(double *&un, double *Rv[], double **CaVec, double **CbVec, int *eqNum, int LcbcBdryRange[3][2], int bdryNgx[3], int axis, int side);
     void getbInt(double b[], double *un, int *EqNum, int *Ind, int interiorRange[3][2], int axis, int side);
     void getDataDeriv(double **&R, double t, double dt, int axis, int side, LcbcData &gn, LcbcData &fn);
     void applyQhF(double *&QF, double *F, double **W, int bdryRange[3][2], int bdryRangeLth[3], int nu, int k, int newWth[3], int newLth[3], int oldWth[3], int oldLth[3], int axis, int side);
@@ -104,25 +110,25 @@ public:
     
     /* variables */
     int p, dim, numGhost, userNumGhost, maxCoefNum, LagrangeData_center, orderInTime;
-    const static int q = 1;
+    const static int q = 2;
     int extraDataGhost;
     
     Param param; FaceParam faceParam[6];
     LcbcMat FaceMat[6];
     LcbcMat CornerMat[12];
     LcbcMat VertexMat[8];
-
     
     F1 Cn, Gn, Fn; // Cn: coef, Gn: bdry, Fn: forcing, bn: bdryOperator
     F2 bn;
     double *LagrangeData;
-    bool noForcing, *zeroBC, zeroBCnewed = false, cstCoef, isInitialized = false, faceEvalNewed = false, initializedBdryData = false, initializedForcingData = false, analyzedUserData = false;
+    bool noForcing, *zeroBC, zeroBCnewed = false, cstCoef, isInitialized = false, faceEvalNewed = false, initializedBdryData = false, initializedForcingData = false, analyzedUserData = false, addAuxEqns = false;
     int *faceEval;
     Grid G;
     LcbcData *coef, *bdryData = NULL, *forcingData = NULL;
     enum LcbcDataType{boundary = 1, forcing = 2, coefficient = 3};
+    char **memory; int memoryComponents; bool preallocatedMemory = false;
 
-    bool debug = false;
+    bool debug = false; 
     
     /* Constructor */
     
@@ -217,14 +223,6 @@ inline double Lcbc::Deriv(double *u, int index[3], int pos, int deriv, double dx
 
     return D;
 }// end of Deriv
-
-inline double Lcbc::dotProduct(double *v1, double *v2, int lth){
-    double dotProduct = 0;
-    for(int i = 0; i<lth; i++){
-        dotProduct = dotProduct + v1[i]*v2[i];
-    }// end of i loop
-    return dotProduct;
-}// end of dotProduct
 
 inline void Lcbc::getbInt(double b[], double *un, int *EqNum, int *Ind, int interiorRange[3][2], int axis, int side){
     

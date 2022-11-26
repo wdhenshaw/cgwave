@@ -1,3 +1,80 @@
+
+***************************************************
+****** Sat Nov 26, 2022
+
+
+++++++++++++ BOX EIG?
+
+NONBOX:
+cgWave -noplot known.cmd -g=nonBox4.order4.hdf -kx=3 -ky=3 -kz=1 -tf=.05 -tp=.05 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0  -meApproach=ha -bcApproach=lcbc -go=go
+
+assignLCBC: grid=0, t= 1.25e-02, cpu=1.00e+01(s)
+cgWave:FD44 t=5.000e-02 (4 steps) dt=1.250e-02 maxErr= 1.43e-04, ||u||= 2.00e-01, cpu= 6.92e-02(s)
+
+
+cgWave -noplot known.cmd -g=box4.order4.hdf -kx=3 -ky=3 -kz=1 -tf=.05 -tp=.05 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0  -meApproach=ha -bcApproach=lcbc -go=go
+
+G4:
+cgWave:FD44 t=5.000e-02 (4 steps) dt=1.250e-02 maxErr= 1.43e-04, ||u||= 2.00e-01, cpu= 4.87e-02(s)
+
+assignLCBC: grid=0, t= 1.25e-02, cpu=1.05e+01(s)
+assignLCBC: grid=0, t= 2.50e-02, cpu=1.05e-02(s)
+
+G2
+cgWave:FD44 t=5.000e-02 (2 steps) dt=2.500e-02 maxErr= 2.26e-03, ||u||= 2.02e-01, cpu= 6.25e-03(s)
+
+
+
+cgWave -noplot known.cmd -g=nonSquare256.order6.hdf -kx=3 -ky=3 -kz=1 -tf=.05 -tp=.05 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0  -meApproach=ha -go=go
+
+cgWave:FD66 t=5.000e-02 (21 steps) dt=2.381e-03 maxErr= 8.96e-10, ||u||= 2.36e-01, cpu= 7.42e-02(s)
+
+cgWave -noplot known.cmd -g=square256.order6.hdf -kx=3 -ky=3 -kz=1 -tf=.05 -tp=.05 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0  -meApproach=ha -go=go
+
+
+cgWave:FD66 t=5.000e-02 (21 steps) dt=2.381e-03 maxErr= 8.96e-10, ||u||= 2.36e-01, cpu= 4.77e-02(s)
+
+
++++++++++++  REVISIT SPHERE 
+
+
+FD66 -- BC=E
+cgWave known.cmd -g=spheree4.order6.ng4 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -assignInterpNeighbours=interp -bcApproach=cbc -bc=e -go=halt
+
+cgWave:FD66 t=1.000e-01 (  13 steps) dt=7.692e-03 maxErr= 9.59e-03, ||u||= 8.32e-01, cpu= 6.75e+00(s)
+
+
+
+
+FD66 -- **TROUBLE** 
+cgWave known.cmd -g=spheree4.order6.ng4 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -assignInterpNeighbours=interp -bcApproach=lcbc -go=halt
+
+cgWave:FD66 t=1.000e-01 (  13 steps) dt=7.692e-03 maxErr= 9.59e-03, ||u||= 8.32e-01, cpu= 9.12e+01(s)
+Overture::checkMemoryUsage: Interpolant::explicitInterpolate:after periodic and updateGhost, myid=0: memory usage has increased to 583.938 (Mb)
+cgWave:FD66 t=2.000e-01 (  26 steps) dt=7.692e-03 maxErr= 2.15e-02, ||u||= 5.75e-01, cpu= 9.71e+01(s)
+
+
+FD44 HA **TROUBLE WITH FAME***
+cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=3 -meApproach=ha -bcApproach=cbc -bc=e -go=halt
+
+cgWave:FD44 t=1.000e-01 (  12 steps) dt=8.333e-03 maxErr= 6.41e-03, ||u||= 8.32e-01, cpu= 1.56e+01(s)
+
+
+FD44 BC=E 
+cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -bc=e -go=halt
+
+cgWave:FD44 t=1.000e-01 (  12 steps) dt=8.333e-03 maxErr= 3.99e-07, ||u||= 8.32e-01, cpu= 4.65e+00(s)
+
+FD44 G4 -- could be OK
+cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0  -go=halt
+
+cgWave:FD44 t=1.000e-01 (  12 steps) dt=8.333e-03 maxErr= 3.99e-07, ||u||= 8.32e-01, cpu= 5.29e+00(s)
+cgWave:FD44 t=2.000e-01 (  24 steps) dt=8.333e-03 maxErr= 3.33e-07, ||u||= 5.75e-01, cpu= 1.49e+01(s)
+cgWave:FD44 t=3.000e-01 (  36 steps) dt=8.333e-03 maxErr= 3.76e-07, ||u||= 2.04e-01, cpu= 1.71e+01(s)
+
+
+
+
 ****************************************************
 ****** Mon Oct 3, 2022
 

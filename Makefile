@@ -147,10 +147,13 @@ PETScEquationSolver.o : $(Oges)/PETScEquationSolver.C; $(CXX) $(CCFLAGS) -DOVERT
 OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/userDefinedKnownSolution.o \
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
        obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
-       obj/takeFirstStep.o obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o \
-       obj/LCBC_corner.o obj/LCBC_vertex.o obj/LCBC_data.o \
-       obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o \
+       obj/takeFirstStep.o \
        obj/rjbesl.o obj/rybesl.o
+       
+# LCBC files: 
+OBJC += obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/LCBC_data.o \
+        obj/LCBC_newFun.o obj/LagrangeDerivFunctions.o \
+        obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o 
 
 # Fortran 90 (FN) object files: 
 FNOBJO = obj/advWave.o\
@@ -221,12 +224,14 @@ testLCBC: $(testLCBCFiles); $(CXX) $(CCFLAGS) -o bin/testLCBC $(testLCBCFiles) $
 obj/testLCBC.o : src/testLCBC.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 # --- LCBC files - compile opt by default  ---
+obj/LagrangeDerivFunctions.o : src/LagrangeDerivFunctions.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
 obj/LCBC.o : src/LCBC.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
 obj/LCBC1.o : src/LCBC1.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/LCBC2.o : src/LCBC2.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/LCBC_corner.o : src/LCBC_corner.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
 obj/LCBC_vertex.o : src/LCBC_vertex.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
 obj/LCBC_data.o : src/LCBC_data.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
+obj/LCBC_newFun.o : src/LCBC_newFun.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
 obj/numericalDeriv.o : src/numericalDeriv.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/utility.o : src/utility.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/LCBC_TzFnPointers.o : src/LCBC_TzFnPointers.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
@@ -299,7 +304,7 @@ src/advWave3dOrder8r.f90 : src/advWave.f90
 src/advWave2dOrder8c.f90 : src/advWave.f90
 src/advWave3dOrder8c.f90 : src/advWave.f90
 
-src/advWaveME.f90: src/advWaveME.bf90; @cd src; $(BPP) -clean -quiet -I$(Overture)/include advWaveME.bf90
+src/advWaveME.f90: src/advWaveME.bf90 maple/update2dOrder6Curvilinear.h maple/update3dOrder6Curvilinear.h maple/update2dOrder8Curvilinear.h maple/update3dOrder8Curvilinear.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include advWaveME.bf90
 
 src/advWaveME2dOrder2r.f90 : src/advWaveME.f90
 src/advWaveME3dOrder2r.f90 : src/advWaveME.f90

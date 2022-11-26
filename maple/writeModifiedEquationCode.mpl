@@ -22,7 +22,7 @@ gridTypeName[rectangular]:="Rectangular";
 gridTypeName[curvilinear]:="Curvilinear"; 
 
 ndStart := 2: ndEnd:=3:     # number of dimensions
-orderStart:=2: orderEnd:=8: # order of accuracy
+orderStart:=6: orderEnd:=6: # order of accuracy
 # orderOfAccuracy  := 8:      # order of accuracy
 # gridType         := rectangular: 
 # gridType         := curvilinear;
@@ -337,11 +337,30 @@ end if:
 
     RETURN(lhs):
   end:
-  # ---------- END PROCEDURE save D0D0D0 --------
+  # ---------- END PROCEDURE saveD0D0D0 --------
 
 
+# ---------- START PROCEDURE startLoops --------
+#   startLoops( file ):
+#
+  startLoops :=proc( file );
+   fprintf(file,"beginLoops3d()\n");
+   fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):  
+   fprintf(file,"  if( mask(i1,i2,i3).ne.0 )then\n");
+   fprintf(file,"  #End \n"):
+  end:
+# ---------- END PROCEDURE startLoops --------
 
-
+# ---------- START PROCEDURE endLoops --------
+#   endLoops( file ):
+#
+  endLoops :=proc( file );
+  fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):
+  fprintf(file,"    end if ! mask .ne. 0\n");
+  fprintf(file,"  #End \n"):  
+  fprintf(file,"  endLoops3d() \n");  
+ end:
+# ---------- END PROCEDURE endLoops --------
 
 # ---------------------------------------------------------------------------
 # ------------ START LOOP OVER GRIDTYPE, ORDER AND DIMENSIONS ---------------
@@ -351,6 +370,9 @@ for orderOfAccuracy from orderStart by 2 to orderEnd do
 for nd from ndStart to ndEnd do 
 
   # printf("--- START: orderOfAccuracy=%d, nd=%d\n",orderOfAccuracy,nd):
+
+ # At eighth order we split loops to improve efficiency 
+ if orderOfAccuracy=8 then splitLoops:=1: else splitLoops:=0: end if:
 
  declareCount:=0;         # global variable for counting declared variables
  numDeclaredPerLine:=10;  # write this many declared variables per line  
@@ -535,10 +557,13 @@ if gridType=curvilinear then
   fprintf(file,"  n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);\n");
   fprintf(file,"  n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);\n");
   fprintf(file,"  n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);\n");
-  fprintf(file,"  beginLoops3d()\n");
-  fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):  
-  fprintf(file,"    if( mask(i1,i2,i3).ne.0 )then\n");
-  fprintf(file,"  #End \n"):
+
+  startLoops( file ):
+
+  # fprintf(file,"  beginLoops3d()\n");
+  # fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):  
+  # fprintf(file,"    if( mask(i1,i2,i3).ne.0 )then\n");
+  # fprintf(file,"  #End \n"):
 
   for m1 from 0 to nd-1 do
   for m2 from 0 to nd-1 do
@@ -695,10 +720,11 @@ if gridType=curvilinear then
   end if: 
   fprintf(file,"\n");
 
-  fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):
-  fprintf(file,"    end if ! mask .ne. 0\n");
-  fprintf(file,"  #End \n"):  
-  fprintf(file,"  endLoops3d() \n");
+  endLoops( file ):
+  # fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):
+  # fprintf(file,"    end if ! mask .ne. 0\n");
+  # fprintf(file,"  #End \n"):  
+  # fprintf(file,"  endLoops3d() \n");
 
   fprintf(file,"end if ! end assignLapCoeff\n");
 
@@ -730,10 +756,12 @@ for ord from 2 by 2 to orderOfAccuracy do
   fprintf(file,"n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);\n");
   fprintf(file,"n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);\n");
 
-  fprintf(file,"beginLoops3d()\n");
-  fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):  
-  fprintf(file,"  if( mask(i1,i2,i3).ne.0 )then\n");
-  fprintf(file,"  #End \n"):
+  startLoops( file ):
+  # fprintf(file,"beginLoops3d()\n");
+  # fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):  
+  # fprintf(file,"  if( mask(i1,i2,i3).ne.0 )then\n");
+  # fprintf(file,"  #End \n"):
+
   if ord=2 then
     # ----------------- ORDER=2 ---------------- 
 
@@ -745,8 +773,8 @@ for ord from 2 by 2 to orderOfAccuracy do
     #   suffix := "i": 
     # end if:  
 
-    lhsName:=saveDpDm( d,u,2,0,0,arrayNeededForNextLevel );
-    lhsName:=saveDpDm( d,u,0,2,0,arrayNeededForNextLevel );
+    lhsName:=saveDpDm( d,u,2,0,0,arrayNeededForNextLevel );  # Eval d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+    lhsName:=saveDpDm( d,u,0,2,0,arrayNeededForNextLevel );  # Eval d020(i1,i2,i3,0) = ...
     if nd=3 then
     lhsName:=saveDpDm( d,u,0,0,2,arrayNeededForNextLevel );
     end if;
@@ -823,11 +851,14 @@ for ord from 2 by 2 to orderOfAccuracy do
     #   suffix := "i": 
     # end if:
 
-    lhsName:= saveDpDm( d,d,4,0,0,arrayNeededForNextLevel ); 
-    lhsName:= saveDpDm( d,d,0,4,0,arrayNeededForNextLevel ); 
+    lhsName:= saveDpDm( d,d,4,0,0,arrayNeededForNextLevel );  # Eval d400(i1,i2,i3,0)
+    lhsName:= saveDpDm( d,d,0,4,0,arrayNeededForNextLevel );  # Eval d040(i1,i2,i3,0)
     if nd=3 then
     lhsName:= saveDpDm( d,d,0,0,4,arrayNeededForNextLevel ); 
     end if:
+
+    
+
 
     if orderOfAccuracy=4 then
       # no need to store these:
@@ -885,7 +916,7 @@ for ord from 2 by 2 to orderOfAccuracy do
         fprintf(file,"         + c001(i1,i2,i3)*ct1 *d003i \n");        
       end if:
 
-
+ 
       fprintf(file,"\n    ! --- Laplacian squared to order 2:\n"); 
       lhsName:= saveDpDm( lap2h,lap2h,2,0,0,arrayNeededForNextLevel );  
       lhsName:= saveDpDm( lap2h,lap2h,0,2,0,arrayNeededForNextLevel );  
@@ -1050,6 +1081,12 @@ for ord from 2 by 2 to orderOfAccuracy do
       fprintf(file,"       + c001(i1,i2,i3)*ct2 *d005i \n");        
       end if:
 
+      # Slower: 
+      # if splitLoops=1 then 
+      #    endLoops( file ):
+      #    fprintf(file," ! --- SPLIT LOOPS\n");
+      #    startLoops( file ):
+      #  end if:
 
       # ! --- Laplacian cubed order 2:
       # if ord<orderOfAccuracy then 
@@ -1095,6 +1132,12 @@ for ord from 2 by 2 to orderOfAccuracy do
         fprintf(file,"       + c001(i1,i2,i3)*lap2hSq001i   \n");         
       end if:
 
+      # Important split: 
+      if splitLoops=1 then 
+        endLoops( file ):
+        fprintf(file," ! --- SPLIT LOOPS\n");
+        startLoops( file ):
+      end if:
       fprintf(file,"\n    ! --- Laplacian squared to order 4 = \n"):
       fprintf(file,"    !  lap2h*( lap4h ) + corrections*( Lap2h )\n"):
 
@@ -1629,10 +1672,11 @@ for ord from 2 by 2 to orderOfAccuracy do
 
   end if:
 
-  fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):
-  fprintf(file,"  end if ! mask .ne. 0\n");
-  fprintf(file,"  #End \n"):
-  fprintf(file,"endLoops3d() \n");
+  endLoops( file ):
+  # fprintf(file,"  #If #MASK eq \"USEMASK\" \n"):
+  # fprintf(file,"  end if ! mask .ne. 0\n");
+  # fprintf(file,"  #End \n"):
+  # fprintf(file,"endLoops3d() \n");
   
 end do:
 

@@ -7,8 +7,8 @@
 #define ind5(i,j,k,l,m,n1,n2,n3,n4,n5) (i+(j*n1)+(k*n1*n2) + (l*n1*n2*n3) + (m*n1*n2*n3*n4))
 #define ind(I,N) (I[0]+(I[1]*N[0])+(I[2]*N[0]*N[1]))
 
-#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y));
-#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y));
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
 #define sumVectors(v1,v2) {(v1[0]+v2[0]),(v1[1]+v2[1]),(v1[2]+v2[2])}
 #define getOrder(m,p) ((m%2==0) ? (p-((m-2)/2)) : (p-((m-1)/2)))
@@ -25,5 +25,9 @@
 //#define bdryInd(I,N,axis) ((I[0] + axisBasedVal(0,axis,0,EXTRA_GHOST)) + (I[1] + axisBasedVal(1,axis,0,EXTRA_GHOST))*(N[0] + axisBasedVal(0,axis,0,(2*EXTRA_GHOST)))+ dimBasedValue(dim,0,((I[2] + axisBasedVal(2,axis,0,EXTRA_GHOST))*(N[0] + axisBasedVal(0,axis,0,(2*EXTRA_GHOST)))*(N[1] + axisBasedVal(1,axis,0,(2*EXTRA_GHOST))))))
 
 #define bdryInd(I,N,axis) (ind(I,N))
+
+//typedef void (*LagrangeDerivFun)(double[], int*, int*, double*, int, double**, int[3], int[3], bool, double[3], int, int, int);
+
+typedef void (*LagrangeDerivFun)(double[], int*, int*, double*, int, double**, int[3], int[3], bool, double[3], int, int, int, char **&);
 
 #endif /* LCBCmacros_h */
