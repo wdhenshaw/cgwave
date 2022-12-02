@@ -71,6 +71,8 @@ extern "C"
 
 // ================================================================================================
 /// \brief Advance the solution 
+/// This is the main advance routine for cgWave.
+/// \param it (input) : iteration number when solving a Helmholtz problem.
 // ================================================================================================
 int CgWave::
 advance( int it )
@@ -492,6 +494,19 @@ advance( int it )
     if( !solveHelmholtz )
     {
         getInitialConditions( cur,t );
+
+        if( true )
+        { 
+      // apply BC's at initial time *wdh* Nov 26, 2022
+      // Include CPU with initialization ( to include LCBC init cost )
+
+            Real cpuBC = getCPU();
+            applyBoundaryConditions( u1, t );  
+            cpuBC = getCPU()-cpuBC;
+
+            timing(timeForInitializeBCs)      += cpuBC;  // add to initBC cpu
+            timing(timeForBoundaryConditions) -= cpuBC;  // remove from BC cpu
+        }
     }
     else
     {
@@ -877,14 +892,14 @@ advance( int it )
                             timing(timeForDissipation) += cpu1-cpuOpt;
                         }
     
-                    if( FALSE )
+                    if( TRUE )  // turned on for cic order 8 -- byt may just need to avoid extrapolating last ghost point ++++++++++++++++++++++ FIX
                     {
             // testing: apply BC's after dissipation is added
                         applyBoundaryConditions( u[cur],t); 
                     }   
                     else
                     {
-                        u[cur].periodicUpdate(); // *wdh* Aug 14, 2021 -- this may be needed (cgsm)
+                        u[cur].periodicUpdate(); // *wdh* Aug 14, 2021 -- this may be needed 
                     }    
                 }
     

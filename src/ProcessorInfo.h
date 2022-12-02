@@ -12,6 +12,9 @@ class ProcessorInfo
 public:
 static inline
 uint64_t getCycles(void)
+//--------------------------------------------------------
+/// \brief Return the current CPU cycle counter
+//--------------------------------------------------------
 {
 #if defined(__ARM_ARCH_7A__)
     uint32_t r;
@@ -32,6 +35,9 @@ uint64_t getCycles(void)
 
 static inline
 uint32_t getMillisecondCounter(void)
+//--------------------------------------------------------
+/// \brief Return the current CPU time in milli-seconds
+//--------------------------------------------------------
 {
     struct timespec t;
     clock_gettime (CLOCK_MONOTONIC, &t);
@@ -41,6 +47,9 @@ uint32_t getMillisecondCounter(void)
 
 static inline
 int getClockSpeed(void)
+//--------------------------------------------------------
+/// \brief Return the clock speed in MHtz
+//--------------------------------------------------------
 {
     const uint64_t cycles = getCycles();
     const uint32_t millis = getMillisecondCounter();

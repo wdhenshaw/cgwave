@@ -400,6 +400,7 @@ void Lcbc::deleteMemory(int components){
 }
 
 
+
 void Lcbc::freeVariables(){
     
     delete [] LagrangeData; LagrangeData = NULL;

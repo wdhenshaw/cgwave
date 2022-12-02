@@ -78,7 +78,7 @@ Real betaWaveHoltz( Real lambda, Real omega, Real T )
 }
 
 // ----------------------------------------------------------------------------
-// Return the multi-frequency Wave-Holtz matrix "A"
+/// \brief Return the multi-frequency Wave-Holtz matrix "A"
 //----------------------------------------------------------------------------
 int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
 {
@@ -151,7 +151,15 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
 // ================================================================================================
 /// \brief Update the time integral used by the Helmholtz solver
 ///
-/// \param stepOption : firstStep, middleStep, lastStep
+/// The WaveHoltz algorithm computes the time integral of the solution. 
+/// This routine increments the time integral using the current solution and stores 
+/// the result in "v" (from the dbase).
+///
+/// \param step (input) : current step 
+/// \param stepOption : firstStep, middleStep, lastStep. When stepOption==firstStep, the integration weights will be comnputed and the
+///     time integral will be initialized.
+/// \param t (input) : current time
+/// \param u (input) : current solution
 // ================================================================================================
 int CgWave::
 updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGridFunction& u )

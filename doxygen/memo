@@ -1,0 +1,6 @@
+**********************************
+**********  Dec 2, 2022
+
+--> generate initial doxygen config file:
+
+doxygen -g cgWaveDoxygen.config

@@ -5,9 +5,8 @@
 int CgWave::
 printStatistics(FILE *file /* = stdout */)
 //===================================================================================
-// /Description:
-// Output timing statistics
-//
+/// \brief Output timing and memory usage statistics
+///
 //===================================================================================
 {
   fflush(0);

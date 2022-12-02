@@ -29,6 +29,8 @@ static int numberOfPushButtons=0, numberOfTextBoxes=0;
 
 // =============================================================================================
 /// \brief Create a grid function that holds all the things we can plot.
+/// \param current (input) : use this grid function
+/// \param v (output) : save the augmented solution here.
 /// \param t (input) : if t<0 then only fill the component names into the grid function v.
 // =============================================================================================
 realCompositeGridFunction& CgWave::
@@ -272,11 +274,16 @@ getTimeSteppingLabel( real dt, aString & label ) const
 int CgWave::
 plot( int current, real t, real dt )
 // ========================================================================================
-// /Description:
-//  plotOptions :  0 = no plotting
-//                 1 - plot and wait
-//                 3 - do not wait for response after plotting
-// /Return values: 0=normal exit. 1=user has requested "finish".
+/// /brief Plot the solution.
+/// \param current (input) : index of solution to plot.
+/// \param t (input) : time of solution to plot
+/// \param dt (input) : current time-step
+/// 
+/// 
+///  plotOptions :  0 = no plotting
+///                 1 - plot and wait
+///                 3 - do not wait for response after plotting
+/// /Return values: 0=normal exit. 1=user has requested "finish".
 // ========================================================================================
 {
   real timep=getCPU();

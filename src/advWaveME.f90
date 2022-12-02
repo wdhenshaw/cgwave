@@ -538,6 +538,7 @@
 ! ===========================================================================
 
 
+
 ! =========================================================================================
 !
 ! Macro: Advance the wave equation, EXPLICIT TIME-STEPPING
@@ -580,19 +581,18 @@
 
 ! buildFile(advWaveME2dOrder6r,2,6,rectangular)
 ! buildFile(advWaveME3dOrder6r,3,6,rectangular)
-! buildFile(advWaveME2dOrder6c,2,6,curvilinear)
-! buildFile(advWaveME3dOrder6c,3,6,curvilinear)
 
 ! buildFile(advWaveME2dOrder8r,2,8,rectangular)
 ! buildFile(advWaveME3dOrder8r,3,8,rectangular)
-! buildFile(advWaveME2dOrder8c,2,8,curvilinear)
 
 
 
             subroutine advWaveME( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
 !======================================================================
 !   Advance a time step for Maxwells eqution
-!     OPTIMIZED version for rectangular grids.
+!     OPTIMIZED MODIFIED EQUATION VERSIONS
+!       FAME: factored ME schemes
+!
 ! nd : number of space dimensions
 !
 ! ipar(0)  = option : option=0 - Maxwell+Artificial diffusion

@@ -21,7 +21,8 @@ $useKnownFirstStep=0;
 $orderInTime=-1;  # -1 = use default
 $tz="polynomial"; 
 $tf=1.; $tp=.1; $cfl=.9; $go="halt; "
-$degreeInSpace=2; $degreeInTime=2; $fx=2.; $fy=2.; $fz=2.; $ft=2.; 
+$degreeInSpace=2; $degreeInTime=2; 
+$fx=2.; $fy=-1; $fz=-1; $ft=-1; # -1 : set equal to $fx
 GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\$degreeInTime,"cfl=f"=>\$cfl,\
             "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"debug=i"=>\$debug,"orderInTime=i"=>\$orderInTime,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"bc=s"=>\$bc,"tf=f"=>\$tf,"tp=f"=>\$tp,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,\
@@ -31,6 +32,9 @@ GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\
 #
 if( $tz eq "trig" ){ $tz="trigonometric"; }
 if( $tz eq "poly" ){ $tz="polynomial"; }
+if( $fy eq -1 ){ $fy=$fx; }
+if( $fz eq -1 ){ $fz=$fx; }
+if( $ft eq -1 ){ $ft=$fx; }
 # 
 # time-stepping: (explicit or implicit)
 $ts
@@ -49,6 +53,8 @@ $cmd
 $cmd="#";
 if( $meApproach eq "std" ){ $cmd="standard modified equation"; }
 if( $meApproach eq "ha" ){ $cmd="hierarchical modified equation"; }
+printf("meApproach=$meApproach\n");
+printf("cmd=$cmd\n");
 $cmd
 #
 if( $ts eq "implicit" ){ $cmd="choose grids for implicit\n  rectangular=$rectangular\n done"; }else{ $cmd="#"; }

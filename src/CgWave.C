@@ -292,6 +292,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   // only name the things that will be really timed in this run
   timingName[totalTime]                          ="total time";
   timingName[timeForInitialize]                  ="setup and initialize";
+  timingName[timeForInitializeBCs]               ="initialize BCs";
   timingName[timeForInitialConditions]           ="initial conditions";
   timingName[timeForAdvance]                     ="advance";
   timingName[timeForAdvanceRectangularGrids]     ="  advance rectangular grids";
@@ -617,14 +618,6 @@ int CgWave::initialize()
     showFile->setFlushFrequency( flushFrequency ); // save this many solutions per sub-showFile
   }
 
-
-  // --- build LCBC objects ----
-  const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
-  if( bcApproach==useLocalCompatibilityBoundaryConditions )
-  {
-    initializeLCBC();
-  }
-
   // -- compute the time-step ---
   getTimeStep(); 
   
@@ -635,6 +628,15 @@ int CgWave::initialize()
 
   timing(timeForInitialize) += getCPU()-cpu0;
   
+  // --- build LCBC objects ----
+  const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
+  if( bcApproach==useLocalCompatibilityBoundaryConditions )
+  {
+    cpu0 = getCPU();
+    initializeLCBC();
+    timing(timeForInitializeBCs) += getCPU()-cpu0;
+  }
+
   return 0;
 }
 
@@ -1388,6 +1390,8 @@ int CgWave::interactiveUpdate()
 
 // ================================================================================================
 /// \brief Setup grids and grid functions
+///
+/// This function will perform various setup steps such as to update operators, create an interpolant, update grid functions.
 // ================================================================================================
 int CgWave::setup()
 {

@@ -306,9 +306,15 @@ void getLcbcCoef(MappedGrid & mg, LcbcData *&LcbcCoef, RealArray coefArray[],  i
                         coefArray[ind2(face,3,faceNum)](i1,i2,i3) = rxx(0,0) + rxy(0,1) + rxz(0,2); // c1 = rxx + ryy + rzz
                         coefArray[ind2(face,4,faceNum)](i1,i2,i3) = rxx(1,0) + rxy(1,1) + rxz(1,2); // c2 = sxx + syy + szz
                         coefArray[ind2(face,5,faceNum)](i1,i2,i3) = rxx(2,0) + rxy(2,1) + rxz(2,2); // c3 = txx + tyy + tzz
+                        // ** CHANGED *WDH* Nov 26, 2022
+                        // c12 = grad_x(r1) dot grad_x( r2 )
                         coefArray[ind2(face,6,faceNum)](i1,i2,i3) = rx(i,0,0)*rx(i,1,0) + rx(i,0,1)*rx(i,1,1) + rx(i,0,2)*rx(i,1,2); // c12 : rx*sx + rx*tx + sx*tx
-                        coefArray[ind2(face,7,faceNum)](i1,i2,i3) = rx(i,1,0)*rx(i,2,0) + rx(i,1,1)*rx(i,2,1) + rx(i,1,2)*rx(i,2,2); // c13 : ry*sy + ry*ty + sy*ty
-                        coefArray[ind2(face,8,faceNum)](i1,i2,i3) = rx(i,2,0)*rx(i,0,0) + rx(i,2,1)*rx(i,0,1) + rx(i,2,2)*rx(i,0,2); // c23
+                        coefArray[ind2(face,7,faceNum)](i1,i2,i3) = rx(i,0,0)*rx(i,2,0) + rx(i,0,1)*rx(i,2,1) + rx(i,0,2)*rx(i,2,2); // c13 : rx*tx + ry*ty + rz*tz
+                        coefArray[ind2(face,8,faceNum)](i1,i2,i3) = rx(i,1,0)*rx(i,2,0) + rx(i,1,1)*rx(i,2,1) + rx(i,1,2)*rx(i,2,2); // c23 : sx*tx + sy*ty + sz*tz
+                        // OLD:  
+                        // coefArray[ind2(face,6,faceNum)](i1,i2,i3) = rx(i,0,0)*rx(i,1,0) + rx(i,0,1)*rx(i,1,1) + rx(i,0,2)*rx(i,1,2); // c12 : rx*sx + rx*tx + sx*tx
+                        // coefArray[ind2(face,7,faceNum)](i1,i2,i3) = rx(i,1,0)*rx(i,2,0) + rx(i,1,1)*rx(i,2,1) + rx(i,1,2)*rx(i,2,2); // c13 : ry*sy + ry*ty + sy*ty
+                        // coefArray[ind2(face,8,faceNum)](i1,i2,i3) = rx(i,2,0)*rx(i,0,0) + rx(i,2,1)*rx(i,0,1) + rx(i,2,2)*rx(i,0,2); // c23
                         coefArray[ind2(face,9,faceNum)](i1,i2,i3) = 0.0;  // c0
                         i++;
                     }
@@ -797,10 +803,10 @@ int CgWave::assignLCBC( realMappedGridFunction & u, Real t, Real dt, int grid )
     // ============== CALL LCBC =========================
     lcbc[grid].updateGhost( un, t, dt, gn, fn );
     
-    if( debug & 2 )
+    if( (debug & 2) || (t<=2*dt) )
     {
         Real cpu = getCPU() - cpu0;
-        printF("assignLCBC: t=%9.3e, cpu = %9.3e (s)\n",t,cpu);
+        printF("assignLCBC: grid=%d, t=%9.3e, cpu = %9.3e (s)\n",grid,t,cpu);
     }
     
     return 0;

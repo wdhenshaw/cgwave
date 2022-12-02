@@ -14,6 +14,7 @@
 
 // ======================================================================================================
 /// \brief Assign the initial conditions
+///
 /// \param current (input)  : assign the grid function u[current]                                 
 /// \param getTimeDerivative (input) : if true, return the time derivative of the initial conditions                                  
 // ======================================================================================================

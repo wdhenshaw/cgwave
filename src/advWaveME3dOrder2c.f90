@@ -343,9 +343,9 @@
                                 n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                                 n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                                 n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                                  do i3=n3a,n3b
-                                  do i2=n2a,n2b
-                                  do i1=n1a,n1b
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
                                     rx = rsxy(i1,i2,i3,0,0)
                                     ry = rsxy(i1,i2,i3,0,1)
                                     rz = rsxy(i1,i2,i3,0,2)
@@ -394,15 +394,15 @@
                                         tzs = (rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2))*(.5*dr2i) 
                                     end if
                                     if( diffOrder3.eq.2 )then
-                                        rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr2i) 
-                                        ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr2i) 
-                                        rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr2i) 
-                                        sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr2i) 
-                                        syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr2i) 
-                                        szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr2i) 
-                                        txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr2i) 
-                                        tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr2i) 
-                                        tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr2i) 
+                                        rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr3i) 
+                                        ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr3i) 
+                                        rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr3i) 
+                                        sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr3i) 
+                                        syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr3i) 
+                                        szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr3i) 
+                                        txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr3i) 
+                                        tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr3i) 
+                                        tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr3i) 
                                     end if
                                     rxx = rx*rxr + sx*rxs + tx*rxt
                                     ryy = ry*ryr + sy*rys + ty*ryt
@@ -418,10 +418,10 @@
                                     lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2 + sz**2 )*dr2i**2
                                     lapCoeff(i1,i2,i3,2) = (tx**2 + ty**2 + tz**2 )*dr3i**2
                                     lapCoeff(i1,i2,i3,3) = 2.*(rx*sx + ry*sy + rz*sz )*dr1i*dr2i*.25
-                                    lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr2i*.25
-                                    lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr1i*dr2i*.25
+                                    lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr3i*.25
+                                    lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr2i*dr3i*.25
                                     lapCoeff(i1,i2,i3,6) = (rxx + ryy + rzz)*dr1i*.5
-                                    lapCoeff(i1,i2,i3,7) = (sxx + syy + tyy)*dr2i*.5 
+                                    lapCoeff(i1,i2,i3,7) = (sxx + syy + szz)*dr2i*.5 
                                     lapCoeff(i1,i2,i3,8) = (txx + tyy + tzz)*dr3i*.5 
                                   end do
                                   end do
@@ -447,9 +447,9 @@
                                     lap2h = lapCoeff(i1,i2,i3,0)*d200i +lapCoeff(i1,i2,i3,1)*d020i +lapCoeff(i1,i2,i3,2)*d002i +lapCoeff(i1,i2,i3,3)*d110i + lapCoeff(i1,i2,i3,4)*d101i + lapCoeff(i1,i2,i3,5)*d011i + lapCoeff(i1,i2,i3,6)*d100i + lapCoeff(i1,i2,i3,7)*d010i + lapCoeff(i1,i2,i3,8)*d001i
                   ! --- Modified equation space-time update ----
                                     un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         +dtSq*fv(m)                             
-                              end do
-                              end do
-                              end do
+                                  end do
+                                  end do
+                                  end do
                     else
               ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
               ! Example: 
@@ -465,10 +465,10 @@
                                 n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                                 n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                                 n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                                  do i3=n3a,n3b
-                                  do i2=n2a,n2b
-                                  do i1=n1a,n1b
-                                    if( mask(i1,i2,i3).ne.0 )then
+                              do i3=n3a,n3b
+                              do i2=n2a,n2b
+                              do i1=n1a,n1b
+                                if( mask(i1,i2,i3).ne.0 )then
                                     rx = rsxy(i1,i2,i3,0,0)
                                     ry = rsxy(i1,i2,i3,0,1)
                                     rz = rsxy(i1,i2,i3,0,2)
@@ -517,15 +517,15 @@
                                         tzs = (rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2))*(.5*dr2i) 
                                     end if
                                     if( diffOrder3.eq.2 )then
-                                        rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr2i) 
-                                        ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr2i) 
-                                        rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr2i) 
-                                        sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr2i) 
-                                        syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr2i) 
-                                        szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr2i) 
-                                        txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr2i) 
-                                        tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr2i) 
-                                        tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr2i) 
+                                        rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr3i) 
+                                        ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr3i) 
+                                        rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr3i) 
+                                        sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr3i) 
+                                        syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr3i) 
+                                        szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr3i) 
+                                        txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr3i) 
+                                        tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr3i) 
+                                        tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr3i) 
                                     end if
                                     rxx = rx*rxr + sx*rxs + tx*rxt
                                     ryy = ry*ryr + sy*rys + ty*ryt
@@ -541,10 +541,10 @@
                                     lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2 + sz**2 )*dr2i**2
                                     lapCoeff(i1,i2,i3,2) = (tx**2 + ty**2 + tz**2 )*dr3i**2
                                     lapCoeff(i1,i2,i3,3) = 2.*(rx*sx + ry*sy + rz*sz )*dr1i*dr2i*.25
-                                    lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr2i*.25
-                                    lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr1i*dr2i*.25
+                                    lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr3i*.25
+                                    lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr2i*dr3i*.25
                                     lapCoeff(i1,i2,i3,6) = (rxx + ryy + rzz)*dr1i*.5
-                                    lapCoeff(i1,i2,i3,7) = (sxx + syy + tyy)*dr2i*.5 
+                                    lapCoeff(i1,i2,i3,7) = (sxx + syy + szz)*dr2i*.5 
                                     lapCoeff(i1,i2,i3,8) = (txx + tyy + tzz)*dr3i*.5 
                                     end if ! mask .ne. 0
                                   end do
@@ -597,10 +597,10 @@
                                           end if
                   ! --- Modified equation space-time update ----
                                     un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         +dtSq*fv(m)                             
-                                end if ! mask .ne. 0
-                              end do
-                              end do
-                              end do
+                                    end if ! mask .ne. 0
+                                  end do
+                                  end do
+                                  end do
                     end if
               else
                       if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
@@ -627,9 +627,9 @@
                                   n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                                   n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                                   n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                                    do i3=n3a,n3b
-                                    do i2=n2a,n2b
-                                    do i1=n1a,n1b
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
                                       rx = rsxy(i1,i2,i3,0,0)
                                       ry = rsxy(i1,i2,i3,0,1)
                                       rz = rsxy(i1,i2,i3,0,2)
@@ -678,15 +678,15 @@
                                           tzs = (rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2))*(.5*dr2i) 
                                       end if
                                       if( diffOrder3.eq.2 )then
-                                          rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr2i) 
-                                          ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr2i) 
-                                          rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr2i) 
-                                          sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr2i) 
-                                          syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr2i) 
-                                          szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr2i) 
-                                          txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr2i) 
-                                          tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr2i) 
-                                          tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr2i) 
+                                          rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr3i) 
+                                          ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr3i) 
+                                          rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr3i) 
+                                          sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr3i) 
+                                          syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr3i) 
+                                          szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr3i) 
+                                          txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr3i) 
+                                          tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr3i) 
+                                          tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr3i) 
                                       end if
                                       rxx = rx*rxr + sx*rxs + tx*rxt
                                       ryy = ry*ryr + sy*rys + ty*ryt
@@ -702,10 +702,10 @@
                                       lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2 + sz**2 )*dr2i**2
                                       lapCoeff(i1,i2,i3,2) = (tx**2 + ty**2 + tz**2 )*dr3i**2
                                       lapCoeff(i1,i2,i3,3) = 2.*(rx*sx + ry*sy + rz*sz )*dr1i*dr2i*.25
-                                      lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr2i*.25
-                                      lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr1i*dr2i*.25
+                                      lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr3i*.25
+                                      lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr2i*dr3i*.25
                                       lapCoeff(i1,i2,i3,6) = (rxx + ryy + rzz)*dr1i*.5
-                                      lapCoeff(i1,i2,i3,7) = (sxx + syy + tyy)*dr2i*.5 
+                                      lapCoeff(i1,i2,i3,7) = (sxx + syy + szz)*dr2i*.5 
                                       lapCoeff(i1,i2,i3,8) = (txx + tyy + tzz)*dr3i*.5 
                                     end do
                                     end do
@@ -731,9 +731,9 @@
                                       lap2h = lapCoeff(i1,i2,i3,0)*d200i +lapCoeff(i1,i2,i3,1)*d020i +lapCoeff(i1,i2,i3,2)*d002i +lapCoeff(i1,i2,i3,3)*d110i + lapCoeff(i1,i2,i3,4)*d101i + lapCoeff(i1,i2,i3,5)*d011i + lapCoeff(i1,i2,i3,6)*d100i + lapCoeff(i1,i2,i3,7)*d010i + lapCoeff(i1,i2,i3,8)*d001i
                    ! --- Modified equation space-time update ----
                                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         +dtSq*fv(m)                             
-                                end do
-                                end do
-                                end do
+                                    end do
+                                    end do
+                                    end do
                       else
                ! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
                ! Example: 
@@ -749,10 +749,10 @@
                                   n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
                                   n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
                                   n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
-                                    do i3=n3a,n3b
-                                    do i2=n2a,n2b
-                                    do i1=n1a,n1b
-                                      if( mask(i1,i2,i3).ne.0 )then
+                                do i3=n3a,n3b
+                                do i2=n2a,n2b
+                                do i1=n1a,n1b
+                                  if( mask(i1,i2,i3).ne.0 )then
                                       rx = rsxy(i1,i2,i3,0,0)
                                       ry = rsxy(i1,i2,i3,0,1)
                                       rz = rsxy(i1,i2,i3,0,2)
@@ -801,15 +801,15 @@
                                           tzs = (rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2))*(.5*dr2i) 
                                       end if
                                       if( diffOrder3.eq.2 )then
-                                          rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr2i) 
-                                          ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr2i) 
-                                          rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr2i) 
-                                          sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr2i) 
-                                          syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr2i) 
-                                          szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr2i) 
-                                          txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr2i) 
-                                          tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr2i) 
-                                          tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr2i) 
+                                          rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr3i) 
+                                          ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr3i) 
+                                          rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr3i) 
+                                          sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr3i) 
+                                          syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr3i) 
+                                          szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr3i) 
+                                          txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr3i) 
+                                          tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr3i) 
+                                          tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr3i) 
                                       end if
                                       rxx = rx*rxr + sx*rxs + tx*rxt
                                       ryy = ry*ryr + sy*rys + ty*ryt
@@ -825,10 +825,10 @@
                                       lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2 + sz**2 )*dr2i**2
                                       lapCoeff(i1,i2,i3,2) = (tx**2 + ty**2 + tz**2 )*dr3i**2
                                       lapCoeff(i1,i2,i3,3) = 2.*(rx*sx + ry*sy + rz*sz )*dr1i*dr2i*.25
-                                      lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr2i*.25
-                                      lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr1i*dr2i*.25
+                                      lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr3i*.25
+                                      lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr2i*dr3i*.25
                                       lapCoeff(i1,i2,i3,6) = (rxx + ryy + rzz)*dr1i*.5
-                                      lapCoeff(i1,i2,i3,7) = (sxx + syy + tyy)*dr2i*.5 
+                                      lapCoeff(i1,i2,i3,7) = (sxx + syy + szz)*dr2i*.5 
                                       lapCoeff(i1,i2,i3,8) = (txx + tyy + tzz)*dr3i*.5 
                                       end if ! mask .ne. 0
                                     end do
@@ -881,10 +881,10 @@
                                             end if
                    ! --- Modified equation space-time update ----
                                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*( lap2h )                         +dtSq*fv(m)                             
-                                  end if ! mask .ne. 0
-                                end do
-                                end do
-                                end do
+                                      end if ! mask .ne. 0
+                                    end do
+                                    end do
+                                    end do
                       end if
               end if 
       else

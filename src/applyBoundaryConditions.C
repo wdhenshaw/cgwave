@@ -34,7 +34,10 @@ void bcOptWave( const int&nd,
 // ============================================================================
 
 // ======================================================================================================
-/// \brief apply boundary conditions
+/// \brief Apply boundary conditions to a composite grid function.
+/// 
+/// \param u (input/output) : apply BCs to this grid function
+/// \param t (input) : current time
 // ======================================================================================================
 int CgWave::
 applyBoundaryConditions( realCompositeGridFunction & u, real t )
@@ -152,11 +155,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t )
           // -- Apply local compatibility boundary conditions ---
                     u.applyBoundaryCondition(0,BCTypes::dirichlet,dirichlet,0.,t);
 
-                    Real cpuLCBC=getCPU();
                     assignLCBC( u[grid], t, dt, grid );
-                    cpuLCBC= getCPU()-cpuLCBC;
-                    if( (debug & 1) || (t<=2*dt) )
-                        printF("assignLCBC: grid=%d, t=%9.2e, cpu=%8.2e(s)\n",grid,t,cpuLCBC);
 
           // OV_ABORT("applyBC: FINISH ME: for bcApproach==useLocalCompatibilityBoundaryConditions");
                     if( useUpwindDissipation )

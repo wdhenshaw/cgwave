@@ -457,26 +457,26 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                         tys = ( 8*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) )*(dr2i/12.) 
                                         tzs = ( 8*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) )*(dr2i/12.) 
                                     elseif( diffOrder2.eq.6 )then
-                                        rxs = ( 8*(rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0)) -(rsxy(i1,i2+2,i3,0,0)-rsxy(i1,i2-2,i3,0,0)) )*(dr2i/12.) 
-                                        rys = ( 8*(rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1)) -(rsxy(i1,i2+2,i3,0,1)-rsxy(i1,i2-2,i3,0,1)) )*(dr2i/12.) 
-                                        rzs = ( 8*(rsxy(i1,i2+1,i3,0,2)-rsxy(i1,i2-1,i3,0,2)) -(rsxy(i1,i2+2,i3,0,2)-rsxy(i1,i2-2,i3,0,2)) )*(dr2i/12.) 
-                                        sxs = ( 8*(rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0)) -(rsxy(i1,i2+2,i3,1,0)-rsxy(i1,i2-2,i3,1,0)) )*(dr2i/12.) 
-                                        sys = ( 8*(rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1)) -(rsxy(i1,i2+2,i3,1,1)-rsxy(i1,i2-2,i3,1,1)) )*(dr2i/12.) 
-                                        szs = ( 8*(rsxy(i1,i2+1,i3,1,2)-rsxy(i1,i2-1,i3,1,2)) -(rsxy(i1,i2+2,i3,1,2)-rsxy(i1,i2-2,i3,1,2)) )*(dr2i/12.) 
-                                        txs = ( 8*(rsxy(i1,i2+1,i3,2,0)-rsxy(i1,i2-1,i3,2,0)) -(rsxy(i1,i2+2,i3,2,0)-rsxy(i1,i2-2,i3,2,0)) )*(dr2i/12.) 
-                                        tys = ( 8*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) )*(dr2i/12.) 
-                                        tzs = ( 8*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) )*(dr2i/12.) 
+                                        rxs = ( 45.*(rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0)) -9.*(rsxy(i1,i2+2,i3,0,0)-rsxy(i1,i2-2,i3,0,0)) +(rsxy(i1,i2+3,i3,0,0)-rsxy(i1,i2-3,i3,0,0)) )*(dr2i/60.) 
+                                        rys = ( 45.*(rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1)) -9.*(rsxy(i1,i2+2,i3,0,1)-rsxy(i1,i2-2,i3,0,1)) +(rsxy(i1,i2+3,i3,0,1)-rsxy(i1,i2-3,i3,0,1)) )*(dr2i/60.) 
+                                        rzs = ( 45.*(rsxy(i1,i2+1,i3,0,2)-rsxy(i1,i2-1,i3,0,2)) -9.*(rsxy(i1,i2+2,i3,0,2)-rsxy(i1,i2-2,i3,0,2)) +(rsxy(i1,i2+3,i3,0,2)-rsxy(i1,i2-3,i3,0,2)) )*(dr2i/60.) 
+                                        sxs = ( 45.*(rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0)) -9.*(rsxy(i1,i2+2,i3,1,0)-rsxy(i1,i2-2,i3,1,0)) +(rsxy(i1,i2+3,i3,1,0)-rsxy(i1,i2-3,i3,1,0)) )*(dr2i/60.) 
+                                        sys = ( 45.*(rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1)) -9.*(rsxy(i1,i2+2,i3,1,1)-rsxy(i1,i2-2,i3,1,1)) +(rsxy(i1,i2+3,i3,1,1)-rsxy(i1,i2-3,i3,1,1)) )*(dr2i/60.) 
+                                        szs = ( 45.*(rsxy(i1,i2+1,i3,1,2)-rsxy(i1,i2-1,i3,1,2)) -9.*(rsxy(i1,i2+2,i3,1,2)-rsxy(i1,i2-2,i3,1,2)) +(rsxy(i1,i2+3,i3,1,2)-rsxy(i1,i2-3,i3,1,2)) )*(dr2i/60.) 
+                                        txs = ( 45.*(rsxy(i1,i2+1,i3,2,0)-rsxy(i1,i2-1,i3,2,0)) -9.*(rsxy(i1,i2+2,i3,2,0)-rsxy(i1,i2-2,i3,2,0)) +(rsxy(i1,i2+3,i3,2,0)-rsxy(i1,i2-3,i3,2,0)) )*(dr2i/60.) 
+                                        tys = ( 45.*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -9.*(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) +(rsxy(i1,i2+3,i3,2,1)-rsxy(i1,i2-3,i3,2,1)) )*(dr2i/60.) 
+                                        tzs = ( 45.*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -9.*(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) +(rsxy(i1,i2+3,i3,2,2)-rsxy(i1,i2-3,i3,2,2)) )*(dr2i/60.) 
                                     end if
                                     if( diffOrder3.eq.2 )then
-                                        rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr2i) 
-                                        ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr2i) 
-                                        rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr2i) 
-                                        sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr2i) 
-                                        syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr2i) 
-                                        szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr2i) 
-                                        txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr2i) 
-                                        tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr2i) 
-                                        tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr2i) 
+                                        rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr3i) 
+                                        ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr3i) 
+                                        rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr3i) 
+                                        sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr3i) 
+                                        syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr3i) 
+                                        szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr3i) 
+                                        txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr3i) 
+                                        tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr3i) 
+                                        tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr3i) 
                                     elseif( diffOrder3.eq.4 )then
                                         rxt = ( 8*(rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0)) -(rsxy(i1,i2,i3+2,0,0)-rsxy(i1,i2,i3-2,0,0)) )*(dr3i/12.) 
                                         ryt = ( 8*(rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1)) -(rsxy(i1,i2,i3+2,0,1)-rsxy(i1,i2,i3-2,0,1)) )*(dr3i/12.) 
@@ -512,10 +512,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2 + sz**2 )*dr2i**2
                                     lapCoeff(i1,i2,i3,2) = (tx**2 + ty**2 + tz**2 )*dr3i**2
                                     lapCoeff(i1,i2,i3,3) = 2.*(rx*sx + ry*sy + rz*sz )*dr1i*dr2i*.25
-                                    lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr2i*.25
-                                    lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr1i*dr2i*.25
+                                    lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr3i*.25
+                                    lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr2i*dr3i*.25
                                     lapCoeff(i1,i2,i3,6) = (rxx + ryy + rzz)*dr1i*.5
-                                    lapCoeff(i1,i2,i3,7) = (sxx + syy + tyy)*dr2i*.5 
+                                    lapCoeff(i1,i2,i3,7) = (sxx + syy + szz)*dr2i*.5 
                                     lapCoeff(i1,i2,i3,8) = (txx + tyy + tzz)*dr3i*.5 
                                   end do
                                   end do
@@ -531,7 +531,6 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     d200(i1,i2,i3,0) = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
                                     d020(i1,i2,i3,0) = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
                                     d002(i1,i2,i3,0) = u(i1,i2,i3+1,0) - 2*u(i1,i2,i3,0) + u(i1,i2,i3-1,0)
-
                                     d100i = u(i1+1,i2,i3,0) - u(i1-1,i2,i3,0)
                                     d010i = u(i1,i2+1,i3,0) - u(i1,i2-1,i3,0)
                                     d110i = u(i1+1,i2+1,i3,0) - u(i1-1,i2+1,i3,0) - u(i1+1,i2-1,i3,0) + u(i1-1,i2-1,i3,0)
@@ -566,13 +565,6 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     d013i = d002(i1,i2+1,i3+1,0) - d002(i1,i2-1,i3+1,0) - d002(i1,i2+1,i3-1,0) + d002(i1,i2-1,i3-1,0)
                   ! --- Laplacian to order 4 = lap2h + corrections 
                                     lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + lapCoeff(i1,i2,i3,0)*crr1*d400(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*css1*d040(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*ctt1*d004(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*(cr1*d310i + cs1*d130i) + lapCoeff(i1,i2,i3,4)*(cr1*d301i + ct1*d103i) + lapCoeff(i1,i2,i3,5)*(cs1*d031i + ct1*d013i) + lapCoeff(i1,i2,i3,6)*cr1 *d300i + lapCoeff(i1,i2,i3,7)*cs1 *d030i + lapCoeff(i1,i2,i3,8)*ct1 *d003i 
-                                    lap2hSq(i1,i2,i3,0) =  lapCoeff(i1,i2,i3,0)*lap2h200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*lap2h020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2h002(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2h110i  + lapCoeff(i1,i2,i3,4)*lap2h101i  + lapCoeff(i1,i2,i3,5)*lap2h011i  + lapCoeff(i1,i2,i3,6)*lap2h100i  + lapCoeff(i1,i2,i3,7)*lap2h010i  + lapCoeff(i1,i2,i3,8)*lap2h001i    
-                                  end do
-                                  end do
-                                  end do                  
-                              do i3=n3a,n3b
-                              do i2=n2a,n2b
-                              do i1=n1a,n1b                  
                   ! --- Laplacian squared to order 2:
                                     lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
                                     lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
@@ -771,26 +763,26 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                         tys = ( 8*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) )*(dr2i/12.) 
                                         tzs = ( 8*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) )*(dr2i/12.) 
                                     elseif( diffOrder2.eq.6 )then
-                                        rxs = ( 8*(rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0)) -(rsxy(i1,i2+2,i3,0,0)-rsxy(i1,i2-2,i3,0,0)) )*(dr2i/12.) 
-                                        rys = ( 8*(rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1)) -(rsxy(i1,i2+2,i3,0,1)-rsxy(i1,i2-2,i3,0,1)) )*(dr2i/12.) 
-                                        rzs = ( 8*(rsxy(i1,i2+1,i3,0,2)-rsxy(i1,i2-1,i3,0,2)) -(rsxy(i1,i2+2,i3,0,2)-rsxy(i1,i2-2,i3,0,2)) )*(dr2i/12.) 
-                                        sxs = ( 8*(rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0)) -(rsxy(i1,i2+2,i3,1,0)-rsxy(i1,i2-2,i3,1,0)) )*(dr2i/12.) 
-                                        sys = ( 8*(rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1)) -(rsxy(i1,i2+2,i3,1,1)-rsxy(i1,i2-2,i3,1,1)) )*(dr2i/12.) 
-                                        szs = ( 8*(rsxy(i1,i2+1,i3,1,2)-rsxy(i1,i2-1,i3,1,2)) -(rsxy(i1,i2+2,i3,1,2)-rsxy(i1,i2-2,i3,1,2)) )*(dr2i/12.) 
-                                        txs = ( 8*(rsxy(i1,i2+1,i3,2,0)-rsxy(i1,i2-1,i3,2,0)) -(rsxy(i1,i2+2,i3,2,0)-rsxy(i1,i2-2,i3,2,0)) )*(dr2i/12.) 
-                                        tys = ( 8*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) )*(dr2i/12.) 
-                                        tzs = ( 8*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) )*(dr2i/12.) 
+                                        rxs = ( 45.*(rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0)) -9.*(rsxy(i1,i2+2,i3,0,0)-rsxy(i1,i2-2,i3,0,0)) +(rsxy(i1,i2+3,i3,0,0)-rsxy(i1,i2-3,i3,0,0)) )*(dr2i/60.) 
+                                        rys = ( 45.*(rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1)) -9.*(rsxy(i1,i2+2,i3,0,1)-rsxy(i1,i2-2,i3,0,1)) +(rsxy(i1,i2+3,i3,0,1)-rsxy(i1,i2-3,i3,0,1)) )*(dr2i/60.) 
+                                        rzs = ( 45.*(rsxy(i1,i2+1,i3,0,2)-rsxy(i1,i2-1,i3,0,2)) -9.*(rsxy(i1,i2+2,i3,0,2)-rsxy(i1,i2-2,i3,0,2)) +(rsxy(i1,i2+3,i3,0,2)-rsxy(i1,i2-3,i3,0,2)) )*(dr2i/60.) 
+                                        sxs = ( 45.*(rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0)) -9.*(rsxy(i1,i2+2,i3,1,0)-rsxy(i1,i2-2,i3,1,0)) +(rsxy(i1,i2+3,i3,1,0)-rsxy(i1,i2-3,i3,1,0)) )*(dr2i/60.) 
+                                        sys = ( 45.*(rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1)) -9.*(rsxy(i1,i2+2,i3,1,1)-rsxy(i1,i2-2,i3,1,1)) +(rsxy(i1,i2+3,i3,1,1)-rsxy(i1,i2-3,i3,1,1)) )*(dr2i/60.) 
+                                        szs = ( 45.*(rsxy(i1,i2+1,i3,1,2)-rsxy(i1,i2-1,i3,1,2)) -9.*(rsxy(i1,i2+2,i3,1,2)-rsxy(i1,i2-2,i3,1,2)) +(rsxy(i1,i2+3,i3,1,2)-rsxy(i1,i2-3,i3,1,2)) )*(dr2i/60.) 
+                                        txs = ( 45.*(rsxy(i1,i2+1,i3,2,0)-rsxy(i1,i2-1,i3,2,0)) -9.*(rsxy(i1,i2+2,i3,2,0)-rsxy(i1,i2-2,i3,2,0)) +(rsxy(i1,i2+3,i3,2,0)-rsxy(i1,i2-3,i3,2,0)) )*(dr2i/60.) 
+                                        tys = ( 45.*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -9.*(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) +(rsxy(i1,i2+3,i3,2,1)-rsxy(i1,i2-3,i3,2,1)) )*(dr2i/60.) 
+                                        tzs = ( 45.*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -9.*(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) +(rsxy(i1,i2+3,i3,2,2)-rsxy(i1,i2-3,i3,2,2)) )*(dr2i/60.) 
                                     end if
                                     if( diffOrder3.eq.2 )then
-                                        rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr2i) 
-                                        ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr2i) 
-                                        rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr2i) 
-                                        sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr2i) 
-                                        syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr2i) 
-                                        szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr2i) 
-                                        txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr2i) 
-                                        tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr2i) 
-                                        tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr2i) 
+                                        rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr3i) 
+                                        ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr3i) 
+                                        rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr3i) 
+                                        sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr3i) 
+                                        syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr3i) 
+                                        szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr3i) 
+                                        txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr3i) 
+                                        tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr3i) 
+                                        tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr3i) 
                                     elseif( diffOrder3.eq.4 )then
                                         rxt = ( 8*(rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0)) -(rsxy(i1,i2,i3+2,0,0)-rsxy(i1,i2,i3-2,0,0)) )*(dr3i/12.) 
                                         ryt = ( 8*(rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1)) -(rsxy(i1,i2,i3+2,0,1)-rsxy(i1,i2,i3-2,0,1)) )*(dr3i/12.) 
@@ -826,10 +818,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2 + sz**2 )*dr2i**2
                                     lapCoeff(i1,i2,i3,2) = (tx**2 + ty**2 + tz**2 )*dr3i**2
                                     lapCoeff(i1,i2,i3,3) = 2.*(rx*sx + ry*sy + rz*sz )*dr1i*dr2i*.25
-                                    lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr2i*.25
-                                    lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr1i*dr2i*.25
+                                    lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr3i*.25
+                                    lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr2i*dr3i*.25
                                     lapCoeff(i1,i2,i3,6) = (rxx + ryy + rzz)*dr1i*.5
-                                    lapCoeff(i1,i2,i3,7) = (sxx + syy + tyy)*dr2i*.5 
+                                    lapCoeff(i1,i2,i3,7) = (sxx + syy + szz)*dr2i*.5 
                                     lapCoeff(i1,i2,i3,8) = (txx + tyy + tzz)*dr3i*.5 
                                     end if ! mask .ne. 0
                                   end do
@@ -865,21 +857,13 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                               do i3=n3a,n3b
                               do i2=n2a,n2b
                               do i1=n1a,n1b
-                                ! if( mask(i1,i2,i3).ne.0 )then
+                                if( mask(i1,i2,i3).ne.0 )then
                                     d400(i1,i2,i3,0) = d200(i1+1,i2,i3,0) - 2*d200(i1,i2,i3,0) + d200(i1-1,i2,i3,0)
                                     d040(i1,i2,i3,0) = d020(i1,i2+1,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1,i2-1,i3,0)
                                     d004(i1,i2,i3,0) = d002(i1,i2,i3+1,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2,i3-1,0)
                                     d220(i1,i2,i3,0) = d020(i1+1,i2,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
                                     d202(i1,i2,i3,0) = d002(i1+1,i2,i3,0) - 2*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
                                     d022(i1,i2,i3,0) = d002(i1,i2+1,i3,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
-                                 ! end if
-                                  end do
-                                  end do
-                                  end do                  
-                              do i3=n3a,n3b
-                              do i2=n2a,n2b
-                              do i1=n1a,n1b  
-                                !if( mask(i1,i2,i3).ne.0 )then                                                                  
                                     d300i = d200(i1+1,i2,i3,0) - d200(i1-1,i2,i3,0)
                                     d030i = d020(i1,i2+1,i3,0) - d020(i1,i2-1,i3,0)
                                     d003i = d002(i1,i2,i3+1,0) - d002(i1,i2,i3-1,0)
@@ -902,7 +886,7 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                     lap2h101i = lap2h(i1+1,i2,i3+1,0) - lap2h(i1-1,i2,i3+1,0) - lap2h(i1+1,i2,i3-1,0) + lap2h(i1-1,i2,i3-1,0)
                                     lap2h011i = lap2h(i1,i2+1,i3+1,0) - lap2h(i1,i2-1,i3+1,0) - lap2h(i1,i2+1,i3-1,0) + lap2h(i1,i2-1,i3-1,0)
                                     lap2hSq(i1,i2,i3,0) =  lapCoeff(i1,i2,i3,0)*lap2h200(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*lap2h020(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*lap2h002(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*lap2h110i  + lapCoeff(i1,i2,i3,4)*lap2h101i  + lapCoeff(i1,i2,i3,5)*lap2h011i  + lapCoeff(i1,i2,i3,6)*lap2h100i  + lapCoeff(i1,i2,i3,7)*lap2h010i  + lapCoeff(i1,i2,i3,8)*lap2h001i    
-                                    ! end if ! mask .ne. 0
+                                    end if ! mask .ne. 0
                                   end do
                                   end do
                                   end do
@@ -914,7 +898,7 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                               do i3=n3a,n3b
                               do i2=n2a,n2b
                               do i1=n1a,n1b
-                                ! if( mask(i1,i2,i3).ne.0 )then
+                                if( mask(i1,i2,i3).ne.0 )then
                                     d600i = d400(i1+1,i2,i3,0) - 2*d400(i1,i2,i3,0) + d400(i1-1,i2,i3,0)
                                     d060i = d040(i1,i2+1,i3,0) - 2*d040(i1,i2,i3,0) + d040(i1,i2-1,i3,0)
                                     d006i = d004(i1,i2,i3+1,0) - 2*d004(i1,i2,i3,0) + d004(i1,i2,i3-1,0)
@@ -993,7 +977,7 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                           end if
                   ! --- Modified equation space-time update ----
                                     un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m)  + cdtsq*( lap6h )               + cdtPow4By12*( lap4hSq )       + cdtPow6By360*( lap2hCubed )   +dtSq*fv(m)                    
-                                   ! end if ! mask .ne. 0
+                                    end if ! mask .ne. 0
                                   end do
                                   end do
                                   end do
@@ -1127,26 +1111,26 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                           tys = ( 8*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) )*(dr2i/12.) 
                                           tzs = ( 8*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) )*(dr2i/12.) 
                                       elseif( diffOrder2.eq.6 )then
-                                          rxs = ( 8*(rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0)) -(rsxy(i1,i2+2,i3,0,0)-rsxy(i1,i2-2,i3,0,0)) )*(dr2i/12.) 
-                                          rys = ( 8*(rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1)) -(rsxy(i1,i2+2,i3,0,1)-rsxy(i1,i2-2,i3,0,1)) )*(dr2i/12.) 
-                                          rzs = ( 8*(rsxy(i1,i2+1,i3,0,2)-rsxy(i1,i2-1,i3,0,2)) -(rsxy(i1,i2+2,i3,0,2)-rsxy(i1,i2-2,i3,0,2)) )*(dr2i/12.) 
-                                          sxs = ( 8*(rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0)) -(rsxy(i1,i2+2,i3,1,0)-rsxy(i1,i2-2,i3,1,0)) )*(dr2i/12.) 
-                                          sys = ( 8*(rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1)) -(rsxy(i1,i2+2,i3,1,1)-rsxy(i1,i2-2,i3,1,1)) )*(dr2i/12.) 
-                                          szs = ( 8*(rsxy(i1,i2+1,i3,1,2)-rsxy(i1,i2-1,i3,1,2)) -(rsxy(i1,i2+2,i3,1,2)-rsxy(i1,i2-2,i3,1,2)) )*(dr2i/12.) 
-                                          txs = ( 8*(rsxy(i1,i2+1,i3,2,0)-rsxy(i1,i2-1,i3,2,0)) -(rsxy(i1,i2+2,i3,2,0)-rsxy(i1,i2-2,i3,2,0)) )*(dr2i/12.) 
-                                          tys = ( 8*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) )*(dr2i/12.) 
-                                          tzs = ( 8*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) )*(dr2i/12.) 
+                                          rxs = ( 45.*(rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0)) -9.*(rsxy(i1,i2+2,i3,0,0)-rsxy(i1,i2-2,i3,0,0)) +(rsxy(i1,i2+3,i3,0,0)-rsxy(i1,i2-3,i3,0,0)) )*(dr2i/60.) 
+                                          rys = ( 45.*(rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1)) -9.*(rsxy(i1,i2+2,i3,0,1)-rsxy(i1,i2-2,i3,0,1)) +(rsxy(i1,i2+3,i3,0,1)-rsxy(i1,i2-3,i3,0,1)) )*(dr2i/60.) 
+                                          rzs = ( 45.*(rsxy(i1,i2+1,i3,0,2)-rsxy(i1,i2-1,i3,0,2)) -9.*(rsxy(i1,i2+2,i3,0,2)-rsxy(i1,i2-2,i3,0,2)) +(rsxy(i1,i2+3,i3,0,2)-rsxy(i1,i2-3,i3,0,2)) )*(dr2i/60.) 
+                                          sxs = ( 45.*(rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0)) -9.*(rsxy(i1,i2+2,i3,1,0)-rsxy(i1,i2-2,i3,1,0)) +(rsxy(i1,i2+3,i3,1,0)-rsxy(i1,i2-3,i3,1,0)) )*(dr2i/60.) 
+                                          sys = ( 45.*(rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1)) -9.*(rsxy(i1,i2+2,i3,1,1)-rsxy(i1,i2-2,i3,1,1)) +(rsxy(i1,i2+3,i3,1,1)-rsxy(i1,i2-3,i3,1,1)) )*(dr2i/60.) 
+                                          szs = ( 45.*(rsxy(i1,i2+1,i3,1,2)-rsxy(i1,i2-1,i3,1,2)) -9.*(rsxy(i1,i2+2,i3,1,2)-rsxy(i1,i2-2,i3,1,2)) +(rsxy(i1,i2+3,i3,1,2)-rsxy(i1,i2-3,i3,1,2)) )*(dr2i/60.) 
+                                          txs = ( 45.*(rsxy(i1,i2+1,i3,2,0)-rsxy(i1,i2-1,i3,2,0)) -9.*(rsxy(i1,i2+2,i3,2,0)-rsxy(i1,i2-2,i3,2,0)) +(rsxy(i1,i2+3,i3,2,0)-rsxy(i1,i2-3,i3,2,0)) )*(dr2i/60.) 
+                                          tys = ( 45.*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -9.*(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) +(rsxy(i1,i2+3,i3,2,1)-rsxy(i1,i2-3,i3,2,1)) )*(dr2i/60.) 
+                                          tzs = ( 45.*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -9.*(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) +(rsxy(i1,i2+3,i3,2,2)-rsxy(i1,i2-3,i3,2,2)) )*(dr2i/60.) 
                                       end if
                                       if( diffOrder3.eq.2 )then
-                                          rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr2i) 
-                                          ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr2i) 
-                                          rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr2i) 
-                                          sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr2i) 
-                                          syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr2i) 
-                                          szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr2i) 
-                                          txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr2i) 
-                                          tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr2i) 
-                                          tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr2i) 
+                                          rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr3i) 
+                                          ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr3i) 
+                                          rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr3i) 
+                                          sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr3i) 
+                                          syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr3i) 
+                                          szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr3i) 
+                                          txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr3i) 
+                                          tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr3i) 
+                                          tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr3i) 
                                       elseif( diffOrder3.eq.4 )then
                                           rxt = ( 8*(rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0)) -(rsxy(i1,i2,i3+2,0,0)-rsxy(i1,i2,i3-2,0,0)) )*(dr3i/12.) 
                                           ryt = ( 8*(rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1)) -(rsxy(i1,i2,i3+2,0,1)-rsxy(i1,i2,i3-2,0,1)) )*(dr3i/12.) 
@@ -1182,10 +1166,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2 + sz**2 )*dr2i**2
                                       lapCoeff(i1,i2,i3,2) = (tx**2 + ty**2 + tz**2 )*dr3i**2
                                       lapCoeff(i1,i2,i3,3) = 2.*(rx*sx + ry*sy + rz*sz )*dr1i*dr2i*.25
-                                      lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr2i*.25
-                                      lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr1i*dr2i*.25
+                                      lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr3i*.25
+                                      lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr2i*dr3i*.25
                                       lapCoeff(i1,i2,i3,6) = (rxx + ryy + rzz)*dr1i*.5
-                                      lapCoeff(i1,i2,i3,7) = (sxx + syy + tyy)*dr2i*.5 
+                                      lapCoeff(i1,i2,i3,7) = (sxx + syy + szz)*dr2i*.5 
                                       lapCoeff(i1,i2,i3,8) = (txx + tyy + tzz)*dr3i*.5 
                                     end do
                                     end do
@@ -1224,12 +1208,6 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       d220(i1,i2,i3,0) = d020(i1+1,i2,i3,0) - 2*d020(i1,i2,i3,0) + d020(i1-1,i2,i3,0)
                                       d202(i1,i2,i3,0) = d002(i1+1,i2,i3,0) - 2*d002(i1,i2,i3,0) + d002(i1-1,i2,i3,0)
                                       d022(i1,i2,i3,0) = d002(i1,i2+1,i3,0) - 2*d002(i1,i2,i3,0) + d002(i1,i2-1,i3,0)
-                                    end do
-                                    end do
-                                    end do
-                                do i3=n3a,n3b
-                                do i2=n2a,n2b
-                                do i1=n1a,n1b                                       
                                       d300i = d200(i1+1,i2,i3,0) - d200(i1-1,i2,i3,0)
                                       d030i = d020(i1,i2+1,i3,0) - d020(i1,i2-1,i3,0)
                                       d003i = d002(i1,i2,i3+1,0) - d002(i1,i2,i3-1,0)
@@ -1241,15 +1219,6 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       d013i = d002(i1,i2+1,i3+1,0) - d002(i1,i2-1,i3+1,0) - d002(i1,i2+1,i3-1,0) + d002(i1,i2-1,i3-1,0)
                    ! --- Laplacian to order 4 = lap2h + corrections 
                                       lap4h(i1,i2,i3,0) = lap2h(i1,i2,i3,0) + lapCoeff(i1,i2,i3,0)*crr1*d400(i1,i2,i3,0) + lapCoeff(i1,i2,i3,1)*css1*d040(i1,i2,i3,0) + lapCoeff(i1,i2,i3,2)*ctt1*d004(i1,i2,i3,0) + lapCoeff(i1,i2,i3,3)*(cr1*d310i + cs1*d130i) + lapCoeff(i1,i2,i3,4)*(cr1*d301i + ct1*d103i) + lapCoeff(i1,i2,i3,5)*(cs1*d031i + ct1*d013i) + lapCoeff(i1,i2,i3,6)*cr1 *d300i + lapCoeff(i1,i2,i3,7)*cs1 *d030i + lapCoeff(i1,i2,i3,8)*ct1 *d003i 
-                   
-
-                                    end do
-                                    end do
-                                    end do
-                                do i3=n3a,n3b
-                                do i2=n2a,n2b
-                                do i1=n1a,n1b 
-
                    ! --- Laplacian squared to order 2:
                                       lap2h200(i1,i2,i3,0) = lap2h(i1+1,i2,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1-1,i2,i3,0)
                                       lap2h020(i1,i2,i3,0) = lap2h(i1,i2+1,i3,0) - 2*lap2h(i1,i2,i3,0) + lap2h(i1,i2-1,i3,0)
@@ -1448,26 +1417,26 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                           tys = ( 8*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) )*(dr2i/12.) 
                                           tzs = ( 8*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) )*(dr2i/12.) 
                                       elseif( diffOrder2.eq.6 )then
-                                          rxs = ( 8*(rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0)) -(rsxy(i1,i2+2,i3,0,0)-rsxy(i1,i2-2,i3,0,0)) )*(dr2i/12.) 
-                                          rys = ( 8*(rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1)) -(rsxy(i1,i2+2,i3,0,1)-rsxy(i1,i2-2,i3,0,1)) )*(dr2i/12.) 
-                                          rzs = ( 8*(rsxy(i1,i2+1,i3,0,2)-rsxy(i1,i2-1,i3,0,2)) -(rsxy(i1,i2+2,i3,0,2)-rsxy(i1,i2-2,i3,0,2)) )*(dr2i/12.) 
-                                          sxs = ( 8*(rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0)) -(rsxy(i1,i2+2,i3,1,0)-rsxy(i1,i2-2,i3,1,0)) )*(dr2i/12.) 
-                                          sys = ( 8*(rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1)) -(rsxy(i1,i2+2,i3,1,1)-rsxy(i1,i2-2,i3,1,1)) )*(dr2i/12.) 
-                                          szs = ( 8*(rsxy(i1,i2+1,i3,1,2)-rsxy(i1,i2-1,i3,1,2)) -(rsxy(i1,i2+2,i3,1,2)-rsxy(i1,i2-2,i3,1,2)) )*(dr2i/12.) 
-                                          txs = ( 8*(rsxy(i1,i2+1,i3,2,0)-rsxy(i1,i2-1,i3,2,0)) -(rsxy(i1,i2+2,i3,2,0)-rsxy(i1,i2-2,i3,2,0)) )*(dr2i/12.) 
-                                          tys = ( 8*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) )*(dr2i/12.) 
-                                          tzs = ( 8*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) )*(dr2i/12.) 
+                                          rxs = ( 45.*(rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0)) -9.*(rsxy(i1,i2+2,i3,0,0)-rsxy(i1,i2-2,i3,0,0)) +(rsxy(i1,i2+3,i3,0,0)-rsxy(i1,i2-3,i3,0,0)) )*(dr2i/60.) 
+                                          rys = ( 45.*(rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1)) -9.*(rsxy(i1,i2+2,i3,0,1)-rsxy(i1,i2-2,i3,0,1)) +(rsxy(i1,i2+3,i3,0,1)-rsxy(i1,i2-3,i3,0,1)) )*(dr2i/60.) 
+                                          rzs = ( 45.*(rsxy(i1,i2+1,i3,0,2)-rsxy(i1,i2-1,i3,0,2)) -9.*(rsxy(i1,i2+2,i3,0,2)-rsxy(i1,i2-2,i3,0,2)) +(rsxy(i1,i2+3,i3,0,2)-rsxy(i1,i2-3,i3,0,2)) )*(dr2i/60.) 
+                                          sxs = ( 45.*(rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0)) -9.*(rsxy(i1,i2+2,i3,1,0)-rsxy(i1,i2-2,i3,1,0)) +(rsxy(i1,i2+3,i3,1,0)-rsxy(i1,i2-3,i3,1,0)) )*(dr2i/60.) 
+                                          sys = ( 45.*(rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1)) -9.*(rsxy(i1,i2+2,i3,1,1)-rsxy(i1,i2-2,i3,1,1)) +(rsxy(i1,i2+3,i3,1,1)-rsxy(i1,i2-3,i3,1,1)) )*(dr2i/60.) 
+                                          szs = ( 45.*(rsxy(i1,i2+1,i3,1,2)-rsxy(i1,i2-1,i3,1,2)) -9.*(rsxy(i1,i2+2,i3,1,2)-rsxy(i1,i2-2,i3,1,2)) +(rsxy(i1,i2+3,i3,1,2)-rsxy(i1,i2-3,i3,1,2)) )*(dr2i/60.) 
+                                          txs = ( 45.*(rsxy(i1,i2+1,i3,2,0)-rsxy(i1,i2-1,i3,2,0)) -9.*(rsxy(i1,i2+2,i3,2,0)-rsxy(i1,i2-2,i3,2,0)) +(rsxy(i1,i2+3,i3,2,0)-rsxy(i1,i2-3,i3,2,0)) )*(dr2i/60.) 
+                                          tys = ( 45.*(rsxy(i1,i2+1,i3,2,1)-rsxy(i1,i2-1,i3,2,1)) -9.*(rsxy(i1,i2+2,i3,2,1)-rsxy(i1,i2-2,i3,2,1)) +(rsxy(i1,i2+3,i3,2,1)-rsxy(i1,i2-3,i3,2,1)) )*(dr2i/60.) 
+                                          tzs = ( 45.*(rsxy(i1,i2+1,i3,2,2)-rsxy(i1,i2-1,i3,2,2)) -9.*(rsxy(i1,i2+2,i3,2,2)-rsxy(i1,i2-2,i3,2,2)) +(rsxy(i1,i2+3,i3,2,2)-rsxy(i1,i2-3,i3,2,2)) )*(dr2i/60.) 
                                       end if
                                       if( diffOrder3.eq.2 )then
-                                          rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr2i) 
-                                          ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr2i) 
-                                          rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr2i) 
-                                          sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr2i) 
-                                          syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr2i) 
-                                          szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr2i) 
-                                          txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr2i) 
-                                          tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr2i) 
-                                          tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr2i) 
+                                          rxt = (rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0))*(.5*dr3i) 
+                                          ryt = (rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1))*(.5*dr3i) 
+                                          rzt = (rsxy(i1,i2,i3+1,0,2)-rsxy(i1,i2,i3-1,0,2))*(.5*dr3i) 
+                                          sxt = (rsxy(i1,i2,i3+1,1,0)-rsxy(i1,i2,i3-1,1,0))*(.5*dr3i) 
+                                          syt = (rsxy(i1,i2,i3+1,1,1)-rsxy(i1,i2,i3-1,1,1))*(.5*dr3i) 
+                                          szt = (rsxy(i1,i2,i3+1,1,2)-rsxy(i1,i2,i3-1,1,2))*(.5*dr3i) 
+                                          txt = (rsxy(i1,i2,i3+1,2,0)-rsxy(i1,i2,i3-1,2,0))*(.5*dr3i) 
+                                          tyt = (rsxy(i1,i2,i3+1,2,1)-rsxy(i1,i2,i3-1,2,1))*(.5*dr3i) 
+                                          tzt = (rsxy(i1,i2,i3+1,2,2)-rsxy(i1,i2,i3-1,2,2))*(.5*dr3i) 
                                       elseif( diffOrder3.eq.4 )then
                                           rxt = ( 8*(rsxy(i1,i2,i3+1,0,0)-rsxy(i1,i2,i3-1,0,0)) -(rsxy(i1,i2,i3+2,0,0)-rsxy(i1,i2,i3-2,0,0)) )*(dr3i/12.) 
                                           ryt = ( 8*(rsxy(i1,i2,i3+1,0,1)-rsxy(i1,i2,i3-1,0,1)) -(rsxy(i1,i2,i3+2,0,1)-rsxy(i1,i2,i3-2,0,1)) )*(dr3i/12.) 
@@ -1503,10 +1472,10 @@ ctttt0 = 1.; ctttt1 = -1/6.; ctttt2 = 7/240.;
                                       lapCoeff(i1,i2,i3,1) = (sx**2 + sy**2 + sz**2 )*dr2i**2
                                       lapCoeff(i1,i2,i3,2) = (tx**2 + ty**2 + tz**2 )*dr3i**2
                                       lapCoeff(i1,i2,i3,3) = 2.*(rx*sx + ry*sy + rz*sz )*dr1i*dr2i*.25
-                                      lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr2i*.25
-                                      lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr1i*dr2i*.25
+                                      lapCoeff(i1,i2,i3,4) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr3i*.25
+                                      lapCoeff(i1,i2,i3,5) = 2.*(sx*tx + sy*ty + sz*tz )*dr2i*dr3i*.25
                                       lapCoeff(i1,i2,i3,6) = (rxx + ryy + rzz)*dr1i*.5
-                                      lapCoeff(i1,i2,i3,7) = (sxx + syy + tyy)*dr2i*.5 
+                                      lapCoeff(i1,i2,i3,7) = (sxx + syy + szz)*dr2i*.5 
                                       lapCoeff(i1,i2,i3,8) = (txx + tyy + tzz)*dr3i*.5 
                                       end if ! mask .ne. 0
                                     end do

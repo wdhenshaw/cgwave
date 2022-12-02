@@ -6,6 +6,338 @@ set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDeriv
 
 
 ****************************************************
+****** Fri Dec 2, 2022
+
+>>> compile LCBC -g 
+cgWave -noplot tz.cmd -g=box1.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=.02 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=go
+
+
+*trouble* LCBC delete memory at end
+cgWave -noplot tz.cmd -g=box1.order8.ng5 -cfl=.9 -tf=.8 -tp=.8 -kx=1 -ky=0 -kz=0 -fx=10 -fy=10 -fz=10 -ft=10 -nBessel=1 -mTheta=1 -ts=explicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=lcbc -meApproach=ha -known=unknown -go=go -tz=trig -degreeInSpace=2 -degreeInTime=2 -fx=10 -fy=10 -fz=10 -ft=10 -dtMax=10000000000
+
+****************************************************
+****** Thurs Dec 1, 2022
+
+TEST PERIODIC ORDER 8 -- check points near branch cut
+
+CIC 8 -- CFL=.5 errors are larger near branch cut **WHY ?? **
+         CFL==.2 looks ok
+cgWave tz.cmd -g=cicFixede8.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=10 -tp=.01 -cfl=.5 -bcApproach=lcbc -meApproach=ha -go=halt
+
+
+CFL=.1, applyBC after upwind : OK 
+cgWave tz.cmd -g=cicFixede2.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=10 -tp=.01 -cfl=.1 -bcApproach=lcbc -meApproach=ha -go=halt
+
+
+UPWIND TROUBLE:
+cgWave tz.cmd -g=cicFixede2.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=10 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+NO upwind -- looks OK
+cgWave tz.cmd -g=cicFixede2.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=10 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+ANNULUS -- upwind LOOKS OK 
+cgWave tz.cmd -g=annulus2.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=10 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+SQUARENP , up=1 LOOKS OK:
+cgWave tz.cmd -g=square16np.order8.ng5 -upwind=1 -tz=trig -orderInTime=-1 -bc=d -tf=10 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+****************************************************
+****** Mon Nov 28, 2022
+
+TEST 2D ANNULUS order=6
+cgWave -noplot tz.cmd -g=annulus8.order6.ng4 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+
+
+FD88 *NOT OK*
+cgWave -noplot tz.cmd -g=quarterCyl8.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order8.ng5 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+
+G8
+cgWave:FD88 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 2.22e-05, ||u||= 8.09e-01, cpu= 9.33e+00(s)
+G4
+cgWave:FD88 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 7.84e-05, ||u||= 8.09e-01, cpu= 5.60e-01(s)
+G2
+cgWave:FD88 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 5.01e-04, ||u||= 8.09e-01, cpu= 5.82e-02(s)
+
+
+FD66  *OK MAYBE* 
+cgWave -noplot tz.cmd -g=quarterCyl8.order6.ng4 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order6.ng4 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order6.ng4 -upwind=0 -tz=trig -orderInTime=-1 -bc=e -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+
+G8 ratio: 126
+cgWave:FD66 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 9.58e-07, ||u||= 8.09e-01, cpu= 5.24e+00(s)
+G4
+cgWave:FD66 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 1.21e-04, ||u||= 8.09e-01, cpu= 3.20e-01(s)
+G2
+cgWave:FD66 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 4.49e-03, ||u||= 8.09e-01, cpu= 2.66e-02(s)
+
+FD44 ME-CBC
+cgWave -noplot tz.cmd -g=quarterCyl8.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+
+G8 LCBC:
+cgWave:FD44 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 7.67e-03, ||u||= 8.09e-01, cpu= 3.27e+00(s)
+
+G8
+cgWave:FD44 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 1.21e-05, ||u||= 8.09e-01, cpu= 3.07e+00(s)
+
+G4
+cgWave:FD44 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 1.89e-04, ||u||= 8.09e-01, cpu= 2.19e-01(s)
+
+G2
+cgWave:FD44 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 2.72e-03, ||u||= 8.12e-01, cpu= 2.15e-02(s)
+
+
+FD22 - HA-CBC : 
+cgWave -noplot tz.cmd -g=quarterCyl8.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+
+G8
+cgWave:FD22 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 1.94e-03, ||u||= 8.10e-01, cpu= 1.12e+00(s)
+G4
+cgWave:FD22 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 7.67e-03, ||u||= 8.09e-01, cpu= 7.63e-02(s)
+
+****************************************************
+****** Sun Nov 27, 2022
+
+BUGS FOUND -- 
+
+FD22 - HA-CBC : **trouble***
+cgWave -noplot tz.cmd -g=quarterCyl8.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+
+G8
+*FIXED* cgWave:FD22 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 1.94e-03, ||u||= 8.10e-01, cpu= 1.12e+00(s)
+
+cgWave:FD22 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 1.79e-02, ||u||= 8.10e-01, cpu= 1.10e+00(s)
+G4
+cgWave:FD22 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 1.64e-02, ||u||= 8.09e-01, cpu= 7.59e-02(s)
+G2
+cgWave:FD22 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 2.98e-02, ||u||= 8.39e-01, cpu= 7.27e-03(s)
+
+
+FD22 - ME-CBC : **trouble***
+cgWave -noplot tz.cmd -g=quarterCyl8.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=me -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=me -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=me -go=go
+
+G8:
+cgWave:FD22 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 1.94e-03, ||u||= 8.10e-01, cpu= 1.16e+00(s)
+
+****************************************************
+****** Sat Nov 26, 2022
+
+REVIST FAME scheme:
+
++++++++++ QUARTER CYL *TROUBLE**
+
+----------------------------------
+ME-LCBC
+cgWave -noplot tz.cmd -g=quarterCyl8.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=me -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=me -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=me -go=go
+
+G8
+cgWave:FD44 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 7.67e-03, ||u||= 8.09e-01, cpu= 3.57e+00(s)
+G4
+cgWave:FD44 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 1.72e-02, ||u||= 8.09e-01, cpu= 2.59e-01(s)
+G2
+cgWave:FD44 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 3.24e-02, ||u||= 8.10e-01, cpu= 2.99e-02(s)
+
+----------------------------------------
+
+
+-----------------------------------
+FD22: ME + LCBC **OK**
+cgWave -noplot tz.cmd -g=quarterCyl16.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=me -go=go
+cgWave -noplot tz.cmd -g=quarterCyl8.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=me -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=me -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order2 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=me -go=go
+
+G16 : ratio = 4.02
+cgWave:FD22 t=1.000e-01 (19 steps) dt=5.263e-03 maxErr= 4.83e-04, ||u||= 8.09e-01, cpu= 2.15e+01(s)
+G8
+cgWave:FD22 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 1.94e-03, ||u||= 8.10e-01, cpu= 1.28e+00(s)
+G4
+cgWave:FD22 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 7.67e-03, ||u||= 8.09e-01, cpu= 9.22e-02(s)
+G2
+cgWave:FD22 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 2.98e-02, ||u||= 8.39e-01, cpu= 1.03e-02(s)
+------------------------------------------
+
+
+
+
+cgWave -noplot tz.cmd -g=quarterCyl4.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+cgWave -noplot tz.cmd -g=quarterCyl2.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+G4
+cgWave:FD44 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 1.99e-02, ||u||= 8.09e-01, cpu= 2.51e-01(s)
+
+G2
+cgWave:FD44 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 3.71e-02, ||u||= 8.10e-01, cpu= 2.86e-02(s)
+
+
+ME-LCBC: *trouble with LCBC ??
+
+Errors on ghost = .3??
+cgWave tz.cmd -g=quarterCyl4.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.02 -bcApproach=lcbc -meApproach=me -go=halt
+
+
+cgWave -noplot tz.cmd -g=quarterCyl4.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=me -go=go
+
+G4
+cgWave:FD44 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 1.72e-02, ||u||= 8.09e-01, cpu= 2.63e-01(s)
+
+
+
+
+HA-CBC : **TROUBLE***
+cgWave -noplot tz.cmd -g=quarterCyl8.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=ha -go=go
+
+G4:
+cgWave:FD44 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 1.60e-02, ||u||= 8.09e-01, cpu= 2.18e-01(s)
+
+
+ME-CBC: *OK*
+cgWave -noplot tz.cmd -g=quarterCyl8.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=me -go=go
+cgWave -noplot tz.cmd -g=quarterCyl4.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=me -go=go
+cgWave -noplot tz.cmd -g=quarterCyl2.order4.ng3 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=cbc -meApproach=me -go=go
+
+G8
+cgWave:FD44 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 1.21e-05, ||u||= 8.09e-01, cpu= 3.36e+00(s)
+
+G4
+cgWave:FD44 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 1.89e-04, ||u||= 8.09e-01, cpu= 2.27e-01(s)
+
+G2
+cgWave:FD44 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 2.72e-03, ||u||= 8.12e-01, cpu= 2.21e-02(s)
+
+++++++++++ tube: *trouble* larger errors on curvilinear grid****
+
+cgWave tz.cmd -g=tubeGride2.order4 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=halt
+
+cgWave -noplot tz.cmd -g=tubeGride2.order4 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=tubeGride1.order4 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+G2
+cgWave:FD44 t=1.000e-01 (8 steps) dt=1.250e-02 maxErr= 1.69e-01, ||u||= 8.09e-01, cpu= 3.74e+00(s)
+
+G1
+cgWave:FD44 t=1.000e-01 (5 steps) dt=2.000e-02 maxErr= 7.84e-02, ||u||= 8.09e-01, cpu= 3.78e-01(s)
+
+
++++++++ WIGGLEY: *big errors near corners**
+
+cgWave -noplot tz.cmd -g=wiggley8.order6 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+G8
+cgWave:FD66 t=1.000e-01 (26 steps) dt=3.846e-03 maxErr= 5.18e-05, ||u||= 8.09e-01, cpu= 8.19e-01(s)
+
+G4
+cgWave:FD66 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 1.37e-04, ||u||= 8.09e-01, cpu= 1.14e-01(s)
+
+FD44: 
+cgWave -noplot tz.cmd -g=wiggley16.order4 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+cgWave -noplot tz.cmd -g=wiggley8.order4 -upwind=0 -tz=trig -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+G16
+cgWave:FD44 t=1.000e-01 (51 steps) dt=1.961e-03 maxErr= 2.09e-05, ||u||= 8.09e-01, cpu= 3.45e+00(s)
+G8
+cgWave:FD44 t=1.000e-01 (26 steps) dt=3.846e-03 maxErr= 6.94e-05, ||u||= 8.09e-01, cpu= 4.45e-01(s)
+
+
++++++++++  ROTATED BOX:
+cgWave -noplot tz.cmd -g=rotatedBox2.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+cgWave:FD66 t=1.000e-01 (4 steps) dt=2.500e-02 maxErr= 1.44e-11, ||u||= 1.42e+01, cpu= 9.76e-01(s)
+
+cgWave -noplot tz.cmd -g=rotatedBox2.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+cgWave:FD44 t=1.000e-01 (4 steps) dt=2.500e-02 maxErr= 7.64e-11, ||u||= 8.42e+00, cpu= 1.57e-01(s)
+
+
+++++++++++++++ FD88
+
+
+cgWave -noplot tz.cmd -g=nonBox2.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+assignLCBC: grid=0, t= 5.00e-02, cpu=2.67e+02(s)
+
+cgWave:FD88 t=1.000e-01 (4 steps) dt=2.500e-02 maxErr= 1.04e-11, ||u||= 1.58e+01, cpu= 2.68e+02(s)
+
+
+
+cgWave -noplot tz.cmd -g=nonSquare512.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+cgWave:FD88 t=1.000e-01 (81 steps) dt=1.235e-03 maxErr= 3.20e-14, ||u||= 6.47e+00, cpu= 1.70e+02(s)
+
+              -------------------CgWave Summary----------------- 
+                       Sat Nov 26 10:40:35 2022
+               Grid:   /home/henshw/grids/nonSquare512.order8.hdf 
+  ==== final time= 1.00e-01, numberOfStepsTaken =       81, grids=1, gridpts =263169, interp pts=0, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=145.758,ave=145.758,max=145.758](Mb), max-recorded=141.121 (Mb), total=145.758 (Mb)
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  1.71e+02    2.11e+00    8.03e-06   100.000   1.711e+02   1.711e+02
+setup and initialize................  6.64e-02    8.19e-04    3.11e-09     0.039   6.637e-02   6.637e-02
+initialize BCs......................  7.69e-01    9.49e-03    3.61e-08     0.449   7.688e-01   7.688e-01
+initial conditions..................  2.09e-02    2.58e-04    9.80e-10     0.012   2.090e-02   2.090e-02
+advance.............................  1.70e+02    2.10e+00    7.99e-06    99.541   1.703e+02   1.703e+02
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  1.67e+02    2.06e+00    7.82e-06    97.397   1.666e+02   1.666e+02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  3.63e+00    4.48e-02    1.70e-07     2.122   3.630e+00   3.630e+00
+  interpolation.....................  3.49e-03    4.31e-05    1.64e-10     0.002   3.494e-03   3.494e-03
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  3.07e-02    3.79e-04    1.44e-09     0.018   3.070e-02   3.070e-02
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+
+ CYCLES : clock=2.99 GHz, gridpts =2.63e+05, numberOfStepsTaken =81, 
+   Timings:                        CYCLES/step/pt    % 
+total time..........................  24019.4      100.00
+setup and initialize................      9.3        0.04
+initialize BCs......................    107.9        0.45
+initial conditions..................      2.9        0.01
+advance.............................  23909.2       99.54
+  advance rectangular grids.........      0.0        0.00
+  advance curvilinear grids.........  23394.1       97.40
+    implicit solve..................      0.0        0.00
+  add dissipation...................      0.0        0.00
+  boundary conditions...............    509.6        2.12
+  interpolation.....................      0.5        0.00
+  update ghost (parallel)...........      0.0        0.00
+  add forcing.......................      0.0        0.00
+  get errors........................      4.3        0.02
+  plotting..........................      0.0        0.00
+output results......................      0.0        0.00
+waiting (not counted)...............      0.0        0.00
+
+cgWave -noplot tz.cmd -g=nonSquare16.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+cgWave:FD88 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 3.02e-14, ||u||= 6.47e+00, cpu= 3.06e-02(s)
+
+cgWave -noplot tz.cmd -g=square16.order8 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+cgWave:FD88 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 3.02e-14, ||u||= 6.47e+00, cpu= 3.06e-02(s)
+
++++++++++++++ FD66
+cgWave -noplot tz.cmd -g=square16.order6 -upwind=0 -degreeInTime=6 -degreeInSpace=6 -orderInTime=-1 -bc=d -tf=.1 -tp=.1 -bcApproach=lcbc -meApproach=ha -go=go
+
+cgWave:FD66 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 5.45e-12, ||u||= 6.47e+00, cpu= 7.97e-03(s)
+
+****************************************************
 ****** Sun Aug 14, 2022
 
 START ADDING IPCU -- implicit PC upwinding 

@@ -36,6 +36,10 @@ typedef ::real LocalReal;
 // ==========================================================================================
 /// \brief  Evaluate a user defined known solution.
 ///
+/// \param t (input) : time to eval solution
+/// \param grid (input) : grid number
+/// \param ua (output) : save solution here
+/// \param I1a,I2a,I3a (input) : eval solution at these points
 /// \param numberOfTimeDerivatives (input) : evaluate this many time-derivatives of the solution.
 ///     Normally  numberOfTimeDerivatives=0, but it can be 1 when the known solution is used
 //      to define boundary conditions 
@@ -853,7 +857,9 @@ int CgWave::
 updateUserDefinedKnownSolution()
 // ==========================================================================================
 /// \brief This function is called to set the user defined known solution.
-/// 
+///
+/// Choose a user defined known solution (UDKS) and any associated parameters. The UDKS can
+/// be used for initial conditions, boundary conditions (exact BCs) and computing errors.
 // ==========================================================================================
 {
   // Make  dbase.get<real >("a") sub-directory in the data-base to store variables used here

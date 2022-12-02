@@ -1,0 +1,356 @@
+\hypertarget{classLcbc}{}\doxysection{Lcbc Class Reference}
+\label{classLcbc}\index{Lcbc@{Lcbc}}
+
+
+Collaboration diagram for Lcbc\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLcbc__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classLcbc_a888a62f63c2ff5239e9b3e6ec7a26528}\label{classLcbc_a888a62f63c2ff5239e9b3e6ec7a26528}} 
+enum {\bfseries Lcbc\+Data\+Type} \{ {\bfseries boundary} = 1
+, {\bfseries forcing} = 2
+, {\bfseries coefficient} = 3
+ \}
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classLcbc_ae7b302e3942b2265e13195445c56b59c}\label{classLcbc_ae7b302e3942b2265e13195445c56b59c}} 
+void \mbox{\hyperlink{classLcbc_ae7b302e3942b2265e13195445c56b59c}{preallocate\+Memory}} (int components, int component\+Size)
+\begin{DoxyCompactList}\small\item\em preallocate\+Memory\+: allocates space in \textquotesingle{}memory\textquotesingle{} double pointer to be used in the interior schemes to prevent dynamic allocation at each time-\/step \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classLcbc_abc4e0ce77b96ba5fbf1a0d7598b115d6}\label{classLcbc_abc4e0ce77b96ba5fbf1a0d7598b115d6}} 
+void \mbox{\hyperlink{classLcbc_abc4e0ce77b96ba5fbf1a0d7598b115d6}{delete\+Memory}} (int components)
+\begin{DoxyCompactList}\small\item\em delete\+Memory\+: deletes the preallocated memory when time-\/stepping is finished \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classLcbc_a7e0b2b9e9b42c2f15bececafa1402c89}\label{classLcbc_a7e0b2b9e9b42c2f15bececafa1402c89}} 
+void {\bfseries get\+Side\+Matrix} (double $\ast$$\ast$\&Ca\+Vec, double $\ast$$\ast$\&Cb\+Vec, int $\ast$eq\+Num, int bdry\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int bdry\+Ngx\mbox{[}3\mbox{]}, int NU, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_af4e9aecf02a00f5ed49af9fd88c62aab}\label{classLcbc_af4e9aecf02a00f5ed49af9fd88c62aab}} 
+void {\bfseries get\+Block\+Matrices} (double $\ast$\&A11, double $\ast$\&A12, int approx\+Eq\+Num, int interior\+Eq\+Num, int comp\+Cond\+Num, int auxiliary\+Eq\+Num, int $\ast$Ind, int axis, int side, int $\ast$eq\+Num, int NU, Lagrange\+Deriv\+Fun Lagrange\+Deriv)
+\item 
+\mbox{\Hypertarget{classLcbc_a5d1e0afb7d4470b5363800654f498c19}\label{classLcbc_a5d1e0afb7d4470b5363800654f498c19}} 
+void {\bfseries get\+Corner\+Matrix} (double $\ast$$\ast$\&Ca\+Vec, double $\ast$$\ast$\&Cb\+Vec, int $\ast$eq\+Num, int bdry\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int NU1, int NU2, int var\+Axis, int fixed\+Axis\mbox{[}2\mbox{]}, int side1, int side2)
+\item 
+\mbox{\Hypertarget{classLcbc_aef5d06566c59544f69f3a3ae2453d2ed}\label{classLcbc_aef5d06566c59544f69f3a3ae2453d2ed}} 
+void {\bfseries get\+Block\+Matrices\+\_\+edge} (double $\ast$\&A11, double $\ast$\&A12, int approx\+Eq\+Num, int interior\+Eq\+Num, int unknown\+Var\+Num, int comp\+Cond\+Num1, int comp\+Cond\+Num2, int auxiliary\+Eq\+Num, int $\ast$Ind, int fixed\+Axis\mbox{[}2\mbox{]}, int side1, int side2, int $\ast$eq\+Num, int NU1, int NU2, Lagrange\+Deriv\+Fun Lagrange\+Deriv1, Lagrange\+Deriv\+Fun Lagrange\+Deriv2)
+\item 
+\mbox{\Hypertarget{classLcbc_a48b72f618c0c019126588ebce6f9640a}\label{classLcbc_a48b72f618c0c019126588ebce6f9640a}} 
+void {\bfseries get\+Vertex\+Matrix} (double $\ast$\&Ca\+Vec, double $\ast$\&Cb\+Vec, int $\ast$eq\+Num, int side0, int side1, int side2, int NU\mbox{[}3\mbox{]}, int comp\+Cond\+Num\mbox{[}3\mbox{]})
+\item 
+\mbox{\Hypertarget{classLcbc_aee63912a7dec80f44006bb39bc9e29b1}\label{classLcbc_aee63912a7dec80f44006bb39bc9e29b1}} 
+void {\bfseries get\+Block\+Matrices\+\_\+vertex} (double $\ast$\&A11, double $\ast$\&A12, int $\ast$Ind, int side0, int side1, int side2, int $\ast$eq\+Num, int NU\mbox{[}3\mbox{]}, int comp\+Cond\+Num\mbox{[}3\mbox{]}, int auxiliary\+Eq\+Num, int total\+Eq\+Num, int approx\+Eq\+Num, int unknown\+Var\+Num, Lagrange\+Deriv\+Fun Lagrange\+Deriv0, Lagrange\+Deriv\+Fun Lagrange\+Deriv1, Lagrange\+Deriv\+Fun Lagrange\+Deriv2)
+\item 
+\mbox{\Hypertarget{classLcbc_a734a78e8e04fd0ad6b22dd5cd4509ed8}\label{classLcbc_a734a78e8e04fd0ad6b22dd5cd4509ed8}} 
+double {\bfseries mixed\+Deriv} (double $\ast$u, int index\mbox{[}3\mbox{]}, int deriv\mbox{[}3\mbox{]}, double dx\mbox{[}3\mbox{]}, int order\mbox{[}3\mbox{]}, int size\mbox{[}3\mbox{]})
+\item 
+\mbox{\Hypertarget{classLcbc_a0f52ab950aa1446417824ea8128797b1}\label{classLcbc_a0f52ab950aa1446417824ea8128797b1}} 
+double {\bfseries Deriv} (double $\ast$u, int index\mbox{[}3\mbox{]}, int pos, int deriv, double dx, int order, int size\mbox{[}3\mbox{]})
+\item 
+\mbox{\Hypertarget{classLcbc_a152c53457aaa09f477da0e7a290252c2}\label{classLcbc_a152c53457aaa09f477da0e7a290252c2}} 
+double {\bfseries Deriv} (double($\ast$F)(double $\ast$), double $\ast$arg, int pos, int deriv, double dx, int order)
+\item 
+\mbox{\Hypertarget{classLcbc_a588934299a85152313b84369ed22825f}\label{classLcbc_a588934299a85152313b84369ed22825f}} 
+void {\bfseries update\+Ghost} (double $\ast$\&unp1, double t, double dt, \mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$\&gn, \mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$\&fn)
+\item 
+\mbox{\Hypertarget{classLcbc_aea456f6cad2e9511e322729f19a7acf3}\label{classLcbc_aea456f6cad2e9511e322729f19a7acf3}} 
+void {\bfseries update\+Vertex\+Ghost} (double $\ast$$\ast$R, double $\ast$\&unp1, double t, double dt, int side0, int side1, int side2)
+\item 
+\mbox{\Hypertarget{classLcbc_a472f22d93548b75b5f3d2aed554acd16}\label{classLcbc_a472f22d93548b75b5f3d2aed554acd16}} 
+void {\bfseries update\+Vertex\+Ghost\+Periodic} (double $\ast$\&unp1, int side0, int side1, int side2)
+\item 
+\mbox{\Hypertarget{classLcbc_a2e8c3f91d02a48031f0cef27bf3f83fe}\label{classLcbc_a2e8c3f91d02a48031f0cef27bf3f83fe}} 
+void {\bfseries prep\+Vertex\+Matrix} (int side0, int side1, int side2, int NU\mbox{[}3\mbox{]}, int comp\+Cond\+Num\mbox{[}3\mbox{]}, int approx\+Eq\+Num)
+\item 
+\mbox{\Hypertarget{classLcbc_a27d95f3e0c73bf47d383b76e025e2e2b}\label{classLcbc_a27d95f3e0c73bf47d383b76e025e2e2b}} 
+void {\bfseries fill\+Vertex\+Matrix\+\_\+\+Lagrange\+Deriv} (double $\ast$\&Matrix, int $\ast$Ind, int side0, int side1, int side2, int $\ast$eq\+Num, int NU\mbox{[}3\mbox{]}, int comp\+Cond\+Num\mbox{[}3\mbox{]}, int auxiliary\+Eq\+Num, int total\+Eq\+Num)
+\item 
+\mbox{\Hypertarget{classLcbc_a82503567bddbf8796525121933bb639a}\label{classLcbc_a82503567bddbf8796525121933bb639a}} 
+void {\bfseries get\+D\+\_\+vertex} (double $\ast$\&D, int NU\mbox{[}3\mbox{]}, int comp\+Cond\+Num\mbox{[}3\mbox{]}, int approx\+Eq\+Num)
+\item 
+\mbox{\Hypertarget{classLcbc_a5792571c049b3a7853a279fcb43fb946}\label{classLcbc_a5792571c049b3a7853a279fcb43fb946}} 
+void {\bfseries getb\+Vec\+\_\+vertex} (double b\mbox{[}$\,$\mbox{]}, double $\ast$$\ast$R, int NU\mbox{[}3\mbox{]}, int total\+Comp\+Cond\+Num)
+\item 
+\mbox{\Hypertarget{classLcbc_a8d0a890b635e7d2872e0f01eea1c2f9b}\label{classLcbc_a8d0a890b635e7d2872e0f01eea1c2f9b}} 
+void {\bfseries prep\+Data\+Vec\+\_\+vertex} (double $\ast$$\ast$R, double $\ast$\&Rv, double t, double dt, int approx\+Eq\+Num, int side0, int side1, int side2, int NU\mbox{[}3\mbox{]})
+\item 
+\mbox{\Hypertarget{classLcbc_a90a6603320bf10de3f55ec65abac9122}\label{classLcbc_a90a6603320bf10de3f55ec65abac9122}} 
+void {\bfseries get\+Vertex\+Ghost} (double $\ast$\&un, double $\ast$Rv, double $\ast$Ca\+Vec, double $\ast$Cb\+Vec, int $\ast$eq\+Num, int approx\+Eq\+Num, int side0, int side1, int side2)
+\item 
+\mbox{\Hypertarget{classLcbc_a75be3ff208f4da8e1517369a0247df65}\label{classLcbc_a75be3ff208f4da8e1517369a0247df65}} 
+void {\bfseries getb\+Int\+\_\+vertex} (double b\mbox{[}$\,$\mbox{]}, double $\ast$un, int $\ast$eq\+Num, int $\ast$Ind, int side0, int side1, int side2)
+\item 
+\mbox{\Hypertarget{classLcbc_afe1e67e68ff5fb3395a97f46f57b4f27}\label{classLcbc_afe1e67e68ff5fb3395a97f46f57b4f27}} 
+void {\bfseries free\+Vertex\+Variables} ()
+\item 
+\mbox{\Hypertarget{classLcbc_a84fe8216744ff441a257b1fb37e28f29}\label{classLcbc_a84fe8216744ff441a257b1fb37e28f29}} 
+void {\bfseries update\+Edge\+Ghost} (double $\ast$$\ast$R, double $\ast$\&unp1, double t, double dt, int side1, int side2, int var\+Axis)
+\item 
+\mbox{\Hypertarget{classLcbc_aa64d820cc46fcd0c43510e2ffd6dd6d3}\label{classLcbc_aa64d820cc46fcd0c43510e2ffd6dd6d3}} 
+void {\bfseries update\+Edge\+Ghost\+Periodic} (double $\ast$\&unp1, int side1, int side2, int var\+Axis, int fixed\+Axis\mbox{[}2\mbox{]})
+\item 
+\mbox{\Hypertarget{classLcbc_a382c7f1bc303f111eb541d0c4778dd8a}\label{classLcbc_a382c7f1bc303f111eb541d0c4778dd8a}} 
+void {\bfseries prep\+Corner\+Matrix} (int side1, int side2, int var\+Axis, int approx\+Eq\+Num, int NU1, int NU2)
+\item 
+\mbox{\Hypertarget{classLcbc_a4efb243f72afef789c8fee2c5854c29f}\label{classLcbc_a4efb243f72afef789c8fee2c5854c29f}} 
+void {\bfseries get\+D\+\_\+corner} (double $\ast$\&D, int var\+Axis, int fixed\+Axis\mbox{[}2\mbox{]}, int NU1, int NU2)
+\item 
+\mbox{\Hypertarget{classLcbc_ad8129aef7fd4733428c26ee2f2f1a376}\label{classLcbc_ad8129aef7fd4733428c26ee2f2f1a376}} 
+void {\bfseries getb\+Vec\+\_\+corner} (double b\mbox{[}$\,$\mbox{]}, double $\ast$$\ast$R, int var\+Axis, int fixed\+Axis\mbox{[}2\mbox{]}, int NU1, int NU2)
+\item 
+\mbox{\Hypertarget{classLcbc_a3f162c51739b48619b833017c3ac8c48}\label{classLcbc_a3f162c51739b48619b833017c3ac8c48}} 
+void {\bfseries fill\+Corner\+Matrix\+\_\+\+Lagrange\+Deriv} (double $\ast$\&Matrix, int $\ast$Ind, int side1, int side2, int var\+Axis, int fixed\+Axis\mbox{[}2\mbox{]}, int $\ast$eq\+Num, int NU1, int NU2, int comp\+Cond\+Num1, int comp\+Cond\+Num2, int auxiliary\+Eq\+Num, int total\+Eq\+Num)
+\item 
+\mbox{\Hypertarget{classLcbc_aef3a52e0e2f6461719c4fd4463ba60b2}\label{classLcbc_aef3a52e0e2f6461719c4fd4463ba60b2}} 
+void {\bfseries prep\+Data\+Vec\+\_\+corner} (double $\ast$$\ast$R, double $\ast$$\ast$\&Rv, double t, double dt, int side1, int side2, int var\+Axis, int approx\+Eq\+Num, int NU1, int NU2)
+\item 
+\mbox{\Hypertarget{classLcbc_ac89427458b2155d4b7d3109415d38b8e}\label{classLcbc_ac89427458b2155d4b7d3109415d38b8e}} 
+void {\bfseries get\+Corner\+Ghost} (double $\ast$\&un, double $\ast$$\ast$Rv, double $\ast$$\ast$Ca\+Vec, double $\ast$$\ast$Cb\+Vec, int $\ast$eq\+Num, int side1, int side2, int var\+Axis, int approx\+Eq\+Num)
+\item 
+\mbox{\Hypertarget{classLcbc_a5bb29198c1d20d79395867a7de38d2bc}\label{classLcbc_a5bb29198c1d20d79395867a7de38d2bc}} 
+void {\bfseries getb\+Int\+\_\+corner} (double b\mbox{[}$\,$\mbox{]}, double $\ast$un, int $\ast$eq\+Num, int $\ast$Ind, int side1, int side2, int fixed\+Axis\mbox{[}2\mbox{]})
+\item 
+\mbox{\Hypertarget{classLcbc_a8f4a544bfb626578a43511b284cf2fcd}\label{classLcbc_a8f4a544bfb626578a43511b284cf2fcd}} 
+void {\bfseries get\+Bdry\+Range\+\_\+corner} (int bdry\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int fixed\+Axis\mbox{[}2\mbox{]}, int fixed\+Side\mbox{[}2\mbox{]}, int var\+Axis, int add\+On\+Side0, int add\+On\+Side1)
+\item 
+\mbox{\Hypertarget{classLcbc_ae54d3d0797b3bf31315ccf876063c87b}\label{classLcbc_ae54d3d0797b3bf31315ccf876063c87b}} 
+void {\bfseries get\+Fixed\+Axis} (int fixed\+Axis\mbox{[}2\mbox{]}, int var\+Axis)
+\item 
+\mbox{\Hypertarget{classLcbc_ab388252ff744c8eaf7ddb489884db375}\label{classLcbc_ab388252ff744c8eaf7ddb489884db375}} 
+void {\bfseries free\+Corner\+Variables} ()
+\item 
+\mbox{\Hypertarget{classLcbc_a20699cde4b0b3316fda46622dbef4626}\label{classLcbc_a20699cde4b0b3316fda46622dbef4626}} 
+void {\bfseries update\+Face\+Ghost} (double $\ast$\&unp1, double $\ast$$\ast$R, double t, double dt, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_af84687c67c8e0117dae8f0c7e5c790d8}\label{classLcbc_af84687c67c8e0117dae8f0c7e5c790d8}} 
+void {\bfseries prep\+Side\+Matrix} (int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_a9522165112e9c22348d7d0a88ca7ee67}\label{classLcbc_a9522165112e9c22348d7d0a88ca7ee67}} 
+void {\bfseries getD} (double $\ast$\&D, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_a299c89991cf6f341bcc0078c6932dc5e}\label{classLcbc_a299c89991cf6f341bcc0078c6932dc5e}} 
+void {\bfseries getb\+Vec} (double $\ast$\&b, double $\ast$$\ast$R, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_a333a2e22215d60abdda99727eca79d2a}\label{classLcbc_a333a2e22215d60abdda99727eca79d2a}} 
+void {\bfseries scaleD} (double $\ast$\&D\+\_\+scaled, double $\ast$D, double $\ast$S, int D\+\_\+size)
+\item 
+\mbox{\Hypertarget{classLcbc_aa21c38c9dc12158aba6c9739cda89eef}\label{classLcbc_aa21c38c9dc12158aba6c9739cda89eef}} 
+void {\bfseries fill\+Matrix\+\_\+\+Lagrange\+Deriv} (double $\ast$\&Matrix, int total\+Eq\+Num, int comp\+Cond\+Num, int auxiliary\+Eq\+Num, int $\ast$Ind, int axis, int side, int $\ast$eq\+Num, int NU)
+\item 
+\mbox{\Hypertarget{classLcbc_a3b25382ad57cd9d1685f9f4901c9a6c9}\label{classLcbc_a3b25382ad57cd9d1685f9f4901c9a6c9}} 
+void {\bfseries get\+Lagrange\+Deriv} (double Y\mbox{[}$\,$\mbox{]}, double Z\mbox{[}$\,$\mbox{]}, int $\ast$Ind, int $\ast$LInd, int axis, int side, bool evaluateY=true)
+\item 
+\mbox{\Hypertarget{classLcbc_ad390af14816742f452007345fcfb4b4e}\label{classLcbc_ad390af14816742f452007345fcfb4b4e}} 
+void {\bfseries apply\+Qh} (double $\ast$\&QV, double $\ast$V, double $\ast$$\ast$W, int $\ast$Ind, int nu, int k, int new\+Wth\mbox{[}3\mbox{]}, int new\+Lth\mbox{[}3\mbox{]}, int old\+Wth\mbox{[}3\mbox{]}, int old\+Lth\mbox{[}3\mbox{]}, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_a20134e760faf3fa018d53fc8f343f29e}\label{classLcbc_a20134e760faf3fa018d53fc8f343f29e}} 
+void {\bfseries apply\+Dh} (double $\ast$\&QV, double $\ast$V, double $\ast$$\ast$W, int $\ast$Ind, int nu, int k, int new\+Wth\mbox{[}3\mbox{]}, int new\+Lth\mbox{[}3\mbox{]}, int old\+Wth\mbox{[}3\mbox{]}, int old\+Lth\mbox{[}3\mbox{]}, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_a9ab95c8c2916984b8d693851afe05def}\label{classLcbc_a9ab95c8c2916984b8d693851afe05def}} 
+void {\bfseries get\+Correction\+Terms} (double $\ast$$\ast$\&VS, double $\ast$V, double $\ast$$\ast$W, int $\ast$lth, int k, int axis)
+\item 
+\mbox{\Hypertarget{classLcbc_a4236cb954c5b106d378742a3d8650d4d}\label{classLcbc_a4236cb954c5b106d378742a3d8650d4d}} 
+void {\bfseries get\+Correction\+Terms\+For\+Dh} (double $\ast$$\ast$\&VS, double $\ast$V, double $\ast$$\ast$W, int $\ast$lth, int k, int axis)
+\item 
+\mbox{\Hypertarget{classLcbc_a794befc35b78a77c9929e566c1fa16de}\label{classLcbc_a794befc35b78a77c9929e566c1fa16de}} 
+void {\bfseries prep\+Data\+Vec} (double $\ast$$\ast$R, double $\ast$$\ast$\&Rv, double t, double dt, int bdry\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int bdry\+Ngx\mbox{[}3\mbox{]}, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_a449a5d8f641e47d51428e249c9bb77e1}\label{classLcbc_a449a5d8f641e47d51428e249c9bb77e1}} 
+void {\bfseries get\+Face\+Ghost} (double $\ast$\&un, double $\ast$Rv\mbox{[}$\,$\mbox{]}, double $\ast$$\ast$Ca\+Vec, double $\ast$$\ast$Cb\+Vec, int $\ast$eq\+Num, int Lcbc\+Bdry\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int bdry\+Ngx\mbox{[}3\mbox{]}, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_aed98af9aa01d17669504a2711544d806}\label{classLcbc_aed98af9aa01d17669504a2711544d806}} 
+void {\bfseries getb\+Int} (double b\mbox{[}$\,$\mbox{]}, double $\ast$un, int $\ast$Eq\+Num, int $\ast$Ind, int interior\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_a0d17a008a89a96d964ab113be2b459d3}\label{classLcbc_a0d17a008a89a96d964ab113be2b459d3}} 
+void {\bfseries get\+Data\+Deriv} (double $\ast$$\ast$\&R, double t, double dt, int axis, int side, \mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} \&gn, \mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} \&fn)
+\item 
+\mbox{\Hypertarget{classLcbc_a99bb0f5b5846171fa50818b2634ae604}\label{classLcbc_a99bb0f5b5846171fa50818b2634ae604}} 
+void {\bfseries apply\+QhF} (double $\ast$\&QF, double $\ast$F, double $\ast$$\ast$W, int bdry\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int bdry\+Range\+Lth\mbox{[}3\mbox{]}, int nu, int k, int new\+Wth\mbox{[}3\mbox{]}, int new\+Lth\mbox{[}3\mbox{]}, int old\+Wth\mbox{[}3\mbox{]}, int old\+Lth\mbox{[}3\mbox{]}, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_acfd355d296863b12161d073755d9cee4}\label{classLcbc_acfd355d296863b12161d073755d9cee4}} 
+void {\bfseries apply\+DhF} (double $\ast$\&QF, double $\ast$F, double $\ast$$\ast$W, int bdry\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int bdry\+Range\+Lth\mbox{[}3\mbox{]}, int nu, int k, int new\+Wth\mbox{[}3\mbox{]}, int new\+Lth\mbox{[}3\mbox{]}, int old\+Wth\mbox{[}3\mbox{]}, int old\+Lth\mbox{[}3\mbox{]}, int axis, int side)
+\item 
+\mbox{\Hypertarget{classLcbc_a615617dadb7aa0743191fce49bebd6c6}\label{classLcbc_a615617dadb7aa0743191fce49bebd6c6}} 
+void {\bfseries free\+Face\+Variables} ()
+\item 
+\mbox{\Hypertarget{classLcbc_a2b4ca36b3ea0d9fc243cae2f3a9aadf1}\label{classLcbc_a2b4ca36b3ea0d9fc243cae2f3a9aadf1}} 
+void {\bfseries initialize} (int dim\+In, int order\+In\+Space, int order\+In\+Time\+In, int $\ast$num\+Grid\+Points, int num\+Ghost\+In, int $\ast$face\+Eval\+In, \mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$coef\+In=NULL, F1 Cn\+In=NULL, F1 Gn\+In=NULL, F1 Fn\+In=NULL, F2 bn\+In=NULL, bool cst\+Coef\+In=false, bool $\ast$zero\+BCIn=NULL, bool no\+Forcing\+In=false)
+\item 
+\mbox{\Hypertarget{classLcbc_a1cb1203c06d0d9d2c5a09463fffcbb28}\label{classLcbc_a1cb1203c06d0d9d2c5a09463fffcbb28}} 
+void {\bfseries analyze\+User\+Input} (\mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$gn, \mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$fn)
+\item 
+\mbox{\Hypertarget{classLcbc_ac75c5a51b1356d0fbf80bbdbbd17fecb}\label{classLcbc_ac75c5a51b1356d0fbf80bbdbbd17fecb}} 
+void {\bfseries get\+Coef} ()
+\item 
+\mbox{\Hypertarget{classLcbc_afeeb432221f344fa5a48cf1f5849cec3}\label{classLcbc_afeeb432221f344fa5a48cf1f5849cec3}} 
+void {\bfseries get\+Coef\+Grid\+Lth} (int index\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int lth\mbox{[}3\mbox{]}, int wth\mbox{[}3\mbox{]}, int fixed\+Axis, int fixed\+Side, int dim, int p)
+\item 
+\mbox{\Hypertarget{classLcbc_a5faeccf630692338b962c6ca43f21fcf}\label{classLcbc_a5faeccf630692338b962c6ca43f21fcf}} 
+void {\bfseries get\+Coef\+Grid\+Lth} (int index\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int lth\mbox{[}3\mbox{]}, int wth\mbox{[}3\mbox{]}, int bdry\+Range\mbox{[}3\mbox{]}\mbox{[}2\mbox{]}, int fixed\+Axis, int fixed\+Side, int dim, int p)
+\item 
+\mbox{\Hypertarget{classLcbc_ac6b3cdddffec224e999277e924d153ca}\label{classLcbc_ac6b3cdddffec224e999277e924d153ca}} 
+double {\bfseries Lagrange\+Poly} (int z, int index)
+\item 
+\mbox{\Hypertarget{classLcbc_a7162e2e37cfd7a4f10602b3a0231425f}\label{classLcbc_a7162e2e37cfd7a4f10602b3a0231425f}} 
+void {\bfseries get\+Lagrange\+Data} ()
+\item 
+\mbox{\Hypertarget{classLcbc_a28911a5c3c138348bbcb185c16171105}\label{classLcbc_a28911a5c3c138348bbcb185c16171105}} 
+void {\bfseries free\+Variables} ()
+\item 
+\mbox{\Hypertarget{classLcbc_a4ec395dc0ddac183a4c609d6a89916fb}\label{classLcbc_a4ec395dc0ddac183a4c609d6a89916fb}} 
+{\bfseries Lcbc} (int dim\+In, int order\+In\+Space, int order\+In\+Time\+In, int $\ast$num\+Grid\+Points, int num\+Ghost\+In, int $\ast$face\+Eval\+In=NULL, \mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$coef\+In=NULL, F1 Cn\+In=NULL, F1 Gn\+In=NULL, F1 Fn\+In=NULL, F2 bn\+In=NULL, bool cst\+Coef\+In=false, bool $\ast$zero\+BCIn=NULL, bool no\+Forcing\+In=false)
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classLcbc_a9d6526fec0260ddabe52d61241c8f32f}\label{classLcbc_a9d6526fec0260ddabe52d61241c8f32f}} 
+static double {\bfseries Default\+\_\+\+Cn} (double $\ast$arg)
+\item 
+\mbox{\Hypertarget{classLcbc_adf75f92627f19319f3ee36cd9606d65a}\label{classLcbc_adf75f92627f19319f3ee36cd9606d65a}} 
+static double {\bfseries Default\+\_\+\+Gn} (double $\ast$arg)
+\item 
+\mbox{\Hypertarget{classLcbc_a7e066e5f425da28d453720389a503754}\label{classLcbc_a7e066e5f425da28d453720389a503754}} 
+static double {\bfseries Default\+\_\+\+Fn} (double $\ast$arg)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classLcbc_ae57042d786164c470376e25f66cac982}\label{classLcbc_ae57042d786164c470376e25f66cac982}} 
+bool {\bfseries defaulted\+Gn} = false
+\item 
+\mbox{\Hypertarget{classLcbc_a46909d1bd4fe04e2f3f0f627bd0f6ff2}\label{classLcbc_a46909d1bd4fe04e2f3f0f627bd0f6ff2}} 
+bool {\bfseries defaulted\+Fn} = false
+\item 
+\mbox{\Hypertarget{classLcbc_a9b9d149bca0bd7a77f88610a86484f81}\label{classLcbc_a9b9d149bca0bd7a77f88610a86484f81}} 
+int {\bfseries p}
+\item 
+\mbox{\Hypertarget{classLcbc_a810e8db6f47f3e92cd9c3c90cd0436f0}\label{classLcbc_a810e8db6f47f3e92cd9c3c90cd0436f0}} 
+int {\bfseries dim}
+\item 
+\mbox{\Hypertarget{classLcbc_a8b562e476626cb1e6b8f113bb549053d}\label{classLcbc_a8b562e476626cb1e6b8f113bb549053d}} 
+int {\bfseries num\+Ghost}
+\item 
+\mbox{\Hypertarget{classLcbc_a6f567582941c4b1cd5a691ac60d44e08}\label{classLcbc_a6f567582941c4b1cd5a691ac60d44e08}} 
+int {\bfseries user\+Num\+Ghost}
+\item 
+\mbox{\Hypertarget{classLcbc_ab3e63575f52e53d9b342856a699638d3}\label{classLcbc_ab3e63575f52e53d9b342856a699638d3}} 
+int {\bfseries max\+Coef\+Num}
+\item 
+\mbox{\Hypertarget{classLcbc_a1d2181b5e0baaa1750e29fe00f20c623}\label{classLcbc_a1d2181b5e0baaa1750e29fe00f20c623}} 
+int {\bfseries Lagrange\+Data\+\_\+center}
+\item 
+\mbox{\Hypertarget{classLcbc_a21efdb13481a0befe0bf8b56bb89d4cc}\label{classLcbc_a21efdb13481a0befe0bf8b56bb89d4cc}} 
+int {\bfseries order\+In\+Time}
+\item 
+\mbox{\Hypertarget{classLcbc_ab15d4f7d1db745f5424f135ef2244b3c}\label{classLcbc_ab15d4f7d1db745f5424f135ef2244b3c}} 
+int {\bfseries extra\+Data\+Ghost}
+\item 
+\mbox{\Hypertarget{classLcbc_a514a2996212a2a35076c90cf297838bf}\label{classLcbc_a514a2996212a2a35076c90cf297838bf}} 
+\mbox{\hyperlink{classParam}{Param}} {\bfseries param}
+\item 
+\mbox{\Hypertarget{classLcbc_a96d2230f19c2dcee5a317e37f9d3b0a1}\label{classLcbc_a96d2230f19c2dcee5a317e37f9d3b0a1}} 
+\mbox{\hyperlink{classFaceParam}{Face\+Param}} {\bfseries face\+Param} \mbox{[}6\mbox{]}
+\item 
+\mbox{\Hypertarget{classLcbc_aab73e059f5f77519bc9a72d068ca6c1e}\label{classLcbc_aab73e059f5f77519bc9a72d068ca6c1e}} 
+\mbox{\hyperlink{structLcbcMat}{Lcbc\+Mat}} {\bfseries Face\+Mat} \mbox{[}6\mbox{]}
+\item 
+\mbox{\Hypertarget{classLcbc_a35e2701ec9a098c5d5d188a43061419c}\label{classLcbc_a35e2701ec9a098c5d5d188a43061419c}} 
+\mbox{\hyperlink{structLcbcMat}{Lcbc\+Mat}} {\bfseries Corner\+Mat} \mbox{[}12\mbox{]}
+\item 
+\mbox{\Hypertarget{classLcbc_a9cf328c19e041c8f970f48494957885b}\label{classLcbc_a9cf328c19e041c8f970f48494957885b}} 
+\mbox{\hyperlink{structLcbcMat}{Lcbc\+Mat}} {\bfseries Vertex\+Mat} \mbox{[}8\mbox{]}
+\item 
+\mbox{\Hypertarget{classLcbc_ac11eef1170fc92eaadbdbc9648a0b690}\label{classLcbc_ac11eef1170fc92eaadbdbc9648a0b690}} 
+F1 {\bfseries Cn}
+\item 
+\mbox{\Hypertarget{classLcbc_ad1fda75f50abddb3ce7715dae5d2086a}\label{classLcbc_ad1fda75f50abddb3ce7715dae5d2086a}} 
+F1 {\bfseries Gn}
+\item 
+\mbox{\Hypertarget{classLcbc_a70f8e4722e4a148782672a854a422f29}\label{classLcbc_a70f8e4722e4a148782672a854a422f29}} 
+F1 {\bfseries Fn}
+\item 
+\mbox{\Hypertarget{classLcbc_a31c5fc2c51ca09eb9cb023b4e9caf8e0}\label{classLcbc_a31c5fc2c51ca09eb9cb023b4e9caf8e0}} 
+F2 {\bfseries bn}
+\item 
+\mbox{\Hypertarget{classLcbc_a6d9183b439622785c547e8ba963cb092}\label{classLcbc_a6d9183b439622785c547e8ba963cb092}} 
+double $\ast$ {\bfseries Lagrange\+Data}
+\item 
+\mbox{\Hypertarget{classLcbc_ad83ddf99e64df7359245638298315e50}\label{classLcbc_ad83ddf99e64df7359245638298315e50}} 
+bool {\bfseries no\+Forcing}
+\item 
+\mbox{\Hypertarget{classLcbc_af8b98d0c274cdd56b98b65ee1f151646}\label{classLcbc_af8b98d0c274cdd56b98b65ee1f151646}} 
+bool $\ast$ {\bfseries zero\+BC}
+\item 
+\mbox{\Hypertarget{classLcbc_aacf0ba1b2bedcb955d1b158924624b75}\label{classLcbc_aacf0ba1b2bedcb955d1b158924624b75}} 
+bool {\bfseries zero\+BCnewed} = false
+\item 
+\mbox{\Hypertarget{classLcbc_a2d5c17a27a2f0abbb73cea7cc1af10ae}\label{classLcbc_a2d5c17a27a2f0abbb73cea7cc1af10ae}} 
+bool {\bfseries cst\+Coef}
+\item 
+\mbox{\Hypertarget{classLcbc_a797f15a9d9a555e3e0dcdb565fdf233a}\label{classLcbc_a797f15a9d9a555e3e0dcdb565fdf233a}} 
+bool {\bfseries is\+Initialized} = false
+\item 
+\mbox{\Hypertarget{classLcbc_af22f5bc8a6c14979000623768f344cf9}\label{classLcbc_af22f5bc8a6c14979000623768f344cf9}} 
+bool {\bfseries face\+Eval\+Newed} = false
+\item 
+\mbox{\Hypertarget{classLcbc_a059cce34bc04aa89c2a5ebb774c29d26}\label{classLcbc_a059cce34bc04aa89c2a5ebb774c29d26}} 
+bool {\bfseries initialized\+Bdry\+Data} = false
+\item 
+\mbox{\Hypertarget{classLcbc_af733b59e742d3a37013199a357770818}\label{classLcbc_af733b59e742d3a37013199a357770818}} 
+bool {\bfseries initialized\+Forcing\+Data} = false
+\item 
+\mbox{\Hypertarget{classLcbc_adf89a020a4cff5c603c7276cfd1dca8c}\label{classLcbc_adf89a020a4cff5c603c7276cfd1dca8c}} 
+bool {\bfseries analyzed\+User\+Data} = false
+\item 
+\mbox{\Hypertarget{classLcbc_a7e2df793d50bf8454d2db3fc6db5f9de}\label{classLcbc_a7e2df793d50bf8454d2db3fc6db5f9de}} 
+bool {\bfseries add\+Aux\+Eqns} = false
+\item 
+\mbox{\Hypertarget{classLcbc_a82169cfbb0f925a0f8d6dbeac9d5f6fa}\label{classLcbc_a82169cfbb0f925a0f8d6dbeac9d5f6fa}} 
+int $\ast$ {\bfseries face\+Eval}
+\item 
+\mbox{\Hypertarget{classLcbc_a16c35cefcb06a587064b9fbefb80f3a5}\label{classLcbc_a16c35cefcb06a587064b9fbefb80f3a5}} 
+\mbox{\hyperlink{classGrid}{Grid}} {\bfseries G}
+\item 
+\mbox{\Hypertarget{classLcbc_aa96f690d8f736c88031789a823ce205d}\label{classLcbc_aa96f690d8f736c88031789a823ce205d}} 
+\mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$ {\bfseries coef}
+\item 
+\mbox{\Hypertarget{classLcbc_a4dad75efd629cde0829afba0c97a96fc}\label{classLcbc_a4dad75efd629cde0829afba0c97a96fc}} 
+\mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$ {\bfseries bdry\+Data} = NULL
+\item 
+\mbox{\Hypertarget{classLcbc_af5fa7a38f7d66bb0f16c8578b77dc925}\label{classLcbc_af5fa7a38f7d66bb0f16c8578b77dc925}} 
+\mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$ {\bfseries forcing\+Data} = NULL
+\item 
+\mbox{\Hypertarget{classLcbc_a5fc0ebba7a0f2c998bcb1120b8ad9694}\label{classLcbc_a5fc0ebba7a0f2c998bcb1120b8ad9694}} 
+char $\ast$$\ast$ {\bfseries memory}
+\item 
+\mbox{\Hypertarget{classLcbc_add93ec4e659b81e2ed5353139a7a3c44}\label{classLcbc_add93ec4e659b81e2ed5353139a7a3c44}} 
+int {\bfseries memory\+Components}
+\item 
+\mbox{\Hypertarget{classLcbc_afcef1d0271b81d29321d0d0c6d485b04}\label{classLcbc_afcef1d0271b81d29321d0d0c6d485b04}} 
+bool {\bfseries preallocated\+Memory} = false
+\item 
+\mbox{\Hypertarget{classLcbc_a313f1b776db3c8cd6af95b0dc93b71ff}\label{classLcbc_a313f1b776db3c8cd6af95b0dc93b71ff}} 
+bool {\bfseries debug} = false
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classLcbc_a93f29255461d34bfdeb2d9f3e42ac86f}\label{classLcbc_a93f29255461d34bfdeb2d9f3e42ac86f}} 
+static const int {\bfseries q} = 2
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/henshw/\+Dropbox/research/cgwave/src/LCBC.\+h\item 
+/home/henshw/\+Dropbox/research/cgwave/src/LCBC.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/LCBC1.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/LCBC2.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/LCBC\+\_\+corner.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/LCBC\+\_\+new\+Fun.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/LCBC\+\_\+vertex.\+C\end{DoxyCompactItemize}

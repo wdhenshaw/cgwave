@@ -1,0 +1,100 @@
+\hypertarget{classCgWaveHoltz}{}\doxysection{Cg\+Wave\+Holtz Class Reference}
+\label{classCgWaveHoltz}\index{CgWaveHoltz@{CgWaveHoltz}}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classCgWaveHoltz_a728925a5b162cb1714df594a5a0d0bb2}\label{classCgWaveHoltz_a728925a5b162cb1714df594a5a0d0bb2}} 
+\mbox{\hyperlink{classCgWaveHoltz_a728925a5b162cb1714df594a5a0d0bb2}{Cg\+Wave\+Holtz}} (Composite\+Grid \&cg, Generic\+Graphics\+Interface \&gi)
+\begin{DoxyCompactList}\small\item\em Constructor for the \mbox{\hyperlink{classCgWaveHoltz}{Cg\+Wave\+Holtz}} class. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_a3d285022060deb7dd7c5159f8c685c63}\label{classCgWaveHoltz_a3d285022060deb7dd7c5159f8c685c63}} 
+\mbox{\hyperlink{classCgWaveHoltz_a3d285022060deb7dd7c5159f8c685c63}{$\sim$\+Cg\+Wave\+Holtz}} ()
+\begin{DoxyCompactList}\small\item\em Destructor for the \mbox{\hyperlink{classCgWaveHoltz}{Cg\+Wave\+Holtz}} class. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_a6a8af174c4dcde67f25fc141870f6b83}\label{classCgWaveHoltz_a6a8af174c4dcde67f25fc141870f6b83}} 
+int \mbox{\hyperlink{classCgWaveHoltz_a6a8af174c4dcde67f25fc141870f6b83}{initialize}} ()
+\begin{DoxyCompactList}\small\item\em Initialize time-\/step and forcing. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_abf0e3576b638a9334dcde8351a4bf151}\label{classCgWaveHoltz_abf0e3576b638a9334dcde8351a4bf151}} 
+int \mbox{\hyperlink{classCgWaveHoltz_abf0e3576b638a9334dcde8351a4bf151}{interactive\+Update}} ()
+\begin{DoxyCompactList}\small\item\em Assign parameters. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_af19757b8d4c02596f4d3a3f815f5016d}\label{classCgWaveHoltz_af19757b8d4c02596f4d3a3f815f5016d}} 
+int \mbox{\hyperlink{classCgWaveHoltz_af19757b8d4c02596f4d3a3f815f5016d}{output\+Header}} ()
+\begin{DoxyCompactList}\small\item\em Output the inital header for \mbox{\hyperlink{classCgWaveHoltz}{Cg\+Wave\+Holtz}} with option and parameter values. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_a9e042ec0b982489029f25846076401f3}\label{classCgWaveHoltz_a9e042ec0b982489029f25846076401f3}} 
+int \mbox{\hyperlink{classCgWaveHoltz_a9e042ec0b982489029f25846076401f3}{output\+Matlab\+File}} ()
+\begin{DoxyCompactList}\small\item\em Save results to a matlab file. \end{DoxyCompactList}\item 
+real \mbox{\hyperlink{classCgWaveHoltz_a3d71c9951528bb2029ab855d30592868}{residual}} (int use\+Adjusted\+Omega=2)
+\begin{DoxyCompactList}\small\item\em Compute the residual in the current solution. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWaveHoltz_a18ea94c308b58d90906d9dae4a4776af}{save\+Check\+File}} (int check\+File\+Counter, Real max\+Err, Real solution\+Norm)
+\begin{DoxyCompactList}\small\item\em Save check file -- used for regression and convergence tests. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_ad1f71c91161ca7f48e937553d2bee71e}\label{classCgWaveHoltz_ad1f71c91161ca7f48e937553d2bee71e}} 
+int \mbox{\hyperlink{classCgWaveHoltz_ad1f71c91161ca7f48e937553d2bee71e}{set\+Name\+Of\+Grid\+File}} (a\+String \&name\+Of\+OGFile)
+\begin{DoxyCompactList}\small\item\em Set the name of the composite grid file. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_a90e0eeaa645e1ce1ca54213aca891667}\label{classCgWaveHoltz_a90e0eeaa645e1ce1ca54213aca891667}} 
+int \mbox{\hyperlink{classCgWaveHoltz_a90e0eeaa645e1ce1ca54213aca891667}{setup}} ()
+\begin{DoxyCompactList}\small\item\em Setup grids and grid functions. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_aeace6c468824eef6187784c6a00892c2}\label{classCgWaveHoltz_aeace6c468824eef6187784c6a00892c2}} 
+int \mbox{\hyperlink{classCgWaveHoltz_aeace6c468824eef6187784c6a00892c2}{solve}} ()
+\begin{DoxyCompactList}\small\item\em Solve the equations over one or more periods. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_aeb5dfc00bd196999174a7b9c79cb473c}\label{classCgWaveHoltz_aeb5dfc00bd196999174a7b9c79cb473c}} 
+int \mbox{\hyperlink{classCgWaveHoltz_aeb5dfc00bd196999174a7b9c79cb473c}{solve\+Helmholtz}} (real\+Composite\+Grid\+Function \&u, real\+Composite\+Grid\+Function \&f)
+\begin{DoxyCompactList}\small\item\em Form and solve the Helmholtz equation using a direct or iterative solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWaveHoltz_ac12f1bb92f387ad7f5e169662f258bd7}\label{classCgWaveHoltz_ac12f1bb92f387ad7f5e169662f258bd7}} 
+int \mbox{\hyperlink{classCgWaveHoltz_ac12f1bb92f387ad7f5e169662f258bd7}{solve\+PETSc}} (int argc, char $\ast$$\ast$args)
+\begin{DoxyCompactList}\small\item\em Solve for the Helholtz solution using PETSc. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classCgWaveHoltz_a429f614885c2deb3ecb6dc47cc43a43b}\label{classCgWaveHoltz_a429f614885c2deb3ecb6dc47cc43a43b}} 
+Data\+Base {\bfseries dbase}
+\item 
+\mbox{\Hypertarget{classCgWaveHoltz_a755604dc2bd49d46a0c911a4424e2a55}\label{classCgWaveHoltz_a755604dc2bd49d46a0c911a4424e2a55}} 
+Composite\+Grid \& {\bfseries cg}
+\item 
+\mbox{\Hypertarget{classCgWaveHoltz_ae8f450408325eddbae379734d5c63465}\label{classCgWaveHoltz_ae8f450408325eddbae379734d5c63465}} 
+Generic\+Graphics\+Interface \& {\bfseries gi}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classCgWaveHoltz_a3d71c9951528bb2029ab855d30592868}\label{classCgWaveHoltz_a3d71c9951528bb2029ab855d30592868}} 
+\index{CgWaveHoltz@{CgWaveHoltz}!residual@{residual}}
+\index{residual@{residual}!CgWaveHoltz@{CgWaveHoltz}}
+\doxysubsubsection{\texorpdfstring{residual()}{residual()}}
+{\footnotesize\ttfamily real Cg\+Wave\+Holtz\+::residual (\begin{DoxyParamCaption}\item[{int}]{use\+Adjusted\+Omega = {\ttfamily 2} }\end{DoxyParamCaption})}
+
+
+
+Compute the residual in the current solution. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em use\+Adjusted\+Omega} & (input) \+: 0 = use standard omega 1 = compute residual using the adjusted omega, 2 = compute resdiual for both omega and adjusted omega. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCgWaveHoltz_a18ea94c308b58d90906d9dae4a4776af}\label{classCgWaveHoltz_a18ea94c308b58d90906d9dae4a4776af}} 
+\index{CgWaveHoltz@{CgWaveHoltz}!saveCheckFile@{saveCheckFile}}
+\index{saveCheckFile@{saveCheckFile}!CgWaveHoltz@{CgWaveHoltz}}
+\doxysubsubsection{\texorpdfstring{saveCheckFile()}{saveCheckFile()}}
+{\footnotesize\ttfamily int Cg\+Wave\+Holtz\+::save\+Check\+File (\begin{DoxyParamCaption}\item[{int}]{check\+File\+Counter,  }\item[{Real}]{max\+Err,  }\item[{Real}]{solution\+Norm }\end{DoxyParamCaption})}
+
+
+
+Save check file -- used for regression and convergence tests. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em check\+File\+Counter} & (input) \+: check\+File\+Counter=0,1,2,3 \+: a counter for different values saved in the check file. \\
+\hline
+{\em max\+Err} & (input) \+: some measure of the error. \\
+\hline
+{\em solution\+Norm} & (input) \+: norm of the solution. \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/henshw/\+Dropbox/research/cgwave/src/Cg\+Wave\+Holtz.\+h\item 
+/home/henshw/\+Dropbox/research/cgwave/src/Cg\+Wave\+Holtz.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/solve\+Helmholtz.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/solve\+PETSc.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/solve\+PETSc\+Null.\+C\end{DoxyCompactItemize}

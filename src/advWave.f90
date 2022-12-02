@@ -204,11 +204,27 @@
 
     ! NOTE: For now 3D versions are just null versions below 
 
+  ! buildFile(advWave2dOrder2r,2,2,rectangular)
+  ! buildFile(advWave3dOrder2r,3,2,rectangular)
+  ! buildFile(advWave2dOrder2c,2,2,curvilinear)
+  ! buildFile(advWave3dOrder2c,3,2,curvilinear)
 
+  ! buildFile(advWave2dOrder4r,2,4,rectangular)
+  ! buildFile(advWave3dOrder4r,3,4,rectangular)
+  ! buildFile(advWave2dOrder4c,2,4,curvilinear)
+  ! buildFile(advWave3dOrder4c,3,4,curvilinear)
 
-  !   ORDER=6 : BC's not implemented yet
+  ! !   ORDER=6 : BC's not implemented yet
+  ! buildFile(advWave2dOrder6r,2,6,rectangular)
+  ! buildFile(advWave3dOrder6r,3,6,rectangular)
+  ! buildFile(advWave2dOrder6c,2,6,curvilinear)
+  ! buildFile(advWave3dOrder6c,3,6,curvilinear)
 
-  ! ORDER 8 -- needed for upwinding 
+  ! ! ORDER 8 -- needed for upwinding 
+  ! buildFile(advWave2dOrder8r,2,8,rectangular)
+  ! buildFile(advWave3dOrder8r,3,8,rectangular)
+  ! buildFile(advWave2dOrder8c,2,8,curvilinear)
+  ! buildFile(advWave3dOrder8c,3,8,curvilinear)
 
 
             subroutine advWave( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
@@ -256,7 +272,6 @@
 
 
 
-      ! write(*,*) 'Inside advWave...'
               
             option                    = ipar( 0)
             gridType                  = ipar( 2)
@@ -264,7 +279,10 @@
             orderInTime               = ipar( 4)
             modifiedEquationApproach  = ipar(18)
 
-      ! useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
+      ! write(*,*) 'Inside advWave...'
+      ! write(*,*) 'option, orderOfAccuracy, modifiedEquationApproach=',option, orderOfAccuracy, modifiedEquationApproach
+
+            ! useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
       ! useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for impliciit time-stepping 
 
             if( option.eq.1 )then 

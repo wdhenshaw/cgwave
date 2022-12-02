@@ -1,0 +1,488 @@
+\hypertarget{classCgWave}{}\doxysection{Cg\+Wave Class Reference}
+\label{classCgWave}\index{CgWave@{CgWave}}
+\doxysubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classCgWave_ae103b334be68b04f48e8ac4761a6290d}\label{classCgWave_ae103b334be68b04f48e8ac4761a6290d}} 
+enum {\bfseries Boundary\+Condition\+Enum} \{ \newline
+{\bfseries periodic} =-\/1
+, {\bfseries interpolation} = 0
+, {\bfseries dirichlet} = 1
+, {\bfseries neumann} = 2
+, \newline
+{\bfseries even\+Symmetry} = 3
+, {\bfseries radiation} = 4
+, {\bfseries exact\+BC} = 5
+ \}
+\item 
+\mbox{\Hypertarget{classCgWave_aac5f3102cf8d6f0f996f4495df60f08a}\label{classCgWave_aac5f3102cf8d6f0f996f4495df60f08a}} 
+enum {\bfseries Initial\+Condition\+Option\+Enum} \{ \newline
+{\bfseries zero\+Initial\+Condition} =0
+, {\bfseries twilight\+Zone\+Initial\+Condition}
+, {\bfseries known\+Solution\+Initial\+Condition}
+, {\bfseries pulse\+Initial\+Condition}
+, \newline
+{\bfseries random\+Initial\+Condition}
+ \}
+\item 
+\mbox{\Hypertarget{classCgWave_a7c395a533767bffab70079f5f2bd3e96}\label{classCgWave_a7c395a533767bffab70079f5f2bd3e96}} 
+enum {\bfseries Forcing\+Option\+Enum} \{ {\bfseries no\+Forcing} =0
+, {\bfseries twilight\+Zone\+Forcing}
+, {\bfseries user\+Forcing}
+, {\bfseries helmholtz\+Forcing}
+ \}
+\item 
+\mbox{\Hypertarget{classCgWave_aaf13db22de0005f813540f2fa51e1572}\label{classCgWave_aaf13db22de0005f813540f2fa51e1572}} 
+enum {\bfseries Twilight\+Zone\+Enum} \{ {\bfseries polynomial}
+, {\bfseries trigonometric}
+ \}
+\item 
+\mbox{\Hypertarget{classCgWave_a6da3bdb53ad5f25728a859cb2b664f33}\label{classCgWave_a6da3bdb53ad5f25728a859cb2b664f33}} 
+enum {\bfseries Step\+Option\+Enum} \{ {\bfseries first\+Step} =0
+, {\bfseries middle\+Step}
+, {\bfseries last\+Step}
+ \}
+\item 
+\mbox{\Hypertarget{classCgWave_af7984e8a4b7af3e57109d9189e66c335}\label{classCgWave_af7984e8a4b7af3e57109d9189e66c335}} 
+enum {\bfseries Plotting\+Options\+Enum} \{ {\bfseries no\+Plotting} =0
+, {\bfseries plot\+And\+Wait} =1
+, {\bfseries plot\+No\+Wait} =2
+ \}
+\item 
+\mbox{\Hypertarget{classCgWave_a498478511c09df69c06e2a5d0804c02f}\label{classCgWave_a498478511c09df69c06e2a5d0804c02f}} 
+enum {\bfseries Time\+Stepping\+Method\+Enum} \{ {\bfseries explicit\+Time\+Stepping} =0
+, {\bfseries implicit\+Time\+Stepping} =1
+ \}
+\item 
+\mbox{\Hypertarget{classCgWave_a98b1bed3d79ff95c71413fd4f5545b68}\label{classCgWave_a98b1bed3d79ff95c71413fd4f5545b68}} 
+enum {\bfseries Boundary\+Condition\+Approach\+Enum} \{ {\bfseries default\+Boundary\+Condition\+Approach} =0
+, {\bfseries use\+One\+Sided\+Boundary\+Conditions}
+, {\bfseries use\+Compatibility\+Boundary\+Conditions}
+, {\bfseries use\+Local\+Compatibility\+Boundary\+Conditions}
+ \}
+\item 
+\mbox{\Hypertarget{classCgWave_a87a2a25829c8c06f1ca53cf3f8d2dcbb}\label{classCgWave_a87a2a25829c8c06f1ca53cf3f8d2dcbb}} 
+enum {\bfseries Assign\+Interpolation\+Neighbours\+Enum} \{ {\bfseries default\+Assign\+Interp\+Neighbours} =0
+, {\bfseries extrapolate\+Interp\+Neighbours}
+, {\bfseries interpolate\+Interp\+Neighbours}
+ \}
+\item 
+\mbox{\Hypertarget{classCgWave_abfa01e44d6b57c65ea7f6cfde4c03dce}\label{classCgWave_abfa01e44d6b57c65ea7f6cfde4c03dce}} 
+enum {\bfseries Timing\+Enum} \{ \newline
+{\bfseries total\+Time} =0
+, {\bfseries time\+For\+Initialize}
+, {\bfseries time\+For\+Initialize\+BCs}
+, {\bfseries time\+For\+Initial\+Conditions}
+, \newline
+{\bfseries time\+For\+Advance}
+, {\bfseries time\+For\+Advance\+Rectangular\+Grids}
+, {\bfseries time\+For\+Advance\+Curvilinear\+Grids}
+, {\bfseries time\+For\+Implicit\+Solve}
+, \newline
+{\bfseries time\+For\+Dissipation}
+, {\bfseries time\+For\+Boundary\+Conditions}
+, {\bfseries time\+For\+Interpolate}
+, {\bfseries time\+For\+Update\+Ghost\+Boundaries}
+, \newline
+{\bfseries time\+For\+Forcing}
+, {\bfseries time\+For\+Get\+Error}
+, {\bfseries time\+For\+Plotting}
+, {\bfseries time\+For\+Output\+Results}
+, \newline
+{\bfseries time\+For\+Waiting}
+, {\bfseries maximum\+Number\+Of\+Timings}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classCgWave_a1e92a21b53df6bf9e07c46187b6ac0da}\label{classCgWave_a1e92a21b53df6bf9e07c46187b6ac0da}} 
+\mbox{\hyperlink{classCgWave_a1e92a21b53df6bf9e07c46187b6ac0da}{Cg\+Wave}} (Composite\+Grid \&cg, Generic\+Graphics\+Interface \&gi)
+\begin{DoxyCompactList}\small\item\em Constructor for the \mbox{\hyperlink{classCgWave}{Cg\+Wave}} class. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a2a12e113c77656a04f057e48da20571a}\label{classCgWave_a2a12e113c77656a04f057e48da20571a}} 
+\mbox{\hyperlink{classCgWave_a2a12e113c77656a04f057e48da20571a}{$\sim$\+Cg\+Wave}} ()
+\begin{DoxyCompactList}\small\item\em Destructor for the \mbox{\hyperlink{classCgWave}{Cg\+Wave}} class. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_abd5d6852da86ff8de035959515d3af67}{advance}} (int it)
+\begin{DoxyCompactList}\small\item\em Advance the solution This is the main advance routine for cg\+Wave. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_ac52a7e66ee28f9e7bc468fb9c7ef891b}{apply\+Boundary\+Conditions}} (real\+Composite\+Grid\+Function \&u, real t)
+\begin{DoxyCompactList}\small\item\em Apply boundary conditions to a composite grid function. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_af9b721197776d1ea54fdbc40de1d81b2}\label{classCgWave_af9b721197776d1ea54fdbc40de1d81b2}} 
+int \mbox{\hyperlink{classCgWave_af9b721197776d1ea54fdbc40de1d81b2}{assign\+LCBC}} (real\+Mapped\+Grid\+Function \&u, Real t, Real dt, int grid)
+\begin{DoxyCompactList}\small\item\em Assign the LCBC boundary conditions. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a2a5bb097258c1198f55ff918647b3572}\label{classCgWave_a2a5bb097258c1198f55ff918647b3572}} 
+int \mbox{\hyperlink{classCgWave_a2a5bb097258c1198f55ff918647b3572}{build\+Run\+Time\+Dialog}} ()
+\begin{DoxyCompactList}\small\item\em Build the run time dialog for \mbox{\hyperlink{classCgWave}{Cg\+Wave}}. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_ada01fa57cdbb3197525cf88d879f19b9}\label{classCgWave_ada01fa57cdbb3197525cf88d879f19b9}} 
+void {\bfseries display\+Boundary\+Conditions} (FILE $\ast$file=stdout)
+\item 
+\mbox{\Hypertarget{classCgWave_a082f0b9f1c4e6522285434698995bfba}\label{classCgWave_a082f0b9f1c4e6522285434698995bfba}} 
+int \mbox{\hyperlink{classCgWave_a082f0b9f1c4e6522285434698995bfba}{form\+Implicit\+Time\+Stepping\+Matrix}} ()
+\begin{DoxyCompactList}\small\item\em Form and the matrix for implicit time-\/stepping. \end{DoxyCompactList}\item 
+real\+Composite\+Grid\+Function \& \mbox{\hyperlink{classCgWave_a04f50f45ff645c24d25fb8584038fee7}{get\+Augmented\+Solution}} (int current, real\+Composite\+Grid\+Function \&v, const real t)
+\begin{DoxyCompactList}\small\item\em Create a grid function that holds all the things we can plot. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a423528ed5c13b12d36daed6e99405c52}\label{classCgWave_a423528ed5c13b12d36daed6e99405c52}} 
+real\+Composite\+Grid\+Function \& \mbox{\hyperlink{classCgWave_a423528ed5c13b12d36daed6e99405c52}{get\+Current\+Solution}} ()
+\begin{DoxyCompactList}\small\item\em Return the current solution. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a49cbd6b34dd714a929a1c4e58e02741a}\label{classCgWave_a49cbd6b34dd714a929a1c4e58e02741a}} 
+real \mbox{\hyperlink{classCgWave_a49cbd6b34dd714a929a1c4e58e02741a}{get\+Errors}} (real\+Composite\+Grid\+Function \&u, real t)
+\begin{DoxyCompactList}\small\item\em Compute errors. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_a72e40f034e43f8f51460acc73fb95f4c}{get\+Helmholtz\+Forcing}} (real\+Composite\+Grid\+Function \&f)
+\begin{DoxyCompactList}\small\item\em Fill in the forcing (right-\/hand-\/side) for the direct Helmholtz solver (solve\+Helm\+Holtz) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_af8c134e99e5df2488f7e279b438b5f19}\label{classCgWave_af8c134e99e5df2488f7e279b438b5f19}} 
+void \mbox{\hyperlink{classCgWave_af8c134e99e5df2488f7e279b438b5f19}{get\+Lcbc\+Data}} (Mapped\+Grid \&mg, \mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$\&fn, \mbox{\hyperlink{classLcbcData}{Lcbc\+Data}} $\ast$\&gn, Real\+Array tmp\+Gn\mbox{[}$\,$\mbox{]}, Real\+Array tmp\+Fn\mbox{[}$\,$\mbox{]}, Real t)
+\begin{DoxyCompactList}\small\item\em Assign data for LCBC routines. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCgWave_a0e799e5ba6b1b7addcc57e426ec73ece}{get\+Initial\+Conditions}} (int current, real t, bool get\+Time\+Derivative=false)
+\begin{DoxyCompactList}\small\item\em Assign the initial conditions. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_a188922967d160a130f8014838ad9fa6a}{get\+Integration\+Weights}} (int Nt, int num\+Freq, const Real\+Array \&Tv, int order\+Of\+Accuracy, Real\+Array \&sigma)
+\begin{DoxyCompactList}\small\item\em Compute the integration weights in time for the Wave\+Holtz integrals. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a8dd1b2fb6baed14378d14802dbfcd1b6}\label{classCgWave_a8dd1b2fb6baed14378d14802dbfcd1b6}} 
+a\+String \mbox{\hyperlink{classCgWave_a8dd1b2fb6baed14378d14802dbfcd1b6}{get\+Method\+Name}} () const
+\begin{DoxyCompactList}\small\item\em Return the method name\+: FD22, FD24s etc. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_ac0da6d133316877c586f7898f3ac2aa3}\label{classCgWave_ac0da6d133316877c586f7898f3ac2aa3}} 
+int \mbox{\hyperlink{classCgWave_ac0da6d133316877c586f7898f3ac2aa3}{get\+Multi\+Frequency\+Wave\+Holtz\+Matrix}} (Real\+Array \&A)
+\begin{DoxyCompactList}\small\item\em Return the multi-\/frequency Wave-\/\+Holtz matrix \char`\"{}\+A\char`\"{}. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a16e10f8ce9b8fe5467281c91db50c329}\label{classCgWave_a16e10f8ce9b8fe5467281c91db50c329}} 
+int \mbox{\hyperlink{classCgWave_a16e10f8ce9b8fe5467281c91db50c329}{get\+Time\+Step}} ()
+\begin{DoxyCompactList}\small\item\em Determine the time step. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a0f4f48f86cc30301ae83a8efbeddda5a}\label{classCgWave_a0f4f48f86cc30301ae83a8efbeddda5a}} 
+void \mbox{\hyperlink{classCgWave_a0f4f48f86cc30301ae83a8efbeddda5a}{get\+Time\+Stepping\+Label}} (real dt, a\+String \&label) const
+\begin{DoxyCompactList}\small\item\em Construct the label that defines the time-\/stepping method and used in the title for plots. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_a93a0639435497560a53b7c1fe8dcfb3b}{get\+User\+Defined\+Known\+Solution}} (real t, int grid, real\+Array \&ua, const Index \&I1a, const Index \&I2a, const Index \&I3a, int number\+Of\+Time\+Derivatives=0)
+\begin{DoxyCompactList}\small\item\em Evaluate a user defined known solution. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_adcc488a506c97881bcc14f47b0d9d6ba}\label{classCgWave_adcc488a506c97881bcc14f47b0d9d6ba}} 
+int \mbox{\hyperlink{classCgWave_adcc488a506c97881bcc14f47b0d9d6ba}{initialize}} ()
+\begin{DoxyCompactList}\small\item\em Initialize time-\/step and forcing. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a80e1c950491bd3372b5dd7441ef6cd5b}\label{classCgWave_a80e1c950491bd3372b5dd7441ef6cd5b}} 
+int \mbox{\hyperlink{classCgWave_a80e1c950491bd3372b5dd7441ef6cd5b}{initialize\+LCBC}} ()
+\begin{DoxyCompactList}\small\item\em Initialize the LCBC objects -- local compatibility boundary condtions. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_ac8ce806d74cd8999ddf2d65b9277dde0}\label{classCgWave_ac8ce806d74cd8999ddf2d65b9277dde0}} 
+int \mbox{\hyperlink{classCgWave_ac8ce806d74cd8999ddf2d65b9277dde0}{interactive\+Update}} ()
+\begin{DoxyCompactList}\small\item\em Assign parameters. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a8091972d807b21771921f942f8418e23}\label{classCgWave_a8091972d807b21771921f942f8418e23}} 
+void \mbox{\hyperlink{classCgWave_a8091972d807b21771921f942f8418e23}{output\+Header}} ()
+\begin{DoxyCompactList}\small\item\em Output the header banner with parameters and grid info. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a3f7d5649205adde2a79cc923ea37be3a}\label{classCgWave_a3f7d5649205adde2a79cc923ea37be3a}} 
+int {\bfseries output\+Results} (int current, real t)
+\item 
+\mbox{\Hypertarget{classCgWave_aa68919ace701c3f03f33ae388a17ed14}\label{classCgWave_aa68919ace701c3f03f33ae388a17ed14}} 
+int \mbox{\hyperlink{classCgWave_aa68919ace701c3f03f33ae388a17ed14}{print\+Statistics}} (FILE $\ast$file=stdout)
+\begin{DoxyCompactList}\small\item\em Output timing and memory usage statistics. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_acbc30dda6dfa495c7be7e2c03bf775dc}{plot}} (int current, real t, real dt)
+\item 
+\mbox{\Hypertarget{classCgWave_a6157e38ce7db0a567a236a7956ecbe2c}\label{classCgWave_a6157e38ce7db0a567a236a7956ecbe2c}} 
+int \mbox{\hyperlink{classCgWave_a6157e38ce7db0a567a236a7956ecbe2c}{save\+Sequence\+Info}} (real t0, Real\+Array \&sequence\+Data)
+\begin{DoxyCompactList}\small\item\em Save info into the time history arrays. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a8c01baaa8007923146640d5903f78086}\label{classCgWave_a8c01baaa8007923146640d5903f78086}} 
+int {\bfseries save\+Sequences\+To\+Show\+File} ()
+\item 
+\mbox{\Hypertarget{classCgWave_abc10f31eed481e01c054da0a8675f57c}\label{classCgWave_abc10f31eed481e01c054da0a8675f57c}} 
+int \mbox{\hyperlink{classCgWave_abc10f31eed481e01c054da0a8675f57c}{save\+Show}} (int current, Real t, Real dt)
+\begin{DoxyCompactList}\small\item\em save the current solution (and errors) to the show file \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a29dff27b8df7b9f11b67e7cd46fb44e6}\label{classCgWave_a29dff27b8df7b9f11b67e7cd46fb44e6}} 
+int \mbox{\hyperlink{classCgWave_a29dff27b8df7b9f11b67e7cd46fb44e6}{set\+Name\+Of\+Grid\+File}} (a\+String \&name\+Of\+OGFile)
+\begin{DoxyCompactList}\small\item\em Set the name of the composite grid file. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_a3c1caaf3b409a5f089549d258d6f8de5}{setup}} ()
+\begin{DoxyCompactList}\small\item\em Setup grids and grid functions. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_a22f79bb3117294311f1762fefae5a8a4}{setup\+User\+Defined\+Forcing}} ()
+\begin{DoxyCompactList}\small\item\em This function is used to choose a user defined forcing and input parameters etc. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a69018cb8479ebeca155b8f594b03c8f7}\label{classCgWave_a69018cb8479ebeca155b8f594b03c8f7}} 
+int \mbox{\hyperlink{classCgWave_a69018cb8479ebeca155b8f594b03c8f7}{take\+First\+Step}} (int cur, real t)
+\begin{DoxyCompactList}\small\item\em Take the first step using Taylor series in time. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a4427397be42fc2ca54c4784523c110b2}\label{classCgWave_a4427397be42fc2ca54c4784523c110b2}} 
+int \mbox{\hyperlink{classCgWave_a4427397be42fc2ca54c4784523c110b2}{take\+First\+Step\+Helmholtz}} (int cur, real t)
+\begin{DoxyCompactList}\small\item\em Take the first step using Taylor series in time (e.\+g. for Helmholtz solve) THIS ASSUMES A HELMHOLTZ SOLVE OR HELMHOLTZ FORCING ~\newline
+ \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCgWave_a6c5318f4dad309c7b78e8b6f648d93c6}\label{classCgWave_a6c5318f4dad309c7b78e8b6f648d93c6}} 
+int \mbox{\hyperlink{classCgWave_a6c5318f4dad309c7b78e8b6f648d93c6}{take\+First\+Backward\+Step}} (int cur, real t)
+\begin{DoxyCompactList}\small\item\em Take the first BACKWARD step using Taylor series in time (e.\+g. for Helmholtz solve) THIS ASSUMES A HELMHOLTZ SOLVE OR HELMHOLTZ FORCING ~\newline
+ \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_a37b319f614bae972cfba827b2a429b02}{take\+Implicit\+Step}} (Real t)
+\begin{DoxyCompactList}\small\item\em Take an implicit time step to new time t. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_a4e80ac8c14cbf21367c153201fe11a42}{update\+Time\+Integral}} (int step, Step\+Option\+Enum step\+Option, real t, real\+Composite\+Grid\+Function \&u)
+\begin{DoxyCompactList}\small\item\em Update the time integral used by the Helmholtz solver. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_af4bcae6d19b9aa20875444304dceb00d}{update\+User\+Defined\+Known\+Solution}} ()
+\begin{DoxyCompactList}\small\item\em This function is called to set the user defined known solution. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCgWave_a86f33c24104558d63359e6b21dabc6a3}{user\+Defined\+Forcing}} (real\+Array \&f, int iparam\mbox{[}$\,$\mbox{]}, real rparam\mbox{[}$\,$\mbox{]})
+\begin{DoxyCompactList}\small\item\em Evaluate the user defined forcing. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classCgWave_a11709ac8c2e056e7176060887c5d0672}\label{classCgWave_a11709ac8c2e056e7176060887c5d0672}} 
+Real\+Array {\bfseries timing}
+\item 
+\mbox{\Hypertarget{classCgWave_a244d1c9d716e1d381e26f0521f931b1a}\label{classCgWave_a244d1c9d716e1d381e26f0521f931b1a}} 
+a\+String {\bfseries timing\+Name} \mbox{[}maximum\+Number\+Of\+Timings\mbox{]}
+\item 
+\mbox{\Hypertarget{classCgWave_a0dc93091344b23ce22fdb52445198bf2}\label{classCgWave_a0dc93091344b23ce22fdb52445198bf2}} 
+Data\+Base {\bfseries dbase}
+\item 
+\mbox{\Hypertarget{classCgWave_a967683bf28aab3dc19236a3e80e4aa09}\label{classCgWave_a967683bf28aab3dc19236a3e80e4aa09}} 
+Composite\+Grid \& {\bfseries cg}
+\item 
+\mbox{\Hypertarget{classCgWave_aefb45b37fa8826b5bc68eebb3d716e4d}\label{classCgWave_aefb45b37fa8826b5bc68eebb3d716e4d}} 
+Generic\+Graphics\+Interface \& {\bfseries gi}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classCgWave_abd5d6852da86ff8de035959515d3af67}\label{classCgWave_abd5d6852da86ff8de035959515d3af67}} 
+\index{CgWave@{CgWave}!advance@{advance}}
+\index{advance@{advance}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{advance()}{advance()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::advance (\begin{DoxyParamCaption}\item[{int}]{it }\end{DoxyParamCaption})}
+
+
+
+Advance the solution This is the main advance routine for cg\+Wave. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em it} & (input) \+: iteration number when solving a Helmholtz problem. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCgWave_ac52a7e66ee28f9e7bc468fb9c7ef891b}\label{classCgWave_ac52a7e66ee28f9e7bc468fb9c7ef891b}} 
+\index{CgWave@{CgWave}!applyBoundaryConditions@{applyBoundaryConditions}}
+\index{applyBoundaryConditions@{applyBoundaryConditions}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{applyBoundaryConditions()}{applyBoundaryConditions()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::apply\+Boundary\+Conditions (\begin{DoxyParamCaption}\item[{real\+Composite\+Grid\+Function \&}]{u,  }\item[{real}]{t }\end{DoxyParamCaption})}
+
+
+
+Apply boundary conditions to a composite grid function. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em u} & (input/output) \+: apply BCs to this grid function \\
+\hline
+{\em t} & (input) \+: current time \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCgWave_a04f50f45ff645c24d25fb8584038fee7}\label{classCgWave_a04f50f45ff645c24d25fb8584038fee7}} 
+\index{CgWave@{CgWave}!getAugmentedSolution@{getAugmentedSolution}}
+\index{getAugmentedSolution@{getAugmentedSolution}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{getAugmentedSolution()}{getAugmentedSolution()}}
+{\footnotesize\ttfamily real\+Composite\+Grid\+Function \& Cg\+Wave\+::get\+Augmented\+Solution (\begin{DoxyParamCaption}\item[{int}]{current,  }\item[{real\+Composite\+Grid\+Function \&}]{v,  }\item[{const real}]{t }\end{DoxyParamCaption})}
+
+
+
+Create a grid function that holds all the things we can plot. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em current} & (input) \+: use this grid function \\
+\hline
+{\em v} & (output) \+: save the augmented solution here. \\
+\hline
+{\em t} & (input) \+: if t$<$0 then only fill the component names into the grid function v. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCgWave_a72e40f034e43f8f51460acc73fb95f4c}\label{classCgWave_a72e40f034e43f8f51460acc73fb95f4c}} 
+\index{CgWave@{CgWave}!getHelmholtzForcing@{getHelmholtzForcing}}
+\index{getHelmholtzForcing@{getHelmholtzForcing}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{getHelmholtzForcing()}{getHelmholtzForcing()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::get\+Helmholtz\+Forcing (\begin{DoxyParamCaption}\item[{real\+Composite\+Grid\+Function \&}]{f }\end{DoxyParamCaption})}
+
+
+
+Fill in the forcing (right-\/hand-\/side) for the direct Helmholtz solver (solve\+Helm\+Holtz) 
+
+Fill in the interior forcing and boundary conditions 
+\begin{DoxyParams}{Parameters}
+{\em f} & (output) ~\newline
+ \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCgWave_a0e799e5ba6b1b7addcc57e426ec73ece}\label{classCgWave_a0e799e5ba6b1b7addcc57e426ec73ece}} 
+\index{CgWave@{CgWave}!getInitialConditions@{getInitialConditions}}
+\index{getInitialConditions@{getInitialConditions}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{getInitialConditions()}{getInitialConditions()}}
+{\footnotesize\ttfamily void Cg\+Wave\+::get\+Initial\+Conditions (\begin{DoxyParamCaption}\item[{int}]{current,  }\item[{real}]{t,  }\item[{bool}]{get\+Time\+Derivative = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Assign the initial conditions. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em current} & (input) \+: assign the grid function u\mbox{[}current\mbox{]} ~\newline
+ \\
+\hline
+{\em get\+Time\+Derivative} & (input) \+: if true, return the time derivative of the initial conditions ~\newline
+ \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCgWave_a188922967d160a130f8014838ad9fa6a}\label{classCgWave_a188922967d160a130f8014838ad9fa6a}} 
+\index{CgWave@{CgWave}!getIntegrationWeights@{getIntegrationWeights}}
+\index{getIntegrationWeights@{getIntegrationWeights}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{getIntegrationWeights()}{getIntegrationWeights()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::get\+Integration\+Weights (\begin{DoxyParamCaption}\item[{int}]{Nt,  }\item[{int}]{num\+Freq,  }\item[{const Real\+Array \&}]{Tv,  }\item[{int}]{order\+Of\+Accuracy,  }\item[{Real\+Array \&}]{sigma }\end{DoxyParamCaption})}
+
+
+
+Compute the integration weights in time for the Wave\+Holtz integrals. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em Nt} & (input) \+: number of time steps \\
+\hline
+{\em num\+Freq} & (input) \+: number of frequencies \\
+\hline
+{\em Tv(0\+:num\+Freq-\/1)} & (input) \+: periods \\
+\hline
+{\em order\+Of\+Accuracy} & (input) \+: order of accuracy of the quadrature\\
+\hline
+{\em sigma(0\+:\+Nt,0\+:num\+Freq-\/1)} & (output) \+: integration weights\\
+\hline
+\end{DoxyParams}
+\begin{DoxyAuthor}{Authors}
+WDH and Cassandra Carrick -- Nov, 2021 
+\end{DoxyAuthor}
+\mbox{\Hypertarget{classCgWave_a93a0639435497560a53b7c1fe8dcfb3b}\label{classCgWave_a93a0639435497560a53b7c1fe8dcfb3b}} 
+\index{CgWave@{CgWave}!getUserDefinedKnownSolution@{getUserDefinedKnownSolution}}
+\index{getUserDefinedKnownSolution@{getUserDefinedKnownSolution}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{getUserDefinedKnownSolution()}{getUserDefinedKnownSolution()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::get\+User\+Defined\+Known\+Solution (\begin{DoxyParamCaption}\item[{real}]{t,  }\item[{int}]{grid,  }\item[{real\+Array \&}]{ua,  }\item[{const Index \&}]{I1a,  }\item[{const Index \&}]{I2a,  }\item[{const Index \&}]{I3a,  }\item[{int}]{number\+Of\+Time\+Derivatives = {\ttfamily 0} }\end{DoxyParamCaption})}
+
+
+
+Evaluate a user defined known solution. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em t} & (input) \+: time to eval solution \\
+\hline
+{\em grid} & (input) \+: grid number \\
+\hline
+{\em ua} & (output) \+: save solution here \\
+\hline
+{\em I1a,I2a,I3a} & (input) \+: eval solution at these points \\
+\hline
+{\em number\+Of\+Time\+Derivatives} & (input) \+: evaluate this many time-\/derivatives of the solution. Normally number\+Of\+Time\+Derivatives=0, but it can be 1 when the known solution is used \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCgWave_acbc30dda6dfa495c7be7e2c03bf775dc}\label{classCgWave_acbc30dda6dfa495c7be7e2c03bf775dc}} 
+\index{CgWave@{CgWave}!plot@{plot}}
+\index{plot@{plot}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{plot()}{plot()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::plot (\begin{DoxyParamCaption}\item[{int}]{current,  }\item[{real}]{t,  }\item[{real}]{dt }\end{DoxyParamCaption})}
+
+/brief Plot the solution. 
+\begin{DoxyParams}{Parameters}
+{\em current} & (input) \+: index of solution to plot. \\
+\hline
+{\em t} & (input) \+: time of solution to plot \\
+\hline
+{\em dt} & (input) \+: current time-\/step\\
+\hline
+\end{DoxyParams}
+plot\+Options \+: 0 = no plotting 1 -\/ plot and wait 3 -\/ do not wait for response after plotting /\+Return values\+: 0=normal exit. 1=user has requested \char`\"{}finish\char`\"{}. \mbox{\Hypertarget{classCgWave_a3c1caaf3b409a5f089549d258d6f8de5}\label{classCgWave_a3c1caaf3b409a5f089549d258d6f8de5}} 
+\index{CgWave@{CgWave}!setup@{setup}}
+\index{setup@{setup}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{setup()}{setup()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::setup (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Setup grids and grid functions. 
+
+This function will perform various setup steps such as to update operators, create an interpolant, update grid functions. \mbox{\Hypertarget{classCgWave_a22f79bb3117294311f1762fefae5a8a4}\label{classCgWave_a22f79bb3117294311f1762fefae5a8a4}} 
+\index{CgWave@{CgWave}!setupUserDefinedForcing@{setupUserDefinedForcing}}
+\index{setupUserDefinedForcing@{setupUserDefinedForcing}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{setupUserDefinedForcing()}{setupUserDefinedForcing()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::setup\+User\+Defined\+Forcing (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+This function is used to choose a user defined forcing and input parameters etc. 
+
+This function is used to setup and define the forcing to use. The function user\+Defined\+Forcing (above) is called to actually assign the forcing. Rewrite or add new options to this routine to supply your own forcing. Choose the \char`\"{}user defined forcing\char`\"{} option to have this routine called. \mbox{\Hypertarget{classCgWave_a37b319f614bae972cfba827b2a429b02}\label{classCgWave_a37b319f614bae972cfba827b2a429b02}} 
+\index{CgWave@{CgWave}!takeImplicitStep@{takeImplicitStep}}
+\index{takeImplicitStep@{takeImplicitStep}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{takeImplicitStep()}{takeImplicitStep()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::take\+Implicit\+Step (\begin{DoxyParamCaption}\item[{Real}]{t }\end{DoxyParamCaption})}
+
+
+
+Take an implicit time step to new time t. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em t} & (input) \+: new time \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCgWave_a4e80ac8c14cbf21367c153201fe11a42}\label{classCgWave_a4e80ac8c14cbf21367c153201fe11a42}} 
+\index{CgWave@{CgWave}!updateTimeIntegral@{updateTimeIntegral}}
+\index{updateTimeIntegral@{updateTimeIntegral}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{updateTimeIntegral()}{updateTimeIntegral()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::update\+Time\+Integral (\begin{DoxyParamCaption}\item[{int}]{step,  }\item[{Step\+Option\+Enum}]{step\+Option,  }\item[{real}]{t,  }\item[{real\+Composite\+Grid\+Function \&}]{u }\end{DoxyParamCaption})}
+
+
+
+Update the time integral used by the Helmholtz solver. 
+
+The Wave\+Holtz algorithm computes the time integral of the solution. This routine increments the time integral using the current solution and stores the result in \char`\"{}v\char`\"{} (from the dbase).
+
+
+\begin{DoxyParams}{Parameters}
+{\em step} & (input) \+: current step \\
+\hline
+{\em step\+Option} & \+: first\+Step, middle\+Step, last\+Step. When step\+Option==first\+Step, the integration weights will be comnputed and the time integral will be initialized. \\
+\hline
+{\em t} & (input) \+: current time \\
+\hline
+{\em u} & (input) \+: current solution \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCgWave_af4bcae6d19b9aa20875444304dceb00d}\label{classCgWave_af4bcae6d19b9aa20875444304dceb00d}} 
+\index{CgWave@{CgWave}!updateUserDefinedKnownSolution@{updateUserDefinedKnownSolution}}
+\index{updateUserDefinedKnownSolution@{updateUserDefinedKnownSolution}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{updateUserDefinedKnownSolution()}{updateUserDefinedKnownSolution()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::update\+User\+Defined\+Known\+Solution (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+This function is called to set the user defined known solution. 
+
+Choose a user defined known solution (UDKS) and any associated parameters. The UDKS can be used for initial conditions, boundary conditions (exact BCs) and computing errors. \mbox{\Hypertarget{classCgWave_a86f33c24104558d63359e6b21dabc6a3}\label{classCgWave_a86f33c24104558d63359e6b21dabc6a3}} 
+\index{CgWave@{CgWave}!userDefinedForcing@{userDefinedForcing}}
+\index{userDefinedForcing@{userDefinedForcing}!CgWave@{CgWave}}
+\doxysubsubsection{\texorpdfstring{userDefinedForcing()}{userDefinedForcing()}}
+{\footnotesize\ttfamily int Cg\+Wave\+::user\+Defined\+Forcing (\begin{DoxyParamCaption}\item[{real\+Array \&}]{f,  }\item[{int}]{iparam\mbox{[}$\,$\mbox{]},  }\item[{real}]{rparam\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+
+
+Evaluate the user defined forcing. 
+
+This function is called to actually evaluate the user defined forcing The function setup\+User\+Defined\+Forcing is first called to assign the option and parameters. Rewrite or add new options to this function and to setup\+User\+Defined\+Forcing to supply your own forcing option.
+
+
+\begin{DoxyParams}{Parameters}
+{\em f} & (input/output) \+: add to this forcing function \\
+\hline
+{\em iparam\mbox{[}$\,$\mbox{]}} & (input) \+: holds some integer parameters \\
+\hline
+{\em rparam\mbox{[}$\,$\mbox{]}} & (input) \+: holds some real parameters \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/henshw/\+Dropbox/research/cgwave/src/Cg\+Wave.\+h\item 
+/home/henshw/\+Dropbox/research/cgwave/src/advance.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/apply\+Boundary\+Conditions.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/Cg\+Wave.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/get\+Errors.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/get\+Helmholtz\+Forcing.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/get\+Initial\+Conditions.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/get\+Time\+Step.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/implicit.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/initialize\+LCBC.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/output\+Header.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/plot.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/print\+Statistics.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/save\+Show.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/take\+First\+Step.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/update\+Time\+Integral.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/user\+Defined\+Forcing.\+C\item 
+/home/henshw/\+Dropbox/research/cgwave/src/user\+Defined\+Known\+Solution.\+C\end{DoxyCompactItemize}

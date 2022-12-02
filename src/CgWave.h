@@ -181,6 +181,7 @@ int userDefinedForcing( realArray & f, int iparam[], real rparam[] );
   { 
     totalTime=0,
     timeForInitialize,
+    timeForInitializeBCs,
     timeForInitialConditions,
     timeForAdvance,
     timeForAdvanceRectangularGrids,

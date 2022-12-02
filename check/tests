@@ -2,6 +2,14 @@
 # REGRESSION TESTS FOR CGWAVE
 #     Tests are run using the perl script check.p
 #
+# Type "make" in this folder to run all checks.
+#
+# Type check.p <checkName.check> to run one check.
+#    e.g. "check.p diskEig6LCBC.check"
+#
+# To replace a check file use
+#   check.p -replace <checkName.check> 
+#
 # Here is the executable:
 ../bin/cgWave
 # CGBUILDPREFIX/mx/bin/cgmx
@@ -20,6 +28,16 @@ nonSquareOrder2.check ../runs/tz/tz.cmd -g=nonSquare16.order2 -upwind=0 -degreeI
 nonSquareOrder4.check ../runs/tz/tz.cmd -g=nonSquare16.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
 nonBoxOrder2.check    ../runs/tz/tz.cmd -g=nonBox1.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
 nonBoxOrder4.check    ../runs/tz/tz.cmd -g=nonBox1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+# FAME + LCBC
+squareOrder2LCBC.check    ../runs/tz/tz.cmd -g=square16.order2     -meApproach=ha -bcApproach=lcbc -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+squareOrder4LCBC.check    ../runs/tz/tz.cmd -g=square16.order4.ng3 -meApproach=ha -bcApproach=lcbc -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+squareOrder6LCBC.check    ../runs/tz/tz.cmd -g=square16.order6.ng4 -meApproach=ha -bcApproach=lcbc -upwind=0 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
+squareOrder8LCBC.check    ../runs/tz/tz.cmd -g=square16.order8.ng5 -meApproach=ha -bcApproach=lcbc -upwind=0 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
+nonSquareOrder2LCBC.check    ../runs/tz/tz.cmd -g=nonSquare16.order2     -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+nonSquareOrder4LCBC.check    ../runs/tz/tz.cmd -g=nonSquare16.order4.ng3 -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+nonSquareOrder6LCBC.check    ../runs/tz/tz.cmd -g=nonSquare16.order6.ng4 -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
+nonSquareOrder8LCBC.check    ../runs/tz/tz.cmd -g=nonSquare16.order8.ng5 -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
+#
 # TZ implicit tests
 squareOrder2Imp.check    ../runs/tz/tz.cmd -g=square16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
 squareOrder4Imp.check    ../runs/tz/tz.cmd -g=square16.order4 -upwind=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
@@ -41,7 +59,11 @@ planeWaveCicOrder4.check ../runs/known/planeWave.cmd -g=cice2.order4.ng3 -upwind
 # disk eigenfunction : CBC conditions
 diskEig2.check ../runs/known/known.cmd -g=sice2.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
 diskEig4.check ../runs/known/known.cmd -g=sice2.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
-# diskEig6.check ../runs/known/known.cmd -g=sice2.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -cfl=.5 -go=go
+# disk eig - FAME + LCBC
+diskEig2LCBC.check ../runs/known/known.cmd -g=sice2.order2     -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+diskEig4LCBC.check ../runs/known/known.cmd -g=sice2.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+diskEig6LCBC.check ../runs/known/known.cmd -g=sice2.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+diskEig8LCBC.check ../runs/known/known.cmd -g=sice2.order8.ng5 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
 #
 # Forced Helmholtz solve
 helmHoltzCicOrder2.check ../cmd/helmholtz.cmd -g=cice2.order2 -upwind=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go

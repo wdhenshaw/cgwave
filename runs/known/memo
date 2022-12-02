@@ -17,6 +17,11 @@ cgWave -noplot known.cmd -g=box4.order4.hdf -kx=3 -ky=3 -kz=1 -tf=.05 -tp=.05 -k
 G4:
 cgWave:FD44 t=5.000e-02 (4 steps) dt=1.250e-02 maxErr= 1.43e-04, ||u||= 2.00e-01, cpu= 4.87e-02(s)
 
+cg66:
+assignLCBC: grid=0, t= 1.25e-02, cpu=7.09e+00(s)
+assignLCBC: grid=0, t= 2.50e-02, cpu=8.75e-03(s)
+
+cg6:
 assignLCBC: grid=0, t= 1.25e-02, cpu=1.05e+01(s)
 assignLCBC: grid=0, t= 2.50e-02, cpu=1.05e-02(s)
 

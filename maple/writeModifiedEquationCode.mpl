@@ -22,11 +22,11 @@ gridTypeName[rectangular]:="Rectangular";
 gridTypeName[curvilinear]:="Curvilinear"; 
 
 ndStart := 2: ndEnd:=3:     # number of dimensions
-orderStart:=6: orderEnd:=6: # order of accuracy
+orderStart:=6: orderEnd:=8: # order of accuracy
 # orderOfAccuracy  := 8:      # order of accuracy
 # gridType         := rectangular: 
 # gridType         := curvilinear;
-gridTypeStart:=1: gridTypeEnd:=2: # gridType 
+gridTypeStart:=2: gridTypeEnd:=2: # gridType 
 
 # --- difference weights from highOrderDiff.maple -----
 # Weights in deriv 1
@@ -629,13 +629,13 @@ if gridType=curvilinear then
   if orderOfAccuracy>=6 then
     fprintf(file,"    elseif( diffOrder2.eq.6 )then\n"):
     for m1 from 0 to nd-1 do  for m2 from 0 to nd-1 do    
-    fprintf(file,"      %s%ss = ( 8*(rsxy(i1,i2+1,i3,%d,%d)-rsxy(i1,i2-1,i3,%d,%d)) -(rsxy(i1,i2+2,i3,%d,%d)-rsxy(i1,i2-2,i3,%d,%d)) )*(dr2i/12.) \n",rNames[m1],xNames[m2],m1,m2,m1,m2,m1,m2,m1,m2): 
+    fprintf(file,"      %s%ss = ( 45.*(rsxy(i1,i2+1,i3,%d,%d)-rsxy(i1,i2-1,i3,%d,%d)) -9.*(rsxy(i1,i2+2,i3,%d,%d)-rsxy(i1,i2-2,i3,%d,%d)) +(rsxy(i1,i2+3,i3,%d,%d)-rsxy(i1,i2-3,i3,%d,%d)) )*(dr2i/60.) \n",rNames[m1],xNames[m2],m1,m2,m1,m2,m1,m2,m1,m2,m1,m2,m1,m2):     
     end do: end do:
   end if:
   if orderOfAccuracy>=8 then
     fprintf(file,"    elseif( diffOrder2.eq.8 )then\n"):
     for m1 from 0 to nd-1 do  for m2 from 0 to nd-1 do    
-    fprintf(file,"      %s%ss = ( 8*(rsxy(i1,i2+1,i3,%d,%d)-rsxy(i1,i2-1,i3,%d,%d)) -(rsxy(i1,i2+2,i3,%d,%d)-rsxy(i1,i2-2,i3,%d,%d)) )*(dr2i/12.) \n",rNames[m1],xNames[m2],m1,m2,m1,m2,m1,m2,m1,m2): 
+    fprintf(file,"      %s%ss = ( 672.*(rsxy(i1,i2+1,i3,%d,%d)-rsxy(i1,i2-1,i3,%d,%d)) -168.*(rsxy(i1,i2+2,i3,%d,%d)-rsxy(i1,i2-2,i3,%d,%d)) +32*(rsxy(i1,i2+3,i3,%d,%d)-rsxy(i1,i2-3,i3,%d,%d)) -3.*(rsxy(i1,i2+4,i3,%d,%d)-rsxy(i1,i2-4,i3,%d,%d)) )*(dr2i/840.) \n",rNames[m1],xNames[m2],m1,m2,m1,m2,m1,m2,m1,m2,m1,m2,m1,m2,m1,m2,m1,m2):     
     end do: end do:
   end if:
   fprintf(file,"    end if\n"):
@@ -643,7 +643,7 @@ if gridType=curvilinear then
   if nd=3 then
     fprintf(file,"    if( diffOrder3.eq.2 )then\n"):
       for m1 from 0 to nd-1 do  for m2 from 0 to nd-1 do    
-      fprintf(file,"      %s%st = (rsxy(i1,i2,i3+1,%d,%d)-rsxy(i1,i2,i3-1,%d,%d))*(.5*dr2i) \n",rNames[m1],xNames[m2],m1,m2,m1,m2):  # rxt =
+      fprintf(file,"      %s%st = (rsxy(i1,i2,i3+1,%d,%d)-rsxy(i1,i2,i3-1,%d,%d))*(.5*dr3i) \n",rNames[m1],xNames[m2],m1,m2,m1,m2):  # rxt =
       end do: end do:
     if orderOfAccuracy>=4 then
       fprintf(file,"    elseif( diffOrder3.eq.4 )then\n"):
@@ -709,11 +709,11 @@ if gridType=curvilinear then
   fprintf(file,"    c002(i1,i2,i3) = (tx**2 + ty**2 + tz**2 )*dr3i**2\n");
 
   fprintf(file,"    c110(i1,i2,i3) = 2.*(rx*sx + ry*sy + rz*sz )*dr1i*dr2i*.25\n");
-  fprintf(file,"    c101(i1,i2,i3) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr2i*.25\n");
-  fprintf(file,"    c011(i1,i2,i3) = 2.*(sx*tx + sy*ty + sz*tz )*dr1i*dr2i*.25\n");
+  fprintf(file,"    c101(i1,i2,i3) = 2.*(rx*tx + ry*ty + rz*tz )*dr1i*dr3i*.25\n");
+  fprintf(file,"    c011(i1,i2,i3) = 2.*(sx*tx + sy*ty + sz*tz )*dr2i*dr3i*.25\n");
 
   fprintf(file,"    c100(i1,i2,i3) = (rxx + ryy + rzz)*dr1i*.5\n");
-  fprintf(file,"    c010(i1,i2,i3) = (sxx + syy + tyy)*dr2i*.5 \n");          
+  fprintf(file,"    c010(i1,i2,i3) = (sxx + syy + szz)*dr2i*.5 \n");          
   fprintf(file,"    c001(i1,i2,i3) = (txx + tyy + tzz)*dr3i*.5 \n"); 
 
 
@@ -1332,21 +1332,21 @@ for ord from 2 by 2 to orderOfAccuracy do
       fprintf(file,"    ! --- Laplacian to order 8 = lap6h + corrections \n");
       fprintf(file,"    lap8h = lap6h(i1,i2,i3,0)                                                         \\\n");
       if nd=2 then
-        fprintf(file,"            + c200(i1,i2,i3)*crr3*d800i                                               \\\n");
-        fprintf(file,"            + c110(i1,i2,i3)*(cr3*d710i + cs3*d170i + cr2*cs1*d530i + cr1*cs2*d350i ) \\\n");
-        fprintf(file,"            + c020(i1,i2,i3)*css3*d080i                                               \\\n");
-        fprintf(file,"            + c100(i1,i2,i3)* cr3*d700i                                               \\\n");
-        fprintf(file,"            + c010(i1,i2,i3)* cs3*d070i \n");
+        fprintf(file," + c200(i1,i2,i3)*crr3*d800i                                               \\\n");
+        fprintf(file," + c110(i1,i2,i3)*(cr3*d710i + cs3*d170i + cr2*cs1*d530i + cr1*cs2*d350i ) \\\n");
+        fprintf(file," + c020(i1,i2,i3)*css3*d080i                                               \\\n");
+        fprintf(file," + c100(i1,i2,i3)* cr3*d700i                                               \\\n");
+        fprintf(file," + c010(i1,i2,i3)* cs3*d070i \n");
       else
-        fprintf(file,"            + c200(i1,i2,i3)*crr3*d800i                                               \\\n");
-        fprintf(file,"            + c020(i1,i2,i3)*css3*d080i                                               \\\n");
-        fprintf(file,"            + c002(i1,i2,i3)*ctt3*d008i                                               \\\n");
-        fprintf(file,"            + c110(i1,i2,i3)*(cr3*d710i + cs3*d170i + cr2*cs1*d530i + cr1*cs2*d350i ) \\\n");
-        fprintf(file,"            + c101(i1,i2,i3)*(cr3*d701i + ct3*d107i + cr2*ct1*d503i + cr1*ct2*d305i ) \\\n");
-        fprintf(file,"            + c011(i1,i2,i3)*(cs3*d071i + ct3*d017i + cs2*ct1*d053i + cs1*ct2*d035i ) \\\n");
-        fprintf(file,"            + c100(i1,i2,i3)* cr3*d700i                                               \\\n");
-        fprintf(file,"            + c010(i1,i2,i3)* cs3*d070i                                               \\\n");
-        fprintf(file,"            + c001(i1,i2,i3)* ct3*d007i \n");        
+        fprintf(file," + c200(i1,i2,i3)*crr3*d800i                                               \\\n");
+        fprintf(file," + c020(i1,i2,i3)*css3*d080i                                               \\\n");
+        fprintf(file," + c002(i1,i2,i3)*ctt3*d008i                                               \\\n");
+        fprintf(file," + c110(i1,i2,i3)*(cr3*d710i + cs3*d170i + cr2*cs1*d530i + cr1*cs2*d350i ) \\\n");
+        fprintf(file," + c101(i1,i2,i3)*(cr3*d701i + ct3*d107i + cr2*ct1*d503i + cr1*ct2*d305i ) \\\n");
+        fprintf(file," + c011(i1,i2,i3)*(cs3*d071i + ct3*d017i + cs2*ct1*d053i + cs1*ct2*d035i ) \\\n");
+        fprintf(file," + c100(i1,i2,i3)* cr3*d700i                                               \\\n");
+        fprintf(file," + c010(i1,i2,i3)* cs3*d070i                                               \\\n");
+        fprintf(file," + c001(i1,i2,i3)* ct3*d007i \n");        
       end if:
 
 
