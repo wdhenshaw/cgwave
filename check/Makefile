@@ -89,7 +89,7 @@ sice2.order6.ng4.hdf:
 	$(Overture)/bin/ogen -noplot $(Overture)/sampleGrids/sicArg -factor=2 -interp=e -order=6 -numGhost=4				
 
 sice2.order8.ng5.hdf:
-	$(Overture)/bin/ogen -noplot $(Overture)/sampleGrids/sicArg -factor=2 -interp=e -order=6 -numGhost=4	
+	$(Overture)/bin/ogen -noplot $(Overture)/sampleGrids/sicArg -factor=2 -interp=e -order=8 -numGhost=5	
 
 #tube1.order4.hdf:
 #	$(Overture)/bin/ogen noplot $(Overture)/sampleGrids/tube1.order4.cmd
