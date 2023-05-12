@@ -1,3 +1,240 @@
+
+*************************************************
+********** Mon March 6, 2023
+
+check check's 
+
+cgwh -noplot trigHelmholtz.cmd -g=square16.order4.ng3.hdf -omega=5.4 -nf=1 -freq=5.4 -adjustOmega=1 -orderInTime=2 -tol=1e-12 -maxIterations=100 -go=dfk
+
+CgWaveHoltz: max-res=3.297e-12 (all frequencies)
+
+Direct solve Helmholtz: cpu= 2.38e-03(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+saveMatlab: dt=3.417e-02
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzFP.m]
+cgwh: max-err =5.32e-04 (between WaveHoltz and known solution, all frequencies)
+cgwh: rel-max-diff=6.70e-14, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+cg66:~/runs/cgWaveHoltz/trigHelmholtz> cat cgWaveHoltz.check
+# Check file for CgWaveHoltz
+ 0.00e+00 1  0  1.00e+00  9.998e-01  
+ 1.00e+00 1  0  1.00e+00  9.998e-01  
+ 2.00e+00 1  0  0.00e+00  9.998e-01  
+ 3.00e+00 1  0  1.00e+00  9.998e-01  
+ 4.00e+00 1  0  6.70e-14  9.998e-01  
+ 5.00e+00 1  0  1.00e+00  9.998e-01  
+ 6.00e+00 1  0  7.77e-15  9.998e-01  
+
+**************************************************
+********** Mon March 6, 2023
+
+revisit SSWH
+
+cgwh trigHelmholtz.cmd -g=square128.order2 -numPeriods=2 -nf=2 -freq=5.1 12 -kx=1.75 -ky=1.75 -ts=explicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=.95 -upwind=1  -matlab=junk -go=halt
+
+cgwh trigHelmholtz.cmd -g=square128.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=explicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=.95 -upwind=1 -matlab=square128o2ExpThreeFreqNp4 -go=halt
+
+**************************************************
+********** Tues Feb 14, 2023
+
+
+REDO PLOTS FOR PAPER: CHANGE TO ORDER=4
+Np=4 
+cgwh -noplot trigHelmholtz.cmd -g=square64.order4 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -omega=5.1 -kx=1.25 -ky=1.25 -ts=explicit -dtMax=.1 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=100 -matlab=square64Freq3Np4 -go=dfk > square64Freq3Np4.out
+Np=2 
+cgwh -noplot trigHelmholtz.cmd -g=square64.order4 -numPeriods=2 -nf=3 -freq=5.1 12 15.5 -omega=5.1 -kx=1.25 -ky=1.25 -ts=explicit -dtMax=.1 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=100 -matlab=square64Freq3Np2 -go=dfk > square64Freq3Np2.out
+Np=1 
+cgwh -noplot trigHelmholtz.cmd -g=square64.order4 -numPeriods=1 -nf=3 -freq=5.1 12 15.5 -omega=5.1 -kx=1.25 -ky=1.25 -ts=explicit -dtMax=.1 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=100 -matlab=square64Freq3Np1 -go=dfk > square64Freq3Np1.out
+
+
+
+Np=4 
+cgwh -noplot trigHelmholtz.cmd -g=square64.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -omega=5.1 -kx=1.25 -ky=1.25 -ts=explicit -dtMax=.1 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=100 -matlab=square64Freq3Np4 -go=dfk > square64Freq3Np4.out
+Np=2 
+cgwh -noplot trigHelmholtz.cmd -g=square64.order2 -numPeriods=2 -nf=3 -freq=5.1 12 15.5 -omega=5.1 -kx=1.25 -ky=1.25 -ts=explicit -dtMax=.1 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=100 -matlab=square64Freq3Np2 -go=dfk > square64Freq3Np2.out
+Np=1 
+cgwh -noplot trigHelmholtz.cmd -g=square64.order2 -numPeriods=1 -nf=3 -freq=5.1 12 15.5 -omega=5.1 -kx=1.25 -ky=1.25 -ts=explicit -dtMax=.1 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=100 -matlab=square64Freq3Np1 -go=dfk > square64Freq3Np1.out
+
+
+
+
+
+**************************************************
+**** Fri Feb 10, 2023
+
+--- REVISIT THREE FREQ CASE STUDY
+
+--> REDO IMP CASES WITH minStepsPeriod=10
+
+SEE MAKEFILE
+
+
+
+
+**************************************************
+**** Sun Jan 29, 2023
+
+START ON DEFLATION
+
+scp henshw@cg6.math.rpi.edu:/home/henshw/runs/eig/square128Ev64.show .
+
+cgwh trigHelmholtz.cmd -g=square64.order2 -numPeriods=4 -nf=1 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=explicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=0.95 -upwind=1 -deflateWaveHoltz=1 -numToDeflate=2 -eigenVectorFile=square128Ev64.show -go=halt
+
+
+**************************************************
+**** Fri Jan 21, 2023
+
+--- ORDER=2 results
+
+
+IMPLICIT
+cgwh trigHelmholtz.cmd -g=square64.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=1  -matlab=square64o2ImpThreeFreqNp4 -go=dfk
+
+EXPLICIT
+cgwh trigHelmholtz.cmd -g=square64.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=explicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=.95 -upwind=1  -matlab=square64o2ThreeFreqNp4 -go=halt
+
+
+**************************************************
+**** Thurs Jan 19, 2023
+
+IMPLICIT CR RATE FOR FPI -- How do we estimate this
+
+
+
+TWO FREQ, NP=1
+cgwh trigHelmholtz.cmd -g=square64.order4.ng3 -numPeriods=1 -nf=2 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=100 -cfl=1000 -upwind=1  -matlab=square64ImpTwoFreqNp1 -go=halt
+
+
+ONE FREQ, NP=1
+cgwh trigHelmholtz.cmd -g=square64.order4.ng3 -numPeriods=1 -nf=1 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=200 -cfl=1000 -upwind=1  -matlab=square64ImpOneFreqNp1 -go=halt
+
+
+**************************************************
+**** Wed Jan 18, 2023
+
+Add quadrature weights to matlab output file
+
+IMPLICIT
+cgwh trigHelmholtz.cmd -g=square64.order4.ng3 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=1  -matlab=square64ImpThreeFreqNp4 -go=halt
+
+EXPLICIT
+cgwh trigHelmholtz.cmd -g=square64.order4.ng3 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=explicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=.95 -upwind=1  -matlab=square64ThreeFreqNp4 -go=halt
+
+
+**************************************************
+**** Tues Jan 17, 2023
+
+REPRODUCE CASE FROM waho/codes
+
+>>> Explicit: matches theory
+cgwh trigHelmholtz.cmd -g=square64.order4.ng3 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=explicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=.95 -upwind=1  -matlab=square64ThreeFreqNp4 -go=halt
+
+cp {square64ThreeFreqNp4FP.m,square64ThreeFreqNp4Krylov.m} $waho/codes
+
+
+IMPLICIT
+cgwh trigHelmholtz.cmd -g=square64.order4.ng3 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=1  -matlab=square64ImpThreeFreqNp4 -go=halt
+
+
+
+ADD OPTION TO SAVE TWO MATLAB FILES IN THE SAME RUN  -- ONE FOR FP AND ONE FOR KRYLOV 
+cgwh trigHelmholtz.cmd -g=square64.order4.ng3 -numPeriods=4 -nf=3 -freq=9.77 12.34 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=50 -cfl=1000 -upwind=1  -matlab=square64ThreeFreq -go=halt
+
+
+cgwh -noplot trigHelmholtz.cmd -g=square64.order4.ng3 -numPeriods=4 -nf=3 -freq=9.77 12.34 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=50 -cfl=1000 -upwind=1  -matlab=square64ThreeFreq -go=both
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+
+ grid=/home/henshw/grids/square64.order4.ng3.hdf
+ Convergence rate CR=0.352, CR-perPeriod=0.770, Time to solve = 8.04e-01(s) : CgWave= 7.79e-01(s) 96.89%, advance= 7.70e-01(s) 95.78%
+ max-residual=3.75e-14 (WaveHoltz its), numberOfIterations = 29 (Krylov) (maximumNumberOfIterations=50)
+ numberOfFrequencies= 3, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=1000.00, numberOfStepsPerSolve=32, totalTimeStepsStaken=992, aveItsPerImplicitSolve=  0.0
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ freq= 0, omega=   9.770, (adjusted=   8.431) T= 0.64311, Tbar= 2.57244, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=   9.925) T= 0.50917, Tbar= 2.03669, numPeriods=  4, Tbar(0)/T=  5.05
+ freq= 2, omega=  15.500, (adjusted=  11.369) T= 0.40537, Tbar= 2.02683, numPeriods=  5, Tbar(0)/T=  6.35
+
+CgWaveHoltz::residual: freq= 0, omega=   9.770, max-res=4.380e-11.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=6.821e-11.
+CgWaveHoltz::residual: freq= 2, omega=  15.500, max-res=6.105e-11.
+CgWaveHoltz: max-res=6.821e-11 (all frequencies)
+
+Direct solve Helmholtz: cpu= 8.83e-02(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+getErrors: t=0.000e+00, freq=  0, omega=   9.770, maxErr=2.442e-05
+getErrors: t=0.000e+00, freq=  1, omega=  12.340, maxErr=8.592e-05
+getErrors: t=0.000e+00, freq=  2, omega=  15.500, maxErr=2.843e-04
+cgwh: max-err =2.84e-04 (between WaveHoltz and known solution, all frequencies)
+cgwh: rel-max-diff=1.07e-12 for freq0 =   9.7700e+00, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=4.42e-12 for freq1 =   1.2340e+01, |v|_max= 9.99e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=7.79e-13 for freq2 =   1.5500e+01, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=4.42e-12, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
+cgwh -noplot trigHelmholtz.cmd -g=square32.order4.ng3 -numPeriods=4 -nf=3 -freq=9.77 12.34 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=50 -cfl=1000 -upwind=1 -go=both
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+
+ grid=/home/henshw/grids/square32.order4.ng3.hdf
+ Convergence rate CR=0.363, CR-perPeriod=0.776, Time to solve = 3.02e-01(s) : CgWave= 2.93e-01(s) 96.79%, advance= 2.85e-01(s) 94.38%
+ max-residual=6.77e-13 (WaveHoltz its), numberOfIterations = 27 (Krylov) (maximumNumberOfIterations=50)
+ numberOfFrequencies= 3, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=1000.00, numberOfStepsPerSolve=32, totalTimeStepsStaken=928, aveItsPerImplicitSolve=  0.0
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ freq= 0, omega=   9.770, (adjusted=   8.431) T= 0.64311, Tbar= 2.57244, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.340, (adjusted=   9.925) T= 0.50917, Tbar= 2.03669, numPeriods=  4, Tbar(0)/T=  5.05
+ freq= 2, omega=  15.500, (adjusted=  11.369) T= 0.40537, Tbar= 2.02683, numPeriods=  5, Tbar(0)/T=  6.35
+
+CgWaveHoltz::residual: freq= 0, omega=   9.770, max-res=5.340e-11.
+CgWaveHoltz::residual: freq= 1, omega=  12.340, max-res=8.230e-11.
+CgWaveHoltz::residual: freq= 2, omega=  15.500, max-res=5.502e-11.
+CgWaveHoltz: max-res=8.230e-11 (all frequencies)
+
+Direct solve Helmholtz: cpu= 1.63e-02(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+getErrors: t=0.000e+00, freq=  0, omega=   9.770, maxErr=1.294e-03
+getErrors: t=0.000e+00, freq=  1, omega=  12.340, maxErr=2.542e-03
+getErrors: t=0.000e+00, freq=  2, omega=  15.500, maxErr=3.960e-03
+cgwh: max-err =3.96e-03 (between WaveHoltz and known solution, all frequencies)
+cgwh: rel-max-diff=6.62e-13 for freq0 =   9.7700e+00, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=1.98e-12 for freq1 =   1.2340e+01, |v|_max= 9.98e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=8.99e-13 for freq2 =   1.5500e+01, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=1.98e-12, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
+**************************************************
+**** Monday Jan 16, 2023
+
+RESULTS FOR WAHO PAPER
+
+CHECK accuracy of the direct Helmholtz solver.
+
+SOLVE BOTH direct and WH
+cgwh -noplot trigHelmholtz.cmd -g=square32.order4.ng3 -numPeriods=4 -nf=1 -freq=9.77 12.34 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=50 -cfl=40 -upwind=1 -go=both
+
+
+cgwh -noplot trigHelmholtz.cmd -g=square256.order4.ng3 -numPeriods=4 -nf=1 -freq=9.77 12.34 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=50 -cfl=40 -upwind=1 -go=direct
+
+cgwh -noplot trigHelmholtz.cmd -g=square128.order4.ng3 -numPeriods=4 -nf=1 -freq=9.77 12.34 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=50 -cfl=40 -upwind=1 -go=direct
+
+cgwh -noplot trigHelmholtz.cmd -g=square64.order4.ng3 -numPeriods=4 -nf=1 -freq=9.77 12.34 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=50 -cfl=40 -upwind=1 -go=direct
+
+G256
+cgwh: max-err =1.56e-07 (between WaveHoltz and known solution, all frequencies)
+G128
+cgwh: max-err =2.04e-06 (between WaveHoltz and known solution, all frequencies)
+G64
+cgwh: max-err =2.44e-05 (between WaveHoltz and known solution, all frequencies)
+
+
+
 **************************************************
 **** Sat Jan 15, 2022
 

@@ -336,8 +336,11 @@ end if
 ! =========================================================================================
 ! Macro: Compute the forcing for the update of u
 ! =========================================================================================
-#beginMacro getForcing(DIM,ORDER,ORDERINTIME,GRIDTYPE)    
-  if( forcingOption.eq.twilightZoneForcing )then
+#beginMacro getForcing(DIM,ORDER,ORDERINTIME,GRIDTYPE) 
+  if( addForcing.eq.0 )then
+    ! THIS ADDED March 24, 2023 *** CHECK ME ***
+    fv(m)=0.
+  else if( forcingOption.eq.twilightZoneForcing )then
     if( nd.eq.2 )then
       OGDERIV2D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
       OGDERIV2D( 2,0,0,0,i1,i2,i3,t, ec, evtt(m) )
@@ -748,8 +751,10 @@ end if
 ! =========================================================================================
 ! Macro: Compute the forcing for the IMPLICIT update of u
 ! =========================================================================================
-#beginMacro getForcingImplicit(DIM,ORDER,ORDERINTIME,GRIDTYPE)    
-  if( forcingOption.eq.twilightZoneForcing )then
+#beginMacro getForcingImplicit(DIM,ORDER,ORDERINTIME,GRIDTYPE)
+  if( addForcing.eq.0 )then ! *wdh* Tues March 28, 2023
+    fv(m) = 0.
+  else if( forcingOption.eq.twilightZoneForcing )then
     if( nd.eq.2 )then
       ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
       OGDERIV2D( 2,0,0,0,i1,i2,i3,t, ec, evtt(m) )
@@ -840,7 +845,7 @@ end if
 ! ========================================================================================
 #beginMacro updateWaveImplicitOpt(DIM,ORDER,ORDERINTIME,GRIDTYPE)
 
-  if( (.true. .or. debug.gt.3) .and. t.lt.2*dt )then
+  if( (debug.gt.3) .and. t.lt.2*dt )then
     write(*,'("advWave: ADVANCE IMPLICIT dim=DIM order=ORDER orderInTime=ORDERINTIME, grid=GRIDTYPE... t=",e10.2)') t
   end if
   
@@ -857,7 +862,7 @@ end if
   !   #End
   ! #End
       
-  if( forcingOption.eq.helmholtzForcing )then
+  if( forcingOption.eq.helmholtzForcing .and. addForcing.ne.0 )then
     do freq=0,numberOfFrequencies-1
       coswt = cos(frequencyArray(freq)*t) ! is this used?
       omega = frequencyArray(freq)
@@ -1350,7 +1355,7 @@ end if
 
 ! Argument list
 #defineMacro ARGLIST() nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,\
-                       mask,xy,rsxy,  um,u,un, f,fa, v, vh, lapCoeff, bc, frequencyArray, ipar, rpar, ierr
+                       mask,xy,rsxy,  um,u,un, f, stencilCoeff, v, vh, lapCoeff, bc, frequencyArray, ipar, rpar, ierr
 
 ! **********************************************************************************
 ! Macro ADV_WAVE:
@@ -1361,8 +1366,6 @@ end if
 ! **********************************************************************************
 #beginMacro ADV_WAVE(NAME,DIM,ORDER,GRIDTYPE)
  subroutine NAME( ARGLIST() )
- ! subroutine NAME(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,\
- !                 mask,xy,rsxy,  um,u,un, f,fa, v, vh,  bc, frequencyArray, ipar, rpar, ierr )
 !======================================================================
 !   Advance a time step for Waves equations
 !
@@ -1380,7 +1383,8 @@ end if
  real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
  real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
  real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
- real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+ ! real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+ real stencilCoeff(0:*)   ! holds stencil coeffs
 
  real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
  real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
@@ -1463,7 +1467,7 @@ end if
   declareDifferenceOrder8(v,none)
 
  ! define variables for getDerivatives macros
- #Include "../maple/declareGetSixthDerivativesMacrosVariables.h"
+ #Include "../include/declareGetSixthDerivativesMacrosVariables.h"
 
  ! real cdt4by360,cdt6by20160
  real cdtPow4By12,cdtPow6By360
@@ -1782,7 +1786,7 @@ end if
     write(*,'("advWave: useUpwindDissipation=",i2," (explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
     write(*,'("advWave: useSosupDissipation=",i2," (1= add upwind dissipation in this stage)")') useSosupDissipation
     write(*,'("advWave: t,dt,c,omega,gridCFL=",5(1pe10.2,1x))') t,dt,cc,omega,gridCFL
-    write(*,'("advWave: gridIsImplicit=",i2," adjustOmega=",i2," solveHelmholtz=",i2)') gridIsImplicit,adjustOmega,solveHelmholtz
+    write(*,'("advWave: gridIsImplicit=",i2," adjustOmega=",i2," solveHelmholtz=",i2," adjustHelmholtz=",i2)') gridIsImplicit,adjustOmega,solveHelmholtz,adjustHelmholtzForUpwinding
     if( forcingOption.eq.helmholtzForcing )then
       write(*,'("advWave: numberOfFrequencies=",i2)') numberOfFrequencies
       write(*,'("advWave: frequencyArray=",(1pe12.4,1x))') (frequencyArray(freq),freq=0,numberOfFrequencies-1)
@@ -1871,8 +1875,11 @@ end if
     ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
     adSosup=sosupParameter*adSosup
 
-    if( gridIsImplicit.ne.0 )then
-      write(*,'("advWave: gridIsImplicit: REDUCE UPWIND DISS COEFF by gridCFL=",e10.2)') gridCFL
+    if( gridIsImplicit.ne.0  )then
+
+      if( t.le.2*dt )then
+        write(*,'("advWave: gridIsImplicit: t=",e10.2," REDUCE UPWIND DISS COEFF by gridCFL=",e10.2)') t,gridCFL
+      end if
 
       adSosup = adSosup/gridCFL 
 
@@ -1995,17 +2002,19 @@ end if
 #endFile
 #endMacro
 
-    ! NOTE: For now 3D versions are just null versions below 
+  ! NOTE: For now 3D versions are just null versions below 
 
-  ! buildFile(advWave2dOrder2r,2,2,rectangular)
-  ! buildFile(advWave3dOrder2r,3,2,rectangular)
-  ! buildFile(advWave2dOrder2c,2,2,curvilinear)
-  ! buildFile(advWave3dOrder2c,3,2,curvilinear)
+  buildFile(advWave2dOrder2r,2,2,rectangular)
+  buildFile(advWave3dOrder2r,3,2,rectangular)
+  buildFile(advWave2dOrder2c,2,2,curvilinear)
+  buildFile(advWave3dOrder2c,3,2,curvilinear)
 
-  ! buildFile(advWave2dOrder4r,2,4,rectangular)
-  ! buildFile(advWave3dOrder4r,3,4,rectangular)
-  ! buildFile(advWave2dOrder4c,2,4,curvilinear)
-  ! buildFile(advWave3dOrder4c,3,4,curvilinear)
+  buildFile(advWave2dOrder4r,2,4,rectangular)
+  buildFile(advWave3dOrder4r,3,4,rectangular)
+  buildFile(advWave2dOrder4c,2,4,curvilinear)
+  buildFile(advWave3dOrder4c,3,4,curvilinear)
+
+
 
   ! !   ORDER=6 : BC's not implemented yet
   ! buildFile(advWave2dOrder6r,2,6,rectangular)
@@ -2036,7 +2045,8 @@ end if
       real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
       real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
       real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-      real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+      ! real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+      real stencilCoeff(0:*)
       real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
       real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
       real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds current Helmholtz solutions
@@ -2061,6 +2071,9 @@ end if
 
       integer rectangular,curvilinear
       parameter( rectangular=0, curvilinear=1 )
+
+      integer standardME, hierarchicalME, stencilME
+      parameter( standardME=0, hierarchicalME=1, stencilME=2 )
 !...........end   statement functions
 
 
@@ -2087,7 +2100,7 @@ end if
 
       if( orderOfAccuracy.eq.2 )then
 
-        if( modifiedEquationApproach.eq.0 .or. addUpwinding.ne.0 )then
+        if( modifiedEquationApproach.eq.standardME .or. addUpwinding.ne.0 )then
           ! standard ME scheme, or upwind stage
           if( nd.eq.2 .and. gridType.eq.rectangular )then
             call advWave2dOrder2r( ARGLIST() )
@@ -2100,7 +2113,7 @@ end if
           else
            stop 8843
           end if
-        else if( modifiedEquationApproach.eq.1 ) then
+        else if( modifiedEquationApproach.eq.hierarchicalME ) then
           ! new Hierarchical scheme
           if( nd.eq.2 .and. gridType.eq.rectangular )then
             call advWaveME2dOrder2r( ARGLIST() )
@@ -2112,7 +2125,21 @@ end if
             call advWaveME3dOrder2c( ARGLIST() )
           else
            stop 8843
-          end if          
+          end if 
+        else if( modifiedEquationApproach.eq.stencilME ) then
+
+         if( nd.eq.2 .and. gridType.eq.rectangular )then
+            call advWaveStencil2dOrder2r( ARGLIST() )
+          else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+            call advWaveStencil2dOrder2c( ARGLIST() )
+          else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+           call advWaveStencil3dOrder2r( ARGLIST() )
+          else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+           call advWaveStencil3dOrder2c( ARGLIST() )
+          else
+           stop 8843
+          end if 
+
         else  
           write(*,'("Unknown modifiedEquationApproach=",i6)') modifiedEquationApproach
           stop 1111
@@ -2132,7 +2159,7 @@ end if
 
       else if( orderOfAccuracy.eq.4 ) then
 
-        if( modifiedEquationApproach.eq.0 .or. addUpwinding.ne.0 )then
+        if( modifiedEquationApproach.eq.standardME .or. addUpwinding.ne.0 )then
           ! standard ME scheme, or upwind stage
           if( nd.eq.2 .and. gridType.eq.rectangular )then
             call advWave2dOrder4r( ARGLIST() )
@@ -2145,7 +2172,7 @@ end if
           else
            stop 8843
           end if
-        else if( modifiedEquationApproach.eq.1 ) then
+        else if( modifiedEquationApproach.eq.hierarchicalME ) then
           ! new Hierarchical scheme
           if( nd.eq.2 .and. gridType.eq.rectangular )then
             call advWaveME2dOrder4r( ARGLIST() )
@@ -2157,7 +2184,22 @@ end if
             call advWaveME3dOrder4c( ARGLIST() )
           else
            stop 8843
-          end if          
+          end if 
+
+        else if( modifiedEquationApproach.eq.stencilME ) then
+
+         if( nd.eq.2 .and. gridType.eq.rectangular )then
+            call advWaveStencil2dOrder4r( ARGLIST() )
+          else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+            call advWaveStencil2dOrder4c( ARGLIST() )
+          else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+            call advWaveStencil3dOrder4r( ARGLIST() )
+          else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+           call advWaveStencil3dOrder4c( ARGLIST() )
+          else
+           stop 8843
+          end if 
+
         else  
           write(*,'("Unknown modifiedEquationApproach=",i6)') modifiedEquationApproach
           stop 1111
@@ -2165,7 +2207,7 @@ end if
 
       else if( orderOfAccuracy.eq.6 ) then
 
-        if( modifiedEquationApproach.eq.0 .or. addUpwinding.ne.0 )then
+        if( modifiedEquationApproach.eq.standardME .or. addUpwinding.ne.0 )then
           ! standard ME scheme, or upwind stage
           if( nd.eq.2 .and. gridType.eq.rectangular )then
             call advWave2dOrder6r( ARGLIST() )
@@ -2178,7 +2220,7 @@ end if
           else
            stop 8843
           end if
-        else if( modifiedEquationApproach.eq.1 ) then
+        else if( modifiedEquationApproach.eq.hierarchicalME ) then
           ! new Hierarchical scheme
           if( nd.eq.2 .and. gridType.eq.rectangular )then
             call advWaveME2dOrder6r( ARGLIST() )
@@ -2190,57 +2232,30 @@ end if
             call advWaveME3dOrder6c( ARGLIST() )
           else
            stop 8843
-          end if          
+          end if 
+        else if( modifiedEquationApproach.eq.stencilME ) then
+
+         if( nd.eq.2 .and. gridType.eq.rectangular )then
+            call advWaveStencil2dOrder6r( ARGLIST() )
+          else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+            call advWaveStencil2dOrder6c( ARGLIST() )
+          else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+           call advWaveStencil3dOrder6r( ARGLIST() )
+          else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+           call advWaveStencil3dOrder6c( ARGLIST() )
+          else
+           stop 8843
+          end if 
+
         else  
           write(*,'("Unknown modifiedEquationApproach=",i6)') modifiedEquationApproach
           stop 1111
         end if
 
 
-       !  if( nd.eq.2 .and. gridType.eq.rectangular )then
-
-       !    if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
-       !      ! new ME scheme (note: upwinding is still added in old scheme)
-       !      call advWaveME2dOrder6r( ARGLIST() )
-       !    else
-       !      call advWave2dOrder6r( ARGLIST() )
-       !    end if
-          
-       !  else if(nd.eq.2 .and. gridType.eq.curvilinear )then
-
-       !   if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
-       !      ! new ME scheme
-       !      call advWaveME2dOrder6c( ARGLIST() )
-       !    else
-       !      call advWave2dOrder6c( ARGLIST() )
-       !    end if          
-          
-       !  else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-
-       !   ! if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
-       !   !    ! new ME scheme
-       !   !    call advWaveME3dOrder6r( ARGLIST() )
-       !   !  else
-       !   !    call advWave23Order6r( ARGLIST() )
-       !   !  end if   
-
-       !    call advWave3dOrder6r( ARGLIST() )
-       !  else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
-       !    ! if( addUpwinding==0 .and. orderInTime==orderOfAccuracy )then
-       !    !   ! new ME scheme
-       !    !   call advWaveME3dOrder6c( ARGLIST() )
-       !    ! else
-       !    !   call advWave23Order6c( ARGLIST() )
-       !    ! end if           
-       !    call advWave3dOrder6c( ARGLIST() )
-
-       ! else
-       !   stop 8843
-       ! end if
-
       else if( orderOfAccuracy.eq.8 ) then
 
-      if( modifiedEquationApproach.eq.0 .or. addUpwinding.ne.0 )then
+      if( modifiedEquationApproach.eq.standardME .or. addUpwinding.ne.0 )then
           ! standard ME scheme, or upwind stage
           if( nd.eq.2 .and. gridType.eq.rectangular )then
             call advWave2dOrder8r( ARGLIST() )
@@ -2253,7 +2268,7 @@ end if
           else
            stop 8843
           end if
-        else if( modifiedEquationApproach.eq.1 ) then
+        else if( modifiedEquationApproach.eq.hierarchicalME ) then
           ! new Hierarchical scheme
           if( nd.eq.2 .and. gridType.eq.rectangular )then
             call advWaveME2dOrder8r( ARGLIST() )
@@ -2265,7 +2280,22 @@ end if
             call advWaveME3dOrder8c( ARGLIST() )
           else
            stop 8843
-          end if          
+          end if 
+
+        else if( modifiedEquationApproach.eq.stencilME ) then
+
+
+         if( nd.eq.2 .and. gridType.eq.rectangular )then
+           call advWaveStencil2dOrder8r( ARGLIST() )
+          else if(nd.eq.2 .and. gridType.eq.curvilinear )then
+           call advWaveStencil2dOrder8c( ARGLIST() )
+          else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+           call advWaveStencil3dOrder8r( ARGLIST() )
+          else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
+           ! call advWaveStencil3dOrder8c( ARGLIST() )
+          else
+           stop 8843
+          end if                  
         else  
           write(*,'("Unknown modifiedEquationApproach=",i6)') modifiedEquationApproach
           stop 1111

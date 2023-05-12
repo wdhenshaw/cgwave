@@ -10,6 +10,179 @@ cd /Users/henshaw/Dropbox/research/cgwave/runs/performance
 
 
 ****************************
+****** Thurs April 27, 2023
+
+LARGER GRID:
+
+cg66:~/runs/cgWave/performance> make -s nonSquare TF=0.1 meApproach=stencil nonSquareGrid=nonSquare2048
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonSquare2048 & 2 & stencil  & 4.2M  &    15.4 &    14.6 &     7.6 &     0.0 &     6.7 &     0.0   \\
+  nonSquare2048 & 4 & stencil  & 4.2M  &    29.5 &    28.3 &    21.4 &     0.0 &     6.5 &     0.0   \\
+  nonSquare2048 & 6 & stencil  & 4.2M  &    63.4 &    61.5 &    50.8 &     0.0 &    10.3 &     0.0   \\
+  nonSquare2048 & 8 & stencil  & 4.2M  &   135.0 &   131.6 &   129.4 &     0.0 &     1.8 &     0.0   \\
+
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonSquare2048 & 2 & FAME  & 4.2M  &    12.2 &    11.5 &     4.5 &     0.0 &     6.6 &     0.0   \\
+  nonSquare2048 & 4 & FAME  & 4.2M  &    31.7 &    30.8 &    23.2 &     0.0 &     7.2 &     0.0   \\
+  nonSquare2048 & 6 & FAME  & 4.2M  &    82.6 &    81.3 &    70.5 &     0.0 &    10.4 &     0.0   \\
+  nonSquare2048 & 8 & FAME  & 4.2M  &   176.5 &   173.8 &   171.7 &     0.0 &     1.8 &     0.0   \\
+
+
+  
+make -s nonSquare TF=0.1 meApproach=stencil nonSquareGrid=nonSquare2048
+
+
+****************************
+****** Wed April 26, 2023
+
+make -s square TF=0.2 meApproach=std
+
+
+****************************
+****** Mon April 24, 2023
+
+--------- NON-BOX ---------
+
+make -s nonBox TF=0.1 meApproach=ha 
+make -s nonBox TF=0.1 meApproach=stencil 
+
+
+---- BOX ----
+
+make -s box TF=0.1 meApproach=ha 
+make -s box TF=0.1 meApproach=stencil 
+
+  box16 & 2 & stencil  & 4.2M  &    18.4 &    13.9 &     2.4 &     0.0 &     7.9 &     0.0   \\
+  box16 & 4 & stencil  & 4.2M  &    24.3 &    19.1 &     7.5 &     0.0 &     8.1 &     0.0   \\
+  box16 & 6 & stencil  & 4.2M  &    50.6 &    44.0 &    31.3 &     0.0 &     9.0 &     0.0   \\
+  box16 & 8 & stencil  & 4.2M  &    92.6 &    88.3 &    74.5 &     0.0 &     9.4 &     0.0   \\
+
+
+  box16 & 2 & FAME  & 4.2M  &    18.4 &    13.9 &     2.4 &     0.0 &     7.9 &     0.0   \\
+  box16 & 4 & FAME  & 4.2M  &    34.8 &    29.6 &    18.4 &     0.0 &     7.6 &     0.0   \\
+  box16 & 6 & FAME  & 4.2M  &    75.3 &    68.7 &    56.1 &     0.0 &     8.9 &     0.0   \\
+  box16 & 8 & FAME  & 4.2M  &   184.9 &   180.5 &   166.9 &     0.0 &     9.3 &     0.0   \\
+
+
+
+---- NON SQUARE ----
+
+make -s nonSquare TF=0.2 meApproach=ha 
+make -s nonSquare TF=0.2 meApproach=stencil 
+
+
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonSquare1024 & 2 & stencil  & 1.1M  &    10.3 &     9.6 &     7.5 &     0.0 &     1.6 &     0.0   \\
+  nonSquare1024 & 4 & stencil  & 1.1M  &    25.1 &    24.0 &    21.5 &     0.0 &     2.1 &     0.0   \\
+  nonSquare1024 & 6 & stencil  & 1.1M  &    61.1 &    59.5 &    51.1 &     0.0 &     7.9 &     0.0   \\
+  nonSquare1024 & 8 & stencil  & 1.1M  &   138.8 &   133.2 &   129.3 &     0.0 &     3.4 &     0.0   \\
+
+ 
+  nonSquare1024 & 2 & FAME  & 1.1M  &     6.9 &     6.3 &     4.1 &     0.0 &     1.7 &     0.0   \\
+  nonSquare1024 & 4 & FAME  & 1.1M  &    15.2 &    14.5 &    11.6 &     0.0 &     2.4 &     0.0   \\
+  nonSquare1024 & 6 & FAME  & 1.1M  &    44.3 &    43.1 &    33.9 &     0.0 &     8.7 &     0.0   \\
+  nonSquare1024 & 8 & FAME  & 1.1M  &   152.0 &   147.2 &   143.1 &     0.0 &     3.6 &     0.1   \\
+
+
+-------- SQUARE ----
+
+add order=8
+make -s square TF=0.2 meApproach=stencil
+make -s square TF=0.2 meApproach=ha
+
+cg66:~/runs/cgWave/performance> make -s square TF=0.2 meApproach=stencil
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  square1024 & 2 & stencil  & 1.1M  &     3.2 &     2.9 &     1.4 &     0.0 &     1.2 &     0.0   \\
+  square1024 & 4 & stencil  & 1.1M  &     4.6 &     4.3 &     2.6 &     0.0 &     1.3 &     0.0   \\
+  square1024 & 6 & stencil  & 1.1M  &    10.5 &    10.2 &     8.1 &     0.0 &     1.8 &     0.0   \\
+  square1024 & 8 & stencil  & 1.1M  &    23.1 &    18.5 &    15.0 &     0.0 &     3.2 &     0.0   \\
+\hline
+cg66:~/runs/cgWave/performance> make -s square TF=0.2 meApproach=ha
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  square1024 & 2 & FAME  & 1.1M  &     3.3 &     3.0 &     1.5 &     0.0 &     1.2 &     0.0   \\
+  square1024 & 4 & FAME  & 1.1M  &     5.9 &     5.6 &     4.3 &     0.0 &     1.0 &     0.0   \\
+  square1024 & 6 & FAME  & 1.1M  &    14.0 &    13.6 &    11.5 &     0.0 &     1.8 &     0.0   \\
+  square1024 & 8 & FAME  & 1.1M  &    52.2 &    47.7 &    44.1 &     0.0 &     3.1 &     0.1   \\
+
+
+
+
+
+------------ NON-SQUARE ---------
+Longer final time ... no much difference
+
+
+
+****************************
+****** Sun April 23, 2023
+
+>>>>>>>>>> START ON STENCIL TIMINGS <<<<<<<<<<<<<
+
+--------- NON-BOX ---------
+
+make -s nonBox
+
+STENCIL
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonBox16 & 2 & stencil  & 4.2M  &    53.3 &    38.0 &    24.4 &     0.0 &     7.9 &     0.0   \\
+  nonBox16 & 4 & stencil  & 4.2M  &   203.2 &   163.8 &   150.0 &     0.0 &     8.0 &     0.0   \\
+  nonBox16 & 6 & stencil  & 4.2M  &   792.2 &   693.1 &   678.2 &     0.0 &     8.8 &     0.0   \\
+
+FAME
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonBox16 & 2 & FAME  & 4.2M  &    36.0 &    23.6 &    10.0 &     0.0 &     7.9 &     0.0   \\
+  nonBox16 & 4 & FAME  & 4.2M  &    83.5 &    57.3 &    43.8 &     0.0 &     7.7 &     0.0   \\
+  nonBox16 & 6 & FAME  & 4.2M  &   290.6 &   231.0 &   216.0 &     0.0 &     8.8 &     0.0   \\
+
+
+--------- BOX ---------
+make -s box
+
+STENCIL *better*
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  box16 & 2 & stencil  & 4.2M  &    18.5 &    13.9 &     2.4 &     0.0 &     8.0 &     0.0   \\
+  box16 & 4 & stencil  & 4.2M  &    23.1 &    17.9 &     6.2 &     0.0 &     8.2 &     0.0   \\
+  box16 & 6 & stencil  & 4.2M  &    50.6 &    44.0 &    31.2 &     0.0 &     9.0 &     0.0   \\
+
+
+FAME
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  box16 & 2 & FAME  & 4.2M  &    18.4 &    13.9 &     2.4 &     0.0 &     8.0 &     0.0   \\
+  box16 & 4 & FAME  & 4.2M  &    35.5 &    30.3 &    18.8 &     0.0 &     8.0 &     0.0   \\
+  box16 & 6 & FAME  & 4.2M  &    75.5 &    68.9 &    56.3 &     0.0 &     8.9 &     0.0   \\
+
+------------ NON-SQUARE ---------
+STENCIL: mixed results
+cg66:~/runs/cgWave/performance> make -s nonSquare
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonSquare1024 & 2 & stencil  & 1.1M  &    10.5 &     9.1 &     6.7 &     0.0 &     1.5 &     0.0   \\
+  nonSquare1024 & 4 & stencil  & 1.1M  &    23.5 &    21.5 &    18.7 &     0.0 &     2.0 &     0.0   \\
+  nonSquare1024 & 6 & stencil  & 1.1M  &    63.5 &    60.1 &    51.5 &     0.0 &     7.8 &     0.0   \\
+
+FAME:
+make -s nonSquare
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  nonSquare1024 & 2 & FAME  & 1.1M  &     7.8 &     6.5 &     4.0 &     0.0 &     1.7 &     0.0   \\
+  nonSquare1024 & 4 & FAME  & 1.1M  &    25.3 &    23.8 &    17.2 &     0.0 &     5.7 &     0.0   \\
+  nonSquare1024 & 6 & FAME  & 1.1M  &    66.5 &    64.3 &    54.5 &     0.0 &     8.9 &     0.0   \\
+
+------------ SQUARE ---------
+STENCIL: faster 
+cg66:~/runs/cgWave/performance> make -s square
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  square1024 & 2 & stencil  & 1.1M  &     3.7 &     3.1 &     1.3 &     0.0 &     1.2 &     0.0   \\
+  square1024 & 4 & stencil  & 1.1M  &     5.2 &     4.5 &     2.6 &     0.0 &     1.3 &     0.0   \\
+  square1024 & 6 & stencil  & 1.1M  &    10.7 &     9.9 &     7.6 &     0.0 &     1.7 &     0.0   \\
+
+FAME:
+make -s square:
+%     Grid      & ord  & scheme & pts   & total    &  adv    & adv-r-c  &   up  &  bc  & interp \\
+  square1024 & 2 & FAME  & 1.1M  &     3.6 &     3.0 &     1.3 &     0.0 &     1.1 &     0.0   \\
+  square1024 & 4 & FAME  & 1.1M  &     6.7 &     6.1 &     4.5 &     0.0 &     1.0 &     0.0   \\
+  square1024 & 6 & FAME  & 1.1M  &    14.3 &    13.5 &    11.2 &     0.0 &     1.7 &     0.0   \\
+
+
+****************************
 ****** Thurs Oct 20, 2022
 
 **make s a small difference to shorten code 

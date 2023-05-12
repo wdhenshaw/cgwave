@@ -2,6 +2,329 @@ set fame = ~/Dropbox/AMP/fame
 
 
 ************************************************************************
+********* Sun Feb 12, 2023
+
+TEST NO UPWIND
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=0 -bc=e -bcApproach=cbc -cfl=.9 -meApproach=ha -nBessel=2 -mTheta=3 -ng=6
+
+
+upwind: 
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 7.93e-03 &       
+      sic4 &     2 & 2.71e-04 & 29.26 
+      sic8 &     4 & 7.58e-06 & 35.75 
+     sic16 &     8 & 1.91e-07 & 39.69 
+     sic32 &    16 & 6.24e-09 & 30.61 
+     sic64 &    32 & 3.63e-10 & 17.19 
+Convergence rates: c0=4.96 
+
+
+************************************************************************
+********* Wed Feb 8, 2023
+
+O4
+conv.p tests.conv -option=tz -tz=trig -cg=sphereFixed -order=4 -kx=2 -ky=2 -kz=2 -tf=1.2 -tp=1.2 -upwind=1 -bc=d -bcApproach=cbc -cfl=0.9 -ng=4
+
+
+O2
+conv.p tests.conv -option=tz -tz=trig -cg=sphereFixed -order=2 -kx=2 -ky=2 -kz=2 -tf=1.2 -tp=1.2 -upwind=1 -bc=d -bcApproach=cbc -cfl=0.9 -ng=4
+
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 1.46e-02 &       
+  sphereFixed4 &     2 & 3.80e-03 &  3.84 
+  sphereFixed8 &     4 & 9.96e-04 &  3.82 
+Convergence rates: c0=1.94 
+
+************************************************************************
+********* Tues Feb 7, 2023
+
+
+CONVERGNCE TESTS FOR SSMX REVISION
+
+>>> SOLID SPHERE:
+
+O4
+conv.p tests.conv -option=tz -tz=trig -cg=sphereFixed -order=4 -kx=2 -ky=2 -kz=2 -tf=1.2 -tp=1.2 -upwind=1 -bc=d -bcApproach=cbc -cfl=0.9 -ng=3
+
+
+t=1.2:
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 4.96e-04 &       
+  sphereFixed4 &     2 & 2.68e-05 & 18.51 
+  sphereFixed8 &     4 & 1.54e-06 & 17.40 
+Convergence rates: c0=4.17 
+
+t=0.6
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 5.61e-04 &       
+  sphereFixed4 &     2 & 3.27e-05 & 17.16 
+  sphereFixed8 &     4 & 2.34e-06 & 13.97 
+Convergence rates: c0=3.95 
+
+
+O2
+conv.p tests.conv -option=tz -tz=trig -cg=sphereFixed -order=2 -kx=2 -ky=2 -kz=2 -tf=0.6 -tp=0.6 -upwind=1 -bc=d -bcApproach=cbc -cfl=0.9 -ng=3
+
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 2.86e-02 &       
+  sphereFixed4 &     2 & 6.84e-03 &  4.18 
+  sphereFixed8 &     4 & 1.65e-03 &  4.15 
+Convergence rates: c0=2.06 
+
+
+
+>>>>>>>> PIPE TRIG TZ CBC
+O4
+conv.p tests.conv -option=tz -tz=trig -cg=pipezFixed -order=4 -kx=2 -ky=2 -kz=2 -tf=1.2 -tp=1.2 -upwind=1 -bc=d -bcApproach=cbc -cfl=0.9 -ng=4
+
+t=1.2
+                grid  & N &  $ u $ & r 
+ pipezFixed2 &     1 & 2.24e-04 &       
+ pipezFixed4 &     2 & 1.53e-05 & 14.64 
+ pipezFixed8 &     4 & 1.35e-06 & 11.33 
+pipezFixed16 &     8 & 1.02e-07 & 13.24 
+Convergence rates: c0=3.68
+
+tf=0.6
+                grid  & N &  $ u $ & r 
+ pipezFixed2 &     1 & 3.73e-04 &       
+ pipezFixed4 &     2 & 1.17e-05 & 31.88 
+ pipezFixed8 &     4 & 8.94e-07 & 13.09 
+pipezFixed16 &     8 & 6.87e-08 & 13.01 
+Convergence rates: c0=4.09 
+
+ ****Output written to ./tzpipezFixedUWCcbcOrder4stdcbcmaxNormConvTable.tex *****
+Saving the results file as ./results.tzstdcbcpipezFixedOrder4maxNorm
+Matlab results written to file [./tzstdcbcpipezFixedOrder4maxNorm.m].
+
+
+O2
+conv.p tests.conv -option=tz -tz=trig -cg=pipezFixed -order=2 -kx=2 -ky=2 -kz=2 -tf=0.6 -tp=0.6 -upwind=1 -bc=d -bcApproach=cbc -cfl=0.9 -ng=4
+
+FIXED: 
+convRate: numberOfComponents=1 (from header)
+                grid  & N &  $ u $ & r 
+ pipezFixed2 &     1 & 1.81e-02 &       
+ pipezFixed4 &     2 & 4.12e-03 &  4.39 
+ pipezFixed8 &     4 & 9.15e-04 &  4.50 
+Convergence rates: c0=2.15 
+
+
+
+tf=.8: 
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 9.68e-03 &       
+    pipez4 &     2 & 2.05e-03 &  4.72 
+    pipez8 &     4 & 6.49e-04 &  3.16 
+   pipez16 &     8 & 2.26e-04 &  2.87 
+Convergence rates: c0=1.79 
+
+
+
+++++++ FD44
+conv.p tests.conv -option=tz -tz=trig -cg=box -order=4 -fx=5 -tf=.8 -tp=.8 -upwind=1 -bc=d -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=4
+
+
+                grid  & N &  $ u $ & r 
+      box1 &     1 & 3.24e-01 &       
+      box2 &     2 & 6.49e-03 & 49.92 
+      box4 &     4 & 2.24e-04 & 28.97 
+      box8 &     8 & 7.14e-06 & 31.37 
+Convergence rates: c0=5.13 
+
+
+
+
+CHANGE EIGENMODE: 
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bc=e -bcApproach=cbc -cfl=.9 -meApproach=ha -nBessel=2 -mTheta=3 -ng=6
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 7.93e-03 &       
+      sic4 &     2 & 2.71e-04 & 29.26 
+      sic8 &     4 & 7.58e-06 & 35.75 
+     sic16 &     8 & 1.91e-07 & 39.69 
+     sic32 &    16 & 6.24e-09 & 30.61 
+     sic64 &    32 & 3.63e-10 & 17.19 
+Convergence rates: c0=4.96 
+
+
+ORDER=6 : BROKEN 
+conv.p tests.conv -option=diskEig -cg=sic -order=6 -tf=.65 -tp=.65 -upwind=1 -bc=e -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=6
+
+ORDER=2
+conv.p tests.conv -option=diskEig -cg=sic -order=2 -tf=.65 -tp=.65 -upwind=1 -bc=e -bcApproach=cbc -cfl=.9 -meApproach=ha -ng=6
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 5.86e-03 &       
+      sic4 &     2 & 1.27e-03 &  4.61 
+      sic8 &     4 & 2.96e-04 &  4.29 
+     sic16 &     8 & 7.05e-05 &  4.20 
+     sic32 &    16 & 1.74e-05 &  4.05 
+     sic64 &    32 & 4.32e-06 &  4.03 
+Convergence rates: c0=2.08 
+
+
+ORDER=4
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bc=e -bcApproach=cbc -cfl=.9 -meApproach=ha -ng=6
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 1.04e-04 &       
+      sic4 &     2 & 4.78e-06 & 21.76 
+      sic8 &     4 & 2.50e-07 & 19.12 
+     sic16 &     8 & 1.51e-08 & 16.56 
+     sic32 &    16 & 9.18e-10 & 16.45 
+     sic64 &    32 & 5.67e-11 & 16.19 
+Convergence rates: c0=4.15 
+
+
+************************************************************************
+********* Tues Jan 17, 2023
+
+CONV tests for WaveHoltz for paper
+
+
+--------- ORDER=2 ------
+conv.p waveHoltzTests.conv -option=boxHelmholtz -cg=pipez -freq=4 -kx=1.3 -ky=1.7 -kz=1 -order=2 -ts=implicit -cfl=10000 -freq=2 -solver=krylov -tol=1e-10 -upwind=1 -solveri=bcgs -rtoli=1.0e-12 -atoli=1.0e-12 -ng=3
+
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 2.10e-02 &       
+    pipez4 &     2 & 5.29e-03 &  3.97 
+    pipez8 &     4 & 1.31e-03 &  4.04 
+Convergence rates: c0=2.00 
+
+conv.p waveHoltzTests.conv -option=boxHelmholtz -cg=box -kx=1.3 -ky=1.7 -kz=1.2 -order=2 -ts=implicit -cfl=10000 -freq=2 -solver=krylov -tol=1e-10 -upwind=1 -solveri=bcgs -rtoli=1.0e-8 -atoli=1.0e-8 -ng=4
+                grid  & N &  $ u $ & r 
+      box1 &     1 & 7.50e-02 &       
+      box2 &     2 & 1.97e-02 &  3.81 
+      box4 &     4 & 4.99e-03 &  3.95 
+      box8 &     8 & 1.25e-03 &  3.99 
+Convergence rates: c0=1.97 
+
+conv.p waveHoltzTests.conv -option=boxHelmholtz -cg=sic -freq=8 -kx=1.3 -ky=1.7 -order=2 -ts=implicit -cfl=10000 -freq=2 -solver=krylov -tol=1e-12 -upwind=1 -ng=5
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 1.25e-01 &       
+      sic4 &     2 & 1.70e-02 &  7.35 
+      sic8 &     4 & 4.43e-03 &  3.84 
+     sic16 &     8 & 1.20e-03 &  3.69 
+     sic32 &    16 & 3.09e-04 &  3.88 
+Convergence rates: c0=2.11 
+
+
+>> SQUARE: CHANGE kx and ky 
+
+conv.p waveHoltzTests.conv -option=boxHelmholtz -cg=square -kx=1.3 -ky=1.7 -order=2 -ts=implicit -cfl=10000 -freq=2 -solver=krylov -tol=1e-12 -upwind=1 -ng=6
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 1.60e-01 &       
+  square16 &     2 & 3.87e-02 &  4.13 
+  square32 &     4 & 9.54e-03 &  4.06 
+  square64 &     8 & 2.38e-03 &  4.01 
+ square128 &    16 & 5.96e-04 &  3.99 
+Convergence rates: c0=2.02 
+
+
+************************************************************************
+********* Mon Jan 16, 2023
+
+CONV tests for WaveHoltz for paper
+
+CHANGE TO cmd file: runsWaveHoltz/trigHelmholtz/trigHelmholtz.cmd 
+
+>> PIPE --  PERIOIDC IN Z (note -rtoli=1.0e-8 -atoli=1.0e-8 was too big for G8 )
+conv.p waveHoltzTests.conv -option=boxHelmholtz -cg=pipez -freq=4 -kx=1.3 -ky=1.7 -kz=1 -order=4 -ts=implicit -cfl=10000 -freq=2 -solver=krylov -tol=1e-10 -upwind=1 -solveri=bcgs -rtoli=1.0e-12 -atoli=1.0e-12 -ng=3
+
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 1.35e-03 &       
+    pipez4 &     2 & 5.19e-05 & 26.01 
+    pipez8 &     4 & 2.65e-06 & 19.58 
+Convergence rates: c0=4.50 
+
+
+
+
+freq=2
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 1.37e-03 &       
+    pipez4 &     2 & 5.11e-05 & 26.81 
+Convergence rates: c0=4.74 
+
+>>>DISK: 
+conv.p waveHoltzTests.conv -option=boxHelmholtz -cg=sic -freq=8 -kx=1.3 -ky=1.7 -order=4 -ts=implicit -cfl=10000 -freq=2 -solver=krylov -tol=1e-12 -upwind=1 -ng=5
+
+
+omega=8:
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 6.53e-03 &       
+      sic4 &     2 & 1.29e-04 & 50.62 
+      sic8 &     4 & 1.32e-05 &  9.77 
+     sic16 &     8 & 8.64e-07 & 15.28 
+     sic32 &    16 & 4.95e-08 & 17.45 
+Convergence rates: c0=4.12 
+
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 3.34e-03 &       
+      sic4 &     2 & 1.08e-04 & 30.93 
+      sic8 &     4 & 3.52e-06 & 30.68 
+     sic16 &     8 & 2.32e-07 & 15.17 
+Convergence rates: c0=4.64 
+
+>> BOX  --> DO NOT USE YALE SOLVERS FOR IMPLICIT
+conv.p waveHoltzTests.conv -option=boxHelmholtz -cg=box -kx=1.3 -ky=1.7 -kz=1.2 -order=4 -ts=implicit -cfl=10000 -freq=2 -solver=krylov -tol=1e-10 -upwind=1 -solveri=bcgs -rtoli=1.0e-8 -atoli=1.0e-8 -ng=4
+
+
+                grid  & N &  $ u $ & r 
+      box1 &     1 & 3.22e-02 &       
+      box2 &     2 & 2.07e-03 & 15.56 
+      box4 &     4 & 8.03e-05 & 25.78 
+      box8 &     8 & 3.18e-06 & 25.25 
+Convergence rates: c0=4.46 
+
+
+>> SQUARE: CHANGE kx and ky 
+conv.p waveHoltzTests.conv -option=boxHelmholtz -cg=square -kx=1.3 -ky=1.7 -order=4 -ts=implicit -cfl=10000 -freq=2 -solver=krylov -tol=1e-12 -upwind=1 -ng=6
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 6.75e-02 &       
+  square16 &     2 & 6.75e-03 & 10.00 
+  square32 &     4 & 2.34e-04 & 28.85 
+  square64 &     8 & 9.53e-06 & 24.55 
+ square128 &    16 & 4.62e-07 & 20.63 
+ square256 &    32 & 3.00e-08 & 15.40 
+Convergence rates: c0=4.33 
+
+
+conv.p waveHoltzTests.conv -option=boxHelmholtz -cg=square -order=4 -ts=implicit -cfl=10000 -freq=2 -solver=krylov -tol=1e-12 -upwind=1 -ng=6
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 4.16e-03 &       
+  square16 &     2 & 4.52e-04 &  9.20 
+  square32 &     4 & 1.98e-05 & 22.83 
+  square64 &     8 & 7.25e-07 & 27.31 
+ square128 &    16 & 5.59e-08 & 12.97 
+ square256 &    32 & 3.86e-09 & 14.48 
+ square512 &    64 & 2.52e-10 & 15.32 
+Convergence rates: c0=4.07 
+
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 4.16e-03 &       
+  square16 &     2 & 4.52e-04 &  9.20 
+  square32 &     4 & 1.98e-05 & 22.83 
+  square64 &     8 & 7.25e-07 & 27.31 
+ square128 &    16 & 5.59e-08 & 12.97 
+ square256 &    32 & 3.86e-09 & 14.48 
+Convergence rates: c0=4.11 
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 4.16e-03 &       
+  square16 &     2 & 4.52e-04 &  9.20 
+  square32 &     4 & 1.98e-05 & 22.83 
+Convergence rates: c0=3.86 
+
+
+************************************************************************
 ********* Fri Dec 2, 2022
 
 >>>>>>>START 3D
@@ -42,8 +365,19 @@ CBC:
 
 
 ++++++ FD22
+conv.p tests.conv -option=tz -tz=trig -cg=quarterCyl -order=2 -fx=5 -tf=.8 -tp=.8 -upwind=1 -bc=d -bcApproach=cbc -cfl=.9 -meApproach=ha -ng=4
+
 conv.p tests.conv -option=tz -tz=trig -cg=quarterCyl -order=2 -fx=5 -tf=.8 -tp=.8 -upwind=1 -bc=d -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=4
 
+CBC:
+                grid  & N &  $ u $ & r 
+ quarterCyl1 &     1 & 9.20e-01 &       
+ quarterCyl2 &     2 & 1.72e-01 &  5.35 
+ quarterCyl4 &     4 & 4.64e-02 &  3.71 
+ quarterCyl8 &     8 & 1.19e-02 &  3.90 
+Convergence rates: c0=2.07
+
+LCBC: 
                 grid  & N &  $ u $ & r 
  quarterCyl1 &     1 & 8.27e-01 &       
  quarterCyl2 &     2 & 1.77e-01 &  4.67 

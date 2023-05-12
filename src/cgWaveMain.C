@@ -14,6 +14,7 @@
 #include "ParallelUtility.h"
 #include "LoadBalancer.h"
 #include "gridFunctionNorms.h"
+#include "Oges.h"
 
 
 
@@ -95,6 +96,8 @@ main(int argc, char *argv[])
   Optimization_Manager::setForceVSG_Update(Off);
   Overture::turnOnMemoryChecking(true);
 
+  // This macro will initialize the PETSc solver if OVERTURE_USE_PETSC is defined.
+  INIT_PETSC_SOLVER();
 
   aString nameOfOGFile= "square32.order2.hdf";
 
@@ -176,6 +179,9 @@ main(int argc, char *argv[])
   cg.update(MappedGrid::THEmask);
   const int numberOfDimensions = cg.numberOfDimensions();
 
+
+  // ** TEST ***
+  // cg.update( MappedGrid::THEmask | MappedGrid::THEvertex | MappedGrid::THEcenter | MappedGrid::THEinverseVertexDerivative ); // May 2, 2023
 
   bool saveShowFile=false;
   

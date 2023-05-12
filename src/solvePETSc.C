@@ -4,21 +4,31 @@
 #include "gridFunctionNorms.h"
 #include "display.h"
 #include "ParallelUtility.h"
+#include "SparseRep.h" 
+
+#include "PlotStuff.h"
+#include "GL_GraphicsInterface.h"
 
 // krb do not use extern "C" if PETSc is linked using BOPT=g_c++
-extern "C"
-{
-// *wdh* 2015/09/31  To avoid having PETSc include complex.h do this: 
-#include "petscconf.h"
-#undef PETSC_HAVE_CXX_COMPLEX
+// extern "C"
+// {
+// // *wdh* 2015/09/31  To avoid having PETSc include complex.h do this: 
+// #include "petscconf.h"
+// #undef PETSC_HAVE_CXX_COMPLEX
+// #include "petscksp.h"
+// }
+
+// for petsc 3.18.2
 #include "petscksp.h"
-}
+
+// SLEPc 
+#include <slepceps.h>
 
 static char help[] = "CgWaveHoltz test of PETSc\n";
 
 // testCase : 
 // 0 = test solving laplace equation
-// 1 = real run
+// 1 = Real run
 static int testCase =1; 
 static int iteration=0;
 
@@ -26,6 +36,13 @@ static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver
  
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
+
+#define FOR3N(i1,i2,i3,n,n1a,n1b,n2a,n2b,n3a,n3b)       \
+    for( i3=n3a; i3<=n3b; i3++ )                        \
+      for( i2=n2a; i2<=n2b; i2++ )                      \
+        for( i1=n1a; i1<=n1b; i1++ )                    \
+          for( n=0; n<numberOfComponents; n++ )
+
 
 // -- global variables -- do this for now 
 static KSP  ksp=NULL;     /* linear solver context */
@@ -39,6 +56,45 @@ static int computeResidual      =-3; // =-1;
 // *wdh* Jan 5, 2022 --> changed cgWave to zero out unused points => thus we do not need to check the mask
 static bool checkMask = false;  // if true, do not use values of the solution where mask==0 
 
+// -- see eig/src/fillInterpolationCoefficients.bC
+// #define nab(side,axis,p,grid) pnab[(side)+2*( (axis) + 3*( (p) + numberOfProcessors*( (grid) ) ) )]
+// #define ndab(axis,p,grid) (nab(1,axis,p,grid)-nab(0,axis,p,grid)+1)
+// #define noffset(p,grid) pnoffset[(p)+numberOfProcessors*(grid)]
+
+
+// int Ogev::
+// getGlobalIndex( int n, int *iv, int grid, int p ) 
+// // ===============================================================================
+// /// \brief: Return the global index (equation number) given the point, grid and processor
+// /// \note: These equation numbers are base=0.
+// // ===============================================================================
+// {
+//   // printF("getGlobalIndex: n=%d, (i1,i2,i3)=(%d,%d,%d) grid=%d, p=%d\n",n,iv[0],iv[1],iv[2],grid,p);
+
+//   return  n + numberOfComponents*(
+//          (iv[0]-nab(0,axis1,p,grid))+ndab(0,p,grid)*(
+//           iv[1]-nab(0,axis2,p,grid) +ndab(1,p,grid)*(
+//           iv[2]-nab(0,axis3,p,grid))) + noffset(p,grid) );
+// }
+
+// ======================================================================================
+/// \brief Initialize PETSC if it hasn't already been initialized
+// ======================================================================================
+int CgWave::initializePETSc( int argc /* = 0 */, char **args  /* =NULL */ )
+{
+    // Do this in case we use PETSc  *wdh* Jan 7, 2023
+  int & petscIsInitialized = dbase.get<int>("petscIsInitialized");
+  if( !petscIsInitialized )
+  {
+    printF("\n######## INIT PETSc ########\n");
+    static char help[] = "CgWaveHoltz test of PETSc\n";
+    petscIsInitialized=true;
+    PetscInitialize(&argc,&args,(char *)0,help);
+  } 
+
+  return 0; 
+}
+
 // =========================================================================================================
 //     MATRIX-VECTOR MULTIPLY FOR MATRIX FREE KRYLOV SOLVERS
 // 
@@ -50,7 +106,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
   printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=%d\n",iteration);
 
-  if( testCase==0 )
+  if( testCase==0 ) // **TESTING ***
   {
     // solve a Poisson equation **TEST CASE***
 
@@ -176,7 +232,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
         getIndex(cg[grid].dimension(),I1,I2,I3);
 
-        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+        OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
         FOR_3D(i1,i2,i3,I1,I2,I3)
         {
           assert( i<iEnd );
@@ -203,14 +259,16 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
-      OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-      OV_GET_SERIAL_ARRAY(real,vOld[grid],vOldLocal);
+      OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+      OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
       vOldLocal = vLocal;  // save current guess
 
       // vOld[grid] = v[grid];  // save current guess
     }
   
-    // -- advance for one period (or multiple periods ) ---
+    // ----------------------------------------------------------------------
+    // -- advance the wave equation for one period (or multiple periods ) ---
+    // ----------------------------------------------------------------------
     cgWave.advance( iteration );
     
 
@@ -222,8 +280,8 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
       {
-        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-        OV_GET_SERIAL_ARRAY(real,bcg[grid],bcgLocal);
+        OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+        OV_GET_SERIAL_ARRAY(Real,bcg[grid],bcgLocal);
 
         bcgLocal = vLocal; 
 
@@ -264,7 +322,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
           getIndex(cg[grid].dimension(),I1,I2,I3);
           OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
 
-          OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+          OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
           FOR_3D(i1,i2,i3,I1,I2,I3)
           {
             assert( i<iEnd );
@@ -298,8 +356,8 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         vOld[grid] -= v[grid]; // 
     
-      const real & tol = cgWaveHoltz.dbase.get<real>("tol");
-      real & maxResidual = cgWaveHoltz.dbase.get<real>("maxResidual");
+      const Real & tol = cgWaveHoltz.dbase.get<Real>("tol");
+      Real & maxResidual = cgWaveHoltz.dbase.get<Real>("maxResidual");
 
       maxResidual = maxNorm(vOld);
       printF("it=%d:  max(residual) = max(|v-vOld|)=%8.2e, tol=%g\n",iteration,maxResidual,tol);
@@ -308,14 +366,28 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     else
     {
       // ----------- MATRIX VECTOR MULTIPLY FOR Krylov solver -------
-      // Compute :
-      //       A v^n = v^n - v^{n+1} + b 
-      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-        vOld[grid] -= v[grid]; // 
+
+      const int & computeEigenmodes       = cgWave.dbase.get<int>("computeEigenmodes");
+
+      if( !computeEigenmodes )
+      {
+        // Compute :
+        //       A v^n = v^n - v^{n+1} + b 
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+          vOld[grid] -= v[grid]; // 
 
 
-      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-        vOld[grid] += bcg[grid];
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+          vOld[grid] += bcg[grid];
+
+      }
+      else
+      {
+        // -- for eigenmodes -- assume b=0
+        // Set A v^n = v^{n+1}
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+          vOld[grid] = v[grid]; // 
+      }
 
       // should we interpolate vOld?
       if( false ) //  Jan 5, 2022 : change to false : FIXES SIC
@@ -336,7 +408,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
         {
           getIndex(cg[grid].dimension(),I1,I2,I3);
           OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
-          OV_GET_SERIAL_ARRAY(real,vOld[grid],vOldLocal);
+          OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
           FOR_3D(i1,i2,i3,I1,I2,I3)
           {
             assert( i<iEnd );
@@ -364,12 +436,13 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     
     }
 
-    if( monitorResiduals && iteration>=0 )
+    const int & computeEigenmodes = cgWave.dbase.get<int>("computeEigenmodes");
+    if( monitorResiduals && iteration>=0 && !computeEigenmodes )
     {
       // ----- Optionally save the current residual -----
       // Save "residuals" by iteration: 
       // resVector(it) = norm( v^{n+1} - v^n )
-      RealArray & resVector = cgWaveHoltz.dbase.get<RealArray>("resVector");  
+      RealArray & resVector = cgWave.dbase.get<RealArray>("resVector");  
 
       if( iteration<0 || iteration>=resVector.getLength(0) )
       {
@@ -417,14 +490,15 @@ solvePETSc(int argc,char **args)
 {
   pCgWaveHoltz=this;
 
+  const int myid=max(0,Communication_Manager::My_Process_Number);
   
-  const real & omega                    = dbase.get<real>("omega");
-  real & Tperiod                        = dbase.get<real>("Tperiod");
+  const Real & omega                    = dbase.get<Real>("omega");
+  Real & Tperiod                        = dbase.get<Real>("Tperiod");
   const int & numPeriods                = dbase.get<int>("numPeriods");
   const int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t   
   const int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
   Real & numberOfActivePoints           = dbase.get<Real>("numberOfActivePoints");
-
+  
   // here is the CgWave solver for the time dependent wave equation
   CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
   if( omega!=0. )
@@ -436,9 +510,11 @@ solvePETSc(int argc,char **args)
  
   // --- set values in CgWave:  *** COULD DO BETTER ***
  
-  cgWave.dbase.get<real>("omega")     = omega;        // ** FIX ME **
-  cgWave.dbase.get<real>("tFinal")    = Tperiod;      // ** FIX ME **
-  cgWave.dbase.get<real>("Tperiod")   = Tperiod;      // ** FIX ME **
+  const int & computeEigenmodes       = cgWave.dbase.get<int>("computeEigenmodes");
+
+  cgWave.dbase.get<Real>("omega")     = omega;        // ** FIX ME **
+  cgWave.dbase.get<Real>("tFinal")    = Tperiod;      // ** FIX ME **
+  cgWave.dbase.get<Real>("Tperiod")   = Tperiod;      // ** FIX ME **
   cgWave.dbase.get<int>("numPeriods") = numPeriods;   // ** FIX ME **
   cgWave.dbase.get<int>("adjustOmega")= adjustOmega;  // 1 : choose omega from the symbol of D+t D-t 
 
@@ -459,11 +535,15 @@ solvePETSc(int argc,char **args)
   vOld.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
 
   // <<<<
-
+  if( computeEigenmodes )
+  {
+    int & computeEigenmodesWithSLEPc = cgWave.dbase.get<int>("computeEigenmodesWithSLEPc");
+    computeEigenmodesWithSLEPc = 1; // tell cgWave we are solving with SLEPc
+  }
 
   // Save "residuals" by iteration: 
   // resVector(it) = norm( v^{n+1} - v^n )
-  RealArray & resVector = dbase.get<RealArray>("resVector");
+  RealArray & resVector = cgWave.dbase.get<RealArray>("resVector");
   resVector.redim(maximumNumberOfIterations+10);
   resVector=0.;
   
@@ -488,9 +568,20 @@ solvePETSc(int argc,char **args)
   if( !petscIsInitialized )
   {
     petscIsInitialized=true;
-    PetscInitialize(&argc,&args,(char *)0,help);
-    ierr = PetscOptionsGetInt(PETSC_NULL,"-m",&m,PETSC_NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetInt(PETSC_NULL,"-n",&n,PETSC_NULL);CHKERRQ(ierr);
+    if( !computeEigenmodes )
+    {
+      PetscInitialize(&argc,&args,(char *)0,help);
+    }
+    else
+    {
+      SlepcInitialize(&argc,&args,(char *)0,help);
+    }
+
+    // 3.4.5 ierr = PetscOptionsGetInt(PETSC_NULL,"-m",&m,PETSC_NULL);CHKERRQ(ierr);
+    // 3.4.5 ierr = PetscOptionsGetInt(PETSC_NULL,"-n",&n,PETSC_NULL);CHKERRQ(ierr);
+    // 3.18.2 : PetscErrorCode PetscOptionsGetInt(PetscOptions options, const char pre[], const char name[], PetscInt *ivalue, PetscBool *set)
+    // ierr = PetscOptionsGetInt(PETSC_NULL,PETSC_NULL,"-m",&m,PETSC_NULL);CHKERRQ(ierr);
+    // ierr = PetscOptionsGetInt(PETSC_NULL,PETSC_NULL,"-n",&n,PETSC_NULL);CHKERRQ(ierr);
   }
   
 
@@ -502,11 +593,11 @@ solvePETSc(int argc,char **args)
   pA = &A; mA=m; nA=n;
   
   int numEquations=0;
-  if( testCase==0 )
+  if( testCase==0 ) // **TESTING***
   {
     numEquations=m*n;
   }
-  else
+  else // **REAL RUN***
   {
     assert( pCgWaveHoltz!=NULL );
     CgWaveHoltz & cgWaveHoltz = *pCgWaveHoltz;
@@ -559,9 +650,11 @@ solvePETSc(int argc,char **args)
      elements of 1.0;  Alternatively, using the runtime option
      -random_sol forms a solution vector with random components.
   */
-  if( testCase==0 )
+  if( testCase==0 ) // **TEST CASE***
   {
-    ierr = PetscOptionsGetBool(PETSC_NULL,"-random_exact_sol",&flg,PETSC_NULL);CHKERRQ(ierr);
+    // 3.4.5 ierr = PetscOptionsGetBool(PETSC_NULL,"-random_exact_sol",&flg,PETSC_NULL);CHKERRQ(ierr);
+    // 3.18.2
+    ierr = PetscOptionsGetBool(PETSC_NULL,PETSC_NULL,"-random_exact_sol",&flg,PETSC_NULL);CHKERRQ(ierr);
     if (flg) {
       ierr = PetscRandomCreate(PETSC_COMM_WORLD,&rctx);CHKERRQ(ierr);
       ierr = PetscRandomSetFromOptions(rctx);CHKERRQ(ierr);
@@ -573,7 +666,7 @@ solvePETSc(int argc,char **args)
     ierr = MatMult(Amf,u,b);CHKERRQ(ierr);
 
   }
-  else
+  else // ** REAL RUN **
   {
 
 
@@ -612,7 +705,7 @@ solvePETSc(int argc,char **args)
           getIndex(mg.dimension(),I1,I2,I3);
 
           OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-          OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+          OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
           FOR_3D(i1,i2,i3,I1,I2,I3)
           {
             assert( i<iEnd );
@@ -637,7 +730,7 @@ solvePETSc(int argc,char **args)
       printF("solvePETSc: Set initial guess to v, max-norm(v)=%8.2e, numberOfActivePoints=%g\n",normV,numberOfActivePoints);
 
 
-    } // send set initial guess 
+    } // END set initial guess 
 
     // ---- set RHS b = A*u -----
     ierr = VecSet(u,0.0);CHKERRQ(ierr);
@@ -660,8 +753,211 @@ solvePETSc(int argc,char **args)
      View the exact solution vector if desired
   */
   flg  = PETSC_FALSE;
-  ierr = PetscOptionsGetBool(PETSC_NULL,"-view_exact_sol",&flg,PETSC_NULL);CHKERRQ(ierr);
+  // 3.4.5 ierr = PetscOptionsGetBool(PETSC_NULL,"-view_exact_sol",&flg,PETSC_NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetBool(PETSC_NULL,PETSC_NULL,"-view_exact_sol",&flg,PETSC_NULL);CHKERRQ(ierr);
   if (flg) {ierr = VecView(u,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);}
+
+
+  if( computeEigenmodes )
+  {
+    // ====================================================
+    // =============== COMPUTE EIGENMODES =================
+    // ====================================================
+
+    int & numEigsToCompute           = cgWave.dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute
+
+    // -- turn OFF adjsuements for upwinding :
+    int & adjustHelmholtzForUpwinding= cgWave.dbase.get<int>("adjustHelmholtzForUpwinding");
+    int adjustHelmholtzForUpwindingSave = adjustHelmholtzForUpwinding;
+    adjustHelmholtzForUpwinding=0; 
+
+    int & computeEigenmodesWithSLEPc = cgWave.dbase.get<int>("computeEigenmodesWithSLEPc");
+    computeEigenmodesWithSLEPc = 1; // tell cgWave we are solving with SLEPc
+
+    EPS            eps;             /* eigenproblem solver context */
+
+    //    Create eigensolver context
+
+    PetscCall(EPSCreate(PETSC_COMM_WORLD,&eps));
+
+
+    // Set operators. In this case, it is a standard eigenvalue problem
+
+    PetscCall(EPSSetOperators(eps,Amf,NULL));
+    PetscCall(EPSSetProblemType(eps,EPS_HEP));
+
+    PetscCall(EPSSetWhichEigenpairs(eps,EPS_LARGEST_MAGNITUDE));
+
+    PetscInt mpd = PETSC_DEFAULT;
+    int numEigenValues = numEigsToCompute;
+    // PetscInt ncv = PETSC_DEFAULT; // numEigenValues*2+1; // size of column space 
+    PetscInt ncv = numEigenValues*2+1; // number of column vectors to used in the space, at least 2*numEigenValues
+    PetscCall(EPSSetDimensions(eps,numEigenValues,ncv,mpd)); 
+
+    PetscInt maxIt = 20000; 
+    PetscScalar tol=1e-12;
+    PetscCall(EPSSetTolerances(eps,tol,maxIt));    
+
+    // *** SOLVE FOR EIGENPAIRS ***
+    PetscCall(EPSSolve(eps));
+
+    /*
+       Optional: Get some information from the solver and display it
+    */
+    EPSType        type;
+    PetscInt       nev;
+    PetscCall(EPSGetType(eps,&type));
+    printF(">>Solution method: %s\n",type);
+    PetscCall(EPSGetDimensions(eps,&nev,NULL,NULL));
+
+    printF(">>Number of requested eigenvalues: %d\n",nev);
+    PetscInt nconv;
+    PetscCall(EPSGetConverged(eps,&nconv));
+    printF(">>Number of converged eigenvalues= %d\n",nconv);
+
+    PetscCall(EPSGetIterationNumber(eps,&its));
+    printF(">>Number of iterations of the method: %d\n",its);
+
+
+    // Create PETSc vectors that have the same distribution as Amf
+    Vec  xr,xi;
+    PetscCall(MatGetVecs(Amf,NULL,&xr));
+    PetscCall(MatGetVecs(Amf,NULL,&xi));
+
+    // PetscCall(EPSPrintSolution(eps,NULL));
+    PetscScalar kr, ki;
+    for( int i=0; i<nconv; i++ )
+    {
+      PetscCall(EPSGetEigenpair(eps,i,&kr,&ki,xr,xi)); 
+      // PetscCall(EPSGetEigenvalue(eps,i,&kr,&ki)); 
+      printF("i=%d: kr=%g, ki=%g\n",i,kr,ki);
+    }
+
+    RealArray eig;
+    Range all;
+    int numEigenVectors=min(nev,nconv); // could use nconv
+
+
+    realCompositeGridFunction ucg(cg,all,all,all,numEigenVectors);
+    for( int i=0; i<numEigenVectors; i++ )
+      ucg.setName(sPrintF("phi%d",i),i);
+
+    int iv[3], &i1=iv[0], &i2=iv[1], &i3=iv[2]; 
+    int ige;
+
+    if( nconv>0 && nev>0 ) 
+    {
+      // eig.redim(2,numEigenVectors);
+
+      for( int i=0; i<numEigenVectors; i++ ) 
+      {
+
+        PetscScalar kr, ki;
+        PetscCall(EPSGetEigenpair(eps,i,&kr,&ki,xr,xi)); 
+        // eig(0,i) = kr;
+        // eig(1,i) = ki;
+
+        printF("Filter eigenvalue %d : k=%18.14e + %18.14e I \n",i,kr,ki);
+
+        // ierr = EPSGetEigenvector(eps,i,xr,xi);CHKERRQ(ierr);
+
+        // ierr = VecView(xr,viewer);CHKERRQ(ierr);
+        // if (!ishermitian) { ierr = VecView(xi,viewer);CHKERRQ(ierr); }
+
+        if( i<numEigenVectors )
+        {
+          // ---- Save the eigenvector ----
+          printF("Save eigenvector %d to the grid function.\n",i);
+
+          PetscScalar *xrv;
+          VecGetArray(xr,&xrv);  // get the local array from Petsc
+          ierr = VecGetOwnershipRange(xr,&Istart,&Iend);CHKERRQ(ierr);
+
+          const int numberOfComponents=1;
+          // *new* way (from PETScSolver.bC)
+          for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+          {  
+            realArray & ug= ucg[grid];
+            realSerialArray uLocal; getLocalArrayWithGhostBoundaries(ug,uLocal); 
+
+            int n1a = uLocal.getBase(0) +ug.getGhostBoundaryWidth(0), 
+                n1b = uLocal.getBound(0)-ug.getGhostBoundaryWidth(0);
+            int n2a = uLocal.getBase(1) +ug.getGhostBoundaryWidth(1), 
+                n2b = uLocal.getBound(1)-ug.getGhostBoundaryWidth(1);
+            int n3a = uLocal.getBase(2) +ug.getGhostBoundaryWidth(2), 
+                n3b = uLocal.getBound(2)-ug.getGhostBoundaryWidth(2);
+              
+            if( false )
+              printf("solvePETSc: myid=%i local array bounds = [%i,%i][%i,%i][%i,%i]\n",myid,n1a,n1b,n2a,n2b,n3a,n3b);
+
+            i1=n1a, i2=n2a, i3=n3a;
+            int n=0;
+            // int ig=getGlobalIndex( n, iv, grid, myid );  // get the global index for the first point
+            int ig=0; // *** DO THIS FOR NOW **********************
+            const int nb=uLocal.getBase(3);
+            const int nComp = i;            // fill in this component
+
+            for( int i3=n3a; i3<=n3b; i3++ )
+            for( int i2=n2a; i2<=n2b; i2++ )
+            for( int i1=n1a; i1<=n1b; i1++ )
+            {
+
+              // ******** NOTE we can probably just increment ig by 1 if we start correctly
+              // int ig=getGlobalIndex( iv, grid, myid );  // get the global index
+
+              if( ig>=Istart && ig<=Iend )
+              {
+                if( false ) printf("SP:: myid=%i: i1,i2=%i,%i, ig=%i xrv[ig]=%6.4f\n",myid,i1,i2,ig,xrv[ig-Istart]);
+                uLocal(i1,i2,i3,nComp)=xrv[ig-Istart];
+              }
+              else
+              {
+                int p=myid;
+                printf("SP::ERROR: myid=%i, i1,i2=%i,%i, ig=%i Istart,Iend=[%i,%i]\n", myid,i1,i2,ig,Istart,Iend);
+              }
+              ig++;
+            }
+            
+          }
+          for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+          {  
+            ucg[grid].updateGhostBoundaries();
+            if( debug & 8 )
+              display(ucg[grid],sPrintF("Eigenvectors: ucg[%i]",grid),"%6.3f ");
+          }          
+
+
+
+
+        }
+      }
+
+      // -- compute eigenvalues of Lh from the Rayleigh Quotient ----
+      eig.redim(numEigenVectors);
+      for( int i=0; i<numEigenVectors; i++ ) 
+      {
+        Real lambdaRQ = cgWave.getRayleighQuotient( ucg, i );
+        eig(i) = lambdaRQ;
+        printF(" i=%d: lambda(Rayleigh Quotient) = %14.6e\n",i,lambdaRQ);
+      }
+      // ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+    }
+
+    GL_GraphicsInterface & ps = (GL_GraphicsInterface&)(*Overture::getGraphicsInterface("test"));
+    ps.erase();
+    PlotStuffParameters psp;
+    psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
+    PlotIt::contour(ps,ucg,psp);
+    psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true); 
+
+
+    OV_ABORT("petscSolver: computeEigenmodes - STOP HERE FOR NOW");
+
+    computeEigenmodesWithSLEPc=0; // reset 
+    adjustHelmholtzForUpwinding = adjustHelmholtzForUpwindingSave; // reset
+
+    // *** REMEMBER TO DESTROY STUFF ****
+  }
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
                 Create the linear solver and set various options
@@ -676,8 +972,10 @@ solvePETSc(int argc,char **args)
      Set operators. Here the matrix that defines the linear system
      also serves as the preconditioning matrix.
   */
-//   ierr = KSPSetOperators(ksp,A,A,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
-  ierr = KSPSetOperators(ksp,Amf,Amf,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
+  //   ierr = KSPSetOperators(ksp,A,A,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
+  // 3.4.5 ierr = KSPSetOperators(ksp,Amf,Amf,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
+  // 3.18.2: 
+  ierr = KSPSetOperators(ksp,Amf,Amf);CHKERRQ(ierr);
 
 
   /* 
@@ -690,7 +988,7 @@ solvePETSc(int argc,char **args)
        KSPSetFromOptions().  All of these defaults can be
        overridden at runtime, as indicated below.
   */
-  const real & tol = dbase.get<real>("tol");
+  const Real & tol = dbase.get<Real>("tol");
   
   // PETSc relative tolerance is based on the l2-norms:
   //        l2Norm(res)/l2Norm(b) < relativeTol
@@ -727,7 +1025,7 @@ solvePETSc(int argc,char **args)
                       Check solution and clean up
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-  if( testCase == 1)
+  if( testCase == 1) // **REAL RUN**
   {
     printF("***** DONE KSP SOLVE ******\n");
 
@@ -747,7 +1045,7 @@ solvePETSc(int argc,char **args)
     //   {
     //     getIndex(cg[grid].dimension(),I1,I2,I3);
 
-    //     OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+    //     OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
     //     FOR_3D(i1,i2,i3,I1,I2,I3)
     //     {
     //       assert( i<iEnd );
@@ -780,57 +1078,15 @@ solvePETSc(int argc,char **args)
     resVector(numberOfIterations) = kspResidual;
     numberOfIterations++;    
 
-    const real & maxResidual = dbase.get<real>("maxResidual");
+    const Real & maxResidual = dbase.get<Real>("maxResidual");
     printF("\n ######## DONE KYRLOV ITERATIONS -- KSP residual=%8.2e (max-res=%8.2e) (tol=%8.2e) numIts=%i #######\n",
            kspResidual,maxResidual,tol,numberOfIterations);
 
   
-    // if( FALSE )
-    // {
-    //   // *** CHECK ME SOMETHING IS WRONG HERE ****
 
-    //   // compute the maximum residual
-    //   printF(" ***solvePETSc::compute max residual...\n");
-
-    //   Vec res;
-    //   //     numberOfVects++;
-    //   //     printF("VecDup res, vect object %i.\n",numberOfVects);
-    //   ierr = VecDuplicate(b,&res);CHKERRQ(ierr);
-
-    //   ierr = MatMult(Amf,x,res);CHKERRQ(ierr);   // res = A*x
-
-    //   //     if( myid==0 ) printf("PETScSolver::res=A*x\n");
-    //   //     ierr = VecView(res,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-
-    //   //     if( myid==0 ) printf("PETScSolver::b\n");
-    //   //     ierr = VecView(res,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-
-    //   // Computes y = x + alpha y.
-    //   PetscScalar alpha; alpha=-1.;
-    //   // 2.2.1 VecAYPX(&alpha,b,res);  // res = b - res
-    //   VecAYPX(res,alpha,b);  // res = b - res
-
-    //   //     if( myid==0 ) printf("PETScSolver::res=b-A*x\n");
-    //   //     ierr = VecView(res,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-          
-    //   //     if( myid==0 ) printf("PETScSolver::b\n");
-    //   //     ierr = VecView(b,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-      
-   
-    //   PetscReal maxNorm;
-    //   VecNorm(res, NORM_INFINITY, &maxNorm);
-
-    //   ierr = VecDestroy(&res);CHKERRQ(ierr);    
-
-    //   printF(" ***solvePETSc: KSP residual=%8.2e, max residual = %8.2e \n",kspResidual,maxNorm);
-
-    // }  
-
-    // real maxRes = residual();
-    // printF("Maximum residual = %9.3e\n",maxRes);
     
   }
-  else
+  else // ** TEST CASE **
   {
 
     /* 

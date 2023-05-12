@@ -1,5 +1,8 @@
 #include "CgWave.h"
 #include "ParallelUtility.h"
+#include "gridFunctionNorms.h"
+#include "Integrate.h"
+#include "CompositeGridOperators.h";    
 
 // lapack routines
 #ifdef OV_USE_DOUBLE
@@ -63,10 +66,11 @@ Real mySinc( Real x )
   return y;
 }
 
-// -------------------------------------------------------
-// Evaluate the WaveHoltz beta function
-// -------------------------------------------------------
-Real betaWaveHoltz( Real lambda, Real omega, Real T )
+// -------------------------------------------------------------------
+/// \brief Evaluate the WaveHoltz beta function (single frequency)
+// -------------------------------------------------------------------
+Real 
+CgWave::betaWaveHoltz( Real lambda, Real omega, Real T )
 {
   //  General form of 
   //        beta(lambda; omega,T) = (2/T) int0^T (cos(omega*t)-.25)*cos(lambda*t) dt 
@@ -76,6 +80,108 @@ Real betaWaveHoltz( Real lambda, Real omega, Real T )
 
   return beta;
 }
+
+// -----------------------------------------------------------------------------------
+/// \brief Return the value of the non-zero eigenvalue of the
+///     the multi-frequency WaveHoltz iteration matrix (sometimes called mu)
+/// 
+/// \details For a single frequency this reduces to the WaveHoltz beta function.
+///  For multiple frequencies, the single non-zero eignvalue of the iteration matrix is returned.
+/// See the waho.pf document for derivation of the formula used here.
+/// 
+/// \param lambda (input) : array of lambda values to evaluate the mu function at.
+/// \param mu (output) : array of function values
+// ---------------------------------------------------------------------------------
+int CgWave::
+getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu )
+{
+  printF(">>Entering getWaveHoltzIterationEigenvalue.\n");
+
+  int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
+  const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");
+  const RealArray & periodArray     = dbase.get<RealArray>("periodArray"); 
+  const real & dt                   = dbase.get<real>("dt");  
+  const int & computeEigenmodes     = dbase.get<int>("computeEigenmodes");
+  const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+
+  RealArray A;
+  getMultiFrequencyWaveHoltzMatrix( A );
+
+  IntegerArray ipiv(numberOfFrequencies);
+  int info; 
+  // Factor Matrix, PA = LU 
+  GETRF( numberOfFrequencies,numberOfFrequencies, A(0,0), numberOfFrequencies, ipiv(0), info );
+  if( info!=0 )
+  {
+    printF("getWaveHoltzIterationEigenvalue:ERROR return from LU factor getrf: info=%d\n",info );
+    OV_ABORT("error");
+  }
+
+  // Form A^{-1}
+  int lwork=numberOfFrequencies;
+  RealArray w(lwork);
+  GETRI( numberOfFrequencies, A(0,0), numberOfFrequencies, ipiv(0), w(0), lwork, info );
+  if( info!=0 )
+  {
+    printF("getWaveHoltzIterationEigenvalue:ERROR return from computing the inverse of A using GETRI: info=%d\n",info);
+    OV_ABORT("error");
+  }
+  // -- compute w(i) = column sum of A^{-1} --
+  for( int j=0; j<numberOfFrequencies; j++ )
+  {
+    Real temp=0.;
+    for( int i=0; i<numberOfFrequencies; i++ )
+      temp += A(i,j);
+    w(j)=temp;
+  }
+
+  // RealArray B(numberOfFrequencies,numberOfFrequencies);
+  // RealArray M(numberOfFrequencies,numberOfFrequencies);
+
+  assert( dt>0 );
+
+  int numLambda = lambda.getLength(0);
+  for( int ilam=0; ilam<numLambda; ilam++ )
+  {
+
+    Real lam = lambda(ilam);
+    // if( true ||  !computeEigenmodes)
+    if( timeSteppingMethod==implicitTimeStepping )
+    {
+     // Adjust lambda for finite time-step -- important for implicit time-stepping at large CFL
+     // I think we should adjust for eigenmodes too -- the beta_j will lie on the shifted curve I think
+     // 
+     // See EigenWave paper for derivation: 
+     // D+tD-t W^n = -lam^2 (1/2) ( W^{n+1} + W^{n-1} )
+     //   W^n = e^(I lamTilde dt*n ) W^0
+     //  lamTilde =  acos( 1./( 1.+.5*SQR(lam*dt) ) )/dt
+     lam = acos( 1./( 1.+.5*SQR(lam*dt) ) )/dt;
+    }
+    else
+    {
+      // adjust for explicit time-stepping:
+      // D+tD-t W^n = - lam^2 W^n 
+      lam = asin(lam*dt*.5)*2./dt; 
+    }
+
+
+     // --- Form mu (see formulae in waho.pdf)
+     //   mu(lambda) = SUM_I beta(i)*w(i) 
+     Real muTemp=0.; 
+     for( int i=0; i<numberOfFrequencies; i++ )
+     {
+       Real beta = betaWaveHoltz( lam, frequencyArray(i), periodArray(i) );
+       muTemp += w(i)*beta;
+     }
+     mu(ilam)=muTemp;
+
+     // printF(">>>> ilam=%d: lam=%12.4e mu=%12.4e\n",ilam,lam,mu(ilam));
+
+  }
+
+  return 0;
+}
+
 
 // ----------------------------------------------------------------------------
 /// \brief Return the multi-frequency Wave-Holtz matrix "A"
@@ -89,7 +195,7 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
   const real & tFinal               = dbase.get<real>("tFinal");
   const real & dt                   = dbase.get<real>("dt");
   const int & adjustOmega           = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
-  RealArray & sigma = dbase.get<realArray>("sigma");  
+  RealArray & sigma                 = dbase.get<realArray>("sigma");  
 
   // ---- Compute the entries using quadrature rather than the exact formulae, in some cases----
   // const bool useQuadrature = adjustOmega && numberOfFrequencies>1;
@@ -123,13 +229,14 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
         A(i,j) = sum( sigma(Range(Nt+1),i)*( (cos(omega*tv)-.25)*cos(lambda*tv) ) )* (2./T); // qudarture approximation
 
         Real beta = betaWaveHoltz( frequencyArray(j), frequencyArray(i), periodArray(i) );
-        printF("getMultiFrequencyWaveHoltzMatrix: A(%d,%d)=%12.4e (exact)   =%12.4e (quadrature)  diff=%8.2e\n",i,j,beta,A(i,j),beta-A(i,j));
+        if( 1==1 || debug & 2 )
+          printF("getMultiFrequencyWaveHoltzMatrix: A(%d,%d)=%16.8e (exact)   =%16.8e (quadrature)  diff=%8.2e\n",i,j,beta,A(i,j),beta-A(i,j));
 
       }
 
     }
   }
-  if( true )
+  if( debug & 2 )
   {
     printF("getMultiFrequencyWaveHoltzMatrix: A:\n");
     for( int i=0; i<numberOfFrequencies; i++ )
@@ -164,7 +271,8 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
 int CgWave::
 updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGridFunction& u )
 {
-
+  Real cpu0 = getCPU();
+  
   realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
 
   const int & debug                 = dbase.get<int>("debug");
@@ -174,6 +282,7 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
   const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");  
   const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz");
   const int & adjustOmega           = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  const int & computeEigenmodes     = dbase.get<int>("computeEigenmodes");
 
   const real & omega                = dbase.get<real>("omega");
   const real & Tperiod              = dbase.get<real>("Tperiod");
@@ -182,6 +291,7 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
   int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
   RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
   RealArray & periodArray           = dbase.get<RealArray>("periodArray");  
+  const int & deflateWaveHoltz      = dbase.get<int>("deflateWaveHoltz");
 
   Index I1,I2,I3;
 
@@ -259,11 +369,17 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
 
   if( stepOption==lastStep )
   {
-    assert( step==Nt );
-
-    if( !( fabs(t-tFinal)< REAL_EPSILON*1000.*tFinal ) )
+    if( step!=Nt )
     {
-      printF("CgWave:ERROR: t != tFinal, t=%14.6e tFinal=%14.6e diff=%9.3e\n",t,tFinal,fabs(t-tFinal));
+      printF("updateTimeIntegral:WARNING: lastStep but step=%d != Nt=%d\n",step,Nt);
+      printF("tFinal=%14.6e, dt=%12.4e (Nt = round(tFinal/dt)\n",tFinal,dt);
+      OV_ABORT("error");
+    }
+
+    const Real tol = REAL_EPSILON*10000.*tFinal; 
+    if( !( fabs(t-tFinal)< tol ) )
+    {
+      printF("CgWave:ERROR: t != tFinal, t=%14.6e tFinal=%14.6e diff=%9.3e, tol=%9.3e\n",t,tFinal,fabs(t-tFinal),tol);
       
       OV_ABORT("ERROR");
     }
@@ -340,7 +456,10 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
     {
       
       if( false || (false && numberOfFrequencies==1) )  // ***************** Oct 31, 2021 NOT valid for multi-freq
-        applyBoundaryConditions( v, t );
+      {
+        bool applyExplicitBoundaryConditions=true;
+        applyBoundaryConditions( v, t, applyExplicitBoundaryConditions );
+      }
 
 
       // ---- MULTI-FREQUENCY PROJECTION -----
@@ -414,10 +533,26 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
         printF("\n ** cgWave:updateTimeIntegral: t=%9.3e, error in WaveHoltz v:  maxErr=%9.2e ** \n\n",t,maxErr);
       }
         
+      
+      const int & computeEigenmodesWithSLEPc = dbase.get<int>("computeEigenmodesWithSLEPc");
+      if( computeEigenmodes && !computeEigenmodesWithSLEPc ) 
+      {
+        updateEigenmodes();
+
+        Real relErrEigenvalue, relErrEigenvector;
+        getErrorsInEigenmodes( relErrEigenvalue, relErrEigenvector );
+
+      }
+
+      if( deflateWaveHoltz )
+      { // Deflate the solution by projecting out selected eigenvectors
+        deflateSolution();
+      }
     }
       
   }
 
+  timing(timeForTimeIntegral) += getCPU()- cpu0;
 
   return 0;
 }
@@ -436,6 +571,8 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
 // =================================================================================
 int CgWave::getIntegrationWeights( int Nt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma )
 {
+  // printF("\n ##### getIntegrationWeights #####\n\n");
+
   if( orderOfAccuracy!=2 && orderOfAccuracy!=4 )
   {
     printF("getIntegrationWeights:ERROR: orderOfAccuracy=%d is not supported\n",orderOfAccuracy);
@@ -638,102 +775,5 @@ int CgWave::getIntegrationWeights( int Nt, int numFreq, const RealArray & Tv, in
   return 0;
 
 }  
-  // if( numFreq>1 && orderOfAccuracy!=2 )
-  // {
-  //   printF("CgWave::getIntegrationWeights:ERROR: orderOfAccuracy=%d is not supported yet.\n",orderOfAccuracy);
-  //   OV_ABORT("error");
-  // }
-
-  // if( Tv(0) < max(abs(Tv)) )
-  // {
-  //   printF("getIntegrationWeights:ERROR: Tv(0)=%8.2e is not the largest!\n",Tv(0));
-  //   ::display(Tv,"Tv","%9.2e ");
-  //   OV_ABORT("error");
-  // }
-
-  // Real dt = Tv(0)/Nt; 
-
-  // sigma.redim(Nt+1,numFreq); // note: base 0 
-
-  // sigma = dt;  // set all weights to dt by default, this is not really needed
-
-  // // trapezoidal rule for Tv(0) -- this is the largest period 
-  // sigma( 0,0)=.5*dt; 
-  // sigma(Nt,0)=.5*dt; 
-
-  // printF("getIntegrationWeights: Nt=%i, dt=%9.3e\n",Nt,dt);
-
-  // // ------- assign weights for each frequency ------
-  // for( int i=1; i<numFreq; i++ )
-  // {
-  //   //                    ...          tf
-  //   //  +-----+ ...   +------+------+---X---+------+  ...  -----+
-  //   //  0                          im      ip                   Nt
-  //   //                  dt          |   |
-  //   //                               dt1
-
-  //   Real tf = Tv(i);                        //  final time for frequency i
-  //   int im = min( 1.*Nt,floor( tf/dt ) );   // point to left of tf
-  //   int ip = im+1;  
-  //   Real dt1 = tf- im*dt;                   // size of last interval
-  //   Real alpha = dt1/dt; 
-  //   if( alpha<0. || alpha>1. )
-  //   {
-  //     printF("getIntegrationWeights:ERROR: alpha<0 or alpha>1 -- something is wrong\n");
-  //     printF(" tf=%12.5e, dt=%10.2e, im=%d, alpha=dt1/dt = %8.3f\n",tf,dt,im,alpha);
-  //     OV_ABORT("error");
-  //   }
-
-  //   //  u(tf) = (1-alpha)*u(im) + alpha*u(ip)
-
-  //   Real wim = .5*dt + .5*dt1 + .5*(1-alpha)*dt1;  // weight for point im 
-  //   Real wip =                  .5*(  alpha)*dt1;  // weight for point ip
-  //   printF("getIntegrationWeights: freq i=%i T=%9.3e, im=%i, dt1/dt=%9.3e, wim/dt=%9.3e wip/dt=%9.3e\n",i,tf,im,dt1/dt,wim/dt,wip/dt);
-
-  //   assert( im!=0 );
-  //   assert( ip<=Nt );
-
-  //   sigma( 0,i) = .5*dt;  // ** assumes im!=0 
-  //   sigma(im,i) = wim;
-  //   sigma(ip,i) = wip;
-
-  //   if( ip<Nt)
-  //   {
-  //     sigma(Range(ip+1,Nt),i)=0.; // zero out remaining weights
-  //   }
-  // }
-
-  // // --- test accuracy ----
-  // if( 1==1 )
-  // {
-  //   Real tf = Tv(0); 
-  //   RealArray tv(Nt+1);
-  //   for( int i=0; i<=Nt; i++ )
-  //   {
-  //     tv(i) = i*dt; // tf/Real(Nt); 
-  //   }
-
-
-  //   RealArray uv(Nt+1);
-  //   Real ct1=1; 
-  //   uv = 1. + ct1*tv; // integrate 1 + t 
-
-  //   for( int i=0; i<numFreq; i++ )
-  //   {
-  //     tf = Tv(i); //  final time for frequency i
-  //     Real uIntTrue = tf + ct1*tf*tf/2.; 
-
-  //     Range N=Nt+1;
-  //     Real uInt = sum( sigma(N,i)*uv(N) );  //  quadrature
-
-  //     Real err = fabs( uInt - uIntTrue );
-  //     printF("getIntegrationWeights: freq i=%d, T=%9.3e, error in integral(1+%g*t) = %8.2e\n",i,tf,ct1,err);
-
-  //   }
-  // }
-
-  // return 0;
-
-// }
 
 

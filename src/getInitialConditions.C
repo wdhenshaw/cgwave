@@ -27,7 +27,7 @@ getInitialConditions( int current, real t, bool getTimeDerivative /* = false */ 
   // const int myid=Communication_Manager::My_Process_Number;
 
   real & dt = dbase.get<real>("dt");
-  printF("++++++++++++ getInitialConditions current=%d, t=%9.3e, dt=%9.3e ++++++++++++++ \n",current,t,dt);
+
   
   // enum InitialConditionOptionEnum
   // {
@@ -49,6 +49,10 @@ getInitialConditions( int current, real t, bool getTimeDerivative /* = false */ 
 
   realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
   real & c         = dbase.get<real>("c");
+
+  printF("++++++++++++ getInitialConditions current=%d, t=%9.3e, dt=%9.3e ++++++++++++++ \n",current,t,dt);
+  printF("++++++ getTimeDerivative=%d, initialConditionOption=%d ++++++\n",
+        (int)getTimeDerivative, (int)initialConditionOption);
 
   // Remove these: *wdh* Oct 31, 2021
   // real & beta = dbase.get<real>("beta");

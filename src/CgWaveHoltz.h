@@ -21,6 +21,7 @@ using namespace DBase;
 
 // forward declarations
 class CgWave;
+class GraphicsParameters;
 
 class CgWaveHoltz
 {
@@ -43,8 +44,13 @@ int interactiveUpdate();
 
 int outputHeader();
 
+// output tables for eigenWave
+int outputEigenTable();
+
 // save results to a Matlab file
-int outputMatlabFile();
+int outputMatlabFile( const aString & matlabFileName );
+
+int plotEigenVectors( realCompositeGridFunction & eigenVectors, const RealArray & eig, const aString & name, GL_GraphicsInterface & ps, GraphicsParameters & psp );
 
 // Compute the residual in the current solution
 real residual( int useAdjustedOmega = 2 );
@@ -60,11 +66,22 @@ int setup();
 // WaveHoltz iteration:
 int solve();
 
-// Solve Helmholtz using a direct or iterative solver.
-int solveHelmholtz( realCompositeGridFunction & u, realCompositeGridFunction & f );
+// Solve for eigenvalues and eigenwvectors using WaveHoltz
+int solveEigen(int argc,char **argv);
 
-// PETSc solver 
+// Solve Helmholtz using WaveHoltz
+int solveHelmholtz(int argc,char **argv);
+
+// Solve Helmholtz using a direct or iterative solver.
+int solveHelmholtzDirect( realCompositeGridFunction & u, realCompositeGridFunction & f );
+
+// Solve the FPI equations uisng PETSc 
 int solvePETSc(int argc,char **args);
+
+// Solve for eigenmodes using SLEPc
+int solveSLEPc(int argc,char **args);
+
+
 
 // The database is used to hold parameters
 mutable DataBase dbase;

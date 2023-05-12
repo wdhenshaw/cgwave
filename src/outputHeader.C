@@ -1,5 +1,7 @@
 #include "CgWave.h"
 
+#include "OgesParameters.h"
+
 // =======================================================================================
 /// \brief Output the header banner with parameters and grid info.
 // =======================================================================================
@@ -26,7 +28,7 @@ outputHeader()
   const int & orderOfAccuracy               = dbase.get<int>("orderOfAccuracy");
   const int & orderOfAccuracyInTime         = dbase.get<int>("orderOfAccuracyInTime");
   const real & dt                           = dbase.get<real>("dt");
-  const int & modifiedEquationApproach      = dbase.get<int>("modifiedEquationApproach");
+  const ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
       
   int & addForcing                          = dbase.get<int>("addForcing");
   ForcingOptionEnum & forcingOption         = dbase.get<ForcingOptionEnum>("forcingOption");
@@ -39,10 +41,21 @@ outputHeader()
   const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep"); 
 	      
   const int & solveHelmholtz                = dbase.get<int>("solveHelmholtz");
+  const int & computeEigenmodes             = dbase.get<int>("computeEigenmodes");
   const int & computeTimeIntegral           = dbase.get<int>("computeTimeIntegral");
   const int & adjustOmega                   = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
   const int & adjustHelmholtzForUpwinding   = dbase.get<int>("adjustHelmholtzForUpwinding");
+  const Real & eigenVectorForcingFactor     = dbase.get<Real>("eigenVectorForcingFactor");
+
   RealArray & dxMinMax                      = dbase.get<RealArray>("dxMinMax");
+
+  const int & deflateWaveHoltz              = dbase.get<int>("deflateWaveHoltz");
+  const int & numToDeflate                  = dbase.get<int>("numToDeflate");
+  const aString & eigenVectorFile           = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
+  const int & minStepsPerPeriod             = dbase.get<int>("minStepsPerPeriod");
+  const int & numberOfRitzVectors           = dbase.get<int>("numberOfRitzVectors");
+  const int & assignRitzFrequency           = dbase.get<int>("assignRitzFrequency");
+
 
   TwilightZoneEnum & twilightZone = dbase.get<TwilightZoneEnum>("twilightZone");
   const int & degreeInSpace = dbase.get<int>("degreeInSpace");
@@ -82,12 +95,52 @@ outputHeader()
     fPrintF(file," timeSteppingMethod = %s\n",(timeSteppingMethod==explicitTimeStepping ? "explicit (modified equation)" :
                                                timeSteppingMethod==implicitTimeStepping ? "implicit" : "unknown") );
     fPrintF(file," modifiedEquationApproach = %s\n",
-          (modifiedEquationApproach==0 ? "standard modified equation" : 
-                                          "hierarchical modified equation" ));
+          (modifiedEquationApproach==standardModifiedEquation     ? "standard modified equation" : 
+           modifiedEquationApproach==hierarchicalModifiedEquation ? "hierarchical modified equation" :
+           modifiedEquationApproach==stencilModifiedEquation      ? "stencil" :
+                                         "unknown" ) );
+    
+    fPrintF(file," orderOfAccuracy=%i, orderOfAccuracyInTime=%d \n",
+        orderOfAccuracy, (orderOfAccuracyInTime==-1 ? orderOfAccuracy : orderOfAccuracyInTime) );
+
+    if( timeSteppingMethod==implicitTimeStepping )
+    {
+      if( dbase.has_key("implicitSolverParameters") )
+      {
+        OgesParameters & par = dbase.get<OgesParameters>("implicitSolverParameters");
+        fPrintF(file," implict solver=%s\n",(const char*)par.getSolverName());
+      
+        Real atol, rtol;
+        par.get(OgesParameters::THEabsoluteTolerance,atol);
+        par.get(OgesParameters::THErelativeTolerance,rtol);
+        fPrintF(file," implicit solver: rtol=%9.2e, atol=%9.2e\n",rtol,atol);
+      }
+      else
+      {
+        fPrintF(file,"  implicit solver = default.\n");
+      }
+      bool semiImplicit = min(gridIsImplicit)==0;
+      if( !semiImplicit )
+      {
+        fPrintF(file,"  All grids are implicit.\n");
+      }
+      else
+      {
+        fPrintF(file," Some grids are implicit and some are explicit:\n");
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+          if( !gridIsImplicit(grid) )
+            fPrintF(file,"   grid %3d (%s) is explicit.\n",grid,(const char*)cg[grid].getName());
+        }
+      }
+    }    
     fPrintF(file," implicit time-stepping weights: cImp(-1,0)=%g, cImp(0,0)=%g, cImp(1,0)=%g (2nd-order term)\n",cImp(-1,0),cImp(0,0),cImp(1,0));
     fPrintF(file,"                               : cImp(-1,1)=%g, cImp(0,1)=%g, cImp(1,1)=%g (4th-order term)\n",cImp(-1,1),cImp(0,1),cImp(1,1));
+    
     fPrintF(file," chooseImplicitTimeStepFromCFL=%d (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
-    fPrintF(file," orderOfAccuracy=%i, orderOfAccuracyInTime=%d \n",orderOfAccuracy, (orderOfAccuracyInTime==-1 ? orderOfAccuracy : orderOfAccuracyInTime) );
+
+
+
 
     fPrintF(file," upwind dissipation is %s, dissipationFrequency=%i\n",(upwind ? "on" : "off"),dissipationFrequency);
     fPrintF(file," upwind dissipation: preComputeUpwindUt=%i \n"
@@ -99,12 +152,7 @@ outputHeader()
          assignInterpNeighbours==extrapolateInterpNeighbours ? "extrapolate" :
                                                                "interpolate" )); // default 
     
-    fPrintF(file," adjust Helmholtz for upwinding=%d\n",adjustHelmholtzForUpwinding);
-    fPrintF(file," forcingOption=%s.\n",(forcingOption==noForcing           ? "noForcing"           :
-                                         forcingOption==twilightZoneForcing ? "twilightZoneForcing" :
-                                         forcingOption==userForcing         ? "userForcing"         :
-                                         forcingOption==helmholtzForcing    ? "helmholtzForcing"    : 
-                                                                              "unknown"));
+
 
     fPrintF(file," twilightZone = %s, degreeInSpace=%d, degreeInTime=%d\n",
             (twilightZone==polynomial ? "polynomial" : "trigonometric"), degreeInSpace,degreeInTime);
@@ -123,7 +171,20 @@ outputHeader()
     {
       fPrintF(file," **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=%d (for discrete symbol of D+tD-t) ****\n",adjustOmega);
     }
-      
+
+    fPrintF(file," computeEigenmodes=%d (1= solve from eigenvalues and eigenvectors using the WaveHoltz algorithm).\n",computeEigenmodes);
+    fPrintF(file," numberOfRitzVectors=%d (maximum number of vectors to use for Rayleigh-Ritz)\n",numberOfRitzVectors);
+    fPrintF(file," assignRitzFrequency=%d (assign Ritz solution this often)\n",assignRitzFrequency);
+    fPrintF(file," eigenVectorForcingFactor=%g (scale factor for eigenvector forcing)\n",eigenVectorForcingFactor);
+
+    fPrintF(file," adjust Helmholtz for upwinding=%d. Minimum time-steps per period=%d.\n",adjustHelmholtzForUpwinding,minStepsPerPeriod);
+    fPrintF(file," deflateWaveHoltz=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,numToDeflate,
+          (const char*)eigenVectorFile);
+    fPrintF(file," forcingOption=%s.\n",(forcingOption==noForcing           ? "noForcing"           :
+                                         forcingOption==twilightZoneForcing ? "twilightZoneForcing" :
+                                         forcingOption==userForcing         ? "userForcing"         :
+                                         forcingOption==helmholtzForcing    ? "helmholtzForcing"    : 
+                                                                              "unknown"));      
     fPrintF(file," computeTimeIntegral=%d\n",computeTimeIntegral);
     fPrintF(file," computeErrors=%d\n",computeErrors);
     

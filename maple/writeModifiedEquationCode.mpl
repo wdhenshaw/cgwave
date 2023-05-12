@@ -22,11 +22,13 @@ gridTypeName[rectangular]:="Rectangular";
 gridTypeName[curvilinear]:="Curvilinear"; 
 
 ndStart := 2: ndEnd:=3:     # number of dimensions
-orderStart:=6: orderEnd:=8: # order of accuracy
+orderStart:=2: orderEnd:=8: # order of accuracy
 # orderOfAccuracy  := 8:      # order of accuracy
 # gridType         := rectangular: 
 # gridType         := curvilinear;
-gridTypeStart:=2: gridTypeEnd:=2: # gridType 
+gridTypeStart:=1: gridTypeEnd:=2: # gridType 
+
+includeDir := "../include"; # put include files here
 
 # --- difference weights from highOrderDiff.maple -----
 # Weights in deriv 1
@@ -382,8 +384,8 @@ rNames[0]:="r": rNames[1]:="s": rNames[2]:="t":
 xNames[0]:="x": xNames[1]:="y": xNames[2]:="z":
 
 # -- define file names: 
-myFileName := sprintf("update%ddOrder%d%s.h",nd,orderOfAccuracy,gridTypeName[gridType]); 
-declareFileName := sprintf("declare%ddOrder%d%s.h",nd,orderOfAccuracy,gridTypeName[gridType]);  # for declarations of variables 
+myFileName := sprintf("%s/update%ddOrder%d%s.h",includeDir,nd,orderOfAccuracy,gridTypeName[gridType]); 
+declareFileName := sprintf("%s/declare%ddOrder%d%s.h",includeDir,nd,orderOfAccuracy,gridTypeName[gridType]);  # for declarations of variables 
 
 
 file := open(myFileName, WRITE);
@@ -452,10 +454,10 @@ fprintf(dfile,"!  Macro created by maple code: cgwave/maple/writeModifiedEquatio
 fprintf(dfile,"! ===========================================================================\n");
 fprintf(dfile,"#beginMacro declare%ddOrder%d%s()\n",nd,orderOfAccuracy,gridTypeName[gridType]); 
 
-fprintf(file,"#If #FORCING eq noForcing\n"):
-fprintf(file,"#defineMacro FV(m) \n"):
-fprintf(file,"#Else\n"):
+fprintf(file,"#If #FORCING eq \"USEFORCING\"\n"):
 fprintf(file,"#defineMacro FV(m) +dtSq*fv(m)\n"):
+fprintf(file,"#Else\n"):
+fprintf(file,"#defineMacro FV(m) \n"):
 fprintf(file,"#End\n"):
 
 

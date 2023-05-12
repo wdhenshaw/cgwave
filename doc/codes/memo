@@ -1,3 +1,14 @@
+cd ~/Dropbox/research/cgwave/doc/codes
+
+
+**********************************************
+******** Sat Jan 14, 2023
+
+RETURN TO WAVEHOLTZ RESULTS FOR PAPER
+
+plotResiduals -caseOption=gaussianSquareOmega17p17
+
+
 **********************************************
 ******** Fri July 23, 2021
 

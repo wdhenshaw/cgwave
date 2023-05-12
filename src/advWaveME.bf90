@@ -20,7 +20,6 @@
 ! define macros to evaluate derivatives for the 6th order method (from maple/makeGetDerivativesMacros.maple)
 ! #Include "../maple/defineGetSixthDerivativesMacros.h"
 
-
 ! ======================================================================================
 !   Evaluate the TZ exact solution in 2D
 ! ======================================================================================
@@ -561,66 +560,66 @@ end if
 
 
 ! --------- include macros ORDER=2 --------
-#Include "../maple/declare2dOrder2Rectangular.h"
-#Include "../maple/update2dOrder2Rectangular.h"
+#Include "../include/declare2dOrder2Rectangular.h"
+#Include "../include/update2dOrder2Rectangular.h"
 
-#Include "../maple/declare2dOrder2Curvilinear.h"
-#Include "../maple/update2dOrder2Curvilinear.h"
+#Include "../include/declare2dOrder2Curvilinear.h"
+#Include "../include/update2dOrder2Curvilinear.h"
 
-#Include "../maple/declare3dOrder2Rectangular.h"
-#Include "../maple/update3dOrder2Rectangular.h"
+#Include "../include/declare3dOrder2Rectangular.h"
+#Include "../include/update3dOrder2Rectangular.h"
 
-#Include "../maple/declare3dOrder2Curvilinear.h"
-#Include "../maple/update3dOrder2Curvilinear.h"
+#Include "../include/declare3dOrder2Curvilinear.h"
+#Include "../include/update3dOrder2Curvilinear.h"
 
 
 ! --------- include macros ORDER=4 --------
-! #Include "../maple/declare2dOrder4Rectangular.h"
-! #Include "../maple/update2dOrder4Rectangular.h"
+! #Include "../include/declare2dOrder4Rectangular.h"
+! #Include "../include/update2dOrder4Rectangular.h"
 
-#Include "../maple/declare2dOrder4RectangularV1.h"
-#Include "../maple/update2dOrder4RectangularV1.h"
+#Include "../include/declare2dOrder4RectangularV1.h"
+#Include "../include/update2dOrder4RectangularV1.h"
 
-#Include "../maple/declare2dOrder4Curvilinear.h"
-#Include "../maple/update2dOrder4Curvilinear.h"
+#Include "../include/declare2dOrder4Curvilinear.h"
+#Include "../include/update2dOrder4Curvilinear.h"
 
-! #Include "../maple/declare3dOrder4Rectangular.h"
-! #Include "../maple/update3dOrder4Rectangular.h"
-#Include "../maple/declare3dOrder4RectangularV1.h"
-#Include "../maple/update3dOrder4RectangularV1.h"
+! #Include "../include/declare3dOrder4Rectangular.h"
+! #Include "../include/update3dOrder4Rectangular.h"
+#Include "../include/declare3dOrder4RectangularV1.h"
+#Include "../include/update3dOrder4RectangularV1.h"
 
-#Include "../maple/declare3dOrder4Curvilinear.h"
-#Include "../maple/update3dOrder4Curvilinear.h"
+#Include "../include/declare3dOrder4Curvilinear.h"
+#Include "../include/update3dOrder4Curvilinear.h"
 
 
 ! --------- include macros ORDER=6 --------
-! #Include "../maple/declare2dOrder6Rectangular.h"
-! #Include "../maple/update2dOrder6Rectangular.h"
+! #Include "../include/declare2dOrder6Rectangular.h"
+! #Include "../include/update2dOrder6Rectangular.h"
 
-#Include "../maple/declare2dOrder6RectangularV1.h"
-#Include "../maple/update2dOrder6RectangularV1.h"
+#Include "../include/declare2dOrder6RectangularV1.h"
+#Include "../include/update2dOrder6RectangularV1.h"
 
-#Include "../maple/declare2dOrder6Curvilinear.h"
-#Include "../maple/update2dOrder6Curvilinear.h"
+#Include "../include/declare2dOrder6Curvilinear.h"
+#Include "../include/update2dOrder6Curvilinear.h"
 
-#Include "../maple/declare3dOrder6RectangularV1.h"
-#Include "../maple/update3dOrder6RectangularV1.h"
+#Include "../include/declare3dOrder6RectangularV1.h"
+#Include "../include/update3dOrder6RectangularV1.h"
 
-#Include "../maple/declare3dOrder6Curvilinear.h"
-#Include "../maple/update3dOrder6Curvilinear.h"
+#Include "../include/declare3dOrder6Curvilinear.h"
+#Include "../include/update3dOrder6Curvilinear.h"
 
 ! --------- include macros ORDER=8 --------
-#Include "../maple/declare2dOrder8RectangularV1.h"
-#Include "../maple/update2dOrder8RectangularV1.h"
+#Include "../include/declare2dOrder8RectangularV1.h"
+#Include "../include/update2dOrder8RectangularV1.h"
 
-#Include "../maple/declare2dOrder8Curvilinear.h"
-#Include "../maple/update2dOrder8Curvilinear.h"
+#Include "../include/declare2dOrder8Curvilinear.h"
+#Include "../include/update2dOrder8Curvilinear.h"
 
-#Include "../maple/declare3dOrder8RectangularV1.h"
-#Include "../maple/update3dOrder8RectangularV1.h"
+#Include "../include/declare3dOrder8RectangularV1.h"
+#Include "../include/update3dOrder8RectangularV1.h"
 
-#Include "../maple/declare3dOrder8Curvilinear.h"
-#Include "../maple/update3dOrder8Curvilinear.h"
+#Include "../include/declare3dOrder8Curvilinear.h"
+#Include "../include/update3dOrder8Curvilinear.h"
 
 
 
@@ -847,9 +846,9 @@ end if
 ! declare coefficients in the chain rule for curvilinear grids (from cgwave/maple/chainRuleCoefficients.mw)
 ! #If #GRIDTYPE eq "curvilinear"
 !   #If DIM == 2
-!     #Include "../maple/declareChainRuleCoefficients2d.h"
+!     #Include "../include/declareChainRuleCoefficients2d.h"
 !   #Else
-!     #Include "../maple/declareChainRuleCoefficients3d.h"
+!     #Include "../include/declareChainRuleCoefficients3d.h"
 !   #End
 ! #End
 
@@ -1132,25 +1131,27 @@ end if
 #endMacro
 
 
-! buildFile(advWaveME2dOrder2r,2,2,rectangular)
-! buildFile(advWaveME3dOrder2r,3,2,rectangular)
-! buildFile(advWaveME2dOrder2c,2,2,curvilinear)
-! buildFile(advWaveME3dOrder2c,3,2,curvilinear)
+! -- create different files ---
+buildFile(advWaveME2dOrder2r,2,2,rectangular)
+buildFile(advWaveME3dOrder2r,3,2,rectangular)
+buildFile(advWaveME2dOrder2c,2,2,curvilinear)
+buildFile(advWaveME3dOrder2c,3,2,curvilinear)
 
-! buildFile(advWaveME2dOrder4r,2,4,rectangular)
-! buildFile(advWaveME3dOrder4r,3,4,rectangular)
-! buildFile(advWaveME2dOrder4c,2,4,curvilinear)
-! buildFile(advWaveME3dOrder4c,3,4,curvilinear)
+buildFile(advWaveME2dOrder4r,2,4,rectangular)
+buildFile(advWaveME3dOrder4r,3,4,rectangular)
+buildFile(advWaveME2dOrder4c,2,4,curvilinear)
+buildFile(advWaveME3dOrder4c,3,4,curvilinear)
 
-! buildFile(advWaveME2dOrder6r,2,6,rectangular)
-! buildFile(advWaveME3dOrder6r,3,6,rectangular)
+buildFile(advWaveME2dOrder6r,2,6,rectangular)
+buildFile(advWaveME3dOrder6r,3,6,rectangular)
 buildFile(advWaveME2dOrder6c,2,6,curvilinear)
 buildFile(advWaveME3dOrder6c,3,6,curvilinear)
 
-! buildFile(advWaveME2dOrder8r,2,8,rectangular)
-! buildFile(advWaveME3dOrder8r,3,8,rectangular)
+buildFile(advWaveME2dOrder8r,2,8,rectangular)
+buildFile(advWaveME3dOrder8r,3,8,rectangular)
 buildFile(advWaveME2dOrder8c,2,8,curvilinear)
 buildFile(advWaveME3dOrder8c,3,8,curvilinear)
+
 
 
 

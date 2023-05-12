@@ -1,0 +1,121 @@
+! ===========================================================================
+!   Modified Equation : order=2, DIMENSIONS=2, gridType=Curvilinear
+!  Macro created by maple code: cgwave/maple/writeModifiedEquationCode.mpl
+!  MASK : USEMASK or NOMASK 
+!  FORCING : NOFORCING, TZ, USEFORCING 
+! ===========================================================================
+#beginMacro update2dOrder2Curvilinear(DIM,ORDER,ORDERINTIME,GRIDTYPE,MASK,FORCING)
+#If #FORCING eq "USEFORCING"
+#defineMacro FV(m) +dtSq*fv(m)
+#Else
+#defineMacro FV(m) 
+#End
+
+! ---- DEFINE CONSTANTS IN EXPANSIONS OF DERIVATIVES ----
+! Example: 
+! u.rr = D+D-( I + crr1*D+D- + crr2*(D+D-x)^2 + ...
+dr1=dr(0); dr1i=1./dr1;
+dr2=dr(1); dr2i=1./dr2;
+dr3=dr(2); dr3i=1./dr3;
+fv(m)=0.
+
+#defineMacro c200(i1,i2,i3) lapCoeff(i1,i2,i3,0)
+#defineMacro c020(i1,i2,i3) lapCoeff(i1,i2,i3,1)
+#defineMacro c110(i1,i2,i3) lapCoeff(i1,i2,i3,2)
+#defineMacro c100(i1,i2,i3) lapCoeff(i1,i2,i3,3)
+#defineMacro c010(i1,i2,i3) lapCoeff(i1,i2,i3,4)
+
+if( c200(0,0,0).le.0. )then
+
+  ! --- Evaluate and store coefficients in Laplacian ---
+  write(*,*) 'ASSIGN SCALED LAPLACIAN COEFF'
+
+  numGhost1=0;
+  n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+  n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+  n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+beginLoops3d()
+  #If #MASK eq "USEMASK" 
+  if( mask(i1,i2,i3).ne.0 )then
+  #End 
+    rx = rsxy(i1,i2,i3,0,0)
+    ry = rsxy(i1,i2,i3,0,1)
+    sx = rsxy(i1,i2,i3,1,0)
+    sy = rsxy(i1,i2,i3,1,1)
+
+    ! --- choose order for (r,s,t) derivatives based on available ghost points, less accuracy is needed in ghost points  ---
+    if( (i1-1).ge.nd1a .and. (i1+1).le.nd1b )then
+      diffOrder1=2
+    else
+      stop 999
+    end if
+    if( (i2-1).ge.nd2a .and. (i2+1).le.nd2b )then
+      diffOrder2=2
+    else
+      stop 999
+    end if
+    if( diffOrder1.eq.2 )then
+      rxr = (rsxy(i1+1,i2,i3,0,0)-rsxy(i1-1,i2,i3,0,0))*(.5*dr1i) 
+      ryr = (rsxy(i1+1,i2,i3,0,1)-rsxy(i1-1,i2,i3,0,1))*(.5*dr1i) 
+      sxr = (rsxy(i1+1,i2,i3,1,0)-rsxy(i1-1,i2,i3,1,0))*(.5*dr1i) 
+      syr = (rsxy(i1+1,i2,i3,1,1)-rsxy(i1-1,i2,i3,1,1))*(.5*dr1i) 
+    end if
+    if( diffOrder2.eq.2 )then
+      rxs = (rsxy(i1,i2+1,i3,0,0)-rsxy(i1,i2-1,i3,0,0))*(.5*dr2i) 
+      rys = (rsxy(i1,i2+1,i3,0,1)-rsxy(i1,i2-1,i3,0,1))*(.5*dr2i) 
+      sxs = (rsxy(i1,i2+1,i3,1,0)-rsxy(i1,i2-1,i3,1,0))*(.5*dr2i) 
+      sys = (rsxy(i1,i2+1,i3,1,1)-rsxy(i1,i2-1,i3,1,1))*(.5*dr2i) 
+    end if
+    rxx = rx*rxr + sx*rxs 
+    ryy = ry*ryr + sy*rys 
+    sxx = rx*sxr + sx*sxs 
+    syy = ry*syr + sy*sys 
+
+    ! -- Coefficients in the Laplacian (scaled)
+    c200(i1,i2,i3) = (rx**2 + ry**2   )*dr1i**2
+    c110(i1,i2,i3) = 2.*(rx*sx + ry*sy)*dr1i*dr2i*.25
+    c020(i1,i2,i3) = (sx**2 + sy**2   )*dr2i**2
+    c100(i1,i2,i3) = (rxx + ryy       )*dr1i*.5
+    c010(i1,i2,i3) = (sxx + syy       )*dr2i*.5 
+
+  #If #MASK eq "USEMASK" 
+    end if ! mask .ne. 0
+  #End 
+  endLoops3d() 
+end if ! end assignLapCoeff
+
+! ===========  FINAL LOOP TO FILL IN THE SOLUTION ============
+
+numGhost1=0;
+n1a=max(nd1a,gridIndexRange(0,0)-numGhost1);  n1b=min(nd1b,gridIndexRange(1,0)+numGhost1);
+n2a=max(nd2a,gridIndexRange(0,1)-numGhost1);  n2b=min(nd2b,gridIndexRange(1,1)+numGhost1);
+n3a=max(nd3a,gridIndexRange(0,2)-numGhost1);  n3b=min(nd3b,gridIndexRange(1,2)+numGhost1);
+beginLoops3d()
+  #If #MASK eq "USEMASK" 
+  if( mask(i1,i2,i3).ne.0 )then
+  #End 
+    d200i = u(i1+1,i2,i3,0) - 2*u(i1,i2,i3,0) + u(i1-1,i2,i3,0)
+    d020i = u(i1,i2+1,i3,0) - 2*u(i1,i2,i3,0) + u(i1,i2-1,i3,0)
+    d100i = u(i1+1,i2,i3,0) - u(i1-1,i2,i3,0)
+    d010i = u(i1,i2+1,i3,0) - u(i1,i2-1,i3,0)
+    d110i = u(i1+1,i2+1,i3,0) - u(i1-1,i2+1,i3,0) - u(i1+1,i2-1,i3,0) + u(i1-1,i2-1,i3,0)
+    lap2h = \
+         c200(i1,i2,i3)*d200i + \
+         c110(i1,i2,i3)*d110i + \
+         c020(i1,i2,i3)*d020i +\
+         c100(i1,i2,i3)*d100i + \
+         c010(i1,i2,i3)*d010i
+    #If #FORCING ne "NOFORCING" 
+      getForcing(DIM,ORDER,ORDERINTIME,GRIDTYPE) 
+    #End 
+
+
+    ! --- Modified equation space-time update ----
+    un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) \
+             + cdtsq*( lap2h )                         \
+             FV(m)                             
+  #If #MASK eq "USEMASK" 
+    end if ! mask .ne. 0
+  #End 
+  endLoops3d() 
+#endMacro

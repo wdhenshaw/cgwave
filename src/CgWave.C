@@ -13,6 +13,7 @@
 #include "DialogData.h"
 #include "Ogshow.h"
 #include "LCBC.h"
+#include "OgesParameters.h"
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
@@ -59,6 +60,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<real>("tFinal")=1.;
   dbase.put<real>("tPlot")=.1;
   dbase.put<real>("dt")=-1.;
+  dbase.put<real>("dtUsed")=-1.; // dt actually used
   dbase.put<Real>("dtMax")=-1.;  // save maximum allowable dt (before corrections to reach a given time)
 
   dbase.put<int>("upwind")=0;  // use upwind dissipation
@@ -85,12 +87,24 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("secondOrderGrid")=1;
   dbase.put<int>("debug")=0;
 
+  dbase.put<int>("deflateWaveHoltz") = 0;      //  set to 1 to turn on deflation for WaveHoltz
+  dbase.put<int>("numToDeflate")     = 1; //  number of eigenvectors to deflate
+  dbase.put<bool>("deflationInitialized") = false; //  set too true if deflation has been initialized
+  dbase.put<aString>("eigenVectorFile")= "none"; //  name of file holding eigs and eigenvectors for deflation
+  dbase.put<Real>("eigenVectorForcingFactor")=0.;   // scale eigenvector forcing by this amount
+  dbase.put<int>("numEigsToCompute")=1; // number of eigenpairs to compute 
+  dbase.put<int>("iterationStartRR") = 5;
+  dbase.put<int>("useAccurateInnerProduct")=true; // use accurate inner product for computing the Rayleigh quotient
+  dbase.put<Real>("eigenValueTolForMultiplicity")=1.e-4;  // tolerance for eignavlue multiplicities
+
+
   dbase.put<TimeSteppingMethodEnum>("timeSteppingMethod")=explicitTimeStepping;
 
   // We have different versions of modified equation time-stepping
   //   0 = standard
   //   1 = hierachical (faster but more memory)
-  dbase.put<int>("modifiedEquationApproach")=0;
+  //   2 = stencil
+  dbase.put<ModifiedEquationApproachEnum>("modifiedEquationApproach")=standardModifiedEquation;
 
   // coefficients in implicit time-stepping  
   //  D+t D-t u =              c^2 Delta( cImp(1,0) *u^{n+1} + cImp(0,0) *u^n + cImp(-1,0)* u^{n-1} )   :  second-order coeff cImp(-1:1,0)
@@ -128,6 +142,8 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<real>("numberOfGridPoints")=0.;
   dbase.put<int>("numberOfStepsTaken")=0;            // total steps taken
   dbase.put<int>("numberOfStepsPerSolve")=0;         // number of steps take per solve
+  dbase.put<int>("totalImplicitIterations")=0;       // total iterations used in implicit solves
+  dbase.put<int>("totalImplicitSolves")=0;           // total number of implicit solves
   
   dbase.put<RealArray>("dxMinMax");
   dbase.put<aString>("nameOfGridFile")="unknown";
@@ -137,14 +153,29 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   // dbase.put<int>("computeErrors")=0;   // true of we compute errors 
 
   // For Helmholtz solve with CgWaveHoltz
-  dbase.put<int>("solveHelmholtz")=false;
+  dbase.put<int>("solveHelmholtz")=false;      // if true,  use the WaveHoltz algorithm to solve the Helmholtz equation
+  dbase.put<int>("computeEigenmodes")=false;   // if true, use the WaveHoltz algorithm to compute eigenvalues and eigenvectors
+  dbase.put<int>("computeEigenmodesWithSLEPc")=false;   // if true, we are solving for eigenvalues and eigenvectors with SLEPc
+  dbase.put<EigenSolverEnum>("eigenSolver") = defaultEigenSolver;     // eigensolver used by SLEPSc
+  dbase.put<int>("initialVectorsForEigenSolver")=true;          // provide initial vectors used by SLEPSc solvers
+  dbase.put<int>("initialVectorSmooths")=500;           // number of times to smooth the initial vectors for the eigen solvers
+
   dbase.put<int>("computeTimeIntegral")=false; // if true compute the time-integral (for the Helmholtz solve or other reason)
+  dbase.put<int>("iteration")=-1;              // iteration number of WaveHoltz
+  // Save WaveHoltz "residuals" by iteration: 
+  // resVector(it) = norm( v^{n+1} - v^n )
+  dbase.put<RealArray>("resVector");
 
   dbase.put<int>("adjustOmega")=0;                    // 1 : choose omega from the symbol of D+t D-t 
   dbase.put<int>("adjustHelmholtzForUpwinding")=1;    // 1 : correct Helmholtz for upwinding (when adjustOmega=1)
   real & omega = dbase.put<real>("omega")=30.1;
   dbase.put<real>("Tperiod")=twoPi/omega;
   dbase.put<int>("numPeriods")=10;
+  dbase.put<int>("minStepsPerPeriod")= 10; // take at least this many steps for implicit time-stepping
+  dbase.put<int>("numberOfRitzVectors")=10; // maximum number of Rayleigh-Ritz vectors to use 
+  dbase.put<int>("assignRitzFrequency")=5;  // set solution to latest Ritz vector every this many steps
+
+  dbase.put<real>("waveHoltzAsymptoticConvergenceRate")=-1.; // in some cases we can compute this 
 
   dbase.put<Real>("omegaSave")   = -1.;  // used when we adjust omega 
   dbase.put<Real>("TperiodSave") = -1.;
@@ -156,6 +187,8 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   RealArray & frequencyArrayAdjusted = dbase.put<RealArray>("frequencyArrayAdjusted");
 
   RealArray & periodArray            = dbase.put<RealArray>("periodArray");
+  RealArray & periodArrayAdjusted    = dbase.put<RealArray>("periodArrayAdjusted");
+
   IntegerArray & numPeriodsArray     = dbase.put<IntegerArray>("numPeriodsArray");
   frequencyArray.redim(numberOfFrequencies);
   frequencyArray(0)=30.1;
@@ -303,6 +336,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   timingName[timeForBoundaryConditions]          ="  boundary conditions";
   timingName[timeForUpdateGhostBoundaries]       ="  update ghost (parallel)";
   timingName[timeForInterpolate]                 ="  interpolation";
+  timingName[timeForTimeIntegral]                ="  time integral";
   timingName[timeForGetError]                    ="  get errors";
   timingName[timeForPlotting]                    ="  plotting";
   timingName[timeForOutputResults]               ="output results";
@@ -348,6 +382,20 @@ CgWave::
     delete [] dbase.get<RealArray*>("lapCoeff");
   }
 
+  if( dbase.has_key("stencilCoeff") )
+  { // stencil coefficients
+    delete [] dbase.get<RealArray*>("stencilCoeff");
+  }  
+
+}
+
+// ================================================================================================
+/// \brief Re-initialize deflation (if the number of vectors to deflate has changed, for example)
+// ================================================================================================
+int CgWave::reinitializeDeflation()
+{
+  dbase.get<bool>("deflationInitialized") = false;
+  return 0;
 }
 
 // ================================================================================================
@@ -360,6 +408,18 @@ setNameOfGridFile( aString & nameOfOGFile )
   return 0;
 }
 
+// ================================================================================================
+/// \brief Get the average number of iterations per implicit solve
+// ================================================================================================
+Real CgWave::
+getAverageNumberOfIterationsPerImplicitSolve() const
+{
+  const int & totalImplicitIterations       = dbase.get<int>("totalImplicitIterations"); 
+  const int & totalImplicitSolves           = dbase.get<int>("totalImplicitSolves"); 
+  const Real aveNumberOfImplicitIterations  = totalImplicitIterations/Real(max(1,totalImplicitSolves)); 
+
+  return aveNumberOfImplicitIterations;
+}
 
 
 // ================================================================================================
@@ -383,7 +443,8 @@ int CgWave::initialize()
   const int & numberOfFrequencies  = dbase.get<int>("numberOfFrequencies");
   printF("CgWave::initialize and assign forcing... numberOfFrequencies=%d\n",numberOfFrequencies);
 
-  const int & modifiedEquationApproach = dbase.get<int>("modifiedEquationApproach");
+  const ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
+  const int & computeEigenmodes        = dbase.get<int>("computeEigenmodes");
 
   const int & addForcing = dbase.get<int>("addForcing");
   const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
@@ -476,7 +537,8 @@ int CgWave::initialize()
   
   Index I1,I2,I3;
 
-  if( forcingOption==helmholtzForcing )
+  if( forcingOption==helmholtzForcing && 
+      !computeEigenmodes )
   {
     printF("CgWave::initialize: ***ASSIGN HELMHOLTZ FORCING***\n");
     
@@ -640,6 +702,576 @@ int CgWave::initialize()
   return 0;
 }
 
+// ======================================================================================
+/// \brief Reset CPU timings to zero:
+// ======================================================================================
+int CgWave::resetTimings()
+{
+   for( int i=0; i<maximumNumberOfTimings; i++ )
+    timing(i) = 0.;
+}
+
+// ===================================================================================================================
+/// \brief Build options dialog for boundary condition options.
+/// \param dialog (input) : graphics dialog to use.
+///
+// ==================================================================================================================
+int CgWave::
+buildBoundaryConditionOptionsDialog(DialogData & dialog )
+{
+
+  BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
+  int & applyKnownSolutionAtBoundaries        = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
+
+  AssignInterpolationNeighboursEnum & assignInterpNeighbours = dbase.get<AssignInterpolationNeighboursEnum>("assignInterpNeighbours");
+
+  // const int & numberOfBCNames = dbase.get<int>("numberOfBCNames");
+  // aString *& bcNames = dbase.get<aString*>("bcNames");
+
+  dialog.setOptionMenuColumns(1);
+
+  dialog.addInfoLabel("Use: bcNumber[1|2|...]=[dirichlet|neumann|...]");
+  dialog.addInfoLabel("E.g. bcNumber1=dirichlet");
+
+  aString bcApproachLabel[] = {"useDefaultApproachForBCs", "useOneSidedBCs", "useCompatibilityBCs", "useLocalCompatibilityBCs", "" };
+  dialog.addOptionMenu("BC approach:", bcApproachLabel, bcApproachLabel, (int)bcApproach );
+
+  aString assignInterpNeighboursLabel[] = {"defaultAssignInterpNeighbours", 
+                                           "extrapolateInterpNeighbours", 
+                                           "interpolateInterpNeighbours", "" };
+  dialog.addOptionMenu("Interp neighbours:", assignInterpNeighboursLabel, assignInterpNeighboursLabel, 
+                       (int)assignInterpNeighbours );
+
+  aString tbCommands[] = {
+                          "set known on boundaries",
+                          ""};
+  int tbState[15];
+  tbState[ 0] = applyKnownSolutionAtBoundaries;
+
+  int numColumns=1;
+  dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
+
+  // // ----- Text strings ------
+  const int numberOfTextStrings=20;
+  aString textCommands[numberOfTextStrings];
+  aString textLabels[numberOfTextStrings];
+  aString textStrings[numberOfTextStrings];
+
+  int nt=0;
+
+  textCommands[nt] = "bc=";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "bcName ([dirichlet|evenSymmetry]");  nt++; 
+
+  // null strings terminal list
+  textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
+  dialog.setTextBoxes(textCommands, textLabels, textStrings);
+
+
+
+
+  return 0;
+}
+
+//================================================================================
+/// \brief: Look for an boundary condition option in the string "answer"
+///
+/// \param answer (input) : check this command 
+///
+/// \return return 1 if the command was found, 0 otherwise.
+//====================================================================
+int CgWave::
+getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerArray & bcOrig )
+{
+
+  BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
+  int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
+  AssignInterpolationNeighboursEnum & assignInterpNeighbours = 
+                             dbase.get<AssignInterpolationNeighboursEnum>("assignInterpNeighbours");
+  const int & numberOfBCNames = dbase.get<int>("numberOfBCNames");
+  aString *& bcNames = dbase.get<aString*>("bcNames");
+
+  int found=true; 
+  char buff[180];
+  aString answer2,line;
+  int len=0;
+
+  if( answer=="useDefaultApproachForBCs" || 
+           answer=="useOneSidedBCs" || 
+           answer=="useCompatibilityBCs" || 
+           answer=="useLocalCompatibilityBCs" )
+  {
+    bcApproach = ( answer=="useDefaultApproachForBCs" ? defaultBoundaryConditionApproach :
+                   answer=="useOneSidedBCs"           ? useOneSidedBoundaryConditions : 
+                   answer=="useCompatibilityBCs"      ? useCompatibilityBoundaryConditions :
+                   answer=="useLocalCompatibilityBCs" ? useLocalCompatibilityBoundaryConditions : 
+                                                        defaultBoundaryConditionApproach );
+    printF("Setting approach for boundary conditions to %s\n",(const char *)answer);
+  }
+
+  else if( answer=="defaultAssignInterpNeighbours" || 
+           answer=="extrapolateInterpNeighbours" || 
+           answer=="interpolateInterpNeighbours" )
+  {
+    // For upwind schemes with wider stencils we can extrap or interp unused points next to interpolation points 
+    assignInterpNeighbours = ( answer=="defaultAssignInterpNeighbours" ? defaultAssignInterpNeighbours :
+                               answer=="extrapolateInterpNeighbours"   ? extrapolateInterpNeighbours :
+                                                                         interpolateInterpNeighbours );
+    aString assignType;
+    if( assignInterpNeighbours==interpolateInterpNeighbours ) 
+      assignType = "interpolated";
+    else if( assignInterpNeighbours==extrapolateInterpNeighbours )
+      assignType = "extrapolated"; 
+    else
+      assignType = "interpolated"; // new default July 4, 2022
+
+    printF("Interpolation neighbours will be %s for upwind schemes with wider stencils.\n",(const char*)assignType );
+  }
+  else if( dialog.getToggleValue(answer,"set known on boundaries",applyKnownSolutionAtBoundaries) )
+  {
+    printF("Setting applyKnownSolutionAtBoundaries=%d (1=apply known solution on boundaries).\n",applyKnownSolutionAtBoundaries);
+  }   
+
+  else if( len=answer.matches("bc=") )
+  {
+    aString bcn = answer(len,answer.length()-1);
+    int bc=-1;
+    for( int i=0; i<numberOfBCNames; i++ )
+    {
+      if( bcn==bcNames[i] )
+      {
+        bc=i;
+      }
+    }
+    if( bc==-1 )
+    {
+      printF("Error: unknown bc=[%s]\n",(const char*)bcn);
+      printF("Valid bcNames:\n");
+      for( int i=0; i<numberOfBCNames; i++ )
+      {
+        printF(" bcNames[%i]=[%s]\n",i,(const char*)bcNames[i]);
+        OV_ABORT("ERROR: fix boundary conditions");
+      }
+      
+    }
+    else
+    {
+      printF("Setting all boundary conditions to bc=[%s]\n",(const char*)bcNames[bc]);
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      {
+        MappedGrid & mg=cg[grid];
+        ForBoundary(side,axis) 
+        {
+          if( mg.boundaryCondition(side,axis)>0 )
+          {
+            mg.setBoundaryCondition(side,axis,bc);
+          }
+        }
+      }
+    }
+  
+  }
+
+  else if( len=answer.matches("bcNumber") )
+  {
+    // --- specify a boundary condition for BC's with given numbers ---
+    //     bcNumber2=dirichlet
+    //     bcNumber5=neumann
+
+    // (1) parse the string to find the number after "bcNumber"
+    int i0=len, i1=-1;
+    for( int i=i0; i<answer.length(); i++ )
+    {
+      if( answer[i]=='=' )
+      {
+        i1=i-1; break; 
+      }
+    }
+    if( i1<i0 )
+    {
+      printF("getBoundaryConditionOption: ERROR parsing command=[%s]\n",(const char*)answer);
+      found=false;
+      return found;
+    }
+    int bcNumber=-1;
+    sScanF(answer(i0,i1),"%d",&bcNumber);
+    if( bcNumber<=0 )
+    {
+      printF("ERROR parsing command=[%s], bcNumber=%d is invalid.\n",(const char*)answer,bcNumber);
+    }
+
+    // Here is the bc name: 
+    aString bcName =answer(i1+2,answer.length()-1);
+
+    printF("answer=[%s], i0=%d, i1=%d, bcNumber=%d, bcName=[%s]\n",(const char*)answer,i0,i1,bcNumber,(const char*)bcName);
+
+    BoundaryConditionEnum bcType = dirichlet;
+    if( bcName=="dirichlet" || bcName=="d" )
+    {
+      bcType=dirichlet;
+    }
+    else if( bcName=="neumann" || bcName=="n" )
+    {
+      bcType=neumann;
+    }
+    else
+    {
+      printF("ERROR: unknown bcName=[%s]\n",(const char*)bcName);
+    }
+
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    {
+      MappedGrid & mg=cg[grid];
+      ForBoundary(side,axis) 
+      {
+        if( bcOrig(side,axis,grid)==bcNumber ) // note refer to original numbering
+        {
+          printF("Setting boundaryCondition(side,axis,grid)=(%d,%d,%d) to [%s]\n",side,axis,grid,(const char*)bcNames[bcType]);
+          mg.setBoundaryCondition(side,axis,bcType);
+        }
+      }
+    }
+
+    //  OV_ABORT("stop here for now");
+
+  }
+ 
+  else
+  {
+    found=false;
+  }
+  
+
+  return found;
+}
+
+// ===================================================================================================================
+/// \brief Build options dialog for EigenWave Options.
+/// \param dialog (input) : graphics dialog to use.
+///
+// ==================================================================================================================
+int CgWave::
+buildWaveHoltzOptionsDialog(DialogData & dialog )
+{
+
+  int & numToDeflate                   = dbase.get<int>("numToDeflate");
+  int & solveHelmholtz                 = dbase.get<int>("solveHelmholtz");
+  int & adjustHelmholtzForUpwinding    = dbase.get<int>("adjustHelmholtzForUpwinding");
+  int & computeTimeIntegral            = dbase.get<int>("computeTimeIntegral");
+  int & deflateWaveHoltz               = dbase.get<int>("deflateWaveHoltz");
+  const real & omega                   = dbase.get<real>("omega");
+
+  aString tbCommands[] = {
+                          "solve Helmholtz",
+                          "compute time integral",
+                          "adjust Helmholtz for upwinding", 
+                          "deflate WaveHoltz",                             
+                            ""};
+  int tbState[15];
+  tbState[ 0] = solveHelmholtz;
+  tbState[ 1] = computeTimeIntegral;
+  tbState[ 2] = adjustHelmholtzForUpwinding;
+  tbState[ 3] = deflateWaveHoltz;
+
+  int numColumns=1;
+  dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
+
+  // // ----- Text strings ------
+  const int numberOfTextStrings=20;
+  aString textCommands[numberOfTextStrings];
+  aString textLabels[numberOfTextStrings];
+  aString textStrings[numberOfTextStrings];
+
+  int nt=0;
+
+  textCommands[nt] = "omega";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%g",omega);  nt++; 
+
+  textCommands[nt] = "number to deflate";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",numToDeflate);  nt++;
+
+  // null strings terminal list
+  textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
+  dialog.setTextBoxes(textCommands, textLabels, textStrings);
+
+
+
+
+  return 0;
+}
+
+//================================================================================
+/// \brief: Look for an EigenWave option in the string "answer"
+///
+/// \param answer (input) : check this command 
+///
+/// \return return 1 if the command was found, 0 otherwise.
+//====================================================================
+int CgWave::
+getWaveHoltzOption(const aString & answer,
+                   DialogData & dialog )
+{
+
+  int & numToDeflate                   = dbase.get<int>("numToDeflate");
+  int & solveHelmholtz                 = dbase.get<int>("solveHelmholtz");
+  int & adjustHelmholtzForUpwinding    = dbase.get<int>("adjustHelmholtzForUpwinding");
+  int & computeTimeIntegral            = dbase.get<int>("computeTimeIntegral");
+  int & deflateWaveHoltz               = dbase.get<int>("deflateWaveHoltz");
+  real & omega                         = dbase.get<real>("omega");
+
+  int found=true; 
+  char buff[180];
+  aString answer2,line;
+  int len=0;
+
+  if( dialog.getTextValue(answer,"number to deflate","%i",numToDeflate) )
+  {
+    printF("Setting numToDeflate=%i (deflate this many eigenvectors for WaveHoltz)\n",numToDeflate);
+  }
+  else if( dialog.getToggleValue(answer,"adjust Helmholtz for upwinding",adjustHelmholtzForUpwinding) )
+  {
+    printF("Setting adjustHelmholtzForUpwinding=%d (1=correct Helmholtz solution for upwinding)\n",adjustHelmholtzForUpwinding);
+  }
+  else if( dialog.getToggleValue(answer,"compute time integral",computeTimeIntegral) )
+  {
+    printF("Setting computeTimeIntegral=%i\n",computeTimeIntegral);
+  } 
+  else if( dialog.getToggleValue(answer,"deflate WaveHoltz",deflateWaveHoltz) )
+  {
+    printF("Setting deflateWaveHoltz=%i (1=apply deflate to WaveHoltz iteration\n",deflateWaveHoltz);
+  }   
+  else if( dialog.getTextValue(answer,"omega","%e",omega) )
+  {
+    printF("Setting omega=%g\n",omega);
+  }   
+  else if( dialog.getToggleValue(answer,"solve Helmholtz",solveHelmholtz) )
+  {
+    if( solveHelmholtz )
+    {
+      printF(" solveHelmholtz=true: CgWave is being used to solve the Helmholtz equation (time-periodic wave equation)\n"
+             " using CgWaveHoltz\n");
+    }
+    
+  }  
+  else
+  {
+    found=false;
+  }
+  
+
+  return found;
+}
+
+
+// ===================================================================================================================
+/// \brief Build options dialog for EigenWave Options.
+/// \param dialog (input) : graphics dialog to use.
+///
+// ==================================================================================================================
+int CgWave::
+buildEigenWaveOptionsDialog(DialogData & dialog )
+{
+
+  const EigenSolverEnum & eigenSolver        = dbase.get<EigenSolverEnum>("eigenSolver"); 
+  const int & computeEigenmodes              = dbase.get<int>("computeEigenmodes");
+  const int & numEigsToCompute               = dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute 
+  const int & useAccurateInnerProduct        = dbase.get<int>("useAccurateInnerProduct"); 
+  const Real & eigenValueTolForMultiplicity  = dbase.get<Real>("eigenValueTolForMultiplicity");
+  const int & initialVectorsForEigenSolver   = dbase.get<int>("initialVectorsForEigenSolver");
+  const aString & eigenVectorFile            = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
+  const int & minStepsPerPeriod              = dbase.get<int>("minStepsPerPeriod");
+  const int & numberOfRitzVectors            = dbase.get<int>("numberOfRitzVectors");
+  const int & assignRitzFrequency            = dbase.get<int>("assignRitzFrequency");
+  const Real & eigenVectorForcingFactor      = dbase.get<Real>("eigenVectorForcingFactor");
+  const int & numPeriods                     = dbase.get<int>("numPeriods");
+  const real & omega                         = dbase.get<real>("omega");
+
+  aString eigenSolverLabel[] = {"defaultEigenSolver", "KrylovSchur", "Arnoldi", "Arpack", "fixedPoint","" };
+  dialog.addOptionMenu("eigenSolver:", eigenSolverLabel, eigenSolverLabel, (int)eigenSolver );
+
+  aString tbCommands[] = {
+                          "compute eigenModes",
+                          "initial vectors for eigenSolver",
+                          "use accurate inner product",
+                            ""};
+  int tbState[15];
+  tbState[0] = computeEigenmodes;
+  tbState[1] = initialVectorsForEigenSolver;
+  tbState[2] = useAccurateInnerProduct;
+
+  int numColumns=1;
+  dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
+
+  // // ----- Text strings ------
+  const int numberOfTextStrings=20;
+  aString textCommands[numberOfTextStrings];
+  aString textLabels[numberOfTextStrings];
+  aString textStrings[numberOfTextStrings];
+
+  int nt=0;
+
+  textCommands[nt] = "omega";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%g",omega);  nt++; 
+
+  textCommands[nt] = "number of eigenvalues";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",numEigsToCompute);  nt++;
+
+  textCommands[nt] = "number of periods";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",numPeriods);  nt++; 
+
+  textCommands[nt] = "min steps per period";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",minStepsPerPeriod);  nt++;
+
+  textCommands[nt] = "number of Ritz vectors";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",numberOfRitzVectors);  nt++;  
+  
+  textCommands[nt] = "assign Ritz frequency";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",assignRitzFrequency);  nt++;  
+
+  textCommands[nt] = "eigenVectorFile";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%s",(const char*)eigenVectorFile);  nt++;
+
+  
+  textCommands[nt] = "eigenVectorForcingFactor";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%g",eigenVectorForcingFactor);  nt++;
+
+  textCommands[nt] = "eig multiplicity tol";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%g",eigenValueTolForMultiplicity);  nt++; 
+
+ // null strings terminal list
+  textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
+  dialog.setTextBoxes(textCommands, textLabels, textStrings);
+
+
+
+
+  return 0;
+}
+
+//================================================================================
+/// \brief: Look for an EigenWave option in the string "answer"
+///
+/// \param answer (input) : check this command 
+///
+/// \return return 1 if the command was found, 0 otherwise.
+//====================================================================
+int CgWave::
+getEigenWaveOption(const aString & answer,
+                   DialogData & dialog )
+{
+
+  EigenSolverEnum & eigenSolver        = dbase.get<EigenSolverEnum>("eigenSolver"); 
+  int & computeEigenmodes              = dbase.get<int>("computeEigenmodes");
+
+  int & numEigsToCompute               = dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute 
+  int & useAccurateInnerProduct        = dbase.get<int>("useAccurateInnerProduct"); 
+  Real & eigenValueTolForMultiplicity  = dbase.get<Real>("eigenValueTolForMultiplicity");
+  int & initialVectorsForEigenSolver   = dbase.get<int>("initialVectorsForEigenSolver");
+  aString & eigenVectorFile            = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
+  int & minStepsPerPeriod              = dbase.get<int>("minStepsPerPeriod");
+  int & numberOfRitzVectors            = dbase.get<int>("numberOfRitzVectors");
+  int & assignRitzFrequency            = dbase.get<int>("assignRitzFrequency");
+  Real & eigenVectorForcingFactor      = dbase.get<Real>("eigenVectorForcingFactor"); 
+  int & numPeriods                     = dbase.get<int>("numPeriods");
+  real & omega                         = dbase.get<real>("omega");
+
+  int found=true; 
+  char buff[180];
+  aString answer2,line;
+  int len=0;
+
+  if( dialog.getToggleValue(answer,"compute eigenModes",computeEigenmodes) )
+  {
+    if( computeEigenmodes )
+    {
+      printF(" computeEigenmodes: Use the WaveHoltz algorithm to compute eigenvalues and eigenvectors.\n");
+    }
+    
+  }  
+  else if( dialog.getTextValue(answer,"omega","%e",omega) )
+  {
+    printF("Setting omega=%g\n",omega);
+  }  
+  else if( dialog.getToggleValue(answer,"initial vectors for eigenSolver",initialVectorsForEigenSolver) )
+  {
+    printF("Setting initialVectorsForEigenSolver=%i (vectors used in Arnolid etc.)\n",initialVectorsForEigenSolver);
+  } 
+  else if( dialog.getToggleValue(answer,"use accurate inner product",useAccurateInnerProduct) )
+  {
+    printF("Setting useAccurateInnerProduct=%i (for computing the Rayleigh Quotient)\n",useAccurateInnerProduct);
+  }  
+  
+  else if( dialog.getTextValue(answer,"number of eigenvalues","%i",numEigsToCompute) )
+  {
+    printF("Setting numEigsToCompute=%i (compute this many eigenpairs when using Arnoldi)\n",numEigsToCompute);
+  }   
+  else if( dialog.getTextValue(answer,"number of periods","%i",numPeriods) )
+  {
+    printF("Setting numPeriods=%i\n",numPeriods);
+  }   
+
+  else if( dialog.getTextValue(answer,"min steps per period","%i",minStepsPerPeriod) )
+  {
+    if( minStepsPerPeriod<5 )
+    {
+      printF("WARNING: minStepsPerPeriod should be at least 5. Setting to 5\n");
+      minStepsPerPeriod=5;
+    }
+    printF("Setting minStepsPerPeriod=%i (for WaveHoltz)\n",minStepsPerPeriod);
+  }
+  else if( dialog.getTextValue(answer,"number of Ritz vectors","%i",numberOfRitzVectors) )
+  {
+    printF("Setting numberOfRitzVectors=%i (max. number of Rayleigh Ritz vectors, used to accelerate EigenWave)\n",numberOfRitzVectors);
+  }
+  else if( dialog.getTextValue(answer,"assign Ritz frequency","%i",assignRitzFrequency) )
+  {
+    printF("Setting assignRitzFrequency=%i (set solution to latest Ritz vector every this many steps (EigenWave)\n",assignRitzFrequency);
+  }        
+
+  else if( dialog.getTextValue(answer,"eigenVectorFile","%s",eigenVectorFile) )
+  {
+    printF("Setting eigenVectorFile=%s (file holding eigenvectors for deflation)\n",(const char*)eigenVectorFile);
+  }    
+
+  else if( dialog.getTextValue(answer,"eig multiplicity tol","%e",eigenValueTolForMultiplicity) )
+  {
+    printF("Setting eigenValueTolForMultiplicity=%g (tolerence for detecting mutiple eigenvalues)\n",eigenValueTolForMultiplicity);
+  }    
+  else if( answer=="defaultEigenSolver" || 
+           answer=="KrylovSchur" || 
+           answer=="Arnoldi" || answer=="arnoldi" || 
+           answer=="Arpack"  || answer=="arpack"  || answer=="ARPACK" ||
+           answer=="fixedPoint" || answer=="fixPoint" || answer=="fp" )
+  {
+    if( answer=="defaultEigenSolver" )
+      eigenSolver = defaultEigenSolver;
+    else if( answer=="KrylovSchur" )
+      eigenSolver = KrylovSchurEigenSolver;
+    else if( answer=="Arnoldi" || answer=="arnoldi" )
+      eigenSolver = ArnoldiEigenSolver;
+   else if( answer=="Arpack" || answer=="arpack"  || answer=="ARPACK" )
+      eigenSolver = ArpackEigenSolver;  
+   else if( answer=="fixedPoint" || answer=="fp"  || answer=="fixPoint" )
+      eigenSolver = fixedPointEigenSolver;             
+    else
+    {
+      OV_ABORT("This case should not happen");
+    }
+    printF("Setting eigenSolver = %s\n",(const char*)answer);
+  }  
+  else if( dialog.getTextValue(answer,"eigenVectorForcingFactor","%e",eigenVectorForcingFactor) )
+  {
+    printF("Setting eigenVectorForcingFactor=%g\n",eigenVectorForcingFactor);
+  }
+
+  else
+  {
+    found=false;
+  }
+  
+
+  return found;
+}
+
 
 
 // ================================================================================================
@@ -673,20 +1305,18 @@ int CgWave::interactiveUpdate()
   real & ad4                           = dbase.get<real>("ad4"); // coeff of the artificial dissipation. (*old*)
   int & dissipationFrequency           = dbase.get<int>("dissipationFrequency");
   int & preComputeUpwindUt             = dbase.get<int>("preComputeUpwindUt");
-  int & adjustHelmholtzForUpwinding    = dbase.get<int>("adjustHelmholtzForUpwinding");
 
-  int & modifiedEquationApproach      = dbase.get<int>("modifiedEquationApproach");
+  ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
        
   int & computeErrors                  = dbase.get<int>("computeErrors");                         // by default, compute errors for TZ or a known solution
-  int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
+  // int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
   int & useKnownSolutionForFirstStep   = dbase.get<int>("useKnownSolutionForFirstStep"); 
   int & debug                          = dbase.get<int>("debug");
   int & interactiveMode                = dbase.get<int>("interactiveMode");
          
   int & solveHelmholtz                 = dbase.get<int>("solveHelmholtz");
-  // int & plotHelmholtzErrors            = dbase.get<int>("plotHelmholtzErrors");
-  int & computeTimeIntegral            = dbase.get<int>("computeTimeIntegral");
   real & tol                           = dbase.get<real>("tol");
+
        
   bool & saveShowFile                  = dbase.get<bool>("saveShowFile"); 
   aString & nameOfShowFile             = dbase.get<aString>("nameOfShowFile"); // name of the show file
@@ -694,14 +1324,8 @@ int CgWave::interactiveUpdate()
                  
   real & omegaSOR                      = dbase.get<real>("omegaSOR");
 
-  // // Gaussian forcing ** FIX ME** why here
-  // real & beta = dbase.get<real>("beta");
-  // real & x0   = dbase.get<real>("x0");
-  // real & y0   = dbase.get<real>("y0");
-  // real & z0   = dbase.get<real>("z0");
-
   TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
-  BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
+  // BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
 
   TwilightZoneEnum & twilightZone = dbase.get<TwilightZoneEnum>("twilightZone");
   int & degreeInSpace             = dbase.get<int>("degreeInSpace");
@@ -713,10 +1337,10 @@ int CgWave::interactiveUpdate()
 
   InitialConditionOptionEnum & initialConditionOption = dbase.get<InitialConditionOptionEnum>("initialConditionOption");
 
-  AssignInterpolationNeighboursEnum & assignInterpNeighbours = 
-                             dbase.get<AssignInterpolationNeighboursEnum>("assignInterpNeighbours");
-  const int & numberOfBCNames = dbase.get<int>("numberOfBCNames");
-  aString *& bcNames = dbase.get<aString*>("bcNames");
+  // AssignInterpolationNeighboursEnum & assignInterpNeighbours = 
+  //                            dbase.get<AssignInterpolationNeighboursEnum>("assignInterpNeighbours");
+  // const int & numberOfBCNames = dbase.get<int>("numberOfBCNames");
+  // aString *& bcNames = dbase.get<aString*>("bcNames");
 
 
   // Build a dialog menu for changing parameters
@@ -726,18 +1350,13 @@ int CgWave::interactiveUpdate()
   dialog.setWindowTitle("CgWave - Wave Equation Solver");
   dialog.setExitCommand("exit", "exit");
 
+
+
+
   dialog.setOptionMenuColumns(1);
 
   aString timeSteppingLabel[] = {"explicit", "implicit", "" };
   dialog.addOptionMenu("time stepping:", timeSteppingLabel, timeSteppingLabel, (int)timeSteppingMethod );
-
-// enum InitialConditionOptionEnum
-// {
-//   zeroInitialCondition=0,
-//   twilightZoneInitialCondition,
-//   knownSolutionInitialCondition,
-//   pulseInitialCondition
-// };
 
   aString initialConditionLabel[] = {"zero initial condition", 
                                      "twilightZone initial condition", 
@@ -751,29 +1370,33 @@ int CgWave::interactiveUpdate()
   dialog.addOptionMenu("forcing:", forcingLabel, forcingLabel, (int)forcingOption );
 
   aString tzLabel[] = {"polynomial", "trigonometric", "" };
-  dialog.addOptionMenu("Twilight zone::",tzLabel,tzLabel,(int)twilightZone );
+  dialog.addOptionMenu("Twilight zone:",tzLabel,tzLabel,(int)twilightZone );
 
-  aString bcApproachLabel[] = {"useDefaultApproachForBCs", "useOneSidedBCs", "useCompatibilityBCs", "useLocalCompatibilityBCs", "" };
-  dialog.addOptionMenu("BC approach:", bcApproachLabel, bcApproachLabel, (int)bcApproach );
+  // aString bcApproachLabel[] = {"useDefaultApproachForBCs", "useOneSidedBCs", "useCompatibilityBCs", "useLocalCompatibilityBCs", "" };
+  // dialog.addOptionMenu("BC approach:", bcApproachLabel, bcApproachLabel, (int)bcApproach );
 
-  aString assignInterpNeighboursLabel[] = {"defaultAssignInterpNeighbours", 
-                                           "extrapolateInterpNeighbours", 
-                                           "interpolateInterpNeighbours", "" };
-  dialog.addOptionMenu("Interp neighbours:", assignInterpNeighboursLabel, assignInterpNeighboursLabel, 
-                       (int)assignInterpNeighbours );
+  // aString assignInterpNeighboursLabel[] = {"defaultAssignInterpNeighbours", 
+  //                                          "extrapolateInterpNeighbours", 
+  //                                          "interpolateInterpNeighbours", "" };
+  // dialog.addOptionMenu("Interp neighbours:", assignInterpNeighboursLabel, assignInterpNeighboursLabel, 
+  //                      (int)assignInterpNeighbours );
 
  aString modifiedEquationApproachLabel[] = {"standard modified equation", 
                                             "hierarchical modified equation", 
+                                            "stencil modified equation",
                                              "" };
   dialog.addOptionMenu("ME variation:", modifiedEquationApproachLabel, modifiedEquationApproachLabel, 
                        (int)modifiedEquationApproach );
 
-
   aString pbLabels[] = {
+                        "Boundary Condition Options...",
+                        "WaveHoltz Options...",
+                        "EigenWave Options...",
                         "user defined known solution...",
                         "user defined forcing...",
                         "choose grids for implicit",
                         "grid",
+                        "implicit solver parameters",
                         "erase",
                         "exit",
                         ""};
@@ -785,11 +1408,8 @@ int CgWave::interactiveUpdate()
                           "upwind dissipation",
                           "turn on forcing",
                           "compute errors",
-                          "solve Helmholtz",
-                          "adjust Helmholtz for upwinding",
-                          "compute time integral",
                           "pre-compute upwind Ut",
-                          "set known on boundaries",
+                          // "set known on boundaries",
                           "choose implicit dt from cfl",
                           "use known for first step",
                           "implicit upwind",
@@ -799,19 +1419,17 @@ int CgWave::interactiveUpdate()
   tbState[ 1] = upwind;
   tbState[ 2] = addForcing;
   tbState[ 3] = computeErrors;
-  tbState[ 4] = solveHelmholtz;
-  tbState[ 5] = adjustHelmholtzForUpwinding;
-  tbState[ 6] = computeTimeIntegral;
-  tbState[ 7] = preComputeUpwindUt;
-  tbState[ 8] = applyKnownSolutionAtBoundaries;
-  tbState[ 9] = chooseImplicitTimeStepFromCFL;
-  tbState[10] = implicitUpwind;
+  tbState[ 4] = preComputeUpwindUt;
+  // tbState[ 5] = applyKnownSolutionAtBoundaries;
+  tbState[ 5] = chooseImplicitTimeStepFromCFL;
+  tbState[ 6] = useKnownSolutionForFirstStep;
+  tbState[ 7] = implicitUpwind;
 
-  int numColumns=1;
+  int numColumns=2;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
 
   // ----- Text strings ------
-  const int numberOfTextStrings=30;
+  const int numberOfTextStrings=40;
   aString textCommands[numberOfTextStrings];
   aString textLabels[numberOfTextStrings];
   aString textStrings[numberOfTextStrings];
@@ -844,15 +1462,6 @@ int CgWave::interactiveUpdate()
   textCommands[nt] = "tPlot";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g",tPlot);  nt++; 
 
-  textCommands[nt] = "number of periods";  textLabels[nt]=textCommands[nt];
-  sPrintF(textStrings[nt], "%i",numPeriods);  nt++; 
-
-  // textCommands[nt] = "artificial dissipation";  textLabels[nt]=textCommands[nt];
-  // sPrintF(textStrings[nt], "%g",ad4);  nt++; 
-
-  // textCommands[nt] = "Gaussian params";  textLabels[nt]=textCommands[nt];
-  // sPrintF(textStrings[nt], "%g %g %g %g (beta,x0,y0,z0)",beta,x0,y0,z0);  nt++; 
-
   textCommands[nt] = "tol";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g",tol);  nt++; 
 
@@ -862,8 +1471,8 @@ int CgWave::interactiveUpdate()
   textCommands[nt] = "interactiveMode";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",interactiveMode);  nt++; 
 
-  textCommands[nt] = "bc=";  textLabels[nt]=textCommands[nt];
-  sPrintF(textStrings[nt], "bcName ([dirichlet|evenSymmetry]");  nt++; 
+  // textCommands[nt] = "bc=";  textLabels[nt]=textCommands[nt];
+  // sPrintF(textStrings[nt], "bcName ([dirichlet|evenSymmetry]");  nt++; 
 
   textCommands[nt] = "dissipationFrequency";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",dissipationFrequency);  nt++; 
@@ -874,16 +1483,46 @@ int CgWave::interactiveUpdate()
   textCommands[nt] = "implicit weights";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g, %g, %g, %g, %g (beta2,beta4,...)",bImp(0),bImp(1),bImp(2),bImp(3),bImp(4));  nt++; 
 
-  textCommands[nt] = "omega";  textLabels[nt]=textCommands[nt];
-  sPrintF(textStrings[nt], "%g",omega);  nt++; 
-  
+
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
   dialog.setTextBoxes(textCommands, textLabels, textStrings);
 
+
+  // ********************* Boundary Condition Options **************************
+  DialogData & boundaryConditionOptionsDialog = gui.getDialogSibling();
+
+  boundaryConditionOptionsDialog.setWindowTitle("Boundary Condition Options");
+  boundaryConditionOptionsDialog.setExitCommand("close Boundary Condition Options", "close");
+  buildBoundaryConditionOptionsDialog( boundaryConditionOptionsDialog );
+
+  // ********************* WaveHoltz Options **************************
+  DialogData & waveHoltzOptionsDialog = gui.getDialogSibling();
+
+  waveHoltzOptionsDialog.setWindowTitle("WaveHoltz Options");
+  waveHoltzOptionsDialog.setExitCommand("close WaveHoltz Options", "close");
+  buildWaveHoltzOptionsDialog( waveHoltzOptionsDialog );
+
   
+  // ********************* EigenWave Options **************************
+  DialogData & eigenWaveOptionsDialog = gui.getDialogSibling();
+
+  eigenWaveOptionsDialog.setWindowTitle("EigenWave Options");
+  eigenWaveOptionsDialog.setExitCommand("close EigenWave Options", "close");
+  buildEigenWaveOptionsDialog( eigenWaveOptionsDialog );
 
   gi.pushGUI(gui);
+
+  // --- save the original numbering of the BC's ----
+  IntegerArray bcOrig(2,3,cg.numberOfComponentGrids());
+  for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+  {
+    MappedGrid & mg=cg[grid];
+    ForBoundary(side,axis) 
+    {
+      bcOrig(side,axis,grid)=mg.boundaryCondition(side,axis);
+    }
+  }
 
   aString answer,line;
   char buff[200];
@@ -939,16 +1578,6 @@ int CgWave::interactiveUpdate()
       printF("setting cfl=%g\n",cfl);
     }
 
-    // else if( dialog.getTextValue(answer,"omegaSOR","%e",omegaSOR) )
-    // {
-    //   printF("Setting omegaSOR=%g\n",omegaSOR);
-    // }
-    
-    // else if( dialog.getTextValue(answer,"omega","%e",omega) )
-    // {
-    //   printF("Setting omega=%g\n",omega);
-    // }
-
     else if( dialog.getTextValue(answer,"show file name","%s",nameOfShowFile) )
     {
       printF("Setting nameOfShowFile=%s\n",(const char*)nameOfShowFile);
@@ -983,6 +1612,45 @@ int CgWave::interactiveUpdate()
       printF("Setting dissipationFrequency=%i (dissipation is applied every this many steps)\n",dissipationFrequency);
     }
 
+    else if( answer=="Boundary Condition Options..."  )
+    {
+      boundaryConditionOptionsDialog.showSibling();
+    }
+    else if( answer=="close Boundary Condition Options" )
+    {
+      boundaryConditionOptionsDialog.hideSibling();  
+    }
+    else if( getBoundaryConditionOption(answer,boundaryConditionOptionsDialog,bcOrig ) )
+    {
+      printF("Answer=%s found in getBoundaryConditionOption\n",(const char*)answer);
+    }
+
+
+    else if( answer=="WaveHoltz Options..."  )
+    {
+      waveHoltzOptionsDialog.showSibling();
+    }
+    else if( answer=="close WaveHoltz Options" )
+    {
+      waveHoltzOptionsDialog.hideSibling();  
+    }
+    else if( getWaveHoltzOption(answer,waveHoltzOptionsDialog ) )
+    {
+      printF("Answer=%s found in getWaveHoltzOption\n",(const char*)answer);
+    }
+
+    else if( answer=="EigenWave Options..."  )
+    {
+      eigenWaveOptionsDialog.showSibling();
+    }
+    else if( answer=="close EigenWave Options" )
+    {
+      eigenWaveOptionsDialog.hideSibling();  // pop timeStepping
+    }
+    else if( getEigenWaveOption(answer,eigenWaveOptionsDialog ) )
+    {
+      printF("Answer=%s found in getEigenWaveOption\n",(const char*)answer);
+    }
 
     else if( dialog.getTextValue(answer,"tol","%e",tol) )
     {
@@ -999,12 +1667,6 @@ int CgWave::interactiveUpdate()
       printF("Setting flushFrequency=%i (number of solution in each sun showFile)\n",flushFrequency);
     }
 
-    else if( dialog.getTextValue(answer,"omega","%e",omega) )
-    {
-      printF("Setting omega=%g (for helmholtz forcing)\n",omega);
-      // frequencyArray(0)=omega; // do this for backward compatibility 
-    }    
-
     else if( dialog.getToggleValue(answer,"save show file",saveShowFile) )
     {
       printF("Setting saveShowFile=%d\n",saveShowFile);
@@ -1015,10 +1677,10 @@ int CgWave::interactiveUpdate()
       printF("Setting computeErrors=%d (1=compute errors for TZ or known solutions.\n",computeErrors);
     }
 
-    else if( dialog.getToggleValue(answer,"set known on boundaries",applyKnownSolutionAtBoundaries) )
-    {
-      printF("Setting applyKnownSolutionAtBoundaries=%d (1=apply known solution on boundaries).\n",applyKnownSolutionAtBoundaries);
-    } 
+    // else if( dialog.getToggleValue(answer,"set known on boundaries",applyKnownSolutionAtBoundaries) )
+    // {
+    //   printF("Setting applyKnownSolutionAtBoundaries=%d (1=apply known solution on boundaries).\n",applyKnownSolutionAtBoundaries);
+    // } 
 
     else if( dialog.getToggleValue(answer,"use known for first step",useKnownSolutionForFirstStep) )
     {
@@ -1031,23 +1693,6 @@ int CgWave::interactiveUpdate()
       printF("Setting upwind=%d (upwind dissipation is on or off).\n",upwind);
     }
     else if( dialog.getToggleValue(answer,"turn on forcing",addForcing) ){}//
-    else if( dialog.getToggleValue(answer,"solve Helmholtz",solveHelmholtz) )
-    {
-      if( solveHelmholtz )
-      {
-        printF(" solveHelmholtz=true: CgWave is being used to solve the Helmholtz equation (time-periodic wave equation)\n"
-               " using CgWaveHoltz\n");
-      }
-      
-    }
-    else if( dialog.getToggleValue(answer,"adjust Helmholtz for upwinding",adjustHelmholtzForUpwinding) )
-    {
-      printF("Setting adjustHelmholtzForUpwinding=%d (1=correct Helmholtz solution for upwinding)\n",adjustHelmholtzForUpwinding);
-    }
-    else if( dialog.getToggleValue(answer,"compute time integral",computeTimeIntegral) )
-    {
-      printF("Setting computeTimeIntegral=%i\n",computeTimeIntegral);
-    }
 
     else if( dialog.getToggleValue(answer,"pre-compute upwind Ut",preComputeUpwindUt) )
     {
@@ -1063,7 +1708,7 @@ int CgWave::interactiveUpdate()
     else if( dialog.getToggleValue(answer,"implicit upwind",implicitUpwind) )
     {
       printF("Setting implicitUpwind=%i (1=include upwinding in implicit matrix when implicit time-stepping\n",implicitUpwind);
-    }     
+    } 
 
     else if( answer=="explicit" || answer=="implicit" )
     {
@@ -1120,6 +1765,11 @@ int CgWave::interactiveUpdate()
 
       if( forcingOption==twilightZoneForcing )
         initialConditionOption = twilightZoneInitialCondition;
+
+      if( forcingOption != noForcing )
+        addForcing=true; // *wdh* March 27, 2023
+      else
+        addForcing=false;
     }
 
     else if( answer=="polynomial" || answer=="trigonometric" )
@@ -1134,49 +1784,62 @@ int CgWave::interactiveUpdate()
       printF("Setting trig frequencies: fx=%g, fy=%g, fz=%g, ft=%g\n",trigFreq(0),trigFreq(1),trigFreq(2),trigFreq(3));
     }
 
-    else if( answer=="useDefaultApproachForBCs" || 
-             answer=="useOneSidedBCs" || 
-             answer=="useCompatibilityBCs" || 
-             answer=="useLocalCompatibilityBCs" )
-    {
-      bcApproach = ( answer=="useDefaultApproachForBCs" ? defaultBoundaryConditionApproach :
-                     answer=="useOneSidedBCs"           ? useOneSidedBoundaryConditions : 
-                     answer=="useCompatibilityBCs"      ? useCompatibilityBoundaryConditions :
-                     answer=="useLocalCompatibilityBCs" ? useLocalCompatibilityBoundaryConditions : 
-                                                          defaultBoundaryConditionApproach );
-      printF("Setting approach for boundary conditions to %s\n",(const char *)answer);
-    }
+    // else if( answer=="useDefaultApproachForBCs" || 
+    //          answer=="useOneSidedBCs" || 
+    //          answer=="useCompatibilityBCs" || 
+    //          answer=="useLocalCompatibilityBCs" )
+    // {
+    //   bcApproach = ( answer=="useDefaultApproachForBCs" ? defaultBoundaryConditionApproach :
+    //                  answer=="useOneSidedBCs"           ? useOneSidedBoundaryConditions : 
+    //                  answer=="useCompatibilityBCs"      ? useCompatibilityBoundaryConditions :
+    //                  answer=="useLocalCompatibilityBCs" ? useLocalCompatibilityBoundaryConditions : 
+    //                                                       defaultBoundaryConditionApproach );
+    //   printF("Setting approach for boundary conditions to %s\n",(const char *)answer);
+    // }
 
-    else if( answer=="defaultAssignInterpNeighbours" || 
-             answer=="extrapolateInterpNeighbours" || 
-             answer=="interpolateInterpNeighbours" )
-    {
-      // For upwind schemes with wider stencils we can extrap or interp unused points next to interpolation points 
-      assignInterpNeighbours = ( answer=="defaultAssignInterpNeighbours" ? defaultAssignInterpNeighbours :
-                                 answer=="extrapolateInterpNeighbours"   ? extrapolateInterpNeighbours :
-                                                                           interpolateInterpNeighbours );
-      aString assignType;
-      if( assignInterpNeighbours==interpolateInterpNeighbours ) 
-        assignType = "interpolated";
-      else if( assignInterpNeighbours==extrapolateInterpNeighbours )
-        assignType = "extrapolated"; 
-      else
-        assignType = "interpolated"; // new default July 4, 2022
+    // else if( answer=="defaultAssignInterpNeighbours" || 
+    //          answer=="extrapolateInterpNeighbours" || 
+    //          answer=="interpolateInterpNeighbours" )
+    // {
+    //   // For upwind schemes with wider stencils we can extrap or interp unused points next to interpolation points 
+    //   assignInterpNeighbours = ( answer=="defaultAssignInterpNeighbours" ? defaultAssignInterpNeighbours :
+    //                              answer=="extrapolateInterpNeighbours"   ? extrapolateInterpNeighbours :
+    //                                                                        interpolateInterpNeighbours );
+    //   aString assignType;
+    //   if( assignInterpNeighbours==interpolateInterpNeighbours ) 
+    //     assignType = "interpolated";
+    //   else if( assignInterpNeighbours==extrapolateInterpNeighbours )
+    //     assignType = "extrapolated"; 
+    //   else
+    //     assignType = "interpolated"; // new default July 4, 2022
 
-      printF("Interpolation neighbours will be %s for upwind schemes with wider stencils.\n",(const char*)assignType );
-    }
+    //   printF("Interpolation neighbours will be %s for upwind schemes with wider stencils.\n",(const char*)assignType );
+    // }
 
     else if( answer=="standard modified equation" || 
-             answer=="hierarchical modified equation" )
+             answer=="hierarchical modified equation" ||
+             answer=="stencil modified equation" )
     {
       // For upwind schemes with wider stencils we can extrap or interp unused points next to interpolation points 
-      modifiedEquationApproach = ( answer=="standard modified equation"     ? 0 :
-                                    answer=="hierarchical modified equation" ? 1 :
-                                                                               0 );
+      modifiedEquationApproach = ( answer=="standard modified equation"     ? standardModifiedEquation :
+                                   answer=="hierarchical modified equation" ? hierarchicalModifiedEquation :
+                                   answer=="stencil modified equation"      ? stencilModifiedEquation :
+                                                                              standardModifiedEquation );
       printF("Setting modifiedEquationApproach=%s\n",(const char*)answer );
     }
 
+    else if( answer=="implicit solver parameters" )
+    {
+      printf("Set the Oges parameters for the implicit solver.\n");
+      if( !dbase.has_key("implicitSolverParameters") )
+      {
+        OgesParameters & par = dbase.put<OgesParameters>("implicitSolverParameters");
+      }
 
+      OgesParameters & par = dbase.get<OgesParameters>("implicitSolverParameters");
+      par.update( gi,cg );
+
+    }
     else if( len=answer.matches("tPlot") )
     {
       sScanF(answer(len,answer.length()-1),"%e",&tPlot);
@@ -1194,59 +1857,109 @@ int CgWave::interactiveUpdate()
 
       // dialog.setTextLabel("artificial dissipation",sPrintF(line, "%g",ad4));
     }
-    // else if( len=answer.matches("Gaussian params") )
+
+    // else if( len=answer.matches("bc=") )
     // {
-    //   printF("Gaussian forcing: \n");
-    //   sScanF(answer(len,answer.length()-1),"%e %e %e %e",&beta,&x0,&y0,&z0);
-    //   dialog.setTextLabel("Gaussian params",sPrintF(line, "%g %g %g %g (beta,x0,y0,z0)",
-    //                                                 beta,x0,y0,z0));
-    //   printF("Gaussian force: beta=%g x0=%g y0=%g z0=%g \n",beta,x0,y0,z0);
-    // }
-    else if( dialog.getTextValue(answer,"number of periods","%i",numPeriods) )
-    {
-      printF("Setting numPeriods=%i\n",numPeriods);
-    }
-  
-    else if( len=answer.matches("bc=") )
-    {
-      aString bcn = answer(len,answer.length()-1);
-      int bc=-1;
-      for( int i=0; i<numberOfBCNames; i++ )
-      {
-        if( bcn==bcNames[i] )
-        {
-          bc=i;
-        }
-      }
-      if( bc==-1 )
-      {
-        printF("Error: unknown bc=[%s]\n",(const char*)bcn);
-        printF("Valid bcNames:\n");
-        for( int i=0; i<numberOfBCNames; i++ )
-        {
-          printF(" bcNames[%i]=[%s]\n",i,(const char*)bcNames[i]);
-          OV_ABORT("ERROR: fix boundary conditions");
-        }
+    //   aString bcn = answer(len,answer.length()-1);
+    //   int bc=-1;
+    //   for( int i=0; i<numberOfBCNames; i++ )
+    //   {
+    //     if( bcn==bcNames[i] )
+    //     {
+    //       bc=i;
+    //     }
+    //   }
+    //   if( bc==-1 )
+    //   {
+    //     printF("Error: unknown bc=[%s]\n",(const char*)bcn);
+    //     printF("Valid bcNames:\n");
+    //     for( int i=0; i<numberOfBCNames; i++ )
+    //     {
+    //       printF(" bcNames[%i]=[%s]\n",i,(const char*)bcNames[i]);
+    //       OV_ABORT("ERROR: fix boundary conditions");
+    //     }
         
-      }
-      else
-      {
-        printF("Setting all boundary conditions to bc=[%s]\n",(const char*)bcNames[bc]);
-        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-        {
-          MappedGrid & mg=cg[grid];
-          ForBoundary(side,axis) 
-          {
-            if( mg.boundaryCondition(side,axis)>0 )
-            {
-              mg.setBoundaryCondition(side,axis,bc);
-            }
-          }
-        }
-      }
-      
+    //   }
+    //   else
+    //   {
+    //     printF("Setting all boundary conditions to bc=[%s]\n",(const char*)bcNames[bc]);
+    //     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    //     {
+    //       MappedGrid & mg=cg[grid];
+    //       ForBoundary(side,axis) 
+    //       {
+    //         if( mg.boundaryCondition(side,axis)>0 )
+    //         {
+    //           mg.setBoundaryCondition(side,axis,bc);
+    //         }
+    //       }
+    //     }
+    //   }
     
-    }
+    // }
+
+    // else if( len=answer.matches("bcNumber") )
+    // {
+    //   // --- specify a boundary condition for BC's with given numbers ---
+    //   //     bcNumber2=dirichlet
+    //   //     bcNumber5=neumann
+
+    //   // (1) parse the string to find the number after "bcNumber"
+    //   int i0=len, i1=-1;
+    //   for( int i=i0; i<answer.length(); i++ )
+    //   {
+    //     if( answer[i]=='=' )
+    //     {
+    //       i1=i-1; break; 
+    //     }
+    //   }
+    //   if( i1<i0 )
+    //   {
+    //     printF("ERROR parsing command=[%s]\n",(const char*)answer);
+    //     continue;
+    //   }
+    //   int bcNumber=-1;
+    //   sScanF(answer(i0,i1),"%d",&bcNumber);
+    //   if( bcNumber<=0 )
+    //   {
+    //     printF("ERROR parsing command=[%s], bcNumber=%d is invalid.\n",(const char*)answer,bcNumber);
+    //   }
+
+    //   // Here is the bc name: 
+    //   aString bcName =answer(i1+2,answer.length()-1);
+
+    //   printF("answer=[%s], i0=%d, i1=%d, bcNumber=%d, bcName=[%s]\n",(const char*)answer,i0,i1,bcNumber,(const char*)bcName);
+
+    //   BoundaryConditionEnum bcType = dirichlet;
+    //   if( bcName=="dirichlet" || bcName=="d" )
+    //   {
+    //     bcType=dirichlet;
+    //   }
+    //   else if( bcName=="neumann" || bcName=="n" )
+    //   {
+    //     bcType=neumann;
+    //   }
+    //   else
+    //   {
+    //     printF("ERROR: unknown bcName=[%s]\n",(const char*)bcName);
+    //   }
+
+    //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    //   {
+    //     MappedGrid & mg=cg[grid];
+    //     ForBoundary(side,axis) 
+    //     {
+    //       if( bcOrig(side,axis,grid)==bcNumber ) // note refer to original numbering
+    //       {
+    //         printF("Setting boundaryCondition(side,axis,grid)=(%d,%d,%d) to [%s]\n",side,axis,grid,(const char*)bcNames[bcType]);
+    //         mg.setBoundaryCondition(side,axis,bcType);
+    //       }
+    //     }
+    //   }
+
+    //   //  OV_ABORT("stop here for now");
+
+    // }
 
     else if( answer=="choose grids for implicit" )
     {
@@ -1842,6 +2555,37 @@ outputResults( int current, real t )
   RealArray solutionNormVector(1);
   solutionNormVector(0)=solutionNorm;
   saveSequenceInfo( t, solutionNormVector );
+
+  return 0;
+}
+
+// =======================================================================
+/// "Sort" the array of eigenvalues. Return the permuation array iperm.
+// =======================================================================
+int CgWave::
+sortArray( RealArray & eigenValues, IntegerArray & iperm )
+{
+  int numberOfEigenvectors = eigenValues.getLength(0);
+
+  for( int ie=0; ie<numberOfEigenvectors; ie++ )
+  {
+    iperm(ie)=ie; // for sorting 
+  }
+  // -- bubble sort ---
+  for( int ie=0; ie<numberOfEigenvectors-1; ie++ )
+  {
+    bool changed=false;
+    for( int je=0; je<numberOfEigenvectors-1; je++ )
+    {
+      if( eigenValues(je) > eigenValues(je+1) )  // increasing order
+      {
+        changed=true;
+        Real temp=eigenValues(je);  eigenValues(je)= eigenValues(je+1);  eigenValues(je+1)=temp;
+        int itemp=      iperm(je);        iperm(je)=       iperm(je+1);        iperm(je+1)=itemp;
+      }
+    }
+    if( !changed ) break;
+  }
 
   return 0;
 }

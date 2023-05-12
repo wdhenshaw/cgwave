@@ -6,6 +6,541 @@ set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDeriv
 
 
 ****************************************************
+****** Fri May 12, 2023
+
+cgWave tz.cmd -g=rsise4.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -rectangular=explicit -go=halt
+
+****************************************************
+****** Thurs May 11, 2023
+
+
+CLEAN UP CGWAVE DIALOG
+
+cgWave tz.cmd -g=rsise4.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -rectangular=explicit -go=halt
+
+****************************************************
+****** Wed May 10, 2023
+
+DOES MG WORK WITH SEMI IMPLICIT ?
+
+FIXED: implicit.bC : fix predefined for semi-implicit
+
+>>>> RSIS + MG **Broken ... FIXED 
+cgWave tz.cmd -g=rsise4.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -rectangular=explicit -go=halt
+
+CgWave::takeImplicitStep: implicit solve: max-res= 1.07e-14 (iterations=2) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 1.07e-14 (iterations=2) ***
+cgWave:FD22 t=1.000e-01 ( 7 steps) dt=1.429e-02 maxErr= 4.26e-14, ||u||= 2.92e+00, cpu= 1.89e+00(s)
+cgWave:FD22 t=2.000e-01 (14 steps) dt=1.429e-02 maxErr= 1.56e-13, ||u||= 3.08e+00, cpu= 4.64e+00(s)
+
+
+>>>> RSIS: 
+cgWave tz.cmd -g=rsise4.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -rectangular=explicit -go=halt
+
+cgWave:FD22 t=1.000e-01 ( 7 steps) dt=1.429e-02 maxErr= 1.15e-14, ||u||= 2.92e+00, cpu= 1.63e+01(s)
+cgWave:FD22 t=2.000e-01 (14 steps) dt=1.429e-02 maxErr= 4.17e-14, ||u||= 3.08e+00, cpu= 1.76e+01(s)
+cgWave:FD22 t=3.000e-01 (21 steps) dt=1.429e-02 maxErr= 8.70e-14, ||u||= 3.27e+00, cpu= 1.86e+01(s)
+cgWave:FD22 t=4.000e-01 (28 steps) dt=1.429e-02 maxErr= 1.47e-13, ||u||= 3.47e+00, cpu= 1.93e+01(s)
+
+
+
+
+SEMI-IMP + MG **TROUBLE** ... FIXED 
+cgWave tz.cmd -g=sice2.order2.ml2.hdf -tz=trig -tf=1 -tp=.1 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -rectangular=explicit -go=halt
+
+CgWave::implicitSolver: A = I -alpha (c*dt)^2 Delta, c=1, dt= 2.50e-02
+Operator averaging for grid=1, level=0, orderOfAccuracyFine=2, orderOfAccuracyCoarse=2
+Operator averaging for grid=1, level=1, orderOfAccuracyFine=2, orderOfAccuracyCoarse=2
+>>>>cgWave::INFO: impSolver is iterative, we need a separate RHS.
+Oges::allocateWorkSpace: numberOfNonzeros=1373 fillinRatio=2.000000e+01
+allocateWorkSpace: numberOfEquations=404, nsp = 27460, fillinRatio= 20, numberOfNonzeros = 1373
+CgWave::takeImplicitStep: implicit solve: max-res= 2.33e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 1.89e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 1.78e-15 (iterations=3) ***
+cgWave:FD22 t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 3.81e-03, ||u||= 8.12e-01, cpu= 1.00e+01(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 1.67e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 1.44e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 1.22e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 9.44e-16 (iterations=3) ***
+cgWave:FD22 t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 1.24e-02, ||u||= 3.20e-01, cpu= 1.13e+01(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 6.66e-16 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 1.39e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 2.99e-13 (iterations=2) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 8.44e-13 (iterations=2) ***
+cgWave:FD22 t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 1.37e-02, ||u||= 3.09e-01, cpu= 1.22e+01(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 6.11e-16 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 8.88e-16 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 1.11e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: max-res= 1.44e-15 (iterations=3) ***
+cgWave:FD22 t=4.000e-01 (16 steps) dt=2.500e-02 maxErr= 8.51e-03, ||u||= 8.09e-01, cpu= 1.29e+01(s)
+
+
+SEMI-IMP + Yale
+cgWave tz.cmd -g=sice2.order2.ml2.hdf -tz=trig -tf=1 -tp=.1 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -rectangular=explicit -go=halt
+cgWave:FD22 t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 3.81e-03, ||u||= 8.12e-01, cpu= 1.84e+00(s)
+cgWave:FD22 t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 1.24e-02, ||u||= 3.20e-01, cpu= 8.14e+00(s)
+cgWave:FD22 t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 1.37e-02, ||u||= 3.09e-01, cpu= 9.02e+00(s)
+cgWave:FD22 t=4.000e-01 (16 steps) dt=2.500e-02 maxErr= 8.51e-03, ||u||= 8.09e-01, cpu= 9.80e+00(s)
+cgWave:FD22 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 1.25e-02, ||u||= 1.01e+00, cpu= 1.08e+01(s)
+cgWave:FD22 t=6.000e-01 (24 steps) dt=2.500e-02 maxErr= 2.40e-02, ||u||= 8.30e-01, cpu= 1.23e+01(s)
+
+
+ALL IMPLICIT
+cgWave tz.cmd -g=sice2.order2.ml2.hdf -tz=trig -tf=1 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -go=halt
+
+CgWave::takeImplicitStep: implicit solve: max-res= 1.14e-12 (iterations=8) ***
+cgWave:FD22 t=2.000e-01 (2 steps) dt=1.000e-01 maxErr= 5.27e-03, ||u||= 3.09e-01, cpu= 3.76e+00(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 4.26e-13 (iterations=8) ***
+cgWave:FD22 t=3.000e-01 (3 steps) dt=1.000e-01 maxErr= 9.26e-03, ||u||= 3.18e-01, cpu= 6.76e+00(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 4.72e-13 (iterations=8) ***
+cgWave:FD22 t=4.000e-01 (4 steps) dt=1.000e-01 maxErr= 5.70e-03, ||u||= 8.14e-01, cpu= 7.54e+00(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 1.18e-12 (iterations=8) ***
+cgWave:FD22 t=5.000e-01 (5 steps) dt=1.000e-01 maxErr= 7.72e-03, ||u||= 1.00e+00, cpu= 8.16e+00(s)
+
+
+****************************************************
+****** Fri May 5, 2023
+
+++++ START IMP + MG + ORDER 4
+
+FD24 : *starts to work*
+cgWave tz.cmd -g=square128.order4 -tz=poly -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -bcApproach=cbc -go=halt
+
+---> errors are not zero ??
+--tol=1e-12
+CgWave::takeImplicitStep: implicit solve: max-res= 3.30e-13 (iterations=8) ***
+cgWave:FD24 t=2.000e-01 (2 steps) dt=1.000e-01 maxErr= 1.56e-09, ||u||= 4.97e+00, cpu= 3.72e+00(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 3.74e-13 (iterations=8) ***
+cgWave:FD24 t=3.000e-01 (3 steps) dt=1.000e-01 maxErr= 1.65e-09, ||u||= 5.27e+00, cpu= 4.75e+00(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 3.72e-13 (iterations=8) ***
+cgWave:FD24 t=4.000e-01 (4 steps) dt=1.000e-01 maxErr= 3.67e-09, ||u||= 5.60e+00, cpu= 5.49e+00(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 3.42e-13 (iterations=8) ***
+cgWave:FD24 t=5.000e-01 (5 steps) dt=1.000e-01 maxErr= 4.58e-09, ||u||= 5.96e+00, cpu= 6.27e+00(s)
+
+--- tol=1e-10
+CgWave::takeImplicitStep: implicit solve: max-res= 1.21e-10 (iterations=6) ***
+cgWave:FD24 t=2.000e-01 (2 steps) dt=1.000e-01 maxErr= 1.56e-09, ||u||= 4.97e+00, cpu= 2.76e+00(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 1.21e-10 (iterations=6) ***
+cgWave:FD24 t=3.000e-01 (3 steps) dt=1.000e-01 maxErr= 1.65e-09, ||u||= 5.27e+00, cpu= 9.69e+00(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 1.21e-10 (iterations=6) ***
+cgWave:FD24 t=4.000e-01 (4 steps) dt=1.000e-01 maxErr= 3.67e-09, ||u||= 5.60e+00, cpu= 1.07e+01(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 1.21e-10 (iterations=6) ***
+cgWave:FD24 t=5.000e-01 (5 steps) dt=1.000e-01 maxErr= 4.58e-09, ||u||= 5.96e+00, cpu= 1.16e+01(s)
+
+FD24 - direct solver **NOTE** OGES Predfined may use extrapolation
+cgWave tz.cmd -g=square128.order4 -tz=poly -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0  -bcApproach=cbc -go=halt
+
+cgWave:FD24 t=2.000e-01 (2 steps) dt=1.000e-01 maxErr= 1.22e-13, ||u||= 4.97e+00, cpu= 1.87e+00(s)
+cgWave:FD24 t=3.000e-01 (3 steps) dt=1.000e-01 maxErr= 1.65e-13, ||u||= 5.27e+00, cpu= 2.09e+00(s)
+cgWave:FD24 t=4.000e-01 (4 steps) dt=1.000e-01 maxErr= 2.26e-13, ||u||= 5.60e+00, cpu= 2.59e+00(s)
+cgWave:FD24 t=5.000e-01 (5 steps) dt=1.000e-01 maxErr= 2.66e-13, ||u||= 5.96e+00, cpu= 3.04e+00(s)
+
+
+
+****************************************************
+****** Thurs May 4, 2023
+
+BUG FIXED IN OGMG -- OPERATOR AVERAGING IN 3D FOR HEAT OP
+
+
+** WORKS NOW: 
+cgWave -noplot tz.cmd -g=boxNx16.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.3 -tp=0.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=go -useKnownFirstStep=1 -debugmg=3
+
+@@@@ cycle: level=0, Compute accurate defect since close to convergence: maxDefect(approx)=1.90e-11 , actual=2.14e-11
+  Ogmg::cycle:level=0, it=6, WU= 5.70, defect=2.14e-11, defect/defectOld= 0.031,  ECR0=   0.545 ***
+   ->solve: (level=0) it=6, l2NormResidual=2.14e-11 <? 3.66e-10 = resTol*l2Norm(f) + aTol=(1.0e-10)*(2.7e+00) + 1.0e-10 
+CgWave::takeImplicitStep: implicit solve: max-res= 2.14e-11 (iterations=6) ***
+cgWave:FD22 t=3.000e-01 (3 steps) dt=1.000e-01 maxErr= 2.29e-11, ||u||= 4.81e+00, cpu= 3.31e-02(s)
+
+
+****************************************************
+****** Wed May 3, 2023
+
+New smaller box:
+
+nonBoxNx16 OK 
+cgWave -noplot tz.cmd -g=nonBoxNx16.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.3 -tp=0.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=go -useKnownFirstStep=1 -debugmg=3
+
+CgWave::implicitSolver: A = I -alpha (c*dt)^2 Delta, alpha=2.500e-01, c=1, dt= 1.00e-01
+*** OgmgParameters::updateToMatchGrid: maxLevels=-1, old=cg.numberOfMultigridLevels=1 new=mg.numberOfMultigridLevels=1 (new)
+Operator averaging for grid=0, level=0, orderOfAccuracyFine=2, orderOfAccuracyCoarse=2
+Operator averaging for grid=0, level=1, orderOfAccuracyFine=2, orderOfAccuracyCoarse=2
+Operator averaging for grid=0, level=2, orderOfAccuracyFine=2, orderOfAccuracyCoarse=2
+>>>>cgWave::INFO: impSolver is iterative, we need a separate RHS.
+bcOptWave: fill BCs into RHS for implicit solver
+ ******** Ogmg::solve, solver=unknown, grid=/home/henshw/grids/nonBoxNx16.order2.hdf********
+*** OgmgParameters::updateToMatchGrid: maxLevels=-1, old=cg.numberOfMultigridLevels=1 new=mg.numberOfMultigridLevels=4 (new)
+Solve: maximum defect at start=2.72e-02...
+  Ogmg::cycle:level=0, it=0, Initial defect =2.72e-02
+  Ogmg:smooth, level = 0, BEFORE iteration=0, defect=7.479555e-02 
+Overture::checkMemoryUsage: Interpolant::explicitInterpolate:after periodic and updateGhost, myid=0: memory usage has increased to 49.5508 (Mb)
+  Ogmg:smooth, level = 0, iteration=0, defect: (0=5.013e-02),max= 5.01e-02, [rate = 0.6702],
+  Ogmg:smooth, level = 0, BEFORE iteration=1, defect=5.012874e-02 
+  Ogmg:smooth, level = 0, iteration=1, defect: (0=2.099e-02),max= 2.10e-02, [rate = 0.4188],
+     Ogmg:smooth, level = 1, BEFORE iteration=0, defect=7.335812e-03 
+     Ogmg:smooth, level = 1, iteration=0, defect: (0=1.804e-03),max= 1.80e-03, [rate = 0.2459],
+     Ogmg:smooth, level = 1, BEFORE iteration=1, defect=1.803903e-03 
+     Ogmg:smooth, level = 1, iteration=1, defect: (0=2.832e-04),max= 2.83e-04, [rate = 0.1570],
+         Ogmg:smooth, level = 2, BEFORE iteration=0, defect=4.670509e-05 
+         Ogmg:smooth, level = 2, iteration=0, defect: (0=1.183e-05),max= 1.18e-05, [rate = 0.2533],
+         Ogmg:smooth, level = 2, BEFORE iteration=1, defect=1.182933e-05 
+         Ogmg:smooth, level = 2, iteration=1, defect: (0=2.158e-06),max= 2.16e-06, [rate = 0.1824],
+***Oges:Increasing fillinRatio for workspace to 3.800000e+01
+
+
+**trouble: 
+cgWave -noplot tz.cmd -g=boxNx16.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.3 -tp=0.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=go -useKnownFirstStep=1 -debugmg=3
+
+
+
+
+OK: 
+cgWave -noplot tz.cmd -g=boxNx8.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.3 -tp=0.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=go -useKnownFirstStep=1 -debugmg=3
+
+
+****************************************************
+****** Mon May 2, 2023
+
+MULTGRID in 3D is not working? 
+
+
+MAKE SOME CHANGES 
+cgWave -noplot tz.cmd -g=box2.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.3 -tp=0.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=go -useKnownFirstStep=1 -debugmg=3
+
+>> recompile implicit.bC and bcOpt ... 
+
+cgWave -noplot tz.cmd -g=box4.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=0.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -debugmg=3 -upwind=0 -solveri=multigrid -go=go -useKnownFirstStep=1
+
+BOX2 -- **BAD**
+cgWave -noplot tz.cmd -g=box2.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=0.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=go -useKnownFirstStep=1 -debugmg=63 > junk.out
+
+BOX1 **OK**
+cgWave -noplot tz.cmd -g=box1.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=0.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -debugmg=3 -upwind=0 -solveri=multigrid -go=go
+
+CgWave::takeImplicitStep: implicit solve: max-res= 1.57e-10 (iterations=5) ***
+cgWave:FD22 t=5.000e-01 (5 steps) dt=1.000e-01 maxErr= 2.44e-10, ||u||= 5.43e+00, cpu= 2.34e-02(s)
+
+
+****************************************************
+****** Mon May 1, 2023
+
+REVISIT MULTIGRID
+if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }
+
+
+cgWave -noplot tz.cmd -g=box1.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.01 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -debugmg=3 -upwind=0 -solveri=multigrid -go=halt
+
+cgWave tz.cmd -g=square16.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.01 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -debugmg=3 -upwind=1 -solveri=multigrid -go=halt
+
+BOX ORDER=2:  ** BROKEN***
+cgWave tz.cmd -g=box2.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -debugmg=3 -upwind=0 -solveri=multigrid -go=halt
+
+****Ogmg::solve:WARNING: No convergence in 15 iterations defect=2.95e+09 ****
+
+
+
+SQUARE ORDER=2: 
+cgWave tz.cmd -g=square128.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -upwind=1 -solveri=multigrid -go=halt
+
+CgWave::takeImplicitStep: implicit solve: max-res= 2.30e-11 (iterations=6) ***
+cgWave:FD22u t=5.000e-01 (5 steps) dt=1.000e-01 maxErr= 7.24e-11, ||u||= 3.69e+00, cpu= 6.28e+00(s)
+
+
+
+
+****************************************************
+****** Sun April 23, 2023
+
+CONTINUE ON STENCIL:
+
+
+ORDER=8 CURV 
+cgWave -noplot tz.cmd -g=nonSquare16.order8 -tz=poly -degreeInTime=8 -degreeInSpace=8 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -bcApproach=lcbc -upwind=0 -meApproach=stencil -go=go
+
+cgWave:FD88 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 1.88e-12, ||u||= 8.22e+00, cpu= 7.31e-02(s)
+cgWave:FD88 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 3.04e-12, ||u||= 8.71e+00, cpu= 1.75e-01(s)
+cgWave:FD88 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 5.14e-12, ||u||= 9.28e+00, cpu= 2.78e-01(s)
+
+
+ORDER=8 exact ?? --> relative error ok 
+cgWave -noplot tz.cmd -g=square16.order8 -tz=poly -degreeInTime=8 -degreeInSpace=8 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -bcApproach=lcbc -meApproach=stencil -go=go
+
+cgWave:FD88 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 1.88e-12, ||u||= 8.22e+00, cpu= 6.91e-02(s)
+cgWave:FD88 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 3.04e-12, ||u||= 8.71e+00, cpu= 1.71e-01(s)
+cgWave:FD88 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 5.14e-12, ||u||= 9.28e+00, cpu= 2.73e-01(s)
+cgWave:FD88 t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 5.23e-12, ||u||= 9.97e+00, cpu= 3.75e-01(s)
+cgWave:FD88 t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 8.08e-12, ||u||= 1.08e+01, cpu= 4.78e-01(s)
+
+
+
+NON-BOX ORDER=6 : *exact*
+cgWave -noplot tz.cmd -g=nonBox2.order6 -tz=poly -degreeInTime=6 -degreeInSpace=6 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+BOX ORDER=6
+cgWave -noplot tz.cmd -g=box2.order6 -tz=poly -degreeInTime=6 -degreeInSpace=6 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+
+
+
+NON-BOX ORDER=4 : *exact*
+cgWave -noplot tz.cmd -g=nonBox2.order4 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+BOX ORDER=4 : *ok*
+cgWave -noplot tz.cmd -g=box2.order4 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+
+NON-BOX ORDER=2 : **exact**
+cgWave -noplot tz.cmd -g=nonBox2.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+BOX ORDER=2 : **exact** 
+cgWave -noplot tz.cmd -g=box2.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+
+
+ORDER=6 CURV *exact*
+cgWave -noplot tz.cmd -g=nonSquare16.order6 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+ORDER=6 *exact*
+cgWave -noplot tz.cmd -g=square16.order6 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+ORDER=4 CURV **EXACT**
+cgWave -noplot tz.cmd -g=nonSquare16.order4 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+ORDER=4
+cgWave -noplot tz.cmd -g=square16.order4 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+ORDER=2 NONSQUARE
+cgWave -noplot tz.cmd -g=nonSquare16.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+ORDER=2
+cgWave -noplot tz.cmd -g=square16.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+****************************************************
+****** Sat April 22, 2023
+
+CONTINUE ON STENCIL:
+
+START 3D
+
+cgWave -noplot tz.cmd -g=nonBox2.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+
+
+ORDER=6 CURV *exact*
+cgWave -noplot tz.cmd -g=nonSquare16.order6 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+
+ORDER=4 CURV **EXACT**
+cgWave -noplot tz.cmd -g=nonSquare16.order4 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+
+****************************************************
+****** Fri April 21, 2023
+
+CONTINUE ON STENCIL:
+
+ORDER=6 CURV *exact*
+cgWave -noplot tz.cmd -g=nonSquare16.order6 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+advWaveStencil: ADVANCE dim=2 order=6 orderInTime=6, grid=curvilinear... t=  0.33E-01
+cgWave:FD66 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 3.11e-15, ||u||= 4.71e+00, cpu= 2.21e-03(s)
+cgWave:FD66 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 4.88e-15, ||u||= 4.99e+00, cpu= 4.62e-03(s)
+
+
+ORDER=6  **EXACT**
+cgWave -noplot tz.cmd -g=square16.order6 -tz=poly -degreeInTime=6 -degreeInSpace=6 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+advWaveStencil: ADVANCE dim=2 order=6 orderInTime=6, grid=rectangular... t=  0.33E-01
+cgWave:FD66 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 3.11e-15, ||u||= 4.71e+00, cpu= 1.76e-03(s)
+cgWave:FD66 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 4.88e-15, ||u||= 4.99e+00, cpu= 4.09e-03(s)
+
+
+ORDER=4 CURV **EXACT**
+cgWave -noplot tz.cmd -g=nonSquare16.order4 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+cgWave:FD44 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 2.66e-15, ||u||= 4.71e+00, cpu= 1.70e-03(s)
+cgWave:FD44 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 8.44e-15, ||u||= 4.99e+00, cpu= 3.80e-03(s)
+cgWave:FD44 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 1.51e-14, ||u||= 5.31e+00, cpu= 5.95e-03(s)
+
+ORDER=4
+cgWave -noplot tz.cmd -g=square16.order4 -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+ORDER=2 NONSQUARE
+cgWave -noplot tz.cmd -g=nonSquare16.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+ORDER=2
+cgWave -noplot tz.cmd -g=square16.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+****************************************************
+****** Thurs April 20, 2023
+
+START ON STENCIL: 
+
+
+cgWave -noplot tz.cmd -g=square16.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -meApproach=stencil -go=go
+
+cgWave:FD22 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 1.33e-15, ||u||= 2.92e+00, cpu= 5.58e-04(s)
+cgWave:FD22 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 1.78e-15, ||u||= 3.08e+00, cpu= 1.13e-03(s)
+cgWave:FD22 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 2.22e-15, ||u||= 3.27e+00, cpu= 1.71e-03(s)
+cgWave:FD22 t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 2.66e-15, ||u||= 3.47e+00, cpu= 2.26e-03(s)
+cgWave:FD22 t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 2.66e-15, ||u||= 3.69e+00, cpu= 2.81e-03(s)
+
+****************************************************
+****** Fri March 21, 2023
+
+clean up .. fix check's
+
+cgWave tz.cmd -g=square128.order2 -tz=trig -tf=1 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -upwind=1 -solveri=multigrid -go=halt
+
+  Ogmg::cycle:level=0, it=6, WU= 5.08, defect=8.48e-11, defect/defectOld= 0.025,  ECR0=   0.484 ***
+     Ogmg:smooth, level = 1, iteration=0, defect: (0=6.162e-11),max= 6.16e-11, [rate = 1.6110],
+     Ogmg:smooth, level = 1, iteration=1, defect: (0=5.608e-11),max= 5.61e-11, [rate = 0.9101],
+         Ogmg:smooth, level = 2, iteration=0, defect: (0=3.813e-11),max= 3.81e-11, [rate = 1.2407],
+         Ogmg:smooth, level = 2, iteration=1, defect: (0=2.790e-11),max= 2.79e-11, [rate = 0.7317],
+             Ogmg::cycle:level=3, it=1, WU= 3.00, defect=2.26e-26, defect/defectOld= 0.000,  ECR3=   0.000  
+         Ogmg:smooth, level = 2, iteration=0, defect: (0=1.076e-12),max= 1.08e-12, [rate = 0.0848],
+         Ogmg::cycle:level=2, it=1, WU= 2.36, defect=1.08e-12, defect/defectOld= 0.013,  ECR2=   0.157  
+     Ogmg:smooth, level = 1, iteration=0, defect: (0=2.133e-12),max= 2.13e-12, [rate = 0.0783],
+     Ogmg::cycle:level=1, it=1, WU= 2.77, defect=2.13e-12, defect/defectOld= 0.025,  ECR1=   0.265  
+  Ogmg:smooth, level = 0, iteration=0, defect: (0=2.788e-12),max= 2.79e-12, [rate = 0.0542],
+  Ogmg:smooth, level = 0, iteration=1, defect: (0=2.299e-12),max= 2.30e-12, [rate = 0.8244],
+  Ogmg:smooth, level = 0, iteration=2, defect: (0=2.224e-12),max= 2.22e-12, [rate = 0.9677],
+  Ogmg::cycle:level=0, it=7, WU= 6.08, defect=2.22e-12, defect/defectOld= 0.026,  ECR0=   0.550 ***
+CgWave::takeImplicitStep: implicit solve: max-res= 2.22e-12 (iterations=7) ***
+cgWave:FD22u t=2.000e-01 (2 steps) dt=1.000e-01 maxErr= 8.56e-03, ||u||= 3.09e-01, cpu= 5.07e+00(s)
+
+
+****************************************************
+****** Fri Jan 13, 2023
+
+*FIXED* bug in ogmg -- predefined.C
+
+DISK: with BIG time-step we need lots of MG iterations:
+cgWave tz.cmd -g=sice8.order2.ml3 -tz=trig -tf=100 -tp=.5 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=-1 -debug=1 -upwind=1 -solveri=multigrid -go=halt
+
+--- USE u(t) as initial guess for u(t+dt)
+  Ogmg::cycle:level=0, it=0, Initial defect =1.77e+01
+
+---- START: 
+  Ogmg::cycle:level=0, it=0, Initial defect =7.90e+03
+Overture::checkMemoryUsage: Interpolant::explicitInterpolate:after periodic and updateGhost, myid=0: memory usage has increased to 58.5977 (Mb)
+  Ogmg:smooth, level = 0, iteration=0, defect: (0=6.069e+03),(1=3.489e+03),max= 6.07e+03, [rate = 0.9379],
+  Ogmg:smooth, level = 0, iteration=1, defect: (0=6.969e+02),(1=1.857e+03),max= 1.86e+03, [rate = 0.3060],
+     Ogmg:smooth, level = 1, iteration=0, defect: (0=1.347e+02),(1=3.671e+02),max= 3.67e+02, [rate = 0.4964],
+     Ogmg:smooth, level = 1, iteration=1, defect: (0=3.159e+02),(1=1.519e+02),max= 3.16e+02, [rate = 0.8605],
+
+
+
+cgWave tz.cmd -g=sice4.order2.ml3 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=1 -solveri=multigrid -go=halt
+
+
+-- looks ok: 
+cgWave tz.cmd -g=sise4.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=1 -solveri=multigrid -go=halt
+
+
+
+****************************************************
+****** Wed Jan 11, 2023
+
+ ---> do not use direct coarse grid solver for now -- fix bug in Ogmg
+cgWave tz.cmd -g=sise4.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=1 -solveri=multigrid -go=halt
+
+Oges:generateMatrix: Coefficients on input
+ (-1,-1) coeff= 1.41e-01  2.81e-01 -4.69e-02  2.81e-01  5.63e-01 -9.38e-02 -4.69e-02 -9.38e-02  1.56e-02 -1.00e+00 
+ (0,-1) coeff= 1.41e-01  2.81e-01 -4.69e-02  2.81e-01  5.63e-01 -9.38e-02 -4.69e-02 -9.38e-02  1.56e-02 -1.00e+00 
+ (1,-1) coeff=-4.69e-02  2.81e-01  1.41e-01 -9.38e-02  5.63e-01  2.81e-01  1.56e-02 -9.38e-02 -4.69e-02 -1.00e+00 
+ (2,-1) coeff= 1.41e-01  2.81e-01 -4.69e-02  2.81e-01  5.63e-01 -9.38e-02 -4.69e-02 -9.38e-02  1.56e-02 -1.00e+00 
+ (3,-1) coeff= 1.41e-01  2.81e-01 -4.69e-02  2.81e-01  5.63e-01 -9.38e-02 -4.69e-02 -9.38e-02  1.56e-02 -1.00e+00 
+ (4,-1) coeff= 1.41e-01  2.81e-01 -4.69e-02  2.81e-01  5.63e-01 -9.38e-02 -4.69e-02 -9.38e-02  1.56e-02 -1.00e+00 
+ (5,-1) coeff= 1.41e-01  2.81e-01 -4.69e-02  2.81e-01  5.63e-01 -9.38e-02 -4.69e-02 -9.38e-02  1.56e-02 -1.00e+00 
+ (6,-1) coeff= 1.41e-01  2.81e-01 -4.69e-02  2.81e-01  5.63e-01 -9.38e-02 -4.69e-02 -9.38e-02  1.56e-02 -1.00e+00 
+ (-1,0) coeff= 1.41e-01  2.81e-01 -4.69e-02  2.81e-01  5.63e-01 -9.38e-02 -4.69e-02 -9.38e-02  1.56e-02 -1.00e+00 
+ (0,0) coeff=-2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04  1.00e+00 -2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04      -nan 
+ (1,0) coeff=-2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04  1.00e+00 -2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04      -nan 
+ (2,0) coeff=-2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04  1.00e+00 -2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04      -nan 
+ (3,0) coeff=-2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04  1.00e+00 -2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04      -nan 
+ (4,0) coeff=-2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04  1.00e+00 -2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04      -nan 
+ (5,0) coeff=-2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04  1.00e+00 -2.08e-04 -2.08e-04 -2.08e-04 -2.08e-04      -nan 
+ 
+
+>>> TEST MG + overset grid **trouble**
+ ---> do not use direct coarse grid solver for now -- fix bug in Ogmg
+cgWave tz.cmd -g=sise4.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=1 -solveri=multigrid -go=halt
+
+Oges::allocateWorkSpace: numberOfNonzeros=1697 fillinRatio=2.000000e+01
+allocateWorkSpace: numberOfEquations=325, nsp = 33940, fillinRatio= 20, numberOfNonzeros = 1697
+ CGESL1: YALE  path:1   null row in a                 --  row =        33      
+
+
+>>> TEST MG + explicit upwind : looks OK
+
+cgWave tz.cmd -g=square32.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=1 -solveri=multigrid -go=halt
+
+cgWave:FD22u t=6.000e-02 ( 6 steps) dt=1.000e-02 maxErr= 7.03e-12, ||u||= 2.86e+00, cpu= 2.17e+01(s)
+
+
+****************************************************
+****** Mon Jan 10, 2023
+
+cgWave tz.cmd -g=square1024.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=halt
+
+cgWave tz.cmd -g=square32.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=halt
+
+
+****************************************************
+****** Mon Jan 9, 2023
+
+cgWave tz.cmd -g=square32.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=halt
+
+
+
+****************************************************
+****** Sun Jan 8, 2023
+
+BUG FIXED -- call solver with (u,f)
+
+START TEST MG for implicit solver
+
+MG is not converging !! WHY?
+cgWave tz.cmd -g=square8.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=halt
+
+
+
+cgWave tz.cmd -g=square32.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tp=.01 -ts=implicit -implicitUpwind=0 -dtMax=.1 -orderInTime=-1 -debug=1 -upwind=0 -solveri=multigrid -go=halt
+
+--> Ogmg: just do a direct solve on finest level -- soltion ok ? by defect large!?
+OgesParameters: relativeTolerance=1.000000e-10 
+Ogmg:WARNING: There is only one multigrid level on this grid! Using the direct solver instead with tol=1.00e-10 (maxIterationsCoarseGrid=10000)
+  Ogmg::cycle:level=0, it=1, WU= 3.06, defect=2.95e-05, defect/defectOld= 0.951,  ECR0=   0.984 ***
+****Ogmg::solve:WARNING: No convergence in 15 iterations defect=2.95e-05 ****
+Overture::checkMemoryUsage: Interpolant::explicitInterpolate:after periodic and updateGhost, myid=0: memory usage has increased to 53.7461 (Mb)
+cgWave:FD22 t=2.000e-02 ( 2 steps) dt=1.000e-02 maxErr= 1.78e-15, ||u||= 2.80e+00, cpu= 5.94e+00(s)
+  Ogmg::cycle:level=0, it=0, Initial defect =3.11e-05
+OgesParameters: relativeTolerance=1.000000e-10 
+Ogmg:WARNING: There is only one multigrid level on this grid! Using the direct solver instead with tol=1.00e-10 (maxIterationsCoarseGrid=10000)
+  Ogmg::cycle:level=0, it=1, WU= 3.06, defect=2.96e-05, defect/defectOld= 0.951,  ECR0=   0.984 ***
+****Ogmg::solve:WARNING: No convergence in 15 iterations defect=2.96e-05 ****
+cgWave:FD22 t=3.000e-02 ( 3 steps) dt=1.000e-02 maxErr= 2.66e-15, ||u||= 2.81e+00, cpu= 1.75e+01(s)
+
+
+****************************************************
+****** Sat Dec 3, 2022
+
+++TRY NEW POLY TZ -- noew supports higher degree's ++++
+
+BC=E, CBC EXACT
+cgWave tz.cmd -g=square16.order8.ng5 -upwind=0 -tz=poly -degreeInTime=8 -degreeInSpace=8 -orderInTime=-1 -bc=e -tf=.2 -tp=.01 -bcApproach=cbc -meApproach=ha -go=halt
+
+cgWave:FD88 t=5.000e-02 ( 5 steps) dt=1.000e-02 maxErr= 7.99e-15, ||u||= 8.01e+00, cpu= 5.96e+00(s)
+
+*** SOME ERRORS ON GHOST=4 a few points from the corner : err=1e-7
+
+exact: degree=6, 7
+cgWave tz.cmd -g=square16.order8.ng5 -upwind=0 -tz=poly -degreeInTime=8 -degreeInSpace=8 -orderInTime=-1 -bc=d -tf=.2 -tp=.01 -bcApproach=lcbc -meApproach=ha -go=halt
+
+degree=8: small errors but not exact ?? is POLY TZ correct?
+  cgWave:FD88 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 1.88e-12, ||u||= 8.22e+00, cpu= 3.07e+00(s)
+
+****************************************************
 ****** Fri Dec 2, 2022
 
 >>> compile LCBC -g 

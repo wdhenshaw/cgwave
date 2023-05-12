@@ -1,6 +1,7 @@
 #include "CgWave.h"
 #include "ParallelUtility.h"
 #include "ProcessorInfo.h"
+#include "Oges.h"
 
 int CgWave::
 printStatistics(FILE *file /* = stdout */)
@@ -21,7 +22,8 @@ printStatistics(FILE *file /* = stdout */)
   const int & orderOfAccuracyInTime         = dbase.get<int>("orderOfAccuracyInTime");
 
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
-  const int & modifiedEquationApproach              = dbase.get<int>("modifiedEquationApproach");
+  const ModifiedEquationApproachEnum & modifiedEquationApproach  
+                           = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
 
   int numberOfInterpolationPoints=0;
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
@@ -73,6 +75,11 @@ printStatistics(FILE *file /* = stdout */)
 
   const real realsPerGridPoint = (totalMem*1024.*1024.)/numberOfGridPoints/sizeof(real);
 
+  // implicit time-stepping: 
+  const int & totalImplicitIterations       = dbase.get<int>("totalImplicitIterations"); 
+  const int & totalImplicitSolves           = dbase.get<int>("totalImplicitSolves"); 
+  const Real aveNumberOfImplicitIterations  = totalImplicitIterations/Real(max(1,totalImplicitSolves));
+
   // Get the current date
   time_t *tp= new time_t;
   time(tp);
@@ -88,11 +95,19 @@ printStatistics(FILE *file /* = stdout */)
             "                       %s" 
             "               Grid:   %s \n" 
             "  ==== final time=%9.2e, numberOfStepsTaken =%9i, grids=%i, gridpts =%g, interp pts=%i, processors=%i, clock=%.2f GHz ==== \n"
-            "  ==== memory per-proc: [min=%g,ave=%g,max=%g](Mb), max-recorded=%g (Mb), total=%g (Mb)\n"
-            "   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %%     [max-s/proc] [min-s/proc]\n",
+            "  ==== memory per-proc: [min=%g,ave=%g,max=%g](Mb), max-recorded=%g (Mb), total=%g (Mb)\n",
             dateString,(const char*)nameOfGridFile,
             tFinal,numberOfStepsTaken,cg.numberOfComponentGrids(),numberOfGridPoints,numberOfInterpolationPoints,
             np,clockSpeed,minMem,aveMem,maxMem,maxMemRecorded,totalMem);
+
+    if( aveNumberOfImplicitIterations>0 )
+    {
+      fPrintF(output,"  ==== implicit: ave-iterations per solve = %5.1f (number of implicit solves=%d)\n",
+        aveNumberOfImplicitIterations,totalImplicitSolves);
+    }
+
+    fPrintF(output,    
+            "   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %%     [max-s/proc] [min-s/proc]\n");
     
   
     int nSpace=35;
@@ -118,26 +133,47 @@ printStatistics(FILE *file /* = stdout */)
 
     cg.displayDistribution("CgWave",output);
 
-    // ----- Output CYCLES -------
-    fPrintF(output,"\n CYCLES : clock=%.2f GHz, gridpts =%.3g, numberOfStepsTaken =%g, \n",clockSpeed,numberOfGridPoints,(Real)numberOfStepsTaken);
-    fPrintF(output,"   Timings:                        CYCLES/step/pt    %% \n",clockSpeed);
-    for( int i=0; i<maximumNumberOfTimings; i++ )
+    // ---- output stats from the implicit solver ---
+    if( timeSteppingMethod == implicitTimeStepping && dbase.has_key("impSolver") )
     {
-      // if( timingName[i]!="" && timing(i)>0. )    
-      if( timingName[i]!="" )
+      Oges & impSolver = dbase.get<Oges>("impSolver");
+      if( impSolver.isSolverIterative() ) 
       {
-        Real myCycles = ( aveTiming(i)/numberOfStepsTaken/numberOfGridPoints ) *( clockSpeed * 1e9 ); // Ghz = 10^9 
-        fPrintF(output,"%s%s",(const char*)timingName[i],
-                (const char*)dots(0,max(0,nSpace-timingName[i].length())));
-        if( myCycles<100000 )
-          fPrintF(output,"%9.1f",myCycles);
-        else
-          fPrintF(output,"%10.2e",myCycles);
-        fPrintF(output,"      %6.2f\n",100.*aveTiming(i)/aveTiming(0));
-      }
-      
+        if( fileio==0 )
+        { // logFile: 
+          fPrintF(output,"\n");
+          fPrintF(output,"-------------------------------------------------------------------------------------------------------\n");        
+          fPrintF(output,"---------------------------- IMPLICIT SOLVER STATISTICS -----------------------------------------------\n");
+          fPrintF(output," ==== implicitSolves: ave-iterations per solve = %5.1f (number of implicit solves=%d)\n",
+                  aveNumberOfImplicitIterations,totalImplicitSolves);          
+          fPrintF(output,"-------------------------------------------------------------------------------------------------------\n");        
+          impSolver.printStatistics(output);
+        }
+      }     
     }
 
+    // ----- Output CYCLES -------
+    if( fileio==0 )
+    { 
+      fPrintF(output,"\n CYCLES : clock=%.2f GHz, gridpts =%.3g, numberOfStepsTaken =%g, \n",clockSpeed,numberOfGridPoints,(Real)numberOfStepsTaken);
+      fPrintF(output,"   Timings:                        CYCLES/step/pt    %% \n",clockSpeed);
+      for( int i=0; i<maximumNumberOfTimings; i++ )
+      {
+        // if( timingName[i]!="" && timing(i)>0. )    
+        if( timingName[i]!="" )
+        {
+          Real myCycles = ( aveTiming(i)/numberOfStepsTaken/numberOfGridPoints ) *( clockSpeed * 1e9 ); // Ghz = 10^9 
+          fPrintF(output,"%s%s",(const char*)timingName[i],
+                  (const char*)dots(0,max(0,nSpace-timingName[i].length())));
+          if( myCycles<100000 )
+            fPrintF(output,"%9.1f",myCycles);
+          else
+            fPrintF(output,"%10.2e",myCycles);
+          fPrintF(output,"      %6.2f\n",100.*aveTiming(i)/aveTiming(0));
+        }
+        
+      }
+    }
     if( fileio==0 )
     {
       // Output results as a LaTeX table
@@ -185,8 +221,16 @@ printStatistics(FILE *file /* = stdout */)
       aString blanks="                                                                 ";
       int numBlanks = max(0,min(30,gridNameNoPrefix.length()-1 -7));
 
-      aString method="ME";                              // modified equation time stepping 
-      if( modifiedEquationApproach==1 ) method = "FAME"; // factored (hierachical)
+      aString method;                              // modified equation time stepping 
+      if( modifiedEquationApproach==standardModifiedEquation ) 
+        method="ME"; 
+      else if( modifiedEquationApproach==hierarchicalModifiedEquation ) 
+        method = "FAME"; // factored (hierachical)
+      else if( modifiedEquationApproach==stencilModifiedEquation)
+        method = "stencil";
+      else
+        method = "unknown";
+
       if( orderOfAccuracyInTime==2 )    method + "T2";  // 2nd-order in time
 
       fPrintF(output,"\n\nSummary info for a performance table see cgwave/doc/performance.tex:\n");

@@ -293,7 +293,7 @@ plot( int current, real t, real dt )
 
     const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
-    if( plotOptions==noPlotting || !graphicsIsOn )
+    if( plotOptions==noPlotting || !graphicsIsOn )  // ************ WDH***  March 24, 2023 **TEMP
         return 0;
 
   // printF(" $$$$$$$$ cgWave: plot: plotOptions=%d t=%9.3e\n",plotOptions,t);

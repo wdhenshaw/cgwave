@@ -9,15 +9,23 @@
 
 include ${Overture}/make.options
 
+LIB_ARPACK = -Wl,-rpath,/home/henshw/software/arpack-ng/lib -L/home/henshw/software/arpack-ng/lib -larpack 
+
+
 usePETSc := on
 # usePETSc := off
 ifeq ($(usePETSc),on)
   usePETSc   = on
-  petscSolver = obj/solvePETSc.o
+  petscSolver = obj/solvePETSc.o obj/solveSLEPc.o
 
   OGES_PETSC = buildEquationSolvers.o PETScEquationSolver.o
-  PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/mpiuni
+  # PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/mpiuni
+  PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/petsc/mpiuni
   PETSC_LIBS = -Wl,-rpath,$(PETSC_LIB) -L$(PETSC_LIB) -lpetsc
+
+  SLEPC_INCLUDE = -I$(SLEPC_DIR) -I$(SLEPC_DIR)/linux-gnu-opt/include -I$(SLEPC_DIR)/include 
+
+  SLEPC_LIBS = $(LIB_ARPACK) -Wl,-rpath,$(SLEPC_DIR)/linux-gnu-opt/lib -L$(SLEPC_DIR)/linux-gnu-opt/lib -lslepc
 
 else
   usePETSc   = off
@@ -26,6 +34,9 @@ else
   OGES_PETSC = 
   PETSC_INCLUDE = 
   PETSC_LIBS = 
+
+  SLEPC_INCLUDE =
+  SLEPC_LIBS =
 endif
 
 # optimization flag:
@@ -36,7 +47,10 @@ OPTFLAG = -O3
 
 
 CCFLAGS = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG)
+
+CCFLAGS += $(SLEPC_INCLUDE)
 CCFLAGS += $(PETSC_INCLUDE)
+
 # for rtg1 which has an older compiler (Processor.h)
 CCFLAGS += -std=c++11
 
@@ -103,7 +117,7 @@ LIBS += $(OV_FORTRAN_LIBRARIES) $(OV_PERL_LIBRARIES) $(OV_MOTIF_LIBRARIES) $(OV_
 .F.o:; $(FC) $(FFLAGSO) -c $<
 .bf.f:; bpp $*.bf
 .bC.C:; bpp $*.bC
-.bf.o: $*.f ; 
+# .bf.o: $*.f ; 
 .bC.o: $*.C ; 
 
 # compile some fortran files optimized by default:
@@ -147,7 +161,7 @@ PETScEquationSolver.o : $(Oges)/PETScEquationSolver.C; $(CXX) $(CCFLAGS) -DOVERT
 OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/userDefinedKnownSolution.o \
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
        obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
-       obj/takeFirstStep.o \
+       obj/takeFirstStep.o obj/deflation.o obj/eigenModes.o \
        obj/rjbesl.o obj/rybesl.o
        
 # LCBC files: 
@@ -170,6 +184,26 @@ FNOBJO += obj/advWaveME.o \
           obj/advWaveME2dOrder6r.o obj/advWaveME2dOrder6c.o  obj/advWaveME3dOrder6r.o obj/advWaveME3dOrder6c.o   \
           obj/advWaveME2dOrder8r.o obj/advWaveME2dOrder8c.o  obj/advWaveME3dOrder8r.o obj/advWaveME3dOrder8c.o     
 
+# Stencil versions
+FNOBJO += obj/advWaveStencil.o \
+          obj/advWaveStencil2dOrder2r.o  obj/advWaveStencil2dOrder2c.o \
+          obj/advWaveStencil2dOrder4r.o  obj/advWaveStencil2dOrder4c.o \
+          obj/advWaveStencil2dOrder6r.o  obj/advWaveStencil2dOrder6c.o \
+          obj/advWaveStencil3dOrder2r.o  obj/advWaveStencil3dOrder2c.o \
+          obj/advWaveStencil3dOrder4r.o  obj/advWaveStencil3dOrder4c.o \
+          obj/advWaveStencil3dOrder6r.o  obj/advWaveStencil3dOrder6c.o \
+          obj/advWaveStencil2dOrder8r.o  obj/advWaveStencil2dOrder8c.o \
+          obj/advWaveStencil3dOrder8r.o 
+          
+#          obj/advWaveStencil2dOrder8r.o  obj/advWaveStencil2dOrder8c.o 
+
+# FNOBJO += obj/advWaveStencil.o \
+#           obj/advWaveStencil2dOrder2r.o obj/advWaveStencil2dOrder2c.o  obj/advWaveStencil3dOrder2r.o obj/advWaveStencil3dOrder2c.o   \
+#           obj/advWaveStencil2dOrder4r.o obj/advWaveStencil2dOrder4c.o  obj/advWaveStencil3dOrder4r.o obj/advWaveStencil3dOrder4c.o   \
+#           obj/advWaveStencil2dOrder6r.o obj/advWaveStencil2dOrder6c.o  obj/advWaveStencil3dOrder6r.o obj/advWaveStencil3dOrder6c.o   \
+#           obj/advWaveStencil2dOrder8r.o obj/advWaveStencil2dOrder8c.o  obj/advWaveStencil3dOrder8r.o obj/advWaveStencil3dOrder8c.o     
+
+
 # OBJO = obj/advWave.o\
 #         obj/advWave2dOrder2r.o obj/advWave2dOrder2c.o obj/advWave2dOrder4r.o obj/advWave2dOrder4c.o 
 
@@ -179,8 +213,9 @@ checkCheckFiles = obj/checkCheckFiles.o
 checkCheckFiles: $(checkCheckFiles); $(CXX) $(CCFLAGS) -o check/checkCheckFiles $(checkCheckFiles) $(LIBS)
 
 # --- CgWave solver ---
-cgWaveFiles = obj/cgWaveMain.o $(OBJC) $(OBJO) $(FNOBJO)
-cgWave: $(cgWaveFiles) ; $(CXX) $(CCFLAGS) -o bin/cgWave $(cgWaveFiles) $(LIBS)
+# ogmgFiles = ${OvertureCheckout}/ogmg/smooth.o
+cgWaveFiles = obj/cgWaveMain.o $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_PETSC)
+cgWave: $(cgWaveFiles) ; $(CXX) $(CCFLAGS) -o bin/cgWave $(cgWaveFiles) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
 
 
 # ----- test of coeff matricies with wide stencils -----
@@ -193,7 +228,7 @@ obj/cgesl1234.o : src/cgesl1234.F; $(FC) $(FFLAGSO) -I.  -DOV_USE_DOUBLE  -o $*.
 #   gfortran -O  -fPIC  -fdefault-real-8 -fdefault-double-8   -I/home/henshw/Overture.g/include -I.   -DOV_USE_DOUBLE -c cgesl1234.F  
 
 obj/tcmWideStencil.o : src/tcmWideStencil.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/solvePETScNull.o : src/solvePETScNull.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+# obj/solvePETScNull.o : src/solvePETScNull.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 
 # ----- test quadrature formulae  -----
@@ -215,6 +250,17 @@ simpleTestFiles = obj/simpleTest.o
 simpleTest: $(simpleTestFiles); $(CXX) $(CCFLAGS) -o bin/simpleTest $(simpleTestFiles) $(LIBS)
 
 obj/simpleTest.o : src/simpleTest4.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+
+# ----- test reordering routine
+testReorderFiles = obj/testReorder.o 
+testReorder: $(testReorderFiles); $(CXX) $(CCFLAGS) -o bin/testReorder $(testReorderFiles) $(LIBS)
+obj/testReorder.o : src/testReorder.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+
+# ----- test reordering routine
+testPlotFiles = obj/testPlot.o  $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_PETSC)
+# testPlot: $(testPlotFiles); $(CXX) $(CCFLAGS) -o bin/testPlot $(testPlotFiles) $(LIBS)
+testPlot: $(testPlotFiles) ; $(CXX) $(CCFLAGS) -o bin/testPlot $(testPlotFiles) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
+obj/testPlot.o : src/testPlot.C; $(CXX) $(CCFLAGS) -o $*.o -c $<    
 
 # ----- test LCBC class : local compatibility boundary conditions -----
 testLCBCFiles = obj/testLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o
@@ -238,6 +284,8 @@ obj/LCBC_TzFnPointers.o : src/LCBC_TzFnPointers.C; $(CXX) $(CCFLAGSO) -o $*.o -c
 obj/LCBC_annulusMap.o : src/LCBC_annulusMap.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 
 obj/initializeLCBC.o : src/initializeLCBC.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/deflation.o : src/deflation.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/eigenModes.o : src/eigenModes.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 # # ----- test LCBC class : local compatibility boundary conditions -----
 # testLCBCFiles = obj/testLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o
@@ -256,17 +304,24 @@ obj/initializeLCBC.o : src/initializeLCBC.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 
 # --------- CgWaveHoltz ----------
 
-test: 
-	-@echo "usePETSc=[$(usePETSc)]"
-	-@echo "petscSolver=$(petscSolver)"
+# test:
+#   -@echo "usePETSc=[$(usePETSc)]"
+
+#   -@echo "usePETSc=[$(usePETSc)]"
+#   -@echo "petscSolver=$(petscSolver)"
+
+test2:;  -@echo "CCFLAGS=$(CCFLAGS)"
+
+test3:; -@echo "SLEPC_INCLUDE = $(SLEPC_INCLUDE)"
 
 # cgwh = obj/cgwh.o obj/CgWaveHoltz.o $(petscSolver) $(OBJC) $(OBJO)
-cgwh = obj/cgwh.o obj/CgWaveHoltz.o obj/solveHelmholtz.o $(petscSolver) $(OGES_PETSC) $(OBJC) $(OBJO) $(FNOBJO)
+cgwh = obj/cgwh.o obj/CgWaveHoltz.o obj/solveHelmholtz.o obj/solveHelmholtzDirect.o obj/solveEigen.o $(petscSolver) $(OGES_PETSC) $(OBJC) $(OBJO) $(FNOBJO)
 cgwh: $(cgwh) 
-	$(CXX) $(CCFLAGS) -o bin/cgwh $(cgwh) $(PETSC_LIBS) $(LIBS)
+	$(CXX) $(CCFLAGS) -o bin/cgwh $(cgwh) $(PETSC_LIBS) $(SLEPC_LIBS) $(LIBS)
 
 
 # bpp files: 
+src/cgwh.C: src/cgwh.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include cgwh.bC
 src/advance.C: src/advance.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include advance.bC
 src/implicit.C: src/implicit.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include implicit.bC
 src/applyBoundaryConditions.C: src/applyBoundaryConditions.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include applyBoundaryConditions.bC
@@ -274,11 +329,17 @@ src/plot.C: src/plot.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include plo
 src/userDefinedKnown.C: src/userDefinedKnown.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include userDefinedKnown.bC
 src/userDefinedForcing.C: src/userDefinedForcing.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include userDefinedForcing.bC
 src/getHelmholtzForcing.C: src/getHelmholtzForcing.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include getHelmholtzForcing.bC
+src/solveHelmholtzDirect.C: src/solveHelmholtzDirect.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveHelmholtzDirect.bC
 src/solveHelmholtz.C: src/solveHelmholtz.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveHelmholtz.bC
+src/solveEigen.C: src/solveEigen.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveEigen.bC
+src/solveSLEPc.C: src/solveSLEPc.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveSLEPc.bC
 
 src/tcmWideStencil.C: src/tcmWideStencil.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include tcmWideStencil.bC
 
 src/takeFirstStep.C: src/takeFirstStep.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include takeFirstStep.bC
+
+src/deflation.C: src/deflation.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include deflation.bC
+src/eigenModes.C: src/eigenModes.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include eigenModes.bC
 
 # -- optimized advance routines
 src/advWave.f90: src/advWave.bf90 
@@ -304,7 +365,7 @@ src/advWave3dOrder8r.f90 : src/advWave.f90
 src/advWave2dOrder8c.f90 : src/advWave.f90
 src/advWave3dOrder8c.f90 : src/advWave.f90
 
-src/advWaveME.f90: src/advWaveME.bf90 maple/update2dOrder6Curvilinear.h maple/update3dOrder6Curvilinear.h maple/update2dOrder8Curvilinear.h maple/update3dOrder8Curvilinear.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include advWaveME.bf90
+src/advWaveME.f90: src/advWaveME.bf90 include/update2dOrder6Curvilinear.h include/update3dOrder6Curvilinear.h include/update2dOrder8Curvilinear.h include/update3dOrder8Curvilinear.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include advWaveME.bf90
 
 src/advWaveME2dOrder2r.f90 : src/advWaveME.f90
 src/advWaveME3dOrder2r.f90 : src/advWaveME.f90
@@ -327,6 +388,28 @@ src/advWaveME2dOrder8c.f90 : src/advWaveME.f90
 src/advWaveME3dOrder8c.f90 : src/advWaveME.f90
 
 
+src/advWaveStencil.f90: src/advWaveStencil.bf90; @cd src; $(BPP) -clean -quiet -I$(Overture)/include advWaveStencil.bf90
+
+src/advWaveStencil2dOrder2r.f90 : src/advWaveStencil.f90
+src/advWaveStencil3dOrder2r.f90 : src/advWaveStencil.f90
+src/advWaveStencil2dOrder2c.f90 : src/advWaveStencil.f90
+src/advWaveStencil3dOrder2c.f90 : src/advWaveStencil.f90
+
+src/advWaveStencil2dOrder4r.f90 : src/advWaveStencil.f90
+src/advWaveStencil3dOrder4r.f90 : src/advWaveStencil.f90
+src/advWaveStencil2dOrder4c.f90 : src/advWaveStencil.f90
+src/advWaveStencil3dOrder4c.f90 : src/advWaveStencil.f90
+
+src/advWaveStencil2dOrder6r.f90 : src/advWaveStencil.f90
+src/advWaveStencil3dOrder6r.f90 : src/advWaveStencil.f90
+src/advWaveStencil2dOrder6c.f90 : src/advWaveStencil.f90
+src/advWaveStencil3dOrder6c.f90 : src/advWaveStencil.f90
+
+src/advWaveStencil2dOrder8r.f90 : src/advWaveStencil.f90
+src/advWaveStencil3dOrder8r.f90 : src/advWaveStencil.f90
+src/advWaveStencil2dOrder8c.f90 : src/advWaveStencil.f90
+src/advWaveStencil3dOrder8c.f90 : src/advWaveStencil.f90
+
 
 # -- optimized BC routine
 src/bcOptWave.f90: src/bcOptWave.bf90 src/knownSolutionMacros.h maple/defineGetDerivativesMacros.h
@@ -344,8 +427,11 @@ obj/getDt.o : src/getDt.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/cgwh.o : src/cgwh.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/CgWaveHoltz.o : src/CgWaveHoltz.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/solvePETSc.o : src/solvePETSc.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
+obj/solveSLEPc.o : src/solveSLEPc.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/solvePETScNull.o : src/solvePETScNull.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<	
-obj/solveHelmholtz.o : src/solveHelmholtz.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<	
+obj/solveHelmholtz.o : src/solveHelmholtz.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+obj/solveHelmholtzDirect.o : src/solveHelmholtzDirect.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+obj/solveEigen.o : src/solveEigen.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 
 # --- cgWave ---
 obj/cgWaveMain.o : src/cgWaveMain.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<

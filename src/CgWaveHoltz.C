@@ -6,6 +6,7 @@
 #include "ParallelUtility.h"
 #include "LoadBalancer.h"
 #include "gridFunctionNorms.h"
+#include <sstream>
 
 #include "CgWave.h"
 
@@ -50,6 +51,7 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
 
   dbase.put<int>("maximumNumberOfIterations")=500;
   dbase.put<int>("numberOfIterations")=0; // actual number of iterations taken
+  dbase.put<int>("numberOfMatrixVectorMultiplications")=0;
 
   dbase.put<int>("orderOfAccuracy")=0; 
 
@@ -70,9 +72,11 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
   dbase.put<realCompositeGridFunction>("residual");
   dbase.put<Real>("numberOfActivePoints")=0.;         // hold number of active points on the grid for scaling L2 norms
 
-  // Save "residuals" by iteration: 
+  dbase.put<Real>("cpuSolveEigenWave")=0.;
+
+  // Save "residuals" by iteration: ****now in cgWave***
   // resVector(it) = norm( v^{n+1} - v^n )
-  dbase.put<RealArray>("resVector");
+  // dbase.put<RealArray>("resVector");
 
   dbase.put<int>("petscIsInitialized")=false;
 
@@ -210,11 +214,13 @@ int CgWaveHoltz::interactiveUpdate()
 
   aString pbLabels[] = {
                         "grid",
+                        "direct solver parameters",
                         "erase",
                         "exit",
 			                  ""};
   int numRows=2;
   dialog.setPushButtons( pbLabels, pbLabels, numRows ); 
+
 
   aString tbCommands[] = {"save matlab file",
                           "monitor residuals",
@@ -298,6 +304,14 @@ int CgWaveHoltz::interactiveUpdate()
       psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);
     }
 
+    else if( answer=="direct solver parameters" )
+    {
+      printf("Set the Oges parameters for the direct Helmholtz solver\n");
+      OgesParameters & par = dbase.put<OgesParameters>("helmholtzOgesParameters");
+      par.update( gi,cg );
+
+    }
+
     else if( dialog.getTextValue(answer,"omega","%e",omega) )
     {
       printF("Setting omega=%g\n",omega);
@@ -334,12 +348,38 @@ int CgWaveHoltz::interactiveUpdate()
       else if( numberOfFrequencies==5 )
         sScanF(answer(len,answer.length()-1),"%e %e %e %e %e",&frequencyArray(0),&frequencyArray(1),&frequencyArray(2),&frequencyArray(3),&frequencyArray(4));  
       else if( numberOfFrequencies==6 )
-        sScanF(answer(len,answer.length()-1),"%e %e %e %e %e %e",&frequencyArray(0),&frequencyArray(1),&frequencyArray(2),&frequencyArray(3),&frequencyArray(4),&frequencyArray(5));  
+        sScanF(answer(len,answer.length()-1),"%e %e %e %e %e %e",
+            &frequencyArray(0),&frequencyArray(1),&frequencyArray(2),&frequencyArray(3),&frequencyArray(4),&frequencyArray(5)); 
+      // else if( numberOfFrequencies==7 )
+      //   sScanF(answer(len,answer.length()-1),"%e %e %e %e %e %e %e",
+      //       &frequencyArray(0),&frequencyArray(1),&frequencyArray(2),&frequencyArray(3),&frequencyArray(4),&frequencyArray(5),&frequencyArray(6));             
       else
       {
-        printF("ERROR: two many frequencies to input. FIX ME BILL! \n");
-        OV_ABORT("error");
-      }                        
+        // --- general case ---
+        stringstream ss;
+        ss << answer(len,answer.length()-1);
+        string temp;
+        int num=0;
+        while( !ss.eof() )
+        {
+          ss >> temp;
+          sScanF(temp,"%e",&frequencyArray(num));
+          printF("READING: frequencyArray(%d)=%9.3e\n",num,frequencyArray(num));
+          num++;
+          if( num==numberOfFrequencies ) break; 
+        }
+        if( num!=numberOfFrequencies )
+        {
+          printF("cgWaveHoltz:ERROR scanning for frequencies, not enough found. num=%d\n",num);
+          OV_ABORT("ERROR");
+        }
+        // OV_ABORT("STOP HERE FOR NOW");
+      }
+      // else
+      // {
+      //   printF("ERROR: two many frequencies to input. FIX ME BILL! \n");
+      //   OV_ABORT("error");
+      // }                        
 
       for( int freq=0; freq<numberOfFrequencies; freq++ )
       {
@@ -395,38 +435,50 @@ int CgWaveHoltz::interactiveUpdate()
 // ================================================================================================
 /// \brief Save results to a matlab file
 // ================================================================================================
-int CgWaveHoltz::outputMatlabFile()
+int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
 {
   
   const int myid=max(0,Communication_Manager::My_Process_Number);
   if( myid!=0 )
    return 0;
 
-  const aString & solverName            = dbase.get<aString>("solverName");
-  const aString & nameOfGridFile        = dbase.get<aString>("nameOfGridFile");
-  const real & omega                    = dbase.get<real>("omega");
-  const real & Tperiod                  = dbase.get<real>("Tperiod");
-  const int & numPeriods                = dbase.get<int>("numPeriods");
-  const real & tol                      = dbase.get<real>("tol");
-  const int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  const aString & solverName               = dbase.get<aString>("solverName");
+  const aString & nameOfGridFile           = dbase.get<aString>("nameOfGridFile");
+  // const real & omega                       = dbase.get<real>("omega");
+  // const real & Tperiod                     = dbase.get<real>("Tperiod");
+  // const int & numPeriods                   = dbase.get<int>("numPeriods");
+  const real & tol                         = dbase.get<real>("tol");
+          
+  const int & numberOfFrequencies          = dbase.get<int>("numberOfFrequencies");
 
-  const int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
-  const RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");
-  const RealArray & periodArray         = dbase.get<RealArray>("periodArray");    
 
-  RealArray & resVector                 = dbase.get<RealArray>("resVector");
-  const int & numberOfIterations        = dbase.get<int>("numberOfIterations");
-  const Real & convergenceRate          = dbase.get<Real>("convergenceRate");
-  const Real & convergenceRatePerPeriod = dbase.get<Real>("convergenceRatePerPeriod");
+  const int & numberOfIterations           = dbase.get<int>("numberOfIterations");
+  const Real & convergenceRate             = dbase.get<Real>("convergenceRate");
+  const Real & convergenceRatePerPeriod    = dbase.get<Real>("convergenceRatePerPeriod");
 
-  CgWave & cgWave             = *dbase.get<CgWave*>("cgWave");
-  const int & orderOfAccuracy = cgWave.dbase.get<int>("orderOfAccuracy");
-  const real & c              = cgWave.dbase.get<real>("c");
 
+  CgWave & cgWave                                           = *dbase.get<CgWave*>("cgWave");
+
+  const real & omega                                        = cgWave.dbase.get<real>("omega");
+  const real & Tperiod                                      = cgWave.dbase.get<real>("Tperiod");
+  const int & numPeriods                                    = cgWave.dbase.get<int>("numPeriods");
+  const int & adjustOmega                                   = cgWave.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  const int & orderOfAccuracy                               = cgWave.dbase.get<int>("orderOfAccuracy");
+  const real & c                                            = cgWave.dbase.get<real>("c");
+  const CgWave::TimeSteppingMethodEnum & timeSteppingMethod = cgWave.dbase.get<CgWave::TimeSteppingMethodEnum>("timeSteppingMethod");
+  const RealArray & frequencyArray                          = cgWave.dbase.get<RealArray>("frequencyArray");
+  const RealArray & periodArray                             = cgWave.dbase.get<RealArray>("periodArray");    
+  const RealArray & frequencyArrayAdjusted                  = cgWave.dbase.get<RealArray>("frequencyArrayAdjusted");
+  const RealArray & periodArrayAdjusted                     = cgWave.dbase.get<RealArray>("periodArrayAdjusted");
+  const RealArray & sigma                                   = cgWave.dbase.get<RealArray>("sigma");
+  const Real & dt                                           = cgWave.dbase.get<Real>("dtUsed");
+  const int & minStepsPerPeriod                             = cgWave.dbase.get<int>("minStepsPerPeriod");
+  const int & computeEigenmodes                             = cgWave.dbase.get<int>("computeEigenmodes");
+  RealArray & resVector                                     = cgWave.dbase.get<RealArray>("resVector");
 
 
   // aString fileName="cgWaveHoltz.m"; // allow this to be specified
-  aString & matlabFileName           = dbase.get<aString>("matlabFileName");    // name of matlab file holding residuals etc.
+  // aString & matlabFileName           = dbase.get<aString>("matlabFileName");    // name of matlab file holding residuals etc.
 
   aString fileName = matlabFileName + ".m";
 
@@ -457,30 +509,187 @@ int CgWaveHoltz::outputMatlabFile()
   fPrintF(matlabFile,"omega=%20.14e;\n",omega);
 
   int numPerLine=5;
+
   fPrintF(matlabFile,"numberOfFrequencies=%d;\n",numberOfFrequencies);
   fPrintF(matlabFile,"frequencyArray=[");
   for( int freq=0; freq<numberOfFrequencies; freq++ )
   {
     fPrintF(matlabFile,"%14.6e ",frequencyArray(freq));
-    if( (freq % numPerLine)==numPerLine-1 ) fprintf(matlabFile,"...\n");
+    if( (freq % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
   }
   fPrintF(matlabFile,"];\n");
+
+  fPrintF(matlabFile,"frequencyArrayAdjusted=[");
+  for( int freq=0; freq<numberOfFrequencies; freq++ )
+  {
+    if( adjustOmega )
+      fPrintF(matlabFile,"%14.6e ",frequencyArrayAdjusted(freq));
+    else
+      fPrintF(matlabFile,"%14.6e ",frequencyArray(freq));
+    if( (freq % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+  }
+  fPrintF(matlabFile,"];\n");  
 
   fPrintF(matlabFile,"periodArray=[");
   for( int freq=0; freq<numberOfFrequencies; freq++ )
   {
     fPrintF(matlabFile,"%14.6e ",periodArray(freq));
-    if( (freq % numPerLine)==numPerLine-1 ) fprintf(matlabFile,"...\n");
+    if( (freq % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
   }
   fPrintF(matlabFile,"];\n");  
 
+  fPrintF(matlabFile,"periodArrayAdjusted=[");
+  for( int freq=0; freq<numberOfFrequencies; freq++ )
+  {
+    if( adjustOmega )
+      fPrintF(matlabFile,"%14.6e ",periodArrayAdjusted(freq));
+    else
+      fPrintF(matlabFile,"%14.6e ",periodArray(freq));
+    if( (freq % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+  }
+  fPrintF(matlabFile,"];\n"); 
+
+  fPrintF(matlabFile,"computeEigenmodes=%d;\n",computeEigenmodes);
+  if( computeEigenmodes )
+  {
+
+    CgWave::EigenSolverEnum & eigenSolver = cgWave.dbase.get<CgWave::EigenSolverEnum>("eigenSolver"); 
+    const bool useFixedPoint =  eigenSolver==CgWave::fixedPointEigenSolver;
+
+    aString eigenSolverName = eigenSolver==CgWave::defaultEigenSolver     ? "KrylovSchur" :
+                              eigenSolver==CgWave::KrylovSchurEigenSolver ? "KrylovSchur" :
+                              eigenSolver==CgWave::ArnoldiEigenSolver     ? "Arnoldi" : 
+                              eigenSolver==CgWave::ArpackEigenSolver      ? "Arpack" : 
+                              eigenSolver==CgWave::fixedPointEigenSolver  ? "fixedPoint" : 
+                                                                            "unknown";
+    fPrintF(matlabFile,"eigenSolver='%s';\n",(const char*)eigenSolverName);
+
+    const int & numEigenVectors = dbase.get<int>("numEigenVectors");
+    fPrintF(matlabFile,"numEigenVectors=%d; %% number of computed eigenpairs\n",numEigenVectors);
+
+    const RealArray & eigenValues = dbase.get<RealArray>("eigenValues");
+    fPrintF(matlabFile,"%% computed eigenvalues:\n");
+    fPrintF(matlabFile,"eigenValues=[%24.16e",eigenValues(0));
+    for( int ie=1; ie<numEigenVectors; ie++ )
+    {
+      fPrintF(matlabFile,", %24.16e",eigenValues(ie));
+      if( (ie % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+    }
+    fPrintF(matlabFile,"];\n");
+
+    if( useFixedPoint )
+    {
+      RealArray & eigsRayleighQuotient      = cgWave.dbase.get<RealArray>("eigsRayleighQuotient");
+      RealArray & eigsRayleighRitz          = cgWave.dbase.get<RealArray>("eigsRayleighRitz");
+      const int & iterationRR               = cgWave.dbase.get<int>("iterationRR");
+      const int & iterationStartRR          = cgWave.dbase.get<int>("iterationStartRR"); 
+
+      fPrintF(matlabFile,"eigsRayleighQuotient=[");
+      const int numIts = min(numberOfIterations,eigsRayleighQuotient.getLength(0));
+      for( int it=0; it<numIts; it++ )
+      {
+        fPrintF(matlabFile,"%24.16e ",eigsRayleighQuotient(it));
+        if( (it % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+      }
+      fPrintF(matlabFile,"];\n"); 
+
+      fPrintF(matlabFile,"iterationStartRR=%d;\n",iterationStartRR);
+      fPrintF(matlabFile,"eigsRayleighRitz=[");
+      for( int it=0; it<iterationRR; it++ )
+      {
+        fPrintF(matlabFile,"%24.16e ",eigsRayleighRitz(it));
+        if( (it % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+      }
+      fPrintF(matlabFile,"];\n");   
+
+      if( cgWave.dbase.has_key("errEigenvector") )
+      {
+        // --- output errors in eigenvalues and eigenvectors if they have been computed ---
+
+        RealArray & errEigenvalue  = cgWave.dbase.get<RealArray>("errEigenvalue");
+        RealArray & errEigenvector = cgWave.dbase.get<RealArray>("errEigenvector");
+
+        const int numIts = min(numberOfIterations,errEigenvalue.getLength(0));
+        fPrintF(matlabFile,"errEigenvalue=[");
+        for( int it=0; it<numIts; it++ )
+        {
+          fPrintF(matlabFile,"%9.3e ",errEigenvalue(it));
+          if( (it % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+        }
+        fPrintF(matlabFile,"];\n");
+
+        fPrintF(matlabFile,"errEigenvector=[");
+        for( int it=0; it<numIts; it++ )
+        {
+          fPrintF(matlabFile,"%9.3e ",errEigenvector(it));
+          if( (it % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+        }
+        fPrintF(matlabFile,"];\n");      
+
+      }
+
+      if( cgWave.dbase.has_key("errEigenvectorRR") )
+      {
+        // --- output errors in eigenvalues and eigenvectors if they have been computed ---
+
+        RealArray & errEigenvalueRR  = cgWave.dbase.get<RealArray>("errEigenvalueRR");
+        RealArray & errEigenvectorRR = cgWave.dbase.get<RealArray>("errEigenvectorRR");
+
+        const int numIts = min(numberOfIterations,errEigenvalueRR.getLength(0));
+        fPrintF(matlabFile,"errEigenvalueRR=[");
+        for( int it=0; it<numIts; it++ )
+        {
+          fPrintF(matlabFile,"%9.3e ",errEigenvalueRR(it));
+          if( (it % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+        }
+        fPrintF(matlabFile,"];\n");
+
+        fPrintF(matlabFile,"errEigenvectorRR=[");
+        for( int it=0; it<numIts; it++ )
+        {
+          fPrintF(matlabFile,"%9.3e ",errEigenvectorRR(it));
+          if( (it % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+        }
+        fPrintF(matlabFile,"];\n");      
+
+      }
+    } // end if fixPoint
+
+  }
+
   fPrintF(matlabFile,"c=%20.14e;\n",c);
+  fPrintF(matlabFile,"numPeriods=%d; %% (integrate over this many periods per Wave-Holtz iteration.\n",numPeriods);
+  fPrintF(matlabFile,"minStepsPerPeriod=%d; %% (min time-steps per period for implicit time-stepping.\n",minStepsPerPeriod);
   fPrintF(matlabFile,"convergenceRate=%12.4e;\n",convergenceRate);
   fPrintF(matlabFile,"convergenceRatePerPeriod=%12.4e;\n",convergenceRatePerPeriod);
   fPrintF(matlabFile,"adjustOmega=%d; %% (1= adjust omega to account for discrete symbol of D+t D-t).\n",adjustOmega);
-  fPrintF(matlabFile,"numPeriods=%d; %% (integrate over this many periods per Wave-Holtz iteration.\n",numPeriods);
   fPrintF(matlabFile,"orderOfAccuracy=%d;\n",orderOfAccuracy);
   fPrintF(matlabFile,"tol=%12.4e;\n",tol);
+  fPrintF(matlabFile,"timeSteppingMethod='%s';\n",(timeSteppingMethod==CgWave::explicitTimeStepping ? "explicit" : "implicit") );
+
+  printF("saveMatlab: dt=%9.3e\n",dt);
+  fPrintF(matlabFile,"dt=%20.14e;\n",dt);
+
+  // --- Save the quadrature weights ---
+  const int numTimeSteps = sigma.getLength(0);  //   Note: this count includes step 0
+  // fPrintF(matlabFile,"numTimeSteps=%d;\n",numTimeSteps);
+  numPerLine=40;
+  fPrintF(matlabFile,"%% sigma(step,freq) = quadrature weights\n");
+  fPrintF(matlabFile,"%% sigma=zeros(%d,%d)\n",numTimeSteps,numberOfFrequencies);
+  fPrintF(matlabFile,"sigma=[");
+  for( int step=0; step<numTimeSteps; step++ )
+  {
+    for( int freq=0; freq<numberOfFrequencies; freq++ )  
+    {
+      fPrintF(matlabFile,"%12.6e",sigma(step,freq));
+      if( freq<numberOfFrequencies-1 ) fPrintF(matlabFile,", ");
+
+      if( (step % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+    }
+    fPrintF(matlabFile,"; ");
+  }
+  fPrintF(matlabFile,"];\n");
+
 
   numPerLine=40;
   fPrintF(matlabFile,"%% itv = iteration number\n");
@@ -488,7 +697,7 @@ int CgWaveHoltz::outputMatlabFile()
   for( int i=0; i<numberOfIterations; i++ )
   {
     fPrintF(matlabFile,"%i ",i);
-    if( (i % numPerLine)==numPerLine-1 ) fprintf(matlabFile,"...\n");
+    if( (i % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
   }
   fPrintF(matlabFile,"];\n");
 
@@ -498,13 +707,62 @@ int CgWaveHoltz::outputMatlabFile()
   for( int i=0; i<numberOfIterations; i++ )
   {
     fPrintF(matlabFile,"%17.10e ",resVector(i));
-    if( (i % numPerLine)==numPerLine-1 ) fprintf(matlabFile,"...\n");
+    if( (i % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
   }
   fPrintF(matlabFile,"];\n");
 
+  // ---- Save info about deflation ----
+  fPrintF(matlabFile,"%% ----- Info about deflation ----\n");
+  const int & deflateWaveHoltz = cgWave.dbase.get<int>("deflateWaveHoltz");
+  const int & numToDeflate     = cgWave.dbase.get<int>("numToDeflate");
+
+  fPrintF(matlabFile,"deflateWaveHoltz=%d;\n",deflateWaveHoltz);
+  fPrintF(matlabFile,"numToDeflate=%d;\n",numToDeflate);
+  if( cgWave.dbase.has_key("eig") )
+  {
+    const RealArray & eig                    = cgWave.dbase.get<RealArray>("eig");
+    const IntegerArray & eigNumbersToDeflate = cgWave.dbase.get<IntegerArray>("eigNumbersToDeflate");
+    IntegerArray & eigMultiplicity           = cgWave.dbase.get<IntegerArray>("eigMultiplicity");
+    const int numberOfEigenvectors           = eig.getBound(1) - eig.getBase(1) + 1;
+
+    fPrintF(matlabFile,"%% True (discrete) eigenvalues\n");
+    fPrintF(matlabFile,"lambdav=[ ...\n");
+    for( int i=0; i<numberOfEigenvectors; i++ )
+    {
+      fPrintF(matlabFile,"%22.16e ",eig(0,i));
+      if( i<numberOfEigenvectors-1 ) fPrintF(matlabFile,", ");
+      if( (i % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+    }
+    fPrintF(matlabFile,"];\n");
+
+    fPrintF(matlabFile,"eigMultiplicity=[ ...\n");
+    for( int i=0; i<numberOfEigenvectors; i++ )
+    {
+      fPrintF(matlabFile,"%d ",eigMultiplicity(i));
+      if( i<numberOfEigenvectors-1 ) fPrintF(matlabFile,", ");
+      if( (i % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+    }
+    fPrintF(matlabFile,"];\n");    
+
+    fPrintF(matlabFile,"eigsToDeflate=[ ...\n");
+    for( int i=0; i<numToDeflate; i++ )
+    {
+      fPrintF(matlabFile,"%d ",eigNumbersToDeflate(i));
+      if( i<numToDeflate-1 ) fPrintF(matlabFile,", ");
+      if( (i % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+    }
+    fPrintF(matlabFile,"];\n");
+  }
+  else
+  {
+    fPrintF(matlabFile,"eig=-1;\n");
+    fPrintF(matlabFile,"eigsToDeflate=-1;\n");
+  }
+
+
   fclose(matlabFile);
 
-  // printf("CgWaveHoltz::Results saved to file %s\n",(const char*)fileName);
+  printF("CgWaveHoltz::saved results in matlab file=[%s]\n",(const char*)fileName);
 
 
   return 0;
@@ -545,18 +803,20 @@ int CgWaveHoltz::setup()
 real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
 {
 
-  CgWave & cgWave                         = *dbase.get<CgWave*>("cgWave");
-  const real & omega                      = dbase.get<real>("omega");
-  const int & adjustOmega                 = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
-    
   const int & debug                       = dbase.get<int>("debug");
+
+  CgWave & cgWave                         = *dbase.get<CgWave*>("cgWave");
+  const real & omega                      = cgWave.dbase.get<real>("omega");
+  const int & adjustOmega                 = cgWave.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+    
   const real & dt                         = cgWave.dbase.get<real>("dt");
   const real & c                          = cgWave.dbase.get<real>("c");
   const int & upwind                      = cgWave.dbase.get<int>("upwind");
   const int & adjustHelmholtzForUpwinding = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding");
+  const int & computeEigenmodes           = cgWave.dbase.get<int>("computeEigenmodes");
 
-  const int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
-  const RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+  const int & numberOfFrequencies         = cgWave.dbase.get<int>("numberOfFrequencies");
+  const RealArray & frequencyArray        = cgWave.dbase.get<RealArray>("frequencyArray");
     
   realCompositeGridFunction & v           = cgWave.dbase.get<realCompositeGridFunction>("v");
   realCompositeGridFunction & f           = cgWave.dbase.get<realCompositeGridFunction>("f");
@@ -594,7 +854,7 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
   int numRes=1;  // number of residuals we compute 
   bool computeResidualWithAdjustedOmega[2] ={ false,false };
 
-  if( useAdjustedOmega==0 || numberOfFrequencies>1 )
+  if( useAdjustedOmega==0 || numberOfFrequencies>1 || computeEigenmodes )
   {
     numRes=1;  computeResidualWithAdjustedOmega[0]=false;
   }
@@ -654,14 +914,14 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
           }
 
           // --- Compute the residual ---
-          if( false )
+          if( computeEigenmodes )
           {
             FOR_3D(i1,i2,i3,I1,I2,I3)
             {
               if( maskLocal(i1,i2,i3)>0 )
               {
-                // resLocal(I1,I2,I3) = (c*c)*lap(I1,I2,I3) + (omega*omega)*vLocal(I1,I2,I3) + fLocal(I1,I2,I3); // change sign on f for cgWave **FIX ME**
-                resLocal(i1,i2,i3,freq) = (c*c)*lap(i1,i2,i3,freq) + (om*om)*vLocal(i1,i2,i3,freq) - fLocal(i1,i2,i3,freq); 
+                // relative residual : scale by 1/omega^2
+                resLocal(i1,i2,i3,freq) = ( (c*c)/(om*om) )*lap(i1,i2,i3,freq) + vLocal(i1,i2,i3,freq);
               }
             }
           }
@@ -704,10 +964,14 @@ real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
 
   for( int freq=0; freq<numberOfFrequencies; freq++ )
   {
-    if( useAdjustedOmega==0 || numberOfFrequencies>1 )
+    if( computeEigenmodes )
+    {
+       printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-rel-res=%9.3e.\n",freq,frequencyArray(freq),maxRes(freq));
+    }  
+    else if( useAdjustedOmega==0 || numberOfFrequencies>1 || computeEigenmodes )
     {
        printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e.\n",freq,frequencyArray(freq),maxRes(freq));
-    }    
+    }        
     else if( useAdjustedOmega==2 )
     {
       printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e (using omega), max-res=%9.3e (using omega from discrete symbol)\n",
@@ -835,11 +1099,11 @@ solve()
   // v=0; // Initial condition 
 
   int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
-  int & numberOfIterations = dbase.get<int>("numberOfIterations");  // holds actual number of iterations taken
+  int & numberOfIterations        = dbase.get<int>("numberOfIterations");  // holds actual number of iterations taken
   
   // Save "residuals" by iteration: 
   // resVector(it) = norm( v^{n+1} - v^n )
-  RealArray & resVector = dbase.get<RealArray>("resVector");
+  RealArray & resVector = cgWave.dbase.get<RealArray>("resVector");
   resVector.redim(maximumNumberOfIterations+1);
   resVector=0.;
 
@@ -971,5 +1235,4 @@ int CgWaveHoltz::saveCheckFile( int checkFileCounter, Real maxErr, Real solution
 
   return 0;
 }
-
 

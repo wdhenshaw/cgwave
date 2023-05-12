@@ -4,7 +4,7 @@
 #   cgWave [-noplot] known.cmd -g=<grid-name> -known=[pw|gpw|boxHelmholtz|polyPeriodic|squareEig|diskEig|annulusEig|sphereEig] 
 #           -upwind=[0|1] -computeErrors=[0|1]
 #           -setKnownOnBoundaries=[0|1] -bcApproach=[cbc|lcbc|oneSided] -assignInterpNeighbours=[extrap|interp]
-#           -meApproach=[std,ha]
+#           -meApproach=[std,ha|stencil]
 #           -ts=[explicit|implicit] -rectangular=[implicit|explicit]
 #
 #   pw = plane wave 
@@ -75,6 +75,7 @@ bc=$bc
 $cmd="#";
 if( $meApproach eq "std" ){ $cmd="standard modified equation"; }
 if( $meApproach eq "ha" ){ $cmd="hierarchical modified equation"; }
+if( $meApproach eq "stencil" ){ $cmd="stencil modified equation"; }
 $cmd
 #
 if( $ts eq "implicit" ){ $cmd="choose grids for implicit\n  rectangular=$rectangular\n done"; }else{ $cmd="#"; }

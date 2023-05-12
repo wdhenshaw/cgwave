@@ -86,17 +86,51 @@ enum AssignInterpolationNeighboursEnum
   interpolateInterpNeighbours
 };
 
+enum ModifiedEquationApproachEnum
+{
+  standardModifiedEquation=0,
+  hierarchicalModifiedEquation,
+  stencilModifiedEquation
+};
+
+enum EigenSolverEnum
+{
+  defaultEigenSolver=0,
+  KrylovSchurEigenSolver,
+  ArnoldiEigenSolver,
+  ArpackEigenSolver,
+  fixedPointEigenSolver
+};
+
 CgWave(CompositeGrid & cg, GenericGraphicsInterface & gi);
 ~CgWave();
+
+int adjustEigenWaveFrequency();
 
 // advance the solution 
 int advance( int it );
 
-int applyBoundaryConditions( realCompositeGridFunction & u, real t );
+int applyBoundaryConditions( realCompositeGridFunction & u, real t, 
+                             bool applyExplicitBoundaryConditions = false );
+
+// Apply BC's to an eigenfunction
+int applyEigenFunctionBoundaryConditions( realCompositeGridFunction & u );
 
 int assignLCBC( realMappedGridFunction & u, Real t, Real dt, int grid );
 
+//  Evaluate the WaveHoltz beta function (single frequency)
+static Real betaWaveHoltz( Real lambda, Real omega, Real T );
+
 int buildRunTimeDialog();
+
+
+
+int checkDeflation();
+
+int correctEigenfunction();
+
+// deflate WaveHoltz solution
+int deflateSolution();
 
 void displayBoundaryConditions( FILE *file = stdout );
 
@@ -104,9 +138,23 @@ int formImplicitTimeSteppingMatrix();
 
 realCompositeGridFunction& getAugmentedSolution(int current, realCompositeGridFunction & v, const real t);
 
+Real getAverageNumberOfIterationsPerImplicitSolve() const;
+
 realCompositeGridFunction& getCurrentSolution();
   
+// Compute the residual in the eigenvalue equation:  || L v + lambda^2 v ||/lambda^2 
+Real getEigenPairResidual( Real lambda, realCompositeGridFunction & v, realCompositeGridFunction & res, int component /* =0 */ );
+
+
 real getErrors( realCompositeGridFunction & u, real t );
+
+// compute errors in the eigenvalues/eigenvectors (when the true values are known)
+int getErrorsInEigenmodes( Real & relErrEigenvalue, Real & relErrEigenvector, bool checkRayleighRitz=false );
+
+// compute errors in a single eigenvalue, eigenvector pair (when the true values are known)
+int getErrorInEigenPair( const Real lambda, realCompositeGridFunction & eigVector, const int component, 
+                         Real & lambdaTrue, Real & relErrEigenvalue, Real & relErrEigenvector, 
+                         int & eigIndex, int & multipleEigIndex, bool saveErrors = false );
 
 // Fill RHS for direct Helmholtz solver
 int getHelmholtzForcing( realCompositeGridFunction & f  );
@@ -122,6 +170,9 @@ aString getMethodName() const;
 
 int getMultiFrequencyWaveHoltzMatrix( RealArray & A );
 
+Real getRayleighQuotient( realCompositeGridFunction & v, int component =0 );
+
+
 int getTimeStep();
   
 void getTimeSteppingLabel( real dt, aString & label ) const;
@@ -129,14 +180,27 @@ void getTimeSteppingLabel( real dt, aString & label ) const;
 int getUserDefinedKnownSolution(real t,  int grid, realArray & ua, const Index & I1a, const Index &I2a, const Index &I3a, 
 				int numberOfTimeDerivatives = 0 );
 
+int getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu );
+
+// inflate WaveHoltz solution
+int inflateSolution();
+
 // Initialize time-step and forcing 
 int initialize();
+
+// Initialize deflation for WaveHoltz
+int initializeDeflation();
 
 // Initialize local compatbility boundart conditions
 int initializeLCBC();
 
+// Initialize PETSc as needed
+int initializePETSc( int argc = 0 , char **args = NULL );
+
 // Assign parameters 
 int interactiveUpdate();
+
+int normalizeEigenvector( int eigNumber );
 
 void outputHeader();
 
@@ -146,6 +210,12 @@ int outputResults( int current, real t );
 int printStatistics(FILE *file = stdout );
 
 int plot( int current, real t, real dt );
+
+// Reset CPU timings to zero:
+int resetTimings();
+
+// Re-initialize deflation (if the number of vectors to deflate has changed, for example)
+int reinitializeDeflation();
 
 int saveSequenceInfo( real t0, RealArray & sequenceData );
 
@@ -160,6 +230,9 @@ int setup();
 
 int setupUserDefinedForcing();
 
+// utility array
+static int sortArray( RealArray & eigenValues, IntegerArray & iperm );
+
 int takeFirstStep( int cur, real t );
 
 int takeFirstStepHelmholtz( int cur, real t );
@@ -168,6 +241,8 @@ int takeFirstStepHelmholtz( int cur, real t );
 int takeFirstBackwardStep( int cur, real t );
 
 int takeImplicitStep( Real t );
+
+int updateEigenmodes();
 
 // update time-integral for Helmholtz projection
 int updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGridFunction& u );
@@ -192,6 +267,7 @@ int userDefinedForcing( realArray & f, int iparam[], real rparam[] );
     timeForInterpolate,
     timeForUpdateGhostBoundaries,
     timeForForcing,
+    timeForTimeIntegral,
     timeForGetError,
     timeForPlotting,
     timeForOutputResults,
@@ -206,6 +282,18 @@ mutable DataBase dbase;
 
 CompositeGrid & cg;
 GenericGraphicsInterface & gi;
+
+
+protected:
+
+  int buildBoundaryConditionOptionsDialog(DialogData & dialog );
+  int buildEigenWaveOptionsDialog(DialogData & dialog );
+  int buildWaveHoltzOptionsDialog(DialogData & dialog );
+
+  int getBoundaryConditionOption(const aString & answer, DialogData & dialog,IntegerArray & bcOrig );
+  int getEigenWaveOption(const aString & answer, DialogData & dialog );
+  int getWaveHoltzOption(const aString & answer, DialogData & dialog );
+
 
 };
 

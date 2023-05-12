@@ -21,7 +21,6 @@
 ! define macros to evaluate derivatives for the 6th order method (from maple/makeGetDerivativesMacros.maple)
 ! #Include "../maple/defineGetSixthDerivativesMacros.h"
 
-
 ! ======================================================================================
 !   Evaluate the TZ exact solution in 2D
 ! ======================================================================================
@@ -30,7 +29,7 @@
 !   Evaluate the TZ exact solution in 3D
 ! ======================================================================================
 
-    
+  
 
 
 ! ---------------------------------------------------------------------------
@@ -382,8 +381,8 @@
 
 
 ! --------- include macros ORDER=4 --------
-! #Include "../maple/declare2dOrder4Rectangular.h"
-! #Include "../maple/update2dOrder4Rectangular.h"
+! #Include "../include/declare2dOrder4Rectangular.h"
+! #Include "../include/update2dOrder4Rectangular.h"
 
 ! ===========================================================================
 !   Modified Equation : order=4, DIMENSIONS=2, gridType=Rectangular
@@ -409,8 +408,8 @@
 !  FORCING : NOFORCING, TZ, USEFORCING 
 ! ===========================================================================
 
-! #Include "../maple/declare3dOrder4Rectangular.h"
-! #Include "../maple/update3dOrder4Rectangular.h"
+! #Include "../include/declare3dOrder4Rectangular.h"
+! #Include "../include/update3dOrder4Rectangular.h"
 ! ===========================================================================
 !   Modified Equation : order=4, DIMENSIONS=3, gridType=Rectangular
 !  Macro to DECLARE VARIABLES
@@ -437,8 +436,8 @@
 
 
 ! --------- include macros ORDER=6 --------
-! #Include "../maple/declare2dOrder6Rectangular.h"
-! #Include "../maple/update2dOrder6Rectangular.h"
+! #Include "../include/declare2dOrder6Rectangular.h"
+! #Include "../include/update2dOrder6Rectangular.h"
 
 ! ===========================================================================
 !   Modified Equation : order=6, DIMENSIONS=2, gridType=Rectangular
@@ -569,25 +568,15 @@
 ! ==============================================
 
 
-! buildFile(advWaveME2dOrder2r,2,2,rectangular)
-! buildFile(advWaveME3dOrder2r,3,2,rectangular)
-! buildFile(advWaveME2dOrder2c,2,2,curvilinear)
-! buildFile(advWaveME3dOrder2c,3,2,curvilinear)
-
-! buildFile(advWaveME2dOrder4r,2,4,rectangular)
-! buildFile(advWaveME3dOrder4r,3,4,rectangular)
-! buildFile(advWaveME2dOrder4c,2,4,curvilinear)
-! buildFile(advWaveME3dOrder4c,3,4,curvilinear)
-
-! buildFile(advWaveME2dOrder6r,2,6,rectangular)
-! buildFile(advWaveME3dOrder6r,3,6,rectangular)
-
-! buildFile(advWaveME2dOrder8r,2,8,rectangular)
-! buildFile(advWaveME3dOrder8r,3,8,rectangular)
+! -- create different files ---
 
 
 
-            subroutine advWaveME( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+
+
+
+
+      subroutine advWaveME( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
 !======================================================================
 !   Advance a time step for Maxwells eqution
 !     OPTIMIZED MODIFIED EQUATION VERSIONS
@@ -598,46 +587,46 @@
 ! ipar(0)  = option : option=0 - Maxwell+Artificial diffusion
 !                           =1 - AD only
 !======================================================================
-            implicit none
-            integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
+      implicit none
+      integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
 
-            real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-            real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-            real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-            real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-            real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
-            real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-            real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
-            real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
+      real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+      real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+      real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+      real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+      real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+      real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+      real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+      real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
 
-            real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
-            real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+      real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
+      real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
 
-            integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
-            integer bc(0:1,0:2),ierr
+      integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+      integer bc(0:1,0:2),ierr
 
-            integer ipar(0:*)
-            real rpar(0:*)
+      integer ipar(0:*)
+      real rpar(0:*)
 
-            real frequencyArray(0:*)
-            
+      real frequencyArray(0:*)
+      
 !     ---- local variables -----
-            integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime
-            integer addForcing,orderOfDissipation,option
-            integer useWhereMask,solveForE,solveForH,grid
-            integer ex,ey,ez, hx,hy,hz
+      integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime
+      integer addForcing,orderOfDissipation,option
+      integer useWhereMask,solveForE,solveForH,grid
+      integer ex,ey,ez, hx,hy,hz
 
-            integer rectangular,curvilinear
-            parameter( rectangular=0, curvilinear=1 )
+      integer rectangular,curvilinear
+      parameter( rectangular=0, curvilinear=1 )
 !...........end   statement functions
 
 
       ! write(*,*) 'Inside advWaveME...'
 
-            gridType           =ipar(2)
-            orderOfAccuracy    =ipar(3)
+      gridType           =ipar(2)
+      orderOfAccuracy    =ipar(3)
 
-            if( orderOfAccuracy.eq.2 )then
+      if( orderOfAccuracy.eq.2 )then
 
         ! if( nd.eq.2 .and. gridType.eq.rectangular ) then
         !   call advWaveME2dOrder2r( ARGLIST() )
@@ -650,11 +639,11 @@
         ! else
         !   stop 2271
         ! end if
-                stop 2222
+        stop 2222
 
-            else if( orderOfAccuracy.eq.4 ) then
-                if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    call advWaveME2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+      else if( orderOfAccuracy.eq.4 ) then
+        if( nd.eq.2 .and. gridType.eq.rectangular )then
+          call advWaveME2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
        !  else if(nd.eq.2 .and. gridType.eq.curvilinear )then
        !    call advWaveME2dOrder4c( ARGLIST() )
        !  else if(  nd.eq.3 .and. gridType.eq.rectangular )then
@@ -663,45 +652,45 @@
        !    call advWaveME3dOrder4c( ARGLIST() )
        ! else
        !   stop 8843
-              end if
-              stop 4444
+       end if
+       stop 4444
 
-            else if( orderOfAccuracy.eq.6 ) then
+      else if( orderOfAccuracy.eq.6 ) then
 
-                if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    call advWaveME2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+        if( nd.eq.2 .and. gridType.eq.rectangular )then
+          call advWaveME2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
         ! else if(nd.eq.2 .and. gridType.eq.curvilinear )then
         !   !call advWaveME2dOrder6c( ARGLIST() )
-                else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-                    call advWaveME3dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+        else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+          call advWaveME3dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
         ! else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
         !   !call advWaveME3dOrder6c( ARGLIST() )
-              else
-                  stop 8843
-              end if
+       else
+         stop 8843
+       end if
 
-            else if( orderOfAccuracy.eq.8 ) then
+      else if( orderOfAccuracy.eq.8 ) then
 
-                if( nd.eq.2 .and. gridType.eq.rectangular )then
-                    call advWaveME2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+        if( nd.eq.2 .and. gridType.eq.rectangular )then
+          call advWaveME2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
         !  else if(nd.eq.2 .and. gridType.eq.curvilinear )then
         !    call advWaveME2dOrder8c( ARGLIST() )
-                else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-                    call advWaveME3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+        else if(  nd.eq.3 .and. gridType.eq.rectangular )then
+          call advWaveME3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
         !  else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
         !    call advWaveME3dOrder8c( ARGLIST() )
-                else
-                    stop 8843
-                end if
+        else
+          stop 8843
+        end if
 
-            else
-                write(*,'(" advWaveME:ERROR: un-implemented order of accuracy =",i6)') orderOfAccuracy
+      else
+        write(*,'(" advWaveME:ERROR: un-implemented order of accuracy =",i6)') orderOfAccuracy
 
-                stop 11122
-            end if
+        stop 11122
+      end if
 
-            return
-            end
+      return
+      end
 
 
 

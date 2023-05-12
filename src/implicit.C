@@ -57,10 +57,14 @@ int CgWave::takeImplicitStep( Real t )
 
     const int & numberOfFrequencies  = dbase.get<int>("numberOfFrequencies");
     const RealArray & frequencyArray = dbase.get<RealArray>("frequencyArray");
+    const int & solveHelmholtz       = dbase.get<int>("solveHelmholtz");
+    const int & computeEigenmodes    = dbase.get<int>("computeEigenmodes");
 
     const int & upwind               = dbase.get<int>("upwind");
     const int & implicitUpwind       = dbase.get<int>("implicitUpwind");
     bool useUpwindDissipation        = upwind;
+    int & totalImplicitIterations    = dbase.get<int>("totalImplicitIterations");  
+    int & totalImplicitSolves        = dbase.get<int>("totalImplicitSolves");  
 
     const int & addForcing                  = dbase.get<int>("addForcing");
     const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
@@ -70,34 +74,117 @@ int CgWave::takeImplicitStep( Real t )
     const int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
 
     const int & current                  = dbase.get<int>("current"); // hold the current solution index
-    const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
+    const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");  
 
     const int cur = current;   // current time level
     const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
     const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
 
     realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
-  // realCompositeGridFunction & u1 = u[cur];      // current time 
-    realCompositeGridFunction & un = u[next];        // new time
+    realCompositeGridFunction & up = u[prev];       // previous time 
+    realCompositeGridFunction & uc = u[cur];        // current time 
+    realCompositeGridFunction & un = u[next];       // new time
+
+    Oges & impSolver = dbase.get<Oges>("impSolver");
+    if( impSolver.isSolverIterative() )
+    {
+    // Iterative solvers need a separate RHS 
+        if( !dbase.has_key("impSolverRHS") )
+        {
+            printF(">>>>cgWave::INFO: impSolver is iterative, we need a separate RHS.\n");
+            dbase.put<realCompositeGridFunction>("impSolverRHS");
+            realCompositeGridFunction & rhs = dbase.get<realCompositeGridFunction>("impSolverRHS");
+            rhs.updateToMatchGrid(cg);
+        }
+        realCompositeGridFunction & rhs = dbase.get<realCompositeGridFunction>("impSolverRHS");
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            OV_GET_SERIAL_ARRAY(Real,up[grid],upLocal);
+            OV_GET_SERIAL_ARRAY(Real,uc[grid],ucLocal);
+            OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
+            OV_GET_SERIAL_ARRAY(Real,rhs[grid],rhsLocal);
+
+      // --- For implicit time-stepping, unLocal holds the RHS to the implicit equations: 
+            rhsLocal=unLocal;
+
+      // ---- initial guess for iterative solver ----
+      //  *to do* For periodic solutions use periodic guess
+
+            if( solveHelmholtz && numberOfFrequencies==1 && !computeEigenmodes )
+            {
+        // Assume: 
+        //    uc = v(x,t)    = u(x)*cos(omega*t)
+        //    un = v(x,t-dt) = u(x)*cos(omega*(t-dt))
+        // Thus
+        //    v(x,t) = v(x,t-dt)* cos(omega*t)/cos(omega*(t-dt))
+                Index I1,I2,I3;
+                getIndex(cg[grid].dimension(),I1,I2,I3);
+                bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);        
+
+                if( ok )
+                {
+                    if( grid==0 && ( debug & 4 ) )
+                        printF("CgWave:impSolve: choose initial guess for implicit solver assuming a periodic solution.\n");
+           // Real diff = max(fabs(ucLocal(I1,I2,I3)-vLocal(I1,I2,I3,0)));
+           // printF(" >> diff | uc - v |=%9.2e\n",diff);
+
+                      Real cosFreqt  = cos( frequencyArray(0)*(t-dt) );
+                      if( fabs(cosFreqt)<REAL_EPSILON*100. ) cosFreqt=1.;
+                      Real cosFactor = cos( frequencyArray(0)*(t) )/cosFreqt;
+
+                      unLocal(I1,I2,I3) = ucLocal(I1,I2,I3)*cosFactor;
+
+           // ****** WRONG: un and uc ONLY HAVE ONE COMPONENT ******************* FIX ME 
+                      for( int freq=1; freq<numberOfFrequencies; freq++ )
+                      {
+                          cosFreqt  = cos( frequencyArray(freq)*(t-dt) );
+                          if( fabs(cosFreqt)<REAL_EPSILON*100. ) cosFreqt=1.;
+                          cosFactor = cos( frequencyArray(freq)*(t) )/cosFreqt;
+
+                          unLocal(I1,I2,I3) += ucLocal(I1,I2,I3,freq)*cos( frequencyArray(freq)*dt );
+                      }
+                }
+            }
+            else
+            {
+        // unLocal = ucLocal;           // initial guess *** FIX ME ***
+                unLocal = 2.*ucLocal - upLocal; // initial guess *** FIX ME ***
+            }
+
+
+        }
+    }
+    realCompositeGridFunction & rhs = impSolver.isSolverIterative() ? dbase.get<realCompositeGridFunction>("impSolverRHS") : un;
+
+
+  // *wdh* May 2, 2023
+  // CompositeGridOperators & op = dbase.get<CompositeGridOperators>("operators");
+  // un.setOperators( op );
+  // rhs.setOperators( op );
 
   // --- Fill in the RHS for implicit boundary conditions ----
 
     int numGhost = orderOfAccuracy/2;
     if( useUpwindDissipation && implicitUpwind ) numGhost++; 
 
-    const int assignBCForImplicit = 1;  
+    if( false )
+    {
+        rhs.display("RHS before filling BCs");
+    }
+
+    const int assignBCForImplicit = 1;  // used in call to bcOptWave
 
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
         MappedGrid & mg = cg[grid];
     // const IntegerArray & gid = mg.gridIndexRange();
         
-        OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
+        OV_GET_SERIAL_ARRAY(Real,rhs[grid],rhsLocal);
         OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
 
     // get parameters for calling fortran
             IntegerArray indexRangeLocal(2,3), dimLocal(2,3), bcLocal(2,3);
-            ParallelGridUtility::getLocalIndexBoundsAndBoundaryConditions( un[grid],indexRangeLocal,dimLocal,bcLocal );
+            ParallelGridUtility::getLocalIndexBoundsAndBoundaryConditions( rhs[grid],indexRangeLocal,dimLocal,bcLocal );
             const bool isRectangular=mg.isRectangular();
             real dx[3]={1.,1.,1.};
             if( isRectangular )
@@ -170,7 +257,7 @@ int CgWave::takeImplicitStep( Real t )
                 REAL_MIN,         //  rpar( 9)
                 c                 //  rpar(10)
                                         };
-            real *pu = unLocal.getDataPointer();
+            real *pu = rhsLocal.getDataPointer();
             int *pmask = maskLocal.getDataPointer();
             real temp, *pxy=&temp, *prsxy=&temp;
             if( !isRectangular )
@@ -194,17 +281,19 @@ int CgWave::takeImplicitStep( Real t )
             }
 
         int ierr=0;
+    // if( true )
+    //   ::display(bcLocal,"implicit: bcLocal","%3i ");
+
         bcOptWave(mg.numberOfDimensions(),
-                            unLocal.getBase(0),unLocal.getBound(0),unLocal.getBase(1),unLocal.getBound(1),
-                            unLocal.getBase(2),unLocal.getBound(2),
+                            rhsLocal.getBase(0),rhsLocal.getBound(0),rhsLocal.getBase(1),rhsLocal.getBound(1),
+                            rhsLocal.getBase(2),rhsLocal.getBound(2),
                             indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                            *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
+                            *rhsLocal.getDataPointer(), *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
                             pdb, ipar[0],rpar[0], ierr );
 
     } // end for grid 
 
 
-    Oges & impSolver = dbase.get<Oges>("impSolver");
 
   // ------- SOLVE THE IMPLICIT EQUATIONS -----
 
@@ -216,8 +305,31 @@ int CgWave::takeImplicitStep( Real t )
         impSolver.set(OgesParameters::THEkeepSparseMatrix,true);
     }
 
-    impSolver.solve( un,un );   
+  // int solverType;
+  // impSolver.get(OgesParameters::THEsolverType,solverType);
+    if( impSolver.isSolverIterative() )
+    {
+        if( false )
+        {
+            rhs.display("RHS before implicit solve");
+            OV_ABORT("stop here for now");
+        }
 
+    // **  for iterative solvers we want un to be the good guess for u(t+dt) **************
+
+        impSolver.solve( un,rhs );  
+
+        int numIterations = impSolver.getNumberOfIterations();
+        totalImplicitIterations += numIterations;
+        totalImplicitSolves++;
+        if( true )
+            printF("CgWave::takeImplicitStep: implicit solve: max-res= %8.2e (iterations=%i) ***\n",
+                                  impSolver.getMaximumResidual(),numIterations);
+    }
+    else
+    {
+        impSolver.solve( un,un );   
+    }
     if( outputMatrix )
     {
         printF("cgWaveINFO: save the implicit matrix to file cgWaveMatrix.out (using writeMatrixToFile). \n");
@@ -299,22 +411,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
               c,dt,orderOfAccuracy,orderOfAccuracyInTime,addUpwinding,(int)bcApproach);
     printF(" ================================================================================\n");
 
-    if( orderOfAccuracyInTime != 2  )
-    {
-        printF("CgWave::formImplicitTimeSteppingMatrix: Error orderOfAccuracyInTime != 2 not implemented yet.\n");
-        OV_ABORT("ERROR");    
-    }
-    if( bcApproach==useCompatibilityBoundaryConditions )
-    {
-        printF("CgWave::formImplicitTimeSteppingMatrix: Error useCompatibilityBoundaryConditions not implemented yet\n");
-        OV_ABORT("ERROR");
-    }
-
-    if( bcApproach==useLocalCompatibilityBoundaryConditions )
-    {
-        printF("CgWave::formImplicitTimeSteppingMatrix: Error useLocalCompatibilityBoundaryConditions not implemented yet\n");
-        OV_ABORT("ERROR");
-    }  
+  
 
     const int & numberOfComponentGrids = cg.numberOfComponentGrids(); 
     const int & numberOfDimensions = cg.numberOfDimensions(); 
@@ -325,40 +422,102 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
     if( !dbase.has_key("impSolver") )
     {
-        dbase.put<Oges>("impSolver");
+        Oges & impSolver =  dbase.put<Oges>("impSolver");
+        impSolver.setGridName( dbase.get<aString>("nameOfGridFile") );
     }
     Oges & impSolver = dbase.get<Oges>("impSolver");
-    impSolver.updateToMatchGrid( cg );                     
 
-    int solverType=OgesParameters::yale; 
+  // impSolver.updateToMatchGrid( cg );                     
 
-  // solverType=OgesParameters::PETSc;
-  // solverType=OgesParameters::PETScNew; // parallel
+    if( dbase.has_key("implicitSolverParameters") )
+    {  
+        printf("CgWave::formImplicitTimeSteppingMatrix: Changing the implicit solver parameters. \n");
+        OgesParameters & par = dbase.get<OgesParameters>("implicitSolverParameters");
+        impSolver.setOgesParameters(par);
+    }
+    else
+    {
+        int solverType=OgesParameters::yale; 
 
-    impSolver.set(OgesParameters::THEsolverType,solverType); 
+    // solverType=OgesParameters::PETSc;
+    // solverType=OgesParameters::PETScNew; // parallel
 
-    if( solverType==OgesParameters::PETSc )
-      impSolver.set(OgesParameters::THEsolverMethod,OgesParameters::biConjugateGradientStabilized);
+        impSolver.set(OgesParameters::THEsolverType,solverType); 
 
-  // impSolver.set(OgesParameters::THEparallelSolverMethod,OgesParameters::gmres);
-  // impSolver.set(OgesParameters::THErelativeTolerance,max(tol,REAL_EPSILON*10.));
-  // impSolver.set(OgesParameters::THEmaximumNumberOfIterations,10000);
-  // if( iluLevels>=0 )
-  //   impSolver.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
+        if( solverType==OgesParameters::PETSc )
+          impSolver.set(OgesParameters::THEsolverMethod,OgesParameters::biConjugateGradientStabilized);
 
+    // impSolver.set(OgesParameters::THEparallelSolverMethod,OgesParameters::gmres);
+    // impSolver.set(OgesParameters::THErelativeTolerance,max(tol,REAL_EPSILON*10.));
+    // impSolver.set(OgesParameters::THEmaximumNumberOfIterations,10000);
+    // if( iluLevels>=0 )
+    //   impSolver.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
+    }
+
+    int solverType;
+    impSolver.get(OgesParameters::THEsolverType,solverType);
+
+  // Oges::debug=7;
+  // printF("Calling impSolver.setGrid()\n");
+    impSolver.setGrid( cg );       // this will generate MG levels if using multigrid
+  // printF("Calling impSolver.updateToMatchGrid()\n");
+  // impSolver.updateToMatchGrid( cg ); 
+
+  // --- save the name of the sparse solver we use ---
+    if( !dbase.has_key("implicitSolverName") )
+        dbase.put<aString>("implicitSolverName");
+    aString & implicitSolverName =  dbase.get<aString>("implicitSolverName");
+    implicitSolverName = impSolver.parameters.getSolverName();
+    printF("\n === Implicit Time-Stepping Solver:\n %s\n =====\n",(const char*)implicitSolverName);
 
     CompositeGridOperators & op = dbase.get<CompositeGridOperators>("operators");
     op.setOrderOfAccuracy(orderOfAccuracy);
 
-    bool usePredefined= false; // true = old way
+  // -- Use predefined equations in Oges for MG  *wdh* Jan 8 2023 -- TRY THIS ---
+    bool useMultigrid= solverType==OgesParameters::multigrid;
+
+  // bool usePredefined = useMultigrid && !addUpwinding && orderOfAccuracy==2; // true = old way
+  // We can use predefined equations for
+  //  Oges: 
+  //    - orderInTime = 2 
+  //    - no implicit upwinding
+  //    - no CBC's ??
+  // Ogmg:
+  //    - order in time 2
+  //    - no implicit upwinding
+  //    - CBC's 
+    bool usePredefined = useMultigrid && !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
+
+    if( orderOfAccuracyInTime != 2  )
+    {
+        printF("CgWave::formImplicitTimeSteppingMatrix: Error orderOfAccuracyInTime != 2 not implemented yet.\n");
+        OV_ABORT("ERROR");    
+    }
+
+  // if( !usePredefined &&  bcApproach==useCompatibilityBoundaryConditions )
+  // {
+  //   printF("CgWave::formImplicitTimeSteppingMatrix: Error useCompatibilityBoundaryConditions not implemented yet\n");
+  //   OV_ABORT("ERROR");
+  // }
+
+    if( bcApproach==useLocalCompatibilityBoundaryConditions )
+    {
+        printF("CgWave::formImplicitTimeSteppingMatrix: Error useLocalCompatibilityBoundaryConditions not implemented yet\n");
+        OV_ABORT("ERROR");
+    }  
+  
+
 
     if( usePredefined )
     {
-    // ***** OLD WAY ******
-        
+    // ***** USE PREDEFINED EQUATIONS IN SOME CASES ******
+        printF("\n >>>>>>> CgWave::implicitSolver: use predfined equations <<<<<<< \n\n");
+
     // ---- use Oges predefined equations ***OLD WAY*** ----
     
         IntegerArray boundaryConditions(2,3,numberOfComponentGrids);
+        boundaryConditions = 0;
+
         RealArray bcData(2,2,3,numberOfComponentGrids);
         bcData=0.;
 
@@ -366,11 +525,21 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
     // Solve constCoeff(0,grid)*I +constCoeff(1,grid)*Laplacian 
     // We solve:  I - alpha*(c^2*dt^2)* Delta = ...
-        Real alpha=cImp(-1,0);
         RealArray constantCoeff(2,numberOfComponentGrids);
 
-        constantCoeff(0,all) = 1.;
-        constantCoeff(1,all) = - alpha*SQR(c*dt);
+
+    // --- SET COEFF IN IMPLICIT MATRIX ----
+        printF("CgWave::implicitSolver: A = I -alpha (c*dt)^2 Delta, c=%g, dt=%9.2e\n",c,dt);
+
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            Real alpha=cImp(-1,0);
+            if( gridIsImplicit(grid)==0 )
+                alpha=0.; // this grid is explicit
+
+            constantCoeff(0,grid) = 1.;
+            constantCoeff(1,grid) = - alpha*SQR(c*dt);
+        }
 
     // Assign boundary conditions for Oges
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
@@ -399,7 +568,6 @@ int CgWave::formImplicitTimeSteppingMatrix()
             }
 
         }
-
 
 
         impSolver.setEquationAndBoundaryConditions( OgesParameters::heatEquationOperator ,op,boundaryConditions,bcData,constantCoeff );

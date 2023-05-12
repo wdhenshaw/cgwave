@@ -3,13 +3,14 @@
 #
 #     conv.p waveHoltzTests.conv -option=[boxHelmholtz] -cg=[gridName] -alwaysCompute=[0|1] -ng=<num-refinement-levels>
 #
-$check="cgWave.check";
+$check="cgWaveHoltz.check";
 # 
 # Set default parameters: 
 $cg="square"; 
 $option="boxHelmholtz"; 
 #
-$cmdFile="boxHelmholtz.cmd"; # comannd file
+# $cmdFile="boxHelmholtz.cmd"; # command file
+$cmdFile="trigHelmholtz.cmd"; # command file
 #
 $CGBUILDPREFIX=$ENV{CGBUILDPREFIX};
 $CGWAVE=$ENV{CGWAVE}; # directory for cgWave repo
@@ -17,22 +18,32 @@ $CGWAVE=$ENV{CGWAVE}; # directory for cgWave repo
 $cgwh = "$CGWAVE/bin/cgwh";  # command for cgWaveHoltz
 #
 # $cmdDir="$ENV{CG}/mx/cmd";  
-$cmdDir="$CGWAVE/cmd";  
-$tf=.5; $tp=.1; $order = "2"; $ng=3; $interp="i"; $cfl=.9; $radius=.5; $bg="box";
+# $cmdDir="$CGWAVE/cmd";  
+$cmdDir="$CGWAVE/runsWaveHoltz/trigHelmholtz";  
+$tf=.5; $tp=.1; $order = "2"; $ng=3; $interp="i"; $cfl=.9; $radius=.5; $bg="box"; $ts="implicit"; 
+$kx=1; $ky=1; $kz=1; 
 $solver="krylov"; $tol=1e-5; 
 $omega=2; 
+@freq = ();  # this must be null for GetOptions to work, defaults are given below
 # $kx=1; $ky=0; $kz=0; 
-$ad4=0;  # 1= UPW dissipation
+$upwind=0;  # 1= UPW dissipation
 $errorNorm=0; 
 $alwaysCompute=1; $saveVectorErrors=0; 
 $numberOfDimensions=2; 
+$solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
+$solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
 #
-GetOptions( "name=s"=>\$name,"order=i"=>\$order,"ng=i"=>\$ng,"tf=f"=>\$tf,"interp=s"=>\$interp,"ad4=f"=>\$ad4,\
+GetOptions( "name=s"=>\$name,"order=i"=>\$order,"ng=i"=>\$ng,"tf=f"=>\$tf,"interp=s"=>\$interp,"upwind=i"=>\$upwind,\
             "fixed=s"=>\$fixed,"cfl=f"=>\$cfl,"alwaysCompute=i"=>\$alwaysCompute,"tp=f"=>\$tp,\
-            "errorNorm=i"=>\$errorNorm,"cg=s"=>\$cg,"option=s"=>\$option,"tol=f"=>\$tol,\
-            "kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"omega=f"=>\$omega,"solver=s"=>\$solver );
+            "errorNorm=i"=>\$errorNorm,"cg=s"=>\$cg,"option=s"=>\$option,"tol=f"=>\$tol,"ts=s"=>\$ts,\
+            "kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"omega=f"=>\$omega,"solver=s"=>\$solver,"freq=f{1,}"=>\@freq,\
+            "solverh=s"=>\$solverh,"rtolh=f"=>\$rtolh,"atolh=f"=>\$atolh,"maxith=i"=>\$maxith,"restart=i"=>\$restart,"iluh=i"=>\$iluh,\
+            "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti );
 # --------------------------------------------------------------------------
-$name=$option; 
+$name=$option;
+if( $freq[0] eq "" ){ @freq=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15); }
+# 
+$omega = $freq[0]; 
 # if( $option eq "planeWave" ){ $cmdFile="planeWave.cmd";  }
 # if( $option eq "helmholtz" ){ $cmdFile="helmholtz.cmd";  }
 # 
@@ -59,13 +70,18 @@ $numberOfComponents=1;
 $title= "grid  \& N \&  \$ u \$ ";
 #
 $labelMethod=$solver;
-$caption= "\\caption\{CgWaveHoltz, $name, $normName norm, solver=$solver, order=\$$order\$, \$t=$tf\$, cfl=\$$cfl\$, ad4=\$$ad4\$, omega=$omega, tol=$tol $date}\\label\{table:$name" . $solver . "Order$order$normName}"; 
+$caption= "\\caption\{CgWaveHoltz, $name, $normName norm, solver=$solver, -kx=$kx -ky=$ky -kz=$kz, order=\$$order\$, \$t=$tf\$, cfl=\$$cfl\$, -ts=$ts, upwind=\$$upwind\$, freq[0]=$freq[0], tol=$tol,-solveri=$solveri -maxiti=$maxiti -rtoli=$rtoli -atoli=$atoli $date}\\label\{table:$name" . $solver . "Order$order$normName}"; 
 # 
-$options = "-cfl=$cfl -omega=$omega -solver=$solver -ad4=$ad4 -tol=$tol -go=go";
+# use -go=krylov to solve with krylov
+# use -go=direct to solve with direct solver
+# use -go=both to solve with both
+$options = "-kx=$kx -ky=$ky -kz=$kz -cfl=$cfl -numPeriods=4 -nf=1 -freq=$freq[0] $freq[1] $freq[2] -ts=$ts -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -upwind=$upwind -tol=$tol";
+$options .= " -solveri=$solveri -maxiti=$maxiti -rtoli=$rtoli -atoli=$atoli";
+$options .= " -go=$solver";
 #
 $suffix="";
-if( ($ad4 > 0.) && ($order eq 4) ){ $suffix=".ng3"; }
-if( ($ad4 > 0.) && ($order eq 6) ){ $suffix=".ng4"; }
+if( ($upwind > 0 ) && ($order eq 4) ){ $suffix=".ng3"; }
+if( ($upwind > 0 ) && ($order eq 6) ){ $suffix=".ng4"; }
 $grid1=$cg . "2";   $gName1 = $cg . "e2.order$order$suffix"; 
 $grid2=$cg . "4";   $gName2 = $cg . "e4.order$order$suffix"; 
 $grid3=$cg . "8";   $gName3 = $cg . "e8.order$order$suffix"; 

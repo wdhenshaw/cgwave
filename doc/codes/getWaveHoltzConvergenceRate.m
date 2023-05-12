@@ -1,7 +1,7 @@
 %
 % Return the asymptotic convergence rate for the Wave-Holtz iteration
 %
-% lamv(i) : eigenvalues of c^2\Delt
+% lamv(i) : eigenvalues of c^2\Delta
 % par.savePlots
 %
 % 

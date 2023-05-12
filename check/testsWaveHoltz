@@ -14,6 +14,6 @@ cgWaveHoltz.check
 # Here is a list of commands to run for tests
 #
 # trig-Helmholtz solutions
-waveHoltzSquare16Order2.check  ../runsWaveHoltz/trigHelmholtz/trigHelmholtz.cmd -g=square16.order2.hdf -omega=5.4 -nf=1 -freq=5.4 -adjustOmega=1 -solver=fixedPoint -tol=1e-12 -maxIterations=100 -go=go
-waveHoltzSquare16Order4.check  ../runsWaveHoltz/trigHelmholtz/trigHelmholtz.cmd -g=square16.order4.ng3.hdf -omega=5.4 -nf=1 -freq=5.4 -adjustOmega=1 -orderInTime=2 -solver=fixedPoint -tol=1e-12 -maxIterations=100 -go=go
+waveHoltzSquare16Order2.check  ../runsWaveHoltz/trigHelmholtz/trigHelmholtz.cmd -g=square16.order2.hdf -omega=5.4 -nf=1 -freq=5.4 -adjustOmega=1 -tol=1e-12 -maxIterations=100 -go=dfk
+waveHoltzSquare16Order4.check  ../runsWaveHoltz/trigHelmholtz/trigHelmholtz.cmd -g=square16.order4.ng3.hdf -omega=5.4 -nf=1 -freq=5.4 -adjustOmega=1 -orderInTime=2 -tol=1e-12 -maxIterations=100 -go=dfk
 

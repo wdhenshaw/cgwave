@@ -1,0 +1,12 @@
+! Stencil: nd=2, orderOfAccuracy=8, gridType=Rectangular
+un(i1,i2,i3,m)=  - um(i1,i2,i3,m)\
+                                                                                                                     + scr(  5)*u(i1+0,i2-4,i3,m)                                                                                                                    \
+                                                                                        + scr( 13)*u(i1-1,i2-3,i3,m) + scr( 14)*u(i1+0,i2-3,i3,m) + scr( 15)*u(i1+1,i2-3,i3,m)                                                                                       \
+                                                           + scr( 21)*u(i1-2,i2-2,i3,m) + scr( 22)*u(i1-1,i2-2,i3,m) + scr( 23)*u(i1+0,i2-2,i3,m) + scr( 24)*u(i1+1,i2-2,i3,m) + scr( 25)*u(i1+2,i2-2,i3,m)                                                          \
+                              + scr( 29)*u(i1-3,i2-1,i3,m) + scr( 30)*u(i1-2,i2-1,i3,m) + scr( 31)*u(i1-1,i2-1,i3,m) + scr( 32)*u(i1+0,i2-1,i3,m) + scr( 33)*u(i1+1,i2-1,i3,m) + scr( 34)*u(i1+2,i2-1,i3,m) + scr( 35)*u(i1+3,i2-1,i3,m)                             \
+ + scr( 37)*u(i1-4,i2+0,i3,m) + scr( 38)*u(i1-3,i2+0,i3,m) + scr( 39)*u(i1-2,i2+0,i3,m) + scr( 40)*u(i1-1,i2+0,i3,m) + scr( 41)*u(i1+0,i2+0,i3,m) + scr( 42)*u(i1+1,i2+0,i3,m) + scr( 43)*u(i1+2,i2+0,i3,m) + scr( 44)*u(i1+3,i2+0,i3,m) + scr( 45)*u(i1+4,i2+0,i3,m)\
+                              + scr( 47)*u(i1-3,i2+1,i3,m) + scr( 48)*u(i1-2,i2+1,i3,m) + scr( 49)*u(i1-1,i2+1,i3,m) + scr( 50)*u(i1+0,i2+1,i3,m) + scr( 51)*u(i1+1,i2+1,i3,m) + scr( 52)*u(i1+2,i2+1,i3,m) + scr( 53)*u(i1+3,i2+1,i3,m)                             \
+                                                           + scr( 57)*u(i1-2,i2+2,i3,m) + scr( 58)*u(i1-1,i2+2,i3,m) + scr( 59)*u(i1+0,i2+2,i3,m) + scr( 60)*u(i1+1,i2+2,i3,m) + scr( 61)*u(i1+2,i2+2,i3,m)                                                          \
+                                                                                        + scr( 67)*u(i1-1,i2+3,i3,m) + scr( 68)*u(i1+0,i2+3,i3,m) + scr( 69)*u(i1+1,i2+3,i3,m)                                                                                       \
+                                                                                                                     + scr( 77)*u(i1+0,i2+4,i3,m)                                                                                                                    \
+ FV(m)

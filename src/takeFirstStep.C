@@ -19,6 +19,8 @@ takeFirstStep( int cur, real t )
     const int & solveHelmholtz              = dbase.get<int>("solveHelmholtz");
     const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
 
+
+
     if( solveHelmholtz || forcingOption==helmholtzForcing )
     {
         return takeFirstStepHelmholtz( cur, t );
@@ -407,7 +409,8 @@ takeFirstStep( int cur, real t )
 
     } // end for grid
 
-    applyBoundaryConditions( u[next], t+dt );
+    bool applyExplicitBoundaryConditions=true;
+    applyBoundaryConditions( u[next], t+dt,applyExplicitBoundaryConditions  );
     
   // u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%6.2f ");
 
@@ -443,6 +446,7 @@ takeFirstStepHelmholtz( int cur, real t )
     const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");  
 
     const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz");
+
     ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
     const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
@@ -450,12 +454,24 @@ takeFirstStepHelmholtz( int cur, real t )
 
     assert( forcingOption==helmholtzForcing );
 
-    const bool usePeriodicFirstStep=true;
-
-
   //  ---- NOTE: change sign of forcing for Helmholtz since we want to solve ----
   //       ( omega^2 I + c^2 Delta) w = f  
-    const Real fSign = forcingOption==helmholtzForcing ? -1.0 : 1.0;
+    Real fSign = forcingOption==helmholtzForcing ? -1.0 : 1.0;
+
+    bool usePeriodicFirstStep= true;
+
+  // *wdh* March 25, 2023 -- we cannot assume omega-periodic solution if we are computing eigen-modes
+  // But there seems to be trouble using this !?
+    const int & computeEigenmodes = dbase.get<int>("computeEigenmodes");  
+    if( computeEigenmodes &&
+            timeSteppingMethod == explicitTimeStepping)
+    {
+        usePeriodicFirstStep=false;
+        fSign=0; // there is no forcing when computing eigenmodes.
+        printF("+++++++++++++ takeFirstStepHelmholtz: do NOT use periodic first step ++++++++++++\n");
+    }
+
+
 
   // const int & solveHelmholtz = dbase.get<int>("solveHelmholtz");
   // const Real fSign = solveHelmholtz ? -1.0 : 1.0;  
@@ -547,7 +563,10 @@ takeFirstStepHelmholtz( int cur, real t )
         //  uttt = c^2*Delta(ut) + ft 
         //  utttt = c^2*Delta(utt) + ftt
         //        = (c^2*Delta)^2 u + c^2*Delta(f) + ftt 
-                unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
+
+        // ** TEMP *** April 28, 2023
+        // ** unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
+                unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3);
                 if( orderOfAccuracy==4 )
                 {
           // this may be good enough for 4th-order -- local error is dt^4
@@ -563,13 +582,14 @@ takeFirstStepHelmholtz( int cur, real t )
 
     if( !usePeriodicFirstStep )
     {
-    // This will not work for implicit since only explicit conditions are done here:
-        if( timeSteppingMethod == implicitTimeStepping )
-        {
-            printF("takeFirstStep: ERROR: fix applyBC for implicit time-stepping\n");
-            OV_ABORT("error");
-        }
-        applyBoundaryConditions( u[next], t+dt );
+    // // This will not work for implicit since only explicit conditions are done here:
+    // if( timeSteppingMethod == implicitTimeStepping )
+    // {
+    //   printF("takeFirstStep: ERROR: fix applyBC for implicit time-stepping\n");
+    //   OV_ABORT("error");
+    // }
+        bool applyExplicitBoundaryConditions=true;
+        applyBoundaryConditions( u[next], t+dt, applyExplicitBoundaryConditions );
     }
     
   // u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%6.2f ");
@@ -668,7 +688,8 @@ takeFirstBackwardStep( int cur, real t )
         }
     } // end for grid
 
-    applyBoundaryConditions( u[prev], t-dt );
+    bool applyExplicitBoundaryConditions=true;
+    applyBoundaryConditions( u[prev], t-dt, applyExplicitBoundaryConditions );
     
 
     return 0;

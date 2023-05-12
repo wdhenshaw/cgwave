@@ -1,4 +1,107 @@
 
+
+***************************************************
+****** Sat April 23, 2023
+
+TEST NEW STENCIL:
+
+FIXED -- SCALED lapCoeff have no factors of .5 or .25
+
+DISK: ORDER=6 STENCIL 
+cgWave -noplot known.cmd -g=sice8.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=stencil -go=go
+
+stencil:
+cgWave:FD66 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 7.59e-10, ||u||= 2.43e-01, cpu= 3.99e-02(s)
+
+HA: 
+cgWave:FD66 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 7.59e-10, ||u||= 2.43e-01, cpu= 1.69e-02(s)
+
+DISK: ORDER=4 STENCIL 
+cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=stencil -go=halt
+
+STENCIL
+*fixed*
+cgWave:FD44 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 1.64e-07, ||u||= 2.43e-01, cpu= 2.60e+00(s)
+*old*
+cgWave:FD44 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 2.63e-03, ||u||= 2.43e-01, cpu= 2.00e-02(s)
+
+cgWave -noplot known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+
+HA:
+cgWave:FD44 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 1.64e-07, ||u||= 2.43e-01, cpu= 1.19e-02(s)
+
+
+STENCIL ORDER=6
+cgWave -noplot known.cmd -g=nonSquare256.order6 -kx=3 -ky=3 -kz=1 -tf=1 -tp=1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=lcbc -go=go -meApproach=stencil 
+
+
+STENCIL ORDER=4
+cgWave -noplot known.cmd -g=nonSquare256.order4 -kx=3 -ky=3 -kz=1 -tf=1 -tp=1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go -meApproach=stencil 
+
+
+***************************************************
+****** Fri April 21, 2023
+
+TEST NEW STENCIL:
+
+>>>>>>>>>>  NON-SQUARE
+
+STENCIL ORDER=6
+cgWave -noplot known.cmd -g=nonSquare256.order6 -kx=3 -ky=3 -kz=1 -tf=1 -tp=1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=lcbc -go=go -meApproach=stencil 
+
+advance.............................  1.31e+00    3.25e-03    4.92e-08    91.915   1.309e+00   1.309e+00
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  1.07e+00    2.65e-03    4.01e-08    74.973   1.068e+00   1.068e+00
+
+FAME: ORDER=6
+cgWave -noplot known.cmd -g=nonSquare256.order6 -kx=3 -ky=3 -kz=1 -tf=1 -tp=1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=lcbc -go=go -meApproach=ha
+
+advance.............................  1.31e+00    3.25e-03    4.92e-08    92.758   1.310e+00   1.310e+00
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  1.12e+00    2.78e-03    4.21e-08    79.396   1.121e+00   1.121e+00
+
+
+
+STENCIL ORDER=4
+cgWave -noplot known.cmd -g=nonSquare256.order4 -kx=3 -ky=3 -kz=1 -tf=1 -tp=1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go -meApproach=stencil 
+
+advance.............................  5.30e-01    1.31e-03    1.99e-08    95.731   5.297e-01   5.297e-01
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  4.04e-01    1.00e-03    1.52e-08    72.996   4.039e-01   4.039e-01
+
+
+FAME: ORDER=4
+cgWave -noplot known.cmd -g=nonSquare256.order4 -kx=3 -ky=3 -kz=1 -tf=1 -tp=1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go -meApproach=ha
+
+advance.............................  3.66e-01    9.08e-04    1.38e-08    95.555   3.660e-01   3.660e-01
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  2.45e-01    6.07e-04    9.19e-09    63.866   2.446e-01   2.446e-01
+
+>>>>>>>>>>>>>>>>>>>
+
+
+
+
+cgWave -noplot known.cmd -g=square128.order4 -kx=3 -ky=3 -kz=1 -tf=1 -tp=1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go -meApproach=stencil 
+
+remove zero coeff, mask:
+  advance rectangular grids.........  1.74e-02    8.60e-05    5.17e-09    43.778   1.737e-02   1.737e-02
+
+
+remove zero coeff, no mask
+  advance rectangular grids.........  9.32e-03    4.61e-05    2.77e-09    30.947   9.316e-03   9.316e-03
+
+NO-MASK
+   advance rectangular grids.........  2.59e-02    1.28e-04    7.71e-09    56.017   2.591e-02   2.591e-02
+MASK:
+  advance rectangular grids.........  4.57e-02    2.26e-04    1.36e-08    68.685   4.568e-02   4.568e-02
+
+FAME: 
+cgWave -noplot known.cmd -g=square128.order4 -kx=3 -ky=3 -kz=1 -tf=1 -tp=1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go -meApproach=ha 
+
+advance.............................  3.11e-02    1.54e-04    9.26e-09    91.935   3.113e-02   3.113e-02
+  advance rectangular grids.........  1.29e-02    6.40e-05    3.84e-09    38.156   1.292e-02   1.292e-02
+
 ***************************************************
 ****** Sat Nov 26, 2022
 

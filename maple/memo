@@ -1,0 +1,33 @@
+***************************
+**** Sun April 23, 2023
+
+writeStencilFiles.mpl
+
+
+TRY EIGHTH-ORDER:
+
+2D order=8
+time for CodeGen = 114 (s)
+
+Done: numStencilCoeff=343, nonZeroCoeff=63, zeroCoeff=280
+Wrote file=../include/stencil3dOrder6Rectangular.h
+
+
+Done: numStencilCoeff=125, nonZeroCoeff=25, zeroCoeff=100
+Wrote file=../include/stencil3dOrder4Rectangular.h
+
+Done: numStencilCoeff=27, nonZeroCoeff=7, zeroCoeff=20
+Wrote file=../include/stencil3dOrder2Rectangular.h
+
+
+
+
+Done: numStencilCoeff=81, nonZeroCoeff=41, zeroCoeff=40
+Wrote file=../include/stencil2dOrder8Rectangular.h
+
+
+3D Order=6: 
+
+Done: numStencilCoeff=343, nonZeroCoeff=263, zeroCoeff=80
+Wrote file=../include/stencil3dOrder6Curvilinear.h
+
