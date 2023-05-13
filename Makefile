@@ -9,7 +9,9 @@
 
 include ${Overture}/make.options
 
+# here is Arpack : 
 LIB_ARPACK = -Wl,-rpath,/home/henshw/software/arpack-ng/lib -L/home/henshw/software/arpack-ng/lib -larpack 
+LIB_ARPACK =
 
 
 usePETSc := on
