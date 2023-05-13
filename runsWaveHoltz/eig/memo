@@ -8,7 +8,7 @@ setsid $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride2.order2.hdf -bc3=neumann -
 
 
 Dark-room -- smaller tol  (more accurate results from genEigs ) **REDO WITH SMALLER rtoli, atoli ***
-
+BETTER: 
 setsid $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride1.order2.hdf -bc3=neumann -nf=1 -adjustOmega=0 -ts=implicit -cfl=100000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=4 -eigenVectorFile=darkCornerRoom3dG1O2EigsEv512.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigTol=1e-4 -freq=3.5 -numEigs=128 -solveri=bcgs -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=darkCornerRoom3dG1O2EigsA.show -matlab=darkCornerRoom3dG1O2Eigs -go=ks > darkCornerRoom3dG1O2EigsFreq3p5.out
 
 
