@@ -14,7 +14,8 @@ extern "C"
 void bcOptWave( const int&nd, 
                 const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
                 const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const int&mask,
-                const real&rsxy, const real&xy, const int&boundaryCondition, const real & frequencyArray,
+                const real&rsxy, const real&xy, real &uTemp1, real & uTemp2, 
+                const int&boundaryCondition, const real & frequencyArray,
                 const DataBase *pdb, const int&ipar, const real&rpar, int&ierr );
 
 }
@@ -142,6 +143,10 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
 
   const int & debug = dbase.get<int>("debug");
 
+  dbase.get<int>("bcCount")++;    // count the number of times applyBC is called
+
+
+
   if( debug & 8 )
     printF("applyBoundaryConditions at t=%9.3e\n",t);
 
@@ -184,11 +189,11 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
   real cpu0 = getCPU();
 
   // *** Note: interpolate also does a periodic update **** 
-
   u.interpolate();
 
   real cpu1 = getCPU();
   timing(timeForInterpolate)+= cpu1-cpu0;
+
   // printF("Done interpolate.\n");
   
   cpu0=cpu1;
@@ -227,7 +232,47 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
   }
   if( applyExplicitBoundaryConditions )  
     isAllImplicit=false; 
+
+
+  // --- apply known solutions on "exact" boundaries ----
+  if( knownSolutionOption=="userDefinedKnownSolution" ) 
+  {
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    {
+      MappedGrid & mg = cg[grid];
+      const IntegerArray & gid = mg.gridIndexRange();
+      
+      realArray & ug = u[grid];
+      ForBoundary(side,axis) 
+      {
+        if( mg.boundaryCondition(side,axis)==exactBC )
+        {
+          // -- assign boundary and ghost values to be exact ---
+          if( t<=2*dt )
+            printF(" Set knownSolution at exact boundary (side,axis,grid)=(%d,%d,%d)\n",side,axis,grid);
+
+          getBoundaryIndex(gid,side,axis,I1,I2,I3);
+          if( side==0 )
+            Iv[axis] = Range(gid(0,axis)-numGhost,gid(0,axis));
+          else 
+            Iv[axis] = Range(gid(1,axis),gid(1,axis)+numGhost);
+
+          getUserDefinedKnownSolution( t, grid, ug, I1,I2,I3 );
+        }
+      }
+    }
+           
+  }
+
   
+  // if( TRUE )
+  // {
+  //   timing(timeForBoundaryConditions) += getCPU()-cpu0;
+  //   return 0;  // ************** TemP ***************************
+  // }
+
+
+
   if( debug & 4 && t<=2*dt )
     printF("CgWave: applyBC: useOpt=%d\n",(int)useOpt);
   if( useOpt )
@@ -286,13 +331,15 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
                     uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
                     uLocal.getBase(2),uLocal.getBound(2),
                     indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                    *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
+                    *pu, *pmask, *prsxy, *pxy, *puTemp1, *puTemp2,
+                    bcLocal(0,0), frequencyArray(0),
                     pdb, ipar[0],rpar[0], ierr );
         }
 
-        // ...swap periodic edges 
+        // ...swap periodic edges ....
         ug.periodicUpdate();
         ug.updateGhostBoundaries();
+
       }
       else
       {
@@ -557,6 +604,13 @@ applyEigenFunctionBoundaryConditions( realCompositeGridFunction & u )
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
   {
     MappedGrid & mg = cg[grid];
+    const IntegerArray & boundaryCondition = mg.boundaryCondition();
+    if( orderOfAccuracy>2 && min(abs(boundaryCondition-neumann))==0 )
+    {
+      printF("applyEigenFunctionBoundaryConditions:ERROR: finish Neumann BC for order=%d\n",orderOfAccuracy);
+      OV_ABORT("finish me");
+    }
+
     realMappedGridFunction & ug = u[grid];
 
     ug.applyBoundaryCondition(0,BCTypes::dirichlet,dirichlet,0.,t); 

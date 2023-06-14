@@ -1,9 +1,360 @@
+**************************************
+****** Tues May 23, 2023
+
+
+START ON REGRESSION TESTS
+
+>>> NEW FOLDER : cgWave/eigenCheck/
+
+cgwh -noplot eig.cmd -g=square32.order4 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -eigenVectorFile=square32O4EigsEv64.show -computeEigs=1 -eigenSolver=default -minStepsPerPeriod=10 -freq=8 -numEigs=8 -numPeriods=1 -go=k
+
+
+cgwh -noplot eig.cmd -g=box1.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=boxG1O2EigsEv64.show -computeEigs=1 -eigenSolver=default  -freq=8 -numEigs=16 -go=k
+
+
+cgwh -noplot eig.cmd -g=sice4.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-16 -upwind=0 -imode=1 -maxIterations=30 -eigenVectorFile=diskG4O2Ev128.show -computeEigs=1 -numPeriods=1 -freq=6 -numEigs=16 -eigenSolver=default -go=k
+
+
+
+
+cgwh -noplot eig.cmd -g=square64.order2 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=100000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=square64EigsEv20.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=10 -numEigs=12 -eigenSolver=default -go=k
+
+
+**************************************
+****** Sun May 21, 2023
+
+4th order + Neumann BC : trouble:
+
+cgwh eig.cmd -g=square64.order4 -bc3=neumann -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=100000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=square64Order4DDNDEigsEv128 -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=6 -numEigs=12 -eigenSolver=default -go=halt
+
+EXP 
+cgwh eig.cmd -g=square64.order4 -bc3=neumann -nf=1 -adjustOmega=0 -ts=explicit -cfl=.9 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=square64Order4DDNDEigsEv128 -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=10 -numEigs=12 -eigenSolver=default -go=halt
+
+
+ i=  0 : eig=  3.512108e+00, multiplicity=1 (eigTol= 1.00e-05)
+ i=  1 : eig=  5.662526e+00, multiplicity=1 (eigTol= 1.00e-05)
+ i=  2 : eig=  6.474102e+00, multiplicity=1 (eigTol= 1.00e-05)
+ i=  3 : eig=  7.851325e+00, multiplicity=1 (eigTol= 1.00e-05)
+ i=  4 : eig=  8.454305e+00, multiplicity=1 (eigTol= 1.00e-05)
+ i=  5 : eig=  9.546377e+00, multiplicity=1 (eigTol= 1.00e-05)
+ i=  6 : eig=  1.005258e+01, multiplicity=1 (eigTol= 1.00e-05)
+ i=  7 : eig=  1.052913e+01, multiplicity=1 (eigTol= 1.00e-05)
+ i=  8 : eig=  1.142249e+01, multiplicity=1 (eigTol= 1.00e-05)
+
+
+**************************************
+****** Thurs, Sat May 18-20, 2023
+
+
+G1 ORDER=4 : 
+freq=1 Np=1 numEigs=64 TEST 
+setsid $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride1.order4.hdf -bc3=neumann -nf=1 -adjustOmega=0 -ts=implicit -cfl=100000 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=16 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigTol=1e-4 -freq=1 -numEigs=64 -solveri=bcgs -rtoli=1e-10 -atoli=1e-10 -eigenSolver=default -show=darkCornerRoom3dG1O4EigsFreq1.show -matlab=darkCornerRoom3dG1O4Eigs -go=ks > darkCornerRoom3dG1O4EigsFreq1.out
+
+MappedGridOperators:: Sorry, the Neumann boundary condition is only implemented for
+ orderOfAccuracy=2, requested orderOfAccuracy=4. Continuing with 2nd-order
+MappedGridOperators:: Sorry, the Neumann boundary condition is only implemented for
+ orderOfAccuracy=2, requested orderOfAccuracy=4. Continuing with 2nd-order
+
+FIX ME: 
+./configure PETSc with --with-64-bit-indices for the case you are running
+
+
+TRY: Np=16 freq=9 MULTIGRID: 
+setsid $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride2.order2.ml1.hdf -bc3=neumann -nf=1 -adjustOmega=0 -ts=implicit -cfl=100000 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=16 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigTol=1e-4 -freq=9 -numEigs=512 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -eigenSolver=default -show=darkCornerRoom3dG2O2EigsFreq9.show -matlab=darkCornerRoom3dG2O2EigsFreq9 -go=ks > darkCornerRoom3dG2O2EigsFreq9.out
+
+[0]PETSC ERROR: Configure options --with-cc=gcc --with-fc=gfortran --PETSC_ARCH=linux-gnu-opt --with-debugging=0 --with-fortran=0 --with-matlab=0 --with-mpi=0 --with-shared-libraries=1
+[0]PETSC ERROR: #1 PetscIntMultError() at /home/henshw/software/petsc-3.18.2-serial/include/petscsys.h:2265
+[0]PETSC ERROR: #2 BVCreate_Svec() at /raid1/software/slepc-3.18.2-serial/src/sys/classes/bv/impls/svec/svec.c:414
+[0]PETSC ERROR: #3 BVSetSizesFromVec() at /raid1/software/slepc-3.18.2-serial/src/sys/classes/bv/interface/bvbasic.c:184
+[0]PETSC ERROR: #4 EPSAllocateSolution() at /raid1/software/slepc-3.18.2-serial/src/eps/interface/epssetup.c:683
+[0]PETSC ERROR: #5 EPSSetUp_KrylovSchur() at /raid1/software/slepc-3.18.2-serial/src/eps/impls/krylov/krylovschur/krylovschur.c:121
+[0]PETSC ERROR: #6 EPSSetUp() at /raid1/software/slepc-3.18.2-serial/src/eps/interface/epssetup.c:323
+[0]PETSC ERROR: #7 EPSSolve() at /raid1/software/slepc-3.18.2-serial/src/eps/interface/epssolve.c:133
+[0]PETSC ERROR: #8 solveSLEPc() at src/solveSLEPc.C:865
+
+G2 : **TROUBLE*** PETSC eerror
+TRy: Np=16 freq=9
+setsid $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride2.order2.hdf -bc3=neumann -nf=1 -adjustOmega=0 -ts=implicit -cfl=100000 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=16 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigTol=1e-4 -freq=9 -numEigs=512 -solveri=bcgs -rtoli=1e-10 -atoli=1e-10 -eigenSolver=default -show=darkCornerRoom3dG2O2EigsFreq9.show -matlab=darkCornerRoom3dG2O2EigsFreq9 -go=ks > darkCornerRoom3dG2O2EigsFreq9.out
+
+[0]PETSC ERROR: --------------------- Error Message --------------------------------------------------------------
+[0]PETSC ERROR: No support for this operation for this object type
+[0]PETSC ERROR: Product of two integers 1026 3035549 overflow, either you have an invalidly large integer error in yo
+
+
+TRY: --> OK but modes not so well resolved
+  freq=8 Np=16 numEigs=512
+freq=6 Np=8 numEigs=128 : converged but all eigs above beta=.95
+setsid $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride1.order2.hdf -bc3=neumann -nf=1 -adjustOmega=0 -ts=implicit -cfl=100000 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=16 -eigenVectorFile=darkCornerRoom3dG1O2EigsEv512.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigTol=1e-4 -freq=8 -numEigs=512 -solveri=bcgs -rtoli=1e-10 -atoli=1e-10 -eigenSolver=default -show=darkCornerRoom3dG1O2EigsFreq8.show -matlab=darkCornerRoom3dG1O2Eigs -go=ks > darkCornerRoom3dG1O2EigsFreq8.out
+
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  8.0000e+00, orderOfAccuracy=2, grid=darkCornerRoom3dGride1
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=0.0001
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=100000.00, dt=6.042e-02, minStepsPerPeriod=10, Np=16, numberOfStepsPerSolve=208, 
+  totalTimeStepsStaken=319696, aveItsPerImplicitSolve=  2.0
+ implict solver=PETSc, solver=[bi-conjugate gradient stabilized + ILU(3) + reverse Cuthill-McKee ordering]
+ implicit solver: rtol= 1.00e-10, atol= 1.00e-10
+ tol= 1.00e-10, number of wave-solves (mat-vecs) = 1537, cpu= 1.36e+05(s)
+ num eigs requested=512, number eigs converged =650, numArnoldiVectors=1025
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+
+
+
+ADD OPTON TO SET NUMBER OF ARNOLDI VECTORS
+
+
+cgwh -noplot eig.cmd -g=square128.order4 -nf=1 -adjustOmega=0 -ts=explicit -cfl=.9 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -eigenVectorFile=square128O4EigsEv512.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigenSolver=default -matlab=square128ImpEig12Num64 -minStepsPerPeriod=10 -freq=12  -numPeriods=1 -go=k -numEigs=64 -numArnoldi=-1
+
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.2000e+01, orderOfAccuracy=4, grid=square128
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.90, dt=4.292e-03, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=122, 
+  totalTimeStepsStaken=7808, aveItsPerImplicitSolve=  0.0
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 64, cpu= 1.20e+00(s)
+ num eigs requested=16, number eigs converged =16, numArnoldiVectors=33
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+
+
+
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 626, cpu= 2.12e+01(s)
+ num eigs requested=256, number eigs converged =267, numArnoldiVectors=475
+
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 747, cpu= 2.79e+01(s)
+ num eigs requested=256, number eigs converged =311, numArnoldiVectors=575
+
+**************************************
+****** Wed May 17, 2023
+
+
+VARY NUMBER OF REQUESTED:
+
+cgwh -noplot eig.cmd -g=square128.order4 -nf=1 -adjustOmega=0 -ts=explicit -cfl=.9 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -eigenVectorFile=square128O4EigsEv512.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigenSolver=default -matlab=square128ExpEig -minStepsPerPeriod=10 -freq=12  -numPeriods=1 -go=k -numEigs=1
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 1325, cpu= 7.38e+01(s)
+ num eigs requested=512, number eigs converged =571
+
+
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 675, cpu= 2.33e+01(s)
+ num eigs requested=256, number eigs converged =285
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 411, cpu= 1.06e+01(s)
+ num eigs requested=128, number eigs converged =154
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 130, cpu= 2.52e+00(s)
+ num eigs requested=32, number eigs converged =38
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 64, cpu= 1.15e+00(s)
+ num eigs requested=8, number eigs converged =9
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 64, cpu= 1.19e+00(s)
+ num eigs requested=16, number eigs converged =16
+
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 85, cpu= 1.49e+00(s)
+ num eigs requested=4, number eigs converged =4
+
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 333, cpu= 5.55e+00(s)
+ num eigs requested=2, number eigs converged =3
+
+
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 367, cpu= 6.76e+00(s)
+ num eigs requested=1, number eigs converged =1
+
+
+**************************************
+****** Wed May 17, 2023
+
+
+G1 TRY THIS FIRST:
+Np=8: omega=6 
+setsid $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride1.order2.hdf -bc3=neumann -nf=1 -adjustOmega=0 -ts=implicit -cfl=100000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=8 -eigenVectorFile=darkCornerRoom3dG1O2EigsEv512.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigTol=1e-4 -freq=6 -numEigs=128 -solveri=bcgs -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=darkCornerRoom3dG1O2EigsB.show -matlab=darkCornerRoom3dG1O2Eigs -go=ks > darkCornerRoom3dG1O2EigsFreq6.out
+
+
+**************************************
+****** Sun May 14, 2023
+
+TEST *NEW* Implicit first step
+
+Higher freq, look for more is better: 
+cgwh eig.cmd -g=cice4.order2.hdf -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=0 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=200 -numPeriods=1 -eigenVectorFile=cice4EigsEv64.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=4 -numEigs=24 -eigenSolver=default -go=halt
+
+>>> IMP first step : better
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  4.0000e+00, orderOfAccuracy=2, grid=cice4
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=1000.00, dt=1.571e-01, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=1120, aveItsPerImplicitSolve=  0.0
+ implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+ implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+ tol= 1.00e-12, number of wave-solves (mat-vecs) = 112, cpu= 2.40e+00(s)
+ num eigs requested=24, number eigs converged =25
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+
+  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res
+ .............................................................................
+  0  3.19615375e+00  [ 7]=3.19615375e+00   1  0.00e+00  1.35e-12  3.41e-11
+  1  3.51427024e+00  [ 8]=3.51427024e+00   1  3.41e-15  8.39e-14  8.54e-13
+  2  3.57608405e+00  [ 9]=3.57608405e+00   2  1.49e-15  1.27e-13  9.53e-13
+  3  3.57608449e+00  [10]=3.57608449e+00   2  0.00e+00  1.25e-13  8.37e-13
+
+
+>>>> OLD
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  4.0000e+00, orderOfAccuracy=2, grid=cice4
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=1000.00, dt=1.571e-01, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=1360, aveItsPerImplicitSolve=  0.0
+ implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+ implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+ tol= 1.00e-12, number of wave-solves (mat-vecs) = 136, cpu= 2.70e+00(s)
+ num eigs requested=24, number eigs converged =25
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+
+  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res
+ .............................................................................
+  0  3.19615375e+00  [ 7]=3.19615375e+00   1  3.89e-15  1.48e-13  9.96e-13
+  1  3.51427024e+00  [ 8]=3.51427024e+00   1  7.08e-15  2.22e-13  1.05e-12
+  2  3.57608405e+00  [ 9]=3.57608405e+00   2  1.99e-15  1.87e-13  8.17e-13
+  3  3.57608449e+00  [10]=3.57608449e+00   2  1.24e-15  2.02e-13  7.72e-13
+  4  3.66005433e+00  [11]=3.66005433e+00   1  2.79e-15  3.27e-13  9.24e-13
+  5  3.88235450e+00  [12]=3.88235450e+00   1  3.43e-15  1.37e-13  6.93e-13
+  6  4.15731755e+00  [13]=4.15731755e+00   2  2.14e-15  5.91e-13  5.46e-13
+
+ 
+
+
+G16 : 110K points 
+cgwh -noplot eig.cmd -g=sice16.order2.ml4 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=0 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -freq=6 -numEigs=16 -go=k
+
+>>> implicit first step : a few more mat-vects
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  6.0000e+00, orderOfAccuracy=2, grid=sice16
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=1000.00, dt=1.047e-01, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=970, aveItsPerImplicitSolve=  8.3
+ implict solver=multigrid, solver=[iterative solver + ]
+ implicit solver: rtol= 1.00e-12, atol= 1.00e-12
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 97, cpu= 8.27e+01(s)
+ num eigs requested=16, number eigs converged =16
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 5.1354462595e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.34e-10
+ i=1: lamRQ = 5.1354938006e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.31e-11
+ i=2: lamRQ = 5.5198898464e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.96e-10
+ i=3: lamRQ = 6.3798696625e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.47e-10
+
+
+
+>> OLD: 
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  6.0000e+00, orderOfAccuracy=2, grid=sice16
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=1000.00, dt=1.047e-01, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=880, aveItsPerImplicitSolve=  8.3
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 88, cpu= 7.17e+01(s)
+ num eigs requested=16, number eigs converged =16
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 3.8316428795e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.13e-10
+ i=1: lamRQ = 3.8316428795e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.39e-10
+ i=2: lamRQ = 5.1354462595e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.59e-10
+ i=3: lamRQ = 5.1354938006e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.04e-10
+ i=4: lamRQ = 5.5198898464e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.31e-11
+
+
+
+cgwh eig.cmd -g=square64.order2 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=100000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=square64EigsEv20.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=10 -numEigs=12 -eigenSolver=default -go=halt
+
+>>>> implicitFirstStep : one less wave-solve
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=2, grid=square64
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=100000.00, dt=6.283e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=590, aveItsPerImplicitSolve=  0.0
+ implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+ implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 59, cpu= 2.55e-01(s)
+ num eigs requested=12, number eigs converged =12
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+
+  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res
+ .............................................................................
+  0  7.02241710e+00  [ 2]=7.02241710e+00   2  1.14e-15  1.37e-14  6.16e-13
+  1  7.02241710e+00  [ 2]=7.02241710e+00   2  1.01e-15  1.22e-14  5.16e-13
+  2  8.88219783e+00  [ 3]=8.88219783e+00   1  2.00e-16  4.50e-14  2.15e-13
+  3  9.92641190e+00  [ 4]=9.92641190e+00   2  1.79e-16  1.61e-14  1.91e-13
+  4  9.92641190e+00  [ 5]=9.92641190e+00   2  8.95e-16  4.58e-13  2.32e-13
+  5  1.13186903e+01  [ 7]=1.13186903e+01   2  0.00e+00  1.95e-14  1.38e-13
+  6  1.13186903e+01  [ 7]=1.13186903e+01   2  7.85e-16  1.29e-14  1.75e-13
+  7  1.29334684e+01  [ 8]=1.29334684e+01   2  1.65e-15  3.83e-13  1.07e-13
+  8  1.29334684e+01  [ 8]=1.29334684e+01   2  1.24e-15  9.13e-14  1.29e-13
+  9  1.33166085e+01  [10]=1.33166085e+01   1  2.00e-15  2.31e-14  9.68e-14
+ 10  1.40304562e+01  [11]=1.40304562e+01   2  8.86e-16  1.14e-13  9.28e-14
+ 11  1.40304562e+01  [12]=1.40304562e+01   2  6.33e-16  2.39e-13  1.26e-13
+
+
+>>>>> OLD WAY: 
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=2, grid=square64
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=100000.00, dt=6.283e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=600, aveItsPerImplicitSolve=  0.0
+ implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+ implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 60, cpu= 2.44e-01(s)
+ num eigs requested=12, number eigs converged =12
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+
+  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res
+ .............................................................................
+  0  7.02241710e+00  [ 1]=7.02241710e+00   2  1.01e-15  1.28e-14  7.16e-13
+  1  7.02241710e+00  [ 1]=7.02241710e+00   2  3.79e-16  1.60e-14  5.23e-13
+  2  8.88219783e+00  [ 3]=8.88219783e+00   1  1.20e-15  7.79e-12  8.80e-12
+  3  9.92641190e+00  [ 4]=9.92641190e+00   2  8.95e-16  4.09e-14  1.05e-13
+  4  9.92641190e+00  [ 5]=9.92641190e+00   2  7.16e-16  4.66e-13  6.28e-13
+  5  1.13186903e+01  [ 6]=1.13186903e+01   2  3.14e-16  2.64e-14  2.52e-13
+  6  1.13186903e+01  [ 7]=1.13186903e+01   2  9.42e-16  8.44e-15  1.22e-13
+  7  1.29334684e+01  [ 8]=1.29334684e+01   2  1.37e-16  5.83e-12  3.06e-12
+  8  1.29334684e+01  [ 8]=1.29334684e+01   2  1.37e-16  2.51e-13  1.83e-13
+  9  1.33166085e+01  [10]=1.33166085e+01   1  1.47e-15  4.43e-14  9.88e-14
+ 10  1.40304562e+01  [11]=1.40304562e+01   2  8.86e-16  2.60e-13  2.08e-13
+ 11  1.40304562e+01  [12]=1.40304562e+01   2  1.77e-15  1.14e-13  1.17e-13
+ .............................................................................
+
 
 **************************************
 ****** Fri May 12, 2023
 
-G2 : TO DO 
-setsid $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride2.order2.hdf -bc3=neumann -nf=1 -adjustOmega=0 -ts=implicit -cfl=100000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=4 -eigenVectorFile=darkCornerRoom3dG2O2EigsEv512.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigTol=1e-4 -freq=3.5 -numEigs=128 -solveri=bcgs -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=darkCornerRoom3dG2O2Eigs.show -matlab=darkCornerRoom3dG2O2Eigs -go=ks > darkCornerRoom3dG2O2EigsFreq3p5.out
+
 
 
 
@@ -245,7 +596,7 @@ cgwh eig.cmd -g=sice8.order2.ml3 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -or
 
 
 G4 DISK ORDER 2 + MG 
-cgwh eig.cmd -g=sice4.order2.ml3 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG4O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -freq=6 -numEigs=16 -go=halt
+cgwh -eig.cmd -g=sice4.order2.ml3 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG4O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -freq=6 -numEigs=16 -go=halt
 
 
 -----------------------------------------------------------------------------

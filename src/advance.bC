@@ -80,27 +80,29 @@ extern "C"
   if( computeEigenmodes )  // *wdh* March 28, 2023
     addForcing=0;
 
-  // printF("advance: preComputeUpwindUt=%d\n",preComputeUpwindUt); 
+  const bool takeFirstStepImplicit = step==0 && timeSteppingMethod==implicitTimeStepping &&  takeImplicitFirstStep; 
 
-  int ipar[]={option,                        // ipar[ 0]
-              grid,                          // ipar[ 1]
-              gridType,                      // ipar[ 2]
-              orderOfAccuracyInSpace,        // ipar[ 3]
-              orderOfAccuracyInTime,         // ipar[ 4]
-              (int)addForcing,               // ipar[ 5]
-              (int)forcingOption,            // ipar[ 6]
-              numberOfForcingFunctions,      // ipar[ 7]
-              fCurrent,                      // ipar[ 8] 
-              debug,                         // ipar[ 9]
-              gridIsImplicit(grid),          // ipar[10]
-              useUpwindDissipation,          // ipar[11]
-              useImplicitUpwindDissipation,  // ipar[12]
-              preComputeUpwindUt,            // ipar[13]
-              numberOfFrequencies,           // ipar[14]
-              adjustOmega,
-              solveHelmholtz,                // ipar[16]
-              adjustHelmholtzForUpwinding,   // ipar[17]
-              modifiedEquationApproach      // ipar[18]
+  // printF("advance: preComputeUpwindUt=%d\n",preComputeUpwindUt); 
+  int ipar[]={option,                          // ipar[ 0]
+              grid,                            // ipar[ 1]
+              gridType,                        // ipar[ 2]
+              orderOfAccuracyInSpace,          // ipar[ 3]
+              orderOfAccuracyInTime,           // ipar[ 4]
+              (int)addForcing,                 // ipar[ 5]
+              (int)forcingOption,              // ipar[ 6]
+              numberOfForcingFunctions,        // ipar[ 7]
+              fCurrent,                        // ipar[ 8] 
+              debug,                           // ipar[ 9]
+              gridIsImplicit(grid),            // ipar[10]
+              useUpwindDissipation,            // ipar[11]
+              useImplicitUpwindDissipation,    // ipar[12]
+              preComputeUpwindUt,              // ipar[13]
+              numberOfFrequencies,             // ipar[14]
+              adjustOmega,                     // ipar[1]
+              solveHelmholtz,                  // ipar[16]
+              adjustHelmholtzForUpwinding,     // ipar[17]
+              modifiedEquationApproach,        // ipar[18]
+              takeFirstStepImplicit            // ipar[19]
                           };  //
 
   real dx[3]={1.,1.,1.};
@@ -335,266 +337,11 @@ extern "C"
   }
 #endMacro
 
-
-
-
-
-// ================================================================================================
-/// \brief Advance the solution 
-/// This is the main advance routine for cgWave.
-/// \param it (input) : iteration number when solving a Helmholtz problem.
-// ================================================================================================
-int CgWave::
-advance( int it )
-{
-  real time0=getCPU();
-  const int & myid = dbase.get<int>("myid");
-  const int & np = dbase.get<int>("np");
-
-  int & iteration = dbase.get<int>("iteration");
-  iteration=it;
-
-  const int & debug  = dbase.get<int>("debug");
-  FILE *& debugFile  = dbase.get<FILE*>("debugFile");
-  FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
-
-  GenericGraphicsInterface & ps = gi;
-  PlotStuffParameters psp;
-
-  Real & c                          = dbase.get<real>("c");
-  Real & cfl                        = dbase.get<real>("cfl");
-  Real & tFinal                     = dbase.get<real>("tFinal");
-  Real & tPlot                      = dbase.get<real>("tPlot");
-  Real & dtMax                      = dbase.get<Real>("dtMax"); 
-
-  const int & upwind                = dbase.get<int>("upwind");
-  const int & implicitUpwind        = dbase.get<int>("implicitUpwind");
-
-  const int & dissipationFrequency  = dbase.get<int>("dissipationFrequency");
-  // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
-  //                      false=compute Ut inline in Gauss-Seidel fashion  
-  int & preComputeUpwindUt = dbase.get<int>("preComputeUpwindUt");
-                        
-
-  real & dt                         = dbase.get<real>("dt");
-  real & dtUsed                     = dbase.get<real>("dtUsed");  // dt actually used
-  RealArray & gridCFL               = dbase.get<RealArray>("gridCFL");
-  const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
-  const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");
-  int & interactiveMode             = dbase.get<int>("interactiveMode");
-  int & computeErrors               = dbase.get<int>("computeErrors"); 
-
-  int & plotOptions                 = dbase.get<int>("plotOptions");
-  int & plotChoices                 = dbase.get<int>("plotChoices");
-  int & plotFrequency               = dbase.get<int>("plotFrequency");
-  
-  const int & solveHelmholtz              = dbase.get<int>("solveHelmholtz");
-  const int & computeTimeIntegral         = dbase.get<int>("computeTimeIntegral");
-  const int & adjustOmega                 = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
-  const int & adjustHelmholtzForUpwinding = dbase.get<int>("adjustHelmholtzForUpwinding");
-  const int & deflateWaveHoltz            = dbase.get<int>("deflateWaveHoltz");
-  const int & numToDeflate                = dbase.get<int>("numToDeflate");
-  const aString & eigenVectorFile         = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
-  const int & computeEigenmodes           = dbase.get<int>("computeEigenmodes");
-  const int & computeEigenmodesWithSLEPc  = dbase.get<int>("computeEigenmodesWithSLEPc");
-
-  real & omega                      = dbase.get<real>("omega");
-  real & Tperiod                    = dbase.get<real>("Tperiod");
-  int & numPeriods                  = dbase.get<int>("numPeriods");
-  real & omegaSave                  = dbase.get<real>("omegaSave");
-  real & TperiodSave                = dbase.get<real>("TperiodSave");  
-  real & dtSave                     = dbase.get<real>("dtSave");
-
-  const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
-  RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
-  RealArray & frequencyArrayAdjusted= dbase.get<RealArray>("frequencyArrayAdjusted");
-  RealArray & periodArray           = dbase.get<RealArray>("periodArray"); 
-  RealArray & periodArrayAdjusted   = dbase.get<RealArray>("periodArrayAdjusted"); 
-  IntegerArray & numPeriodsArray    = dbase.get<IntegerArray>("numPeriodsArray");
-  RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
-  RealArray & periodArraySave       = dbase.get<RealArray>("periodArraySave");     
-
-  int & addForcing                  = dbase.get<int>("addForcing");
-  ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
-
-  const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep");
-
-  const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
-
-  const ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
-
-  IntegerArray & gridIsImplicit     = dbase.get<IntegerArray>("gridIsImplicit");
-  const RealArray & bImp            = dbase.get<RealArray>("bImp");
-  const RealArray & cImp            = dbase.get<RealArray>("cImp");
-
-  real & solutionNorm               = dbase.get<real>("solutionNorm");  // save solution norm here 
-
-  int & current = dbase.get<int>("current"); // hold the current solution index
-
-  realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
-  CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
-  Interpolant *& pInterpolant = dbase.get<Interpolant*>("pInterpolant");
-  assert( pInterpolant!=NULL );
-  Interpolant & interpolant = *pInterpolant;
-
-  realCompositeGridFunction & f = dbase.get<realCompositeGridFunction>("f");
-  
-  BoundaryConditionParameters bcParams;
-  
-  BCTypes::BCNames boundaryCondition=BCTypes::evenSymmetry; 
-  // BCTypes::BCNames boundaryCondition=BCTypes::dirichlet;
-
-  Index I1,I2,I3;
-
-  if( modifiedEquationApproach==hierarchicalModifiedEquation ||
-      modifiedEquationApproach==stencilModifiedEquation )
-  {
-    // -- We compute and save the coefficients in the Laplacian for the hierachical approach --
-
-    if( orderOfAccuracy!=orderOfAccuracyInTime )
-    {
-      printF("ERROR: modified equation hierachical scheme currently needs orderOfAccuracy=orderOfAccuracyInTime,\n");
-      printF("   *but*  orderOfAccuracy=%d, orderOfAccuracyInTime=%d\n",orderOfAccuracy,orderOfAccuracyInTime);
-      OV_ABORT("error");
-    }
-    
-    if( !dbase.has_key("lapCoeff") )
-    {
-      RealArray *& lapCoeff = dbase.put<RealArray*>("lapCoeff");
-      lapCoeff = new RealArray[cg.numberOfComponentGrids()];           
-      // 2D: c200, c110, c020, c100, c010
-      // 3D: c200, c020, c002, c110, c101, c011, c100, c010, c001
-      const int numCoeff = cg.numberOfDimensions()==2 ? 5 : 9;    
-      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-      {
-        lapCoeff[grid]=NULL;
-        const bool isRectangular = cg[grid].isRectangular();
-        if( !isRectangular )
-        {
-          getIndex(cg[grid].dimension(),I1,I2,I3);
-          lapCoeff[grid].redim(I1,I2,I3,numCoeff);
-          lapCoeff[grid]=-1.; // this means the coefficients have not yet been set
-        }
-      }
-    }
-    if( modifiedEquationApproach==stencilModifiedEquation )
-    {
-      if( !dbase.has_key("stencilCoeff") )
-      {
-        RealArray *& stencilCoeff = dbase.put<RealArray*>("stencilCoeff");
-        stencilCoeff = new RealArray[cg.numberOfComponentGrids()];        
-
-        int stencilWidth = orderOfAccuracy+1;
-        int numStencilCoeff;
-        if( cg.numberOfDimensions()==2 )
-          numStencilCoeff= stencilWidth*stencilWidth;
-        else
-          numStencilCoeff= stencilWidth*stencilWidth*stencilWidth;
-        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-        {
-          stencilCoeff[grid]=NULL;
-          const bool isRectangular = cg[grid].isRectangular();
-          if( !isRectangular )
-          {
-            getIndex(cg[grid].dimension(),I1,I2,I3);
-            stencilCoeff[grid].redim(numStencilCoeff,I1,I2,I3);
-            stencilCoeff[grid]=-1.; // this means the coefficients have not yet been set
-          }
-        }        
-
-      }
-    }
-  }
-  RealArray *lapCoeff = modifiedEquationApproach==standardModifiedEquation ? NULL : dbase.get<RealArray*>("lapCoeff");
-  RealArray *stencilCoeff = modifiedEquationApproach!=stencilModifiedEquation ? NULL : dbase.get<RealArray*>("stencilCoeff");
-
-  real t=0.;
-  // real dtSquared = SQR(dt);
-  real cSquared=c*c;
-    
-  // if( false )
-  // {
-  //   Tperiod = numPeriods*twoPi/omega;
-  //   tFinal=Tperiod;
-  //   tPlot=Tperiod/10.;  // plot this often
-  // }
-  
-  if( !(plotOptions==noPlotting || plotOptions==plotAndWait || plotOptions==plotNoWait) )
-  {
-    printF("ERROR: invalid plotOptions=%d \n",plotOptions);
-    OV_ABORT("ERROR");
-  }
-  GUIState *& runTimeDialog = dbase.get<GUIState*>("runTimeDialog");
-  if( plotOptions != noPlotting )
-  {
-     // ---- Build the run-time dialog if plotting is on ----
-    if( runTimeDialog==NULL )
-    {
-      buildRunTimeDialog();
-    }
-    GUIState & dialog = *runTimeDialog;
-    ps.pushGUI(dialog);
-  }
-
-  
-
-
-  // estimated number of time steps: (for output)
-  // int numberOfTimeSteps=int( tFinal/dt+.5);
-
-  const int maxNumberOfTimeSteps=1e10; 
-  
-  // adjust dt to reach tFinal
-  // dt = tFinal/numberOfTimeSteps;
-
-  // --- choose dt so we reach the next time to plot ---
-  Real nextTimeToPlot = min(tPlot,tFinal);
-
-  // Currenly we need to make sure that dt is constant when solving Helmholtz (for the accuracy of the time integral)
-  if( solveHelmholtz )
-      nextTimeToPlot=tFinal;
-
-  // For now we do not adjust dt when using implicit time-stepping:
-  bool adjustTimeStep = timeSteppingMethod==explicitTimeStepping;
-
-  // NOTE: dtMax is the initial time-step determined by getTimeStep
-  int numPlotSteps    =  ceil( nextTimeToPlot/dtMax );  // max number of steps 
-
-  if( solveHelmholtz && timeSteppingMethod == implicitTimeStepping )
-  { 
-    // For implicit time-stepping we must take at least 5 steps per period when we adjust omega and dt
-    // numPlotSteps = max(5*numPeriods,numPlotSteps);
-
-    const int & minStepsPerPeriod = dbase.get<int>("minStepsPerPeriod");
-
-    // Note: numPlotsSteps is per period
-    if( numberOfFrequencies==1 )
-    {
-      numPlotSteps = max(minStepsPerPeriod,numPlotSteps);
-    }
-    else
-    {
-      // we need at least 5 steps for the smallest period
-      const Real minFreq = min(frequencyArray);  // should be frequencyArray(0)
-      const Real maxFreq = max(frequencyArray);
-      const Real Tmax = twoPi/minFreq;  // longest period
-      const Real Tmin = twoPi/maxFreq;  // shortest period
-      int minSteps = ceil( minStepsPerPeriod*Tmax/Tmin ); // is this correct
-      // printF("### Tmax=%12.4e, Tmin=%12.4e, Tmax/Tmin=%12.4e, minSteps=%d\n",Tmax,Tmin,Tmax/Tmin,minSteps);
-      numPlotSteps = max(minSteps,numPlotSteps);
-    }
-
-    // printF("###(1) numPlotSteps=%d\n",numPlotSteps);
-  }
-
-  // // The number of plot steps should be a multiple of the number of periods.
-  // if( solveHelmholtz && (numPlotSteps % numPeriods) != 0  )
-  // {
-  //   numPlotSteps += numPeriods - (numPlotSteps % numPeriods); 
-  //   printF("###(2) numPlotSteps=%d\n",numPlotSteps);
-  // }
-
-
+// ===========================================================================
+// Macro:
+//   Adjust the time-step and frequencies/periods for WaveHoltz and EigenWave
+// ===========================================================================
+#beginMacro adjustTimeStepAndFrequenciesMacro()
   if( true || adjustTimeStep )
   {
     dt = nextTimeToPlot/numPlotSteps;  
@@ -793,45 +540,24 @@ advance( int it )
 
     // OV_ABORT("stop here for now");
   }
-
-
   if( debug & 2 )
     printF("CgWave:advance: nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e)\n",
            nextTimeToPlot,numPlotSteps, dt,dtMax);
 
-  // int plotSteps = (int)max(1.,tPlot/dt+.5);
-  // plotSteps=10;
-  
-  //  const int showSteps = (int)max(1.,tShow/dt+.5);
-  // Put these in class:
-  // real timeForLaplace=0, timeForBoundaryConditions=0., timeForUpdateGhostBoundaries=0.,
-  //   timeForInterpolate=0., timeForAdvance=0., timeForGetLocalArray=0.,
-  //   timeForFinishBoundaryConditions=0.;
-      
-  printF("CgWave::advance: c=%g, numberOfFrequencies=%d, omega=%g, Tperiod=%g, numPeriods=%d, tFinal=%g, plotOptions=%d\n",
-         c,numberOfFrequencies,omega,Tperiod,numPeriods,tFinal,plotOptions);
+
+  if( (debug & 2) && solveHelmholtz )   
+    printF("CgWave::advance: c=%g, numberOfFrequencies=%d, omega=%g, Tperiod=%g, numPeriods=%d, tFinal=%g, plotOptions=%d\n",
+           c,numberOfFrequencies,omega,Tperiod,numPeriods,tFinal,plotOptions);
 
 
-  int i1,i2,i3;
+#endMacro
 
-  const bool takeForwardInitialStep=true; // false; // true; // *new* way : July 26, 2021
 
-  int step=-1;
-  t=0.;
-
-  const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
-  const int cur = 0; // current time level
-  const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
-  const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
-
-  realCompositeGridFunction & u1 = u[cur];     // current time 
-  realCompositeGridFunction & u2 = u[prev];    // previous time
-
-  // u1=0.;
-  // u2=0.;
-  // u[next]=0.; // initialize so there are valid values in all ghost (for WaveHoltz PETSc solver)
-
-  // ----- Initial Conditions -----
+// ===========================================================================
+// Macro:
+//   Assign the solution at t=0 
+// ===========================================================================
+#beginMacro assignInitialSolutionMacro()
   if( !solveHelmholtz )
   {
     getInitialConditions( cur,t );
@@ -902,43 +628,305 @@ advance( int it )
       }  
     }
 
-
-    // if( solveHelmholtz && deflateWaveHoltz )
-    // {
-    //   // *** PUT THIS HERE FOR NOW ****
-    //   checkDeflation();
-
-    // }
-
   }
+#endMacro
+
+// ================================================================================================
+/// \brief Advance the solution 
+/// This is the main advance routine for cgWave.
+/// \param it (input) : iteration number when solving a Helmholtz problem.
+// ================================================================================================
+int CgWave::
+advance( int it )
+{
+  real time0=getCPU();
+  const int & myid = dbase.get<int>("myid");
+  const int & np = dbase.get<int>("np");
+
+  int & iteration = dbase.get<int>("iteration");
+  iteration=it;
+
+  const int & debug  = dbase.get<int>("debug");
+  FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+  FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
+
+  GenericGraphicsInterface & ps = gi;
+  PlotStuffParameters psp;
+
+  Real & c                          = dbase.get<real>("c");
+  Real & cfl                        = dbase.get<real>("cfl");
+  Real & tFinal                     = dbase.get<real>("tFinal");
+  Real & tPlot                      = dbase.get<real>("tPlot");
+  Real & dtMax                      = dbase.get<Real>("dtMax"); 
+
+  const int & upwind                = dbase.get<int>("upwind");
+  const int & implicitUpwind        = dbase.get<int>("implicitUpwind");
+
+  const int & dissipationFrequency  = dbase.get<int>("dissipationFrequency");
+  // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
+  //                      false=compute Ut inline in Gauss-Seidel fashion  
+  int & preComputeUpwindUt = dbase.get<int>("preComputeUpwindUt");
 
 
-  // ----- FIRST STEP ------  
+  real & dt                         = dbase.get<real>("dt");
+  real & dtUsed                     = dbase.get<real>("dtUsed");  // dt actually used
+  RealArray & gridCFL               = dbase.get<RealArray>("gridCFL");
+  const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");
+  int & interactiveMode             = dbase.get<int>("interactiveMode");
+  int & computeErrors               = dbase.get<int>("computeErrors"); 
 
-  if( takeForwardInitialStep )
+  int & plotOptions                 = dbase.get<int>("plotOptions");
+  int & plotChoices                 = dbase.get<int>("plotChoices");
+  int & plotFrequency               = dbase.get<int>("plotFrequency");
+  
+  const int & solveHelmholtz              = dbase.get<int>("solveHelmholtz");
+  const int & computeTimeIntegral         = dbase.get<int>("computeTimeIntegral");
+  const int & adjustOmega                 = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  const int & adjustHelmholtzForUpwinding = dbase.get<int>("adjustHelmholtzForUpwinding");
+  const int & deflateWaveHoltz            = dbase.get<int>("deflateWaveHoltz");
+  const int & numToDeflate                = dbase.get<int>("numToDeflate");
+  const aString & eigenVectorFile         = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
+  const int & computeEigenmodes           = dbase.get<int>("computeEigenmodes");
+  const int & computeEigenmodesWithSLEPc  = dbase.get<int>("computeEigenmodesWithSLEPc");
+
+  real & omega                      = dbase.get<real>("omega");
+  real & Tperiod                    = dbase.get<real>("Tperiod");
+  int & numPeriods                  = dbase.get<int>("numPeriods");
+  real & omegaSave                  = dbase.get<real>("omegaSave");
+  real & TperiodSave                = dbase.get<real>("TperiodSave");  
+  real & dtSave                     = dbase.get<real>("dtSave");
+
+  const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
+  RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+  RealArray & frequencyArrayAdjusted= dbase.get<RealArray>("frequencyArrayAdjusted");
+  RealArray & periodArray           = dbase.get<RealArray>("periodArray"); 
+  RealArray & periodArrayAdjusted   = dbase.get<RealArray>("periodArrayAdjusted"); 
+  IntegerArray & numPeriodsArray    = dbase.get<IntegerArray>("numPeriodsArray");
+  RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+  RealArray & periodArraySave       = dbase.get<RealArray>("periodArraySave");     
+
+  int & addForcing                  = dbase.get<int>("addForcing");
+  ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
+
+  const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep");
+  const int & takeImplicitFirstStep         = dbase.get<int>("takeImplicitFirstStep");
+
+  const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+
+  const ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
+
+  IntegerArray & gridIsImplicit     = dbase.get<IntegerArray>("gridIsImplicit");
+  const RealArray & bImp            = dbase.get<RealArray>("bImp");
+  const RealArray & cImp            = dbase.get<RealArray>("cImp");
+
+  real & solutionNorm               = dbase.get<real>("solutionNorm");  // save solution norm here 
+
+  int & current = dbase.get<int>("current"); // hold the current solution index
+
+  realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
+  CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
+  Interpolant *& pInterpolant = dbase.get<Interpolant*>("pInterpolant");
+  assert( pInterpolant!=NULL );
+  Interpolant & interpolant = *pInterpolant;
+
+  realCompositeGridFunction & f = dbase.get<realCompositeGridFunction>("f");
+  
+  BoundaryConditionParameters bcParams;
+  
+  BCTypes::BCNames boundaryCondition=BCTypes::evenSymmetry; 
+  // BCTypes::BCNames boundaryCondition=BCTypes::dirichlet;
+
+  Index I1,I2,I3;
+
+  if( modifiedEquationApproach==hierarchicalModifiedEquation ||
+      modifiedEquationApproach==stencilModifiedEquation )
   {
-    if( forcingOption==helmholtzForcing )
-      takeFirstStep( cur, t ); // -- NOTE: for now initial step is only called for Helmholtz problems *fix me*
-    else
+    // -- We compute and save the coefficients in the Laplacian for the hierachical approach --
+
+    if( orderOfAccuracy!=orderOfAccuracyInTime )
     {
-      if( !useKnownSolutionForFirstStep && timeSteppingMethod==explicitTimeStepping 
-          && orderOfAccuracy < 8 ) // do this for now 
-      { // *new* wdh Nov 19, 2021
-        takeFirstStep( cur, t ); 
+      printF("ERROR: modified equation hierachical scheme currently needs orderOfAccuracy=orderOfAccuracyInTime,\n");
+      printF("   *but*  orderOfAccuracy=%d, orderOfAccuracyInTime=%d\n",orderOfAccuracy,orderOfAccuracyInTime);
+      OV_ABORT("error");
+    }
+    
+    if( !dbase.has_key("lapCoeff") )
+    {
+      RealArray *& lapCoeff = dbase.put<RealArray*>("lapCoeff");
+      lapCoeff = new RealArray[cg.numberOfComponentGrids()];           
+      // 2D: c200, c110, c020, c100, c010
+      // 3D: c200, c020, c002, c110, c101, c011, c100, c010, c001
+      const int numCoeff = cg.numberOfDimensions()==2 ? 5 : 9;    
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      {
+        lapCoeff[grid]=NULL;
+        const bool isRectangular = cg[grid].isRectangular();
+        if( !isRectangular )
+        {
+          getIndex(cg[grid].dimension(),I1,I2,I3);
+          lapCoeff[grid].redim(I1,I2,I3,numCoeff);
+          lapCoeff[grid]=-1.; // this means the coefficients have not yet been set
+        }
       }
-      else
-      { // Just get solution at t=dt from IC function
-        getInitialConditions( next,t+dt );
+    }
+    if( modifiedEquationApproach==stencilModifiedEquation )
+    {
+      if( !dbase.has_key("stencilCoeff") )
+      {
+        RealArray *& stencilCoeff = dbase.put<RealArray*>("stencilCoeff");
+        stencilCoeff = new RealArray[cg.numberOfComponentGrids()];        
+
+        int stencilWidth = orderOfAccuracy+1;
+        int numStencilCoeff;
+        if( cg.numberOfDimensions()==2 )
+          numStencilCoeff= stencilWidth*stencilWidth;
+        else
+          numStencilCoeff= stencilWidth*stencilWidth*stencilWidth;
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+          stencilCoeff[grid]=NULL;
+          const bool isRectangular = cg[grid].isRectangular();
+          if( !isRectangular )
+          {
+            getIndex(cg[grid].dimension(),I1,I2,I3);
+            stencilCoeff[grid].redim(numStencilCoeff,I1,I2,I3);
+            stencilCoeff[grid]=-1.; // this means the coefficients have not yet been set
+          }
+        }        
+
       }
     }
   }
+  RealArray *lapCoeff = modifiedEquationApproach==standardModifiedEquation ? NULL : dbase.get<RealArray*>("lapCoeff");
+  RealArray *stencilCoeff = modifiedEquationApproach!=stencilModifiedEquation ? NULL : dbase.get<RealArray*>("stencilCoeff");
+
+  real t=0.;
+  // real dtSquared = SQR(dt);
+  real cSquared=c*c;
+    
+  // if( false )
+  // {
+  //   Tperiod = numPeriods*twoPi/omega;
+  //   tFinal=Tperiod;
+  //   tPlot=Tperiod/10.;  // plot this often
+  // }
+  
+  if( !(plotOptions==noPlotting || plotOptions==plotAndWait || plotOptions==plotNoWait) )
+  {
+    printF("ERROR: invalid plotOptions=%d \n",plotOptions);
+    OV_ABORT("ERROR");
+  }
+  GUIState *& runTimeDialog = dbase.get<GUIState*>("runTimeDialog");
+  if( plotOptions != noPlotting )
+  {
+     // ---- Build the run-time dialog if plotting is on ----
+    if( runTimeDialog==NULL )
+    {
+      buildRunTimeDialog();
+    }
+    GUIState & dialog = *runTimeDialog;
+    ps.pushGUI(dialog);
+  }
+
+  // estimated number of time steps: (for output)
+  // int numberOfTimeSteps=int( tFinal/dt+.5);
+
+  const int maxNumberOfTimeSteps=1e10; 
+  
+  // adjust dt to reach tFinal
+  // dt = tFinal/numberOfTimeSteps;
+
+  // --- choose dt so we reach the next time to plot ---
+  Real nextTimeToPlot = min(tPlot,tFinal);
+
+  // Currenly we need to make sure that dt is constant when solving Helmholtz (for the accuracy of the time integral)
+  if( solveHelmholtz )
+      nextTimeToPlot=tFinal;
+
+  // For now we do not adjust dt when using implicit time-stepping:
+  bool adjustTimeStep = timeSteppingMethod==explicitTimeStepping;
+
+  // NOTE: dtMax is the initial time-step determined by getTimeStep
+  int numPlotSteps    =  ceil( nextTimeToPlot/dtMax );  // max number of steps 
+
+  if( solveHelmholtz && timeSteppingMethod == implicitTimeStepping )
+  { 
+    // For implicit time-stepping we must take at least 5 steps per period when we adjust omega and dt
+    // numPlotSteps = max(5*numPeriods,numPlotSteps);
+
+    const int & minStepsPerPeriod = dbase.get<int>("minStepsPerPeriod");
+
+    // Note: numPlotsSteps is per period
+    if( numberOfFrequencies==1 )
+    {
+      numPlotSteps = max(minStepsPerPeriod,numPlotSteps);
+    }
+    else
+    {
+      // we need at least 5 steps for the smallest period
+      const Real minFreq = min(frequencyArray);  // should be frequencyArray(0)
+      const Real maxFreq = max(frequencyArray);
+      const Real Tmax = twoPi/minFreq;  // longest period
+      const Real Tmin = twoPi/maxFreq;  // shortest period
+      int minSteps = ceil( minStepsPerPeriod*Tmax/Tmin ); // is this correct
+      // printF("### Tmax=%12.4e, Tmin=%12.4e, Tmax/Tmin=%12.4e, minSteps=%d\n",Tmax,Tmin,Tmax/Tmin,minSteps);
+      numPlotSteps = max(minSteps,numPlotSteps);
+    }
+
+    // printF("###(1) numPlotSteps=%d\n",numPlotSteps);
+  }
+
+
+  // --------------------------------------------------------------------------------
+  // --- Adjust the time-step and frequencies/periods for WaveHoltz and EigenWave ---
+  // --------------------------------------------------------------------------------
+  adjustTimeStepAndFrequenciesMacro(); 
+
+
+  int i1,i2,i3;
+
+  // const bool takeForwardInitialStep=true; // false; // true; // *new* way : July 26, 2021
+
+  int step=-1;
+  t=0.;
+
+  const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
+  const int cur = 0; // current time level
+  const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+  const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+
+  realCompositeGridFunction & u1 = u[cur];     // current time 
+  realCompositeGridFunction & u2 = u[prev];    // previous time
+
+  // u1=0.;
+  // u2=0.;
+  // u[next]=0.; // initialize so there are valid values in all ghost (for WaveHoltz PETSc solver)
+
+  // -------------------------------------------------------------
+  // -------------- Initial Conditions : u1 = u(t=0) -------------
+  // -------------------------------------------------------------
+  assignInitialSolutionMacro();
+
+  // --------------------------------------------
+  // --------------- FIRST STEP -----------------  
+  // --------------------------------------------
+  if( forcingOption==helmholtzForcing )
+  {
+    takeFirstStep( cur, t ); // -- NOTE: for now initial step is only called for Helmholtz problems *fix me*
+  }
   else
   {
-   // test backward step 
-    if( forcingOption==helmholtzForcing )
-      takeFirstBackwardStep( cur, t );
+    if( !useKnownSolutionForFirstStep 
+        && ( timeSteppingMethod==explicitTimeStepping || takeImplicitFirstStep )
+        && orderOfAccuracy < 8 ) // do this for now 
+    { // *new* wdh Nov 19, 2021
+      takeFirstStep( cur, t ); 
+    }
     else
-      getInitialConditions( prev,t-dt );
+    { // Just get solution at t=dt from IC function
+      getInitialConditions( next,t+dt );
+    }
   }
 
 
@@ -975,7 +963,7 @@ advance( int it )
     // vOld : current guess for Helmholtz solution 
     realCompositeGridFunction & vOld = solveHelmholtz ?  dbase.get<realCompositeGridFunction>("vOld") : u[prev];
 
-    if( step==0 && takeForwardInitialStep )
+    if( step==0 && !takeImplicitFirstStep )
     {
       // --- first step has already been taken ----
        t+=dt;
@@ -983,10 +971,16 @@ advance( int it )
          printF("Skip first step since set to exact, or used time-periodic\n");
     }
     else
-    { // ------ take a time-step -----
+    { 
+
+
+      // ----------------------------------------------
+      // ---------------- take a time-step ------------
+      // ----------------------------------------------
+
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
       {
-        if( debug & 4 ) printf("Advance grid %i, step=%i...\n",grid,step);
+        if( debug & 4 ) printF("Advance grid %i, step=%i, ...\n",grid,step);
             
         MappedGrid & mg = cg[grid];
         
@@ -1029,7 +1023,8 @@ advance( int it )
         // 
         // Note: We need step>0 below since we need 3 levels of the solution to apply the upwind dissipation.
         // Note: Add upwinding at least 2 steps in a row 
-        bool startUpwinding = (takeForwardInitialStep && step>1) || (!takeForwardInitialStep && step>0); 
+        // bool startUpwinding = (takeForwardInitialStep && step>1) || (!takeForwardInitialStep && step>0); 
+        bool startUpwinding = step>1;
         if( startUpwinding && useUpwindDissipation &&
                !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added with option=0 below
                ( (step % dissipationFrequency)==0 ) ||
@@ -1052,17 +1047,26 @@ advance( int it )
           int option = 1;    // 0=advance, 1=add dissipation
           callOptimizedAdvance();
   
-          if( TRUE )  // turned on for cic order 8 -- byt may just need to avoid extrapolating last ghost point ++++++++++++++++++++++ FIX
+          // --- THIS NEXT SECTION IS NOT CORRECT SINCE applyBC does **ALL** grids  **FIX ME**
+          if( FALSE ) // ** TURN THIS OFF June 13, 2023  **CHECK ME**
           {
-            // testing: apply BC's after dissipation is added
+            if( TRUE )  // turned on for cic order 8 -- byt may just need to avoid extrapolating last ghost point ++++++++++++++++++++++ FIX
+            {
+              // testing: apply BC's after dissipation is added
 
-            applyBoundaryConditions( u[cur],t);  // 
-          }   
+              applyBoundaryConditions( u[cur],t);  // 
+            }   
+            else
+            {
+              u[cur].periodicUpdate(); // *wdh* Aug 14, 2021 -- this may be needed 
+            } 
+          }
           else
           {
-            u[cur].periodicUpdate(); // *wdh* Aug 14, 2021 -- this may be needed 
-          }    
+            u[cur][grid].periodicUpdate();  // this may be needed?
+          }   
         }
+
   
         // -- optimized advance ---
         OV_GET_SERIAL_ARRAY(real,u[prev][grid],umLocal);

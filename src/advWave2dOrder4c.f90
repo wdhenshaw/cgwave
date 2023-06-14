@@ -43,7 +43,7 @@
     real dx2i,dy2i,dz2i,dxsqi,dysqi,dzsqi,dxi,dyi,dzi
     real dx12i,dy12i,dz12i,dxsq12i,dysq12i,dzsq12i,dxy4i,dxz4i,dyz4,time0,time1
     real dxi4,dyi4,dzi4,dxdyi2,dxdzi2,dydzi2
-    real c0,c1,csq,dtsq,cdtsq,cdtsq12,cdtSqBy12
+    real c0,c1,csq,dtSq,cdtSq,cdtsq12,cdtSqBy12
     real gridCFL
     integer maxOrderOfAccuracy
     parameter( maxOrderOfAccuracy=12 )
@@ -2286,8 +2286,10 @@ real uzzzzzz
     integer idv(0:2),j1,j2,j3
     integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r
     integer useUpwindDissipation,useImplicitUpwindDissipation,adjustOmega,solveHelmholtz
+    integer takeImplicitFirstStep
     real upw,maxDiff,umj
     real upwindCoeff(-3:3,0:3) 
+    real ts1,ts2,ts3,ts4,tsf
     integer forcingOption
     ! forcingOptions -- these should match ForcingEnum in CgWave.h 
     ! enum ForcingOptionEnum
@@ -3474,6 +3476,7 @@ real uzzzzzz
      solveHelmholtz               = ipar(16)
      adjustHelmholtzForUpwinding  = ipar(17)
      modifiedEquationApproach     = ipar(18)
+     takeImplicitFirstStep        = ipar(19)
      fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
      fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
      ! ** fix me ***
@@ -3501,17 +3504,17 @@ real uzzzzzz
      ! addDissipation = adc.gt.0.
      ! adcdt=adc*dt
      csq=cc**2
-     dtsq=dt**2
-     cdtsq=(cc**2)*(dt**2)
+     dtSq=dt**2
+     cdtSq=(cc**2)*(dt**2)
      cdt=cc*dt
      ! new: 
      cdtPow4By12  = cdt**4/12.
      cdtPow6By360 = cdt**6/360 
-     cdtsq12=cdtsq*cdtsq/12.  ! c^4 dt^4 /12 
+     cdtsq12=cdtSq*cdtSq/12.  ! c^4 dt^4 /12 
      ! cdt4by360=(cdt)**4/360.  ! (c*dt)^4/360 
      ! cdt6by20160=cdt**6/(8.*7.*6.*5.*4.*3.)
-     cdtSqBy12= cdtsq/12.   ! c^2*dt*2/12
-     dt4by12=dtsq*dtsq/12.
+     cdtSqBy12= cdtSq/12.   ! c^2*dt*2/12
+     dt4by12=dtSq*dtSq/12.
      cdtdx = (cc*dt/dx(0))**2
      cdtdy = (cc*dt/dy)**2
      cdtdz = (cc*dt/dz)**2
@@ -3563,6 +3566,28 @@ real uzzzzzz
          stop 2222
        end if
       end if
+     ! Scheme is 
+     !   un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) +ts2*um(i1,i2,i3,m) + ts3*( uxx22r(i1,i2,i3,0) +  uyy22r(i1,i2,i3,0) )  
+     !                                                         + ts4*(umxx22r(i1,i2,i3,0) + umyy22r(i1,i2,i3,0) ) )  
+     !                                                         + tsf*fv(m)       
+     if( takeImplicitFirstStep.eq.0 )then
+       ts1=2. 
+       ts2=-1.
+       ts3=cdtSq*cImp( 0,0)
+       ts4=cdtSq*cImp(-1,0)
+       tsf=dtSq
+     else
+       ! first-step implicit:
+       !   Assumes um = ut(t=0) 
+       ! AND 
+       !   cImp(1,0) = cImp(-1,0)
+       !   RHS = u + dt*ut + (dt^2/2)*L * ( cImp(0,0)*u - 2.*dt*cImp(1,0)*ut ) + .5*dt^2 * f    
+       ts1=1. 
+       ts2=dt
+       ts3= .5*cdtSq*cImp( 0,0)
+       ts4=-dt*cdtSq*cImp(-1,0)
+       tsf=.5*dtSq    
+     end if
      if( (.false. .or. debug.gt.1) .and. t.le.3*dt )then
        write(*,'("advWave: option=",i4," grid=",i4)') option,grid
        write(*,'("advWave: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
@@ -3570,7 +3595,8 @@ real uzzzzzz
        write(*,'("advWave: useUpwindDissipation=",i2," (explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
        write(*,'("advWave: useSosupDissipation=",i2," (1= add upwind dissipation in this stage)")') useSosupDissipation
        write(*,'("advWave: t,dt,c,omega,gridCFL=",5(1pe10.2,1x))') t,dt,cc,omega,gridCFL
-       write(*,'("advWave: gridIsImplicit=",i2," adjustOmega=",i2," solveHelmholtz=",i2," adjustHelmholtz=",i2)') gridIsImplicit,adjustOmega,solveHelmholtz,adjustHelmholtzForUpwinding
+       write(*,'("advWave: gridIsImplicit=",i2," takeImplicitFirstStep=",i2)') gridIsImplicit,takeImplicitFirstStep
+       write(*,'("advWave: adjustOmega=",i2," solveHelmholtz=",i2," adjustHelmholtz=",i2)') adjustOmega,solveHelmholtz,adjustHelmholtzForUpwinding
        if( forcingOption.eq.helmholtzForcing )then
          write(*,'("advWave: numberOfFrequencies=",i2)') numberOfFrequencies
          write(*,'("advWave: frequencyArray=",(1pe12.4,1x))') (frequencyArray(freq),freq=0,numberOfFrequencies-1)
@@ -3611,33 +3637,6 @@ real uzzzzzz
        ! if( .true. )then
        ! *new* way to define coefficients: (see cgWave.pdf)
        adSosup = cc*dt/( sqrt(1.*nd) * 2**(orderOfAccuracy+1) ) 
-       ! if( orderOfAccuracy.eq.6 )then
-       !   adSosup = adSosup*.5     ! *** TEMP : ME66 seems to be unstable at cfl=.9 and original adSosup
-       ! end if
-         ! upwinding always takes a positive coefficient now *wdh* Feb 5, 2022
-         ! if( mod(orderOfAccuracy/2,2).eq.1 )then
-         !   adSosup = - adSosup  ! negative for orders 2,6,10, ...
-         ! end if
-       ! else 
-       !   ! **** OLD WAY ****
-       !   ! Coefficients in the sosup dissipation from Jordan Angel
-       !   if( orderOfAccuracy.eq.2 )then
-       !    adSosup=-cc*dt*1./8.
-       !    if( preComputeUpwindUt.eq.1 )then
-       !      ! We need to reduce the upwind coefficient for stability if we pre-compute uDot: (see CgWave documentation)
-       !      adSosup=adSosup/sqrt(1.*nd)
-       !    end if 
-       !   else if( orderOfAccuracy.eq.4 )then 
-       !     adSosup=cc*dt*5./288.
-       !     if( .false. )then 
-       !        adSosup = adSosup*.5 ! ****TEST****
-       !     end if
-       !   else if( orderOfAccuracy.eq.6 )then 
-       !     adSosup=-cc*dt*31./8640.
-       !   else
-       !     stop 1005
-       !   end if
-       ! end if
        uDotFactor=.5  ! By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
        ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
        adSosup=sosupParameter*adSosup
@@ -3792,9 +3791,10 @@ real uzzzzzz
      if( useSosupDissipation.eq.0 )then
        if( gridIsImplicit.eq.0 )then 
          ! ------- EXPLIICT update the solution ---------
-           if( orderInTime.eq.2 )then
-            ! FD24 : second-order in time and fourth-order in space
-            ! FD26 : second-order in time and sixth-order in space
+         if( orderInTime.eq.2 )then
+          ! FD24 : second-order in time and fourth-order in space
+          ! FD26 : second-order in time and sixth-order in space
+           if( addForcing.eq.0 )then
               if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
                 write(*,'("advWave: ADVANCE dim=2 order=4 orderInTime=2, grid=curvilinear... t=",e10.2)') t
               end if
@@ -3805,10 +3805,51 @@ real uzzzzzz
                 coswt = cos(omega*t)
               end if 
               fv(m)=0.
-                do i3=n3a,n3b
-                do i2=n2a,n2b
-                do i1=n1a,n1b
-                  if( mask(i1,i2,i3).gt.0 )then
+             ! ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
+             ! #If "NOFORCING" eq "NOFORCING"
+             ! ! do not use mask for Cartesian grid , no forcing 
+               do i3=n3a,n3b
+               do i2=n2a,n2b
+               do i1=n1a,n1b
+             ! #Else
+             !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+             ! #End
+                 ! --- -FOURTH 4 ---
+                   ! --- FOUTH-4 TWO DIMENSIONS ---
+                     ! orderInSpace==4 and orderInTime==2                                                   
+                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtSq*  ( uxx42(i1,i2,i3,m) + uyy42(i1,i2,i3,m) ) 
+               ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
+               ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
+               ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
+               ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
+              ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
+              !#If "NOFORCING" eq "NOFORCING"
+                end do
+                end do
+                end do
+              !#Else
+              ! endLoopsMask()
+              !#End
+           else 
+              if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
+                write(*,'("advWave: ADVANCE dim=2 order=4 orderInTime=2, grid=curvilinear... t=",e10.2)') t
+              end if
+              ! --- TAYLOR TIME-STEPPING --- 
+              m=0 ! component number 
+              ec = 0 ! component number
+              if( forcingOption.eq.helmholtzForcing )then
+                coswt = cos(omega*t)
+              end if 
+              fv(m)=0.
+             ! ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
+             ! #If "USEFORCING" eq "NOFORCING"
+             ! ! do not use mask for Cartesian grid , no forcing 
+               do i3=n3a,n3b
+               do i2=n2a,n2b
+               do i1=n1a,n1b
+             ! #Else
+             !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+             ! #End
                   if( addForcing.eq.0 )then
                     ! THIS ADDED March 24, 2023 *** CHECK ME ***
                     fv(m)=0.
@@ -3848,15 +3889,83 @@ real uzzzzzz
                  ! --- -FOURTH 4 ---
                    ! --- FOUTH-4 TWO DIMENSIONS ---
                      ! orderInSpace==4 and orderInTime==2                                                   
-                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*  ( uxx42(i1,i2,i3,m) + uyy42(i1,i2,i3,m) ) + dtSq*fv(m)
+                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtSq*  ( uxx42(i1,i2,i3,m) + uyy42(i1,i2,i3,m) ) +tsf*fv(m)
                ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
                ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
-                  end if
+              ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
+              !#If "USEFORCING" eq "NOFORCING"
                 end do
                 end do
                 end do
+              !#Else
+              ! endLoopsMask()
+              !#End
+           end if
+         else
+           if( addForcing.eq.0 )then
+               if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
+                 write(*,'("advWave: ADVANCE dim=2 order=4 orderInTime=4, grid=curvilinear... t=",e10.2)') t
+               end if
+               ! --- TAYLOR TIME-STEPPING --- 
+               m=0 ! component number 
+               ec = 0 ! component number
+                      ! write(*,'("advWave: COMPUTE V= LAP(U) TO SECOND ORDER dim=2")') 
+                      ! We need Lap2h(u) at an extra point 
+                      numGhost=orderOfAccuracy/2 -1 
+                      m1a=n1a-numGhost
+                      m1b=n1b+numGhost
+                      m2a=n2a-numGhost
+                      m2b=n2b+numGhost
+                      if( nd.eq.2 )then
+                       m3a=n3a
+                       m3b=n3b
+                      else
+                        m3a=n3a-numGhost
+                        m3b=n3b+numGhost
+                      end if
+                      ! write(*,'(" Lap(u) : numGhost=",i2," m1a,m1b,m2a,m2b=",4i4)') numGhost,m1a,m1b,m2a,m2b
+                        do i3=m3a,m3b
+                        do i2=m2a,m2b
+                        do i1=m1a,m1b
+                         v(i1,i2,i3,0) = uxx22(i1,i2,i3,0) + uyy22(i1,i2,i3,0)
+                         ! OGDERIV2D( 0,2,0,0,i1,i2,i3,t, ec, evxx(m) )
+                         ! write(*,'(" i1,i2=",2i4," uxx2=",e10.2," true=",e10.2)') i1,i2,uxx22(i1,i2,i3,0),evxx(0)
+                        end do
+                        end do
+                        end do
+               if( forcingOption.eq.helmholtzForcing )then
+                 coswt = cos(omega*t)
+               end if 
+               fv(m)=0.
+              ! ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
+              ! #If "NOFORCING" eq "NOFORCING"
+              ! ! do not use mask for Cartesian grid , no forcing 
+                do i3=n3a,n3b
+                do i2=n2a,n2b
+                do i1=n1a,n1b
+              ! #Else
+              !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+              ! #End
+                  ! --- -FOURTH 4 ---
+                    ! --- FOUTH-4 TWO DIMENSIONS ---
+                      ! orderInSpace=4 and orderInTime=4 
+                        ! v is assumed to hold Lap(u) to 2nd-order
+                        ! write(*,'(" i1,i2=",2i4," uxx4=",e10.2," true=",e10.2)') i1,i2,uxx42(i1,i2,i3,m),evxx(m)
+                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtSq*  ( uxx42(i1,i2,i3,m) + uyy42(i1,i2,i3,m) ) + cdtsq12*( vxx22(i1,i2,i3,m) + vyy22(i1,i2,i3,m) ) 
+                ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
+                ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
+                ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
+                ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
+               ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
+               !#If "NOFORCING" eq "NOFORCING"
+                 end do
+                 end do
+                 end do
+               !#Else
+               ! endLoopsMask()
+               !#End
            else
                if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
                  write(*,'("advWave: ADVANCE dim=2 order=4 orderInTime=4, grid=curvilinear... t=",e10.2)') t
@@ -3892,10 +4001,15 @@ real uzzzzzz
                  coswt = cos(omega*t)
                end if 
                fv(m)=0.
-                 do i3=n3a,n3b
-                 do i2=n2a,n2b
-                 do i1=n1a,n1b
-                   if( mask(i1,i2,i3).gt.0 )then
+              ! ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
+              ! #If "USEFORCING" eq "NOFORCING"
+              ! ! do not use mask for Cartesian grid , no forcing 
+                do i3=n3a,n3b
+                do i2=n2a,n2b
+                do i1=n1a,n1b
+              ! #Else
+              !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+              ! #End
                    if( addForcing.eq.0 )then
                      ! THIS ADDED March 24, 2023 *** CHECK ME ***
                      fv(m)=0.
@@ -3941,22 +4055,35 @@ real uzzzzzz
                       ! orderInSpace=4 and orderInTime=4 
                         ! v is assumed to hold Lap(u) to 2nd-order
                         ! write(*,'(" i1,i2=",2i4," uxx4=",e10.2," true=",e10.2)') i1,i2,uxx42(i1,i2,i3,m),evxx(m)
-                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*  ( uxx42(i1,i2,i3,m) + uyy42(i1,i2,i3,m) ) + cdtsq12*( vxx22(i1,i2,i3,m) + vyy22(i1,i2,i3,m) ) + dtSq*fv(m)
+                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtSq*  ( uxx42(i1,i2,i3,m) + uyy42(i1,i2,i3,m) ) + cdtsq12*( vxx22(i1,i2,i3,m) + vyy22(i1,i2,i3,m) ) +tsf*fv(m)
                 ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                 ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                 ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
                 ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
-                   end if
+               ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
+               !#If "USEFORCING" eq "NOFORCING"
                  end do
                  end do
                  end do
-           end if 
+               !#Else
+               ! endLoopsMask()
+               !#End
+           end if
+         end if 
        else
          ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----
+         if( takeImplicitFirstStep.eq.1 )then
+           if( orderInTime.eq.2 )then
+             write(*,'(" advWave: TAKE IMPLICIT FIRST STEP ")')
+           else
+             write(*,'(" advWave: TAKE IMPLICIT FIRST STEP : FINISH ME, orderInTime =",i2)') orderInTime
+             stop 468
+           end if
+         end if           
            if( orderOfAccuracy.eq.4 .and. orderInTime.eq.2 )then
             ! FD24 : second-order in time and fourth-order in space
               if( (debug.gt.3) .and. t.lt.2*dt )then
-                write(*,'("advWave: ADVANCE IMPLICIT dim=2 order=4 orderInTime=2, grid=curvilinear... t=",e10.2)') t
+                write(*,'("advWave: ADVANCE IMPLICIT dim=2 order=4 orderInTime=2, grid=curvilinear, t=",e10.2)') t
               end if
               ! --- IMPLICIT TAYLOR TIME-STEPPING --- 
               !  D+t D-t u = c^2 Delta( cImp(1) *u^{n+1} + cImp(0) *u^n + cImp(-1)* u^{n-1} )
@@ -4025,7 +4152,8 @@ real uzzzzzz
                  ! --- -FOURTH 4 ---
                    ! --- TWO DIMENSIONS ---
                      ! 2D orderInSpace==4 and orderInTime==2  IMPLICIT                                                 
-                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *(  uxx42(i1,i2,i3,0) +  uyy42(i1,i2,i3,0) ) +   cImp(-1,0) *( umxx42(i1,i2,i3,0) + umyy42(i1,i2,i3,0) ) )   + dtSq*fv(m)                                                             
+                       un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) +ts2*um(i1,i2,i3,m) + ts3*( uxx42(i1,i2,i3,0) +  uyy42(i1,i2,i3,0) )  + ts4*(umxx42(i1,i2,i3,0) + umyy42(i1,i2,i3,0) )  + tsf*fv(m)               
+                       ! un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *(  uxx42(i1,i2,i3,0) +  uyy42(i1,i2,i3,0) ) +   !                                                               cImp(-1,0) *( umxx42(i1,i2,i3,0) + umyy42(i1,i2,i3,0) ) )   !                                                   + dtSq*fv(m)                                                             
                ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -4036,7 +4164,7 @@ real uzzzzzz
                 end do
            else
                if( (debug.gt.3) .and. t.lt.2*dt )then
-                 write(*,'("advWave: ADVANCE IMPLICIT dim=2 order=4 orderInTime=4, grid=curvilinear... t=",e10.2)') t
+                 write(*,'("advWave: ADVANCE IMPLICIT dim=2 order=4 orderInTime=4, grid=curvilinear, t=",e10.2)') t
                end if
                ! --- IMPLICIT TAYLOR TIME-STEPPING --- 
                !  D+t D-t u = c^2 Delta( cImp(1) *u^{n+1} + cImp(0) *u^n + cImp(-1)* u^{n-1} )
@@ -4120,7 +4248,7 @@ real uzzzzzz
                         stop 4444
                         ! v is assumed to hold Lap(u) to 2nd-order
                         ! write(*,'(" i1,i2=",2i4," uxx4=",e10.2," true=",e10.2)') i1,i2,uxx42(i1,i2,i3,m),evxx(m)
-                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtsq*  ( uxx42(i1,i2,i3,m) + uyy42(i1,i2,i3,m) ) + cdtsq12*( vxx22(i1,i2,i3,m) + vyy22(i1,i2,i3,m) ) + dtSq*fv(m)
+                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m)-um(i1,i2,i3,m) + cdtSq*  ( uxx42(i1,i2,i3,m) + uyy42(i1,i2,i3,m) ) + cdtsq12*( vxx22(i1,i2,i3,m) + vyy22(i1,i2,i3,m) ) + dtSq*fv(m)
                 ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                 ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                 ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -4234,6 +4362,8 @@ real uzzzzzz
            end if
            m=0 ! component number 
            ec = 0 ! component number
+           ! +++ ADD UPWIND DISSIPATION +++
+           ! beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
              do i3=n3a,n3b
              do i2=n2a,n2b
              do i1=n1a,n1b
@@ -4250,6 +4380,7 @@ real uzzzzzz
              end do
              end do
              end do
+           ! endLoops()
        else
          ! compute Ut inline in Gauss-Seidel fashion (this is more stable)
            if( debug.gt.3 .and. t.lt.4*dt )then
@@ -4258,6 +4389,8 @@ real uzzzzzz
            end if
            m=0 ! component number 
            ec = 0 ! component number
+           ! +++ ADD UPWIND DISSIPATION +++
+           ! beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
              do i3=n3a,n3b
              do i2=n2a,n2b
              do i1=n1a,n1b
@@ -4274,6 +4407,7 @@ real uzzzzzz
              end do
              end do
              end do
+           ! endLoops()
        end if
      end if
      return

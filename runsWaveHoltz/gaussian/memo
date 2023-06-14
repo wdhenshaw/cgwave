@@ -1,6 +1,75 @@
 
 
 *************************************************
+**** Thurs May 18, 2023
+
+**CHECK** IS UPWINDING NEEDED??
+
+G4 -- higher freq : OK 
+cgwh gaussian.cmd -g=sice4.order4.ng3 -x0=0.2 -y0=0.1 -nf=1 -freq=12  -amp=150 -beta=150 -adjustOmega=1 -ts=explicit -cfl=.9 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -go=halt
+
+
+
+G8 OK 
+cgwh gaussian.cmd -g=sice8.order4.ng3 -x0=0.0 -y0=0.0 -nf=1 -freq=7  -amp=150 -beta=150 -adjustOmega=1 -ts=explicit -cfl=.9 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -go=halt
+
+
+EXPLICIT: OK TOO
+cgwh gaussian.cmd -g=sice4.order4.ng3 -x0=0.0 -y0=0.0 -nf=1 -freq=7  -amp=150 -beta=150 -adjustOmega=1 -ts=explicit -cfl=.9 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2  -eigenVectorFile=diskG4O4Ev64.show -go=halt
+
+
+IMPLICIT: 
+cgwh gaussian.cmd -g=sice4.order4.ng3 -x0=0.0 -y0=0.0 -nf=1 -freq=7  -amp=150 -beta=150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -cfl=10000 -eigenVectorFile=diskG4O4Ev64.show -go=halt
+
+FIX-POINT : OK too
+
+NO-UPWIND - OK
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+
+ grid=/home/henshw/grids/sice4.order4.ng3.hdf
+ Convergence rate CR=0.267, CR-perPeriod=0.517, Time to solve = 5.71e-01(s) : CgWave= 5.57e-01(s) 97.51%, advance= 5.49e-01(s) 96.06%
+ max-residual=1.16e-12 (WaveHoltz its), numberOfIterations = 20 (Krylov) (maximumNumberOfIterations=50)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=10000.00, dt=9.816e-02, minStepsPerPeriod=10, numberOfStepsPerSolve=20, totalTimeStepsStaken=520, aveItsPerImplicitSolve=  0.0
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[diskG4O4Ev64.show]
+ freq= 0, omega=   7.000, (adjusted=   6.401) T= 0.89760, Tbar= 1.79520, numPeriods=  2, Tbar(0)/T=  2.00
+
+CgWaveHoltz::residual: freq= 0, omega=   7.000, max-res=1.556e-10 (using omega), max-res=2.359e+00 (using omega from discrete symbol)
+CgWaveHoltz: max-res=1.556e-10 (all frequencies)
+
+Direct solve Helmholtz: cpu= 1.26e-01(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+saveMatlab: dt=9.816e-02
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzKrylov.m]
+cgwh: rel-max-diff=1.72e-09, |v|_max= 3.86e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+UPWIND
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+
+ grid=/home/henshw/grids/sice4.order4.ng3.hdf
+ Convergence rate CR=0.267, CR-perPeriod=0.517, Time to solve = 6.45e-01(s) : CgWave= 6.33e-01(s) 98.13%, advance= 6.25e-01(s) 96.88%
+ max-residual=1.10e-12 (WaveHoltz its), numberOfIterations = 20 (Krylov) (maximumNumberOfIterations=50)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=10000.00, dt=9.816e-02, minStepsPerPeriod=10, numberOfStepsPerSolve=20, totalTimeStepsStaken=1340, aveItsPerImplicitSolve=  0.0
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[diskG4O4Ev64.show]
+ freq= 0, omega=   7.000, (adjusted=   6.401) T= 0.89760, Tbar= 1.79520, numPeriods=  2, Tbar(0)/T=  2.00
+
+CgWaveHoltz::residual: freq= 0, omega=   7.000, max-res=1.759e-10 (using omega), max-res=2.359e+00 (using omega from discrete symbol)
+CgWaveHoltz: max-res=1.759e-10 (all frequencies)
+
+Direct solve Helmholtz: cpu= 1.18e-01(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+saveMatlab: dt=9.816e-02
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzKrylov.m]
+cgwh: rel-max-diff=1.95e-09, |v|_max= 3.86e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+*************************************************
 **** Sat April 1, 2023
 
 REORGANIZATION of cgwh ..

@@ -30,9 +30,10 @@ $cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1;
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $orderInTime=-1;  # -1 = use default
 $deflateWaveHoltz=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; $computeEigs=1; $numRitz=20; $assignRitzFrequency=1000;
-$numEigs=1; 
+$numEigs=1; $numArnoldi=-1; 
 $setInitialVectors=1; # provide initial vectors for eigenSolver
-$useAccurateInnerProduct=0; # use accurate inner product for Rayleigh Quotient 
+$useAccurateInnerProduct=0; # use accurate inner product for Rayleigh Quotient
+$takeImplicitFirstStep=0;  
 $eigenSolver="default";  # [default|KrylovSchur|Arnoldi]
 $minStepsPerPeriod=10; # do this for eigs
 $eigTol=1.e-5;  # tolerance for detecting multiple eigs 
@@ -50,11 +51,11 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "numberOfFrequencies=i"=>\$numberOfFrequencies,"nf=i"=>\$numberOfFrequencies,"freq=f{1,}"=>\@freq,\
             "solverh=s"=>\$solverh,"rtolh=f"=>\$rtolh,"atolh=f"=>\$atolh,"maxith=i"=>\$maxith,"restart=i"=>\$restart,"iluh=i"=>\$iluh,\
             "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,\
-            "deflateWaveHoltz=i"=>\$deflateWaveHoltz,"numToDeflate=i"=>\$numToDeflate,"computeEigs=i"=>\$computeEigs,\
+            "deflateWaveHoltz=i"=>\$deflateWaveHoltz,"numToDeflate=i"=>\$numToDeflate,"computeEigs=i"=>\$computeEigs,"numArnoldi=i"=>\$numArnoldi,\
             "eigenVectorFile=s"=>\$eigenVectorFile,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"numRitz=i"=>\$numRitz,\
             "assignRitzFrequency=i"=>\$assignRitzFrequency,"numEigs=i"=>\$numEigs,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,\
             "eigenSolver=s"=>\$eigenSolver,"setInitialVectors=i"=>\$setInitialVectors,"eigTol=f"=>\$eigTol,\
-            "useAccurateInnerProduct=i"=>\$useAccurateInnerProduct,\
+            "useAccurateInnerProduct=i"=>\$useAccurateInnerProduct,"takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,\
             "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6 );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
@@ -107,6 +108,7 @@ exit
 $ts
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
+take implicit first step $takeImplicitFirstStep
 dtMax $dtMax
 implicit weights $beta2 $beta4 $beta6 $beta8
 cfl $cfl
@@ -141,6 +143,7 @@ min steps per period $minStepsPerPeriod
 #
 compute eigenModes $computeEigs
 number of eigenvalues $numEigs
+num Arnoldi vectors $numArnoldi
 number of Ritz vectors $numRitz
 assign Ritz frequency $assignRitzFrequency
 # for implicit tyime-stepping and WaveHoltz: 

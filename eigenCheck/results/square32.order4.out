@@ -1,0 +1,1404 @@
+Usage: `mpirun -np N cgwh [-noplot] [file.cmd] [-g=<gridName>]'
+Look for Overture configuration file=[/home/henshw/.overturerc]
+Successfully opened /home/henshw/Overture.g/overturerc for reading
+User commands are being saved in the file `cgWaveHoltz.cmd'
+Searching for grids in locations specified by the `OvertureGridDirectories' environment variable
+look for /home/henshw/Overture.g/sampleGrids/square32.order4 
+look for /home/henshw/grids/square32.order4 
+ ***** Mounting file /home/henshw/grids/square32.order4.hdf****
+getFromADataBase: number of CompositeGrid(s) found =1, name[0]=square32.order4
+Time to read in the grid is 8.39e-03(s)
+#
+#  cgWaveHoltz command script:
+#
+#     cgwh eig.cmd -g=<grid-name> -x0=<f> -y0=<f> -omega=<f> -solver=[none|fixedPoint|krylov] -tol=<f> -tp=<f> ...
+#                         -kx=<f> -ky=<f> -kz=<f> -forcing=[gaussian|sine] -adjustOmega=[0|1] -maxIterations=<>
+#                          -upwind=[0|1] -imode=[0|1] -bcApproach=[cbc|lcbc|oneSided] -go=[go|og|halt]
+#                          -eigenSolver=[default|KrylovSchur|Arnoldi]
+#
+#   -solver=[fixedPoint|krylov] : fixed-point or Krylov
+#   -imode=1 : do not wait in cgWave
+#   -maxIterations=<>
+#
+$go="go"; $forcing="gaussian";
+$omega=30.1;
+# $beta=50.; # $x0=0.5; $y0=0.5; $z0=0.5;
+@beta= (); @amp = (); @x0 = (); @y0 = (); @z0 = (); # this must be null for GetOptions to work, defaults are given below
+$t0=0.;
+# $amp=1.;
+$numPeriods=1; $omegaSOR=1; $tol=1.e-3;
+$minStepsPerPeriod=10;   # min is 5
+$numberOfFrequencies=1;
+@freq = ();  # this must be null for GetOptions to work, defaults are given below
+# beta2=0 = TRAP, beta2=.5 = Full weighting
+$beta2=.0; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping
+$upwind=0; # new way
+$tp=.5; $imode=0;
+$solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIterations=100; $adjustOmega=0;
+$matlab="cgWaveHoltz"; $show="gaussian.show";
+$cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1;
+$bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$orderInTime=-1;  # -1 = use default
+$deflateWaveHoltz=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; $computeEigs=1; $numRitz=20; $assignRitzFrequency=1000;
+$numEigs=1; $numArnoldi=-1;
+$setInitialVectors=1; # provide initial vectors for eigenSolver
+$useAccurateInnerProduct=0; # use accurate inner product for Rayleigh Quotient
+$takeImplicitFirstStep=0;
+$eigenSolver="default";  # [default|KrylovSchur|Arnoldi]
+$minStepsPerPeriod=10; # do this for eigs
+$eigTol=1.e-5;  # tolerance for detecting multiple eigs
+$bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6="";
+#
+$solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
+$solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
+#
+GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,            "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,            "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,            "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,            "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f{1,}"=>\@amp,"show=s"=>\$show,            "bcApproach=s"=>\$bcApproach,"upwind=i"=>\$upwind,"beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,            "numberOfFrequencies=i"=>\$numberOfFrequencies,"nf=i"=>\$numberOfFrequencies,"freq=f{1,}"=>\@freq,            "solverh=s"=>\$solverh,"rtolh=f"=>\$rtolh,"atolh=f"=>\$atolh,"maxith=i"=>\$maxith,"restart=i"=>\$restart,"iluh=i"=>\$iluh,            "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,            "deflateWaveHoltz=i"=>\$deflateWaveHoltz,"numToDeflate=i"=>\$numToDeflate,"computeEigs=i"=>\$computeEigs,"numArnoldi=i"=>\$numArnoldi,            "eigenVectorFile=s"=>\$eigenVectorFile,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"numRitz=i"=>\$numRitz,            "assignRitzFrequency=i"=>\$assignRitzFrequency,"numEigs=i"=>\$numEigs,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,            "eigenSolver=s"=>\$eigenSolver,"setInitialVectors=i"=>\$setInitialVectors,"eigTol=f"=>\$eigTol,            "useAccurateInnerProduct=i"=>\$useAccurateInnerProduct,"takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6 );
+#
+if( $bc eq "d" ){ $bc="dirichlet"; }
+if( $bc eq "n" ){ $bc="neumann"; }
+if( $bc eq "e" ){ $bc="evenSymmetry"; }
+if( $bc eq "r" ){ $bc="radiation"; }
+if( $amp[0] eq "" ){ @amp=(1,1,1,1,1,1,1,1,1); }
+if( $beta[0] eq "" ){ @beta=(50,50,50,50,50,50,50,50); }
+if( $x0[0] eq ""  ){ @x0=(0,0,0,0,0,0,0,0); }
+if( $y0[0] eq ""  ){ @y0=(0,0,0,0,0,0,0,0); }
+if( $z0[0] eq ""  ){ @z0=(0,0,0,0,0,0,0,0); }
+if( $freq[0] eq "" ){ @freq=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15); }
+#
+$omega = $freq[0];
+#
+# pause
+## Gaussian params $beta $x0 $y0 0 (beta,x0,y0,z0)
+omega $omega
+Setting omega=8
+maximum number of iterations $maxIterations
+Setting maximumNumberOfIterations=60
+tol $tol
+Setting tol=1e-14 (tolerence for Krylov solvers)
+number of periods $numPeriods
+Setting numPeriods=1
+adjust omega $adjustOmega
+Setting adjustOmega=0: 1=adjust omega for the discrete symbol pf D+t D-t 
+ This will make WaveHoltz solution be closer to the discrete Helhmhotz problem
+number of frequencies $numberOfFrequencies
+Setting numberOfFrequencies=1
+frequencies $freq[0] $freq[1] $freq[2] $freq[3] $freq[4] $freq[5] $freq[6] $freq[7] $freq[8] $freq[9] $freq[10] $freq[11]] $freq[12]
+Setting frequency 0 = 8.000000e+00
+matlab filename: $matlab
+Setting matlabFileName=[cgWaveHoltz]
+# choose parameters for the direct Helmholtz solver
+direct solver parameters
+Set the Oges parameters for the direct Helmholtz solver
+if( $solverh ne "yale" ){ $cmd="choose best iterative solver\n $solverh"; }else{ $cmd="choose best direct solver"; }
+$cmd
+Choosing: yale, solver=[direct sparse solver, no pivoting + ]
+number of incomplete LU levels
+$iluh
+number of GMRES vectors
+$restart
+maximum number of iterations
+#
+$maxith
+relative tolerance
+$rtolh
+absolute tolerance
+$atolh
+# gmres restart length
+#   30
+# pause
+#  PETSc
+exit
+# pause
+exit
+cgWaveHoltz::setup: numberOfFrequencies=1
+CgWave::setup SETTING orderOfAccuracy=4
+# ------ Start cgWave setup ------
+# time-stepping : explicit/implicit
+$ts
+if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
+$cmd
+Setting orderOfAccuracyInTime=2 (-1 means use same as order in space)
+take implicit first step $takeImplicitFirstStep
+Setting takeImplicitFirstStep=0 (1=take an implicit first step when implicit time-stepping
+dtMax $dtMax
+Setting dtMax=1
+implicit weights $beta2 $beta4 $beta6 $beta8
+Setting implicit time-stepping weights to beta2=0, beta4=0, beta6=0, beta8=0
+cfl $cfl
+setting cfl=1000
+interactiveMode $imode
+Setting interactiveMode=1 (0=normal, 1=advance and finish)
+tPlot $tp
+ tPlot=0.5
+# -- Here is input for cgWave
+#
+$cmd="#";
+if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }
+if( $bcApproach eq "cbc"      ){ $cmd="useCompatibilityBCs"; }
+if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
+$cmd
+Setting approach for boundary conditions to useOneSidedBCs
+Answer=useOneSidedBCs found in getBoundaryConditionOption
+#
+bc=$bc
+Setting all boundary conditions to bc=[dirichlet]
+Answer=bc=dirichlet found in getBoundaryConditionOption
+$cmd="#";
+if( $bc1 ne "" ){ $cmd .="\n bcNumber1=$bc1"; }
+if( $bc2 ne "" ){ $cmd .="\n bcNumber2=$bc2"; }
+if( $bc3 ne "" ){ $cmd .="\n bcNumber3=$bc3"; }
+if( $bc4 ne "" ){ $cmd .="\n bcNumber4=$bc4"; }
+if( $bc5 ne "" ){ $cmd .="\n bcNumber5=$bc5"; }
+if( $bc6 ne "" ){ $cmd .="\n bcNumber6=$bc6"; }
+printf('cmd=$cmd\n");')
+$cmd
+#
+# if( $ad4>0. ){ $upwind=1; }# for backward compatibility
+upwind dissipation $upwind
+Setting upwind=0 (upwind dissipation is on or off).
+#
+deflate WaveHoltz $deflateWaveHoltz
+Setting deflateWaveHoltz=0 (1=apply deflate to WaveHoltz iteration
+Answer=deflate WaveHoltz 0 found in getWaveHoltzOption
+number to deflate $numToDeflate
+Setting numToDeflate=1 (deflate this many eigenvectors for WaveHoltz)
+Answer=number to deflate 1 found in getWaveHoltzOption
+eigenVectorFile $eigenVectorFile
+Setting eigenVectorFile=/home/henshw/runs/cgWaveHoltz/eig/square32O4EigsEv64.show (file holding eigenvectors for deflation)
+Answer=eigenVectorFile /home/henshw/runs/cgWaveHoltz/eig/square32O4EigsEv64.show found in getEigenWaveOption
+min steps per period $minStepsPerPeriod
+Setting minStepsPerPeriod=10 (for WaveHoltz)
+Answer=min steps per period 10 found in getEigenWaveOption
+#
+compute eigenModes $computeEigs
+ computeEigenmodes: Use the WaveHoltz algorithm to compute eigenvalues and eigenvectors.
+Answer=compute eigenModes 1 found in getEigenWaveOption
+number of eigenvalues $numEigs
+Setting numEigsToCompute=8 (compute this many eigenpairs when using Arnoldi)
+Answer=number of eigenvalues 8 found in getEigenWaveOption
+num Arnoldi vectors $numArnoldi
+Setting numArnoldiVectors=-1 (number of vectors in the Arnoldi column space)
+Answer=num Arnoldi vectors -1 found in getEigenWaveOption
+number of Ritz vectors $numRitz
+Setting numberOfRitzVectors=20 (max. number of Rayleigh Ritz vectors, used to accelerate EigenWave)
+Answer=number of Ritz vectors 20 found in getEigenWaveOption
+assign Ritz frequency $assignRitzFrequency
+Setting assignRitzFrequency=1000 (set solution to latest Ritz vector every this many steps (EigenWave)
+Answer=assign Ritz frequency 1000 found in getEigenWaveOption
+# for implicit tyime-stepping and WaveHoltz:
+min steps per period $minStepsPerPeriod
+Setting minStepsPerPeriod=10 (for WaveHoltz)
+Answer=min steps per period 10 found in getEigenWaveOption
+# choose the method used by SLEPc:
+printf("eigenSolver=$eigenSolver\n");
+if( $eigenSolver eq "default" ){ $eigenSolver="defaultEigenSolver"; }
+$eigenSolver
+Setting eigenSolver = defaultEigenSolver
+Answer=defaultEigenSolver found in getEigenWaveOption
+#
+initial vectors for eigenSolver $setInitialVectors
+Setting initialVectorsForEigenSolver=1 (vectors used in Arnolid etc.)
+Answer=initial vectors for eigenSolver 1 found in getEigenWaveOption
+# use accurate inner product for Rayleigh Quotient
+use accurate inner product $useAccurateInnerProduct
+Setting useAccurateInnerProduct=0 (for computing the Rayleigh Quotient)
+Answer=use accurate inner product 0 found in getEigenWaveOption
+#
+eig multiplicity tol $eigTol
+Setting eigenValueTolForMultiplicity=1e-05 (tolerence for detecting mutiple eigenvalues)
+Answer=eig multiplicity tol 1e-05 found in getEigenWaveOption
+#
+compute errors 0
+Setting computeErrors=0 (1=compute errors for TZ or known solutions.
+# pause
+#
+implicit solver parameters
+Set the Oges parameters for the implicit solver.
+# NOTE: bcgs = bi-CG stab
+if( $solveri ne "yale" ){ $cmd="choose best iterative solver\n $solveri"; }else{ $cmd="choose best direct solver"; }
+$cmd
+Choosing: yale, solver=[direct sparse solver, no pivoting + ]
+number of incomplete LU levels
+3
+number of GMRES vectors
+20
+maximum number of iterations
+#
+$maxiti
+relative tolerance
+$rtoli
+absolute tolerance
+$atoli
+#
+multigrid parameters
+choose good parameters: 1
+choose good parameters: 0=OFF, 1=ON, 2=Use more robust parameters. Setting value to 1
+OgesParameters: relativeTolerance=1.000000e-03 
+residual tolerance $rtoli
+absolute tolerance $atoli
+# debug
+#   1
+# show smoothing rates
+# Coarse level solver:
+Oges parameters
+choose best direct solver
+Choosing: yale, solver=[direct sparse solver, no pivoting + ]
+# choose best iterative solver
+relative tolerance
+1.e-10
+absolute tolerance
+1.e-10
+number of incomplete LU levels
+3
+exit
+OgmgParameters::display direct solver ogesParameters:
+name = yale, solver=[direct sparse solver, no pivoting + ]
+solverType = yale
+solverMethod = direct sparse solver, no pivoting
+parallel solverMethod = direct sparse solver, no pivoting
+preconditioner = incomplete LU preconditioner
+parallelPreconditioner = block Jacobi preconditioner
+matrix ordering = reverse Cuthill-McKee ordering
+maximumNumberOfIterations = 100
+minimumNumberOfIterations = 0
+relativeTolerance = 1.00e-10
+absoluteTolerance = 1.00e-10
+maximumAllowableIncreaseInResidual = 1.00e+05
+compatibilityConstraint = 0
+gmresRestartLength = 20
+numberOfIncompleteLULevels = 3
+incompleteLUExpectedFill = 20
+minimumNumberOfIterations = 20
+maximumNumberOfIterations = 20
+solveForTranspose = 20
+rescaleRowNorms = 1
+matrixCutoff= 0.00e+00
+fixupRightHandSide= 1
+zeroRatio    = 0.00e+00
+fillinRatio  = 0.00e+00
+fillinRatio2 = 0.00e+00
+harwellPivotingTolerance = 1.00e-01
+nullVectorScaling = 1.00e+00
+maximumInterpolationWidth = 100
+iterativeImprovement = 0
+sorOmega = 1.01e+00
+userSuppliedCompatibilityConstraint = 0
+userSuppliedEquations = 0
+exit
+#pause
+exit
+# artificial dissipation $ad4
+#
+helmholtzForcing
+solve Helmholtz 1
+ solveHelmholtz=true: CgWave is being used to solve the Helmholtz equation (time-periodic wave equation)
+ using CgWaveHoltz
+Answer=solve Helmholtz 1 found in getWaveHoltzOption
+#
+# ------ Gaussian sources ----
+# amp, beta, omega, p,
+# $amp = 10.*$omega*$omega;
+#
+$numTerms=1; # each source has 1 term
+$p=1;        # power in exponent
+$cmd =  "user defined forcing...\n"       . " gaussian sources\n";
+for( $i=0; $i<$numberOfFrequencies; $i++ ){   $cmd .= "$numTerms\n $amp[$i] $beta[$i] $omega $p $x0[$i] $y0[$i] $z0[$i] $t0\n";}
+$cmd .= "exit";
+#
+#   --- eigenmode-like exact solution : sin(kx*x)*sin(ky*y)*cos(omega*t)
+if( $forcing eq "sine" ){  $cmd = " user defined known solution...\n"       . " box helmholtz\n"       . "  $omega $kx $ky $kz\n"       . " done\n"       . " user defined forcing...\n"       . "   box Helmholtz\n"       . " exit\n"; }
+$cmd
+user defined forcing...
+gaussian sources
+The Gaussian source in 2D is of the form:
+ u(x,y,t) = a*cos(omega*(t-t0) )*exp( -beta*[ (x-x0)^2 + (y-y0)^2 ]^p )
+1
+1 50 8 1 0 0 0 0
+Gaussian source 0, freq=0: setting a=1.00e+00, beta=5.00e+01, omega=8.00e+00, p=1.00e+00, x0=0.00e+00, y0=0.00e+00, z0=0.00e+00, t0=0.00e+00
+exit
+#
+exit
+CgWave::initialize and assign forcing... numberOfFrequencies=1
+CgWave::getTimeStep: c=1, cfl=1000, timeSteppingMethod=1
+getTimeStep: grid=0 : dx= 3.12e-02, dy= 3.12e-02, dt=2.210e+01
+cgWave::getTimeStep: cfl=1000, explicit dt= 1.00e+00, implicit dt= 1.00e+00, ratio=  1.00
+cgWave:chooseTimeStep: chooseImplicitTimeStepFromCFL : setting dt= 1.00e+00, cfl=1000
+getTimeStep: grid=0: gridCFL=  5.23e+01
+CgWave::initialize: dt=1
+
+*********************************************************************************
+           CgWave : Wave Equation Solver                    
+           -----------------------------                  
+ tFinal=1.000000, dt=1.000e+00, tPlot=5.000e-01 cfl=1000.00
+ modifiedEquationApproach = standard modified equation
+ orderOfAccuracy=4, orderOfAccuracyInTime=2 
+ timeSteppingMethod = implicit
+ ---- implicit time stepping parameters ----
+   implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+   implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+   All grids are implicit.
+   takeImplicitFirstStep = 0.
+   implicit time-stepping weights: cImp(-1,0)=0.5, cImp(0,0)=0, cImp(1,0)=0.5 (2nd-order term)
+                                 : cImp(-1,1)=0.208333, cImp(0,1)=0, cImp(1,1)=0.208333 (4th-order term)
+   chooseImplicitTimeStepFromCFL=1 (1=choose implicit dt from cfl, 0=choose dt from dtMax)
+ upwind dissipation is off, dissipationFrequency=1
+ upwind dissipation: preComputeUpwindUt=0 
+                     true=precompute Ut in upwind dissipation,
+                     false=compute Ut inline in Gauss-Seidel fashion)
+ implicitUpwind=0 : if true, include upwinding in implicit matrix when implicit time-stepping.
+ assignInterpNeighbours = interpolate (for wider upwind stencil)
+ twilightZone = polynomial, degreeInSpace=2, degreeInTime=2
+ useKnownSolutionForFirstStep = 0 (use known solution for first step step, if possible)
+ BC approach = useOneSidedBCs. [useDefault|useOneSided|useCompatibility|useLocalCompatibility]
+ solveHelmholtz=1 (1= we are solving a Helmholtz problem).
+   **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=0 (for discrete symbol of D+tD-t) ****
+   computeTimeIntegral=1
+   adjust Helmholtz for upwinding=1. Minimum time-steps per period=10.
+   deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[/home/henshw/runs/cgWaveHoltz/eig/square32O4EigsEv64.show]
+ computeEigenmodes=1 (1= solve from eigenvalues and eigenvectors using the WaveHoltz algorithm).
+   numEigsToCompute=8, numArnoldiVectors=-1.
+   computeTimeIntegral=1
+   numberOfRitzVectors=20 (maximum number of vectors to use for Rayleigh-Ritz)
+   assignRitzFrequency=1000 (assign Ritz solution this often)
+   eigenVectorForcingFactor=0 (scale factor for eigenvector forcing)
+   eigenVectorFile=[/home/henshw/runs/cgWaveHoltz/eig/square32O4EigsEv64.show]
+ forcingOption=helmholtzForcing.
+ computeErrors=0
+ number of processors=1
+
+ Grid: /home/henshw/grids/square32.order4.hdf 
+               Grid Data
+               ---------
+grid     name      gridIndexRange(0:1,0:2)           gridPoints        hmx      hmn   time-stepping
+   0: square   ([ 0:   32],[ 0:   32],[ 0:    0])          1089   3.12e-02 3.12e-02    implicit
+ total number of grid points =1089, min(hmn)=3.12e-02, max(hmn)=3.12e-02, max(hmx)=3.12e-02,  
+
+ grid   name     side axis    boundary condition and name
+ ----   ----     ---- ----    ---------------------------
+    0: square     0    0      1 : dirichlet 
+    0: square     1    0      1 : dirichlet 
+    0: square     0    1      1 : dirichlet 
+    0: square     1    1      1 : dirichlet 
+*********************************************************************************
+
+# --- end cgWave setup  ---
+show file $show
+Setting nameOfShowFile=gaussian.show
+# contour
+# exit
+random initial condition
+if( $solver eq "fixedPoint" ){ $cmd="compute with fixed-point"; }elsif( $solver eq "krylov" ){ $cmd="compute with petsc"; }else{ $cmd="#" };
+if( $go eq "go" && $cmd ne "#" ){ $cmd .= "compute \n exit"; }
+if( $go eq "dk"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\nexit"; }
+if( $go eq "dks"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\n save to show\n exit"; }
+if( $go eq "fk" ){ $cmd="zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
+if( $go eq "dfk" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
+if( $go eq "ks"  ){ $cmd="compute\n save to show\n exit"; }
+if( $go eq "k"  ){ $cmd="compute\n exit"; }
+$cmd
+compute
+
+ ==== INITIALIZE DEFLATION =====
+  deflateWaveHoltz=0, numToDeflate=1, computeEigenmodes=1, eigenVectorFile=[/home/henshw/runs/cgWaveHoltz/eig/square32O4EigsEv64.show]
+---- Read show file=[/home/henshw/runs/cgWaveHoltz/eig/square32O4EigsEv64.show] with eigenvectors and process -----
+mount the showfile: /home/henshw/runs/cgWaveHoltz/eig/square32O4EigsEv64.show
+mount the showfile... done. (file created with version Overture.v27, current version is Overture.v27)
+ShowFileReader::open: File descriptor limits = 1024, 1048576, setting maxNumberOfOpenFiles=512.
+FrameSeries : defaultFrameSeries : 77 frames, 0 sequences found , is not a moving grid problem
+ShowFileReader : getting general parameters for root directory
+ShowFileReader : getting general parameters for defaultFrameSeries
+There are 77 solutions and 77 frames
+--SFR-- locateFramesInFiles: frames are not in standard order (restart?). Make a list:        frame 0 is in file 0
+        frame 1 is in file 0
+        frame 2 is in file 0
+        frame 3 is in file 0
+        frame 4 is in file 0
+        frame 5 is in file 0
+        frame 6 is in file 0
+        frame 7 is in file 0
+        frame 8 is in file 0
+        frame 9 is in file 0
+        frame 10 is in file 0
+        frame 11 is in file 0
+        frame 12 is in file 0
+        frame 13 is in file 0
+        frame 14 is in file 0
+        frame 15 is in file 0
+        frame 16 is in file 0
+        frame 17 is in file 0
+        frame 18 is in file 0
+        frame 19 is in file 0
+        frame 20 is in file 0
+        frame 21 is in file 0
+        frame 22 is in file 0
+        frame 23 is in file 0
+        frame 24 is in file 0
+        frame 25 is in file 0
+        frame 26 is in file 0
+        frame 27 is in file 0
+        frame 28 is in file 0
+        frame 29 is in file 0
+        frame 30 is in file 0
+        frame 31 is in file 0
+        frame 32 is in file 0
+        frame 33 is in file 0
+        frame 34 is in file 0
+        frame 35 is in file 0
+        frame 36 is in file 0
+        frame 37 is in file 0
+        frame 38 is in file 0
+        frame 39 is in file 0
+        frame 40 is in file 0
+        frame 41 is in file 0
+        frame 42 is in file 0
+        frame 43 is in file 0
+        frame 44 is in file 0
+        frame 45 is in file 0
+        frame 46 is in file 0
+        frame 47 is in file 0
+        frame 48 is in file 0
+        frame 49 is in file 0
+        frame 50 is in file 0
+        frame 51 is in file 0
+        frame 52 is in file 0
+        frame 53 is in file 0
+        frame 54 is in file 0
+        frame 55 is in file 0
+        frame 56 is in file 0
+        frame 57 is in file 0
+        frame 58 is in file 0
+        frame 59 is in file 0
+        frame 60 is in file 0
+        frame 61 is in file 0
+        frame 62 is in file 0
+        frame 63 is in file 0
+        frame 64 is in file 0
+        frame 65 is in file 0
+        frame 66 is in file 0
+        frame 67 is in file 0
+        frame 68 is in file 0
+        frame 69 is in file 0
+        frame 70 is in file 0
+        frame 71 is in file 0
+        frame 72 is in file 0
+        frame 73 is in file 0
+        frame 74 is in file 0
+        frame 75 is in file 0
+        frame 76 is in file 0
+--SFR-- getFrame: solution 1 found in file 0.
+multiplicity
+    (0) (1) (2) (3) (4) (5) (6) (7) (8) (9) (10) (11) (12) (13) (14) (15) (16) (17) (18) (19) (20) (21) (22) (23) (24) (25) (26) (27) (28) (29) (30) (31) (32) (33) (34) (35) (36) (37) (38) (39) (40) (41) (42) (43) (44) (45) (46) (47) (48) (49) (50) (51) (52) (53) (54) (55) (56) (57) (58) (59) (60) (61) (62) (63) (64) (65) (66) (67) (68) (69) (70) (71) (72) (73) (74) (75) (76) (77) (78) (79) (80) (81) (82) (83) (84) (85) (86) (87) (88) (89) (90) (91) (92) (93) (94) (95) (96) 
+(0)  1 2 2 1 2 2 2 2 2 2 1 2 2 2 2 2 2 2 2 1 2 2 2 2 2 2 2 2 2 2 3 3 3 2 2 2 2 2 2 2 2 4 4 4 4 2 2 1 2 2 2 2 2 2 2 2 4 4 4 4 2 2 2 2 2 2 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 4 4 4 4 1 4 4 4 4 2 2 1
+--SFR-- getFrame: solution 1 found in file 0.
+--SFR-- getFrame: solution 1 found in file 0.
+--SFR-- getFrame: solution 2 found in file 0.
+--SFR-- getFrame: solution 3 found in file 0.
+--SFR-- getFrame: solution 4 found in file 0.
+--SFR-- getFrame: solution 5 found in file 0.
+--SFR-- getFrame: solution 6 found in file 0.
+--SFR-- getFrame: solution 7 found in file 0.
+--SFR-- getFrame: solution 8 found in file 0.
+--SFR-- getFrame: solution 9 found in file 0.
+--SFR-- getFrame: solution 10 found in file 0.
+--SFR-- getFrame: solution 11 found in file 0.
+--SFR-- getFrame: solution 12 found in file 0.
+--SFR-- getFrame: solution 13 found in file 0.
+--SFR-- getFrame: solution 14 found in file 0.
+--SFR-- getFrame: solution 15 found in file 0.
+--SFR-- getFrame: solution 16 found in file 0.
+--SFR-- getFrame: solution 17 found in file 0.
+--SFR-- getFrame: solution 18 found in file 0.
+--SFR-- getFrame: solution 19 found in file 0.
+--SFR-- getFrame: solution 20 found in file 0.
+--SFR-- getFrame: solution 21 found in file 0.
+--SFR-- getFrame: solution 22 found in file 0.
+--SFR-- getFrame: solution 23 found in file 0.
+--SFR-- getFrame: solution 24 found in file 0.
+--SFR-- getFrame: solution 25 found in file 0.
+--SFR-- getFrame: solution 26 found in file 0.
+--SFR-- getFrame: solution 27 found in file 0.
+--SFR-- getFrame: solution 28 found in file 0.
+--SFR-- getFrame: solution 29 found in file 0.
+--SFR-- getFrame: solution 30 found in file 0.
+--SFR-- getFrame: solution 31 found in file 0.
+--SFR-- getFrame: solution 32 found in file 0.
+--SFR-- getFrame: solution 33 found in file 0.
+--SFR-- getFrame: solution 34 found in file 0.
+--SFR-- getFrame: solution 35 found in file 0.
+--SFR-- getFrame: solution 36 found in file 0.
+--SFR-- getFrame: solution 37 found in file 0.
+--SFR-- getFrame: solution 38 found in file 0.
+--SFR-- getFrame: solution 39 found in file 0.
+--SFR-- getFrame: solution 40 found in file 0.
+--SFR-- getFrame: solution 41 found in file 0.
+--SFR-- getFrame: solution 42 found in file 0.
+--SFR-- getFrame: solution 43 found in file 0.
+--SFR-- getFrame: solution 44 found in file 0.
+--SFR-- getFrame: solution 45 found in file 0.
+--SFR-- getFrame: solution 46 found in file 0.
+--SFR-- getFrame: solution 47 found in file 0.
+--SFR-- getFrame: solution 48 found in file 0.
+--SFR-- getFrame: solution 49 found in file 0.
+--SFR-- getFrame: solution 50 found in file 0.
+--SFR-- getFrame: solution 51 found in file 0.
+--SFR-- getFrame: solution 52 found in file 0.
+--SFR-- getFrame: solution 53 found in file 0.
+--SFR-- getFrame: solution 54 found in file 0.
+--SFR-- getFrame: solution 55 found in file 0.
+--SFR-- getFrame: solution 56 found in file 0.
+--SFR-- getFrame: solution 57 found in file 0.
+--SFR-- getFrame: solution 58 found in file 0.
+--SFR-- getFrame: solution 59 found in file 0.
+--SFR-- getFrame: solution 60 found in file 0.
+--SFR-- getFrame: solution 61 found in file 0.
+--SFR-- getFrame: solution 62 found in file 0.
+--SFR-- getFrame: solution 63 found in file 0.
+--SFR-- getFrame: solution 64 found in file 0.
+--SFR-- getFrame: solution 65 found in file 0.
+--SFR-- getFrame: solution 66 found in file 0.
+--SFR-- getFrame: solution 67 found in file 0.
+--SFR-- getFrame: solution 68 found in file 0.
+--SFR-- getFrame: solution 69 found in file 0.
+--SFR-- getFrame: solution 70 found in file 0.
+--SFR-- getFrame: solution 71 found in file 0.
+--SFR-- getFrame: solution 72 found in file 0.
+--SFR-- getFrame: solution 73 found in file 0.
+--SFR-- getFrame: solution 74 found in file 0.
+--SFR-- getFrame: solution 75 found in file 0.
+--SFR-- getFrame: solution 76 found in file 0.
+--SFR-- getFrame: solution 77 found in file 0.
+>> There are 77 eigenvectors
+Eigenvalue   0 : k=    4.4428832982 (after square root)
+Eigenvalue   1 : k=    7.0248200439 (after square root)
+Eigenvalue   2 : k=    7.0248200439 (after square root)
+Eigenvalue   3 : k=    8.8857740967 (after square root)
+Eigenvalue   4 : k=    9.9346031685 (after square root)
+Eigenvalue   5 : k=    9.9346031685 (after square root)
+Eigenvalue   6 : k=   11.3271896233 (after square root)
+Eigenvalue   7 : k=   11.3271896233 (after square root)
+Eigenvalue   8 : k=   12.9530277385 (after square root)
+Eigenvalue   9 : k=   12.9530277385 (after square root)
+Eigenvalue  10 : k=   13.3286709100 (after square root)
+Eigenvalue  11 : k=   14.0495484711 (after square root)
+Eigenvalue  12 : k=   14.0495484711 (after square root)
+Eigenvalue  13 : k=   15.7078978768 (after square root)
+Eigenvalue  14 : k=   15.7078978768 (after square root)
+Eigenvalue  15 : k=   16.0181935207 (after square root)
+Eigenvalue  16 : k=   16.0181935207 (after square root)
+Eigenvalue  17 : k=   16.9171926842 (after square root)
+Eigenvalue  18 : k=   16.9171926842 (after square root)
+Eigenvalue  19 : k=   17.7713995843 (after square root)
+Eigenvalue  20 : k=   18.3177414486 (after square root)
+Eigenvalue  21 : k=   18.3177414486 (after square root)
+Eigenvalue  22 : k=   19.1058524619 (after square root)
+Eigenvalue  23 : k=   19.1058524619 (after square root)
+Eigenvalue  24 : k=   19.8656105605 (after square root)
+Eigenvalue  25 : k=   19.8656105605 (after square root)
+Eigenvalue  26 : k=   20.1152737803 (after square root)
+Eigenvalue  27 : k=   20.1152737803 (after square root)
+Eigenvalue  28 : k=   21.0710874520 (after square root)
+Eigenvalue  29 : k=   21.0710874520 (after square root)
+Eigenvalue  30 : k=   22.2027381908 (after square root)
+Eigenvalue  31 : k=   22.2027381908 (after square root)
+Eigenvalue  32 : k=   22.2131905707 (after square root)
+Eigenvalue  33 : k=   22.6511658395 (after square root)
+Eigenvalue  34 : k=   22.6511658395 (after square root)
+Eigenvalue  35 : k=   22.8598002576 (after square root)
+Eigenvalue  36 : k=   22.8598002576 (after square root)
+Eigenvalue  37 : k=   23.9148219998 (after square root)
+Eigenvalue  38 : k=   23.9148219998 (after square root)
+Eigenvalue  39 : k=   24.5331797768 (after square root)
+Eigenvalue  40 : k=   24.5331797768 (after square root)
+Eigenvalue  41 : k=   25.2983281315 (after square root)
+Eigenvalue  42 : k=   25.2983281315 (after square root)
+Eigenvalue  43 : k=   25.3180429489 (after square root)
+Eigenvalue  44 : k=   25.3180429489 (after square root)
+Eigenvalue  45 : k=   25.8769065171 (after square root)
+Eigenvalue  46 : k=   25.8769065171 (after square root)
+Eigenvalue  47 : k=   26.6519789995 (after square root)
+Eigenvalue  48 : k=   26.8134767302 (after square root)
+Eigenvalue  49 : k=   26.8134767302 (after square root)
+Eigenvalue  50 : k=   27.0149013479 (after square root)
+Eigenvalue  51 : k=   27.0149013479 (after square root)
+Eigenvalue  52 : k=   28.0721770057 (after square root)
+Eigenvalue  53 : k=   28.0721770057 (after square root)
+Eigenvalue  54 : k=   28.3814828580 (after square root)
+Eigenvalue  55 : k=   28.3814828580 (after square root)
+Eigenvalue  56 : k=   28.8983988115 (after square root)
+Eigenvalue  57 : k=   28.8983988115 (after square root)
+Eigenvalue  58 : k=   28.9526504739 (after square root)
+Eigenvalue  59 : k=   28.9526504739 (after square root)
+Eigenvalue  60 : k=   29.6116314632 (after square root)
+Eigenvalue  61 : k=   29.6116314632 (after square root)
+Eigenvalue  62 : k=   29.7399680116 (after square root)
+Eigenvalue  63 : k=   29.7399680116 (after square root)
+Eigenvalue  64 : k=   30.8796095314 (after square root)
+Eigenvalue  65 : k=   30.8796095314 (after square root)
+Eigenvalue  66 : k=   31.0834997119 (after square root)
+Eigenvalue  67 : k=   31.3894853819 (after square root)
+Eigenvalue  68 : k=   31.3894853819 (after square root)
+Eigenvalue  69 : k=   31.4387598414 (after square root)
+Eigenvalue  70 : k=   31.4387598414 (after square root)
+Eigenvalue  71 : k=   31.9061828650 (after square root)
+Eigenvalue  72 : k=   31.9061828650 (after square root)
+Eigenvalue  73 : k=   32.2854747663 (after square root)
+Eigenvalue  74 : k=   32.2854747663 (after square root)
+Eigenvalue  75 : k=   32.6703649884 (after square root)
+Eigenvalue  76 : k=   32.6703649884 (after square root)
+ i=  0 : eig=  4.442883e+00, multiplicity=1 (eigTol= 1.00e-05)
+ i=  1 : eig=  7.024820e+00, multiplicity=2 (eigTol= 1.00e-05)
+ i=  2 : eig=  7.024820e+00, multiplicity=2 (eigTol= 1.00e-05)
+ i=  3 : eig=  8.885774e+00, multiplicity=1 (eigTol= 1.00e-05)
+ i=  4 : eig=  9.934603e+00, multiplicity=2 (eigTol= 1.00e-05)
+ i=  5 : eig=  9.934603e+00, multiplicity=2 (eigTol= 1.00e-05)
+ i=  6 : eig=  1.132719e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i=  7 : eig=  1.132719e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i=  8 : eig=  1.295303e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i=  9 : eig=  1.295303e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 10 : eig=  1.332867e+01, multiplicity=1 (eigTol= 1.00e-05)
+ i= 11 : eig=  1.404955e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 12 : eig=  1.404955e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 13 : eig=  1.570790e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 14 : eig=  1.570790e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 15 : eig=  1.601819e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 16 : eig=  1.601819e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 17 : eig=  1.691719e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 18 : eig=  1.691719e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 19 : eig=  1.777140e+01, multiplicity=1 (eigTol= 1.00e-05)
+ i= 20 : eig=  1.831774e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 21 : eig=  1.831774e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 22 : eig=  1.910585e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 23 : eig=  1.910585e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 24 : eig=  1.986561e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 25 : eig=  1.986561e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 26 : eig=  2.011527e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 27 : eig=  2.011527e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 28 : eig=  2.107109e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 29 : eig=  2.107109e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 30 : eig=  2.220274e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 31 : eig=  2.220274e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 32 : eig=  2.221319e+01, multiplicity=1 (eigTol= 1.00e-05)
+ i= 33 : eig=  2.265117e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 34 : eig=  2.265117e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 35 : eig=  2.285980e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 36 : eig=  2.285980e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 37 : eig=  2.391482e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 38 : eig=  2.391482e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 39 : eig=  2.453318e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 40 : eig=  2.453318e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 41 : eig=  2.529833e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 42 : eig=  2.529833e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 43 : eig=  2.531804e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 44 : eig=  2.531804e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 45 : eig=  2.587691e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 46 : eig=  2.587691e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 47 : eig=  2.665198e+01, multiplicity=1 (eigTol= 1.00e-05)
+ i= 48 : eig=  2.681348e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 49 : eig=  2.681348e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 50 : eig=  2.701490e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 51 : eig=  2.701490e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 52 : eig=  2.807218e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 53 : eig=  2.807218e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 54 : eig=  2.838148e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 55 : eig=  2.838148e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 56 : eig=  2.889840e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 57 : eig=  2.889840e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 58 : eig=  2.895265e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 59 : eig=  2.895265e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 60 : eig=  2.961163e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 61 : eig=  2.961163e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 62 : eig=  2.973997e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 63 : eig=  2.973997e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 64 : eig=  3.087961e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 65 : eig=  3.087961e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 66 : eig=  3.108350e+01, multiplicity=1 (eigTol= 1.00e-05)
+ i= 67 : eig=  3.138949e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 68 : eig=  3.138949e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 69 : eig=  3.143876e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 70 : eig=  3.143876e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 71 : eig=  3.190618e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 72 : eig=  3.190618e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 73 : eig=  3.228547e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 74 : eig=  3.228547e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 75 : eig=  3.267036e+01, multiplicity=2 (eigTol= 1.00e-05)
+ i= 76 : eig=  3.267036e+01, multiplicity=2 (eigTol= 1.00e-05)
+Oges::allocateWorkSpace: numberOfNonzeros=10969 fillinRatio=3.600000e+01
+allocateWorkSpace: numberOfEquations=1369, nsp = 394884, fillinRatio= 36, numberOfNonzeros = 10969
+initializeDeflation: computed volume of the domain =  1.00e+00
+CgWaveHoltz::solveSLEPC: setting tFinal = Tperiod*numPeriods = 7.854e-01 (numPeriods=1) 
+getActivePointIndex: I1=[1,31] I2=[1,31] I3=[0,0]
+solveSLEPC:Make a Matrix Free Shell: numEquations=961
+solveSLEPc: supply 1 initial conditions
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=0
+ **************** MatVec for SLEPc iteration=0 *************
+
+
+ >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<
+ it=0, dt=  7.853981633974e-02, omega=  8.000000000000e+00,  tFinal=  7.853981633974e-01
+ adjustOmega=0, adjustHelmholtzForUpwinding=0 
+ freq=0 frequency=  8.000000000000e+00 period=  7.853981633974e-01, numberOfPeriods=1
+ nextTimeToPlot=7.854e-01, numPlotSteps=10, new dt=7.854e-02 (dtMax=1.000e+00)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 7.52e-02, cpu= 0.00e+00(s)
+
+ ==================== FORM MATRIX FOR IMPLICIT TIME-STEPPING ===================
+   c=1, dt=7.854e-02, orderOfAccuracy=4, orderOfAccuracyInTime=2 addUpwinding=0, bcApproach=1
+ ================================================================================
+CgWave::formImplicitTimeSteppingMatrix: Changing the implicit solver parameters. 
+
+ === Implicit Time-Stepping Solver:
+ yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+
+ >>>>>>> CgWave::implicitSolver: use predfined equations <<<<<<< 
+
+CgWave::implicitSolver: A = I -alpha (c*dt)^2 Delta, c=1, dt= 7.85e-02
+Oges::allocateWorkSpace: numberOfNonzeros=10457 fillinRatio=3.600000e+01
+allocateWorkSpace: numberOfEquations=1369, nsp = 376452, fillinRatio= 36, numberOfNonzeros = 10457
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 5.40e-02, cpu= 6.18e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=1
+ **************** MatVec for SLEPc iteration=1 *************
+
+
+ >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<
+ it=1, dt=  7.853981633974e-02, omega=  8.000000000000e+00,  tFinal=  7.853981633974e-01
+ adjustOmega=0, adjustHelmholtzForUpwinding=0 
+ freq=0 frequency=  8.000000000000e+00 period=  7.853981633974e-01, numberOfPeriods=1
+ nextTimeToPlot=7.854e-01, numPlotSteps=10, new dt=7.854e-02 (dtMax=1.000e+00)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 6.61e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.30e-02, cpu= 1.58e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=2
+ **************** MatVec for SLEPc iteration=2 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 7.75e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.89e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=3
+ **************** MatVec for SLEPc iteration=3 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 7.59e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 5.85e-02, cpu= 1.58e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=4
+ **************** MatVec for SLEPc iteration=4 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.13e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.90e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=5
+ **************** MatVec for SLEPc iteration=5 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.00e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 5.98e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=6
+ **************** MatVec for SLEPc iteration=6 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.71e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.24e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=7
+ **************** MatVec for SLEPc iteration=7 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.03e-01, cpu= 1.00e-06(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.37e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=8
+ **************** MatVec for SLEPc iteration=8 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.02e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.99e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=9
+ **************** MatVec for SLEPc iteration=9 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.11e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.56e-02, cpu= 1.58e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=10
+ **************** MatVec for SLEPc iteration=10 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.28e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.10e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=11
+ **************** MatVec for SLEPc iteration=11 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.17e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.08e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=12
+ **************** MatVec for SLEPc iteration=12 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.63e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 1.12e-01, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=13
+ **************** MatVec for SLEPc iteration=13 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.28e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.13e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=14
+ **************** MatVec for SLEPc iteration=14 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.76e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.91e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=15
+ **************** MatVec for SLEPc iteration=15 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.17e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.60e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=16
+ **************** MatVec for SLEPc iteration=16 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.25e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.98e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=17
+ **************** MatVec for SLEPc iteration=17 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.36e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.83e-02, cpu= 1.58e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=18
+ **************** MatVec for SLEPc iteration=18 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.15e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.09e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=19
+ **************** MatVec for SLEPc iteration=19 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.11e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 9.19e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=20
+ **************** MatVec for SLEPc iteration=20 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.88e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.60e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=21
+ **************** MatVec for SLEPc iteration=21 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.34e-02, cpu= 1.00e-06(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.87e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=22
+ **************** MatVec for SLEPc iteration=22 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.46e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.16e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=23
+ **************** MatVec for SLEPc iteration=23 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.13e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.08e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=24
+ **************** MatVec for SLEPc iteration=24 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.16e-01, cpu= 1.00e-06(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 9.64e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=25
+ **************** MatVec for SLEPc iteration=25 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.03e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.55e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=26
+ **************** MatVec for SLEPc iteration=26 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.67e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.72e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=27
+ **************** MatVec for SLEPc iteration=27 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.06e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.01e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=28
+ **************** MatVec for SLEPc iteration=28 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.62e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.48e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=29
+ **************** MatVec for SLEPc iteration=29 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.46e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.21e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=30
+ **************** MatVec for SLEPc iteration=30 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.28e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 4.83e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=31
+ **************** MatVec for SLEPc iteration=31 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.58e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.39e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=32
+ **************** MatVec for SLEPc iteration=32 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.09e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 1.13e-01, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=33
+ **************** MatVec for SLEPc iteration=33 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.33e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 1.11e-01, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=34
+ **************** MatVec for SLEPc iteration=34 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.10e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 5.41e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=35
+ **************** MatVec for SLEPc iteration=35 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.03e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 4.64e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=36
+ **************** MatVec for SLEPc iteration=36 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.16e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 1.26e-01, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=37
+ **************** MatVec for SLEPc iteration=37 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.18e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.32e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=38
+ **************** MatVec for SLEPc iteration=38 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.28e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.89e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=39
+ **************** MatVec for SLEPc iteration=39 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.03e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.14e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=40
+ **************** MatVec for SLEPc iteration=40 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.40e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.02e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=41
+ **************** MatVec for SLEPc iteration=41 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.57e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.31e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=42
+ **************** MatVec for SLEPc iteration=42 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.05e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.86e-02, cpu= 1.57e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=43
+ **************** MatVec for SLEPc iteration=43 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.41e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.00e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=44
+ **************** MatVec for SLEPc iteration=44 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.24e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.96e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=45
+ **************** MatVec for SLEPc iteration=45 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.37e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.97e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=46
+ **************** MatVec for SLEPc iteration=46 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.08e-01, cpu= 1.00e-06(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 9.07e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=47
+ **************** MatVec for SLEPc iteration=47 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.25e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.87e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=48
+ **************** MatVec for SLEPc iteration=48 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.17e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.90e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=49
+ **************** MatVec for SLEPc iteration=49 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.95e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.73e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=50
+ **************** MatVec for SLEPc iteration=50 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.24e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 1.04e-01, cpu= 1.59e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=51
+ **************** MatVec for SLEPc iteration=51 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.08e-01, cpu= 1.00e-06(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 5.67e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=52
+ **************** MatVec for SLEPc iteration=52 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.29e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.54e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=53
+ **************** MatVec for SLEPc iteration=53 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.02e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 5.80e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=54
+ **************** MatVec for SLEPc iteration=54 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 8.38e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.69e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=55
+ **************** MatVec for SLEPc iteration=55 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.09e-01, cpu= 1.00e-06(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.30e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=56
+ **************** MatVec for SLEPc iteration=56 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 9.88e-02, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.13e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=57
+ **************** MatVec for SLEPc iteration=57 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.08e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 6.93e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=58
+ **************** MatVec for SLEPc iteration=58 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.19e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 7.73e-02, cpu= 1.56e-03(s)
+
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=59
+ **************** MatVec for SLEPc iteration=59 *************
+
+
+ ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=0+++++
+
+cgWave:FD24 t=0.000e+00 (0 steps) dt=7.854e-02 ||u||= 1.07e-01, cpu= 0.00e+00(s)
+cgWave:FD24 t=7.854e-01 (10 steps) dt=7.854e-02 ||u||= 8.32e-02, cpu= 1.56e-03(s)
+>>Solution method: krylovschur
+>>Number of requested eigenvalues: 8
+>>Number of converged eigenvalues= 8
+>>Number of iterations of the method: 7
+WaveHoltz eigenvalue beta 0 : k=9.98579751067989e-01 + 0.00000000000000e+00 I 
+WaveHoltz eigenvalue beta 1 : k=9.41148155865088e-01 + 0.00000000000000e+00 I 
+WaveHoltz eigenvalue beta 2 : k=9.41148155865086e-01 + 0.00000000000000e+00 I 
+WaveHoltz eigenvalue beta 3 : k=8.88267744178254e-01 + 0.00000000000000e+00 I 
+WaveHoltz eigenvalue beta 4 : k=8.88267744178253e-01 + 0.00000000000000e+00 I 
+WaveHoltz eigenvalue beta 5 : k=7.65791240660478e-01 + 0.00000000000000e+00 I 
+WaveHoltz eigenvalue beta 6 : k=7.65791240660475e-01 + 0.00000000000000e+00 I 
+WaveHoltz eigenvalue beta 7 : k=4.96212314939414e-01 + 0.00000000000000e+00 I 
+
+ -----------------------------------------------------------------------------
+ ---------------------- EigenWave SUMMARY (SLEPc solver) ---------------------
+ omega=  8.0000e+00, grid=/home/henshw/grids/square32.order4.hdf
+ eigenSolver = KrylovSchur
+ provide initial vector(s) for eigenSolver = 1
+ timeSteppingMethod = implicit, minStepsPerPeriod=10
+ tol= 1.00e-14, numIterations=60, provide initial vectors=1
+ num eigs requested=8, number eigs converged=8, numArnoldiVectors=17
+ -----------------------------------------------------------------------------
+iperm
+    (   0) (   1) (   2) (   3) (   4) (   5) (   6) (   7) 
+(0)      4      3      0      1      2      6      5      7 
+>>> Reorder eigenVectors: number of assignments to reorder=10
+ i=0: lamRQ = 7.0248200439e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.51e-13
+ i=1: lamRQ = 7.0248200439e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.30e-13
+ i=2: lamRQ = 8.8857740967e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.70e-14
+ i=3: lamRQ = 9.9346031685e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.16e-14
+ i=4: lamRQ = 9.9346031685e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.93e-14
+ i=5: lamRQ = 1.1327189623e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.27e-14
+ i=6: lamRQ = 1.1327189623e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.81e-14
+ i=7: lamRQ = 1.2953027738e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.86e-14
+
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  8.0000e+00, orderOfAccuracy=4, grid=square32
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=1000.00, dt=7.854e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=600, aveItsPerImplicitSolve=  0.0
+ implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+ implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 60, cpu= 1.41e-01(s)
+ num eigs requested=8, number eigs converged =8, numArnoldiVectors=17
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+
+  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res
+ .............................................................................
+  0  7.02482004e+00  [ 1]=7.02482004e+00   2  4.43e-15  1.27e-14  1.51e-13
+  1  7.02482004e+00  [ 1]=7.02482004e+00   2  4.05e-15  9.99e-15  1.30e-13
+  2  8.88577410e+00  [ 3]=8.88577410e+00   1  6.00e-16  1.55e-14  6.70e-14
+  3  9.93460317e+00  [ 4]=9.93460317e+00   2  8.94e-16  2.26e-14  6.16e-14
+  4  9.93460317e+00  [ 4]=9.93460317e+00   2  7.15e-16  6.68e-15  5.93e-14
+  5  1.13271896e+01  [ 7]=1.13271896e+01   2  1.10e-15  1.13e-14  7.27e-14
+  6  1.13271896e+01  [ 7]=1.13271896e+01   2  4.70e-16  8.60e-15  3.81e-14
+  7  1.29530277e+01  [ 9]=1.29530277e+01   2  5.49e-16  1.29e-14  4.86e-14
+ .............................................................................
+ Note:  relative-errors, eig-res = || Lv+lamRQ^2 v ||/lamRQ^2
+Wrote results to LaTeX file [cgWaveHoltzKrylov.tex]
+Wrote results to the check file [eigenWave.check]
+saveMatlab: dt=7.854e-02
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzKrylov.m]
+exit
+
+              -------------------CgWave Summary----------------- 
+                       Tue May 23 15:54:18 2023
+               Grid:   /home/henshw/grids/square32.order4.hdf 
+  ==== final time= 7.85e-01, numberOfStepsTaken =      600, grids=1, gridpts =1089, interp pts=0, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=51.0156,ave=51.0156,max=51.0156](Mb), max-recorded=0 (Mb), total=51.0156 (Mb)
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  1.14e-01    1.89e-04    1.74e-07   100.000   1.136e-01   1.136e-01
+setup and initialize................  1.34e-03    2.23e-06    2.04e-09     1.176   1.336e-03   1.336e-03
+initialize BCs......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+initial conditions..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+advance.............................  1.00e-01    1.67e-04    1.54e-07    88.375   1.004e-01   1.004e-01
+  advance rectangular grids.........  6.55e-03    1.09e-05    1.00e-08     5.769   6.554e-03   6.554e-03
+  advance curvilinear grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+    implicit solve..................  5.72e-02    9.54e-05    8.76e-08    50.360   5.722e-02   5.722e-02
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  1.45e-02    2.41e-05    2.21e-08    12.735   1.447e-02   1.447e-02
+  interpolation.....................  1.80e-03    3.00e-06    2.75e-09     1.584   1.800e-03   1.800e-03
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  1.60e-02    2.66e-05    2.44e-08    14.051   1.596e-02   1.596e-02
+  get errors........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+ Memory usage: reals/grid-point = 6140.24.
+--------------------------------------------------------------------------------------------------------
+ ======== Parallel Distribution for CgWave (np=1)============
+ numberOfGrids=1, gridDistributionList.size()=1l 
+  grid=0: procs=1 [0,0], proc-decomp=[1]x[1]x[1], pts=1369=[37]x[37]x[1], pts/proc=1369=[37]x[37]x[1], ratio=37/37=  1, ghost=[0,0,0]
+cmd=$cmd\n");eigenSolver=default
+
+ >>>> See the file mx.log for further timings, memory usage and other statistics <<<< 
+

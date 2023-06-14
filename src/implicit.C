@@ -15,7 +15,8 @@ extern "C"
 void bcOptWave( const int&nd, 
                                 const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
                                 const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const int&mask,
-                                const real&rsxy, const real&xy, const int&boundaryCondition, const real & frequencyArray,
+                                const real&rsxy, const real&xy, real &uTemp1, real & uTemp2, 
+                                const int&boundaryCondition, const real & frequencyArray,
                                 const DataBase *pdb, const int&ipar, const real&rpar, int&ierr );
 
 }
@@ -217,8 +218,15 @@ int CgWave::takeImplicitStep( Real t )
                 {
                     knownSolutionOption=4;                   // this number must match in bcOptWave.bf90
           // assignKnownSolutionAtBoundaries=1;  
-                }    
+                } 
+                else
+                {
+                    knownSolutionOption=1000;  // all other user defined known solutions
+                }   
             }
+            int addForcingBC= forcingOption==noForcing ? 0 : 1;
+            if( applyKnownSolutionAtBoundaries )
+                addForcingBC=1; 
             int gridType = isRectangular ? 0 : 1;
             int gridIsImplicit = 0; 
             int numberOfComponents = 1;          // for now CgWave only has a single component 
@@ -236,7 +244,7 @@ int CgWave::takeImplicitStep( Real t )
                 myid                ,            // ipar( 9)
                 applyKnownSolutionAtBoundaries,  // ipar(10)
                 knownSolutionOption,             // ipar(11)
-                addForcing,                      // ipar(12)
+                addForcingBC,                    // ipar(12)
                 forcingOption,                   // ipar(13)
                 useUpwindDissipation,            // ipar(14)
                 numGhost,                        // ipar(15)
@@ -262,22 +270,52 @@ int CgWave::takeImplicitStep( Real t )
             real temp, *pxy=&temp, *prsxy=&temp;
             if( !isRectangular )
             {
-                mg.update(MappedGrid::THEinverseVertexDerivative);
+                mg.update(MappedGrid::THEinverseVertexDerivative); 
                 #ifdef USE_PPP
                   prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
                 #else
                   prsxy=mg.inverseVertexDerivative().getDataPointer();
-                #endif    
+                #endif  
             }
             bool vertexNeeded = twilightZone || knownSolutionOption!=0;
             if( vertexNeeded )
             {
-                mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
+                mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter ); 
                 #ifdef USE_PPP
                   pxy=mg.vertex().getLocalArray().getDataPointer();
                 #else
                   pxy=mg.vertex().getDataPointer();
                 #endif    
+            }
+            real *puTemp1=&temp, *puTemp2=&temp;
+            if( orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions )
+            {
+        // WE currently need work space for bcOptWave and standard CBC at order four ******************FIX ME: just make a stencil ****
+                if( !dbase.has_key("uTemp1") )
+                {
+                    RealArray & uTemp1 = dbase.put<RealArray>("uTemp1");
+                    RealArray & uTemp2 = dbase.put<RealArray>("uTemp2");
+          // -- find the grid with physical boundaries with the most points ---
+                    int numElements=0;
+                    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                    {
+                        MappedGrid & mg = cg[grid];
+                        const IntegerArray & boundaryCondition = mg.boundaryCondition();
+                        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+                        if( max(boundaryCondition)>0 )
+                            numElements = max( numElements, maskLocal.elementCount() );
+                    }
+                    printF(">>> INFO CgWave::applyBC: allocate uTemp1 and utemp2 for order 4 CBC: numElements=%d\n",numElements);
+                    if( numElements>0 )
+                    {
+                        uTemp1.redim(numElements);
+                        uTemp2.redim(numElements);
+                    }
+                }
+                RealArray & uTemp1 = dbase.get<RealArray>("uTemp1");
+                RealArray & uTemp2 = dbase.get<RealArray>("uTemp2");
+                puTemp1 = uTemp1.getDataPointer();
+                puTemp2 = uTemp2.getDataPointer();
             }
 
         int ierr=0;
@@ -288,7 +326,8 @@ int CgWave::takeImplicitStep( Real t )
                             rhsLocal.getBase(0),rhsLocal.getBound(0),rhsLocal.getBase(1),rhsLocal.getBound(1),
                             rhsLocal.getBase(2),rhsLocal.getBound(2),
                             indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                            *rhsLocal.getDataPointer(), *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
+                            *rhsLocal.getDataPointer(), *pmask, *prsxy, *pxy, *puTemp1, *puTemp2,
+                            bcLocal(0,0), frequencyArray(0),
                             pdb, ipar[0],rpar[0], ierr );
 
     } // end for grid 
@@ -322,7 +361,8 @@ int CgWave::takeImplicitStep( Real t )
         int numIterations = impSolver.getNumberOfIterations();
         totalImplicitIterations += numIterations;
         totalImplicitSolves++;
-        if( true )
+
+        if( debug & 2 || (t <= 10.*dt) )
             printF("CgWave::takeImplicitStep: implicit solve: max-res= %8.2e (iterations=%i) ***\n",
                                   impSolver.getMaximumResidual(),numIterations);
     }
@@ -486,7 +526,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
   //    - order in time 2
   //    - no implicit upwinding
   //    - CBC's 
-    bool usePredefined = useMultigrid && !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
+  // bool usePredefined = useMultigrid && !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
+    bool usePredefined = !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
 
     if( orderOfAccuracyInTime != 2  )
     {
@@ -712,8 +753,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
                 int stencilSize = sparse.stencilSize;
                 int stencilDim=stencilSize*numberOfComponentsForCoefficients; // number of coefficients per equation
                 const int equationOffset=sparse.equationOffset;
-                IntegerArray & equationNumber = sparse.equationNumber;
-                IntegerArray & classify = sparse.classify;
+                intArray & equationNumber = sparse.equationNumber;
+                intArray & classify = sparse.classify;
                 const int equationNumberBase1  =equationNumber.getBase(1);
                 const int equationNumberLength1=equationNumber.getLength(1);
                 const int equationNumberBase2  =equationNumber.getBase(2);

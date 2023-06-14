@@ -1,4 +1,376 @@
 
+****************************************************
+****** Wed June 14, 2023
+
+PLANE WAVE:
+cgWave -noplot known.cmd -g=square1024.order2 -upwind=1 -kx=2 -ky=1 -tp=2 -tf=2 -known=planeWave -bc=e -debug=0 -go=go
+
+advance.............................  3.85e+01    1.20e-02    1.14e-08    99.691   3.851e+01   3.851e+01
+  advance rectangular grids.........  4.43e+00    1.38e-03    1.31e-09    11.457   4.426e+00   4.426e+00
+  advance curvilinear grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  3.22e+01    1.00e-02    9.52e-09    83.337   3.220e+01   3.220e+01
+  boundary conditions...............  1.62e+00    5.04e-04    4.79e-10     4.195   1.621e+00   1.621e+00
+  interpolation.....................  6.94e-02    2.16e-05    2.05e-11     0.180   6.942e-02   6.942e-02
+  
+
+EXPLICIT
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9  -implicitUpwind=0 -dtMax=.5 -go=go
+              -------------------CgWave Summary----------------- 
+                       Wed Jun 14 07:12:25 2023
+               Grid:   /home/henshw/grids/sice32.order2.hdf 
+  ==== final time= 2.00e+00, numberOfStepsTaken =     1011, grids=2, gridpts =412112, interp pts=4512, processors=1, clock=3.00 GHz ==== 
+  ==== memory per-proc: [min=69.1641,ave=69.1641,max=69.1641](Mb), max-recorded=69.1641 (Mb), total=69.1641 (Mb)
+ applyBoundaryConditions called 1012 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  4.40e+00    4.36e-03    1.06e-08   100.000   4.404e+00   4.404e+00
+setup and initialize................  7.67e-03    7.59e-06    1.84e-11     0.174   7.670e-03   7.670e-03
+initialize BCs......................  9.30e-03    9.20e-06    2.23e-11     0.211   9.297e-03   9.297e-03
+initial conditions..................  1.72e-01    1.71e-04    4.14e-10     3.916   1.725e-01   1.725e-01
+advance.............................  4.21e+00    4.17e-03    1.01e-08    95.687   4.214e+00   4.214e+00
+  advance rectangular grids.........  4.28e-01    4.23e-04    1.03e-09     9.708   4.276e-01   4.276e-01
+  advance curvilinear grids.........  1.09e-01    1.08e-04    2.63e-10     2.485   1.095e-01   1.095e-01
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  3.21e+00    3.18e-03    7.71e-09    72.969   3.214e+00   3.214e+00
+  boundary conditions...............  2.02e-01    1.99e-04    4.84e-10     4.576   2.015e-01   2.015e-01
+  interpolation.....................  6.53e-02    6.46e-05    1.57e-10     1.483   6.530e-02   6.530e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.64e-01    1.63e-04    3.95e-10     3.733   1.644e-01   1.644e-01
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+
+SEMI-IMPLICIT:  
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.5 -rectangular=explicit -go=go
+              -------------------CgWave Summary----------------- 
+                       Wed Jun 14 07:10:32 2023
+               Grid:   /home/henshw/grids/sice32.order2.hdf 
+  ==== final time= 2.00e+00, numberOfStepsTaken =     1011, grids=2, gridpts =412112, interp pts=4512, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=147.809,ave=147.809,max=147.809](Mb), max-recorded=147.809 (Mb), total=147.809 (Mb)
+ applyBoundaryConditions called 1011 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  7.38e+00    7.30e-03    1.77e-08   100.000   7.384e+00   7.384e+00
+setup and initialize................  8.44e-02    8.35e-05    2.03e-10     1.143   8.439e-02   8.439e-02
+initialize BCs......................  9.08e-03    8.99e-06    2.18e-11     0.123   9.084e-03   9.084e-03
+initial conditions..................  1.72e-01    1.70e-04    4.13e-10     2.330   1.720e-01   1.720e-01
+advance.............................  7.20e+00    7.12e-03    1.73e-08    97.501   7.199e+00   7.199e+00
+  advance rectangular grids.........  4.57e-01    4.52e-04    1.10e-09     6.196   4.575e-01   4.575e-01
+  advance curvilinear grids.........  3.23e-01    3.19e-04    7.75e-10     4.371   3.227e-01   3.227e-01
+    implicit solve..................  2.71e+00    2.68e-03    6.50e-09    36.687   2.709e+00   2.709e+00
+  add dissipation...................  3.23e+00    3.19e-03    7.74e-09    43.699   3.227e+00   3.227e+00
+  boundary conditions...............  2.09e-01    2.07e-04    5.02e-10     2.831   2.090e-01   2.090e-01
+  interpolation.....................  7.17e-02    7.09e-05    1.72e-10     0.971   7.172e-02   7.172e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.64e-01    1.62e-04    3.93e-10     2.220   1.639e-01   1.639e-01
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+
+
+ALL IMPLICIT: 
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.5 -go=go
+              -------------------CgWave Summary----------------- 
+                       Wed Jun 14 07:09:18 2023
+               Grid:   /home/henshw/grids/sice32.order2.hdf 
+  ==== final time= 2.00e+00, numberOfStepsTaken =     1011, grids=2, gridpts =412112, interp pts=4512, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=380.52,ave=380.52,max=380.52](Mb), max-recorded=380.52 (Mb), total=380.52 (Mb)
+ applyBoundaryConditions called 1011 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  5.68e+01    5.61e-02    1.36e-07   100.000   5.677e+01   5.677e+01
+setup and initialize................  8.41e-02    8.32e-05    2.02e-10     0.148   8.411e-02   8.411e-02
+initialize BCs......................  9.18e-03    9.09e-06    2.20e-11     0.016   9.185e-03   9.185e-03
+initial conditions..................  1.72e-01    1.70e-04    4.12e-10     0.302   1.715e-01   1.715e-01
+advance.............................  5.66e+01    5.60e-02    1.36e-07    99.675   5.658e+01   5.658e+01
+  advance rectangular grids.........  1.51e+00    1.49e-03    3.63e-09     2.662   1.511e+00   1.511e+00
+  advance curvilinear grids.........  3.22e-01    3.18e-04    7.72e-10     0.567   3.218e-01   3.218e-01
+    implicit solve..................  5.10e+01    5.04e-02    1.22e-07    89.818   5.099e+01   5.099e+01
+  add dissipation...................  3.25e+00    3.22e-03    7.80e-09     5.728   3.251e+00   3.251e+00
+  boundary conditions...............  2.19e-01    2.17e-04    5.26e-10     0.386   2.190e-01   2.190e-01
+  interpolation.....................  8.60e-02    8.51e-05    2.07e-10     0.152   8.604e-02   8.604e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.65e-01    1.64e-04    3.97e-10     0.291   1.653e-01   1.653e-01
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+
+
+
+
+CONTINUE WITH OPT BC
+
+Pre-allocate temp arrays for CBC4
+
+
++++++++++++ UPWIND: 
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+
+
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=5 -tp=5 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+
+advance.............................  1.03e+01    4.08e-03    9.89e-09    98.151   1.030e+01   1.030e+01
+  advance rectangular grids.........  1.08e+00    4.26e-04    1.03e-09    10.260   1.077e+00   1.077e+00
+  advance curvilinear grids.........  2.77e-01    1.10e-04    2.66e-10     2.639   2.770e-01   2.770e-01
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  8.04e+00    3.18e-03    7.72e-09    76.606   8.043e+00   8.043e+00
+  boundary conditions...............  5.04e-01    1.99e-04    4.84e-10     4.801   5.040e-01   5.040e-01
+  interpolation.....................  1.58e-01    6.24e-05    1.51e-10     1.502   1.577e-01   1.577e-01
+
+
+
+
+
+G32
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+
+
+Disk: Bessel function solution: a=1, n=3, m=1, lambda=9.761023e+00, bcOpt=0 
+Disk: Bessel function solution: a=1, n=3, m=1, lambda=9.761023e+00, bcOpt=0 
+cgWave:FD22 t=0.000e+00 (  0 steps) dt=1.976e-03 maxErr= 3.91e-07, ||u||= 4.34e-01, cpu= 1.00e-06(s)
+cgWave:FD22 t=1.000e+00 (506 steps) dt=1.976e-03 maxErr= 4.50e-05, ||u||= 4.10e-01, cpu= 4.30e-01(s)
+
+              -------------------CgWave Summary----------------- 
+                       Wed Jun 14 06:13:32 2023
+               Grid:   /home/henshw/grids/sice32.order2.hdf 
+  ==== final time= 1.00e+00, numberOfStepsTaken =      506, grids=2, gridpts =412112, interp pts=4512, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=68.3438,ave=68.3438,max=68.3438](Mb), max-recorded=68.3438 (Mb), total=68.3438 (Mb)
+ applyBoundaryConditions called 507 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  6.91e-01    1.37e-03    3.31e-09   100.000   6.908e-01   6.908e-01
+setup and initialize................  7.55e-03    1.49e-05    3.62e-11     1.094   7.554e-03   7.554e-03
+initialize BCs......................  3.99e-04    7.89e-07    1.91e-12     0.058   3.990e-04   3.990e-04
+initial conditions..................  1.71e-01    3.38e-04    8.21e-10    24.786   1.712e-01   1.712e-01
+advance.............................  5.11e-01    1.01e-03    2.45e-09    73.985   5.111e-01   5.111e-01
+  advance rectangular grids.........  1.96e-01    3.87e-04    9.39e-10    28.332   1.957e-01   1.957e-01
+  advance curvilinear grids.........  5.01e-02    9.90e-05    2.40e-10     7.250   5.008e-02   5.008e-02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  5.66e-02    1.12e-04    2.71e-10     8.195   5.661e-02   5.661e-02
+  interpolation.....................  3.16e-02    6.25e-05    1.52e-10     4.580   3.164e-02   3.164e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.62e-01    3.21e-04    7.78e-10    23.491   1.623e-01   1.623e-01
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+
+
+
+****************************************************
+****** Tues June 13, 2023
+
+FIX userDefinedKnown solution and -bc=e
+
+******* FIXES MADE FOR bc=e ****
+
+
+********** SPEED UP BC's *******
+
+>>> ADD USEFORCING NOFORCING to bcOptWave
+
+applyBC was being called too many times!!! Every grid!!
+
+
+SKIP bcOptWave entirely: 
+  boundary conditions...............  5.53e-02    1.09e-04    2.65e-10     7.837   5.533e-02   5.533e-02
+
+G32:
+              -------------------CgWave Summary----------------- 
+                       Tue Jun 13 18:04:06 2023
+               Grid:   /home/henshw/grids/sice32.order2.hdf 
+  ==== final time= 1.00e+00, numberOfStepsTaken =      506, grids=2, gridpts =412112, interp pts=4512, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=68.7656,ave=68.7656,max=68.7656](Mb), max-recorded=68.7656 (Mb), total=68.7656 (Mb)
+ applyBoundaryConditions called 507 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  7.82e-01    1.55e-03    3.75e-09   100.000   7.822e-01   7.822e-01
+setup and initialize................  6.94e-03    1.37e-05    3.33e-11     0.887   6.941e-03   6.941e-03
+initialize BCs......................  1.06e-03    2.08e-06    5.06e-12     0.135   1.055e-03   1.055e-03
+initial conditions..................  1.70e-01    3.36e-04    8.15e-10    21.737   1.700e-01   1.700e-01
+advance.............................  6.03e-01    1.19e-03    2.89e-09    77.149   6.034e-01   6.034e-01
+  advance rectangular grids.........  2.12e-01    4.19e-04    1.02e-09    27.134   2.122e-01   2.122e-01
+  advance curvilinear grids.........  5.49e-02    1.08e-04    2.63e-10     7.017   5.489e-02   5.489e-02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  1.26e-01    2.49e-04    6.05e-10    16.125   1.261e-01   1.261e-01
+  interpolation.....................  3.08e-02    6.08e-05    1.48e-10     3.933   3.077e-02   3.077e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.65e-01    3.26e-04    7.92e-10    21.104   1.651e-01   1.651e-01
+
+
+
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+
+
+MOVE GHOST LOOPS OUTSIDE
+advance.............................  1.26e-01    4.96e-04    4.79e-09    72.579   1.260e-01   1.260e-01
+  advance rectangular grids.........  2.55e-02    1.00e-04    9.69e-10    14.699   2.551e-02   2.551e-02
+  advance curvilinear grids.........  1.29e-02    5.09e-05    4.91e-10     7.450   1.293e-02   1.293e-02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  2.92e-02    1.15e-04    1.11e-09    16.817   2.919e-02   2.919e-02
+  interpolation.....................  9.08e-03    3.57e-05    3.45e-10     5.231   9.078e-03   9.078e-03
+
+
+
+REALLY TURN OFF FORCING:
+advance.............................  1.16e-01    4.55e-04    4.40e-09    70.477   1.157e-01   1.157e-01
+  advance rectangular grids.........  2.78e-02    1.09e-04    1.06e-09    16.933   2.780e-02   2.780e-02
+  advance curvilinear grids.........  1.53e-02    6.01e-05    5.80e-10     9.295   1.526e-02   1.526e-02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  1.35e-02    5.30e-05    5.11e-10     8.196   1.345e-02   1.345e-02
+  interpolation.....................  8.86e-03    3.49e-05    3.36e-10     5.396   8.857e-03   8.857e-03
+
+
+advance.............................  1.12e-01    4.39e-04    4.24e-09    70.236   1.115e-01   1.115e-01
+  advance rectangular grids.........  2.57e-02    1.01e-04    9.78e-10    16.208   2.574e-02   2.574e-02
+  advance curvilinear grids.........  1.35e-02    5.30e-05    5.11e-10     8.477   1.346e-02   1.346e-02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  1.40e-02    5.51e-05    5.31e-10     8.809   1.399e-02   1.399e-02
+  interpolation.....................  8.99e-03    3.54e-05    3.41e-10     5.660   8.987e-03   8.987e-03
+
+
+TURN OFF APPLYBC:
+
+TURN OFF ADVOPT !!!
+advance.............................  1.17e-01    4.62e-04    4.46e-09    71.239   1.174e-01   1.174e-01
+  advance rectangular grids.........  2.56e-02    1.01e-04    9.74e-10    15.556   2.564e-02   2.564e-02
+  advance curvilinear grids.........  1.38e-02    5.43e-05    5.24e-10     8.373   1.380e-02   1.380e-02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  1.90e-02    7.48e-05    7.22e-10    11.529   1.900e-02   1.900e-02
+  interpolation.....................  9.25e-03    3.64e-05    3.51e-10     5.610   9.248e-03   9.248e-03
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+
+
+>> better but still expensive ????
+advance.............................  3.40e-01    1.34e-03    1.29e-08    86.624   3.396e-01   3.396e-01
+  advance rectangular grids.........  2.48e-02    9.78e-05    9.44e-10     6.337   2.484e-02   2.484e-02
+  advance curvilinear grids.........  1.24e-02    4.87e-05    4.70e-10     3.158   1.238e-02   1.238e-02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  2.01e-01    7.91e-04    7.64e-09    51.269   2.010e-01   2.010e-01
+  boundary conditions...............  4.25e-02    1.67e-04    1.61e-09    10.831   4.246e-02   4.246e-02
+  interpolation.....................  9.34e-03    3.68e-05    3.55e-10     2.381   9.336e-03   9.336e-03
+
+
+
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+
+           -------------------CgWave Summary----------------- 
+                       Tue Jun 13 07:37:53 2023
+               Grid:   /home/henshw/grids/sice16.order2.hdf 
+  ==== final time= 1.00e+00, numberOfStepsTaken =      254, grids=2, gridpts =103630, interp pts=2226, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=48.0469,ave=48.0469,max=48.0469](Mb), max-recorded=48.0469 (Mb), total=48.0469 (Mb)
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  5.45e-01    2.15e-03    2.07e-08   100.000   5.449e-01   5.449e-01
+setup and initialize................  2.78e-03    1.09e-05    1.06e-10     0.510   2.779e-03   2.779e-03
+initialize BCs......................  4.95e-03    1.95e-05    1.88e-10     0.908   4.948e-03   4.948e-03
+initial conditions..................  4.62e-02    1.82e-04    1.76e-09     8.486   4.624e-02   4.624e-02
+advance.............................  4.91e-01    1.93e-03    1.87e-08    90.157   4.912e-01   4.912e-01
+  advance rectangular grids.........  2.50e-02    9.84e-05    9.50e-10     4.589   2.500e-02   2.500e-02
+  advance curvilinear grids.........  1.29e-02    5.10e-05    4.92e-10     2.376   1.294e-02   1.294e-02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  2.04e-01    8.02e-04    7.74e-09    37.406   2.038e-01   2.038e-01
+  boundary conditions...............  1.57e-01    6.18e-04    5.97e-09    28.821   1.570e-01   1.570e-01
+  interpolation.....................  2.79e-02    1.10e-04    1.06e-09     5.122   2.791e-02   2.791e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  4.33e-02    1.71e-04    1.65e-09     7.952   4.332e-02   4.332e-02
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+
+
+
+
+
+BC=E: starts to work: 
+cgWave -noplot known.cmd -g=square64.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -orderInTime=-1 -debug=0 -cfl=.9 -bc=e -go=go  
+
+
+cgWave -noplot known.cmd -g=square64.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=e -setKnownOnBoundaries=1 -go=go  
+
+cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=e -setKnownOnBoundaries=1 -go=go 
+
+
+****************************************************
+****** Thurs June 8, 2023
+
+REVISIT IPCU SCHEME
+
+ALL EXPLICIT -- **check BCs and upwinding ***
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9  -implicitUpwind=0 -dtMax=.5 -go=go -meApproach=stencil
+
+              -------------------CgWave Summary----------------- 
+                       Thu Jun  8 06:09:29 2023
+               Grid:   /home/henshw/grids/sice16.order2.hdf 
+  ==== final time= 1.00e+00, numberOfStepsTaken =      254, grids=2, gridpts =103630, interp pts=2226, processors=1, clock=3.00 GHz ==== 
+  ==== memory per-proc: [min=48.1445,ave=48.1445,max=48.1445](Mb), max-recorded=48.1445 (Mb), total=48.1445 (Mb)
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  5.07e-01    2.00e-03    1.93e-08   100.000   5.069e-01   5.069e-01
+setup and initialize................  2.59e-03    1.02e-05    9.86e-11     0.512   2.595e-03   2.595e-03
+initialize BCs......................  4.74e-03    1.86e-05    1.80e-10     0.935   4.737e-03   4.737e-03
+initial conditions..................  4.55e-02    1.79e-04    1.73e-09     8.976   4.550e-02   4.550e-02
+advance.............................  4.54e-01    1.79e-03    1.73e-08    89.657   4.544e-01   4.544e-01
+  advance rectangular grids.........  2.45e-02    9.65e-05    9.32e-10     4.838   2.452e-02   2.452e-02
+  advance curvilinear grids.........  1.27e-02    5.02e-05    4.84e-10     2.514   1.274e-02   1.274e-02
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  2.01e-01    7.91e-04    7.64e-09    39.659   2.010e-01   2.010e-01
+  boundary conditions...............  1.25e-01    4.92e-04    4.74e-09    24.637   1.249e-01   1.249e-01
+  interpolation.....................  2.76e-02    1.09e-04    1.05e-09     5.440   2.757e-02   2.757e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  4.28e-02    1.68e-04    1.63e-09     8.443   4.280e-02   4.280e-02
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+
+
+
+ALL IMPLICIT: 
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.5 -go=go
+
+              -------------------CgWave Summary----------------- 
+                       Thu Jun  8 06:08:21 2023
+               Grid:   /home/henshw/grids/sice16.order2.hdf 
+  ==== final time= 1.00e+00, numberOfStepsTaken =      254, grids=2, gridpts =103630, interp pts=2226, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=118.719,ave=118.719,max=118.719](Mb), max-recorded=118.719 (Mb), total=118.719 (Mb)
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  3.26e+00    1.28e-02    1.24e-07   100.000   3.259e+00   3.259e+00
+setup and initialize................  2.73e-02    1.07e-04    1.04e-09     0.837   2.727e-02   2.727e-02
+initialize BCs......................  4.73e-03    1.86e-05    1.80e-10     0.145   4.732e-03   4.732e-03
+initial conditions..................  4.58e-02    1.80e-04    1.74e-09     1.405   4.578e-02   4.578e-02
+advance.............................  3.21e+00    1.26e-02    1.22e-07    98.417   3.207e+00   3.207e+00
+  advance rectangular grids.........  8.58e-02    3.38e-04    3.26e-09     2.632   8.577e-02   8.577e-02
+  advance curvilinear grids.........  4.03e-02    1.59e-04    1.53e-09     1.238   4.033e-02   4.033e-02
+    implicit solve..................  2.71e+00    1.07e-02    1.03e-07    83.148   2.710e+00   2.710e+00
+  add dissipation...................  2.02e-01    7.95e-04    7.67e-09     6.195   2.019e-01   2.019e-01
+  boundary conditions...............  7.46e-02    2.94e-04    2.83e-09     2.288   7.457e-02   7.457e-02
+  interpolation.....................  2.83e-02    1.11e-04    1.08e-09     0.869   2.832e-02   2.832e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  4.39e-02    1.73e-04    1.67e-09     1.346   4.388e-02   4.388e-02
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+
+
 
 ***************************************************
 ****** Sat April 23, 2023

@@ -20,7 +20,12 @@ ifeq ($(usePETSc),on)
   usePETSc   = on
   petscSolver = obj/solvePETSc.o obj/solveSLEPc.o
 
-  OGES_PETSC = buildEquationSolvers.o PETScEquationSolver.o
+  ifeq ($(OV_PARALLEL),parallel) 
+    OGES_PETSC = buildEquationSolvers.o PETScSolver.o
+  else
+    OGES_PETSC = buildEquationSolvers.o PETScEquationSolver.o
+  endif
+
   # PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/mpiuni
   PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/petsc/mpiuni
   PETSC_LIBS = -Wl,-rpath,$(PETSC_LIB) -L$(PETSC_LIB) -lpetsc
@@ -167,9 +172,13 @@ OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/u
        obj/rjbesl.o obj/rybesl.o
        
 # LCBC files: 
-OBJC += obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/LCBC_data.o \
-        obj/LCBC_newFun.o obj/LagrangeDerivFunctions.o \
-        obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o 
+OBJC += obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_data.o \
+        obj/LagrangeDerivFunctions.o obj/LCBC_updateGhost.o obj/LCBC_deriv.o \
+        obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o 
+
+# OBJC += obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/LCBC_data.o \
+#         obj/LCBC_newFun.o obj/LagrangeDerivFunctions.o \
+#         obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o
 
 # Fortran 90 (FN) object files: 
 FNOBJO = obj/advWave.o\
@@ -177,7 +186,10 @@ FNOBJO = obj/advWave.o\
          obj/advWave2dOrder4r.o obj/advWave3dOrder4r.o obj/advWave2dOrder4c.o obj/advWave3dOrder4c.o \
          obj/advWave2dOrder6r.o obj/advWave3dOrder6r.o obj/advWave2dOrder6c.o obj/advWave3dOrder6c.o \
          obj/advWave2dOrder8r.o obj/advWave3dOrder8r.o obj/advWave2dOrder8c.o obj/advWave3dOrder8c.o \
-         obj/bcOptWave.o obj/getWaveDerivatives.o obj/hierDeriv.o
+         obj/bcOptWave.o \
+         obj/bcOptWave2dOrder2.o obj/bcOptWave2dOrder4.o \
+         obj/bcOptWave3dOrder2.o \
+         obj/getWaveDerivatives.o obj/hierDeriv.o
 
 # New high-order accurate modified equation versions
 FNOBJO += obj/advWaveME.o \
@@ -276,11 +288,11 @@ obj/LagrangeDerivFunctions.o : src/LagrangeDerivFunctions.C; $(CXX) $(CCFLAGSO) 
 obj/LCBC.o : src/LCBC.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
 obj/LCBC1.o : src/LCBC1.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/LCBC2.o : src/LCBC2.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
-obj/LCBC_corner.o : src/LCBC_corner.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
-obj/LCBC_vertex.o : src/LCBC_vertex.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
+obj/LCBC_updateGhost.o : src/LCBC_updateGhost.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
+obj/LCBC_deriv.o : src/LCBC_deriv.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
 obj/LCBC_data.o : src/LCBC_data.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
-obj/LCBC_newFun.o : src/LCBC_newFun.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
-obj/numericalDeriv.o : src/numericalDeriv.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+# obj/LCBC_newFun.o : src/LCBC_newFun.C; $(CXX) $(CCFLAGSO) -o $*.o -c $< 
+# obj/numericalDeriv.o : src/numericalDeriv.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/utility.o : src/utility.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/LCBC_TzFnPointers.o : src/LCBC_TzFnPointers.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/LCBC_annulusMap.o : src/LCBC_annulusMap.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
@@ -417,6 +429,16 @@ src/advWaveStencil3dOrder8c.f90 : src/advWaveStencil.f90
 src/bcOptWave.f90: src/bcOptWave.bf90 src/knownSolutionMacros.h maple/defineGetDerivativesMacros.h
 	      @cd src; $(BPP) -clean -quiet -I$(Overture)/include bcOptWave.bf90	
 
+
+src/bcOptWave2dOrder2.f90 : src/bcOptWave.f90
+src/bcOptWave2dOrder4.f90 : src/bcOptWave.f90
+src/bcOptWave2dOrder6.f90 : src/bcOptWave.f90
+src/bcOptWave2dOrder8.f90 : src/bcOptWave.f90
+src/bcOptWave3dOrder2.f90 : src/bcOptWave.f90
+src/bcOptWave3dOrder4.f90 : src/bcOptWave.f90
+src/bcOptWave3dOrder6.f90 : src/bcOptWave.f90
+src/bcOptWave3dOrder8.f90 : src/bcOptWave.f90  
+
 # -- optimized derivatives evaluation
 src/getWaveDerivatives.f90: src/getWaveDerivatives.bf90; @cd src; $(BPP) -clean -quiet -I$(Overture)/include getWaveDerivatives.bf90
 
@@ -470,7 +492,7 @@ $(FNOBJO) : obj/%.o : %.f90
 
 
 clean:  
-	rm -f obj/*.o bin/cgwh bin/cgWave
+	rm -f *.o obj/*.o bin/cgwh bin/cgWave
 
 
 .PRECIOUS: 

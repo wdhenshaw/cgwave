@@ -623,8 +623,19 @@ solveSLEPc(int argc,char **args)
 
     PetscInt mpd = PETSC_DEFAULT;
     int numEigenValues = numEigsToCompute;
+    int & numArnoldiVectors = cgWave.dbase.get<int>("numArnoldiVectors");
   // PetscInt ncv = PETSC_DEFAULT; // numEigenValues*2+1; // size of column space 
-    PetscInt ncv = numEigenValues*2+1; // number of column vectors to used in the space, at least 2*numEigenValues
+
+    PetscInt ncv;
+    if( numArnoldiVectors<=0 )
+    {
+        ncv= numEigenValues*2+1; // number of column vectors to used in the space, at least 2*numEigenValues
+        numArnoldiVectors = ncv;
+    }
+    else
+    {
+        ncv=numArnoldiVectors;
+    }
 
   // mpd = 100; // ** TEST ***
     PetscCall(EPSSetDimensions(eps,numEigenValues,ncv,mpd)); 
@@ -1101,7 +1112,7 @@ solveSLEPc(int argc,char **args)
                                                                                   timeSteppingMethod==CgWave::implicitTimeStepping ? "implicit" : "unknown"),
                                                                                   minStepsPerPeriod );    
         printF(" tol=%9.2e, numIterations=%d, provide initial vectors=%d\n",tol,iteration,(int)setInitialConditions);
-        printF(" num eigs requested=%d, number eigs converged=%d\n",nev,nconv);
+        printF(" num eigs requested=%d, number eigs converged=%d, numArnoldiVectors=%d\n",nev,nconv,numArnoldiVectors);
         printF(" -----------------------------------------------------------------------------\n");
     // -- compute eigenvalues of Lh from the Rayleigh Quotient ----
         eigenValues.redim(numEigenVectors);

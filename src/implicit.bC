@@ -14,7 +14,8 @@ extern "C"
 void bcOptWave( const int&nd, 
                 const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
                 const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const int&mask,
-                const real&rsxy, const real&xy, const int&boundaryCondition, const real & frequencyArray,
+                const real&rsxy, const real&xy, real &uTemp1, real & uTemp2, 
+                const int&boundaryCondition, const real & frequencyArray,
                 const DataBase *pdb, const int&ipar, const real&rpar, int&ierr );
 
 }
@@ -191,7 +192,8 @@ int CgWave::takeImplicitStep( Real t )
               rhsLocal.getBase(0),rhsLocal.getBound(0),rhsLocal.getBase(1),rhsLocal.getBound(1),
               rhsLocal.getBase(2),rhsLocal.getBound(2),
               indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-              *rhsLocal.getDataPointer(), *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
+              *rhsLocal.getDataPointer(), *pmask, *prsxy, *pxy, *puTemp1, *puTemp2,
+              bcLocal(0,0), frequencyArray(0),
               pdb, ipar[0],rpar[0], ierr );
 
   } // end for grid 
@@ -225,7 +227,8 @@ int CgWave::takeImplicitStep( Real t )
     int numIterations = impSolver.getNumberOfIterations();
     totalImplicitIterations += numIterations;
     totalImplicitSolves++;
-    if( true )
+
+    if( debug & 2 || (t <= 10.*dt) )
       printF("CgWave::takeImplicitStep: implicit solve: max-res= %8.2e (iterations=%i) ***\n",
                  impSolver.getMaximumResidual(),numIterations);
   }
@@ -307,8 +310,8 @@ classify(i1,i2,i3,n)=type
   
   
   const int equationOffset=sparse.equationOffset;
-  IntegerArray & equationNumber = sparse.equationNumber;
-  IntegerArray & classify = sparse.classify;
+  intArray & equationNumber = sparse.equationNumber;
+  intArray & classify = sparse.classify;
   
   const int equationNumberBase1  =equationNumber.getBase(1);
   const int equationNumberLength1=equationNumber.getLength(1);
@@ -460,7 +463,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
   //    - order in time 2
   //    - no implicit upwinding
   //    - CBC's 
-  bool usePredefined = useMultigrid && !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
+  // bool usePredefined = useMultigrid && !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
+  bool usePredefined = !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
 
   if( orderOfAccuracyInTime != 2  )
   {

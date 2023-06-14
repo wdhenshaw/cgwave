@@ -1,5 +1,23 @@
 #include "LagrangeDerivFunctions.h"
 
+/// \brief This file contains functions to compute the derivatives of Lagrange polynomial functions for an implementation of the LCBC method with **Dirichlet BCs**
+/// Functions starting with LagrangeDeriv are all similar so I'll document the first one appearing in the list and the rest follows similarly
+
+/// \brief Compute derivatives of Lagrange polynomials needed for an implementation of the LCBC method with **Dirichlet BCs**
+/// \param Z (output): carries the derivatives of Lagrange polynomial for each CBC and its tangential derivatives (see full definition in LCBC_newFun in getBlockMatrices function)
+/// \param Ind (input): the index over which the LCBC method is centered
+/// \param LagrangeData (input): values of Lagrange polynomials evaluated at integer values
+/// \param LagrangeData_center (input): the center of the grid function LagrangeData
+/// \param coef (input): grid function carrying PDE coefficients on the grid
+/// \param coefWth (input): the number of ghost points added to the coef grid function in each dimension
+/// \param coefLth (input): the length of the grid funciton coef
+/// \param cstCoef (input): a boolean to tell if the PDE has constant coefficients
+/// \param dx (input): step sizes in each direction
+/// \param axis (input): axis to identify the boundary face
+/// \param side (input): side to identify the boundary face
+/// \param NU  (input): number of primary CBCs needed at a specific face (depends on the type of BC - here we're using Dirichlet BCs, so this isn't really needed)
+/// \param memory (input): an object carrying preallocated memory space to be used if needed
+
 void LagrangeDeriv_2D_8_0(double Z[], int *Ind, int *LInd, double *LagrangeData, int LagrangeData_center, double **coef, int coefWth[3], int coefLth[3], bool cstCoef, double dx[3], int axis, int side, int NU, char **&memory){
     
     int p = 4;
@@ -26,7 +44,7 @@ void LagrangeDeriv_2D_8_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
 
     int i[3]; i[2] = 0;
     for(i[1] = 0; i[1]<lth[1]; i[1]++){
-        for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+        for(i[0] = 0; i[0]<lth[0]; i[0]++){
             Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)];
         } // end i[0] loop
     }// end of i[1] loop
@@ -289,7 +307,7 @@ void LagrangeDeriv_2D_8_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
 
     int i[3]; i[2] = 0;
     for(i[1] = 0; i[1]<lth[1]; i[1]++){
-        for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+        for(i[0] = 0; i[0]<lth[0]; i[0]++){
             Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)];
         } // end i[0] loop
     }// end of i[1] loop
@@ -550,7 +568,7 @@ void LagrangeDeriv_2D_6_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     
     int i[3]; i[2] = 0;
     for(i[1] = 0; i[1]<lth[1]; i[1]++){
-        for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+        for(i[0] = 0; i[0]<lth[0]; i[0]++){
             Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)];
         } // end i[0] loop
     }// end of i[1] loop
@@ -725,7 +743,7 @@ void LagrangeDeriv_2D_6_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
     
     int i[3]; i[2] = 0;
     for(i[1] = 0; i[1]<lth[1]; i[1]++){
-        for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+        for(i[0] = 0; i[0]<lth[0]; i[0]++){
             Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)];
         } // end i[0] loop
     }// end of i[1] loop
@@ -898,7 +916,7 @@ void LagrangeDeriv_2D_4_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     
     int i[3]; i[2] = 0;
     for(i[1] = 0; i[1]<lth[1]; i[1]++){
-        for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+        for(i[0] = 0; i[0]<lth[0]; i[0]++){
             Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)];
         } // end i[0] loop
     }// end of i[1] loop
@@ -1007,7 +1025,7 @@ void LagrangeDeriv_2D_2_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     
     int i[3]; i[2] = 0;
     for(i[1] = 0; i[1]<lth[1]; i[1]++){
-        for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+        for(i[0] = 0; i[0]<lth[0]; i[0]++){
             V[ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)];
         } // end i[0] loop
     }// end of i[1] loop
@@ -1062,7 +1080,7 @@ void LagrangeDeriv_2D_2_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
     
     int i[3]; i[2] = 0;
     for(i[1] = 0; i[1]<lth[1]; i[1]++){
-        for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+        for(i[0] = 0; i[0]<lth[0]; i[0]++){
             V[ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)];
         } // end i[0] loop
     }// end of i[1] loop
@@ -1118,7 +1136,7 @@ void LagrangeDeriv_2D_4_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
     
     int i[3]; i[2] = 0;
     for(i[1] = 0; i[1]<lth[1]; i[1]++){
-        for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+        for(i[0] = 0; i[0]<lth[0]; i[0]++){
             Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)];
         } // end i[0] loop
     }// end of i[1] loop
@@ -1227,7 +1245,7 @@ void LagrangeDeriv_3D_2_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -1289,7 +1307,7 @@ void LagrangeDeriv_3D_2_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -1351,7 +1369,7 @@ void LagrangeDeriv_3D_2_2(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -1413,7 +1431,7 @@ void LagrangeDeriv_3D_4_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -1518,7 +1536,7 @@ void LagrangeDeriv_3D_4_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -1622,7 +1640,7 @@ void LagrangeDeriv_3D_4_2(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -1729,7 +1747,7 @@ void LagrangeDeriv_3D_6_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -1909,7 +1927,7 @@ void LagrangeDeriv_3D_6_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -2089,7 +2107,7 @@ void LagrangeDeriv_3D_6_2(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -2253,7 +2271,6 @@ void LagrangeDeriv_3D_8_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int wth[3] = {(2*p),(2*p),(2*p)}; wth[axis] = p;
     int lth[3]= {(2*wth[0]+1),(2*wth[1]+1),(2*wth[2]+1)};
     int L_center = LagrangeData_center;
-//    int L_wth    = 2*L_center + 1;
     int v0 = 1;
     int v1 = 2;
     int cI = 0;
@@ -2261,41 +2278,6 @@ void LagrangeDeriv_3D_8_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int K = p+1;
     
     int Lth =(lth[0]*lth[1]*lth[2]);
-//    double Q[NU*K][Lth];
-    // Note that: must change to dynamic allocation because you run out of static memory
-//    double d002[Lth];
-//    double d020[Lth];
-//    double d200[Lth];
-//    double d004[Lth];
-//    double d022[Lth];
-//    double d040[Lth];
-//    double d202[Lth];
-//    double d220[Lth];
-//    double d400[Lth];
-//    double Q11_002[Lth];
-//    double Q11_020[Lth];
-//    double Q11_200[Lth];
-//    double d006[Lth];
-//    double d024[Lth];
-//    double d042[Lth];
-//    double d060[Lth];
-//    double d204[Lth];
-//    double d240[Lth];
-//    double d402[Lth];
-//    double d420[Lth];
-//    double d600[Lth];
-//    double Q11_004[Lth];
-//    double Q11_022[Lth];
-//    double Q11_040[Lth];
-//    double Q11_202[Lth];
-//    double Q11_220[Lth];
-//    double Q11_400[Lth];
-//    double Q21_002[Lth];
-//    double Q21_020[Lth];
-//    double Q21_200[Lth];
-//    double Q12_002[Lth];
-//    double Q12_020[Lth];
-//    double Q12_200[Lth];
     
     double *Q[NU*K];
     int nuk;
@@ -2339,7 +2321,7 @@ void LagrangeDeriv_3D_8_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -2617,8 +2599,6 @@ void LagrangeDeriv_3D_8_0(double Z[], int *Ind, int *LInd, double *LagrangeData,
     Z[ind3(3,0,0,NU,MU,MU)] = Q[ind2(3,2,NU,K)][I];
     Z[ind3(4,0,0,NU,MU,MU)] = Q[ind2(4,1,NU,K)][I];
     
-//    printf("%f,%f,%f,%f,%f\n",Z[ind3(0,0,0,NU,MU,MU)], Z[ind3(1,0,0,NU,MU,MU)], Z[ind3(2,0,0,NU,MU,MU)], Z[ind3(3,0,0,NU,MU,MU)], Z[ind3(4,0,0,NU,MU,MU)]);
-    
     /* Generate the tangential derivatives here */
     
 #include "tangentialDerivs_3D_8_0.C"
@@ -2637,41 +2617,7 @@ void LagrangeDeriv_3D_8_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int K = p+1;
     
     int Lth =(lth[0]*lth[1]*lth[2]);
-//    double Q[NU*K][Lth];
-//    double d002[Lth];
-//    double d020[Lth];
-//    double d200[Lth];
-//    double d004[Lth];
-//    double d022[Lth];
-//    double d040[Lth];
-//    double d202[Lth];
-//    double d220[Lth];
-//    double d400[Lth];
-//    double Q11_002[Lth];
-//    double Q11_020[Lth];
-//    double Q11_200[Lth];
-//    double d006[Lth];
-//    double d024[Lth];
-//    double d042[Lth];
-//    double d060[Lth];
-//    double d204[Lth];
-//    double d240[Lth];
-//    double d402[Lth];
-//    double d420[Lth];
-//    double d600[Lth];
-//    double Q11_004[Lth];
-//    double Q11_022[Lth];
-//    double Q11_040[Lth];
-//    double Q11_202[Lth];
-//    double Q11_220[Lth];
-//    double Q11_400[Lth];
-//    double Q21_002[Lth];
-//    double Q21_020[Lth];
-//    double Q21_200[Lth];
-//    double Q12_002[Lth];
-//    double Q12_020[Lth];
-//    double Q12_200[Lth];
-    
+
     double *Q[NU*K];
     int nuk;
     for(nuk = 0; nuk<(NU*K); nuk++)
@@ -2715,7 +2661,7 @@ void LagrangeDeriv_3D_8_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -2738,7 +2684,7 @@ void LagrangeDeriv_3D_8_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
                 
                 if(!cstCoef){
                     cInd[axis] = coefWth[axis] + i[axis] - wth[axis] ;
-                    cInd[v0] = Ind[v0] -p + coefWth[v0] + i[v0] - wth[v0];
+                    cInd[v0] = Ind[v0] - p + coefWth[v0] + i[v0] - wth[v0];
                     cInd[v1] = Ind[v1] - p + coefWth[v1] + i[v1] - wth[v1];
                     cI = ind(cInd, coefLth);
                 }
@@ -2859,7 +2805,7 @@ void LagrangeDeriv_3D_8_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
                 
                 if(!cstCoef){
                     cInd[axis] = coefWth[axis] + i[axis] - wth[axis];
-                    cInd[v0] = Ind[v0] -p + coefWth[v0] + i[v0] - wth[v0];
+                    cInd[v0] = Ind[v0] - p + coefWth[v0] + i[v0] - wth[v0];
                     cInd[v1] = Ind[v1] - p + coefWth[v1] + i[v1] - wth[v1];
                     cI = ind(cInd, coefLth);
                 }
@@ -2970,7 +2916,7 @@ void LagrangeDeriv_3D_8_1(double Z[], int *Ind, int *LInd, double *LagrangeData,
                 
                 if(!cstCoef){
                     cInd[axis] = coefWth[axis] + i[axis] - wth[axis];
-                    cInd[v0] = Ind[v0] -p + coefWth[v0] + i[v0] - wth[v0];
+                    cInd[v0] = Ind[v0] - p + coefWth[v0] + i[v0] - wth[v0];
                     cInd[v1] = Ind[v1] - p + coefWth[v1] + i[v1] - wth[v1];
                     cI = ind(cInd, coefLth);
                 }
@@ -3010,40 +2956,6 @@ void LagrangeDeriv_3D_8_2(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int K = p+1;
     
     int Lth =(lth[0]*lth[1]*lth[2]);
-//    double Q[NU*K][Lth];
-//    double d002[Lth];
-//    double d020[Lth];
-//    double d200[Lth];
-//    double d004[Lth];
-//    double d022[Lth];
-//    double d040[Lth];
-//    double d202[Lth];
-//    double d220[Lth];
-//    double d400[Lth];
-//    double Q11_002[Lth];
-//    double Q11_020[Lth];
-//    double Q11_200[Lth];
-//    double d006[Lth];
-//    double d024[Lth];
-//    double d042[Lth];
-//    double d060[Lth];
-//    double d204[Lth];
-//    double d240[Lth];
-//    double d402[Lth];
-//    double d420[Lth];
-//    double d600[Lth];
-//    double Q11_004[Lth];
-//    double Q11_022[Lth];
-//    double Q11_040[Lth];
-//    double Q11_202[Lth];
-//    double Q11_220[Lth];
-//    double Q11_400[Lth];
-//    double Q21_002[Lth];
-//    double Q21_020[Lth];
-//    double Q21_200[Lth];
-//    double Q12_002[Lth];
-//    double Q12_020[Lth];
-//    double Q12_200[Lth];
     
     double *Q[NU*K];
     int nuk;
@@ -3087,7 +2999,7 @@ void LagrangeDeriv_3D_8_2(double Z[], int *Ind, int *LInd, double *LagrangeData,
     int i[3];
     for(i[2] = 0; i[2]<lth[2]; i[2]++){
         for(i[1] = 0; i[1]<lth[1]; i[1]++){
-            for(i[0] = 0; i[0]<=lth[0]; i[0]++){
+            for(i[0] = 0; i[0]<lth[0]; i[0]++){
                 Q[ind2(0,1,NU,K)][ind(i,lth)] = LagrangeData[ind2(LInd[0],(L_center+i[0]-wth[0]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[1],(L_center+i[1]-wth[1]),(2*p+1),L_wth)]*LagrangeData[ind2(LInd[2],(L_center+i[2]-wth[2]),(2*p+1),L_wth)];
             } // end i[0] loop
         }// end of i[1] loop
@@ -3369,7 +3281,10 @@ void LagrangeDeriv_3D_8_2(double Z[], int *Ind, int *LInd, double *LagrangeData,
 #include "tangentialDerivs_3D_8_2.C"
 }
 
-
+/// \brief Pick a specific LagrangeDeriv function based on the dimension, order in space and the axis
+/// \param dim (input): dimension
+/// \param p (input): order in space /2
+/// \param axis (input): axis to identify the boundary face 
 LagrangeDerivFun pickLagrangeDerivFun(int dim, int p, int axis){
     if(p == 1 && dim == 2 && axis == 0){
         return &LagrangeDeriv_2D_2_0;

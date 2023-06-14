@@ -209,6 +209,7 @@ int CgWaveHoltz::outputEigenTable()
   const Real & tol                                = dbase.get<Real>("tol");
   const int & numberOfMatrixVectorMultiplications = dbase.get<int>("numberOfMatrixVectorMultiplications");
   const int & numEigsToCompute                    = cgWave.dbase.get<int>("numEigsToCompute");
+  const int & numArnoldiVectors                   = cgWave.dbase.get<int>("numArnoldiVectors");
   const Real & eigenValueTolForMultiplicity       = cgWave.dbase.get<Real>("eigenValueTolForMultiplicity");
   // int iteration=-1;
   // int nev=-1, nconv=-1;
@@ -264,7 +265,7 @@ int CgWaveHoltz::outputEigenTable()
     } 
   }
   printF(" tol=%9.2e, number of wave-solves (mat-vecs) = %d, cpu=%9.2e(s)\n",tol,numberOfMatrixVectorMultiplications,cpuSolveEigenWave);
-  printF(" num eigs requested=%d, number eigs converged =%d\n",numEigsToCompute,numEigenVectors);
+  printF(" num eigs requested=%d, number eigs converged =%d, numArnoldiVectors=%d\n",numEigsToCompute,numEigenVectors,numArnoldiVectors);
   printF(" numberOfIterations=%d, iterationStartRR=%d, assignRitzFrequency=%d, numberOfRitzVectors=%d (for fixed-point)\n",
         numberOfIterations,iterationStartRR,assignRitzFrequency,numberOfRitzVectors);
   printF(" -----------------------------------------------------------------------------\n");
@@ -383,6 +384,10 @@ int CgWaveHoltz::outputEigenTable()
   // Output results as a LaTeX table
   fPrintF(output,"\n\n%% ------------ EigenWave Table for LaTeX -------------------------------\n");
 
+  const Real maxEigErr    = max(relErrEigenvalue);
+  const Real maxEvectErr  = max(relErrEigenvector);
+  const Real maxEigResid  = max(eigenPairResidual);
+
   if( saveErrors )
   {  
     IntegerArray & eigMultiplicity  = cgWave.dbase.get<IntegerArray>("eigMultiplicity");
@@ -413,9 +418,10 @@ int CgWaveHoltz::outputEigenTable()
     fPrintF(output,"}%% end of LongTable for %s\n",(const char*)gridNameNoPrefix);
 
     // ---- summary table ----
-    Real maxEigErr    = max(relErrEigenvalue);
-    Real maxEvectErr  = max(relErrEigenvector);
-    Real maxEigResid  = max(eigenPairResidual);
+    // Real maxEigErr    = max(relErrEigenvalue);
+    // Real maxEvectErr  = max(relErrEigenvector);
+    // Real maxEigResid  = max(eigenPairResidual);
+
     fPrintF(output,"\n");
     // fPrintF(output,
     //      "\\begin{table}[hbt]\n"
@@ -461,6 +467,37 @@ int CgWaveHoltz::outputEigenTable()
   }
   fclose(output);
   printF("Wrote results to LaTeX file [%s]\n",(const char*)eigenWaveLatexTableName);
+
+
+  // --- save a check file for EigenWave ---
+  FILE *checkFile=NULL;
+  checkFile = fopen("eigenWave.check","w" );        // for regression and convergence tests
+
+  assert( checkFile != NULL );
+
+  // Get the current date
+  time_t *tp= new time_t;
+  time(tp);
+  const char *dateString = ctime(tp);
+  fPrintF(checkFile,"# Check file for EigenWave, grid=%s, %s",(const char*)gridNameNoPrefix,dateString);  // Note: dateString include newline
+  delete tp; 
+
+  fPrintF(checkFile,"grid=%s;\n",(const char*)gridNameNoPrefix);
+  fPrintF(checkFile,"eigenSolver=%s;\n",(const char*)eigenSolverName);
+  fPrintF(checkFile,"timeStepping=%s;\n",(const char*)timeSteppingName);
+  fPrintF(checkFile,"orderOfAccuracy=%d;\n",orderOfAccuracy);
+  fPrintF(checkFile,"numPeriods=%d;\n",numPeriods);
+  fPrintF(checkFile,"numberOfStepsPerSolve=%d;\n",numberOfStepsPerSolve);
+  fPrintF(checkFile,"numEigsRequested=%d;\n",numEigsToCompute);
+  fPrintF(checkFile,"numEigsComputed=%d;\n",numEigenVectors);
+  fPrintF(checkFile,"numArnoldiVectors=%d;\n",numArnoldiVectors);
+  fPrintF(checkFile,"numWaveSolves=%d;\n",numberOfMatrixVectorMultiplications);
+  fPrintF(checkFile,"maxEigErr=%9.2e;\n",maxEigErr);
+  fPrintF(checkFile,"maxEvectErr=%9.2e;\n",maxEvectErr);
+  fPrintF(checkFile,"maxEigResid=%9.2e;\n",maxEigResid);
+  fclose(checkFile);
+
+  printF("Wrote results to the check file [eigenWave.check]\n");
 
   return 0;
 
@@ -638,9 +675,9 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
   int plotChoices=0; // 1=grid, 2=contour
   bool replot=false;
   bool reComputeErrors=false; 
-  bool saveCheckFile=false; // set to true when errors should be saved to the check file.
+  // bool saveCheckFile=false; // set to true when errors should be saved to the check file.
 
-  int checkFileCounter=0; // keeps track of how many times the checkFile is saved with results
+  // int checkFileCounter=0; // keeps track of how many times the checkFile is saved with results
 
   // uHelmholtz holds Helmholtz solution from direct solver
   //   This is optionally used in CgWave as a known solution
@@ -980,6 +1017,10 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
       {
         showFileIsOpen=true;
         show.open(nameOfShowFile);
+
+        const int & flushFrequency  = cgWave.dbase.get<int>("flushFrequency");  // number of solutions per show file 
+        show.setFlushFrequency( flushFrequency ); // save this many solutions per sub-showFile
+
       }
       
       show.saveGeneralComment("Solutions from EigenWave"); // save a general comment in the show file
@@ -1204,7 +1245,11 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
       psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);  
       
       // PlotIt::plot(ps,t,x,title,tName,xName,psp);
-      PlotIt::plot(ps,lambda,mu,title,tName,xName,psp);
+      #ifndef USE_PPP
+        PlotIt::plot(ps,lambda,mu,title,tName,xName,psp);
+      #else
+        printF("FINISH ME FOR PARALLEL: PlotIt::plot(ps,lambda,mu,title,tName,xName,psp)\n");
+      #endif
 
       psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);        
 
@@ -1316,7 +1361,11 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
  
       ps.erase();
       psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
-      PlotIt::plot(ps,t,x,title,tName,xName,psp);
+      #ifndef USE_PPP
+        PlotIt::plot(ps,t,x,title,tName,xName,psp);
+      #else
+        printF("FINISH ME FOR PARALLEL: PlotIt::plot(ps,t,x,...)\n");        
+      #endif
       psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);
 
       replot=true;
@@ -1350,34 +1399,34 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
        
     }
 
-    if( reComputeErrors )
-    {
-      reComputeErrors=false;
+    // if( reComputeErrors )
+    // {
+    //   reComputeErrors=false;
 
-      if( computeErrors )
-      {
-        realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-        Real t=0; // compute errors with t=0 in cos(omega*t)
-        Real maxErr=1.;
-        const int & computeEigenmodes = cgWave.dbase.get<int>("computeEigenmodes");
-        // **FIX ME FOR computeEigenmodes
-        if( !computeEigenmodes ) 
-        {
-          Real maxErr = cgWave.getErrors( v, t );
-          printF("solveEigen: max-err =%8.2e (between WaveHoltz and known solution, all frequencies)\n",maxErr);
+    //   if( computeErrors )
+    //   {
+    //     realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+    //     Real t=0; // compute errors with t=0 in cos(omega*t)
+    //     Real maxErr=1.;
+    //     const int & computeEigenmodes = cgWave.dbase.get<int>("computeEigenmodes");
+    //     // **FIX ME FOR computeEigenmodes
+    //     if( !computeEigenmodes ) 
+    //     {
+    //       Real maxErr = cgWave.getErrors( v, t );
+    //       printF("solveEigen: max-err =%8.2e (between WaveHoltz and known solution, all frequencies)\n",maxErr);
 
-          if( saveCheckFile )
-          {
-            Real solutionNorm = maxNorm( v ); 
-            cgWaveHoltz.saveCheckFile( checkFileCounter,maxErr,solutionNorm ); 
-            checkFileCounter++; 
-          }
-        }
-     }
+    //       if( saveCheckFile )
+    //       {
+    //         Real solutionNorm = maxNorm( v ); 
+    //         cgWaveHoltz.saveCheckFile( checkFileCounter,maxErr,solutionNorm ); 
+    //         checkFileCounter++; 
+    //       }
+    //     }
+    //  }
 
-      saveCheckFile=false;
+    //   saveCheckFile=false;
 
-    }
+    // }
 
     if( answer=="contour" || (replot && plotChoices & 2) )
     {

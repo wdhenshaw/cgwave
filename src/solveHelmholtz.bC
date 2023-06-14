@@ -696,7 +696,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             bool ok=ParallelUtility::getLocalArrayBounds(q[grid],qLocal,I1,I2,I3);
             if( ok )
               qLocal(I1,I2,I3,ishow) = fLocal(I1,I2,I3,freq);  // forcing
-            
+
             // q[grid](all,all,all,ishow) = f[grid](all,all,all,freq);  // forcing
           }
           ishow++;
@@ -827,7 +827,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       if( computeEigenmodes && cgWave.dbase.has_key("errEigenvectorRR") )
          numberOfComponents+=2;
       aString xName[10];
-      RealArray t(nd),x(nd,numberOfComponents);
+      realArray t(nd),x(nd,numberOfComponents);
       int m=0; // counts components
       xName[0]="log10(res)";
       for( int i=0; i<nd; i++ )

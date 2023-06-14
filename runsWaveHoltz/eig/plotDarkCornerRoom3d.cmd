@@ -1,5 +1,6 @@
 #
 # 
+#   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2EigsFreq8.show -name=darkCornerRoom3dG1O2EigsFreq8 -sol=2
 #   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2Eigs.show -name=darkCornerRoom3dG1O2Eigs -sol=144 149
 #   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2Eigs.show -name=darkCornerRoom3dG1O2Eigs -sol=148 150
 #   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2Eigs.show -name=darkCornerRoom3dG1O2Eigs -sol=74 78

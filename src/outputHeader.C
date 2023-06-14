@@ -32,6 +32,9 @@ outputHeader()
       
   int & addForcing                          = dbase.get<int>("addForcing");
   ForcingOptionEnum & forcingOption         = dbase.get<ForcingOptionEnum>("forcingOption");
+  const aString & knownSolutionOption       = dbase.get<aString>("knownSolutionOption"); 
+  const int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries");
+
   const IntegerArray & gridIsImplicit       = dbase.get<IntegerArray>("gridIsImplicit");
   const RealArray & bImp                    = dbase.get<RealArray>("bImp");
   const RealArray & cImp                    = dbase.get<RealArray>("cImp");
@@ -39,9 +42,13 @@ outputHeader()
 
   const int & computeErrors                 = dbase.get<int>("computeErrors");
   const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep"); 
+  const int & takeImplicitFirstStep         = dbase.get<int>("takeImplicitFirstStep");
 	      
   const int & solveHelmholtz                = dbase.get<int>("solveHelmholtz");
   const int & computeEigenmodes             = dbase.get<int>("computeEigenmodes");
+  const int & numEigsToCompute               = dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute 
+  const int & numArnoldiVectors              = dbase.get<int>("numArnoldiVectors");
+
   const int & computeTimeIntegral           = dbase.get<int>("computeTimeIntegral");
   const int & adjustOmega                   = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
   const int & adjustHelmholtzForUpwinding   = dbase.get<int>("adjustHelmholtzForUpwinding");
@@ -92,8 +99,6 @@ outputHeader()
 	    "           -----------------------------                  \n");
 
     fPrintF(file," tFinal=%f, dt=%9.3e, tPlot=%9.3e cfl=%3.2f\n",tFinal,dt,tPlot,cfl );
-    fPrintF(file," timeSteppingMethod = %s\n",(timeSteppingMethod==explicitTimeStepping ? "explicit (modified equation)" :
-                                               timeSteppingMethod==implicitTimeStepping ? "implicit" : "unknown") );
     fPrintF(file," modifiedEquationApproach = %s\n",
           (modifiedEquationApproach==standardModifiedEquation     ? "standard modified equation" : 
            modifiedEquationApproach==hierarchicalModifiedEquation ? "hierarchical modified equation" :
@@ -103,17 +108,20 @@ outputHeader()
     fPrintF(file," orderOfAccuracy=%i, orderOfAccuracyInTime=%d \n",
         orderOfAccuracy, (orderOfAccuracyInTime==-1 ? orderOfAccuracy : orderOfAccuracyInTime) );
 
+    fPrintF(file," timeSteppingMethod = %s\n",(timeSteppingMethod==explicitTimeStepping ? "explicit (modified equation)" :
+                                               timeSteppingMethod==implicitTimeStepping ? "implicit" : "unknown") );
     if( timeSteppingMethod==implicitTimeStepping )
     {
+      fPrintF(file," ---- implicit time stepping parameters ----\n");
       if( dbase.has_key("implicitSolverParameters") )
       {
         OgesParameters & par = dbase.get<OgesParameters>("implicitSolverParameters");
-        fPrintF(file," implict solver=%s\n",(const char*)par.getSolverName());
+        fPrintF(file,"   implict solver=%s\n",(const char*)par.getSolverName());
       
         Real atol, rtol;
         par.get(OgesParameters::THEabsoluteTolerance,atol);
         par.get(OgesParameters::THErelativeTolerance,rtol);
-        fPrintF(file," implicit solver: rtol=%9.2e, atol=%9.2e\n",rtol,atol);
+        fPrintF(file,"   implicit solver: rtol=%9.2e, atol=%9.2e\n",rtol,atol);
       }
       else
       {
@@ -122,22 +130,24 @@ outputHeader()
       bool semiImplicit = min(gridIsImplicit)==0;
       if( !semiImplicit )
       {
-        fPrintF(file,"  All grids are implicit.\n");
+        fPrintF(file,"   All grids are implicit.\n");
       }
       else
       {
-        fPrintF(file," Some grids are implicit and some are explicit:\n");
+        fPrintF(file,"  Some grids are implicit and some are explicit:\n");
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
           if( !gridIsImplicit(grid) )
             fPrintF(file,"   grid %3d (%s) is explicit.\n",grid,(const char*)cg[grid].getName());
         }
       }
-    }    
-    fPrintF(file," implicit time-stepping weights: cImp(-1,0)=%g, cImp(0,0)=%g, cImp(1,0)=%g (2nd-order term)\n",cImp(-1,0),cImp(0,0),cImp(1,0));
-    fPrintF(file,"                               : cImp(-1,1)=%g, cImp(0,1)=%g, cImp(1,1)=%g (4th-order term)\n",cImp(-1,1),cImp(0,1),cImp(1,1));
+
+      fPrintF(file,"   takeImplicitFirstStep = %d.\n",takeImplicitFirstStep);
+      fPrintF(file,"   implicit time-stepping weights: cImp(-1,0)=%g, cImp(0,0)=%g, cImp(1,0)=%g (2nd-order term)\n",cImp(-1,0),cImp(0,0),cImp(1,0));
+      fPrintF(file,"                                 : cImp(-1,1)=%g, cImp(0,1)=%g, cImp(1,1)=%g (4th-order term)\n",cImp(-1,1),cImp(0,1),cImp(1,1));
     
-    fPrintF(file," chooseImplicitTimeStepFromCFL=%d (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
+      fPrintF(file,"   chooseImplicitTimeStepFromCFL=%d (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
+    }   
 
 
 
@@ -156,9 +166,17 @@ outputHeader()
 
     fPrintF(file," twilightZone = %s, degreeInSpace=%d, degreeInTime=%d\n",
             (twilightZone==polynomial ? "polynomial" : "trigonometric"), degreeInSpace,degreeInTime);
-    fPrintF(file," useKnownSolutionForFirstStep = %d (use known solution for first step step, if possible)\n",
-          useKnownSolutionForFirstStep);
-    
+
+    fPrintF(file," knownSolutionOption=%s",(const char*)knownSolutionOption);
+    if( dbase.has_key("userDefinedKnownSolutionData") )
+    {
+      DataBase & db =  dbase.get<DataBase>("userDefinedKnownSolutionData");
+      const aString & userKnownSolution = db.get<aString>("userKnownSolution");
+      fPrintF(file,", userKnownSolution=%s",(const char*)userKnownSolution);
+    }
+    fPrintF(file,"\n useKnownSolutionForFirstStep=%d, applyKnownSolutionAtBoundaries=%d\n",useKnownSolutionForFirstStep,
+            applyKnownSolutionAtBoundaries);
+
     fPrintF(file," BC approach = %s. [useDefault|useOneSided|useCompatibility|useLocalCompatibility]\n",
                   ( bcApproach==defaultBoundaryConditionApproach        ? "useDefaultApproachForBCs"                :
                     bcApproach==useOneSidedBoundaryConditions           ? "useOneSidedBCs"                          :
@@ -169,23 +187,28 @@ outputHeader()
     fPrintF(file," solveHelmholtz=%d (1= we are solving a Helmholtz problem).\n",solveHelmholtz);
     if( solveHelmholtz )
     {
-      fPrintF(file," **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=%d (for discrete symbol of D+tD-t) ****\n",adjustOmega);
+      fPrintF(file,"   **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=%d (for discrete symbol of D+tD-t) ****\n",adjustOmega);
+      fPrintF(file,"   computeTimeIntegral=%d\n",computeTimeIntegral);
+      fPrintF(file,"   adjust Helmholtz for upwinding=%d. Minimum time-steps per period=%d.\n",adjustHelmholtzForUpwinding,minStepsPerPeriod);
+      fPrintF(file,"   deflateWaveHoltz=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,numToDeflate,
+            (const char*)eigenVectorFile);      
     }
 
     fPrintF(file," computeEigenmodes=%d (1= solve from eigenvalues and eigenvectors using the WaveHoltz algorithm).\n",computeEigenmodes);
-    fPrintF(file," numberOfRitzVectors=%d (maximum number of vectors to use for Rayleigh-Ritz)\n",numberOfRitzVectors);
-    fPrintF(file," assignRitzFrequency=%d (assign Ritz solution this often)\n",assignRitzFrequency);
-    fPrintF(file," eigenVectorForcingFactor=%g (scale factor for eigenvector forcing)\n",eigenVectorForcingFactor);
-
-    fPrintF(file," adjust Helmholtz for upwinding=%d. Minimum time-steps per period=%d.\n",adjustHelmholtzForUpwinding,minStepsPerPeriod);
-    fPrintF(file," deflateWaveHoltz=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,numToDeflate,
-          (const char*)eigenVectorFile);
+    if ( computeEigenmodes )
+    {
+      fPrintF(file,"   numEigsToCompute=%d, numArnoldiVectors=%d.\n",numEigsToCompute,numArnoldiVectors);
+      fPrintF(file,"   computeTimeIntegral=%d\n",computeTimeIntegral);
+      fPrintF(file,"   numberOfRitzVectors=%d (maximum number of vectors to use for Rayleigh-Ritz)\n",numberOfRitzVectors);
+      fPrintF(file,"   assignRitzFrequency=%d (assign Ritz solution this often)\n",assignRitzFrequency);
+      fPrintF(file,"   eigenVectorForcingFactor=%g (scale factor for eigenvector forcing)\n",eigenVectorForcingFactor);
+      fPrintF(file,"   eigenVectorFile=[%s]\n",(const char*)eigenVectorFile); 
+    }
     fPrintF(file," forcingOption=%s.\n",(forcingOption==noForcing           ? "noForcing"           :
                                          forcingOption==twilightZoneForcing ? "twilightZoneForcing" :
                                          forcingOption==userForcing         ? "userForcing"         :
                                          forcingOption==helmholtzForcing    ? "helmholtzForcing"    : 
                                                                               "unknown"));      
-    fPrintF(file," computeTimeIntegral=%d\n",computeTimeIntegral);
     fPrintF(file," computeErrors=%d\n",computeErrors);
     
 

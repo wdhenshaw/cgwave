@@ -6,6 +6,104 @@ set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDeriv
 
 
 ****************************************************
+****** Mon May 15, 2023
+
+START TEST IMPLICIT PARALLEL
+
+mpirun -np 2 $cgWave -noplot tz.cmd -g=square32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=implicit -cfl=1000 -solveri=petsc -rtoli=1e-12 -atoli=1e-12 -debug=3 -upwind=0 -debug=3 -go=go
+
+np=2
+cgWave:FD22 t=4.000e-01 (4 steps) dt=1.000e-01 maxErr= 8.05e-12, ||u||= 3.47e+00, cpu= 8.46e-03(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 2.48e-11 (iterations=9) ***
+cgWave:FD22 t=5.000e-01 (5 steps) dt=1.000e-01 maxErr= 9.09e-12, ||u||= 3.69e+00, cpu= 9.58e-03(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 2.48e-11 (iterations=9) ***
+cgWave:FD22 t=6.000e-01 (6 steps) dt=1.000e-01 maxErr= 8.73e-12, ||u||= 3.93e+00, cpu= 1.07e-02(s)
+
+
+CgWave::takeImplicitStep: implicit solve: max-res= 6.82e-11 (iterations=3) ***
+cgWave:FD22 t=4.000e-01 (4 steps) dt=1.000e-01 maxErr= 6.76e-12, ||u||= 3.47e+00, cpu= 1.48e-02(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 6.82e-11 (iterations=3) ***
+cgWave:FD22 t=5.000e-01 (5 steps) dt=1.000e-01 maxErr= 1.33e-11, ||u||= 3.69e+00, cpu= 1.74e-02(s)
+
+
+
+mpirun -np 2 $cgWave -noplot tz.cmd -g=cice2.order4.hdf -tz=trig -tf=1 -tp=0.1 -cfl=.9 -ts=explicit -debug=3 -upwind=0 -debug=1 -go=go
+mpirun -np 2 $cgWave -noplot tz.cmd -g=cice2.order2.hdf -tz=trig -tf=1 -tp=0.1 -cfl=.9 -ts=explicit -debug=3 -upwind=0 -debug=1 -go=go
+
+****************************************************
+****** Sun May 14, 2023
+
+
+START TEST PARALLEL
+
+useKnownFirstStep : Ok 
+ORDER=4: np=1: ok, np=2: trouble, nan's ... *FIXED**
+mpirun -np 2 $cgWave tz.cmd -g=square32.order4.hdf -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=1 -tp=0.01 -cfl=.9 -ts=explicit -debug=3 -upwind=0 -debug=3 -useKnownFirstStep=1 -go=halt
+
+exact: np=1, np=2
+mpirun -np 2 $cgWave -noplot tz.cmd -g=square32.order2.hdf  -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=.9 -ts=explicit -debug=3 -upwind=0 -debug=3 -go=go
+
+
+CONTINUE ON NEW IMPLICIT FIRST STEP
+
+>>>>>>>>>> ORDER=4 SPACE, ORDER=2 TIME
+exact:
+cgWave -noplot tz.cmd -g=nonBox1.order4.hdf -orderInTime=2 -tz=poly -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=3 -go=go
+
+exact:
+cgWave -noplot tz.cmd -g=box1.order4.hdf -orderInTime=2 -tz=poly -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=3 -go=go
+
+exact:
+cgWave -noplot tz.cmd -g=nonSquare32.order4.hdf -orderInTime=2 -tz=poly -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=1 -go=go
+
+exct:
+cgWave -noplot tz.cmd -g=square32.order4.hdf -orderInTime=2 -tz=poly -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=3 -go=go
+
+cgWave -noplot tz.cmd -g=square32.order4.hdf -orderInTime=2 -tz=poly -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=0 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=3 -go=go
+
+
+cgWave -noplot tz.cmd -g=nonBox1.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=1 -go=go
+
+
+cgWave -noplot tz.cmd -g=box1.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=1 -go=go
+
+
+cgWave -noplot tz.cmd -g=nonSquare32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=1 -go=go
+
+
+cgWave -noplot tz.cmd -g=square32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=1 -go=go
+
+****************************************************
+****** Sat May 13, 2023
+
+START ON NEW IMPLICIT FIRST STEP
+
+BOX -- TROUBLE 
+cgWave tz.cmd -g=box1.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=1 -go=halt
+
+cgWave:FD22 t=1.000e-01 (1 steps) dt=1.000e-01 maxErr= 1.95e-03, ||u||= 4.29e+00, cpu= 2.01e+00(s)
+
+
+
+nonSquare : OK 
+cgWave tz.cmd -g=nonSquare32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=1 -go=halt
+
+cgWave:FD22 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 2.02e-14, ||u||= 2.92e+00, cpu= 2.78e+00(s)
+cgWave:FD22 t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 6.22e-14, ||u||= 3.08e+00, cpu= 6.34e+00(s)
+
+STARTS TO WORK: 
+cgWave tz.cmd -g=square32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=1000 -ts=implicit -takeImplicitFirstStep=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=1 -go=halt
+
+cgWave:FD22 t=1.000e-01 (1 steps) dt=1.000e-01 maxErr= 7.11e-15, ||u||= 2.92e+00, cpu= 1.22e+01(s)
+Advance grid 0, step=1, takeImplicitFirstStep=1, ...
+ Inside advWave...
+cgWave:FD22 t=2.000e-01 (2 steps) dt=1.000e-01 maxErr= 1.38e-14, ||u||= 3.08e+00, cpu= 2.12e+01(s)
+Advance grid 0, step=2, takeImplicitFirstStep=1, ...
+ Inside advWave...
+cgWave:FD22 t=3.000e-01 (3 steps) dt=1.000e-01 maxErr= 2.71e-14, ||u||= 3.27e+00, cpu= 2.22e+01(s)
+
+
+****************************************************
 ****** Fri May 12, 2023
 
 cgWave tz.cmd -g=rsise4.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=.1 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -rectangular=explicit -go=halt

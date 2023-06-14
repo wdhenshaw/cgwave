@@ -1,5 +1,27 @@
 ===== Information regarding LCBC updates =====
 
+==== May 16, 2023 Update =====
+
+- The LCBC class now supports 2D or 3D overset grid cases where an interpolation boundary intersects a physical boundary.
+
+==== Nov 21, 2022 Update =====
+
+- Updated functions that retrieve derivatives of Lagrange Polynomial hierarchically in order to improve efficiency.
+- The new functions are updated for the Dirichlet case only. 
+- Note that the previous version works for Neumann boundary conditions. The current version however is not setup for Neumann BCs yet. 
+- Note that order 8 functions give a memory error due to limited memory on the stack. I will work on a fix for this by using static preallocation of memory. 
+
+Added files: 
+
+LagrangeDerivFunctions.C/.h (contains the functions that generate derivatives of Lagrange Polynomials)
+LCBC_newFun.C               (contains new functions that form the LCBC matrices: faces, edges and corners)
+tangentialDerivs_3D....C    (to compute tangential derivatives needed in the LCBC procedure)
+derivatives.h               (contains macros that compute finite difference approximations of derivatives)
+
+Files deleted: 
+
+numericalDeriv.C/.h        
+
 ==== JULY 24 Update ============
 
 - LCBC class goes to order 8 in accuracy

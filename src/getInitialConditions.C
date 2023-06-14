@@ -239,7 +239,10 @@ getInitialConditions( int current, real t, bool getTimeDerivative /* = false */ 
     // if( !plotOption ) 
     //   cg[grid].destroy(MappedGrid::THEvertex);  // vertices are no nolonger needed.
 
+    u[current][grid].updateGhostBoundaries(); // May 14, 2023
+
   }
+
 
   printF("CgWave: done initial conditions\n");
   timing(timeForInitialConditions) += getCPU()- cpu0;

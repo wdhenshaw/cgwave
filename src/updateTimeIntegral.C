@@ -195,7 +195,7 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
   const real & tFinal               = dbase.get<real>("tFinal");
   const real & dt                   = dbase.get<real>("dt");
   const int & adjustOmega           = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
-  RealArray & sigma                 = dbase.get<realArray>("sigma");  
+  RealArray & sigma                 = dbase.get<RealArray>("sigma");  
 
   // ---- Compute the entries using quadrature rather than the exact formulae, in some cases----
   // const bool useQuadrature = adjustOmega && numberOfFrequencies>1;
@@ -355,7 +355,7 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
   {
     dbase.put<RealArray>("sigma"); // holds integration weights
   }
-  RealArray & sigma = dbase.get<realArray>("sigma");  
+  RealArray & sigma = dbase.get<RealArray>("sigma");  
 
   if( stepOption==firstStep )
   {
@@ -402,7 +402,7 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
         {
           // vLocal = ( .5*( cos(omega*(t))-.25 ) )*uLocal;  // Trapezoidal first term (.5)
           const Real omegaFreq = frequencyArray(freq); 
-          vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal;  // Trapezoidal first term (.5)
+          vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
         }
       }
   

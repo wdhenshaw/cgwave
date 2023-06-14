@@ -18,10 +18,13 @@ takeFirstStep( int cur, real t )
 {
     const int & solveHelmholtz              = dbase.get<int>("solveHelmholtz");
     const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
+    const int & takeImplicitFirstStep         = dbase.get<int>("takeImplicitFirstStep");
+    const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
+    bool takeFirstStepImplicit = timeSteppingMethod==implicitTimeStepping &&  takeImplicitFirstStep; 
 
-
-    if( solveHelmholtz || forcingOption==helmholtzForcing )
+    if( (solveHelmholtz || forcingOption==helmholtzForcing) 
+            && !takeFirstStepImplicit  )
     {
         return takeFirstStepHelmholtz( cur, t );
     }
@@ -45,7 +48,7 @@ takeFirstStep( int cur, real t )
 
 
     
-    const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+  
     const int & addForcing = dbase.get<int>("addForcing");
     const bool twilightZone = addForcing && forcingOption==twilightZoneForcing ; 
 
@@ -70,6 +73,17 @@ takeFirstStep( int cur, real t )
     bool getTimeDerivative=true; 
     getInitialConditions( prev,t,getTimeDerivative );
 
+
+    if( takeImplicitFirstStep )
+    {
+    // --- implicit first step:
+    //   Save the time derivative in up, this is used in advWave
+
+        printF("\n **** takeFirstStep: IMPLICIT FIRST STEP : save time-derivative at t=0 *****\n\n");
+        return 0;
+    }
+
+
     const Real c2=c*c, c3=c2*c, c4=c2*c2, c6=c4*c2;
     const Real dt2=dt*dt, dt3=dt2*dt, dt4=dt3*dt, dt5=dt4*dt, dt6=dt5*dt; 
     const Real cdt = c*dt, cdt2=cdt*cdt, cdt3=cdt2*cdt, cdt4=cdt3*cdt, cdt6=cdt3*cdt3; // powers of c*dt 
@@ -83,12 +97,13 @@ takeFirstStep( int cur, real t )
         OV_GET_SERIAL_ARRAY(real,un[grid],unLocal);
 
         getIndex(mg.gridIndexRange(),I1,I2,I3);
-        bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
+        const int includeGhost=1;
+        bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3,includeGhost);
 
         Index J1,J2,J3; // add extra so we can compute Delta^2 
         int extra=orderOfAccuracy/2; 
         getIndex(mg.gridIndexRange(),J1,J2,J3,extra);
-        ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,J1,J2,J3);
+        ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,J1,J2,J3,includeGhost);
 
         if( ok )
         {

@@ -17,7 +17,7 @@ $dtMax=1e10;
 $bc="d"; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $meApproach="std"; # or "ha"
-$useKnownFirstStep=0; 
+$useKnownFirstStep=0; $takeImplicitFirstStep=0; 
 $orderInTime=-1;  # -1 = use default
 $tz="polynomial"; 
 $tf=1.; $tp=.1; $cfl=.9; $go="halt; "
@@ -31,7 +31,7 @@ GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\
             "beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,\
             "useKnownFirstStep=i"=>\$useKnownFirstStep,"meApproach=s"=>\$meApproach,"implicitUpwind=i"=>\$implicitUpwind,\
             "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"debugmg=i"=>\$debugmg,\
-            "go=s"=>\$go );
+            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"go=s"=>\$go );
 #
 if( $tz eq "trig" ){ $tz="trigonometric"; }
 if( $tz eq "poly" ){ $tz="polynomial"; }
@@ -65,6 +65,7 @@ $cmd
 #  Set options for implicit time-stepping: 
 if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }
 $cmd
+take implicit first step $takeImplicitFirstStep
 #
 debug $debug 
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }

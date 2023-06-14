@@ -11,5 +11,4 @@
 
 LagrangeDerivFun pickLagrangeDerivFun(int dim, int p, int axis);
 
-
 #endif /* LagrangeDerivFunctions_h */

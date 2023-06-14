@@ -1,0 +1,14 @@
+# Check file for EigenWave, grid=square32, Tue May 23 15:54:04 2023
+grid=square32;
+eigenSolver=KrylovSchur;
+timeStepping=implicit;
+orderOfAccuracy=4;
+numPeriods=1;
+numberOfStepsPerSolve=10;
+numEigsRequested=8;
+numEigsComputed=8;
+numArnoldiVectors=17;
+numWaveSolves=60;
+maxEigErr= 4.43e-15;
+maxEvectErr= 2.26e-14;
+maxEigResid= 1.51e-13;

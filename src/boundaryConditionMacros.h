@@ -41,10 +41,18 @@
     {
       knownSolutionOption=4;                   // this number must match in bcOptWave.bf90
       // assignKnownSolutionAtBoundaries=1;  
-    }    
+    } 
+    else
+    {
+      knownSolutionOption=1000;  // all other user defined known solutions
+    }   
 
 
   }
+
+  int addForcingBC= forcingOption==noForcing ? 0 : 1;
+  if( applyKnownSolutionAtBoundaries )
+    addForcingBC=1; 
 
   int gridType = isRectangular ? 0 : 1;
   int gridIsImplicit = 0; 
@@ -63,7 +71,7 @@
     myid                ,            // ipar( 9)
     applyKnownSolutionAtBoundaries,  // ipar(10)
     knownSolutionOption,             // ipar(11)
-    addForcing,                      // ipar(12)
+    addForcingBC,                    // ipar(12)
     forcingOption,                   // ipar(13)
     useUpwindDissipation,            // ipar(14)
     numGhost,                        // ipar(15)
@@ -90,21 +98,56 @@
   real temp, *pxy=&temp, *prsxy=&temp;
   if( !isRectangular )
   {
-    mg.update(MappedGrid::THEinverseVertexDerivative);
+    mg.update(MappedGrid::THEinverseVertexDerivative); 
+
     #ifdef USE_PPP
      prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
     #else
      prsxy=mg.inverseVertexDerivative().getDataPointer();
-    #endif    
+    #endif  
+
   }
   bool vertexNeeded = twilightZone || knownSolutionOption!=0;
   if( vertexNeeded )
   {
-    mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
+    mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter ); 
+
     #ifdef USE_PPP
      pxy=mg.vertex().getLocalArray().getDataPointer();
     #else
      pxy=mg.vertex().getDataPointer();
     #endif    
   }
+
+  real *puTemp1=&temp, *puTemp2=&temp;
+  if( orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions )
+  {
+    // WE currently need work space for bcOptWave and standard CBC at order four ******************FIX ME: just make a stencil ****
+    if( !dbase.has_key("uTemp1") )
+    {
+      RealArray & uTemp1 = dbase.put<RealArray>("uTemp1");
+      RealArray & uTemp2 = dbase.put<RealArray>("uTemp2");
+      // -- find the grid with physical boundaries with the most points ---
+      int numElements=0;
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      {
+        MappedGrid & mg = cg[grid];
+        const IntegerArray & boundaryCondition = mg.boundaryCondition();
+        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+        if( max(boundaryCondition)>0 )
+          numElements = max( numElements, maskLocal.elementCount() );
+      }
+      printF(">>> INFO CgWave::applyBC: allocate uTemp1 and utemp2 for order 4 CBC: numElements=%d\n",numElements);
+      if( numElements>0 )
+      {
+        uTemp1.redim(numElements);
+        uTemp2.redim(numElements);
+      }
+    }
+    RealArray & uTemp1 = dbase.get<RealArray>("uTemp1");
+    RealArray & uTemp2 = dbase.get<RealArray>("uTemp2");
+    puTemp1 = uTemp1.getDataPointer();
+    puTemp2 = uTemp2.getDataPointer();
+  }
+
 #endMacro                                  

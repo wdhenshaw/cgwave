@@ -76,6 +76,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   dbase.put<int>("computeErrors") = 1;                  // by default, compute errors for TZ or a known solution
   dbase.put<int>("applyKnownSolutionAtBoundaries") = 0; // by default, do NOT apply known solution at boundaries
+  dbase.put<int>("bcCount") = 0;                        // count the number of times applyBC is called
 
   dbase.put<int>("useKnownSolutionForFirstStep") = 0;   // use known solution for first time-step
 
@@ -87,18 +88,22 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("secondOrderGrid")=1;
   dbase.put<int>("debug")=0;
 
-  dbase.put<int>("deflateWaveHoltz") = 0;      //  set to 1 to turn on deflation for WaveHoltz
-  dbase.put<int>("numToDeflate")     = 1; //  number of eigenvectors to deflate
-  dbase.put<bool>("deflationInitialized") = false; //  set too true if deflation has been initialized
-  dbase.put<aString>("eigenVectorFile")= "none"; //  name of file holding eigs and eigenvectors for deflation
+  dbase.put<int>("deflateWaveHoltz") = 0;           //  set to 1 to turn on deflation for WaveHoltz
+  dbase.put<int>("numToDeflate")     = 1;           //  number of eigenvectors to deflate
+  dbase.put<bool>("deflationInitialized") = false;  //  set too true if deflation has been initialized
+  dbase.put<aString>("eigenVectorFile")= "none";    //  name of file holding eigs and eigenvectors for deflation
   dbase.put<Real>("eigenVectorForcingFactor")=0.;   // scale eigenvector forcing by this amount
-  dbase.put<int>("numEigsToCompute")=1; // number of eigenpairs to compute 
+  dbase.put<int>("numEigsToCompute")=1;             // number of eigenpairs to compute 
+  dbase.put<int>("numArnoldiVectors")=-1;           // total number of Arnolidi vectors to keep (-1 = use default)
+
   dbase.put<int>("iterationStartRR") = 5;
   dbase.put<int>("useAccurateInnerProduct")=true; // use accurate inner product for computing the Rayleigh quotient
   dbase.put<Real>("eigenValueTolForMultiplicity")=1.e-4;  // tolerance for eignavlue multiplicities
 
 
   dbase.put<TimeSteppingMethodEnum>("timeSteppingMethod")=explicitTimeStepping;
+  dbase.put<int>("takeImplicitFirstStep")=0;     // 1 = For implicit time-stepping, use an implicit first step
+
 
   // We have different versions of modified equation time-stepping
   //   0 = standard
@@ -1074,6 +1079,7 @@ buildEigenWaveOptionsDialog(DialogData & dialog )
   const EigenSolverEnum & eigenSolver        = dbase.get<EigenSolverEnum>("eigenSolver"); 
   const int & computeEigenmodes              = dbase.get<int>("computeEigenmodes");
   const int & numEigsToCompute               = dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute 
+  const int & numArnoldiVectors              = dbase.get<int>("numArnoldiVectors");
   const int & useAccurateInnerProduct        = dbase.get<int>("useAccurateInnerProduct"); 
   const Real & eigenValueTolForMultiplicity  = dbase.get<Real>("eigenValueTolForMultiplicity");
   const int & initialVectorsForEigenSolver   = dbase.get<int>("initialVectorsForEigenSolver");
@@ -1114,6 +1120,9 @@ buildEigenWaveOptionsDialog(DialogData & dialog )
 
   textCommands[nt] = "number of eigenvalues";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",numEigsToCompute);  nt++;
+
+  textCommands[nt] = "num Arnoldi vectors";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i (-1 = use default)",numArnoldiVectors);  nt++;
 
   textCommands[nt] = "number of periods";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",numPeriods);  nt++; 
@@ -1163,6 +1172,7 @@ getEigenWaveOption(const aString & answer,
   int & computeEigenmodes              = dbase.get<int>("computeEigenmodes");
 
   int & numEigsToCompute               = dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute 
+  int & numArnoldiVectors              = dbase.get<int>("numArnoldiVectors");
   int & useAccurateInnerProduct        = dbase.get<int>("useAccurateInnerProduct"); 
   Real & eigenValueTolForMultiplicity  = dbase.get<Real>("eigenValueTolForMultiplicity");
   int & initialVectorsForEigenSolver   = dbase.get<int>("initialVectorsForEigenSolver");
@@ -1203,7 +1213,11 @@ getEigenWaveOption(const aString & answer,
   else if( dialog.getTextValue(answer,"number of eigenvalues","%i",numEigsToCompute) )
   {
     printF("Setting numEigsToCompute=%i (compute this many eigenpairs when using Arnoldi)\n",numEigsToCompute);
-  }   
+  } 
+  else if( dialog.getTextValue(answer,"num Arnoldi vectors","%i",numArnoldiVectors) )
+  {
+    printF("Setting numArnoldiVectors=%i (number of vectors in the Arnoldi column space)\n",numArnoldiVectors);
+  }     
   else if( dialog.getTextValue(answer,"number of periods","%i",numPeriods) )
   {
     printF("Setting numPeriods=%i\n",numPeriods);
@@ -1305,6 +1319,7 @@ int CgWave::interactiveUpdate()
   real & ad4                           = dbase.get<real>("ad4"); // coeff of the artificial dissipation. (*old*)
   int & dissipationFrequency           = dbase.get<int>("dissipationFrequency");
   int & preComputeUpwindUt             = dbase.get<int>("preComputeUpwindUt");
+  int & takeImplicitFirstStep          = dbase.get<int>("takeImplicitFirstStep");
 
   ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
        
@@ -1413,6 +1428,7 @@ int CgWave::interactiveUpdate()
                           "choose implicit dt from cfl",
                           "use known for first step",
                           "implicit upwind",
+                          "take implicit first step",
                             ""};
   int tbState[15];
   tbState[ 0] = saveShowFile;
@@ -1420,10 +1436,10 @@ int CgWave::interactiveUpdate()
   tbState[ 2] = addForcing;
   tbState[ 3] = computeErrors;
   tbState[ 4] = preComputeUpwindUt;
-  // tbState[ 5] = applyKnownSolutionAtBoundaries;
   tbState[ 5] = chooseImplicitTimeStepFromCFL;
   tbState[ 6] = useKnownSolutionForFirstStep;
   tbState[ 7] = implicitUpwind;
+  tbState[ 8] = takeImplicitFirstStep;
 
   int numColumns=2;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -1708,6 +1724,11 @@ int CgWave::interactiveUpdate()
     else if( dialog.getToggleValue(answer,"implicit upwind",implicitUpwind) )
     {
       printF("Setting implicitUpwind=%i (1=include upwinding in implicit matrix when implicit time-stepping\n",implicitUpwind);
+    } 
+
+    else if( dialog.getToggleValue(answer,"take implicit first step",takeImplicitFirstStep) )
+    {
+      printF("Setting takeImplicitFirstStep=%i (1=take an implicit first step when implicit time-stepping\n",takeImplicitFirstStep);
     } 
 
     else if( answer=="explicit" || answer=="implicit" )

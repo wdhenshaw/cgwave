@@ -4,9 +4,11 @@
 # examples:
 #     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=1
 #     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=2 
+#     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=2 -ml=2
 #     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=4
 #     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=6
 # 
+#     ogen -noplot darkCornerRoom3d -interp=e -order=4 -factor=1
 #     ogen -noplot darkCornerRoom3d -interp=e -order=4 -factor=2
 #     ogen -noplot darkCornerRoom3d -interp=e -order=4 -factor=4
 # 
@@ -178,7 +180,7 @@ exit
       # choose point on surface 0  .0  4.35 .5
       # choose point on surface 0  .25 4.35 .5
       # choose point on surface 0  .5  4.35 .5
-      $pw = .9; # patch half-width
+      $pw = .9 + .05*($order-2); # patch half-width
       $p1=-$pw; $p2=-.5*$pw; $p3=0.; $p4=.5*$pw; $p5=$pw; 
       choose point on surface 0 $p1 4.35 $pw
       choose point on surface 0 $p2 4.35 $pw
@@ -188,9 +190,13 @@ exit
       done
       backward
       $sideLength=2*$pw;  
-      $nc = intmg( 1.5*$sideLength/$ds + 1.5 );
+      # grid lines include ghost points 
+      $numGhostSurface = 2;
+      $nc = intmg( 1.5*$sideLength/$ds + 1.5 ) + $numGhostSurface;
+      printf("polarSurfacePatch: nc=$nc ml=$ml\n");
       points on initial curve $nc
-      lines to march $nc
+      $ncm = $nc-1; 
+      lines to march $ncm
       distance to march $sideLength
       BC: left (backward) fix x, float y and z
       BC: right (backward) fix x, float y and z      
@@ -201,8 +207,11 @@ exit
       exit
 # 
     create volume grid...
-      distance to march .5 
-      lines to march 11  
+      $nr = intmg( 12 ) -1;
+      $dist = ($nr-2)*$ds; 
+      distance to march $dist 
+      # distance to march .5 
+      lines to march $nr 
       backward
       generate
       boundary conditions
@@ -219,6 +228,7 @@ $gridName = "innerEllipseFull";
 $direction="forward";
 $bc = "1 7 5 0 0 0";
 $share =  "1 2 0 0 0 0"; 
+$nr0 = 8 + 2*($order-2);
 include $ENV{CGWAVE}/runsWaveHoltz/eig/buildVolumeGrid.h
 # 
 #  chop off ends of the inner ellipse grid since these are covered by

@@ -14,12 +14,13 @@ printStatistics(FILE *file /* = stdout */)
   Communication_Manager::Sync();
   const int & np = dbase.get<int>("np");
 
-  const int & debug               = dbase.get<int>("debug");
-  const real & tFinal             = dbase.get<real>("tFinal");
-  const real & numberOfGridPoints = dbase.get<real>("numberOfGridPoints");
-  const int & numberOfStepsTaken  = dbase.get<int>("numberOfStepsTaken");
-  const int & orderOfAccuracy               = dbase.get<int>("orderOfAccuracy");
-  const int & orderOfAccuracyInTime         = dbase.get<int>("orderOfAccuracyInTime");
+  const int & debug                  = dbase.get<int>("debug");
+  const real & tFinal                = dbase.get<real>("tFinal");
+  const real & numberOfGridPoints    = dbase.get<real>("numberOfGridPoints");
+  const int & numberOfStepsTaken     = dbase.get<int>("numberOfStepsTaken");
+  const int & orderOfAccuracy        = dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracyInTime  = dbase.get<int>("orderOfAccuracyInTime");
+  const int & bcCount                = dbase.get<int>("bcCount");
 
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
   const ModifiedEquationApproachEnum & modifiedEquationApproach  
@@ -99,6 +100,11 @@ printStatistics(FILE *file /* = stdout */)
             dateString,(const char*)nameOfGridFile,
             tFinal,numberOfStepsTaken,cg.numberOfComponentGrids(),numberOfGridPoints,numberOfInterpolationPoints,
             np,clockSpeed,minMem,aveMem,maxMem,maxMemRecorded,totalMem);
+
+    if( 1==1 )
+    {
+      fPrintF(output," applyBoundaryConditions called %d times\n",bcCount);  // for debugging 
+    }
 
     if( aveNumberOfImplicitIterations>0 )
     {

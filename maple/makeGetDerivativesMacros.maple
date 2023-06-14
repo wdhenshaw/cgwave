@@ -24,8 +24,8 @@ outputMacros:=true:
 
 
 ndd := 3: dName:="Third":  maxOrder:=4: 
-ndd := 4: dName:="Fourth": maxOrder:=4:
-ndd := 6: dName:="Sixth":  maxOrder:=6:
+# ndd := 4: dName:="Fourth": maxOrder:=4:
+# ndd := 6: dName:="Sixth":  maxOrder:=6:
 
 maxDerivative:=ndd;
 # orderOfAccuracy:=2;
@@ -150,6 +150,8 @@ differenceApproximation :=proc( rDeriv,sDeriv,tDeriv, orderOfAccuracy, rName, dr
  if components=0 then cc:="": elif components=1 then cc:=",m" elif components=2 then cc:=",m,n" else cc:=",l,m,n"; end if:
  e:= SubstituteAll(e,"$kd",cc):
  fprintf(mfile," #defineMacro u ## %s%dMacro(i1,i2,i3%s) %s\n",dn,orderOfAccuracy,cc,e);
+ # *wdh* Make a Distinctive name to avoid complicts:
+ # fprintf(mfile," #defineMacro u ## ABC%s%dMacro(i1,i2,i3%s) %s\n",dn,orderOfAccuracy,cc,e);
 
  RETURN(vv):
 end:
@@ -186,7 +188,9 @@ for components from 0 to 1 do
           # if jr<=k and js<=k and jt<=k and (jr+js+jt)>0 then
           if (jr+js+jt)>0 and  jr<=maxDeriv and js<=maxDeriv and jt<=maxDeriv then
             printf(" myOrder=%d, maxDeriv=%d, components=%d, derivative r=%d s=%d t=%d\n",myOrder,maxDeriv,components,jr,js,jt):
+
             differenceApproximation(jr,js,jt,myOrder,rName,"dr");
+
             # differenceApproximation(jr,js,jt,orderOfAccuracy,xName,"dx");
           end if:
        end do:
@@ -335,6 +339,7 @@ for dim from 2 to numberOfDimensions do
           end if:             
          
 
+          # *wdh* Use the distictive macro name: 
           if ivar=0 then
             fprintf(mfile,"%-8s = %s%dMacro(i1,i2,i3,0)\n",uNameString,uNameString,myOrder);
           else

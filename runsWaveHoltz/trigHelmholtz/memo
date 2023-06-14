@@ -1,4 +1,54 @@
 
+
+*************************************************
+********** Mon May 15, 2023
+
+
+
+*************************************************
+********** Mon May 15, 2023
+
+START TEST PARALLEL
+
+** compute fixed point : np=1: OK 
+mpirun -np 1 $cgwh trigHelmholtz.cmd -g=square128.order2 -numPeriods=2 -nf=2 -freq=5.1 12 -kx=1.75 -ky=1.75 -ts=explicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -solverh=petsc -rtolh=1e-12 -atolh=1e-12 -tp=1000 -maxIterations=70 -cfl=.95 -upwind=1  -matlab=junk -go=halt
+
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+
+ grid=/home/henshw/grids/square128.order2.hdf
+ Convergence rate CR=0.699, CR-perPeriod=0.836, Time to solve = 2.95e+01(s) : CgWave= 2.95e+01(s) 99.94%, advance= 2.94e+01(s) 99.83%
+ max-residual=-1.00e+00 (WaveHoltz its), numberOfIterations = 63 (FP) (maximumNumberOfIterations=70)
+ numberOfFrequencies= 2, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = explicit, cfl=  0.95, dt=2.621e-03, minStepsPerPeriod=10, numberOfStepsPerSolve=940, totalTimeStepsStaken=60160, aveItsPerImplicitSolve=  0.0
+    implicit solver : none
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ freq= 0, omega=   5.100, (adjusted=   5.100) T= 1.23200, Tbar= 2.46399, numPeriods=  2, Tbar(0)/T=  2.00
+ freq= 1, omega=  12.000, (adjusted=  12.000) T= 0.52360, Tbar= 2.09440, numPeriods=  4, Tbar(0)/T=  4.71
+
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=6.588e-08.
+CgWaveHoltz::residual: freq= 1, omega=  12.000, max-res=1.011e-07.
+CgWaveHoltz: max-res=1.011e-07 (all frequencies)
+
+Direct solve Helmholtz: cpu= 2.53e-01(s), iterations=149 (sum all freq)
+   solver : PETSc, parallel=[bi-conjugate gradient stabilized + block Jacobi preconditioner], local=[ILU(5) + reverse Cuthill-McKee ordering]
+saveMatlab: dt=2.621e-03
+CgWaveHoltz::saved results in matlab file=[junkFP.m]
+getErrors: t=0.000e+00, freq=  0, omega=   5.100, maxErr=8.051e-04
+getErrors: t=0.000e+00, freq=  1, omega=  12.000, maxErr=2.538e-03
+cgwh: max-err =2.54e-03 (between WaveHoltz and known solution, all frequencies)
+cgwh: rel-max-diff=6.47e-10 for freq0 =   5.1000e+00, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=6.41e-09 for freq1 =   1.2000e+01, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=6.41e-09, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
+
+
+
+
 *************************************************
 ********** Mon March 6, 2023
 

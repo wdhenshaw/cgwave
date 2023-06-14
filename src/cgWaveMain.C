@@ -325,7 +325,7 @@ main(int argc, char *argv[])
         OV_GET_SERIAL_ARRAY(real,res[grid],resLocal);
 
         int numberOfTimeDerivatives=0;
-        cgWave.getUserDefinedKnownSolution(t, grid, uLocal,I1,I2,I3,numberOfTimeDerivatives);
+        cgWave.getUserDefinedKnownSolution(t, grid, u[grid],I1,I2,I3,numberOfTimeDerivatives);
 
         int extra=-1; // skip boundaries -- *fix* me for Neumann BCs
         getIndex( mg.gridIndexRange(),I1,I2,I3,extra ); 

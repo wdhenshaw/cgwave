@@ -15,7 +15,8 @@ extern "C"
 void bcOptWave( const int&nd, 
                                 const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
                                 const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const int&mask,
-                                const real&rsxy, const real&xy, const int&boundaryCondition, const real & frequencyArray,
+                                const real&rsxy, const real&xy, real &uTemp1, real & uTemp2, 
+                                const int&boundaryCondition, const real & frequencyArray,
                                 const DataBase *pdb, const int&ipar, const real&rpar, int&ierr );
 
 }
@@ -52,6 +53,10 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
     const int np   = max(1,Communication_Manager::numberOfProcessors());
 
     const int & debug = dbase.get<int>("debug");
+
+    dbase.get<int>("bcCount")++;    // count the number of times applyBC is called
+
+
 
     if( debug & 8 )
         printF("applyBoundaryConditions at t=%9.3e\n",t);
@@ -95,11 +100,11 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
     real cpu0 = getCPU();
 
   // *** Note: interpolate also does a periodic update **** 
-
     u.interpolate();
 
     real cpu1 = getCPU();
     timing(timeForInterpolate)+= cpu1-cpu0;
+
   // printF("Done interpolate.\n");
     
     cpu0=cpu1;
@@ -138,7 +143,47 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
     }
     if( applyExplicitBoundaryConditions )  
         isAllImplicit=false; 
+
+
+  // --- apply known solutions on "exact" boundaries ----
+    if( knownSolutionOption=="userDefinedKnownSolution" ) 
+    {
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            MappedGrid & mg = cg[grid];
+            const IntegerArray & gid = mg.gridIndexRange();
+            
+            realArray & ug = u[grid];
+            ForBoundary(side,axis) 
+            {
+                if( mg.boundaryCondition(side,axis)==exactBC )
+                {
+          // -- assign boundary and ghost values to be exact ---
+                    if( t<=2*dt )
+                        printF(" Set knownSolution at exact boundary (side,axis,grid)=(%d,%d,%d)\n",side,axis,grid);
+
+                    getBoundaryIndex(gid,side,axis,I1,I2,I3);
+                    if( side==0 )
+                        Iv[axis] = Range(gid(0,axis)-numGhost,gid(0,axis));
+                    else 
+                        Iv[axis] = Range(gid(1,axis),gid(1,axis)+numGhost);
+
+                    getUserDefinedKnownSolution( t, grid, ug, I1,I2,I3 );
+                }
+            }
+        }
+                      
+    }
+
     
+  // if( TRUE )
+  // {
+  //   timing(timeForBoundaryConditions) += getCPU()-cpu0;
+  //   return 0;  // ************** TemP ***************************
+  // }
+
+
+
     if( debug & 4 && t<=2*dt )
         printF("CgWave: applyBC: useOpt=%d\n",(int)useOpt);
     if( useOpt )
@@ -222,8 +267,15 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
                             {
                                 knownSolutionOption=4;                   // this number must match in bcOptWave.bf90
                 // assignKnownSolutionAtBoundaries=1;  
-                            }    
+                            } 
+                            else
+                            {
+                                knownSolutionOption=1000;  // all other user defined known solutions
+                            }   
                         }
+                        int addForcingBC= forcingOption==noForcing ? 0 : 1;
+                        if( applyKnownSolutionAtBoundaries )
+                            addForcingBC=1; 
                         int gridType = isRectangular ? 0 : 1;
                         int gridIsImplicit = 0; 
                         int numberOfComponents = 1;          // for now CgWave only has a single component 
@@ -241,7 +293,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
                             myid                ,            // ipar( 9)
                             applyKnownSolutionAtBoundaries,  // ipar(10)
                             knownSolutionOption,             // ipar(11)
-                            addForcing,                      // ipar(12)
+                            addForcingBC,                    // ipar(12)
                             forcingOption,                   // ipar(13)
                             useUpwindDissipation,            // ipar(14)
                             numGhost,                        // ipar(15)
@@ -267,22 +319,52 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
                         real temp, *pxy=&temp, *prsxy=&temp;
                         if( !isRectangular )
                         {
-                            mg.update(MappedGrid::THEinverseVertexDerivative);
+                            mg.update(MappedGrid::THEinverseVertexDerivative); 
                             #ifdef USE_PPP
                               prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
                             #else
                               prsxy=mg.inverseVertexDerivative().getDataPointer();
-                            #endif    
+                            #endif  
                         }
                         bool vertexNeeded = twilightZone || knownSolutionOption!=0;
                         if( vertexNeeded )
                         {
-                            mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
+                            mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter ); 
                             #ifdef USE_PPP
                               pxy=mg.vertex().getLocalArray().getDataPointer();
                             #else
                               pxy=mg.vertex().getDataPointer();
                             #endif    
+                        }
+                        real *puTemp1=&temp, *puTemp2=&temp;
+                        if( orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions )
+                        {
+              // WE currently need work space for bcOptWave and standard CBC at order four ******************FIX ME: just make a stencil ****
+                            if( !dbase.has_key("uTemp1") )
+                            {
+                                RealArray & uTemp1 = dbase.put<RealArray>("uTemp1");
+                                RealArray & uTemp2 = dbase.put<RealArray>("uTemp2");
+                // -- find the grid with physical boundaries with the most points ---
+                                int numElements=0;
+                                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                                {
+                                    MappedGrid & mg = cg[grid];
+                                    const IntegerArray & boundaryCondition = mg.boundaryCondition();
+                                    OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+                                    if( max(boundaryCondition)>0 )
+                                        numElements = max( numElements, maskLocal.elementCount() );
+                                }
+                                printF(">>> INFO CgWave::applyBC: allocate uTemp1 and utemp2 for order 4 CBC: numElements=%d\n",numElements);
+                                if( numElements>0 )
+                                {
+                                    uTemp1.redim(numElements);
+                                    uTemp2.redim(numElements);
+                                }
+                            }
+                            RealArray & uTemp1 = dbase.get<RealArray>("uTemp1");
+                            RealArray & uTemp2 = dbase.get<RealArray>("uTemp2");
+                            puTemp1 = uTemp1.getDataPointer();
+                            puTemp2 = uTemp2.getDataPointer();
                         }
 
           // if( true )
@@ -292,13 +374,15 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
                                         uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
                                         uLocal.getBase(2),uLocal.getBound(2),
                                         indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                                        *pu, *pmask, *prsxy, *pxy,  bcLocal(0,0), frequencyArray(0),
+                                        *pu, *pmask, *prsxy, *pxy, *puTemp1, *puTemp2,
+                                        bcLocal(0,0), frequencyArray(0),
                                         pdb, ipar[0],rpar[0], ierr );
                 }
 
-        // ...swap periodic edges 
+        // ...swap periodic edges ....
                 ug.periodicUpdate();
                 ug.updateGhostBoundaries();
+
             }
             else
             {
@@ -632,6 +716,13 @@ applyEigenFunctionBoundaryConditions( realCompositeGridFunction & u )
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
         MappedGrid & mg = cg[grid];
+        const IntegerArray & boundaryCondition = mg.boundaryCondition();
+        if( orderOfAccuracy>2 && min(abs(boundaryCondition-neumann))==0 )
+        {
+            printF("applyEigenFunctionBoundaryConditions:ERROR: finish Neumann BC for order=%d\n",orderOfAccuracy);
+            OV_ABORT("finish me");
+        }
+
         realMappedGridFunction & ug = u[grid];
 
         ug.applyBoundaryCondition(0,BCTypes::dirichlet,dirichlet,0.,t); 

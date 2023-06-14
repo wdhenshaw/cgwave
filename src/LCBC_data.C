@@ -2,13 +2,21 @@
 #include "LCBCmacros.h"
 #include <string.h>
 
+/// \brief Set 2 3D vectors equal to each other
+/// \param v1 (output): vector we want to equate to the other
+/// \param v2 (input): known vector
 void equateVectors(int v1[3], int v2[3]){
     for(int i = 0; i<3; i++){
         v1[i] = v2[i];
     }
 }
-/* Start here */
 
+/// \brief Initialize the LcbcData class
+/// \param lthIn (input): the length of the grid function added by the user
+/// \param wthIn (input): the number of ghost points added in each axes added by the user
+/// \param indexLthIn (input): the number of components involved in each grid function added by the user
+/// \param FnIn (input): the grid function carrying the data values added by the user if not NULL
+/// \param fixIn (input): a boolean to tell if we need to extrapolate extra values of data functions
 void LcbcData::initialize( int lthIn[3], int wthIn[3], int indexLthIn, double **FnIn, bool fixIn){
     
     if(!initialized){
@@ -27,6 +35,9 @@ void LcbcData::initialize( int lthIn[3], int wthIn[3], int indexLthIn, double **
     }
 }// end of initialize
 
+/// \brief Allocate space for the grid function carrying the data
+/// \param lth (input): size of the grid function in each dimension
+/// \param indexLth (input): the number of components in the grid function
 void LcbcData::allocateSpace(int lth[3], int indexLth){
     if(!allocatedSpace){ 
         Fn = new double*[indexLth];
@@ -37,6 +48,7 @@ void LcbcData::allocateSpace(int lth[3], int indexLth){
     }
 }
 
+/// \brief Delete any allocated space
 void LcbcData::deleteLcbcData(){
     if(allocatedSpace){
         for(int i = 0; i<indexLth; i++){
@@ -48,11 +60,26 @@ void LcbcData::deleteLcbcData(){
 
 /* Check Data functions */
 
+/* Create an enum for type of data needed */
 enum lcbcFnType{boundary=1, forcing=2, coefficient=3};
+
+/* Create an enum to tell if user added by user is less than needed (create new grid function within the class), more than needed (use what the user gives but be careful with indexing), sufficient (use what the user gives), or insufficient (return an error to the user) */
 enum dataInput{less=-1, more=1, sufficient=0, insufficient=999};
 
 bool debug = false;
 
+/// \brief Run over boundary faces to check whether the user data is adequate. If not, either return an error, fill a new grid function to match LCBC grid, or fix if extra values of the data are needed
+/// \param classData (output): the LcbcData object that will be used in the LCBC class
+/// \param userData (input): the LcbcData object provided by the user
+/// \param Nx (input): the number of grid points in each direction
+/// \param Ngx (input): the total number of grid points (including ghost values) in each direction
+/// \param faceEval (input): a vector carrying information on the type of boundary condition at each face (-1:periodic, 0:none, 1:Dirichlet, 2:Neumann)
+/// \param dim (input): dimension
+/// \param p (input): order of accuracy in space/ 2
+/// \param extraDataGhost (input): extra ghost points needed from data function for the LCBC procedure
+/// \param dataType (input): type of data used: PDE coefficients, forcing, boundary (see dataInput enum defined above)
+/// \param fix (input): boolean to determine if we need to extrapolate solution values on extra ghost points or to refill solution values in separate grid functions
+/// \param overRide (input): a boolean to over ride the check and just set the classData to the userData
 void checkUserData(LcbcData *&classData, LcbcData *userData, int Nx[3], int Ngx[3], int faceEval[], int dim, int p, int extraDataGhost, int dataType, bool fix, bool overRide){
     
     int axis = -1;
@@ -74,6 +101,17 @@ void checkUserData(LcbcData *&classData, LcbcData *userData, int Nx[3], int Ngx[
     }// end of face loop
 }// end of checkUserData
 
+/// \brief Check whether the user data is adequate on a given face. If not, either return an error, fill a new grid function to match LCBC grid, or fix if extra values of the data are needed
+/// \param classData (output): the LcbcData object that will be used in the LCBC class
+/// \param userData (input): the LcbcData object provided by the user
+/// \param Nx (input): the number of grid points in each direction
+/// \param Ngx (input): the total number of grid points (including ghost values) in each direction
+/// \param axis (input)
+/// \param p (input): order of accuracy in space/ 2
+/// \param dim (input): dimension
+/// \param extraDataGhost (input): extra ghost points needed from data function for the LCBC procedure
+/// \param FnType (input): type of data used: PDE coefficients, forcing, boundary (see dataInput enum defined above)
+/// \param overRide (input): a boolean to over ride the check and just set the classData to the userData
 void checkData(LcbcData &classData, LcbcData &userData, int Nx[3], int Ngx[3], int axis, int p, int dim, int extraDataGhost, int FnType, bool overRide){
     
     int lcbcLth[3], lcbcWth[3], minLth[3];
@@ -82,6 +120,7 @@ void checkData(LcbcData &classData, LcbcData &userData, int Nx[3], int Ngx[3], i
         classData = userData;
     }
     else{
+        /* get the needed length and width to check */
         if(FnType == boundary){
             getBdryLcbcLthWth(lcbcLth, lcbcWth, minLth, Ngx, axis, p, dim);
         }else if(FnType == forcing || FnType == coefficient){
@@ -90,7 +129,7 @@ void checkData(LcbcData &classData, LcbcData &userData, int Nx[3], int Ngx[3], i
             printf("LCBC_data: ERROR data function type is incorrect\nUse 1:boudary, 2:forcing, 3:coefficient\n");
             exit(-1);
         }
-        
+        /* compare between what is needed and what is added by the user */
         int userInput = compareVectors(userData.lth, lcbcLth, minLth);
         if(userInput == less){
             if(debug)
@@ -125,6 +164,11 @@ void checkData(LcbcData &classData, LcbcData &userData, int Nx[3], int Ngx[3], i
     }// end of else to overRide
 }// end of checkData
 
+/// \brief Extrapolate data values on extra grid points if needed
+/// \param data (input/output): data that will be extrapolated
+/// \param p (input): order in space/2
+/// \param dim (input); dimension
+/// \param axis (input)
 void fixData(LcbcData &data, int p, int dim, int axis){
     
     if(debug)
@@ -184,6 +228,9 @@ void fixData(LcbcData &data, int p, int dim, int axis){
         }// end of nu loop
 }// end of fixData
 
+/// \brief Fill data values in a new grid function to match the grid needed in the LCBC implementation
+/// \param classData (output): the LcbcData object needed in the LCBC class
+/// \param userData (input): the LcbcData object provided by the user
 void fillData(LcbcData &classData, LcbcData &userData){
     
     if(debug)
@@ -204,6 +251,14 @@ void fillData(LcbcData &classData, LcbcData &userData){
     }// end of nu
 }// end of fill
 
+/// \brief Get the length and width (number of ghost points in each direction) of the grid functions needed in the LCBC procedure
+/// \param lcbcLth (output): length of the grid function needed in the LCBC procedure
+/// \param lcbcWth (output): width of the grid function needed in the LCBC procedure (number of ghost points needed in each direction)
+/// \param minLth (output): the minimum length of the grid function required in the LCBC implementation
+/// \param Ngx (input): the total number of grid points (including ghost values) in each direction
+/// \param fixedAxis (input)
+/// \param p (input): order in space/2
+/// \param dim (input): dimension
 void getBdryLcbcLthWth(int (&lcbcLth)[3], int (&lcbcWth)[3], int (&minLth)[3], int Ngx[3], int fixedAxis, int p, int dim){
     for(int axis = 0; axis<3; axis++){
         lcbcLth[axis] = (axis == fixedAxis)?(1):Ngx[axis];
@@ -216,6 +271,14 @@ void getBdryLcbcLthWth(int (&lcbcLth)[3], int (&lcbcWth)[3], int (&minLth)[3], i
     }// end of axis
 }
 
+/// \brief Get the length and width (number of ghost points in each direction) of the grid functions needed in the LCBC procedure for forcing data
+/// \param lcbcLth (output): length of the grid function needed in the LCBC procedure
+/// \param lcbcWth (output): width of the grid function needed in the LCBC procedure (number of ghost points needed in each direction)
+/// \param minLth (output): the minimum length of the grid function required in the LCBC implementation
+/// \param fixedAxis (input)
+/// \param p (input): order in space/2
+/// \param dim (input): dimension
+/// \param extraDataGhost (input): extra grid points where the forcing data needs to be known on the grid (this will be extrapolated if not provided by the user)
 void getForcingLthWth(int Nx[3], int (&lcbcLth)[3], int (&lcbcWth)[3], int (&minLth)[3], int fixedAxis, int dim, int p, int extraDataGhost){
     
     for(int axis = 0; axis<3; axis++){
@@ -232,6 +295,9 @@ void getForcingLthWth(int Nx[3], int (&lcbcLth)[3], int (&lcbcWth)[3], int (&min
     }// end of axis
 }
 
+/// \brief Get the other axes given a fixed axis
+/// \param varAxis (output): a vector containing the number corresponding to the variable axes (0:x axis, 1:y axis, 2:z axis)
+/// \param fixedAxis (input)
 void getVarAxis_data(int varAxis[2], int fixedAxis){
     int cnt = 0;
     for(int d  = 0; d<3; d++){
@@ -242,6 +308,11 @@ void getVarAxis_data(int varAxis[2], int fixedAxis){
     }// end of d for loop
 }// end of getVarAxis_data
 
+/// \brief A function that compares two three dimensional vectors and returns an integer.
+/// The integers refer to the dataInput enum defined above
+/// \param vec (input): vector we need to compare to another constant vector
+/// \param cstVec (input): the vector we want to compare to
+/// \param minVec (input): a vector that is the minimum allowed. If vec<minVec, return an error
 int compareVectors(int vec[3], int cstVec[3], int minVec[3]){
     for(int i = 0; i<3; i++){
         if(vec[i] != cstVec[i]){
@@ -259,6 +330,13 @@ int compareVectors(int vec[3], int cstVec[3], int minVec[3]){
     return 0;
 }// end of compareVectors
 
+/// \brief A function to extrapolate values of data on extra ghost points
+/// \param gridFn (input): the grid function carrying the values of the data on the grid
+/// \param index (input): the index around which we want to carry out the extrapolation
+/// \param lth (input): the length of the grid function gridFn in each dimension
+/// \param axis (input)
+/// \param sign (input): is this a forward or backward extrapolation?
+/// \param order (input): order of accuracy of the approximation
 double extrapolate_data(double *gridFn, int index[3], int lth[3], int axis, int sign, int order){
     
     double E = 0;

@@ -17,7 +17,8 @@ $upwind=0;
 $debug=3;  $go="halt"; $bc="d"; $dissFreq=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $useKnownFirstStep=0; $checkKnown=0; 
-$computeErrors=1; $setKnownOnBoundaries=1; 
+$computeErrors=1; 
+$setKnownOnBoundaries=-1; #-1 : use default
 $tf=5.; $tp=.05; $cfl=.9; 
 $ts="explicit"; $dtMax=1e10; $implicitUpwind=0; 
 $rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat rectangular grids explicitly
@@ -44,9 +45,11 @@ if( $bc eq "n" ){ $bc="neumann"; }
 if( $bc eq "e" ){ $bc="exact"; }
 # if( $bc eq "e" ){ $bc="evenSymmetry"; }
 if( $bc eq "r" ){ $bc="radiation"; }
-if( $known eq "diskEig" || $known eq "squareEig" ){ $setKnownOnBoundaries=0; }
-if( $known eq "annulusEig" ){ $setKnownOnBoundaries=0; }
-if( $known eq "sphereEig" ){ $setKnownOnBoundaries=0; }
+# by default we do NOT set known on boundaries for these solutions:
+if( $setKnownOnBoundaries eq "-1" && ($known eq "diskEig" || $known eq "squareEig" || $known eq "annulusEig" || $known eq "sphereEig") ){ $setKnownOnBoundaries=0; }
+if( $setKnownOnBoundaries eq "-1" ){ $setKnownOnBoundaries=1; }
+# if( $known eq "annulusEig" ){ $setKnownOnBoundaries=0; }
+# if( $known eq "sphereEig" ){ $setKnownOnBoundaries=0; }
 # time-stepping: (explicit or implicit)
 $ts
 # pause

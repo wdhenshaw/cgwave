@@ -1,38 +1,42 @@
 #include "utility.h"
 #include <string.h>
 #include <assert.h>
-#include <malloc.h>  // *wdh* 2022/03/16
-#include <stdlib.h>  // *wdh* for exit
+//#include <malloc.h>  // *wdh* 2022/03/16
+//#include <stdlib.h>  // *wdh* for exit
 
-//void multiplyMatrices(double *&C, double *A, double *B, int R1, int C1, int R2, int C2, double s) {
-////    if (C1 != R2) {
-////        printf("Matrices are incompatible for multiplication\n");
-////        exit(EXIT_FAILURE);
-////    }
-////    else{
-//        for (int i = 0; i < R1; i++) {
-//            for (int j = 0; j < C2; j++) {
-//                C[ind2(i,j,R1,C2)] = 0;
-//
-//                for (int k = 0; k < R2; k++) {
-//                    C[ind2(i,j,R1,C2)] += s*A[ind2(i,k,R1,C1)]*B[ind2(k,j,R2,C2)];
-//                }// end of k loop
-//            }// end of j loop
-//        }// end of i loop
-//        return;
-////    }
-//}// end of function
-
-void getVarAxis(int varAxis[2], int fixedAxis){
+/// \brief Given a fixed axis. Get a vector containing the other axes.
+/// \param otherAxis (output): a vector containing integers corresponding to the variable axes
+/// \param fixedAxis (input)
+void getOtherAxes(int otherAxis[2], int fixedAxis){
     int cnt = 0;
     for(int d  = 0; d<3; d++){
         if(d!=fixedAxis){
-            varAxis[cnt] = d;
+            otherAxis[cnt] = d;
             cnt++;
         }// end of if d statement
     }// end of d for loop
 }// end of getVarAxis
 
+/// \brief Sum the element of a vector of a given size
+/// \param vec (input): the vector for which we want to sum the elements
+/// \param size (input): the size of the input vector 'vec'
+int intVectorSum(int *vec, int size){
+    int sum = 0;
+    for(int i = 0; i<size; i++){
+        sum = sum + vec[i];
+    }
+    return sum;
+}
+
+/// \brief A function to print the index range. Used for debugging
+/// \param indexRange (input): the index range object we want to print
+void printIndexRange(int indexRange[3][2]){
+    printf("[%d,%d]x[%d,%d]x[%d,%d]\n",indexRange[0][0],indexRange[0][1],indexRange[1][0],indexRange[1][1],indexRange[2][0],indexRange[2][1]); 
+}
+
+/// \brief Get the identity matrix of size NxN
+/// \param ID (output): the identity matrix of size NxN
+/// \param N (input): size of the identity matrix
 void getIDmatrix(double *&ID, int N){
     for(int i = 0; i<N; i++){
         for(int j = 0; j<N; j++){
@@ -47,6 +51,10 @@ void getIDmatrix(double *&ID, int N){
     return;
 }
 
+/// \brief Set a 2D array to zero
+/// \param A (input/output): the array that we want to set to zero
+/// \param s1 (input): size of the array in the first dimension
+/// \param s2 (input): size of the array in the second dimension
 void set2DArrayToZero(double **&A, int s1, int s2){
     for(int i = 0; i<s1; i++){
         for(int j = 0; j<s2; j++){
@@ -55,6 +63,14 @@ void set2DArrayToZero(double **&A, int s1, int s2){
     }
 }
 
+/// \brief Solve Ax = b using least-squares where A is mxn and the number of right-hand-sides is nrhs
+/// \param A (input)
+/// \param b (input)
+/// \param x (input)
+/// \param m (input)
+/// \param n (input)
+/// \param nrhs (input): number of right-hand-side vectors
+/// \param trans (input): set to 'T' to solve the transpose problem A^T x = b instead. Set to 'N' to solve the original problem
 void LSsolve(double *A, double *b, double *&x, int m, int n, int nrhs, char trans){
     int M = m;
     int N = n;
@@ -82,8 +98,6 @@ void LSsolve(double *A, double *b, double *&x, int m, int n, int nrhs, char tran
             B[ind2(i,j,LDB,nrhs)] = 0.0;
         }
     }
-    
-//    print2Darray(B, LDB, NRHS);
 
     double wkopt;
     double* work;
@@ -118,6 +132,14 @@ void LSsolve(double *A, double *b, double *&x, int m, int n, int nrhs, char tran
     delete [] B;
 }
 
+/// \brief A function to extract block matrices from a bigger matrix Mat
+/// \param Mat (input): the original matrix that we'd like to extract blocks from
+/// \param Block (output): the block matrix that we want to extract
+/// \param MatRowNum (input): the number of rows of Mat
+/// \param MatColmNum (input): the number of columns of Mat
+/// \param extractRows (input): a vector containing the range of rows that we want to extract
+/// \param extractColms (input): a vector containing the range of columns that we want to extract
+/// \param scale (input): multiply the extracted block by a constant 'scale'
 void extractBlocks(double *Mat, double *&Block, int MatRowNum, int MatColmNum, int extractRows[2], int extractColms[2], int scale){
     int BlockRowNum  = extractRows[1] - extractRows[0];
     int BlockColmNum = extractColms[1] - extractColms[0];
@@ -133,22 +155,11 @@ void extractBlocks(double *Mat, double *&Block, int MatRowNum, int MatColmNum, i
     }
 }
 
-void scaleRows(double *&Mat, double scale[], int numScaledRows, int numRows, int numColms){
-    /* this function scales the rows of the matrix Mat by their max norm and saves the scaling factor in scale */
-    
-    int cnt = 0;
-    for(int row = 0; row<numScaledRows; row++){
-        scale[cnt] = rowMaxNorm(Mat, row, numRows, numColms); // this finds the max norm of each row of Mat
-        if(scale[cnt] == 0){
-            scale[cnt] = 1;
-        }
-        for(int colm = 0; colm<numColms; colm++){
-            Mat[ind2(row,colm,numRows,numColms)] = Mat[ind2(row,colm,numRows,numColms)]/scale[cnt];
-        }// end of c loop
-        cnt = cnt + 1;
-    }// end of r loop
-}// end of the function
-
+/// \brief Find the maximum norm of each row of a matrix Mat
+/// \param Mat (input)
+/// \param row (input): the row of the matrix Mat we want to find the maximum norm of
+/// \param numRows (input): the number of rows of the matrix Mat
+/// \param numColms (input): the number of columns of the matrix Mat
 double rowMaxNorm(double *Mat, int row, int numRows, int numColms){
     /* this functions finds the maximum of the absolute values of rows of a matrix Mat */
     double max = Mat[ind2(row,0,numRows,numColms)];
@@ -160,6 +171,10 @@ double rowMaxNorm(double *Mat, int row, int numRows, int numColms){
     return max;
 }// end of function
 
+/// \brief Print a 2D array of doubles
+/// \param arr (input): the array we want to print
+/// \param s1 (input): the size of the array arr in the first dimension
+/// \param s2 (input): the size of the array arr in the second dimension
 void print2Darray(double *arr, int s1, int s2){
     for(int i = 0; i<s1; i++){
         for(int j = 0; j<s2; j++){
@@ -170,6 +185,23 @@ void print2Darray(double *arr, int s1, int s2){
     printf("\n");
 }
 
+/// \brief Print a 2D array of integers
+/// \param arr (input): the array we want to print
+/// \param s1 (input): the size of the array arr in the first dimension
+/// \param s2 (input): the size of the array arr in the second dimension
+void print2Darray(int *arr, int s1, int s2){
+    for(int i = 0; i<s1; i++){
+        for(int j = 0; j<s2; j++){
+            printf("%d|",arr[ind2(i,j,s1,s2)]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+/// \brief Print a 1D array of doubles
+/// \param arr (input): the array we want to print
+/// \param s (input): the size of the array arr
 void print1Darray(double *arr, int s){
     for(int i = 0; i<s; i++){
         printf("%1.4f\n",arr[i]);
@@ -177,31 +209,8 @@ void print1Darray(double *arr, int s){
     printf("\n");
 }
 
+/// \brief A debugging function used to print the message "STOP HERE"
 void stopHere(){
     printf("\n STOP HERE \n"); 
 }
-
-void partialPrint_3Darray(double *arr, int *Lth, int fixedInd){
-    int i[3];
-    i[2] = fixedInd;
-    for(i[0] = 0; i[0]<Lth[0]; i[0]++){
-        for(i[1] = 0; i[1]<Lth[1]; i[1]++){
-            printf("%1.2f|",arr[ind(i, Lth)]);
-        }// end of i[1]
-        printf("\n");
-    }// end of i[0]
-    
-    printf("\n");
-}// end of fn
-
-void print2Darray2(double *arr, int rowNum, int colmNum, int r1, int r2, int c1, int c2){
-    for(int i = r1; i<r2; i++){
-        for(int j = c1; j<c2; j++){
-            printf("%1.2f|",arr[ind2(i,j,rowNum,colmNum)]);
-        }// end of j loop
-        printf("\n");
-    }// end of i loop
-    printf("\n");
-}
-
 
