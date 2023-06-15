@@ -2,7 +2,27 @@
 ****************************************************
 ****** Wed June 14, 2023
 
+START ADDING SUPER_GRID
+
 PLANE WAVE:
+cgWave -noplot known.cmd -g=nonSquare1024.order2 -upwind=1 -kx=2 -ky=1 -tp=2 -tf=2 -known=planeWave -bc=e -debug=0 -go=go
+advance.............................  6.15e+01    1.91e-02    1.82e-08    99.689   6.153e+01   6.153e+01
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  2.49e+01    7.75e-03    7.37e-09    40.408   2.494e+01   2.494e+01
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  3.23e+01    1.00e-02    9.55e-09    52.349   3.231e+01   3.231e+01
+  boundary conditions...............  3.91e+00    1.21e-03    1.16e-09     6.333   3.909e+00   3.909e+00
+  interpolation.....................  9.98e-02    3.10e-05    2.95e-11     0.162   9.979e-02   9.979e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.29e-01    4.00e-05    3.80e-11     0.208   1.286e-01   1.286e-01
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+
+
+PLANE WAVE: 
 cgWave -noplot known.cmd -g=square1024.order2 -upwind=1 -kx=2 -ky=1 -tp=2 -tf=2 -known=planeWave -bc=e -debug=0 -go=go
 
 advance.............................  3.85e+01    1.20e-02    1.14e-08    99.691   3.851e+01   3.851e+01
@@ -12,7 +32,7 @@ advance.............................  3.85e+01    1.20e-02    1.14e-08    99.691
   add dissipation...................  3.22e+01    1.00e-02    9.52e-09    83.337   3.220e+01   3.220e+01
   boundary conditions...............  1.62e+00    5.04e-04    4.79e-10     4.195   1.621e+00   1.621e+00
   interpolation.....................  6.94e-02    2.16e-05    2.05e-11     0.180   6.942e-02   6.942e-02
-  
+
 
 EXPLICIT
 cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9  -implicitUpwind=0 -dtMax=.5 -go=go

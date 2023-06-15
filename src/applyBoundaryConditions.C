@@ -116,7 +116,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
         ForBoundary(side,axis) 
         {
             int bc = mg.boundaryCondition(side,axis);
-            if( !( bc<=0 || bc==dirichlet || bc==evenSymmetry || bc==neumann || bc==exactBC ) )
+            if( !( bc<=0 || bc==dirichlet || bc==evenSymmetry || bc==neumann || bc==exactBC || bc==absorbing ) )
             {
                 printF("CgWave:applyBoundaryConditions:ERROR: grid=%i side=%i axis=%i bc=%i not implemented\n",grid,side,axis,bc);
                 printF(" You should set boundary conditions in the interactiveUpdate \n");

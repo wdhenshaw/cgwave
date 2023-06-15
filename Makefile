@@ -169,7 +169,7 @@ OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/u
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
        obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
        obj/takeFirstStep.o obj/deflation.o obj/eigenModes.o \
-       obj/rjbesl.o obj/rybesl.o
+       obj/rjbesl.o obj/rybesl.o obj/buildSuperGrid.o
        
 # LCBC files: 
 OBJC += obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_data.o \
@@ -300,6 +300,9 @@ obj/LCBC_annulusMap.o : src/LCBC_annulusMap.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/initializeLCBC.o : src/initializeLCBC.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/deflation.o : src/deflation.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/eigenModes.o : src/eigenModes.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
+
+
+obj/buildSuperGrid.o : src/buildSuperGrid.C; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 
 # # ----- test LCBC class : local compatibility boundary conditions -----
 # testLCBCFiles = obj/testLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o

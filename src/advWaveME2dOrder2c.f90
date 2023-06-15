@@ -1,5 +1,5 @@
 ! This file automatically generated from advWaveME.bf90 with bpp.
-  subroutine advWaveME2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,fa,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+  subroutine advWaveME2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
   ! subroutine advWaveME2dOrder2c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,!                 mask,xy,rsxy,  um,u,un, f,fa, v, vh,  bc, frequencyArray, ipar, rpar, ierr )
  !======================================================================
  !   Advance a time step for Waves equations
@@ -13,23 +13,43 @@
  !======================================================================
   implicit none
   integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
-  real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-  real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-  real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-  real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-  real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
-  real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
-  real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-  real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
-  real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
-  real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
-  integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
-  integer bc(0:1,0:2),ierr
+   real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   ! real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+   real stencilCoeff(0:*)   ! holds stencil coeffs
+   real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
+   real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+   real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
+   real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+   real etax(nd1a:nd1b)  ! superGrid functions
+   real etay(nd2a:nd2b)
+   real etaz(nd3a:nd3b)
+   integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+   integer bc(0:1,0:2),ierr  
+   real frequencyArray(0:*)
+   integer ipar(0:*)
+   real rpar(0:*)
+  ! integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
+  ! real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+  ! real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
+  ! real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+  ! real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
+  ! real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+  ! integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+  ! integer bc(0:1,0:2),ierr
+  ! real frequencyArray(0:*)
+  ! integer ipar(0:*)
+  ! real rpar(0:*)
+  !     ---- local variables -----
   integer gridIndexRange(0:1,0:2)
-  real frequencyArray(0:*)
-  integer ipar(0:*)
-  real rpar(0:*)
- !     ---- local variables -----
   integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt,ig,useMask
   integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
   integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt

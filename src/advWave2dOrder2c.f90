@@ -1,5 +1,5 @@
 ! This file automatically generated from advWave.bf90 with bpp.
-    subroutine advWave2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+    subroutine advWave2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
    !======================================================================
    !   Advance a time step for Waves equations
    !
@@ -12,22 +12,42 @@
    !======================================================================
     implicit none
     integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
-    real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-    real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-    real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-    real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-    ! real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
-    real stencilCoeff(0:*)   ! holds stencil coeffs
-    real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
-    real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-    real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
-    real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
-    real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
-    integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
-    integer bc(0:1,0:2),ierr
-    real frequencyArray(0:*)
-    integer ipar(0:*)
-    real rpar(0:*)
+     real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+     real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+     real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+     real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+     ! real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+     real stencilCoeff(0:*)   ! holds stencil coeffs
+     real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
+     real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+     real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+     real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
+     real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+     real etax(nd1a:nd1b,0:*)  ! superGrid functions
+     real etay(nd2a:nd2b,0:*)
+     real etaz(nd3a:nd3b,0:*)
+     integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+     integer bc(0:1,0:2),ierr  
+     real frequencyArray(0:*)
+     integer ipar(0:*)
+     real rpar(0:*)
+    ! integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
+    ! real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+    ! real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+    ! real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+    ! real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+    ! ! real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+    ! real stencilCoeff(0:*)   ! holds stencil coeffs
+    ! real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
+    ! real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+    ! real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+    ! real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
+    ! real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+    ! integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+    ! integer bc(0:1,0:2),ierr
+    ! real frequencyArray(0:*)
+    ! integer ipar(0:*)
+    ! real rpar(0:*)
    !     ---- local variables -----
     integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt
     integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
@@ -38,7 +58,7 @@
     real dt4by12
     ! logical addDissipation
     integer debug
-    integer adjustHelmholtzForUpwinding
+    integer adjustHelmholtzForUpwinding, useSuperGrid
     real dx(0:2),dr(0:2)
     real dx2i,dy2i,dz2i,dxsqi,dysqi,dzsqi,dxi,dyi,dzi
     real dx12i,dy12i,dz12i,dxsq12i,dysq12i,dzsq12i,dxy4i,dxz4i,dyz4,time0,time1
@@ -3477,6 +3497,7 @@ real uzzzzzz
      adjustHelmholtzForUpwinding  = ipar(17)
      modifiedEquationApproach     = ipar(18)
      takeImplicitFirstStep        = ipar(19)
+     useSuperGrid                 = ipar(20)
      fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
      fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
      ! ** fix me ***
@@ -3791,225 +3812,231 @@ real uzzzzzz
      if( useSosupDissipation.eq.0 )then
        if( gridIsImplicit.eq.0 )then 
          ! ------- EXPLIICT update the solution ---------
-         if( orderInTime.eq.2 )then
-          ! FD24 : second-order in time and fourth-order in space
-          ! FD26 : second-order in time and sixth-order in space
-           if( addForcing.eq.0 )then
-              if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
-                write(*,'("advWave: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=",e10.2)') t
-              end if
-              ! --- TAYLOR TIME-STEPPING --- 
-              m=0 ! component number 
-              ec = 0 ! component number
-              if( forcingOption.eq.helmholtzForcing )then
-                coswt = cos(omega*t)
-              end if 
-              fv(m)=0.
-             ! ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
-             ! #If "NOFORCING" eq "NOFORCING"
-             ! ! do not use mask for Cartesian grid , no forcing 
-               do i3=n3a,n3b
-               do i2=n2a,n2b
-               do i1=n1a,n1b
-             ! #Else
-             !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
-             ! #End
-                 ! --- SECOND 2 ---
-                   ! --- TWO DIMENSIONS ---
-                     un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22(i1,i2,i3,0)  + uyy22(i1,i2,i3,0) ) 
-               ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
-               ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
-               ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
-               ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
-              ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
-              !#If "NOFORCING" eq "NOFORCING"
-                end do
-                end do
-                end do
-              !#Else
-              ! endLoopsMask()
-              !#End
-           else 
-              if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
-                write(*,'("advWave: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=",e10.2)') t
-              end if
-              ! --- TAYLOR TIME-STEPPING --- 
-              m=0 ! component number 
-              ec = 0 ! component number
-              if( forcingOption.eq.helmholtzForcing )then
-                coswt = cos(omega*t)
-              end if 
-              fv(m)=0.
-             ! ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
-             ! #If "USEFORCING" eq "NOFORCING"
-             ! ! do not use mask for Cartesian grid , no forcing 
-               do i3=n3a,n3b
-               do i2=n2a,n2b
-               do i1=n1a,n1b
-             ! #Else
-             !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
-             ! #End
-                  if( addForcing.eq.0 )then
-                    ! THIS ADDED March 24, 2023 *** CHECK ME ***
-                    fv(m)=0.
-                  else if( forcingOption.eq.twilightZoneForcing )then
-                    if( nd.eq.2 )then
-                        call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
-                        call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
-                        call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
-                        call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
-                      fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
-                    else
-                        call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
-                        call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
-                        call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
-                        call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
-                        call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
-                      fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
+         if( useSuperGrid == 0 )then
+           if( orderInTime.eq.2 )then
+            ! FD24 : second-order in time and fourth-order in space
+            ! FD26 : second-order in time and sixth-order in space
+             if( addForcing.eq.0 )then
+                if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
+                  write(*,'("advWave: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=",e10.2)') t
+                end if
+                ! --- TAYLOR TIME-STEPPING --- 
+                m=0 ! component number 
+                ec = 0 ! component number
+                if( forcingOption.eq.helmholtzForcing )then
+                  coswt = cos(omega*t)
+                end if 
+                fv(m)=0.
+               ! ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
+               ! #If "NOFORCING" eq "NOFORCING"
+               ! ! do not use mask for Cartesian grid , no forcing 
+                 do i3=n3a,n3b
+                 do i2=n2a,n2b
+                 do i1=n1a,n1b
+               ! #Else
+               !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+               ! #End
+                   ! --- SECOND 2 ---
+                     ! --- TWO DIMENSIONS ---
+                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22(i1,i2,i3,0)  + uyy22(i1,i2,i3,0) ) 
+                 ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
+                 ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
+                 ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
+                 ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
+                ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
+                !#If "NOFORCING" eq "NOFORCING"
+                  end do
+                  end do
+                  end do
+                !#Else
+                ! endLoopsMask()
+                !#End
+             else 
+                if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
+                  write(*,'("advWave: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=",e10.2)') t
+                end if
+                ! --- TAYLOR TIME-STEPPING --- 
+                m=0 ! component number 
+                ec = 0 ! component number
+                if( forcingOption.eq.helmholtzForcing )then
+                  coswt = cos(omega*t)
+                end if 
+                fv(m)=0.
+               ! ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
+               ! #If "USEFORCING" eq "NOFORCING"
+               ! ! do not use mask for Cartesian grid , no forcing 
+                 do i3=n3a,n3b
+                 do i2=n2a,n2b
+                 do i1=n1a,n1b
+               ! #Else
+               !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+               ! #End
+                    if( addForcing.eq.0 )then
+                      ! THIS ADDED March 24, 2023 *** CHECK ME ***
+                      fv(m)=0.
+                    else if( forcingOption.eq.twilightZoneForcing )then
+                      if( nd.eq.2 )then
+                          call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
+                          call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
+                          call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
+                          call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
+                        fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
+                      else
+                          call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
+                          call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
+                          call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
+                          call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
+                          call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
+                        fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
+                     end if
+                   else if( forcingOption.eq.helmholtzForcing )then
+                      ! forcing for solving the Helmholtz equation   
+                      ! NOTE: change sign of forcing since for Helholtz we want to solve
+                      !      ( omega^2 I + c^2 Delta) w = f 
+                      ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                      fv(m)=0.
+                      do freq=0,numberOfFrequencies-1 
+                        omega = frequencyArray(freq)
+                        coswt = cosFreqt(freq)    
+                         ! if( i1.eq.2 .and. i2.eq.2 )then 
+                         !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+                         ! end if
+                         ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                         fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
+                      end do ! do freq  
+                   else if( addForcing.ne.0 )then  
+                      fv(m) = f(i1,i2,i3,0)
                    end if
-                 else if( forcingOption.eq.helmholtzForcing )then
-                    ! forcing for solving the Helmholtz equation   
-                    ! NOTE: change sign of forcing since for Helholtz we want to solve
-                    !      ( omega^2 I + c^2 Delta) w = f 
-                    ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                    fv(m)=0.
-                    do freq=0,numberOfFrequencies-1 
-                      omega = frequencyArray(freq)
-                      coswt = cosFreqt(freq)    
-                       ! if( i1.eq.2 .and. i2.eq.2 )then 
-                       !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
-                       ! end if
-                       ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                       fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
-                    end do ! do freq  
-                 else if( addForcing.ne.0 )then  
-                    fv(m) = f(i1,i2,i3,0)
-                 end if
-                 ! --- SECOND 2 ---
-                   ! --- TWO DIMENSIONS ---
-                     un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22(i1,i2,i3,0)  + uyy22(i1,i2,i3,0) ) +tsf*fv(m)
-               ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
-               ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
-               ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
-               ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
-              ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
-              !#If "USEFORCING" eq "NOFORCING"
-                end do
-                end do
-                end do
-              !#Else
-              ! endLoopsMask()
-              !#End
-           end if
-         else
-           if( addForcing.eq.0 )then
-               if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
-                 write(*,'("advWave: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=",e10.2)') t
-               end if
-               ! --- TAYLOR TIME-STEPPING --- 
-               m=0 ! component number 
-               ec = 0 ! component number
-               if( forcingOption.eq.helmholtzForcing )then
-                 coswt = cos(omega*t)
-               end if 
-               fv(m)=0.
-              ! ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
-              ! #If "NOFORCING" eq "NOFORCING"
-              ! ! do not use mask for Cartesian grid , no forcing 
-                do i3=n3a,n3b
-                do i2=n2a,n2b
-                do i1=n1a,n1b
-              ! #Else
-              !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
-              ! #End
-                  ! --- SECOND 2 ---
-                    ! --- TWO DIMENSIONS ---
-                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22(i1,i2,i3,0)  + uyy22(i1,i2,i3,0) ) 
-                ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
-                ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
-                ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
-                ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
-               ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
-               !#If "NOFORCING" eq "NOFORCING"
-                 end do
-                 end do
-                 end do
-               !#Else
-               ! endLoopsMask()
-               !#End
+                   ! --- SECOND 2 ---
+                     ! --- TWO DIMENSIONS ---
+                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22(i1,i2,i3,0)  + uyy22(i1,i2,i3,0) ) +tsf*fv(m)
+                 ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
+                 ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
+                 ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
+                 ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
+                ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
+                !#If "USEFORCING" eq "NOFORCING"
+                  end do
+                  end do
+                  end do
+                !#Else
+                ! endLoopsMask()
+                !#End
+             end if
            else
-               if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
-                 write(*,'("advWave: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=",e10.2)') t
-               end if
-               ! --- TAYLOR TIME-STEPPING --- 
-               m=0 ! component number 
-               ec = 0 ! component number
-               if( forcingOption.eq.helmholtzForcing )then
-                 coswt = cos(omega*t)
-               end if 
-               fv(m)=0.
-              ! ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
-              ! #If "USEFORCING" eq "NOFORCING"
-              ! ! do not use mask for Cartesian grid , no forcing 
-                do i3=n3a,n3b
-                do i2=n2a,n2b
-                do i1=n1a,n1b
-              ! #Else
-              !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
-              ! #End
-                   if( addForcing.eq.0 )then
-                     ! THIS ADDED March 24, 2023 *** CHECK ME ***
-                     fv(m)=0.
-                   else if( forcingOption.eq.twilightZoneForcing )then
-                     if( nd.eq.2 )then
-                         call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
-                         call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
-                         call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
-                         call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
-                       fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
-                     else
-                         call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
-                         call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
-                         call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
-                         call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
-                         call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
-                       fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
+             if( addForcing.eq.0 )then
+                 if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
+                   write(*,'("advWave: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=",e10.2)') t
+                 end if
+                 ! --- TAYLOR TIME-STEPPING --- 
+                 m=0 ! component number 
+                 ec = 0 ! component number
+                 if( forcingOption.eq.helmholtzForcing )then
+                   coswt = cos(omega*t)
+                 end if 
+                 fv(m)=0.
+                ! ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
+                ! #If "NOFORCING" eq "NOFORCING"
+                ! ! do not use mask for Cartesian grid , no forcing 
+                  do i3=n3a,n3b
+                  do i2=n2a,n2b
+                  do i1=n1a,n1b
+                ! #Else
+                !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+                ! #End
+                    ! --- SECOND 2 ---
+                      ! --- TWO DIMENSIONS ---
+                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22(i1,i2,i3,0)  + uyy22(i1,i2,i3,0) ) 
+                  ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
+                  ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
+                  ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
+                  ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
+                 ! #If "curvilinear" eq "rectangular" && "NOFORCING" eq "NOFORCING"
+                 !#If "NOFORCING" eq "NOFORCING"
+                   end do
+                   end do
+                   end do
+                 !#Else
+                 ! endLoopsMask()
+                 !#End
+             else
+                 if( (orderOfAccuracy.eq.6 .or. debug.gt.3) .and. t.lt.2*dt )then
+                   write(*,'("advWave: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=",e10.2)') t
+                 end if
+                 ! --- TAYLOR TIME-STEPPING --- 
+                 m=0 ! component number 
+                 ec = 0 ! component number
+                 if( forcingOption.eq.helmholtzForcing )then
+                   coswt = cos(omega*t)
+                 end if 
+                 fv(m)=0.
+                ! ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
+                ! #If "USEFORCING" eq "NOFORCING"
+                ! ! do not use mask for Cartesian grid , no forcing 
+                  do i3=n3a,n3b
+                  do i2=n2a,n2b
+                  do i1=n1a,n1b
+                ! #Else
+                !  beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+                ! #End
+                     if( addForcing.eq.0 )then
+                       ! THIS ADDED March 24, 2023 *** CHECK ME ***
+                       fv(m)=0.
+                     else if( forcingOption.eq.twilightZoneForcing )then
+                       if( nd.eq.2 )then
+                           call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
+                           call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
+                           call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
+                           call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
+                         fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
+                       else
+                           call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
+                           call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
+                           call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
+                           call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
+                           call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
+                         fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
+                      end if
+                    else if( forcingOption.eq.helmholtzForcing )then
+                       ! forcing for solving the Helmholtz equation   
+                       ! NOTE: change sign of forcing since for Helholtz we want to solve
+                       !      ( omega^2 I + c^2 Delta) w = f 
+                       ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                       fv(m)=0.
+                       do freq=0,numberOfFrequencies-1 
+                         omega = frequencyArray(freq)
+                         coswt = cosFreqt(freq)    
+                          ! if( i1.eq.2 .and. i2.eq.2 )then 
+                          !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
+                          ! end if
+                          ! fv(m) = -f(i1,i2,i3,0)*coswt  
+                          fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
+                       end do ! do freq  
+                    else if( addForcing.ne.0 )then  
+                       fv(m) = f(i1,i2,i3,0)
                     end if
-                  else if( forcingOption.eq.helmholtzForcing )then
-                     ! forcing for solving the Helmholtz equation   
-                     ! NOTE: change sign of forcing since for Helholtz we want to solve
-                     !      ( omega^2 I + c^2 Delta) w = f 
-                     ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                     fv(m)=0.
-                     do freq=0,numberOfFrequencies-1 
-                       omega = frequencyArray(freq)
-                       coswt = cosFreqt(freq)    
-                        ! if( i1.eq.2 .and. i2.eq.2 )then 
-                        !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
-                        ! end if
-                        ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                        fv(m) = fv(m) - f(i1,i2,i3,freq)*coswt
-                     end do ! do freq  
-                  else if( addForcing.ne.0 )then  
-                     fv(m) = f(i1,i2,i3,0)
-                  end if
-                  ! --- SECOND 2 ---
-                    ! --- TWO DIMENSIONS ---
-                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22(i1,i2,i3,0)  + uyy22(i1,i2,i3,0) ) +tsf*fv(m)
-                ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
-                ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
-                ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
-                ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
-               ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
-               !#If "USEFORCING" eq "NOFORCING"
-                 end do
-                 end do
-                 end do
-               !#Else
-               ! endLoopsMask()
-               !#End
-           end if
-         end if 
+                    ! --- SECOND 2 ---
+                      ! --- TWO DIMENSIONS ---
+                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx22(i1,i2,i3,0)  + uyy22(i1,i2,i3,0) ) +tsf*fv(m)
+                  ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
+                  ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
+                  ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
+                  ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
+                 ! #If "curvilinear" eq "rectangular" && "USEFORCING" eq "NOFORCING"
+                 !#If "USEFORCING" eq "NOFORCING"
+                   end do
+                   end do
+                   end do
+                 !#Else
+                 ! endLoopsMask()
+                 !#End
+             end if
+           end if 
+         else
+           ! write(*,'(" advWave: Use SUPER-GRID ")')
+             write(*,'("advWave: ADVANCE SUPERGRID: This function should not be called for curvilinear grids, use normal one.")' )
+             stop 666        
+         end if
        else
          ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----
          if( takeImplicitFirstStep.eq.1 )then

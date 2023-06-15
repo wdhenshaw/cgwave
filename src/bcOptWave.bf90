@@ -395,40 +395,40 @@ end do
    extra3a=0
    extra3b=0
  end if
- if( boundaryCondition(0,0).lt.0 )then
+ if( bc(0,0).lt.0 )then
    extra1a=max(0,extra1a) ! over-ride extra=-1 : assign ends in periodic directions (or internal parallel boundaries)
- else if( boundaryCondition(0,0).eq.0 )then
+ else if( bc(0,0).eq.0 )then
    extra1a=numberOfGhostPoints  ! include interpolation points since we assign ghost points outside these
  end if
  ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
- if( boundaryCondition(1,0).lt.0 )then
+ if( bc(1,0).lt.0 )then
    extra1b=max(0,extra1b) ! over-ride extra=-1 : assign ends in periodic directions
- else if( boundaryCondition(1,0).eq.0 )then
+ else if( bc(1,0).eq.0 )then
    extra1b=numberOfGhostPoints
  end if
 
- if( boundaryCondition(0,1).lt.0 )then
+ if( bc(0,1).lt.0 )then
    extra2a=max(0,extra2a) ! over-ride extra=-1 : assign ends in periodic directions (or internal parallel boundaries)
- else if( boundaryCondition(0,1).eq.0 )then
+ else if( bc(0,1).eq.0 )then
    extra2a=numberOfGhostPoints  ! include interpolation points since we assign ghost points outside these
  end if
  ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
- if( boundaryCondition(1,1).lt.0 )then
+ if( bc(1,1).lt.0 )then
    extra2b=max(0,extra2b) ! over-ride extra=-1 : assign ends in periodic directions
- else if( boundaryCondition(1,1).eq.0 )then
+ else if( bc(1,1).eq.0 )then
    extra2b=numberOfGhostPoints
  end if
 
  if(  nd.eq.3 )then
-  if( boundaryCondition(0,2).lt.0 )then
+  if( bc(0,2).lt.0 )then
     extra3a=max(0,extra3a) ! over-ride extra=-1 : assign ends in periodic directions (or internal parallel boundaries)
-  else if( boundaryCondition(0,2).eq.0 )then
+  else if( bc(0,2).eq.0 )then
     extra3a=numberOfGhostPoints  ! include interpolation points since we assign ghost points outside these
   end if
   ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-  if( boundaryCondition(1,2).lt.0 )then
+  if( bc(1,2).lt.0 )then
     extra3b=max(0,extra3b) ! over-ride extra=-1 : assign ends in periodic directions
-  else if( boundaryCondition(1,2).eq.0 )then
+  else if( bc(1,2).eq.0 )then
     extra3b=numberOfGhostPoints
   end if
  end if
@@ -436,9 +436,9 @@ end do
  do axis=0,nd-1
  do side=0,1
 
-   if( boundaryCondition(side,axis).gt.0 )then
+   if( bc(side,axis).gt.0 )then
 
-     ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,boundaryCondition(side,axis)
+     ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,bc(side,axis)
 
      n1a=gridIndexRange(0,0)
      n1b=gridIndexRange(1,0)
@@ -562,8 +562,8 @@ end do
 
   do side1=0,1
   do side2=0,1
-  if( boundaryCondition(side1,0).eq.tractionBC .and.\
-      boundaryCondition(side2,1).eq.tractionBC )then
+  if( bc(side1,0).eq.tractionBC .and.\
+      bc(side2,1).eq.tractionBC )then
 
     i1=gridIndexRange(side1,0) ! (i1,i2,i3)=corner point
     i2=gridIndexRange(side2,1)
@@ -668,19 +668,19 @@ end do
     u(i1-is1,i2-is2,i3,vc)=2.*u(i1,i2,i3,vc) - u(i1+is1,i2+is2,i3,vc) \
                      +dx(0)**2*uxx22r(i1,i2,i3,vc) - 2.*dx(0)*dx(1)*uyy22r(i1,i2,i3,uc) +dx(1)**2*uyy22r(i1,i2,i3,vc)
 
-  else if( (boundaryCondition(side1,0).eq.tractionBC .and. boundaryCondition(side2,1).eq.displacementBC) .or.\
-           (boundaryCondition(side1,0).eq.displacementBC  .and. boundaryCondition(side2,1).eq.tractionBC) )then 
+  else if( (bc(side1,0).eq.tractionBC .and. bc(side2,1).eq.displacementBC) .or.\
+           (bc(side1,0).eq.displacementBC  .and. bc(side2,1).eq.tractionBC) )then 
 
     ! displacementBC next to stress free
     stop 2311
 
-  else if( boundaryCondition(side1,0).eq.displacementBC .and. boundaryCondition(side2,1).eq.displacementBC )then
+  else if( bc(side1,0).eq.displacementBC .and. bc(side2,1).eq.displacementBC )then
 
     ! displacementBC next to displacementBC
     ! do we need to do anything in this case ? *wdh* 071012
     ! stop 2312
 
-  else if( boundaryCondition(side1,0).gt.0 .and. boundaryCondition(side2,1).gt.0 )then
+  else if( bc(side1,0).gt.0 .and. bc(side2,1).gt.0 )then
 
     ! unknown 
     stop 2313
@@ -718,9 +718,9 @@ end do
    is2=1-2*side2
    is3=1-2*side3
 
-   if( boundaryCondition(side1,0).eq.perfectElectricalConductor .and.\
-       boundaryCondition(side2,1).eq.perfectElectricalConductor .and.\
-       boundaryCondition(side3,2).eq.perfectElectricalConductor )then
+   if( bc(side1,0).eq.perfectElectricalConductor .and.\
+       bc(side2,1).eq.perfectElectricalConductor .and.\
+       bc(side3,2).eq.perfectElectricalConductor )then
 
    end if
 
@@ -784,9 +784,9 @@ end do
   do side3=0,1
   do side2=0,1
   do side1=0,1
-    if( orderOfAccuracy.ge.4. .and. boundaryCondition(side1,0).eq.neumann .and. \
-                                    boundaryCondition(side2,1).eq.neumann .and. \
-                     ( nd.eq.2 .or. boundaryCondition(side3,2).eq.neumann ) )then
+    if( orderOfAccuracy.ge.4. .and. bc(side1,0).eq.neumann .and. \
+                                    bc(side2,1).eq.neumann .and. \
+                     ( nd.eq.2 .or. bc(side3,2).eq.neumann ) )then
       ! ---- This is a Neumann-Neumann corner ----
       cornerBC(side1,side2,side3)=extrapolateCorner
 
@@ -796,9 +796,9 @@ end do
       ! cornerBC(side1,side2,side3)=taylor4thOrderEvenCorner
       ! cornerBC(side1,side2,side3)=evenSymmetryCorner
       ! cornerBC(side1,side2,side3)=0 
-    else if(            boundaryCondition(side1,0).eq.exactBC .and. \
-                        boundaryCondition(side2,1).eq.exactBC .and. \
-         ( nd.eq.2 .or. boundaryCondition(side3,2).eq.exactBC ) )then
+    else if(            bc(side1,0).eq.exactBC .and. \
+                        bc(side2,1).eq.exactBC .and. \
+         ( nd.eq.2 .or. bc(side3,2).eq.exactBC ) )then
 
       ! ---- Do nothing at this exact corner 
 
@@ -2907,20 +2907,20 @@ end do
     do side2=0,1
     do side1=0,1
 
-      if( boundaryCondition(side1,0).gt.0 .and. \
-          boundaryCondition(side2,1).gt.0 )then
+      if( bc(side1,0).gt.0 .and. \
+          bc(side2,1).gt.0 )then
 
         ! **fix me** for exact BCs
 
-        if( ( boundaryCondition(side1,0).ne.dirichlet .and. boundaryCondition(side1,0).ne.neumann ) .or. \
-            ( boundaryCondition(side2,1).ne.dirichlet .and. boundaryCondition(side2,1).ne.neumann ) )then
-          write(*,*) "Un-supported corner bcs =",boundaryCondition(side1,0),boundaryCondition(side2,1)
+        if( ( bc(side1,0).ne.dirichlet .and. bc(side1,0).ne.neumann ) .or. \
+            ( bc(side2,1).ne.dirichlet .and. bc(side2,1).ne.neumann ) )then
+          write(*,*) "Un-supported corner bcs =",bc(side1,0),bc(side2,1)
           stop 2222
         end if
 
         symSign = +1. ! even symmetry for D-D or N-N corners
-        if( (boundaryCondition(side1,0).eq.dirichlet .and. boundaryCondition(side2,1).eq.neumann   ) .or. \
-            (boundaryCondition(side1,0).eq.neumann   .and. boundaryCondition(side2,1).eq.dirichlet ) ) then
+        if( (bc(side1,0).eq.dirichlet .and. bc(side2,1).eq.neumann   ) .or. \
+            (bc(side1,0).eq.neumann   .and. bc(side2,1).eq.dirichlet ) ) then
           symSign=-1.;
         end if
         is1 = 1-2*side1
@@ -3144,6 +3144,8 @@ subroutine NAME( ARGLIST() )
   real rpar(0:*)
 
   !     --- local variables ----
+
+  integer bc(0:1,0:2) ! local version, normally equal to boundaryCondition
   
   integer uc,numberOfComponents,assignTwilightZone,assignKnownSolutionAtBoundaries,freq
   integer grid,gridType,orderOfAccuracy,useWhereMask,gridIsImplicit,useUpwindDissipation
@@ -3162,6 +3164,8 @@ subroutine NAME( ARGLIST() )
   real a0,a1,an1,an2,an3,aNormi, t1,t2,t3
   real dx(0:2),dr(0:2),gravity(0:2)
   real r1,r2,r3
+
+  
 
   real dxn,b0,b1,ue,uex,uey,uez,ff,urv(0:2),ur0,cosPW
 
@@ -3208,16 +3212,19 @@ subroutine NAME( ARGLIST() )
     curvilinear=1)
 
   ! Boundary conditions: These must mauch the values in CgWave.h
-  ! periodic      =-1,
-  ! interpolation = 0,
-  ! dirichlet     = 1,
-  ! neumann       = 2,
-  ! evenSymmetry  = 3,
-  ! radiation     = 4   
-  ! exactBC       = 5 
+  ! periodic       =-1,
+  ! interpolation  = 0,
+  ! dirichlet      = 1,
+  ! neumann        = 2,
+  ! evenSymmetry   = 3,
+  ! radiation      = 4   
+  ! exactBC        = 5 
+  ! abcEM2         = 6,  // absorbing BC, Engquist-Majda order 2  
+  ! characteristic = 7,  // characteristic BC
+  ! absorbing      = 8,   // for SuperGrid  
 
-  integer dirichlet,neumann,evenSymmetry,radiation,exactBC
-  parameter( dirichlet=1, neumann=2, evenSymmetry=3, radiation=4, exactBC=5  )
+  integer dirichlet,neumann,evenSymmetry,radiation,exactBC,abcEM2,characteristic,absorbing
+  parameter( dirichlet=1, neumann=2, evenSymmetry=3, radiation=4, exactBC=5, abcEM2=6, characteristic=7, absorbing=8  )
 
   ! Corner conditions (from op/fortranDeriv/assignCornersOpt.bf)
   integer doNothingCorner,extrapolateCorner,symmetryCorner,taylor2ndOrder
@@ -3441,7 +3448,7 @@ subroutine NAME( ARGLIST() )
     write(*,'("  t=",e10.2," dt=",e10.2," knownSolutionOption=",i4," REAL_MIN=",e10.2)') t,dt,knownSolutionOption,REAL_MIN
     write(*,'("  useUpwindDissipation=",i2," numGhost=",i2)') useUpwindDissipation,numGhost
     write(*,'("  assignBCForImplicitForImplicit=",i4," bcApproach=",i4)') assignBCForImplicitForImplicit,bcApproach
-    write(*,'("  bc=",6i4)') ((boundaryCondition(side,axis),side=0,1),axis=0,2)
+    write(*,'("  boundaryCondition=",6i4)') ((boundaryCondition(side,axis),side=0,1),axis=0,2)
   end if
   
   ! if( bcApproach.eq.useCompatibilityBoundaryConditions )then
@@ -3453,6 +3460,20 @@ subroutine NAME( ARGLIST() )
     write(*,'("bcOptWave: ERROR: useLocalCompatibilityBoundaryConditions not implemented yet.")') 
     stop 2020    
   end if
+
+  ! ---- Make a local version of the boundaryCondition array ----
+  do side=0,1
+    do axis=0,2
+      bc(side,axis)=boundaryCondition(side,axis)
+
+      if( bc(side,axis).eq.absorbing )then
+
+        ! DO THIS FOR NOW : use dirichlet for absorbing boundaries 
+
+        bc(side,axis)=dirichlet
+      end if
+    end do
+  end do
 
   if( .true. ) then
     if( knownSolutionOption.eq.planeWave )then
@@ -3559,7 +3580,7 @@ subroutine NAME( ARGLIST() )
 
     beginLoopOverSides(numGhost,numGhost)
 
-      if( boundaryCondition(side,axis) == dirichlet )then
+      if( bc(side,axis) == dirichlet )then
 
         ff=0.
         if( bcApproach.eq.useOneSidedBoundaryConditions )then
@@ -3614,13 +3635,13 @@ subroutine NAME( ARGLIST() )
         end if
 
 
-      else if( boundaryCondition(side,axis) == exactBC )then
+      else if( bc(side,axis) == exactBC )then
 
         write(*,*) "bcOpt: implicit BC for exactBc -- finish me"
         stop 4444
 
 
-      else if( boundaryCondition(side,axis) == neumann )then
+      else if( bc(side,axis) == neumann )then
 
         if( gridType.eq.rectangular )then
           ! compute the outward normal (an1,an2,an3)
@@ -3658,9 +3679,9 @@ subroutine NAME( ARGLIST() )
           end if 
         endLoops3d()    
 
-      else if( boundaryCondition(side,axis) > 0 )then
+      else if( bc(side,axis) > 0 )then
 
-        write(*,'("bcOptWave:fill RHS for direct Helmholtz solver, unexpected boundaryCondition=",i4)') boundaryCondition(side,axis)
+        write(*,'("bcOptWave:fill RHS for direct Helmholtz solver, unexpected boundaryCondition=",i4)') bc(side,axis)
 
         stop 6666
       end if
@@ -3683,7 +3704,7 @@ subroutine NAME( ARGLIST() )
   ff =0. ! default value 
   beginLoopOverSides(extraForDirichlet,numGhost)
 
-    if( boundaryCondition(side,axis).eq.exactBC )then
+    if( bc(side,axis).eq.exactBC )then
 
       ! ==== Set the boundary and ghost with the exact solution ====
 
@@ -3692,7 +3713,7 @@ subroutine NAME( ARGLIST() )
       ! ***** this case is now done in applyBoundaryCondtions.bC *******
       !! assignExactBoundary()
 
-    else if( boundaryCondition(side,axis).eq.dirichlet )then
+    else if( bc(side,axis).eq.dirichlet )then
 
       if( bcApproach.eq.useCompatibilityBoundaryConditions )then
         ! --- Assign values on the boundary for CBCs ---
@@ -3769,9 +3790,9 @@ subroutine NAME( ARGLIST() )
   !         curvilinear grids so we have values for the Neumann BC
   beginLoopOverSides(numGhost,numGhost)
 
-    if( ( (boundaryCondition(side,axis).ne.dirichlet .and. boundaryCondition(side,axis).ne.exactBC ) \
+    if( ( (bc(side,axis).ne.dirichlet .and. bc(side,axis).ne.exactBC ) \
          .or. bcApproach.eq.useCompatibilityBoundaryConditions ) \
-         .and. boundaryCondition(side,axis).gt.0 )then
+         .and. bc(side,axis).gt.0 )then
 
       if( orderOfAccuracy.eq.2 )then
         #If #ORDER eq "2"
@@ -3822,7 +3843,7 @@ subroutine NAME( ARGLIST() )
   extraForNeumann=0 ! only assign Neumann conditions to the boundary
   beginLoopOverSides(extraForNeumann,numGhost)
 
-    if( boundaryCondition(side,axis).eq.dirichlet .and. bcApproach.eq.useCompatibilityBoundaryConditions )then
+    if( bc(side,axis).eq.dirichlet .and. bcApproach.eq.useCompatibilityBoundaryConditions )then
       ! -- fill ghost using CBCs ----
 
       if( orderOfAccuracy.eq.2 )then
@@ -3851,7 +3872,7 @@ subroutine NAME( ARGLIST() )
 
       end if
 
-    else if( boundaryCondition(side,axis).eq.neumann )then
+    else if( bc(side,axis).eq.neumann )then
 
       ! ------ NEUMANN ----------
       if( bcApproach.eq.useCompatibilityBoundaryConditions )then
@@ -3902,11 +3923,11 @@ subroutine NAME( ARGLIST() )
       end if
 
 
-    else if(  boundaryCondition(side,axis).eq.dirichlet .or. boundaryCondition(side,axis).eq.exactBC .or. boundaryCondition(side,axis).le.0 )then
+    else if(  bc(side,axis).eq.dirichlet .or. bc(side,axis).eq.exactBC .or. bc(side,axis).le.0 )then
       ! do nothing
 
     else
-      write(*,'("bcOptWave: unexpected boundaryCondition=",i4)') boundaryCondition(side,axis)
+      write(*,'("bcOptWave: unexpected boundaryCondition=",i4)') bc(side,axis)
       stop 5151
     end if 
 

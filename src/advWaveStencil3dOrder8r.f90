@@ -1,5 +1,5 @@
 ! This file automatically generated from advWaveStencil.bf90 with bpp.
-    subroutine advWaveStencil3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,sc,v,vh,lapCoeff,bc,frequencyArray,ipar,rpar,ierr )
+  subroutine advWaveStencil3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,sc,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
  !======================================================================
  !   Advance a time step for Waves equations
  !
@@ -10,84 +10,103 @@
  !                           =1 - add upwind dissipation (predictor corrector mode)
  !
  !======================================================================
-    implicit none
-    integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
-    real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-    real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-    real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-    real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-  ! real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
-    real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
-    real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
-    real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
-    real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
-    real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
-          real sc(1:729,nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
-          real scr(1:729)    
-    integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
-    integer bc(0:1,0:2),ierr
-    integer gridIndexRange(0:1,0:2)
-    real frequencyArray(0:*)
-    integer ipar(0:*)
-    real rpar(0:*)
+  implicit none
+  integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
+   real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   ! real stencilCoeff(0:*)   ! holds stencil coeffs
+   real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
+   real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+   real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+   real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
+   real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+   real etax(nd1a:nd1b)  ! superGrid functions
+   real etay(nd2a:nd2b)
+   real etaz(nd3a:nd3b)
+   integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+   integer bc(0:1,0:2),ierr  
+   real frequencyArray(0:*)
+   integer ipar(0:*)
+   real rpar(0:*)
+  ! integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
+  ! real um(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! real f(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! ! real fa(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b,0:*)  ! forcings at different times
+  ! real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1) 
+  ! real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)
+  ! real vh(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,nd4a:nd4b)  ! holds current Helmholtz solutions
+  ! real lapCoeff(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)  ! holds coeff of Laplacian for HA scheme
+  ! real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+  ! integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+  ! integer bc(0:1,0:2),ierr
+  ! real frequencyArray(0:*)
+  ! integer ipar(0:*)
+  ! real rpar(0:*)
+     real sc(1:729,nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+     real scr(1:729)    
   !     ---- local variables -----
-    integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt,ig,useMask
-    integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
-    integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
-    integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev,numberOfFrequencies
-    real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz
+  integer gridIndexRange(0:1,0:2)
+  integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt,ig,useMask
+  integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
+  integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt
+  integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev,numberOfFrequencies
+  real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz
   ! ,adc,adcdt,add,adddt
-    real dt4by12
+  real dt4by12
   ! logical addDissipation
-    integer debug
-    integer adjustHelmholtzForUpwinding
-    real dx(0:2),dr(0:2)
-    real c0,c1,csq,dtsq,cdtsq,cdtsq12,cdtSqBy12
-    integer maxOrderOfAccuracy
-    parameter( maxOrderOfAccuracy=12 )
+  integer debug
+  integer adjustHelmholtzForUpwinding
+  real dx(0:2),dr(0:2)
+  real c0,c1,csq,dtsq,cdtsq,cdtsq12,cdtSqBy12
+  integer maxOrderOfAccuracy
+  parameter( maxOrderOfAccuracy=12 )
   ! Coefficients in the implicit scheme
-    real bImp(0:maxOrderOfAccuracy-1)
-    real cImp(-1:1,0:maxOrderOfAccuracy-1)
-    real alpha2,alpha4,alpha6,alpha8, beta2,beta4,beta6,beta8
-    integer rectangular,curvilinear
-    parameter( rectangular=0, curvilinear=1 )
-    integer timeSteppingMethod
-    integer defaultTimeStepping,adamsSymmetricOrder3,rungeKuttaFourthOrder,stoermerTimeStepping,modifiedEquationTimeStepping
-    parameter(defaultTimeStepping=0,adamsSymmetricOrder3=1,rungeKuttaFourthOrder=2,stoermerTimeStepping=3,modifiedEquationTimeStepping=4)
+  real bImp(0:maxOrderOfAccuracy-1)
+  real cImp(-1:1,0:maxOrderOfAccuracy-1)
+  real alpha2,alpha4,alpha6,alpha8, beta2,beta4,beta6,beta8
+  integer rectangular,curvilinear
+  parameter( rectangular=0, curvilinear=1 )
+  integer timeSteppingMethod
+  integer defaultTimeStepping,adamsSymmetricOrder3,rungeKuttaFourthOrder,stoermerTimeStepping,modifiedEquationTimeStepping
+  parameter(defaultTimeStepping=0,adamsSymmetricOrder3=1,rungeKuttaFourthOrder=2,stoermerTimeStepping=3,modifiedEquationTimeStepping=4)
  !...........start statement function
-    integer kd,m
+  integer kd,m
   ! real rx,ry,rz,sx,sy,sz,tx,ty,tz
-    real cdtPow2,cdtPow4By12,cdtPow6By360,cdtPow8By20160
-    real ff
+  real cdtPow2,cdtPow4By12,cdtPow6By360,cdtPow8By20160
+  real ff
   ! real cdSosupx,cdSosupy,cdSosupz
-    real adSosup,sosupParameter, uDotFactor, adxSosup(0:2)
-    integer useSosupDissipation,sosupDissipationOption
-    integer updateSolution,updateDissipation,computeUt
-    integer ec 
-    real ep 
-    real fv(0:1) , ev(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1)
-    real evxxxx(0:1), evxxyy(0:1), evyyyy(0:1), evxxzz(0:1), evyyzz(0:1), evzzzz(0:1), evtttt(0:1)
-    real evtttttt(0:1)
-    real evxxxxxx(0:1)
-    real evyyyyyy(0:1)
-    real evzzzzzz(0:1)       
-    real evxxyyyy(0:1)
-    real evxxxxyy(0:1)
-    real evxxxxzz(0:1)
-    real evxxzzzz(0:1)
-    real evyyyyzz(0:1)
-    real evyyzzzz(0:1)
-    real evxxyyzz(0:1)
-    real omega, coswt
-    integer maxFreq
-    parameter( maxFreq=500 )
-    real cosFreqt(0:maxFreq), coswtAve(0:maxFreq), cosineFactor(0:maxFreq)
-    integer idv(0:2),j1,j2,j3
-    integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r
-    integer useUpwindDissipation,useImplicitUpwindDissipation,adjustOmega,solveHelmholtz
-    real upw,maxDiff,umj
+  real adSosup,sosupParameter, uDotFactor, adxSosup(0:2)
+  integer useSosupDissipation,sosupDissipationOption
+  integer updateSolution,updateDissipation,computeUt
+  integer ec 
+  real ep 
+  real fv(0:1) , ev(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1)
+  real evxxxx(0:1), evxxyy(0:1), evyyyy(0:1), evxxzz(0:1), evyyzz(0:1), evzzzz(0:1), evtttt(0:1)
+  real evtttttt(0:1)
+  real evxxxxxx(0:1)
+  real evyyyyyy(0:1)
+  real evzzzzzz(0:1)       
+  real evxxyyyy(0:1)
+  real evxxxxyy(0:1)
+  real evxxxxzz(0:1)
+  real evxxzzzz(0:1)
+  real evyyyyzz(0:1)
+  real evyyzzzz(0:1)
+  real evxxyyzz(0:1)
+  real omega, coswt
+  integer maxFreq
+  parameter( maxFreq=500 )
+  real cosFreqt(0:maxFreq), coswtAve(0:maxFreq), cosineFactor(0:maxFreq)
+  integer idv(0:2),j1,j2,j3
+  integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r
+  integer useUpwindDissipation,useImplicitUpwindDissipation,adjustOmega,solveHelmholtz
+  real upw,maxDiff,umj
   ! real upwindCoeff(-3:3,0:3) 
-    integer forcingOption
+  integer forcingOption
   ! forcingOptions -- these should match ForcingEnum in CgWave.h 
   ! enum ForcingOptionEnum
   ! {
@@ -96,39 +115,39 @@
   !   userForcing,
   !   helmholtzForcing
   ! };
-    integer noForcing,twilightZoneForcing,userForcing,helmholtzForcing
-    parameter(noForcing           =0,twilightZoneForcing =1,userForcing         =2,helmholtzForcing    =3 )
-      real maxErr(1:30), l2Err(1:30)
-      real maxSol(30)
-      real ue
-      real uet8 
-      real uex8 
-      real uey8 
-      real uez8 
-      real uex6y2
-      real uex4y4
-      real uex2y6
-      real uex6z2
-      real uex4z4
-      real uex2z6
-      real uey6z2
-      real uey4z4
-      real uey2z6
-      real uex4y2z2
-      real uex2y4z2
-      real uex2y2z4
-      integer maxDeriv,d,uc,count,numGhost1,m1,m2,m3
+  integer noForcing,twilightZoneForcing,userForcing,helmholtzForcing
+  parameter(noForcing           =0,twilightZoneForcing =1,userForcing         =2,helmholtzForcing    =3 )
+   real maxErr(1:30), l2Err(1:30)
+   real maxSol(30)
+   real ue
+   real uet8 
+   real uex8 
+   real uey8 
+   real uez8 
+   real uex6y2
+   real uex4y4
+   real uex2y6
+   real uex6z2
+   real uex4z4
+   real uex2z6
+   real uey6z2
+   real uey4z4
+   real uey2z6
+   real uex4y2z2
+   real uex2y4z2
+   real uex2y2z4
+   integer maxDeriv,d,uc,count,numGhost1,m1,m2,m3
    ! ====== variables for stencils ========
    ! real czm,czp,czz,cmz,cpz
-      real dt2,dt4,dt6,dt8
-      real dx2i,dy2i,dz2i
-      real cdx2i,cdy2i,cdz2i
-      integer stencilWidth,numStencilCoeff
-      real dr1, dr2, dr3, dr1i, dr2i, dr3i, rx, ry, rz, sx, sy
-      real sz, tx, ty, tz, diffOrder1, diffOrder2, diffOrder3, rxr, rxs, rxt, ryr
-      real rys, ryt, rzr, rzs, rzt, sxr, sxs, sxt, syr, sys, syt
-      real szr, szs, szt, txr, txs, txt, tyr, tys, tyt, tzr, tzs
-      real tzt, rxx, ryy, rzz, sxx, syy, szz, txx, tyy, tzz
+   real dt2,dt4,dt6,dt8
+   real dx2i,dy2i,dz2i
+   real cdx2i,cdy2i,cdz2i
+   integer stencilWidth,numStencilCoeff
+   real dr1, dr2, dr3, dr1i, dr2i, dr3i, rx, ry, rz, sx, sy
+   real sz, tx, ty, tz, diffOrder1, diffOrder2, diffOrder3, rxr, rxs, rxt, ryr
+   real rys, ryt, rzr, rzs, rzt, sxr, sxs, sxt, syr, sys, syt
+   real szr, szs, szt, txr, txs, txt, tyr, tys, tyt, tzr, tzs
+   real tzt, rxx, ryy, rzz, sxx, syy, szz, txx, tyy, tzz
    ! *** The next include files were generated by cgWave/maple/writeStencilFiles.mpl ***
 ! Define variables to valuate stencil coefficients, dim=3, order=8, gridType=Rectangular
 ! File generated by cgWave/maple/writeStencilFiles.mpl
@@ -139,159 +158,159 @@ real t0,t1,t3,t4,t9,t12,t14,t15,t16,t19,t22,t23,t24,t25,t30,t31,t32,t33,t34,t36,
     ! #Include "../include/defineStencilVariables2dOrder2Rectangular.h"
    !...........end   statement functions
    ! write(*,*) 'Inside advWaveStencil...'
-      cc             = rpar( 0)  ! this is c
-      dt             = rpar( 1)
-      dx(0)          = rpar( 2)
-      dx(1)          = rpar( 3)
-      dx(2)          = rpar( 4)
-      dr(0)          = rpar( 5)
-      dr(1)          = rpar( 6)
-      dr(2)          = rpar( 7)
-      t              = rpar( 8)
-      ep             = rpar( 9)
-      sosupParameter = rpar(10)
-      omega          = rpar(11) ! for helmholtz 
-      bImp( 0)       = rpar(12) ! beta2 : coefficient for implicit time-stepping
-      bImp( 1)       = rpar(13) ! beta4 : coefficient for implicit time-stepping
-      bImp( 2)       = rpar(14) ! beta6 (for future)
-      bImp( 3)       = rpar(15) ! beta8 (for future)
-      dy=dx(1)  ! Are these needed?
-      dz=dx(2)
-      option                       = ipar( 0)
-      grid                         = ipar( 1)
-      gridType                     = ipar( 2)
-      orderOfAccuracy              = ipar( 3)
-      orderInTime                  = ipar( 4)
-      addForcing                   = ipar( 5)
-      forcingOption                = ipar( 6)
-      numberOfForcingFunctions     = ipar( 7)
-      fcur                         = ipar( 8) 
-      debug                        = ipar( 9)
-      gridIsImplicit               = ipar(10)
-      useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
-      useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for impliciit time-stepping
-      preComputeUpwindUt           = ipar(13)
-      numberOfFrequencies          = ipar(14)
-      adjustOmega                  = ipar(15)
-      solveHelmholtz               = ipar(16)
-      adjustHelmholtzForUpwinding  = ipar(17)
-      fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
-      fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
+   cc             = rpar( 0)  ! this is c
+   dt             = rpar( 1)
+   dx(0)          = rpar( 2)
+   dx(1)          = rpar( 3)
+   dx(2)          = rpar( 4)
+   dr(0)          = rpar( 5)
+   dr(1)          = rpar( 6)
+   dr(2)          = rpar( 7)
+   t              = rpar( 8)
+   ep             = rpar( 9)
+   sosupParameter = rpar(10)
+   omega          = rpar(11) ! for helmholtz 
+   bImp( 0)       = rpar(12) ! beta2 : coefficient for implicit time-stepping
+   bImp( 1)       = rpar(13) ! beta4 : coefficient for implicit time-stepping
+   bImp( 2)       = rpar(14) ! beta6 (for future)
+   bImp( 3)       = rpar(15) ! beta8 (for future)
+   dy=dx(1)  ! Are these needed?
+   dz=dx(2)
+   option                       = ipar( 0)
+   grid                         = ipar( 1)
+   gridType                     = ipar( 2)
+   orderOfAccuracy              = ipar( 3)
+   orderInTime                  = ipar( 4)
+   addForcing                   = ipar( 5)
+   forcingOption                = ipar( 6)
+   numberOfForcingFunctions     = ipar( 7)
+   fcur                         = ipar( 8) 
+   debug                        = ipar( 9)
+   gridIsImplicit               = ipar(10)
+   useUpwindDissipation         = ipar(11)  ! explicit upwind dissipation
+   useImplicitUpwindDissipation = ipar(12)  ! true if upwind-dissipation is on for impliciit time-stepping
+   preComputeUpwindUt           = ipar(13)
+   numberOfFrequencies          = ipar(14)
+   adjustOmega                  = ipar(15)
+   solveHelmholtz               = ipar(16)
+   adjustHelmholtzForUpwinding  = ipar(17)
+   fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
+   fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
    ! ** fix me ***
-      timeSteppingMethod=modifiedEquationTimeStepping
-      useMask=0  ! do this for now -- do not check mask in loops, these seems faster
+   timeSteppingMethod=modifiedEquationTimeStepping
+   useMask=0  ! do this for now -- do not check mask in loops, these seems faster
    ! Set dr(:) = dx(:) for 6th-order derivatives
-      if( gridType.eq.rectangular )then
-          do axis=0,2
-              dr(axis)=dx(axis)
-          end do
-      else
-          do axis=0,2
-              dx(axis)=dr(axis)
-          end do
-      end if  
+   if( gridType.eq.rectangular )then
+     do axis=0,2
+       dr(axis)=dx(axis)
+     end do
+   else
+     do axis=0,2
+       dx(axis)=dr(axis)
+     end do
+   end if  
    ! Do this for now: 
-      maxDeriv=6
-      uc=0
-      gridIndexRange(0,0)=n1a
-      gridIndexRange(1,0)=n1b
-      gridIndexRange(0,1)=n2a
-      gridIndexRange(1,1)=n2b
-      gridIndexRange(0,2)=n3a
-      gridIndexRange(1,2)=n3b    
+   maxDeriv=6
+   uc=0
+   gridIndexRange(0,0)=n1a
+   gridIndexRange(1,0)=n1b
+   gridIndexRange(0,1)=n2a
+   gridIndexRange(1,1)=n2b
+   gridIndexRange(0,2)=n3a
+   gridIndexRange(1,2)=n3b    
    ! ---- Compute the coefficients in the implicit time-stepping scheme ----
-      beta2=bImp(0)
-      beta4=bImp(1)
-      alpha2 = (1.-beta2)/2.
-      alpha4 = (alpha2-beta4-1./12.)/2. 
-      cImp(-1,0)=alpha2
-      cImp( 0,0)= beta2
-      cImp( 1,0)=alpha2
-      cImp(-1,1)=alpha4
-      cImp( 0,1)= beta4
-      cImp( 1,1)=alpha4  
-      csq=cc**2
-      dtsq=dt**2
-      cdtsq=(cc**2)*(dt**2)
-      cdt=cc*dt
+   beta2=bImp(0)
+   beta4=bImp(1)
+   alpha2 = (1.-beta2)/2.
+   alpha4 = (alpha2-beta4-1./12.)/2. 
+   cImp(-1,0)=alpha2
+   cImp( 0,0)= beta2
+   cImp( 1,0)=alpha2
+   cImp(-1,1)=alpha4
+   cImp( 0,1)= beta4
+   cImp( 1,1)=alpha4  
+   csq=cc**2
+   dtsq=dt**2
+   cdtsq=(cc**2)*(dt**2)
+   cdt=cc*dt
    ! new: 
-      cdtPow2        = cdt**2
-      cdtPow4By12    = cdt**4/12.
-      cdtPow6By360   = cdt**6/360. 
-      cdtPow8By20160 = cdt**8/20160.  
-      cdtsq12=cdtsq*cdtsq/12.  ! c^4 dt^4 /12 
+   cdtPow2        = cdt**2
+   cdtPow4By12    = cdt**4/12.
+   cdtPow6By360   = cdt**6/360. 
+   cdtPow8By20160 = cdt**8/20160.  
+   cdtsq12=cdtsq*cdtsq/12.  ! c^4 dt^4 /12 
    ! cdt4by360=(cdt)**4/360.  ! (c*dt)^4/360 
    ! cdt6by20160=cdt**6/(8.*7.*6.*5.*4.*3.)
-      cdtSqBy12= cdtsq/12.   ! c^2*dt*2/12
-      dt4by12=dtsq*dtsq/12.
-      cdtdx = (cc*dt/dx(0))**2
-      cdtdy = (cc*dt/dy)**2
-      cdtdz = (cc*dt/dz)**2
-      dt2 = dt*dt;
-      dt4 = dt2*dt2;
-      dt6 = dt4*dt2;
-      dt8 = dt6*dt2;
-      dx2i = 1./dx(0)**2
-      dy2i = 1./dx(1)**2
-      dz2i = 1./dx(2)**2
-      cdx2i = csq/dx(0)**2
-      cdy2i = csq/dx(1)**2
-      cdz2i = csq/dx(2)**2  
+   cdtSqBy12= cdtsq/12.   ! c^2*dt*2/12
+   dt4by12=dtsq*dtsq/12.
+   cdtdx = (cc*dt/dx(0))**2
+   cdtdy = (cc*dt/dy)**2
+   cdtdz = (cc*dt/dz)**2
+   dt2 = dt*dt;
+   dt4 = dt2*dt2;
+   dt6 = dt4*dt2;
+   dt8 = dt6*dt2;
+   dx2i = 1./dx(0)**2
+   dy2i = 1./dx(1)**2
+   dz2i = 1./dx(2)**2
+   cdx2i = csq/dx(0)**2
+   cdy2i = csq/dx(1)**2
+   cdz2i = csq/dx(2)**2  
    ! if( option.eq.1 )then 
    !  useSosupDissipation = 1
    ! else
    !  useSosupDissipation = 0
    ! end if
-      if( (.true. .or. debug.gt.1) .and. t.le.dt )then
-          write(*,'("advWaveStencil: option=",i4," grid=",i4)') option,grid
-          write(*,'("advWaveStencil: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
-          write(*,'("advWaveStencil: addForcing=",i2," forcingOption=",i2)') addForcing,forcingOption
+   if( (.true. .or. debug.gt.1) .and. t.le.dt )then
+     write(*,'("advWaveStencil: option=",i4," grid=",i4)') option,grid
+     write(*,'("advWaveStencil: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
+     write(*,'("advWaveStencil: addForcing=",i2," forcingOption=",i2)') addForcing,forcingOption
      ! write(*,'("advWaveStencil: useUpwindDissipation=",i2,"(explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
-          write(*,'("advWaveStencil: t,dt,c,omega=",4e10.2)') t,dt,cc,omega 
-          write(*,'("advWaveStencil: gridIsImplicit=",i2," adjustOmega=",i2," solveHelmholtz=",i2)') gridIsImplicit,adjustOmega,solveHelmholtz
-          if( forcingOption.eq.helmholtzForcing )then
-              write(*,'("advWaveStencil: numberOfFrequencies=",i2)') numberOfFrequencies
-              write(*,'("advWaveStencil: frequencyArray=",(1pe12.4,1x))') (frequencyArray(freq),freq=0,numberOfFrequencies-1)
-          end if
-          if( gridIsImplicit.eq.1 )then
-              write(*,'("  Implicit coeff: cImp(-1:1,0) = ",3(1pe10.2,1x), "(for 2nd-order)")') cImp(-1,0),cImp(0,0),cImp(1,0)
-              write(*,'("  Implicit coeff: cImp(-1:1,1) = ",3(1pe10.2,1x), "(for 4th-order)")') cImp(-1,1),cImp(0,1),cImp(1,1)
-          end if
-      end if
-      if( forcingOption.eq.helmholtzForcing )then
+     write(*,'("advWaveStencil: t,dt,c,omega=",4e10.2)') t,dt,cc,omega 
+     write(*,'("advWaveStencil: gridIsImplicit=",i2," adjustOmega=",i2," solveHelmholtz=",i2)') gridIsImplicit,adjustOmega,solveHelmholtz
+     if( forcingOption.eq.helmholtzForcing )then
+       write(*,'("advWaveStencil: numberOfFrequencies=",i2)') numberOfFrequencies
+       write(*,'("advWaveStencil: frequencyArray=",(1pe12.4,1x))') (frequencyArray(freq),freq=0,numberOfFrequencies-1)
+     end if
+     if( gridIsImplicit.eq.1 )then
+       write(*,'("  Implicit coeff: cImp(-1:1,0) = ",3(1pe10.2,1x), "(for 2nd-order)")') cImp(-1,0),cImp(0,0),cImp(1,0)
+       write(*,'("  Implicit coeff: cImp(-1:1,1) = ",3(1pe10.2,1x), "(for 4th-order)")') cImp(-1,1),cImp(0,1),cImp(1,1)
+     end if
+   end if
+   if( forcingOption.eq.helmholtzForcing )then
      ! --- solving the Helmholtz problem ---
-          if( t.le.dt .and. debug.gt.1 )then
-              write(*,'("advWaveStencil: numberOfFrequencies=",i6," omega=",1pe12.4," frequencyArray(0)=",1pe12.4)') numberOfFrequencies,omega,frequencyArray(0)
-          end if
-          if( numberOfFrequencies.le.0 )then
-              write(*,'("advWaveStencil: ERROR: numberOfFrequencies=",i6," is <= 0")') numberOfFrequencies
-              stop 0123
-          end if
-          if( numberOfFrequencies.eq.1  .and. frequencyArray(0) .ne. omega )then
-              write(*,'("advWaveStencil: ERROR: frequencyArray(0)=",1pe12.4," is not equal to omega=",1pe12.4)') frequencyArray(0),omega
-              stop 1234
-          end if
-          if( numberOfFrequencies.gt.maxFreq )then
-              write(*,'("advWaveStencil: ERROR: numberOfFrequencies > maxFreq=",i6," .. FIX ME")') maxFreq
-              stop 2345
-          end if
+     if( t.le.dt .and. debug.gt.1 )then
+       write(*,'("advWaveStencil: numberOfFrequencies=",i6," omega=",1pe12.4," frequencyArray(0)=",1pe12.4)') numberOfFrequencies,omega,frequencyArray(0)
+     end if
+     if( numberOfFrequencies.le.0 )then
+       write(*,'("advWaveStencil: ERROR: numberOfFrequencies=",i6," is <= 0")') numberOfFrequencies
+       stop 0123
+     end if
+     if( numberOfFrequencies.eq.1  .and. frequencyArray(0) .ne. omega )then
+       write(*,'("advWaveStencil: ERROR: frequencyArray(0)=",1pe12.4," is not equal to omega=",1pe12.4)') frequencyArray(0),omega
+       stop 1234
+     end if
+     if( numberOfFrequencies.gt.maxFreq )then
+       write(*,'("advWaveStencil: ERROR: numberOfFrequencies > maxFreq=",i6," .. FIX ME")') maxFreq
+       stop 2345
+     end if
      ! if( numberOfFrequencies.gt.1 .and. gridIsImplicit.eq.1 )then
      !   write(*,'("advWave: ERROR: numberOfFrequencies > 1 and implicit time-stepping : FINISH ME")') 
      !   stop 3456  
      ! end if
-          do freq=0,numberOfFrequencies-1
-              cosFreqt(freq) = cos(frequencyArray(freq)*t)
-          end do
-      end if
+     do freq=0,numberOfFrequencies-1
+       cosFreqt(freq) = cos(frequencyArray(freq)*t)
+     end do
+   end if
    ! write(*,'(" advWave: timeSteppingMethod=",i2)') timeSteppingMethod
-      if( timeSteppingMethod.eq.defaultTimeStepping )then
-        write(*,'(" advWaveStencil:ERROR: timeSteppingMethod=defaultTimeStepping -- this should be set")')
+   if( timeSteppingMethod.eq.defaultTimeStepping )then
+    write(*,'(" advWaveStencil:ERROR: timeSteppingMethod=defaultTimeStepping -- this should be set")')
       ! '
-        stop 83322
-      end if
+    stop 83322
+   end if
    ! -- first time through, eval lapCoeff and the stencil coefficients --
      ! ---- CARTESIAN GRID -----
-          i1=0; i2=0; i3=0;
+     i1=0; i2=0; i3=0;
 ! Evaluate stencil coefficients, dim=3, order=8, gridType=Rectangular
 ! File generated by cgWave/maple/writeStencilFiles.mpl
 i1m1=i1-1; i1p1=i1+1;
@@ -1539,131 +1558,131 @@ scr(729) = 0;
      !     end if
      !   end do
      ! end if
-      if( gridIsImplicit.eq.0 )then 
+   if( gridIsImplicit.eq.0 )then 
      ! ------- EXPLICIT update the solution ---------
-              if( orderInTime.eq.2 .and. orderOfAccuracy.gt.2 )then
-                  stop 2222
+       if( orderInTime.eq.2 .and. orderOfAccuracy.gt.2 )then
+         stop 2222
          ! if( addForcing.eq.0 )then
          !   updateWaveOpt(3,8,2,rectangular,NOFORCING)
          ! else 
          !   updateWaveOpt(3,8,2,rectangular,FORCING)
          ! end if
-              else
-                  if( addForcing.eq.0 )then
-                          if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
-                              write(*,'("advWaveStencil: ADVANCE dim=3 order=8 orderInTime=8, grid=rectangular... t=",e10.2)') t
-                          end if
+       else
+         if( addForcing.eq.0 )then
+             if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
+               write(*,'("advWaveStencil: ADVANCE dim=3 order=8 orderInTime=8, grid=rectangular... t=",e10.2)') t
+             end if
              ! --- TAYLOR TIME-STEPPING --- 
-                          m=0 ! component number 
-                          ec = 0 ! component number
-                          if( forcingOption.eq.helmholtzForcing )then
-                              coswt = cos(omega*t)
-                          end if 
-                          fv(m)=0.
+             m=0 ! component number 
+             ec = 0 ! component number
+             if( forcingOption.eq.helmholtzForcing )then
+               coswt = cos(omega*t)
+             end if 
+             fv(m)=0.
              ! >>>> NOTE: NO-MASK IS FASTER for square128
              ! beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
-                              do i3=n3a,n3b
-                              do i2=n2a,n2b
-                              do i1=n1a,n1b
+               do i3=n3a,n3b
+               do i2=n2a,n2b
+               do i1=n1a,n1b
 ! Stencil: nd=3, orderOfAccuracy=8, gridType=Rectangular
 un(i1,i2,i3,m)=  - um(i1,i2,i3,m)+ scr( 41)*u(i1+0,i2+0,i3-4,m)                                                                                                                                + scr(113)*u(i1+0,i2-1,i3-3,m)                                                                                                                                + scr(121)*u(i1-1,i2+0,i3-3,m) + scr(122)*u(i1+0,i2+0,i3-3,m) + scr(123)*u(i1+1,i2+0,i3-3,m)                                                                                                + scr(131)*u(i1+0,i2+1,i3-3,m)                                                                                                                                + scr(185)*u(i1+0,i2-2,i3-2,m)                                                                                                                                + scr(193)*u(i1-1,i2-1,i3-2,m) + scr(194)*u(i1+0,i2-1,i3-2,m) + scr(195)*u(i1+1,i2-1,i3-2,m)                                                                                                + scr(201)*u(i1-2,i2+0,i3-2,m) + scr(202)*u(i1-1,i2+0,i3-2,m) + scr(203)*u(i1+0,i2+0,i3-2,m) + scr(204)*u(i1+1,i2+0,i3-2,m) + scr(205)*u(i1+2,i2+0,i3-2,m)                                                                + scr(211)*u(i1-1,i2+1,i3-2,m) + scr(212)*u(i1+0,i2+1,i3-2,m) + scr(213)*u(i1+1,i2+1,i3-2,m)                                                                                                + scr(221)*u(i1+0,i2+2,i3-2,m)                                                                                                                                + scr(257)*u(i1+0,i2-3,i3-1,m)                                                                                                                                + scr(265)*u(i1-1,i2-2,i3-1,m) + scr(266)*u(i1+0,i2-2,i3-1,m) + scr(267)*u(i1+1,i2-2,i3-1,m)                                                                                                + scr(273)*u(i1-2,i2-1,i3-1,m) + scr(274)*u(i1-1,i2-1,i3-1,m) + scr(275)*u(i1+0,i2-1,i3-1,m) + scr(276)*u(i1+1,i2-1,i3-1,m) + scr(277)*u(i1+2,i2-1,i3-1,m)                                                                + scr(281)*u(i1-3,i2+0,i3-1,m) + scr(282)*u(i1-2,i2+0,i3-1,m) + scr(283)*u(i1-1,i2+0,i3-1,m) + scr(284)*u(i1+0,i2+0,i3-1,m) + scr(285)*u(i1+1,i2+0,i3-1,m) + scr(286)*u(i1+2,i2+0,i3-1,m) + scr(287)*u(i1+3,i2+0,i3-1,m)                                + scr(291)*u(i1-2,i2+1,i3-1,m) + scr(292)*u(i1-1,i2+1,i3-1,m) + scr(293)*u(i1+0,i2+1,i3-1,m) + scr(294)*u(i1+1,i2+1,i3-1,m) + scr(295)*u(i1+2,i2+1,i3-1,m)                                                                + scr(301)*u(i1-1,i2+2,i3-1,m) + scr(302)*u(i1+0,i2+2,i3-1,m) + scr(303)*u(i1+1,i2+2,i3-1,m)                                                                                                + scr(311)*u(i1+0,i2+3,i3-1,m)                                                                                                                                + scr(329)*u(i1+0,i2-4,i3+0,m)                                                                                                                                + scr(337)*u(i1-1,i2-3,i3+0,m) + scr(338)*u(i1+0,i2-3,i3+0,m) + scr(339)*u(i1+1,i2-3,i3+0,m)                                                                                                + scr(345)*u(i1-2,i2-2,i3+0,m) + scr(346)*u(i1-1,i2-2,i3+0,m) + scr(347)*u(i1+0,i2-2,i3+0,m) + scr(348)*u(i1+1,i2-2,i3+0,m) + scr(349)*u(i1+2,i2-2,i3+0,m)                                                                + scr(353)*u(i1-3,i2-1,i3+0,m) + scr(354)*u(i1-2,i2-1,i3+0,m) + scr(355)*u(i1-1,i2-1,i3+0,m) + scr(356)*u(i1+0,i2-1,i3+0,m) + scr(357)*u(i1+1,i2-1,i3+0,m) + scr(358)*u(i1+2,i2-1,i3+0,m) + scr(359)*u(i1+3,i2-1,i3+0,m)                                + scr(361)*u(i1-4,i2+0,i3+0,m) + scr(362)*u(i1-3,i2+0,i3+0,m) + scr(363)*u(i1-2,i2+0,i3+0,m) + scr(364)*u(i1-1,i2+0,i3+0,m) + scr(365)*u(i1+0,i2+0,i3+0,m) + scr(366)*u(i1+1,i2+0,i3+0,m) + scr(367)*u(i1+2,i2+0,i3+0,m) + scr(368)*u(i1+3,i2+0,i3+0,m) + scr(369)*u(i1+4,i2+0,i3+0,m)+ scr(371)*u(i1-3,i2+1,i3+0,m) + scr(372)*u(i1-2,i2+1,i3+0,m) + scr(373)*u(i1-1,i2+1,i3+0,m) + scr(374)*u(i1+0,i2+1,i3+0,m) + scr(375)*u(i1+1,i2+1,i3+0,m) + scr(376)*u(i1+2,i2+1,i3+0,m) + scr(377)*u(i1+3,i2+1,i3+0,m)                                + scr(381)*u(i1-2,i2+2,i3+0,m) + scr(382)*u(i1-1,i2+2,i3+0,m) + scr(383)*u(i1+0,i2+2,i3+0,m) + scr(384)*u(i1+1,i2+2,i3+0,m) + scr(385)*u(i1+2,i2+2,i3+0,m)                                                                + scr(391)*u(i1-1,i2+3,i3+0,m) + scr(392)*u(i1+0,i2+3,i3+0,m) + scr(393)*u(i1+1,i2+3,i3+0,m)                                                                                                + scr(401)*u(i1+0,i2+4,i3+0,m)                                                                                                                                + scr(419)*u(i1+0,i2-3,i3+1,m)                                                                                                                                + scr(427)*u(i1-1,i2-2,i3+1,m) + scr(428)*u(i1+0,i2-2,i3+1,m) + scr(429)*u(i1+1,i2-2,i3+1,m)                                                                                                + scr(435)*u(i1-2,i2-1,i3+1,m) + scr(436)*u(i1-1,i2-1,i3+1,m) + scr(437)*u(i1+0,i2-1,i3+1,m) + scr(438)*u(i1+1,i2-1,i3+1,m) + scr(439)*u(i1+2,i2-1,i3+1,m)                                                                + scr(443)*u(i1-3,i2+0,i3+1,m) + scr(444)*u(i1-2,i2+0,i3+1,m) + scr(445)*u(i1-1,i2+0,i3+1,m) + scr(446)*u(i1+0,i2+0,i3+1,m) + scr(447)*u(i1+1,i2+0,i3+1,m) + scr(448)*u(i1+2,i2+0,i3+1,m) + scr(449)*u(i1+3,i2+0,i3+1,m)                                + scr(453)*u(i1-2,i2+1,i3+1,m) + scr(454)*u(i1-1,i2+1,i3+1,m) + scr(455)*u(i1+0,i2+1,i3+1,m) + scr(456)*u(i1+1,i2+1,i3+1,m) + scr(457)*u(i1+2,i2+1,i3+1,m)                                                                + scr(463)*u(i1-1,i2+2,i3+1,m) + scr(464)*u(i1+0,i2+2,i3+1,m) + scr(465)*u(i1+1,i2+2,i3+1,m)                                                                                                + scr(473)*u(i1+0,i2+3,i3+1,m)                                                                                                                                + scr(509)*u(i1+0,i2-2,i3+2,m)                                                                                                                                + scr(517)*u(i1-1,i2-1,i3+2,m) + scr(518)*u(i1+0,i2-1,i3+2,m) + scr(519)*u(i1+1,i2-1,i3+2,m)                                                                                                + scr(525)*u(i1-2,i2+0,i3+2,m) + scr(526)*u(i1-1,i2+0,i3+2,m) + scr(527)*u(i1+0,i2+0,i3+2,m) + scr(528)*u(i1+1,i2+0,i3+2,m) + scr(529)*u(i1+2,i2+0,i3+2,m)                                                                + scr(535)*u(i1-1,i2+1,i3+2,m) + scr(536)*u(i1+0,i2+1,i3+2,m) + scr(537)*u(i1+1,i2+1,i3+2,m)                                                                                                + scr(545)*u(i1+0,i2+2,i3+2,m)                                                                                                                                + scr(599)*u(i1+0,i2-1,i3+3,m)                                                                                                                                + scr(607)*u(i1-1,i2+0,i3+3,m) + scr(608)*u(i1+0,i2+0,i3+3,m) + scr(609)*u(i1+1,i2+0,i3+3,m)                                                                                                + scr(617)*u(i1+0,i2+1,i3+3,m)                                                                                                                                + scr(689)*u(i1+0,i2+0,i3+4,m)                                                                                                                                
-                              end do
-                              end do
-                              end do
+               end do
+               end do
+               end do
              ! endLoopsMask()
-                  else
-                          if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
-                              write(*,'("advWaveStencil: ADVANCE dim=3 order=8 orderInTime=8, grid=rectangular... t=",e10.2)') t
-                          end if
+         else
+             if( ( .true. .or. debug.gt.3) .and. t.lt.2*dt )then
+               write(*,'("advWaveStencil: ADVANCE dim=3 order=8 orderInTime=8, grid=rectangular... t=",e10.2)') t
+             end if
              ! --- TAYLOR TIME-STEPPING --- 
-                          m=0 ! component number 
-                          ec = 0 ! component number
-                          if( forcingOption.eq.helmholtzForcing )then
-                              coswt = cos(omega*t)
-                          end if 
-                          fv(m)=0.
+             m=0 ! component number 
+             ec = 0 ! component number
+             if( forcingOption.eq.helmholtzForcing )then
+               coswt = cos(omega*t)
+             end if 
+             fv(m)=0.
              ! >>>> NOTE: NO-MASK IS FASTER for square128
              ! beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
-                              do i3=n3a,n3b
-                              do i2=n2a,n2b
-                              do i1=n1a,n1b
-                                      if( forcingOption.eq.twilightZoneForcing )then
-                                                  call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
-                                                  call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
-                                                  call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
-                                                  call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
-                                                  call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
-                                              fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
+               do i3=n3a,n3b
+               do i2=n2a,n2b
+               do i1=n1a,n1b
+                   if( forcingOption.eq.twilightZoneForcing )then
+                         call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
+                         call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
+                         call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
+                         call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
+                         call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
+                       fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
                         ! Correct forcing for fourth-order ME in 3D
-                                                    call ogDeriv(ep, 4,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttt(m) )
-                                                    call ogDeriv(ep, 0,4,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxx(m) )
-                                                    call ogDeriv(ep, 0,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyy(m) )
-                                                    call ogDeriv(ep, 0,2,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzz(m) )
-                                                    call ogDeriv(ep, 0,0,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzz(m) )
-                                                    call ogDeriv(ep, 0,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyy(m) )
-                                                    call ogDeriv(ep, 0,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzz(m) )
-                                                fv(m) = fv(m) + (dtSq/12.)*evtttt(m) - (cdtsq12/dtSq)*( evxxxx(m) + 2.*( evxxyy(m) + evxxzz(m) + evyyzz(m) ) + evyyyy(m) + evzzzz(m) )       
+                          call ogDeriv(ep, 4,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttt(m) )
+                          call ogDeriv(ep, 0,4,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxx(m) )
+                          call ogDeriv(ep, 0,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyy(m) )
+                          call ogDeriv(ep, 0,2,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzz(m) )
+                          call ogDeriv(ep, 0,0,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzz(m) )
+                          call ogDeriv(ep, 0,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyy(m) )
+                          call ogDeriv(ep, 0,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzz(m) )
+                        fv(m) = fv(m) + (dtSq/12.)*evtttt(m) - (cdtsq12/dtSq)*( evxxxx(m) + 2.*( evxxyy(m) + evxxzz(m) + evyyzz(m) ) + evyyyy(m) + evzzzz(m) )       
                         ! Correct forcing for sixth-order ME in 3D
-                                                    call ogDeriv(ep, 6,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttttt(m) )
-                                                    call ogDeriv(ep, 0,6,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxxx(m) )
-                                                    call ogDeriv(ep, 0,0,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyyy(m) )
-                                                    call ogDeriv(ep, 0,0,0,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzzzz(m) )
-                                                    call ogDeriv(ep, 0,4,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxyy(m) )
-                                                    call ogDeriv(ep, 0,2,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyyy(m) )
-                                                    call ogDeriv(ep, 0,4,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxzz(m) )
-                                                    call ogDeriv(ep, 0,2,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzzzz(m) )
-                                                    call ogDeriv(ep, 0,0,4,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyzz(m) )
-                                                    call ogDeriv(ep, 0,0,2,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzzzz(m) )
-                                                    call ogDeriv(ep, 0,2,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyzz(m) )
-                                                fv(m) = fv(m) + (dtSq**2/360.)*evtttttt(m) - (cdtPow6By360/dtSq)*( evxxxxxx(m) + evyyyyyy(m) + evzzzzzz(m) + 3.*(evxxxxyy(m) + evxxyyyy(m) + evxxxxzz(m) + evxxzzzz(m) + evyyyyzz(m) + evyyzzzz(m) ) + 6.*evxxyyzz(m)  )
+                          call ogDeriv(ep, 6,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtttttt(m) )
+                          call ogDeriv(ep, 0,6,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxxx(m) )
+                          call ogDeriv(ep, 0,0,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyyy(m) )
+                          call ogDeriv(ep, 0,0,0,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzzzz(m) )
+                          call ogDeriv(ep, 0,4,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxyy(m) )
+                          call ogDeriv(ep, 0,2,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyyy(m) )
+                          call ogDeriv(ep, 0,4,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxzz(m) )
+                          call ogDeriv(ep, 0,2,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzzzz(m) )
+                          call ogDeriv(ep, 0,0,4,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyzz(m) )
+                          call ogDeriv(ep, 0,0,2,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzzzz(m) )
+                          call ogDeriv(ep, 0,2,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyzz(m) )
+                        fv(m) = fv(m) + (dtSq**2/360.)*evtttttt(m) - (cdtPow6By360/dtSq)*( evxxxxxx(m) + evyyyyyy(m) + evzzzzzz(m) + 3.*(evxxxxyy(m) + evxxyyyy(m) + evxxxxzz(m) + evxxzzzz(m) + evyyyyzz(m) + evyyzzzz(m) ) + 6.*evxxyyzz(m)  )
                         ! Correct forcing for eighth-order ME in 3D
-                                                    call ogDeriv(ep, 8,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uet8 )
-                                                    call ogDeriv(ep, 0,8,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex8 )
-                                                    call ogDeriv(ep, 0,0,8,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey8 )
-                                                    call ogDeriv(ep, 0,0,0,8, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uez8 )
-                                                    call ogDeriv(ep, 0,6,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex6y2 )
-                                                    call ogDeriv(ep, 0,4,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4y4 )
-                                                    call ogDeriv(ep, 0,2,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y6 )
-                                                    call ogDeriv(ep, 0,6,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex6z2 )
-                                                    call ogDeriv(ep, 0,4,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4z4 )
-                                                    call ogDeriv(ep, 0,2,0,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2z6 )
-                                                    call ogDeriv(ep, 0,0,6,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey6z2 )
-                                                    call ogDeriv(ep, 0,0,4,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey4z4 )
-                                                    call ogDeriv(ep, 0,0,2,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey2z6 )
-                                                    call ogDeriv(ep, 0,4,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4y2z2 )
-                                                    call ogDeriv(ep, 0,2,4,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y4z2 )
-                                                    call ogDeriv(ep, 0,2,2,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y2z4 )
+                          call ogDeriv(ep, 8,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uet8 )
+                          call ogDeriv(ep, 0,8,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex8 )
+                          call ogDeriv(ep, 0,0,8,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey8 )
+                          call ogDeriv(ep, 0,0,0,8, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uez8 )
+                          call ogDeriv(ep, 0,6,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex6y2 )
+                          call ogDeriv(ep, 0,4,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4y4 )
+                          call ogDeriv(ep, 0,2,6,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y6 )
+                          call ogDeriv(ep, 0,6,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex6z2 )
+                          call ogDeriv(ep, 0,4,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4z4 )
+                          call ogDeriv(ep, 0,2,0,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2z6 )
+                          call ogDeriv(ep, 0,0,6,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey6z2 )
+                          call ogDeriv(ep, 0,0,4,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey4z4 )
+                          call ogDeriv(ep, 0,0,2,6, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uey2z6 )
+                          call ogDeriv(ep, 0,4,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex4y2z2 )
+                          call ogDeriv(ep, 0,2,4,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y4z2 )
+                          call ogDeriv(ep, 0,2,2,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,uex2y2z4 )
                         ! ( x*x _ y*y + z*z )^4 = x^8 + 4*x^6*y^2 + 4*x^6*z^2 + 6*x^4*y^4 + 12*x^4*y^2*z^2 + 6*x^4*z^4 + 4*x^2*y^6 + 12*x^2*y^4*z^2 + 12*x^2*y^2*z^4 + 4*x^2*z^6 + y^8 + 4*y^6*z^2 + 6*y^4*z^4 + 4*y^2*z^6 + z^8 
-                                                fv(m) = fv(m) + (dtSq**3/20160.)*uet8       - (cdtPow8By20160/dtSq)*( uex8 +       uey8 +       uez8         +  4.*(uex6y2 +    uex2y6 +    uex6z2 +    uex2z6 +    uey6z2 +    uey2z6 )    +  6.*( uex4y4 +   uex4z4 +   uey4z4 )   + 12.*( uex4y2z2 + uex2y4z2 + uex2y2z4 ) )
-                                    else if( forcingOption.eq.helmholtzForcing )then
+                        fv(m) = fv(m) + (dtSq**3/20160.)*uet8       - (cdtPow8By20160/dtSq)*( uex8 +       uey8 +       uez8         +  4.*(uex6y2 +    uex2y6 +    uex6z2 +    uex2z6 +    uey6z2 +    uey2z6 )    +  6.*( uex4y4 +   uex4z4 +   uey4z4 )   + 12.*( uex4y2z2 + uex2y4z2 + uex2y2z4 ) )
+                  else if( forcingOption.eq.helmholtzForcing )then
                      ! forcing for solving the Helmholtz equation   
                      ! NOTE: change sign of forcing since for Helholtz we want to solve
                      !      ( omega^2 I + c^2 Delta) w = f 
                      ! fv(m) = -f(i1,i2,i3,0)*coswt  
-                                          fv(m)=0.
-                                          do freq=0,numberOfFrequencies-1 
-                                              omega = frequencyArray(freq)
-                                              coswt = cosFreqt(freq)    
+                     fv(m)=0.
+                     do freq=0,numberOfFrequencies-1 
+                       omega = frequencyArray(freq)
+                       coswt = cosFreqt(freq)    
                          ! Add corrections for 4th order modified equation 
                          !  fv = f + (dt^2/12)*( c^2 Delta(u) + ftt )
-                                                  write(*,*) 'fix me'
-                                                  stop 4444
+                         write(*,*) 'fix me'
+                         stop 4444
                              !fv(m) = fv(m) -( f(i1,i2,i3,freq) + cdtSqBy12*( cSq*(fxx23r(i1,i2,i3,freq) + fyy23r(i1,i2,i3,freq) + fzz23r(i1,i2,i3,freq)) - omega*omega*f(i1,i2,i3,freq)) )*coswt 
-                                          end do ! do freq  
-                                    else if( addForcing.ne.0 )then  
-                                          fv(m) = f(i1,i2,i3,0)
-                                    end if
+                     end do ! do freq  
+                  else if( addForcing.ne.0 )then  
+                     fv(m) = f(i1,i2,i3,0)
+                  end if
 ! Stencil: nd=3, orderOfAccuracy=8, gridType=Rectangular
 un(i1,i2,i3,m)=  - um(i1,i2,i3,m)+ scr( 41)*u(i1+0,i2+0,i3-4,m)                                                                                                                                + scr(113)*u(i1+0,i2-1,i3-3,m)                                                                                                                                + scr(121)*u(i1-1,i2+0,i3-3,m) + scr(122)*u(i1+0,i2+0,i3-3,m) + scr(123)*u(i1+1,i2+0,i3-3,m)                                                                                                + scr(131)*u(i1+0,i2+1,i3-3,m)                                                                                                                                + scr(185)*u(i1+0,i2-2,i3-2,m)                                                                                                                                + scr(193)*u(i1-1,i2-1,i3-2,m) + scr(194)*u(i1+0,i2-1,i3-2,m) + scr(195)*u(i1+1,i2-1,i3-2,m)                                                                                                + scr(201)*u(i1-2,i2+0,i3-2,m) + scr(202)*u(i1-1,i2+0,i3-2,m) + scr(203)*u(i1+0,i2+0,i3-2,m) + scr(204)*u(i1+1,i2+0,i3-2,m) + scr(205)*u(i1+2,i2+0,i3-2,m)                                                                + scr(211)*u(i1-1,i2+1,i3-2,m) + scr(212)*u(i1+0,i2+1,i3-2,m) + scr(213)*u(i1+1,i2+1,i3-2,m)                                                                                                + scr(221)*u(i1+0,i2+2,i3-2,m)                                                                                                                                + scr(257)*u(i1+0,i2-3,i3-1,m)                                                                                                                                + scr(265)*u(i1-1,i2-2,i3-1,m) + scr(266)*u(i1+0,i2-2,i3-1,m) + scr(267)*u(i1+1,i2-2,i3-1,m)                                                                                                + scr(273)*u(i1-2,i2-1,i3-1,m) + scr(274)*u(i1-1,i2-1,i3-1,m) + scr(275)*u(i1+0,i2-1,i3-1,m) + scr(276)*u(i1+1,i2-1,i3-1,m) + scr(277)*u(i1+2,i2-1,i3-1,m)                                                                + scr(281)*u(i1-3,i2+0,i3-1,m) + scr(282)*u(i1-2,i2+0,i3-1,m) + scr(283)*u(i1-1,i2+0,i3-1,m) + scr(284)*u(i1+0,i2+0,i3-1,m) + scr(285)*u(i1+1,i2+0,i3-1,m) + scr(286)*u(i1+2,i2+0,i3-1,m) + scr(287)*u(i1+3,i2+0,i3-1,m)                                + scr(291)*u(i1-2,i2+1,i3-1,m) + scr(292)*u(i1-1,i2+1,i3-1,m) + scr(293)*u(i1+0,i2+1,i3-1,m) + scr(294)*u(i1+1,i2+1,i3-1,m) + scr(295)*u(i1+2,i2+1,i3-1,m)                                                                + scr(301)*u(i1-1,i2+2,i3-1,m) + scr(302)*u(i1+0,i2+2,i3-1,m) + scr(303)*u(i1+1,i2+2,i3-1,m)                                                                                                + scr(311)*u(i1+0,i2+3,i3-1,m)                                                                                                                                + scr(329)*u(i1+0,i2-4,i3+0,m)                                                                                                                                + scr(337)*u(i1-1,i2-3,i3+0,m) + scr(338)*u(i1+0,i2-3,i3+0,m) + scr(339)*u(i1+1,i2-3,i3+0,m)                                                                                                + scr(345)*u(i1-2,i2-2,i3+0,m) + scr(346)*u(i1-1,i2-2,i3+0,m) + scr(347)*u(i1+0,i2-2,i3+0,m) + scr(348)*u(i1+1,i2-2,i3+0,m) + scr(349)*u(i1+2,i2-2,i3+0,m)                                                                + scr(353)*u(i1-3,i2-1,i3+0,m) + scr(354)*u(i1-2,i2-1,i3+0,m) + scr(355)*u(i1-1,i2-1,i3+0,m) + scr(356)*u(i1+0,i2-1,i3+0,m) + scr(357)*u(i1+1,i2-1,i3+0,m) + scr(358)*u(i1+2,i2-1,i3+0,m) + scr(359)*u(i1+3,i2-1,i3+0,m)                                + scr(361)*u(i1-4,i2+0,i3+0,m) + scr(362)*u(i1-3,i2+0,i3+0,m) + scr(363)*u(i1-2,i2+0,i3+0,m) + scr(364)*u(i1-1,i2+0,i3+0,m) + scr(365)*u(i1+0,i2+0,i3+0,m) + scr(366)*u(i1+1,i2+0,i3+0,m) + scr(367)*u(i1+2,i2+0,i3+0,m) + scr(368)*u(i1+3,i2+0,i3+0,m) + scr(369)*u(i1+4,i2+0,i3+0,m)+ scr(371)*u(i1-3,i2+1,i3+0,m) + scr(372)*u(i1-2,i2+1,i3+0,m) + scr(373)*u(i1-1,i2+1,i3+0,m) + scr(374)*u(i1+0,i2+1,i3+0,m) + scr(375)*u(i1+1,i2+1,i3+0,m) + scr(376)*u(i1+2,i2+1,i3+0,m) + scr(377)*u(i1+3,i2+1,i3+0,m)                                + scr(381)*u(i1-2,i2+2,i3+0,m) + scr(382)*u(i1-1,i2+2,i3+0,m) + scr(383)*u(i1+0,i2+2,i3+0,m) + scr(384)*u(i1+1,i2+2,i3+0,m) + scr(385)*u(i1+2,i2+2,i3+0,m)                                                                + scr(391)*u(i1-1,i2+3,i3+0,m) + scr(392)*u(i1+0,i2+3,i3+0,m) + scr(393)*u(i1+1,i2+3,i3+0,m)                                                                                                + scr(401)*u(i1+0,i2+4,i3+0,m)                                                                                                                                + scr(419)*u(i1+0,i2-3,i3+1,m)                                                                                                                                + scr(427)*u(i1-1,i2-2,i3+1,m) + scr(428)*u(i1+0,i2-2,i3+1,m) + scr(429)*u(i1+1,i2-2,i3+1,m)                                                                                                + scr(435)*u(i1-2,i2-1,i3+1,m) + scr(436)*u(i1-1,i2-1,i3+1,m) + scr(437)*u(i1+0,i2-1,i3+1,m) + scr(438)*u(i1+1,i2-1,i3+1,m) + scr(439)*u(i1+2,i2-1,i3+1,m)                                                                + scr(443)*u(i1-3,i2+0,i3+1,m) + scr(444)*u(i1-2,i2+0,i3+1,m) + scr(445)*u(i1-1,i2+0,i3+1,m) + scr(446)*u(i1+0,i2+0,i3+1,m) + scr(447)*u(i1+1,i2+0,i3+1,m) + scr(448)*u(i1+2,i2+0,i3+1,m) + scr(449)*u(i1+3,i2+0,i3+1,m)                                + scr(453)*u(i1-2,i2+1,i3+1,m) + scr(454)*u(i1-1,i2+1,i3+1,m) + scr(455)*u(i1+0,i2+1,i3+1,m) + scr(456)*u(i1+1,i2+1,i3+1,m) + scr(457)*u(i1+2,i2+1,i3+1,m)                                                                + scr(463)*u(i1-1,i2+2,i3+1,m) + scr(464)*u(i1+0,i2+2,i3+1,m) + scr(465)*u(i1+1,i2+2,i3+1,m)                                                                                                + scr(473)*u(i1+0,i2+3,i3+1,m)                                                                                                                                + scr(509)*u(i1+0,i2-2,i3+2,m)                                                                                                                                + scr(517)*u(i1-1,i2-1,i3+2,m) + scr(518)*u(i1+0,i2-1,i3+2,m) + scr(519)*u(i1+1,i2-1,i3+2,m)                                                                                                + scr(525)*u(i1-2,i2+0,i3+2,m) + scr(526)*u(i1-1,i2+0,i3+2,m) + scr(527)*u(i1+0,i2+0,i3+2,m) + scr(528)*u(i1+1,i2+0,i3+2,m) + scr(529)*u(i1+2,i2+0,i3+2,m)                                                                + scr(535)*u(i1-1,i2+1,i3+2,m) + scr(536)*u(i1+0,i2+1,i3+2,m) + scr(537)*u(i1+1,i2+1,i3+2,m)                                                                                                + scr(545)*u(i1+0,i2+2,i3+2,m)                                                                                                                                + scr(599)*u(i1+0,i2-1,i3+3,m)                                                                                                                                + scr(607)*u(i1-1,i2+0,i3+3,m) + scr(608)*u(i1+0,i2+0,i3+3,m) + scr(609)*u(i1+1,i2+0,i3+3,m)                                                                                                + scr(617)*u(i1+0,i2+1,i3+3,m)                                                                                                                                + scr(689)*u(i1+0,i2+0,i3+4,m)                                                                                                                                +dtSq*fv(m)
-                              end do
-                              end do
-                              end do
+               end do
+               end do
+               end do
              ! endLoopsMask()
-                  end if
-              end if 
-      else
+         end if
+       end if 
+   else
      ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----
-          stop 1111
-      end if
-      return
-      end
+     stop 1111
+   end if
+   return
+   end

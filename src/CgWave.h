@@ -18,13 +18,16 @@ public:
 
 enum BoundaryConditionEnum
 {
-  periodic      =-1,
-  interpolation = 0,
-  dirichlet     = 1,
-  neumann       = 2,
-  evenSymmetry  = 3,
-  radiation     = 4,
-  exactBC       = 5   // Set exact values on boundary and ghost
+  periodic       =-1,
+  interpolation  = 0,
+  dirichlet      = 1,
+  neumann        = 2,
+  evenSymmetry   = 3,
+  radiation      = 4,
+  exactBC        = 5,  // Set exact values on boundary and ghost
+  abcEM2         = 6,  // absorbing BC, Engquist-Majda order 2  
+  characteristic = 7,  // characteristic BC
+  absorbing      = 8,   // for SuperGrid
 };
 
 enum InitialConditionOptionEnum
@@ -123,7 +126,9 @@ static Real betaWaveHoltz( Real lambda, Real omega, Real T );
 
 int buildRunTimeDialog();
 
+int buildSuperGrid( );
 
+bool adjustBoundsForAbsorbingLayer( MappedGrid & mg, Index Iv[3], int extra =0 );
 
 int checkDeflation();
 

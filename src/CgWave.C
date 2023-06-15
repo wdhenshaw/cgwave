@@ -137,6 +137,11 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   // By default choose the implicit dt based on the CFL: (otherwise us dtMax)
   dbase.put<int>("chooseImplicitTimeStepFromCFL")=1;
 
+
+  dbase.put<int>("useSuperGrid")=0;      
+  dbase.put<real>("superGridWidth")=.2;          // superGrid layer width (in parameter space)
+  dbase.put<IntegerArray>("useAbsorbingLayer");  //  useAbsorbingLayer(axis,grid) 
+
   // interactiveMode :
   //       0 = plot intermediate results
   //       1 = run without plotting and exit advance when finished 
@@ -279,7 +284,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<bool>("knownSolutionIsTimeDependent")=false; 
 
   // These should match BoundaryConditionEnum
-  int & numberOfBCNames = dbase.put<int>("numberOfBCNames")=6;
+  int & numberOfBCNames = dbase.put<int>("numberOfBCNames")=9;
   aString *& bcNames = dbase.put<aString*>("bcNames") = new aString [numberOfBCNames];
   bcNames[0]="periodic";
   bcNames[1]="dirichlet";
@@ -287,8 +292,9 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   bcNames[3]="evenSymmetry";
   bcNames[4]="radiation";
   bcNames[5]="exact";
-  
-
+  bcNames[6]="abcEM2";
+  bcNames[7]="characteristic";
+  bcNames[8]="absorbing";
 
 
   // show file variables:
@@ -444,6 +450,13 @@ realCompositeGridFunction& CgWave::getCurrentSolution()
 int CgWave::initialize()
 {
   real cpu0=getCPU();
+
+  const int & useSuperGrid = dbase.get<int>("useSuperGrid");
+  if( useSuperGrid )
+  {
+    // -- construct superGrid functions ---
+    buildSuperGrid();
+  }  
   
   const int & numberOfFrequencies  = dbase.get<int>("numberOfFrequencies");
   printF("CgWave::initialize and assign forcing... numberOfFrequencies=%d\n",numberOfFrequencies);
@@ -728,6 +741,9 @@ buildBoundaryConditionOptionsDialog(DialogData & dialog )
   BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
   int & applyKnownSolutionAtBoundaries        = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
 
+  const int & useSuperGrid                    = dbase.get<int>("useSuperGrid");
+  const Real & superGridWidth                 = dbase.get<real>("superGridWidth");
+
   AssignInterpolationNeighboursEnum & assignInterpNeighbours = dbase.get<AssignInterpolationNeighboursEnum>("assignInterpNeighbours");
 
   // const int & numberOfBCNames = dbase.get<int>("numberOfBCNames");
@@ -749,9 +765,11 @@ buildBoundaryConditionOptionsDialog(DialogData & dialog )
 
   aString tbCommands[] = {
                           "set known on boundaries",
+                          "use superGrid",
                           ""};
   int tbState[15];
   tbState[ 0] = applyKnownSolutionAtBoundaries;
+  tbState[ 1] = useSuperGrid;
 
   int numColumns=1;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -766,6 +784,9 @@ buildBoundaryConditionOptionsDialog(DialogData & dialog )
 
   textCommands[nt] = "bc=";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "bcName ([dirichlet|evenSymmetry]");  nt++; 
+
+  textCommands[nt] = "superGrid width";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "superGrid width %g",superGridWidth);  nt++;   
 
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -787,6 +808,10 @@ buildBoundaryConditionOptionsDialog(DialogData & dialog )
 int CgWave::
 getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerArray & bcOrig )
 {
+
+  int & useSuperGrid    = dbase.get<int>("useSuperGrid");
+  Real & superGridWidth = dbase.get<real>("superGridWidth");
+
 
   BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
   int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
@@ -835,7 +860,14 @@ getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerA
   {
     printF("Setting applyKnownSolutionAtBoundaries=%d (1=apply known solution on boundaries).\n",applyKnownSolutionAtBoundaries);
   }   
-
+  else if( dialog.getToggleValue(answer,"use superGrid",useSuperGrid) )
+  {
+    printF("Setting useSuperGrid=%d (1=use superGrid absorbing layers).\n",useSuperGrid);
+  }
+  else if( dialog.getTextValue(answer,"superGrid width","%e",superGridWidth) )
+  {
+    printF("Setting superGridWidth=%g (layer width in parameter space)\n",superGridWidth);
+  }  
   else if( len=answer.matches("bc=") )
   {
     aString bcn = answer(len,answer.length()-1);
@@ -2131,7 +2163,8 @@ int CgWave::setup()
 {
   real cpu0 = getCPU();
   
-  
+
+
   realCompositeGridFunction *& ucg = dbase.get<realCompositeGridFunction*>("ucg");
 
   CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
@@ -2169,6 +2202,8 @@ int CgWave::setup()
   IntegerArray & gridIsImplicit = dbase.get<IntegerArray>("gridIsImplicit");
   gridIsImplicit.redim(cg.numberOfComponentGrids());
   gridIsImplicit=0;
+
+
 
   timing(timeForInitialize) += getCPU()-cpu0;
 

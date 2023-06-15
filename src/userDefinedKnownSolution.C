@@ -554,7 +554,9 @@ getUserDefinedKnownSolution(real t,  int grid,
         else
         {
       // Neumann BC
-            #include "src/besselPrimeZeros.h"    
+      // #include "src/besselPrimeZeros.h"    
+      // Next file from Allison Carson:
+            #include "src/besselPrimeZeros99.h"    
             assert( m<mdbpz && n<ndbpz );
             const Real jzmn = besselPrimeZeros[n][m];  // m'th zero of Jn' (excluding r=0 for J0)
             lambda=jzmn/a;

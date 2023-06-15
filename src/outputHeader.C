@@ -43,11 +43,14 @@ outputHeader()
   const int & computeErrors                 = dbase.get<int>("computeErrors");
   const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep"); 
   const int & takeImplicitFirstStep         = dbase.get<int>("takeImplicitFirstStep");
+
+  const int & useSuperGrid                  = dbase.get<int>("useSuperGrid");
+  const Real & superGridWidth               = dbase.get<real>("superGridWidth");
 	      
   const int & solveHelmholtz                = dbase.get<int>("solveHelmholtz");
   const int & computeEigenmodes             = dbase.get<int>("computeEigenmodes");
-  const int & numEigsToCompute               = dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute 
-  const int & numArnoldiVectors              = dbase.get<int>("numArnoldiVectors");
+  const int & numEigsToCompute              = dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute 
+  const int & numArnoldiVectors             = dbase.get<int>("numArnoldiVectors");
 
   const int & computeTimeIntegral           = dbase.get<int>("computeTimeIntegral");
   const int & adjustOmega                   = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
@@ -183,6 +186,8 @@ outputHeader()
                     bcApproach==useCompatibilityBoundaryConditions      ? "useCompatibilityBCs"                     :
                     bcApproach==useLocalCompatibilityBoundaryConditions ? "useLocalCompatibilityBoundaryConditions" : 
                                                                           "unknown" ));
+
+    fPrintF(file," useSuperGrid=%d, superGridWidth=%g\n",useSuperGrid,superGridWidth);
 
     fPrintF(file," solveHelmholtz=%d (1= we are solving a Helmholtz problem).\n",solveHelmholtz);
     if( solveHelmholtz )

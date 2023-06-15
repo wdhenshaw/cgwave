@@ -38,6 +38,7 @@
    integer ipar(0:*)
    real rpar(0:*)
    !     --- local variables ----
+   integer bc(0:1,0:2) ! local version, normally equal to boundaryCondition
    integer uc,numberOfComponents,assignTwilightZone,assignKnownSolutionAtBoundaries,freq
    integer grid,gridType,orderOfAccuracy,useWhereMask,gridIsImplicit,useUpwindDissipation
    integer twilightZone,numberOfProcessors,addForcingBC,assignBCForImplicitForImplicit
@@ -86,15 +87,18 @@
    integer rectangular,curvilinear
    parameter(rectangular=0,curvilinear=1)
    ! Boundary conditions: These must mauch the values in CgWave.h
-   ! periodic      =-1,
-   ! interpolation = 0,
-   ! dirichlet     = 1,
-   ! neumann       = 2,
-   ! evenSymmetry  = 3,
-   ! radiation     = 4   
-   ! exactBC       = 5 
-   integer dirichlet,neumann,evenSymmetry,radiation,exactBC
-   parameter( dirichlet=1, neumann=2, evenSymmetry=3, radiation=4, exactBC=5  )
+   ! periodic       =-1,
+   ! interpolation  = 0,
+   ! dirichlet      = 1,
+   ! neumann        = 2,
+   ! evenSymmetry   = 3,
+   ! radiation      = 4   
+   ! exactBC        = 5 
+   ! abcEM2         = 6,  // absorbing BC, Engquist-Majda order 2  
+   ! characteristic = 7,  // characteristic BC
+   ! absorbing      = 8,   // for SuperGrid  
+   integer dirichlet,neumann,evenSymmetry,radiation,exactBC,abcEM2,characteristic,absorbing
+   parameter( dirichlet=1, neumann=2, evenSymmetry=3, radiation=4, exactBC=5, abcEM2=6, characteristic=7, absorbing=8  )
    ! Corner conditions (from op/fortranDeriv/assignCornersOpt.bf)
    integer doNothingCorner,extrapolateCorner,symmetryCorner,taylor2ndOrder
    integer evenSymmetryCorner,oddSymmetryCorner,taylor2ndOrderEvenCorner,taylor4thOrderEvenCorner,vectorSymmetryAxis1Corner,vectorSymmetryAxis2Corner,vectorSymmetryAxis3Corner
@@ -1447,7 +1451,7 @@ real uzzzz
      write(*,'("  t=",e10.2," dt=",e10.2," knownSolutionOption=",i4," REAL_MIN=",e10.2)') t,dt,knownSolutionOption,REAL_MIN
      write(*,'("  useUpwindDissipation=",i2," numGhost=",i2)') useUpwindDissipation,numGhost
      write(*,'("  assignBCForImplicitForImplicit=",i4," bcApproach=",i4)') assignBCForImplicitForImplicit,bcApproach
-     write(*,'("  bc=",6i4)') ((boundaryCondition(side,axis),side=0,1),axis=0,2)
+     write(*,'("  boundaryCondition=",6i4)') ((boundaryCondition(side,axis),side=0,1),axis=0,2)
    end if
    ! if( bcApproach.eq.useCompatibilityBoundaryConditions )then
    !   write(*,'("bcOptWave: ERROR: useCompatibilityBoundaryConditions not implemented yet.")') 
@@ -1457,6 +1461,16 @@ real uzzzz
      write(*,'("bcOptWave: ERROR: useLocalCompatibilityBoundaryConditions not implemented yet.")') 
      stop 2020    
    end if
+   ! ---- Make a local version of the boundaryCondition array ----
+   do side=0,1
+     do axis=0,2
+       bc(side,axis)=boundaryCondition(side,axis)
+       if( bc(side,axis).eq.absorbing )then
+         ! DO THIS FOR NOW : use dirichlet for absorbing boundaries 
+         bc(side,axis)=dirichlet
+       end if
+     end do
+   end do
    if( .true. ) then
      if( knownSolutionOption.eq.planeWave )then
        ! get parameter values from the C++ data-base
@@ -1632,45 +1646,45 @@ real uzzzz
         extra3a=0
         extra3b=0
       end if
-      if( boundaryCondition(0,0).lt.0 )then
+      if( bc(0,0).lt.0 )then
         extra1a=max(0,extra1a) ! over-ride numGhost=-1 : assign ends in periodic directions (or internal parallel boundaries)
-      else if( boundaryCondition(0,0).eq.0 )then
+      else if( bc(0,0).eq.0 )then
         extra1a=numGhost  ! include interpolation points since we assign ghost points outside these
       end if
       ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-      if( boundaryCondition(1,0).lt.0 )then
+      if( bc(1,0).lt.0 )then
         extra1b=max(0,extra1b) ! over-ride numGhost=-1 : assign ends in periodic directions
-      else if( boundaryCondition(1,0).eq.0 )then
+      else if( bc(1,0).eq.0 )then
         extra1b=numGhost
       end if
-      if( boundaryCondition(0,1).lt.0 )then
+      if( bc(0,1).lt.0 )then
         extra2a=max(0,extra2a) ! over-ride numGhost=-1 : assign ends in periodic directions (or internal parallel boundaries)
-      else if( boundaryCondition(0,1).eq.0 )then
+      else if( bc(0,1).eq.0 )then
         extra2a=numGhost  ! include interpolation points since we assign ghost points outside these
       end if
       ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-      if( boundaryCondition(1,1).lt.0 )then
+      if( bc(1,1).lt.0 )then
         extra2b=max(0,extra2b) ! over-ride numGhost=-1 : assign ends in periodic directions
-      else if( boundaryCondition(1,1).eq.0 )then
+      else if( bc(1,1).eq.0 )then
         extra2b=numGhost
       end if
       if(  nd.eq.3 )then
-       if( boundaryCondition(0,2).lt.0 )then
+       if( bc(0,2).lt.0 )then
          extra3a=max(0,extra3a) ! over-ride numGhost=-1 : assign ends in periodic directions (or internal parallel boundaries)
-       else if( boundaryCondition(0,2).eq.0 )then
+       else if( bc(0,2).eq.0 )then
          extra3a=numGhost  ! include interpolation points since we assign ghost points outside these
        end if
        ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-       if( boundaryCondition(1,2).lt.0 )then
+       if( bc(1,2).lt.0 )then
          extra3b=max(0,extra3b) ! over-ride numGhost=-1 : assign ends in periodic directions
-       else if( boundaryCondition(1,2).eq.0 )then
+       else if( bc(1,2).eq.0 )then
          extra3b=numGhost
        end if
       end if
       do axis=0,nd-1
       do side=0,1
-        if( boundaryCondition(side,axis).gt.0 )then
-          ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,boundaryCondition(side,axis)
+        if( bc(side,axis).gt.0 )then
+          ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,bc(side,axis)
           n1a=gridIndexRange(0,0)
           n1b=gridIndexRange(1,0)
           n2a=gridIndexRange(0,1)
@@ -1724,7 +1738,7 @@ real uzzzz
           end if
         end if ! if bc>0 
         assignTwilightZone=twilightZone
-       if( boundaryCondition(side,axis) == dirichlet )then
+       if( bc(side,axis) == dirichlet )then
          ff=0.
          if( bcApproach.eq.useOneSidedBoundaryConditions )then
             do i3=n3a,n3b
@@ -1895,10 +1909,10 @@ real uzzzz
            write(*,'("bcOpt: implicit: unexpected bcApproach=",i6)') bcApproach
            stop 1111
          end if
-       else if( boundaryCondition(side,axis) == exactBC )then
+       else if( bc(side,axis) == exactBC )then
          write(*,*) "bcOpt: implicit BC for exactBc -- finish me"
          stop 4444
-       else if( boundaryCondition(side,axis) == neumann )then
+       else if( bc(side,axis) == neumann )then
          if( gridType.eq.rectangular )then
            ! compute the outward normal (an1,an2,an3)
            an1 = 0.
@@ -2012,8 +2026,8 @@ real uzzzz
           end do
           end do
           end do
-       else if( boundaryCondition(side,axis) > 0 )then
-         write(*,'("bcOptWave:fill RHS for direct Helmholtz solver, unexpected boundaryCondition=",i4)') boundaryCondition(side,axis)
+       else if( bc(side,axis) > 0 )then
+         write(*,'("bcOptWave:fill RHS for direct Helmholtz solver, unexpected boundaryCondition=",i4)') bc(side,axis)
          stop 6666
        end if
       end do ! end side
@@ -2038,45 +2052,45 @@ real uzzzz
       extra3a=0
       extra3b=0
     end if
-    if( boundaryCondition(0,0).lt.0 )then
+    if( bc(0,0).lt.0 )then
       extra1a=max(0,extra1a) ! over-ride extraForDirichlet=-1 : assign ends in periodic directions (or internal parallel boundaries)
-    else if( boundaryCondition(0,0).eq.0 )then
+    else if( bc(0,0).eq.0 )then
       extra1a=numGhost  ! include interpolation points since we assign ghost points outside these
     end if
     ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-    if( boundaryCondition(1,0).lt.0 )then
+    if( bc(1,0).lt.0 )then
       extra1b=max(0,extra1b) ! over-ride extraForDirichlet=-1 : assign ends in periodic directions
-    else if( boundaryCondition(1,0).eq.0 )then
+    else if( bc(1,0).eq.0 )then
       extra1b=numGhost
     end if
-    if( boundaryCondition(0,1).lt.0 )then
+    if( bc(0,1).lt.0 )then
       extra2a=max(0,extra2a) ! over-ride extraForDirichlet=-1 : assign ends in periodic directions (or internal parallel boundaries)
-    else if( boundaryCondition(0,1).eq.0 )then
+    else if( bc(0,1).eq.0 )then
       extra2a=numGhost  ! include interpolation points since we assign ghost points outside these
     end if
     ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-    if( boundaryCondition(1,1).lt.0 )then
+    if( bc(1,1).lt.0 )then
       extra2b=max(0,extra2b) ! over-ride extraForDirichlet=-1 : assign ends in periodic directions
-    else if( boundaryCondition(1,1).eq.0 )then
+    else if( bc(1,1).eq.0 )then
       extra2b=numGhost
     end if
     if(  nd.eq.3 )then
-     if( boundaryCondition(0,2).lt.0 )then
+     if( bc(0,2).lt.0 )then
        extra3a=max(0,extra3a) ! over-ride extraForDirichlet=-1 : assign ends in periodic directions (or internal parallel boundaries)
-     else if( boundaryCondition(0,2).eq.0 )then
+     else if( bc(0,2).eq.0 )then
        extra3a=numGhost  ! include interpolation points since we assign ghost points outside these
      end if
      ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-     if( boundaryCondition(1,2).lt.0 )then
+     if( bc(1,2).lt.0 )then
        extra3b=max(0,extra3b) ! over-ride extraForDirichlet=-1 : assign ends in periodic directions
-     else if( boundaryCondition(1,2).eq.0 )then
+     else if( bc(1,2).eq.0 )then
        extra3b=numGhost
      end if
     end if
     do axis=0,nd-1
     do side=0,1
-      if( boundaryCondition(side,axis).gt.0 )then
-        ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,boundaryCondition(side,axis)
+      if( bc(side,axis).gt.0 )then
+        ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,bc(side,axis)
         n1a=gridIndexRange(0,0)
         n1b=gridIndexRange(1,0)
         n2a=gridIndexRange(0,1)
@@ -2130,12 +2144,12 @@ real uzzzz
         end if
       end if ! if bc>0 
       assignTwilightZone=twilightZone
-     if( boundaryCondition(side,axis).eq.exactBC )then
+     if( bc(side,axis).eq.exactBC )then
        ! ==== Set the boundary and ghost with the exact solution ====
        ! *wdh* June 13, 2023 
        ! ***** this case is now done in applyBoundaryCondtions.bC *******
        !! assignExactBoundary()
-     else if( boundaryCondition(side,axis).eq.dirichlet )then
+     else if( bc(side,axis).eq.dirichlet )then
        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
          ! --- Assign values on the boundary for CBCs ---
          if( orderOfAccuracy.eq.2 )then
@@ -2375,45 +2389,45 @@ real uzzzz
       extra3a=0
       extra3b=0
     end if
-    if( boundaryCondition(0,0).lt.0 )then
+    if( bc(0,0).lt.0 )then
       extra1a=max(0,extra1a) ! over-ride numGhost=-1 : assign ends in periodic directions (or internal parallel boundaries)
-    else if( boundaryCondition(0,0).eq.0 )then
+    else if( bc(0,0).eq.0 )then
       extra1a=numGhost  ! include interpolation points since we assign ghost points outside these
     end if
     ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-    if( boundaryCondition(1,0).lt.0 )then
+    if( bc(1,0).lt.0 )then
       extra1b=max(0,extra1b) ! over-ride numGhost=-1 : assign ends in periodic directions
-    else if( boundaryCondition(1,0).eq.0 )then
+    else if( bc(1,0).eq.0 )then
       extra1b=numGhost
     end if
-    if( boundaryCondition(0,1).lt.0 )then
+    if( bc(0,1).lt.0 )then
       extra2a=max(0,extra2a) ! over-ride numGhost=-1 : assign ends in periodic directions (or internal parallel boundaries)
-    else if( boundaryCondition(0,1).eq.0 )then
+    else if( bc(0,1).eq.0 )then
       extra2a=numGhost  ! include interpolation points since we assign ghost points outside these
     end if
     ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-    if( boundaryCondition(1,1).lt.0 )then
+    if( bc(1,1).lt.0 )then
       extra2b=max(0,extra2b) ! over-ride numGhost=-1 : assign ends in periodic directions
-    else if( boundaryCondition(1,1).eq.0 )then
+    else if( bc(1,1).eq.0 )then
       extra2b=numGhost
     end if
     if(  nd.eq.3 )then
-     if( boundaryCondition(0,2).lt.0 )then
+     if( bc(0,2).lt.0 )then
        extra3a=max(0,extra3a) ! over-ride numGhost=-1 : assign ends in periodic directions (or internal parallel boundaries)
-     else if( boundaryCondition(0,2).eq.0 )then
+     else if( bc(0,2).eq.0 )then
        extra3a=numGhost  ! include interpolation points since we assign ghost points outside these
      end if
      ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-     if( boundaryCondition(1,2).lt.0 )then
+     if( bc(1,2).lt.0 )then
        extra3b=max(0,extra3b) ! over-ride numGhost=-1 : assign ends in periodic directions
-     else if( boundaryCondition(1,2).eq.0 )then
+     else if( bc(1,2).eq.0 )then
        extra3b=numGhost
      end if
     end if
     do axis=0,nd-1
     do side=0,1
-      if( boundaryCondition(side,axis).gt.0 )then
-        ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,boundaryCondition(side,axis)
+      if( bc(side,axis).gt.0 )then
+        ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,bc(side,axis)
         n1a=gridIndexRange(0,0)
         n1b=gridIndexRange(1,0)
         n2a=gridIndexRange(0,1)
@@ -2467,7 +2481,7 @@ real uzzzz
         end if
       end if ! if bc>0 
       assignTwilightZone=twilightZone
-     if( ( (boundaryCondition(side,axis).ne.dirichlet .and. boundaryCondition(side,axis).ne.exactBC ) .or. bcApproach.eq.useCompatibilityBoundaryConditions ) .and. boundaryCondition(side,axis).gt.0 )then
+     if( ( (bc(side,axis).ne.dirichlet .and. bc(side,axis).ne.exactBC ) .or. bcApproach.eq.useCompatibilityBoundaryConditions ) .and. bc(side,axis).gt.0 )then
        if( orderOfAccuracy.eq.2 )then
        else if( orderOfAccuracy.eq.4 )then
            ! ghost-loops will assign extra points in tangential directions
@@ -2522,45 +2536,45 @@ real uzzzz
       extra3a=0
       extra3b=0
     end if
-    if( boundaryCondition(0,0).lt.0 )then
+    if( bc(0,0).lt.0 )then
       extra1a=max(0,extra1a) ! over-ride extraForNeumann=-1 : assign ends in periodic directions (or internal parallel boundaries)
-    else if( boundaryCondition(0,0).eq.0 )then
+    else if( bc(0,0).eq.0 )then
       extra1a=numGhost  ! include interpolation points since we assign ghost points outside these
     end if
     ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-    if( boundaryCondition(1,0).lt.0 )then
+    if( bc(1,0).lt.0 )then
       extra1b=max(0,extra1b) ! over-ride extraForNeumann=-1 : assign ends in periodic directions
-    else if( boundaryCondition(1,0).eq.0 )then
+    else if( bc(1,0).eq.0 )then
       extra1b=numGhost
     end if
-    if( boundaryCondition(0,1).lt.0 )then
+    if( bc(0,1).lt.0 )then
       extra2a=max(0,extra2a) ! over-ride extraForNeumann=-1 : assign ends in periodic directions (or internal parallel boundaries)
-    else if( boundaryCondition(0,1).eq.0 )then
+    else if( bc(0,1).eq.0 )then
       extra2a=numGhost  ! include interpolation points since we assign ghost points outside these
     end if
     ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-    if( boundaryCondition(1,1).lt.0 )then
+    if( bc(1,1).lt.0 )then
       extra2b=max(0,extra2b) ! over-ride extraForNeumann=-1 : assign ends in periodic directions
-    else if( boundaryCondition(1,1).eq.0 )then
+    else if( bc(1,1).eq.0 )then
       extra2b=numGhost
     end if
     if(  nd.eq.3 )then
-     if( boundaryCondition(0,2).lt.0 )then
+     if( bc(0,2).lt.0 )then
        extra3a=max(0,extra3a) ! over-ride extraForNeumann=-1 : assign ends in periodic directions (or internal parallel boundaries)
-     else if( boundaryCondition(0,2).eq.0 )then
+     else if( bc(0,2).eq.0 )then
        extra3a=numGhost  ! include interpolation points since we assign ghost points outside these
      end if
      ! **NOTE** the bc on the right may be negative even it is not on the left (for parallel)
-     if( boundaryCondition(1,2).lt.0 )then
+     if( bc(1,2).lt.0 )then
        extra3b=max(0,extra3b) ! over-ride extraForNeumann=-1 : assign ends in periodic directions
-     else if( boundaryCondition(1,2).eq.0 )then
+     else if( bc(1,2).eq.0 )then
        extra3b=numGhost
      end if
     end if
     do axis=0,nd-1
     do side=0,1
-      if( boundaryCondition(side,axis).gt.0 )then
-        ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,boundaryCondition(side,axis)
+      if( bc(side,axis).gt.0 )then
+        ! write(*,'(" bcOpt: side,axis,bc=",3i2)') side,axis,bc(side,axis)
         n1a=gridIndexRange(0,0)
         n1b=gridIndexRange(1,0)
         n2a=gridIndexRange(0,1)
@@ -2614,7 +2628,7 @@ real uzzzz
         end if
       end if ! if bc>0 
       assignTwilightZone=twilightZone
-     if( boundaryCondition(side,axis).eq.dirichlet .and. bcApproach.eq.useCompatibilityBoundaryConditions )then
+     if( bc(side,axis).eq.dirichlet .and. bcApproach.eq.useCompatibilityBoundaryConditions )then
        ! -- fill ghost using CBCs ----
        if( orderOfAccuracy.eq.2 )then
        else if( orderOfAccuracy.eq.4 )then
@@ -4178,7 +4192,7 @@ real uzzzz
          write(*,'("CgWave::bcOpt:ERROR:Dirichlet CBC unexpected orderOfAccuracy=",i6)') orderOfAccuracy
          stop 8888
        end if
-     else if( boundaryCondition(side,axis).eq.neumann )then
+     else if( bc(side,axis).eq.neumann )then
        ! ------ NEUMANN ----------
        if( bcApproach.eq.useCompatibilityBoundaryConditions )then
          if( orderOfAccuracy.eq.2 )then
@@ -6417,10 +6431,10 @@ real uzzzz
            stop 8888
          end if
        end if
-     else if(  boundaryCondition(side,axis).eq.dirichlet .or. boundaryCondition(side,axis).eq.exactBC .or. boundaryCondition(side,axis).le.0 )then
+     else if(  bc(side,axis).eq.dirichlet .or. bc(side,axis).eq.exactBC .or. bc(side,axis).le.0 )then
        ! do nothing
      else
-       write(*,'("bcOptWave: unexpected boundaryCondition=",i4)') boundaryCondition(side,axis)
+       write(*,'("bcOptWave: unexpected boundaryCondition=",i4)') bc(side,axis)
        stop 5151
      end if 
     end do ! end side
@@ -6435,14 +6449,14 @@ real uzzzz
            ! --- TWO DIMENSIONS ----
            do side2=0,1
            do side1=0,1
-             if( boundaryCondition(side1,0).gt.0 .and. boundaryCondition(side2,1).gt.0 )then
+             if( bc(side1,0).gt.0 .and. bc(side2,1).gt.0 )then
                ! **fix me** for exact BCs
-               if( ( boundaryCondition(side1,0).ne.dirichlet .and. boundaryCondition(side1,0).ne.neumann ) .or. ( boundaryCondition(side2,1).ne.dirichlet .and. boundaryCondition(side2,1).ne.neumann ) )then
-                 write(*,*) "Un-supported corner bcs =",boundaryCondition(side1,0),boundaryCondition(side2,1)
+               if( ( bc(side1,0).ne.dirichlet .and. bc(side1,0).ne.neumann ) .or. ( bc(side2,1).ne.dirichlet .and. bc(side2,1).ne.neumann ) )then
+                 write(*,*) "Un-supported corner bcs =",bc(side1,0),bc(side2,1)
                  stop 2222
                end if
                symSign = +1. ! even symmetry for D-D or N-N corners
-               if( (boundaryCondition(side1,0).eq.dirichlet .and. boundaryCondition(side2,1).eq.neumann   ) .or. (boundaryCondition(side1,0).eq.neumann   .and. boundaryCondition(side2,1).eq.dirichlet ) ) then
+               if( (bc(side1,0).eq.dirichlet .and. bc(side2,1).eq.neumann   ) .or. (bc(side1,0).eq.neumann   .and. bc(side2,1).eq.dirichlet ) ) then
                  symSign=-1.;
                end if
                is1 = 1-2*side1
@@ -6479,14 +6493,14 @@ real uzzzz
            ! --- TWO DIMENSIONS ----
            do side2=0,1
            do side1=0,1
-             if( boundaryCondition(side1,0).gt.0 .and. boundaryCondition(side2,1).gt.0 )then
+             if( bc(side1,0).gt.0 .and. bc(side2,1).gt.0 )then
                ! **fix me** for exact BCs
-               if( ( boundaryCondition(side1,0).ne.dirichlet .and. boundaryCondition(side1,0).ne.neumann ) .or. ( boundaryCondition(side2,1).ne.dirichlet .and. boundaryCondition(side2,1).ne.neumann ) )then
-                 write(*,*) "Un-supported corner bcs =",boundaryCondition(side1,0),boundaryCondition(side2,1)
+               if( ( bc(side1,0).ne.dirichlet .and. bc(side1,0).ne.neumann ) .or. ( bc(side2,1).ne.dirichlet .and. bc(side2,1).ne.neumann ) )then
+                 write(*,*) "Un-supported corner bcs =",bc(side1,0),bc(side2,1)
                  stop 2222
                end if
                symSign = +1. ! even symmetry for D-D or N-N corners
-               if( (boundaryCondition(side1,0).eq.dirichlet .and. boundaryCondition(side2,1).eq.neumann   ) .or. (boundaryCondition(side1,0).eq.neumann   .and. boundaryCondition(side2,1).eq.dirichlet ) ) then
+               if( (bc(side1,0).eq.dirichlet .and. bc(side2,1).eq.neumann   ) .or. (bc(side1,0).eq.neumann   .and. bc(side2,1).eq.dirichlet ) ) then
                  symSign=-1.;
                end if
                is1 = 1-2*side1

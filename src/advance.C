@@ -53,6 +53,7 @@ extern "C"
             const int&mask,const real&xy, const real&rx,    
             const real&um, const real&u, real&un, const real&f, 
             const real&stencilCoeff, const real& v, const real& vh, real & lapCoeffPtr,
+            const real & etax, const real & etay, const real & etaz, 
             const int&bc, const real & frequencyArray, const int&ipar, const real&rpar, int&ierr );
 
 }
@@ -125,6 +126,8 @@ advance( int it )
     int & plotOptions                 = dbase.get<int>("plotOptions");
     int & plotChoices                 = dbase.get<int>("plotChoices");
     int & plotFrequency               = dbase.get<int>("plotFrequency");
+
+    const int & useSuperGrid          = dbase.get<int>("useSuperGrid");
     
     const int & solveHelmholtz              = dbase.get<int>("solveHelmholtz");
     const int & computeTimeIntegral         = dbase.get<int>("computeTimeIntegral");
@@ -814,7 +817,8 @@ advance( int it )
                                                 solveHelmholtz,                  // ipar[16]
                                                 adjustHelmholtzForUpwinding,     // ipar[17]
                                                 modifiedEquationApproach,        // ipar[18]
-                                                takeFirstStepImplicit            // ipar[19]
+                                                takeFirstStepImplicit,           // ipar[19]
+                                                useSuperGrid                     // ipar[20]
                                                                         };  //
                         real dx[3]={1.,1.,1.};
                         if( isRectangular )
@@ -856,7 +860,7 @@ advance( int it )
                             }
                             RealArray uDot;
                             if( ( option==1 && preComputeUpwindUt ) || 
-                                    ( orderOfAccuracy==4 && !isRectangular) )
+                                    ( orderOfAccuracy==4 && (!isRectangular || useSuperGrid) ) )
                             {
                                 uDot.redim(uLocal);
                                 vptr = uDot.getDataPointer();  // do this for now 
@@ -904,6 +908,22 @@ advance( int it )
                                 assert( stencilCoeff !=NULL );
                                 stencilCoeffptr = stencilCoeff[grid].getDataPointer();
                             }
+                            real temp; 
+                            real *petaxSuperGrid=&temp, *petaySuperGrid=&temp, *petazSuperGrid=&temp;
+                            if( useSuperGrid )
+                            {
+                // useAbsorbingLayer(axis,grid) = true or false if we use an absorbing layer for this axis and grid 
+                                IntegerArray & useAbsorbingLayer = dbase.get<IntegerArray>("useAbsorbingLayer");
+                                RealArray *& etaxSuperGrid = dbase.get<RealArray*>("etaxSuperGrid" );
+                                RealArray *& etaySuperGrid = dbase.get<RealArray*>("etaySuperGrid" );
+                                RealArray *& etazSuperGrid = dbase.get<RealArray*>("etazSuperGrid" );
+                                if( useAbsorbingLayer(0,grid) )
+                                    petaxSuperGrid = etaxSuperGrid[grid].getDataPointer();
+                                if( useAbsorbingLayer(1,grid) )
+                                    petaySuperGrid = etaySuperGrid[grid].getDataPointer();
+                                if( mg.numberOfDimensions()>2 && useAbsorbingLayer(2,grid) )
+                                    petazSuperGrid = etazSuperGrid[grid].getDataPointer();
+                            }
                             int ierr;
                             Real cyclesStart = ProcessorInfo::getCycles();
                             advWave(mg.numberOfDimensions(),
@@ -917,6 +937,7 @@ advance( int it )
                                             *vptr,   // to hold uDot 
                                             *vhptr,  // Pointer to current Helmholtz solution
                                             *lapCoeffptr, // coefficients in Laplacian for HA scheme are stored here
+                                            *petaxSuperGrid, *petaySuperGrid, *petazSuperGrid,   // superGrid layer functions
                                             mg.boundaryCondition(0,0), frequencyArray(0), ipar[0], rpar[0], ierr );
                             Real cycles = ProcessorInfo::getCycles() - cyclesStart;
                             if( false )
@@ -1018,7 +1039,8 @@ advance( int it )
                                             solveHelmholtz,                  // ipar[16]
                                             adjustHelmholtzForUpwinding,     // ipar[17]
                                             modifiedEquationApproach,        // ipar[18]
-                                            takeFirstStepImplicit            // ipar[19]
+                                            takeFirstStepImplicit,           // ipar[19]
+                                            useSuperGrid                     // ipar[20]
                                                                     };  //
                     real dx[3]={1.,1.,1.};
                     if( isRectangular )
@@ -1060,7 +1082,7 @@ advance( int it )
                         }
                         RealArray uDot;
                         if( ( option==1 && preComputeUpwindUt ) || 
-                                ( orderOfAccuracy==4 && !isRectangular) )
+                                ( orderOfAccuracy==4 && (!isRectangular || useSuperGrid) ) )
                         {
                             uDot.redim(uLocal);
                             vptr = uDot.getDataPointer();  // do this for now 
@@ -1108,6 +1130,22 @@ advance( int it )
                             assert( stencilCoeff !=NULL );
                             stencilCoeffptr = stencilCoeff[grid].getDataPointer();
                         }
+                        real temp; 
+                        real *petaxSuperGrid=&temp, *petaySuperGrid=&temp, *petazSuperGrid=&temp;
+                        if( useSuperGrid )
+                        {
+              // useAbsorbingLayer(axis,grid) = true or false if we use an absorbing layer for this axis and grid 
+                            IntegerArray & useAbsorbingLayer = dbase.get<IntegerArray>("useAbsorbingLayer");
+                            RealArray *& etaxSuperGrid = dbase.get<RealArray*>("etaxSuperGrid" );
+                            RealArray *& etaySuperGrid = dbase.get<RealArray*>("etaySuperGrid" );
+                            RealArray *& etazSuperGrid = dbase.get<RealArray*>("etazSuperGrid" );
+                            if( useAbsorbingLayer(0,grid) )
+                                petaxSuperGrid = etaxSuperGrid[grid].getDataPointer();
+                            if( useAbsorbingLayer(1,grid) )
+                                petaySuperGrid = etaySuperGrid[grid].getDataPointer();
+                            if( mg.numberOfDimensions()>2 && useAbsorbingLayer(2,grid) )
+                                petazSuperGrid = etazSuperGrid[grid].getDataPointer();
+                        }
                         int ierr;
                         Real cyclesStart = ProcessorInfo::getCycles();
                         advWave(mg.numberOfDimensions(),
@@ -1121,6 +1159,7 @@ advance( int it )
                                         *vptr,   // to hold uDot 
                                         *vhptr,  // Pointer to current Helmholtz solution
                                         *lapCoeffptr, // coefficients in Laplacian for HA scheme are stored here
+                                        *petaxSuperGrid, *petaySuperGrid, *petazSuperGrid,   // superGrid layer functions
                                         mg.boundaryCondition(0,0), frequencyArray(0), ipar[0], rpar[0], ierr );
                         Real cycles = ProcessorInfo::getCycles() - cyclesStart;
                         if( false )

@@ -20,10 +20,11 @@ $cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1;
 $rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat rectangular grids explicitly
 $orderInTime=-1;  # -1 = use default
 $chooseImplicitTimeStepFromCFL=1; 
+$useSuperGrid=0; 
 GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"numPeriods=i"=>\$numPeriods,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"ad4=f"=>\$ad4,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"tf=f"=>\$tf,"iMode=i"=>\$imode,\
             "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,\
-            "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,\
+            "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,"useSuperGrid=i"=>\$useSuperGrid,\
             "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f"=>\$amp,"show=s"=>\$show,"upwind=i"=>\$upwind,\
             "debug=i"=>\$debug,"bcApproach=s"=>\$bcApproach,"meApproach=s"=>\$meApproach,"rectangular=s"=>\$rectangular );
 # 
@@ -31,6 +32,7 @@ if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
 if( $bc eq "e" ){ $bc="evenSymmetry"; }
 if( $bc eq "r" ){ $bc="radiation"; }
+if( $bc eq "a" ){ $bc="absorbing"; }
 # 
 # ------ Start cgWave setup ------
 # time-stepping : explicit/implicit
@@ -45,6 +47,9 @@ interactiveMode $imode
 debug $debug
 tPlot $tp 
 tFinal $tf
+#
+use superGrid $useSuperGrid
+# pause
 # 
 $cmd="#";
 if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }

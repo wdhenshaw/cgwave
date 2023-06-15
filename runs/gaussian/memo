@@ -1,6 +1,55 @@
 
 
 **************************************************
+**** Thurs June 15, 2023
+
+START SUPER-GRID CARTESIAN
+
+
+TRY 2D ORDER 6 FD26 --> FIX ME BC's 
+cgWave gaussian.cmd -g=square256.order6.ng4 -beta=400 -x0=0.5 -y0=0.5 -omega=100 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a -go=halt
+
+TRY 3D: 
+3D order=4  -- looks ok 
+cgWave gaussian.cmd -g=box8.order4.ng3 -beta=400 -x0=0.5 -y0=0.5 -z0=0.5 -omega=100 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a  -go=halt
+
+3D order=2 -- looks ok
+cgWave gaussian.cmd -g=box8.order2 -beta=400 -x0=0.5 -y0=0.5 -z0=0.5 -omega=100 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a  -go=halt
+
+
+TRY ORDER=4 .. starts to work : 2D 
+
+cgWave gaussian.cmd -g=square256.order4.ng3 -beta=400 -x0=0.5 -y0=0.5 -omega=100 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a  -go=halt
+
+cgWave gaussian.cmd -g=nonSquare256.order4.ng3 -beta=400 -x0=0.5 -y0=0.5 -omega=100 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a  -go=halt
+
+
+
+Starts to work: 
+cgWave gaussian.cmd -g=square256.order2 -beta=400 -x0=0.5 -y0=0.5 -omega=100 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a  -go=halt
+
+
+cgWave gaussian.cmd -g=nonSquare256.order2 -beta=400 -x0=0.5 -y0=0.5 -omega=100 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a  -go=halt
+
+
+**************************************************
+**** Wed June 14, 2023
+
+Example for SuperGrid:
+
+USE absorbing BC's to mark superGrid boundaries
+
+SUPERGRID -- STARTS TO WORK: 
+cgWave gaussian.cmd -g=nonSquare512.order2 -beta=400 -x0=0.5 -y0=0.5 -omega=100 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a  -go=halt
+
+cgWave gaussian.cmd -g=nonSquare256.order2 -beta=100 -x0=0.5 -y0=0.5 -omega=50 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a  -go=halt
+
+
+cgWave gaussian.cmd -g=square256.order2 -beta=100 -x0=0.5 -y0=0.5 -omega=50 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a  -go=halt
+
+
+
+**************************************************
 **** Sat Aug 13, 2022
 
 REVISIT IMPLICIT TIME-STEPPING
