@@ -71,7 +71,11 @@ getTimeStep()
   RealArray & dxMinMax = dbase.get<RealArray>("dxMinMax");
   dxMinMax.redim(cg.numberOfComponentGrids(),2);
 
-  // gridCFL(grid) = effective CFL number for each grid 
+  // -------------------------------------------------------------------
+  // gridCFL(grid) =  "c/dx" = effective CFL/dt number for each grid 
+  // NOTE: We store this variable since "dt" may be changed later
+  // -------------------------------------------------------------------
+
   if( !dbase.has_key("gridCFL") )
   {
     RealArray & gridCFL = dbase.put<RealArray>("gridCFL");
@@ -103,7 +107,7 @@ getTimeStep()
       dxMinMax(grid,0)= numberOfDimensions == 2? min(dx[0],dx[1]) : min(dx[0],dx[1],dx[2]);
       dxMinMax(grid,1)= numberOfDimensions == 2? min(dx[0],dx[1]) : max(dx[0],dx[1],dx[2]);
 
-      gridCFL(grid)=dtGrid; // adjusted below 
+      gridCFL(grid)= 1./(dtGrid/cfl);  // = "c/dx"
     }
     else
     {
@@ -217,7 +221,7 @@ getTimeStep()
 
         dtGrid = (cfl/c) * dxMin;
 
-        gridCFL(grid)=dtGrid; // adjusted below 
+        gridCFL(grid)= 1./(dtGrid/cfl); // "c/dx"
 
         printF("getTimeStep: grid=%d, dxMin=%9.2e, dxMax=%9.2e, dt=%9.3e\n",grid,dxMin,dxMax,dtGrid);        
       }
@@ -228,7 +232,7 @@ getTimeStep()
     {
       // ----- order in time =2 may have a smaller stability bound ----
       dtGrid *= stabilityBound; 
-      gridCFL(grid) *= stabilityBound;
+      // gridCFL(grid) *= stabilityBound;
     }    
 
     dtExplicit = min(dtExplicit,dtGrid);
@@ -261,11 +265,11 @@ getTimeStep()
     }
   }
 
-  // Save the grid CFL number (used for variable coefficient upwinding)
-  gridCFL = cfl*( dt/gridCFL );   //  **check me : should be adjust this if dtMax is chosen ?? ++++++++++++++++++++=
+  // Save the grid CFL number (used for upwind dissipation coefficient in advWave.bf90 )
+  // gridCFL = cfl*( dt/gridCFL );   //  **check me : should be adjust this if dtMax is chosen ?? ++++++++++++++++++++=
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
   {
-    printF("getTimeStep: grid=%d: gridCFL=%10.2e\n",grid,gridCFL(grid));
+    printF("getTimeStep: grid=%d: gridCFL = c/dx =%10.2e, gridCFL*dt=%10.2e\n",grid,gridCFL(grid),gridCFL(grid)*dt);
   }
 
 

@@ -150,9 +150,22 @@ ogshow = $(current)/../ogshow
 
 VPATH = src:obj
 
-all = cgWave cgwh
+all = cgWave cgwh info
 # all = cgWave
 all: $(all);
+
+info:; @echo "INFO: type 'make check' or 'make check-quiet' to run regression tests"
+# ----- RUN REGRESSION TESTS ---
+check-all:
+	$(MAKE) -C checkEigen
+	$(MAKE) -C checkWave
+	$(MAKE) -C checkWaveHoltz
+
+check-quiet:
+	@$(MAKE) -s -C checkEigen check-quiet
+	@$(MAKE) -s -C checkWave check-quiet
+	@$(MAKE) -s -C checkWaveHoltz check-quiet
+
 
 
 Oges = $(Overture)/Oges
@@ -169,7 +182,7 @@ OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/u
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
        obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
        obj/takeFirstStep.o obj/deflation.o obj/eigenModes.o \
-       obj/rjbesl.o obj/rybesl.o obj/buildSuperGrid.o
+       obj/rjbesl.o obj/rybesl.o obj/buildSuperGrid.o obj/residual.o
        
 # LCBC files: 
 OBJC += obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_data.o \
@@ -189,7 +202,8 @@ FNOBJO = obj/advWave.o\
          obj/bcOptWave.o \
          obj/bcOptWave2dOrder2.o obj/bcOptWave2dOrder4.o \
          obj/bcOptWave3dOrder2.o \
-         obj/getWaveDerivatives.o obj/hierDeriv.o
+         obj/getWaveDerivatives.o obj/hierDeriv.o \
+         obj/abcWave.o
 
 # New high-order accurate modified equation versions
 FNOBJO += obj/advWaveME.o \
@@ -224,7 +238,7 @@ FNOBJO += obj/advWaveStencil.o \
 
 # For regression tests: (Note: the master version of checkCheckFiles is in cg/common/src --> could move to Overture)
 checkCheckFiles = obj/checkCheckFiles.o 
-checkCheckFiles: $(checkCheckFiles); $(CXX) $(CCFLAGS) -o check/checkCheckFiles $(checkCheckFiles) $(LIBS)
+checkCheckFiles: $(checkCheckFiles); $(CXX) $(CCFLAGS) -o checkWave/checkCheckFiles $(checkCheckFiles) $(LIBS)
 
 # --- CgWave solver ---
 # ogmgFiles = ${OvertureCheckout}/ogmg/smooth.o
@@ -354,6 +368,7 @@ src/solveSLEPc.C: src/solveSLEPc.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)
 src/tcmWideStencil.C: src/tcmWideStencil.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include tcmWideStencil.bC
 
 src/takeFirstStep.C: src/takeFirstStep.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include takeFirstStep.bC
+src/residual.C: src/residual.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include residual.bC
 
 src/deflation.C: src/deflation.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include deflation.bC
 src/eigenModes.C: src/eigenModes.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include eigenModes.bC
@@ -433,6 +448,8 @@ src/bcOptWave.f90: src/bcOptWave.bf90 src/knownSolutionMacros.h maple/defineGetD
 	      @cd src; $(BPP) -clean -quiet -I$(Overture)/include bcOptWave.bf90	
 
 
+src/abcWave.f90: src/abcWave.bf90 include/planeWave.h include/bcDefineFortranInclude.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include abcWave.bf90
+
 src/bcOptWave2dOrder2.f90 : src/bcOptWave.f90
 src/bcOptWave2dOrder4.f90 : src/bcOptWave.f90
 src/bcOptWave2dOrder6.f90 : src/bcOptWave.f90
@@ -478,6 +495,8 @@ obj/getInitialConditions.o : src/getInitialConditions.C src/CgWave.h; $(CXX) $(C
 obj/saveShow.o : src/saveShow.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getErrors.o : src/getErrors.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/takeFirstStep.o : src/takeFirstStep.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
+
+obj/residual.o : src/residual.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 
 obj/rjbesl.o : src/rjbesl.f; $(FC) $(FFLAGSO) -o $@ -c $<  
 obj/rybesl.o : src/rybesl.f; $(FC) $(FFLAGSO) -o $@ -c $<  

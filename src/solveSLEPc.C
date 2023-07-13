@@ -369,7 +369,10 @@ solveSLEPc(int argc,char **args)
 
     realCompositeGridFunction & vOld = cgWave.dbase.get<realCompositeGridFunction>("vOld");
     Range all;
-    vOld.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+    const int & numCompWaveHoltz = cgWave.dbase.get<int>("numCompWaveHoltz");  
+    vOld.updateToMatchGrid(cg,all,all,all,numCompWaveHoltz);
+
+  // vOld.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
     CompositeGridOperators & operators = cgWave.dbase.get<CompositeGridOperators>("operators");
     vOld.setOperators(operators);
 

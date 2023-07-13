@@ -21,6 +21,17 @@
 ! define macros to evaluate derivatives for the 6th order method (from maple/makeGetDerivativesMacros.maple)
 ! #Include "../maple/defineGetSixthDerivativesMacros.h"
 
+! From bcOptSmFOS.bf
+! DataBase *pdb = &parameters.dbase;
+! double precision pdb  ! pointer to data base
+! ====================================================================
+! Look up an integer parameter from the data base
+! ====================================================================
+
+! ====================================================================
+! Look up a real parameter from the data base
+! ====================================================================
+
 ! ======================================================================================
 !   Evaluate the TZ exact solution in 2D
 ! ======================================================================================
@@ -579,7 +590,7 @@
 
 
 
-      subroutine advWaveME( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+      subroutine advWaveME( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
 !======================================================================
 !   Advance a time step for Maxwells eqution
 !     OPTIMIZED MODIFIED EQUATION VERSIONS
@@ -609,6 +620,7 @@
    integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
    integer bc(0:1,0:2),ierr  
    real frequencyArray(0:*)
+   double precision pdb  ! pointer to the data base
    integer ipar(0:*)
    real rpar(0:*)
       ! integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
@@ -666,7 +678,7 @@
 
   else if( orderOfAccuracy.eq.4 ) then
     if( nd.eq.2 .and. gridType.eq.rectangular )then
-      call advWaveME2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+      call advWaveME2dOrder4r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
    !  else if(nd.eq.2 .and. gridType.eq.curvilinear )then
    !    call advWaveME2dOrder4c( ARGLIST() )
    !  else if(  nd.eq.3 .and. gridType.eq.rectangular )then
@@ -681,11 +693,11 @@
   else if( orderOfAccuracy.eq.6 ) then
 
     if( nd.eq.2 .and. gridType.eq.rectangular )then
-      call advWaveME2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+      call advWaveME2dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
     ! else if(nd.eq.2 .and. gridType.eq.curvilinear )then
     !   !call advWaveME2dOrder6c( ARGLIST() )
     else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-      call advWaveME3dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+      call advWaveME3dOrder6r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
     ! else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
     !   !call advWaveME3dOrder6c( ARGLIST() )
    else
@@ -695,11 +707,11 @@
   else if( orderOfAccuracy.eq.8 ) then
 
     if( nd.eq.2 .and. gridType.eq.rectangular )then
-      call advWaveME2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+      call advWaveME2dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
     !  else if(nd.eq.2 .and. gridType.eq.curvilinear )then
     !    call advWaveME2dOrder8c( ARGLIST() )
     else if(  nd.eq.3 .and. gridType.eq.rectangular )then
-      call advWaveME3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+      call advWaveME3dOrder8r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
     !  else if(  nd.eq.3 .and. gridType.eq.curvilinear )then
     !    call advWaveME3dOrder8c( ARGLIST() )
     else

@@ -53,7 +53,11 @@ int outputMatlabFile( const aString & matlabFileName );
 int plotEigenVectors( realCompositeGridFunction & eigenVectors, const RealArray & eig, const aString & name, GL_GraphicsInterface & ps, GraphicsParameters & psp );
 
 // Compute the residual in the current solution
-real residual( int useAdjustedOmega = 2 );
+real residual( RealArray & maxRes, int useAdjustedOmega = 2 );
+
+// Compute the residual a grid function
+real residual( RealCompositeGridFunction & uh, RealArray & maxRes, int useAdjustedOmega = 2 );
+real residual( RealCompositeGridFunction & uh, RealCompositeGridFunction & f, RealArray & maxRes, int useAdjustedOmega = 2 );
 
 // save check file -- used for regression and convergence tests
 int saveCheckFile( int checkFileCounter, Real maxErr, Real solutionNorm );

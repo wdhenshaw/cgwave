@@ -52,8 +52,8 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
   if( option=="none" ) // No user defined forcing has been specified
    return 0;
 
-  const real t =rparam[0];       // Add the forcing at this time.
-  const real dt =rparam[1];      // Current time step.
+  const Real t =rparam[0];       // Add the forcing at this time.
+  const Real dt =rparam[1];      // Current time step.
   const int & grid = iparam[0];  // Here is the grid we are on 
   const int & current = iparam[1];
 
@@ -133,26 +133,28 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
     {
       for( int m=0; m<numberOfGaussianSources(freq); m++ )
       {
-        const real a    = gaussianParameters(0,m,freq);
-        const real beta = gaussianParameters(1,m,freq); 
-        // const real omega= gaussianParameters(2,m,freq); 
-        const real p    = gaussianParameters(3,m,freq);
-        const real x0   = gaussianParameters(4,m,freq); 
-        const real y0   = gaussianParameters(5,m,freq); 
-        const real z0   = gaussianParameters(6,m,freq);
-        const real t0   = gaussianParameters(7,m,freq);
+        const Real a    = gaussianParameters(0,m,freq);
+        const Real beta = gaussianParameters(1,m,freq); 
+        // const Real omega= gaussianParameters(2,m,freq); 
+        const Real p    = gaussianParameters(3,m,freq);
+        const Real x0   = gaussianParameters(4,m,freq); 
+        const Real y0   = gaussianParameters(5,m,freq); 
+        const Real z0   = gaussianParameters(6,m,freq);
+        const Real t0   = gaussianParameters(7,m,freq);
+
+        const Real betaSq = beta*beta; // June 19, 2023 : switch beta to beta^2 to match matlab 
 
         // Use frequencyArray so we get any adjusted frequencies: --> doesn't matter if only evaluated at t=0
         Real omega = frequencyArray(freq);
 
         if( true || t0 < 2.*dt )
-          printF(">>> Gaussian source %i, freq=%d: setting a=%8.2e, beta=%8.2e, omega=%8.2e, p=%8.2e, x0=%8.2e, y0=%8.2e, "
-                 "z0=%8.2e, t0=%8.2e, t=%8.2e\n", m,freq,a,beta,omega,p,x0,y0,z0,t0,t);
+          printF("\n >>> Gaussian source %i, freq=%d: setting a=%8.2e, beta=%8.2e, omega=%8.2e, p=%8.2e, x0=%8.2e, y0=%8.2e, "
+                 "z0=%8.2e, t0=%8.2e, t=%8.2e, fSign=%g\n\n", m,freq,a,beta,omega,p,x0,y0,z0,t0,t,fSign);
 
-        // const real cost=cos(2.*Pi*omega*(t-t0));
-        // const real sint=sin(2.*Pi*omega*(t-t0));
-        const real cost=cos(omega*(t-t0));
-        // const real sint=sin(omega*(t-t0));
+        // const Real cost=cos(2.*Pi*omega*(t-t0));
+        // const Real sint=sin(2.*Pi*omega*(t-t0));
+        const Real cost=cos(omega*(t-t0));
+        // const Real sint=sin(omega*(t-t0));
 
         if( mg.numberOfDimensions()==2 )
         {
@@ -162,7 +164,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
             real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1);
             real rSq = SQR(x-x0)+SQR(y-y0);
             // real g = a*cost*exp( -beta*pow( rSq, p ) );
-            real aExp = a*exp( -beta*pow( rSq, p ) );
+            real aExp = a*exp( -betaSq*pow( rSq, p ) );
             // real g = aExp*cost;
             real g = aExp*cost;
             real rPow = p==1. ? 1 :  pow(rSq,p-1.);
@@ -179,7 +181,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
             real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1), z=xLocal(i1,i2,i3,2);
             real rSq =  SQR(x-x0)+SQR(y-y0)+SQR(z-z0);
             // real g = a*cost*exp( -beta*pow( rSq, p ) );
-            real aExp = a*exp( -beta*pow( rSq, p ) );
+            real aExp = a*exp( -betaSq*pow( rSq, p ) );
             real g = aExp*cost;
             real rPow = pow(rSq,p-1.);
             
@@ -193,7 +195,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
   else if( option=="boxHelmholtz" )
   {
 
-    const real & c = dbase.get<real>("c");
+    const Real & c = dbase.get<real>("c");
 
     // --- Get data from the userDefinedKnownSolution ---
     
@@ -225,7 +227,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
 
       if( mg.numberOfDimensions()==2 )
       {
-        const real amp = fSign*( -SQR(omega) + c*c*( kx*kx + ky*ky ) );
+        const Real amp = fSign*( -SQR(omega) + c*c*( kx*kx + ky*ky ) );
         FOR_3D(i1,i2,i3,I1,I2,I3)
         {
           real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1);
@@ -236,7 +238,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
       else
       {
         // --- 3D ---
-        const real amp = fSign*( -SQR(omega) + c*c*( kx*kx + ky*ky + kz*kz ) );
+        const Real amp = fSign*( -SQR(omega) + c*c*( kx*kx + ky*ky + kz*kz ) );
         FOR_3D(i1,i2,i3,I1,I2,I3)
         {
           real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1), z=xLocal(i1,i2,i3,2);
@@ -249,22 +251,22 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
   else if( option=="polyPeriodic" )
   {
 
-    const real & c = dbase.get<real>("c");
+    const Real & c = dbase.get<real>("c");
 
     // --- Get data from the userDefinedKnownSolution ---
-    const real & omega        = dbase.get<Real>("omegaPolyPeriodic");
+    const Real & omega        = dbase.get<Real>("omegaPolyPeriodic");
     const int & degreeInSpace = dbase.get<int>("degreeInSpacePolyPeriodic");
-    const real & a0           = dbase.get<Real>("a0PolyPeriodic");
-    const real & a1           = dbase.get<Real>("a1PolyPeriodic");
-    const real & b1           = dbase.get<Real>("b1PolyPeriodic");
-    const real & c1           = dbase.get<Real>("c1PolyPeriodic"); 
+    const Real & a0           = dbase.get<Real>("a0PolyPeriodic");
+    const Real & a1           = dbase.get<Real>("a1PolyPeriodic");
+    const Real & b1           = dbase.get<Real>("b1PolyPeriodic");
+    const Real & c1           = dbase.get<Real>("c1PolyPeriodic"); 
 
     if( true || t<= 2.*dt )
       printF("userDefinedForcing: eval polyPeriodic omega=%g, a0=%g, a1=%g, b1=%g, c1=%g at t=%9.3e\n",omega,a0,a1,b1,c1,t);       
     
     if( mg.numberOfDimensions()==2 )
     {
-      const real amp = fSign*( -SQR(omega) ); 
+      const Real amp = fSign*( -SQR(omega) ); 
       FOR_3D(i1,i2,i3,I1,I2,I3)
       {
         real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1);
@@ -275,7 +277,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
     else
     {
       // --- 3D ---
-      const real amp = fSign*( -SQR(omega) );
+      const Real amp = fSign*( -SQR(omega) );
       FOR_3D(i1,i2,i3,I1,I2,I3)
       {
         real x= xLocal(i1,i2,i3,0), y=xLocal(i1,i2,i3,1), z=xLocal(i1,i2,i3,2);
@@ -369,13 +371,13 @@ setupUserDefinedForcing()
       if( numberOfDimensions==2 )
       {
         printF("The Gaussian source in 2D is of the form:\n"
-               " u(x,y,t) = a*cos(omega*(t-t0) )*exp( -beta*[ (x-x0)^2 + (y-y0)^2 ]^p )\n"
+               " u(x,y,t) = a*cos(omega*(t-t0) )*exp( -beta^2*[ (x-x0)^2 + (y-y0)^2 ]^p )\n"
           );
       }
       else
       {
         printF("The Gaussian source in 3D is of the form:\n"
-               " g(x,y,z,t) = a*cos( omega*(t-t0) )*exp( -beta*[ (x-x0)^2 + (y-y0)^2 + (z-z0)^2 ]^p )\n"
+               " g(x,y,z,t) = a*cos( omega*(t-t0) )*exp( -beta^2*[ (x-x0)^2 + (y-y0)^2 + (z-z0)^2 ]^p )\n"
           );
       }
       

@@ -3,7 +3,7 @@ cgwh= $(HOME)/research/cgwave/bin/cgwh
 WAHO= $(HOME)/Dropbox/AMP/waho
 
 
-# Confirmationf of convergence analysis:
+# Confirmation of convergence analysis:
 # Np=4 
 # cgwh -noplot trigHelmholtz.cmd -g=square64.order4 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -omega=5.1 -kx=1.25 -ky=1.25 -ts=explicit -dtMax=.1 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=100 -matlab=square64Freq3Np4 -go=dfk > square64Freq3Np4.out
 # Np=2 

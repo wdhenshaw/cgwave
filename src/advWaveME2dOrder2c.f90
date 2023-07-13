@@ -1,5 +1,5 @@
 ! This file automatically generated from advWaveME.bf90 with bpp.
-  subroutine advWaveME2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+  subroutine advWaveME2dOrder2c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
   ! subroutine advWaveME2dOrder2c(nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,!                 mask,xy,rsxy,  um,u,un, f,fa, v, vh,  bc, frequencyArray, ipar, rpar, ierr )
  !======================================================================
  !   Advance a time step for Waves equations
@@ -30,6 +30,7 @@
    integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
    integer bc(0:1,0:2),ierr  
    real frequencyArray(0:*)
+   double precision pdb  ! pointer to the data base
    integer ipar(0:*)
    real rpar(0:*)
   ! integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
@@ -100,7 +101,8 @@
   real evyyyyzz(0:1)
   real evyyzzzz(0:1)
   real evxxyyzz(0:1)
-  real omega, coswt
+  real omega, coswt, damp
+  integer ok,getInt,getReal
   integer maxFreq
   parameter( maxFreq=500 )
   real cosFreqt(0:maxFreq), coswtAve(0:maxFreq), cosineFactor(0:maxFreq)
@@ -209,6 +211,16 @@
    adjustOmega                  = ipar(15)
    solveHelmholtz               = ipar(16)
    adjustHelmholtzForUpwinding  = ipar(17)
+   ! new way: extract parameters from the dataBase
+    ok=getReal(pdb,'damp',damp) 
+    if( ok.eq.0 )then
+      write(*,'("*** advWaveME:getReal:ERROR: unable to find damp")') 
+      stop 1133
+    end if
+   if( damp.ne.0. )then
+     write(*,*) "advWaveME: FINISH ME FOR damping"
+     stop 1010
+   end if 
    fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
    fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
    ! ** fix me ***

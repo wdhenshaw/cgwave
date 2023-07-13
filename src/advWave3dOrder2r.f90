@@ -1,5 +1,5 @@
 ! This file automatically generated from advWave.bf90 with bpp.
-    subroutine advWave3dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+    subroutine advWave3dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
    !======================================================================
    !   Advance a time step for Waves equations
    !
@@ -29,6 +29,7 @@
      integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
      integer bc(0:1,0:2),ierr  
      real frequencyArray(0:*)
+     double precision pdb  ! pointer to the data base
      integer ipar(0:*)
      real rpar(0:*)
     ! integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
@@ -50,10 +51,10 @@
     ! real rpar(0:*)
    !     ---- local variables -----
     integer m1a,m1b,m2a,m2b,m3a,m3b,numGhost,nStart,nEnd,mt
-    integer c,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
+    integer ic,i1,i2,i3,n,gridType,orderOfAccuracy,orderInTime,axis,dir,grid,freq
     integer addForcing,orderOfDissipation,option,gridIsImplicit,preComputeUpwindUt,modifiedEquationApproach
     integer useNewForcingMethod,numberOfForcingFunctions,fcur,fnext,fprev,numberOfFrequencies
-    real t,tm,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz
+    real t,tm,c,cc,dt,dy,dz,cdt,cdtdx,cdtdy,cdtdz
     ! ,adc,adcdt,add,adddt
     real dt4by12
     ! logical addDissipation
@@ -2281,12 +2282,12 @@ real uzzzzzz
     ! forcing correction functions: 
     real lap2d2f,f2drme44, lap3d2f, f3drme44, f2dcme44, f3dcme44, ff
     ! real cdSosupx,cdSosupy,cdSosupz
-    real adSosup,sosupParameter, uDotFactor, adxSosup(0:2)
+    real adSosup,sosupParameter, uDotFactor, adxSosup(0:2), adSosupOld
     integer useSosupDissipation,sosupDissipationOption
     integer updateSolution,updateDissipation,computeUt
     integer ec 
     real ep 
-    real fv(0:1) , ev(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1)
+    real fv(0:1) , ev(0:1), evt(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1)
     real evxxxx(0:1), evxxyy(0:1), evyyyy(0:1), evxxzz(0:1), evyyzz(0:1), evzzzz(0:1), evtttt(0:1)
     real evtttttt(0:1)
     real evxxxxxx(0:1)
@@ -2299,7 +2300,7 @@ real uzzzzzz
     real evyyyyzz(0:1)
     real evyyzzzz(0:1)
     real evxxyyzz(0:1)
-    real omega, coswt
+    real omega, coswt, damp
     integer maxFreq
     parameter( maxFreq=500 )
     real cosFreqt(0:maxFreq), coswtAve(0:maxFreq), cosineFactor(0:maxFreq)
@@ -2309,7 +2310,11 @@ real uzzzzzz
     integer takeImplicitFirstStep
     real upw,maxDiff,umj
     real upwindCoeff(-3:3,0:3) 
-    real ts1,ts2,ts3,ts4,tsf
+    integer useSimplifiedDissipation
+    real upwindDissipationCoefficient,dissSafetyFactor
+    real cn,cm,cLap,cLapSq,cf
+    real ts1,ts2,ts3,ts4,ts5,ts6,tsf
+    integer ok,getInt,getReal
     integer forcingOption
     ! forcingOptions -- these should match ForcingEnum in CgWave.h 
     ! enum ForcingOptionEnum
@@ -3444,37 +3449,39 @@ real uzzzzzz
     ! 3D laplacian squared = f.xxxx + f.yyyy + f.zzzz + 2 (f.xxyy + f.xxzz + f.yyzz )
     fLapSq23r(i1,i2,i3,kd)= ( 6.*f(i1,i2,i3,kd)   - 4.*(f(i1+1,i2,i3,kd)+f(i1-1,i2,i3,kd))    +(f(i1+2,i2,i3,kd)+f(i1-2,i2,i3,kd)) )/(dx(0)**4) +( 6.*f(i1,i2,i3,kd)    -4.*(f(i1,i2+1,i3,kd)+f(i1,i2-1,i3,kd))    +(f(i1,i2+2,i3,kd)+f(i1,i2-2,i3,kd)) )/(dx(1)**4)  +( 6.*f(i1,i2,i3,kd)    -4.*(f(i1,i2,i3+1,kd)+f(i1,i2,i3-1,kd))    +(f(i1,i2,i3+2,kd)+f(i1,i2,i3-2,kd)) )/(dx(2)**4)  +( 8.*f(i1,i2,i3,kd)     -4.*(f(i1+1,i2,i3,kd)  +f(i1-1,i2,i3,kd)  +f(i1  ,i2+1,i3,kd)+f(i1  ,i2-1,i3,kd))   +2.*(f(i1+1,i2+1,i3,kd)+f(i1-1,i2+1,i3,kd)+f(i1+1,i2-1,i3,kd)+f(i1-1,i2-1,i3,kd)) )/(dx(0)**2*dx(1)**2)+( 8.*f(i1,i2,i3,kd)     -4.*(f(i1+1,i2,i3,kd)  +f(i1-1,i2,i3,kd)  +f(i1  ,i2,i3+1,kd)+f(i1  ,i2,i3-1,kd))   +2.*(f(i1+1,i2,i3+1,kd)+f(i1-1,i2,i3+1,kd)+f(i1+1,i2,i3-1,kd)+f(i1-1,i2,i3-1,kd)) )/(dx(0)**2*dx(2)**2)+( 8.*f(i1,i2,i3,kd)     -4.*(f(i1,i2+1,i3,kd)  +f(i1,i2-1,i3,kd)  +f(i1,i2  ,i3+1,kd)+f(i1,i2  ,i3-1,kd))   +2.*(f(i1,i2+1,i3+1,kd)+f(i1,i2-1,i3+1,kd)+f(i1,i2+1,i3-1,kd)+f(i1,i2-1,i3-1,kd)) )/(dx(1)**2*dx(2)**2)
      ! 2D laplacian squared = u.xxxx + 2 u.xxyy + u.yyyy
-     lap2d2Pow2(i1,i2,i3,c)= ( 6.*u(i1,i2,i3,c)   - 4.*(u(i1+1,i2,i3,c)+u(i1-1,i2,i3,c))    +(u(i1+2,i2,i3,c)+u(i1-2,i2,i3,c)) )*dxi4 +( 6.*u(i1,i2,i3,c)    -4.*(u(i1,i2+1,i3,c)+u(i1,i2-1,i3,c))    +(u(i1,i2+2,i3,c)+u(i1,i2-2,i3,c)) )*dyi4  +( 8.*u(i1,i2,i3,c)     -4.*(u(i1+1,i2,i3,c)+u(i1-1,i2,i3,c)+u(i1,i2+1,i3,c)+u(i1,i2-1,i3,c))   +2.*(u(i1+1,i2+1,i3,c)+u(i1-1,i2+1,i3,c)+u(i1+1,i2-1,i3,c)+u(i1-1,i2-1,i3,c)) )*dxdyi2
+     lap2d2Pow2(i1,i2,i3,ic)= ( 6.*u(i1,i2,i3,ic)   - 4.*(u(i1+1,i2,i3,ic)+u(i1-1,i2,i3,ic))    +(u(i1+2,i2,i3,ic)+u(i1-2,i2,i3,ic)) )*dxi4 +( 6.*u(i1,i2,i3,ic)    -4.*(u(i1,i2+1,i3,ic)+u(i1,i2-1,i3,ic))    +(u(i1,i2+2,i3,ic)+u(i1,i2-2,i3,ic)) )*dyi4  +( 8.*u(i1,i2,i3,ic)     -4.*(u(i1+1,i2,i3,ic)+u(i1-1,i2,i3,ic)+u(i1,i2+1,i3,ic)+u(i1,i2-1,i3,ic))   +2.*(u(i1+1,i2+1,i3,ic)+u(i1-1,i2+1,i3,ic)+u(i1+1,i2-1,i3,ic)+u(i1-1,i2-1,i3,ic)) )*dxdyi2
      ! 3D laplacian squared = u.xxxx + u.yyyy + u.zzzz + 2 (u.xxyy + u.xxzz + u.yyzz )
-     lap3d2Pow2(i1,i2,i3,c)= ( 6.*u(i1,i2,i3,c)   - 4.*(u(i1+1,i2,i3,c)+u(i1-1,i2,i3,c))    +(u(i1+2,i2,i3,c)+u(i1-2,i2,i3,c)) )*dxi4 +(  +6.*u(i1,i2,i3,c)    -4.*(u(i1,i2+1,i3,c)+u(i1,i2-1,i3,c))    +(u(i1,i2+2,i3,c)+u(i1,i2-2,i3,c)) )*dyi4+(  +6.*u(i1,i2,i3,c)    -4.*(u(i1,i2,i3+1,c)+u(i1,i2,i3-1,c))    +(u(i1,i2,i3+2,c)+u(i1,i2,i3-2,c)) )*dzi4+(8.*u(i1,i2,i3,c)     -4.*(u(i1+1,i2,i3,c)+u(i1-1,i2,i3,c)+u(i1,i2+1,i3,c)+u(i1,i2-1,i3,c))   +2.*(u(i1+1,i2+1,i3,c)+u(i1-1,i2+1,i3,c)+u(i1+1,i2-1,i3,c)+u(i1-1,i2-1,i3,c)) )*dxdyi2 +(8.*u(i1,i2,i3,c)     -4.*(u(i1+1,i2,i3,c)+u(i1-1,i2,i3,c)+u(i1,i2,i3+1,c)+u(i1,i2,i3-1,c))   +2.*(u(i1+1,i2,i3+1,c)+u(i1-1,i2,i3+1,c)+u(i1+1,i2,i3-1,c)+u(i1-1,i2,i3-1,c)) )*dxdzi2 +(8.*u(i1,i2,i3,c)     -4.*(u(i1,i2+1,i3,c)+u(i1,i2-1,i3,c)+u(i1,i2,i3+1,c)+u(i1,i2,i3-1,c))   +2.*(u(i1,i2+1,i3+1,c)+u(i1,i2-1,i3+1,c)+u(i1,i2+1,i3-1,c)+u(i1,i2-1,i3-1,c)) )*dydzi2 
+     lap3d2Pow2(i1,i2,i3,ic)= ( 6.*u(i1,i2,i3,ic)   - 4.*(u(i1+1,i2,i3,ic)+u(i1-1,i2,i3,ic))    +(u(i1+2,i2,i3,ic)+u(i1-2,i2,i3,ic)) )*dxi4 +(  +6.*u(i1,i2,i3,ic)    -4.*(u(i1,i2+1,i3,ic)+u(i1,i2-1,i3,ic))    +(u(i1,i2+2,i3,ic)+u(i1,i2-2,i3,ic)) )*dyi4+(  +6.*u(i1,i2,i3,ic)    -4.*(u(i1,i2,i3+1,ic)+u(i1,i2,i3-1,ic))    +(u(i1,i2,i3+2,ic)+u(i1,i2,i3-2,ic)) )*dzi4+(8.*u(i1,i2,i3,ic)     -4.*(u(i1+1,i2,i3,ic)+u(i1-1,i2,i3,ic)+u(i1,i2+1,i3,ic)+u(i1,i2-1,i3,ic))   +2.*(u(i1+1,i2+1,i3,ic)+u(i1-1,i2+1,i3,ic)+u(i1+1,i2-1,i3,ic)+u(i1-1,i2-1,i3,ic)) )*dxdyi2 +(8.*u(i1,i2,i3,ic)     -4.*(u(i1+1,i2,i3,ic)+u(i1-1,i2,i3,ic)+u(i1,i2,i3+1,ic)+u(i1,i2,i3-1,ic))   +2.*(u(i1+1,i2,i3+1,ic)+u(i1-1,i2,i3+1,ic)+u(i1+1,i2,i3-1,ic)+u(i1-1,i2,i3-1,ic)) )*dxdzi2 +(8.*u(i1,i2,i3,ic)     -4.*(u(i1,i2+1,i3,ic)+u(i1,i2-1,i3,ic)+u(i1,i2,i3+1,ic)+u(i1,i2,i3-1,ic))   +2.*(u(i1,i2+1,i3+1,ic)+u(i1,i2-1,i3+1,ic)+u(i1,i2+1,i3-1,ic)+u(i1,i2-1,i3-1,ic)) )*dydzi2 
    !    ** 4th order ****
-     lap2d4(i1,i2,i3,c)=( -30.*u(i1,i2,i3,c)     +16.*(u(i1+1,i2,i3,c)+u(i1-1,i2,i3,c))     -(u(i1+2,i2,i3,c)+u(i1-2,i2,i3,c)) )*dxsq12i + ( -30.*u(i1,i2,i3,c)     +16.*(u(i1,i2+1,i3,c)+u(i1,i2-1,i3,c))     -(u(i1,i2+2,i3,c)+u(i1,i2-2,i3,c)) )*dysq12i 
-     lap3d4(i1,i2,i3,c)=lap2d4(i1,i2,i3,c)+ ( -30.*u(i1,i2,i3,c)      +16.*(u(i1,i2,i3+1,c)+u(i1,i2,i3-1,c))      -(u(i1,i2,i3+2,c)+u(i1,i2,i3-2,c)) )*dzsq12i 
-     lap2d4Pow2(i1,i2,i3,c)=(-30.*lap2d4(i1,i2,i3,c)+16.*(lap2d4(i1+1,i2,i3,c)+lap2d4(i1-1,i2,i3,c))-(lap2d4(i1+2,i2,i3,c)+lap2d4(i1-2,i2,i3,c)))*dxsq12i+(-30.*lap2d4(i1,i2,i3,c)+16.*(lap2d4(i1,i2+1,i3,c)+lap2d4(i1,i2-1,i3,c))-(lap2d4(i1,i2+2,i3,c)+lap2d4(i1,i2-2,i3,c)))*dysq12i
-     lap3d4Pow2(i1,i2,i3,c)=(-30.*lap3d4(i1,i2,i3,c)+16.*(lap3d4(i1+1,i2,i3,c)+lap3d4(i1-1,i2,i3,c))-(lap3d4(i1+2,i2,i3,c)+lap3d4(i1-2,i2,i3,c)))*dxsq12i+(-30.*lap3d4(i1,i2,i3,c)+16.*(lap3d4(i1,i2+1,i3,c)+lap3d4(i1,i2-1,i3,c))-(lap3d4(i1,i2+2,i3,c)+lap3d4(i1,i2-2,i3,c)))*dysq12i+(-30.*lap3d4(i1,i2,i3,c)+16.*(lap3d4(i1,i2,i3+1,c)+lap3d4(i1,i2,i3-1,c))-(lap3d4(i1,i2,i3+2,c)+lap3d4(i1,i2,i3-2,c)))*dzsq12i
-     lap2d4Pow3(i1,i2,i3,c)=(-30.*lap2d4Pow2(i1,i2,i3,c)+16.*(lap2d4Pow2(i1+1,i2,i3,c)+lap2d4Pow2(i1-1,i2,i3,c))-(lap2d4Pow2(i1+2,i2,i3,c)+lap2d4Pow2(i1-2,i2,i3,c)))*dxsq12i+(-30.*lap2d4Pow2(i1,i2,i3,c)+16.*(lap2d4Pow2(i1,i2+1,i3,c)+lap2d4Pow2(i1,i2-1,i3,c))-(lap2d4Pow2(i1,i2+2,i3,c)+lap2d4Pow2(i1,i2-2,i3,c)))*dysq12i
-     lap3d4Pow3(i1,i2,i3,c)=(-30.*lap3d4Pow2(i1,i2,i3,c)+16.*(lap3d4Pow2(i1+1,i2,i3,c)+lap3d4Pow2(i1-1,i2,i3,c))-(lap3d4Pow2(i1+2,i2,i3,c)+lap3d4Pow2(i1-2,i2,i3,c)))*dxsq12i+(-30.*lap3d4Pow2(i1,i2,i3,c)+16.*(lap3d4Pow2(i1,i2+1,i3,c)+lap3d4Pow2(i1,i2-1,i3,c))-(lap3d4Pow2(i1,i2+2,i3,c)+lap3d4Pow2(i1,i2-2,i3,c)))*dysq12i+(-30.*lap3d4Pow2(i1,i2,i3,c)+16.*(lap3d4Pow2(i1,i2,i3+1,c)+lap3d4Pow2(i1,i2,i3-1,c))-(lap3d4Pow2(i1,i2,i3+2,c)+lap3d4Pow2(i1,i2,i3-2,c)))*dzsq12i
+     lap2d4(i1,i2,i3,ic)=( -30.*u(i1,i2,i3,ic)     +16.*(u(i1+1,i2,i3,ic)+u(i1-1,i2,i3,ic))     -(u(i1+2,i2,i3,ic)+u(i1-2,i2,i3,ic)) )*dxsq12i + ( -30.*u(i1,i2,i3,ic)     +16.*(u(i1,i2+1,i3,ic)+u(i1,i2-1,i3,ic))     -(u(i1,i2+2,i3,ic)+u(i1,i2-2,i3,ic)) )*dysq12i 
+     lap3d4(i1,i2,i3,ic)=lap2d4(i1,i2,i3,ic)+ ( -30.*u(i1,i2,i3,ic)      +16.*(u(i1,i2,i3+1,ic)+u(i1,i2,i3-1,ic))      -(u(i1,i2,i3+2,ic)+u(i1,i2,i3-2,ic)) )*dzsq12i 
+     lap2d4Pow2(i1,i2,i3,ic)=(-30.*lap2d4(i1,i2,i3,ic)+16.*(lap2d4(i1+1,i2,i3,ic)+lap2d4(i1-1,i2,i3,ic))-(lap2d4(i1+2,i2,i3,ic)+lap2d4(i1-2,i2,i3,ic)))*dxsq12i+(-30.*lap2d4(i1,i2,i3,ic)+16.*(lap2d4(i1,i2+1,i3,ic)+lap2d4(i1,i2-1,i3,ic))-(lap2d4(i1,i2+2,i3,ic)+lap2d4(i1,i2-2,i3,ic)))*dysq12i
+     lap3d4Pow2(i1,i2,i3,ic)=(-30.*lap3d4(i1,i2,i3,ic)+16.*(lap3d4(i1+1,i2,i3,ic)+lap3d4(i1-1,i2,i3,ic))-(lap3d4(i1+2,i2,i3,ic)+lap3d4(i1-2,i2,i3,ic)))*dxsq12i+(-30.*lap3d4(i1,i2,i3,ic)+16.*(lap3d4(i1,i2+1,i3,ic)+lap3d4(i1,i2-1,i3,ic))-(lap3d4(i1,i2+2,i3,ic)+lap3d4(i1,i2-2,i3,ic)))*dysq12i+(-30.*lap3d4(i1,i2,i3,ic)+16.*(lap3d4(i1,i2,i3+1,ic)+lap3d4(i1,i2,i3-1,ic))-(lap3d4(i1,i2,i3+2,ic)+lap3d4(i1,i2,i3-2,ic)))*dzsq12i
+     lap2d4Pow3(i1,i2,i3,ic)=(-30.*lap2d4Pow2(i1,i2,i3,ic)+16.*(lap2d4Pow2(i1+1,i2,i3,ic)+lap2d4Pow2(i1-1,i2,i3,ic))-(lap2d4Pow2(i1+2,i2,i3,ic)+lap2d4Pow2(i1-2,i2,i3,ic)))*dxsq12i+(-30.*lap2d4Pow2(i1,i2,i3,ic)+16.*(lap2d4Pow2(i1,i2+1,i3,ic)+lap2d4Pow2(i1,i2-1,i3,ic))-(lap2d4Pow2(i1,i2+2,i3,ic)+lap2d4Pow2(i1,i2-2,i3,ic)))*dysq12i
+     lap3d4Pow3(i1,i2,i3,ic)=(-30.*lap3d4Pow2(i1,i2,i3,ic)+16.*(lap3d4Pow2(i1+1,i2,i3,ic)+lap3d4Pow2(i1-1,i2,i3,ic))-(lap3d4Pow2(i1+2,i2,i3,ic)+lap3d4Pow2(i1-2,i2,i3,ic)))*dxsq12i+(-30.*lap3d4Pow2(i1,i2,i3,ic)+16.*(lap3d4Pow2(i1,i2+1,i3,ic)+lap3d4Pow2(i1,i2-1,i3,ic))-(lap3d4Pow2(i1,i2+2,i3,ic)+lap3d4Pow2(i1,i2-2,i3,ic)))*dysq12i+(-30.*lap3d4Pow2(i1,i2,i3,ic)+16.*(lap3d4Pow2(i1,i2,i3+1,ic)+lap3d4Pow2(i1,i2,i3-1,ic))-(lap3d4Pow2(i1,i2,i3+2,ic)+lap3d4Pow2(i1,i2,i3-2,ic)))*dzsq12i
      ! D-zero in time (really undivided)
      DztU(i1,i2,i3,n) = (un(i1,i2,i3,n)-um(i1,i2,i3,n))
      !...........end   statement functions
      ! write(*,*) 'Inside advWave...'
-     cc             = rpar( 0)  ! this is c
-     dt             = rpar( 1)
-     dx(0)          = rpar( 2)
-     dx(1)          = rpar( 3)
-     dx(2)          = rpar( 4)
-     dr(0)          = rpar( 5)
-     dr(1)          = rpar( 6)
-     dr(2)          = rpar( 7)
-     t              = rpar( 8)
-     ep             = rpar( 9)
-     sosupParameter = rpar(10)
-     omega          = rpar(11) ! for helmholtz 
-     bImp( 0)       = rpar(12) ! beta2 : coefficient for implicit time-stepping
-     bImp( 1)       = rpar(13) ! beta4 : coefficient for implicit time-stepping
-     bImp( 2)       = rpar(14) ! beta6 (for future)
-     bImp( 3)       = rpar(15) ! beta8 (for future)
-     gridCFL        = rpar(16)
+     cc                           = rpar( 0)  ! this is c
+     dt                           = rpar( 1)
+     dx(0)                        = rpar( 2)
+     dx(1)                        = rpar( 3)
+     dx(2)                        = rpar( 4)
+     dr(0)                        = rpar( 5)
+     dr(1)                        = rpar( 6)
+     dr(2)                        = rpar( 7)
+     t                            = rpar( 8)
+     ep                           = rpar( 9)
+     sosupParameter               = rpar(10)
+     omega                        = rpar(11) ! for helmholtz 
+     bImp( 0)                     = rpar(12) ! beta2 : coefficient for implicit time-stepping
+     bImp( 1)                     = rpar(13) ! beta4 : coefficient for implicit time-stepping
+     bImp( 2)                     = rpar(14) ! beta6 (for future)
+     bImp( 3)                     = rpar(15) ! beta8 (for future)
+     gridCFL                      = rpar(16)
+     upwindDissipationCoefficient = rpar(17)
+     c              = cc
      dy=dx(1)  ! Are these needed?
      dz=dx(2)
      option                       = ipar( 0)
@@ -3498,6 +3505,12 @@ real uzzzzzz
      modifiedEquationApproach     = ipar(18)
      takeImplicitFirstStep        = ipar(19)
      useSuperGrid                 = ipar(20)
+     ! new way: extract parameters from the dataBase
+      ok=getReal(pdb,'damp',damp) 
+      if( ok.eq.0 )then
+        write(*,'("*** advWave:getReal:ERROR: unable to find damp")') 
+        stop 1133
+      end if
      fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
      fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
      ! ** fix me ***
@@ -3507,6 +3520,13 @@ real uzzzzzz
        do axis=0,2
          dr(axis)=dx(axis)
        end do
+     else
+       do axis=0,2
+         dx(axis)=dr(axis)
+       end do 
+       dx = dx(0)
+       dy = dx(1)
+       dz = dx(2)
      end if
      ! ---- Compute the coefficients in the implicit time-stepping scheme ----
      beta2=bImp(0)
@@ -3587,35 +3607,83 @@ real uzzzzzz
          stop 2222
        end if
       end if
-     ! Scheme is 
-     !   un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) +ts2*um(i1,i2,i3,m) + ts3*( uxx22r(i1,i2,i3,0) +  uyy22r(i1,i2,i3,0) )  
-     !                                                         + ts4*(umxx22r(i1,i2,i3,0) + umyy22r(i1,i2,i3,0) ) )  
-     !                                                         + tsf*fv(m)       
-     if( takeImplicitFirstStep.eq.0 )then
-       ts1=2. 
-       ts2=-1.
-       ts3=cdtSq*cImp( 0,0)
-       ts4=cdtSq*cImp(-1,0)
-       tsf=dtSq
-     else
-       ! first-step implicit:
-       !   Assumes um = ut(t=0) 
-       ! AND 
-       !   cImp(1,0) = cImp(-1,0)
-       !   RHS = u + dt*ut + (dt^2/2)*L * ( cImp(0,0)*u - 2.*dt*cImp(1,0)*ut ) + .5*dt^2 * f    
-       ts1=1. 
-       ts2=dt
-       ts3= .5*cdtSq*cImp( 0,0)
-       ts4=-dt*cdtSq*cImp(-1,0)
-       tsf=.5*dtSq    
+     ! if( useSuperGrid==1 )then
+     !   write(*,'("etax(:,0)=",200(1pe10.2,1x))') (etax(i1,0),i1=nd1a,nd1b)
+     !   write(*,'("etax(:,1)=",200(1pe10.2,1x))') (etax(i1,1),i1=nd1a,nd1b)
+     !   write(*,'("etay(:,0)=",200(1pe10.2,1x))') (etay(i2,0),i2=nd2a,nd2b)
+     !   write(*,'("etay(:,1)=",200(1pe10.2,1x))') (etay(i2,1),i2=nd2a,nd2b)
+     ! end if 
+     ! ! ---- DAMPING COEFF ----
+     ! cn    =               2./(1+damp*dt*.5);
+     ! cm    = (-1 +damp*dt*.5)/(1+damp*dt*.5);
+     ! cLap  =         (c*dt)^2/(1+damp*dt*.5);
+     ! cf    =             dt^2/(1+damp*dt*.5); 
+     ! ---- explicit ----
+     cn     =                2./(1.+damp*dt*.5); 
+     cm     = (-1. +damp*dt*.5)/(1.+damp*dt*.5); 
+     cLap   =             cdtSq/(1.+damp*dt*.5); 
+     cLapSq =           cdtsq12/(1.+damp*dt*.5); 
+     cf     =              dtSq/(1.+damp*dt*.5); 
+     if( gridIsImplicit==1 )then
+       ! Implicit Scheme is 
+       !   un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) +ts2*um(i1,i2,i3,m) + ts3*( uxx22r(i1,i2,i3,0) +  uyy22r(i1,i2,i3,0) )  
+       !                                                         + ts4*(umxx22r(i1,i2,i3,0) + umyy22r(i1,i2,i3,0) ) )  
+       !                                                         + tsf*fv(m)      
+       ! if( damp.ne.0. )then
+       !   write(*,*) "advWave: Finish Implicit for damping"
+       !   stop 777
+       ! end if
+       if( takeImplicitFirstStep.eq.0 )then
+         ts1=2. 
+         ts2=( -1. + damp*dt*.5 )
+         ts3=cdtSq*cImp( 0,0)
+         ts4=cdtSq*cImp(-1,0)
+         ! for order=4: 
+         ts5 = - (cdtSq)**2 *( cImp( 0,1) )
+         ts6 = - (cdtSq)**2 *( cImp(-1,1) )
+         tsf=dtSq
+       else
+         ! first-step implicit:
+         !
+         ! *NOTE* 
+         !    We need to adjust the coefficients so that we can use the SAME IMPLICI SOLVER as the later steps
+         !   u(t+dt) = u(0) + dt*ut(0) + .5*dt^2* u.tt
+         !   u(0) = known
+         !   ut(0) = known
+         !
+         ! FINISH ME: 
+         !   u.tt = Lu - damp*u.t 
+         !   Lu = cImp(1,0)*Lu(t+dt) + cImp(0)*Lu(t) + cImp(1)*Lu(t-dt)
+         !   
+         !   u(t+dt) = u(0) + dt*ut(0) + .5*dt^2* [ cImp(1,0)*Lu(t+dt) + cImp(0)*Lu(t) + cImp(1)*Lu(t-dt) ] + .5*dt^2( u(t+dt) - u(t-dt))/(2*dt) 
+         !
+         !  [ I - dt^2* cImp(1,0)*L + damp*.5*dt] u(t+dt) =  u(0) + dt*ut(0) 
+         !   Assumes um = ut(t=0) 
+         ! AND 
+         !   cImp(1,0) = cImp(-1,0)
+         !   RHS = u + dt*ut + (dt^2/2)*L * ( cImp(0,0)*u - 2.*dt*cImp(1,0)*ut ) + .5*dt^2 * f
+         ! CHECK ME FOR DAMPING     
+         ts1=1. + .5*damp*dt
+         ts2=dt - .5*dt*dt*damp
+         ts3= .5*cdtSq*cImp( 0,0)
+         ts4=-dt*cdtSq*cImp(-1,0)
+         if( orderInTime.eq.4 )then
+           write(*,'("advWave: finish me : IMP orderInTime=4")') 
+           stop 4445
+         end if
+         tsf=.5*dtSq    
+       end if
+       cf = tsf
      end if
+     ! write(*,'("advWave: debug=",i3," damp=",1(1pe18.10,1x))') debug,damp
      if( (.false. .or. debug.gt.1) .and. t.le.3*dt )then
        write(*,'("advWave: option=",i4," grid=",i4)') option,grid
        write(*,'("advWave: orderOfAccuracy=",i2," orderInTime=",i2  )') orderOfAccuracy,orderInTime
        write(*,'("advWave: addForcing=",i2," forcingOption=",i2)') addForcing,forcingOption
        write(*,'("advWave: useUpwindDissipation=",i2," (explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
        write(*,'("advWave: useSosupDissipation=",i2," (1= add upwind dissipation in this stage)")') useSosupDissipation
-       write(*,'("advWave: t,dt,c,omega,gridCFL=",5(1pe10.2,1x))') t,dt,cc,omega,gridCFL
+       write(*,'("advWave: t=",1pe10.3," dt=",1pe10.3," c=",1pe10.2," omega=",1pe10.3," gridCFL=",1pe10.3)') t,dt,cc,omega,gridCFL
+       write(*,'("advWave: damp=",1(1pe18.10,1x))') damp
        write(*,'("advWave: gridIsImplicit=",i2," takeImplicitFirstStep=",i2)') gridIsImplicit,takeImplicitFirstStep
        write(*,'("advWave: adjustOmega=",i2," solveHelmholtz=",i2," adjustHelmholtz=",i2)') adjustOmega,solveHelmholtz,adjustHelmholtzForUpwinding
        if( forcingOption.eq.helmholtzForcing )then
@@ -3652,36 +3720,72 @@ real uzzzzzz
          cosFreqt(freq) = cos(frequencyArray(freq)*t)
        end do
      end if
-     if( useSosupDissipation.ne.0 .or. useImplicitUpwindDissipation.eq.1 )then
-       ! ---- coefficients of upwind dissipation ---
-       !   **NOTE**: These must match the values in implicit.bC 
-       ! if( .true. )then
-       ! *new* way to define coefficients: (see cgWave.pdf)
-       adSosup = cc*dt/( sqrt(1.*nd) * 2**(orderOfAccuracy+1) ) 
-       uDotFactor=.5  ! By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
-       ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
-       adSosup=sosupParameter*adSosup
-       if( gridIsImplicit.ne.0  )then
-         if( t.le.2*dt )then
-           write(*,'("advWave: gridIsImplicit: t=",e10.2," REDUCE UPWIND DISS COEFF by gridCFL=",e10.2)') t,gridCFL
-         end if
-         adSosup = adSosup/gridCFL 
-       end if
-       if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
-         write(*,'("advMxWave: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useImplicitUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useImplicitUpwindDissipation
-         write(*,'("         : t,dt,adSosup=",3e10.2," adSosup/(c*dt)=",e12.4)')t,dt,adSosup,adSosup/(cc*dt)
-         write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2," preComputeUpwindUt=",i2)') useSosupDissipation,sosupParameter,preComputeUpwindUt
-         ! write(*,'("advMxUp: updateDissipation=",i2)') updateDissipation
-         ! write(*,'("advMxUp: useNewForcingMethod=",i2)') useNewForcingMethod
-       end if
-       ! ! Coefficients of the sosup dissipation with Cartesian grids:
-       ! cdSosupx= adSosup/dx(0)
-       ! cdSosupy= adSosup/dx(1)
-       ! cdSosupz= adSosup/dx(2)
-       ! Note: these next values are only used for rectangular grids. (curvilinear grid values are computed in the loops)
+     uDotFactor=.5  ! By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
+     useSimplifiedDissipation=0
+     ! if( .true. )then
+     !   ! ************* OLD WAY *********
+     !   if( .true. .and. useSosupDissipation.ne.0 .and. solveHelmholtz==1 .and. useSuperGrid==1 .and. useImplicitUpwindDissipation==0 )then
+     !     useSimplifiedDissipation=1;
+     !     ! Choose coefficient to kill the plus/minus mode: 
+     !     ! CHECK ME: could be off by a factor of 2 because of D0t 
+     !     dissSafetyFactor=.9
+     !     ! adSosup =  dissSafetyFactor*uDotFactor/( nd * 2**(orderOfAccuracy+1) );
+     !     adSosup =  dissSafetyFactor/( nd * 2**(orderOfAccuracy+2) );
+     !     adxSosup(0)= adSosup
+     !     adxSosup(1)= adSosup
+     !     adxSosup(2)= adSosup    
+     !     if( .false. .and. t.le.2*dt )then
+     !       write(*,'("advWave: USE SIMPLIFIED UPWIND DISSIPATION: 1/coeff=",e10.2)') 1./adSosup
+     !     end if    
+     !   else if( useSosupDissipation.ne.0 .or. useImplicitUpwindDissipation.eq.1 )then
+     !     ! ---- coefficients of upwind dissipation ---
+     !     !   **NOTE**: These must match the values in implicit.bC 
+     !     ! if( .true. )then
+     !     ! *new* way to define coefficients: (see cgWave.pdf)
+     !     adSosup = cc*dt/( sqrt(1.*nd) * 2**(orderOfAccuracy+1) ) 
+     !     ! sosupParameter=gamma in sosup scheme  0<= gamma <=1   0=centered scheme
+     !     adSosup=sosupParameter*adSosup
+     !     if( gridIsImplicit.ne.0 .and. useImplicitUpwindDissipation==0 ) then
+     !       if( solveHelmholtz==0 .and. useSuperGrid==0 )then
+     !         if( t.le.2*dt )then
+     !           write(*,'("advWave: gridIsImplicit: t=",e10.2," REDUCE UPWIND DISS COEFF by gridCFL=",e10.2)') t,gridCFL
+     !         end if
+     !         adSosup = adSosup/gridCFL
+     !       elseif( .false. )then  ! TURN OFF -- July 1, 2023
+     !         ! **** SOLVE HELMHOLTZ WITH SUPEGRID : TESTING *****
+     !         !  +++++ gridCFL is not correct for superGrid since it uses the transformed metrics ++++++++++++++++
+     !         gridCFL = cc*dt/dr(0)  ! TRY THIS ** TESTING ***
+     !         adSosup = adSosup / gridCFL
+     !         if( t.le.2*dt )then
+     !           write(*,'("advWave: gridIsImplicit: solveHelmholtz with SuperGrid : t=",e10.2," SETUP upwindDiss coeff =",1pe10.2)') t,adSosup
+     !         end if
+     !       end if
+     !     end if
+     !   end if ! end old way 
+     !   adSosupOld = adSosup
+     ! *new* way : July 6, 2023 : coefficient is passed in 
+     ! use new UPWIND coeff
+     adSosup = upwindDissipationCoefficient
+     ! Note: these next values are only used for rectangular grids. (curvilinear grid values are computed in the loops)
+     if( gridType==rectangular )then
        adxSosup(0)=  uDotFactor*adSosup/dx(0)
        adxSosup(1)=  uDotFactor*adSosup/dx(1)
-       adxSosup(2)=  uDotFactor*adSosup/dx(2)
+       adxSosup(2)=  uDotFactor*adSosup/dx(2)    
+     end if
+     if( (.false. .or. debug.gt.1) .and. t.le.2*dt )then
+       write(*,'("XX advWave XX: grid=",i3," gridType=",i2," orderOfAccuracy=",i2," useImplicitUpwindDissipation=",i2)') grid,gridType,orderOfAccuracy,useImplicitUpwindDissipation
+       write(*,'("         : t=",1pe10.2," dt=",1pe14.6)')t,dt
+       if( useSosupDissipation==1 .or. useImplicitUpwindDissipation==1 )then
+         write(*,'("  ****** useSosupDissipation *******")')
+         ! write(*,'("         : adSosupOld=",1pe12.4," upwindDissipationCoefficient=",1pe12.4," adSosupOld/(c*dt)=",1pe12.4)') adSosupOld,upwindDissipationCoefficient,adSosupOld/(cc*dt)
+         write(*,'("         : upwindDissipationCoefficient=",1pe12.4," adSosupOld/(c*dt)=",1pe12.4)') upwindDissipationCoefficient,adSosupOld/(cc*dt)
+         write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2," preComputeUpwindUt=",i2)') useSosupDissipation,sosupParameter,preComputeUpwindUt
+         if( gridType==rectangular )then
+            write(*,'("         : adxSosup",3(1pe14.6))') adxSosup(0),adxSosup(1), adxSosup(2)
+         end if
+       end if
+       ! write(*,'("advMxUp: updateDissipation=",i2)') updateDissipation
+       ! write(*,'("advMxUp: useNewForcingMethod=",i2)') useNewForcingMethod
      end if
      if( useSosupDissipation.eq.1 .and. preComputeUpwindUt.eq.1 )then
        if( option.ne.1 )then
@@ -3811,8 +3915,9 @@ real uzzzzzz
      end if
      if( useSosupDissipation.eq.0 )then
        if( gridIsImplicit.eq.0 )then 
-         ! ------- EXPLIICT update the solution ---------
-         if( useSuperGrid == 0 )then
+         ! ------- EXPLICIT update the solution ---------
+         if( useSuperGrid == 0 .or. gridType==curvilinear )then
+           ! NOTE: superGrid is embedded the mectrics for curvilinear grids so we can use the normal version
            if( orderInTime.eq.2 )then
             ! FD24 : second-order in time and fourth-order in space
             ! FD26 : second-order in time and sixth-order in space
@@ -3838,7 +3943,7 @@ real uzzzzzz
                ! #End
                    ! --- SECOND 2 ---
                      ! --- THREE DIMENSIONS ---
-                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx23r(i1,i2,i3,0) + uyy23r(i1,i2,i3,0) + uzz23r(i1,i2,i3,0) ) 
+                       un(i1,i2,i3,m)= cn*u(i1,i2,i3,m) +cm*um(i1,i2,i3,m) + cLap*( uxx23r(i1,i2,i3,0) + uyy23r(i1,i2,i3,0) + uzz23r(i1,i2,i3,0) ) 
                  ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                  ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                  ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -3875,20 +3980,16 @@ real uzzzzzz
                       ! THIS ADDED March 24, 2023 *** CHECK ME ***
                       fv(m)=0.
                     else if( forcingOption.eq.twilightZoneForcing )then
-                      if( nd.eq.2 )then
-                          call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
-                          call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
-                          call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
-                          call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
-                        fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
-                      else
                           call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
                           call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
                           call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
                           call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
                           call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
                         fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
-                     end if
+                      if( damp.ne.0. )then
+                            call ogDeriv(ep, 1,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evt(m) )
+                        fv(m) = fv(m) + damp*evt(m)
+                      end if   
                    else if( forcingOption.eq.helmholtzForcing )then
                       ! forcing for solving the Helmholtz equation   
                       ! NOTE: change sign of forcing since for Helholtz we want to solve
@@ -3899,6 +4000,7 @@ real uzzzzzz
                         omega = frequencyArray(freq)
                         coswt = cosFreqt(freq)    
                          ! if( i1.eq.2 .and. i2.eq.2 )then 
+                         ! if( .true. )then 
                          !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
                          ! end if
                          ! fv(m) = -f(i1,i2,i3,0)*coswt  
@@ -3909,7 +4011,7 @@ real uzzzzzz
                    end if
                    ! --- SECOND 2 ---
                      ! --- THREE DIMENSIONS ---
-                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx23r(i1,i2,i3,0) + uyy23r(i1,i2,i3,0) + uzz23r(i1,i2,i3,0) ) +tsf*fv(m)
+                       un(i1,i2,i3,m)= cn*u(i1,i2,i3,m) +cm*um(i1,i2,i3,m) + cLap*( uxx23r(i1,i2,i3,0) + uyy23r(i1,i2,i3,0) + uzz23r(i1,i2,i3,0) ) +cf*fv(m)
                  ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                  ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                  ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -3946,7 +4048,7 @@ real uzzzzzz
                 ! #End
                     ! --- SECOND 2 ---
                       ! --- THREE DIMENSIONS ---
-                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx23r(i1,i2,i3,0) + uyy23r(i1,i2,i3,0) + uzz23r(i1,i2,i3,0) ) 
+                        un(i1,i2,i3,m)= cn*u(i1,i2,i3,m) +cm*um(i1,i2,i3,m) + cLap*( uxx23r(i1,i2,i3,0) + uyy23r(i1,i2,i3,0) + uzz23r(i1,i2,i3,0) ) 
                   ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                   ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                   ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -3983,20 +4085,16 @@ real uzzzzzz
                        ! THIS ADDED March 24, 2023 *** CHECK ME ***
                        fv(m)=0.
                      else if( forcingOption.eq.twilightZoneForcing )then
-                       if( nd.eq.2 )then
-                           call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
-                           call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
-                           call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
-                           call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
-                         fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
-                       else
                            call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
                            call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
                            call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
                            call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
                            call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
                          fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
-                      end if
+                       if( damp.ne.0. )then
+                             call ogDeriv(ep, 1,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evt(m) )
+                         fv(m) = fv(m) + damp*evt(m)
+                       end if   
                     else if( forcingOption.eq.helmholtzForcing )then
                        ! forcing for solving the Helmholtz equation   
                        ! NOTE: change sign of forcing since for Helholtz we want to solve
@@ -4007,6 +4105,7 @@ real uzzzzzz
                          omega = frequencyArray(freq)
                          coswt = cosFreqt(freq)    
                           ! if( i1.eq.2 .and. i2.eq.2 )then 
+                          ! if( .true. )then 
                           !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
                           ! end if
                           ! fv(m) = -f(i1,i2,i3,0)*coswt  
@@ -4017,7 +4116,7 @@ real uzzzzzz
                     end if
                     ! --- SECOND 2 ---
                       ! --- THREE DIMENSIONS ---
-                        un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( uxx23r(i1,i2,i3,0) + uyy23r(i1,i2,i3,0) + uzz23r(i1,i2,i3,0) ) +tsf*fv(m)
+                        un(i1,i2,i3,m)= cn*u(i1,i2,i3,m) +cm*um(i1,i2,i3,m) + cLap*( uxx23r(i1,i2,i3,0) + uyy23r(i1,i2,i3,0) + uzz23r(i1,i2,i3,0) ) +cf*fv(m)
                   ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                   ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                   ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -4033,7 +4132,8 @@ real uzzzzzz
              end if
            end if 
          else
-           ! write(*,'(" advWave: Use SUPER-GRID ")')
+           ! write(*,'(" advWave: Use SUPER-GRID addForcing=",i3)') addForcing
+           ! write(*,*) (((f(i1,i2,i3,0),i1=nd1a,nd1b),i2=nd2a,nd2b),i3=nd3a,nd3b)
            if( orderInTime.eq.2 )then
             ! FD24 : second-order in time and fourth-order in space
             ! FD26 : second-order in time and sixth-order in space
@@ -4059,7 +4159,7 @@ real uzzzzzz
                ! #End
                    ! --- SECOND 2 ---
                      ! --- THREE DIMENSIONS ---
-                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( etax(i1,0)*uxx23r(i1,i2,i3,0) + etax(i1,1)*ux23r(i1,i2,i3,0) + etay(i2,0)*uyy23r(i1,i2,i3,0) + etay(i2,1)*uy23r(i1,i2,i3,0) + etaz(i3,0)*uzz23r(i1,i2,i3,0) + etaz(i3,1)*uz23r(i1,i2,i3,0) ) 
+                      un(i1,i2,i3,m)= cn*u(i1,i2,i3,m) +cm*um(i1,i2,i3,m) + cLap*( etax(i1,0)*uxx23r(i1,i2,i3,0) + etax(i1,1)*ux23r(i1,i2,i3,0) + etay(i2,0)*uyy23r(i1,i2,i3,0) + etay(i2,1)*uy23r(i1,i2,i3,0) + etaz(i3,0)*uzz23r(i1,i2,i3,0) + etaz(i3,1)*uz23r(i1,i2,i3,0) ) 
                  ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                  ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                  ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -4096,20 +4196,16 @@ real uzzzzzz
                       ! THIS ADDED March 24, 2023 *** CHECK ME ***
                       fv(m)=0.
                     else if( forcingOption.eq.twilightZoneForcing )then
-                      if( nd.eq.2 )then
-                          call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
-                          call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
-                          call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
-                          call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
-                        fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
-                      else
                           call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
                           call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
                           call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
                           call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
                           call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
                         fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
-                     end if
+                      if( damp.ne.0. )then
+                            call ogDeriv(ep, 1,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evt(m) )
+                        fv(m) = fv(m) + damp*evt(m)
+                      end if   
                    else if( forcingOption.eq.helmholtzForcing )then
                       ! forcing for solving the Helmholtz equation   
                       ! NOTE: change sign of forcing since for Helholtz we want to solve
@@ -4120,6 +4216,7 @@ real uzzzzzz
                         omega = frequencyArray(freq)
                         coswt = cosFreqt(freq)    
                          ! if( i1.eq.2 .and. i2.eq.2 )then 
+                         ! if( .true. )then 
                          !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
                          ! end if
                          ! fv(m) = -f(i1,i2,i3,0)*coswt  
@@ -4130,7 +4227,7 @@ real uzzzzzz
                    end if
                    ! --- SECOND 2 ---
                      ! --- THREE DIMENSIONS ---
-                      un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( etax(i1,0)*uxx23r(i1,i2,i3,0) + etax(i1,1)*ux23r(i1,i2,i3,0) + etay(i2,0)*uyy23r(i1,i2,i3,0) + etay(i2,1)*uy23r(i1,i2,i3,0) + etaz(i3,0)*uzz23r(i1,i2,i3,0) + etaz(i3,1)*uz23r(i1,i2,i3,0) ) +tsf*fv(m)
+                      un(i1,i2,i3,m)= cn*u(i1,i2,i3,m) +cm*um(i1,i2,i3,m) + cLap*( etax(i1,0)*uxx23r(i1,i2,i3,0) + etax(i1,1)*ux23r(i1,i2,i3,0) + etay(i2,0)*uyy23r(i1,i2,i3,0) + etay(i2,1)*uy23r(i1,i2,i3,0) + etaz(i3,0)*uzz23r(i1,i2,i3,0) + etaz(i3,1)*uz23r(i1,i2,i3,0) ) +cf*fv(m)
                  ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                  ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                  ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -4167,7 +4264,7 @@ real uzzzzzz
                 ! #End
                     ! --- SECOND 2 ---
                       ! --- THREE DIMENSIONS ---
-                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( etax(i1,0)*uxx23r(i1,i2,i3,0) + etax(i1,1)*ux23r(i1,i2,i3,0) + etay(i2,0)*uyy23r(i1,i2,i3,0) + etay(i2,1)*uy23r(i1,i2,i3,0) + etaz(i3,0)*uzz23r(i1,i2,i3,0) + etaz(i3,1)*uz23r(i1,i2,i3,0) ) 
+                       un(i1,i2,i3,m)= cn*u(i1,i2,i3,m) +cm*um(i1,i2,i3,m) + cLap*( etax(i1,0)*uxx23r(i1,i2,i3,0) + etax(i1,1)*ux23r(i1,i2,i3,0) + etay(i2,0)*uyy23r(i1,i2,i3,0) + etay(i2,1)*uy23r(i1,i2,i3,0) + etaz(i3,0)*uzz23r(i1,i2,i3,0) + etaz(i3,1)*uz23r(i1,i2,i3,0) ) 
                   ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                   ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                   ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -4204,20 +4301,16 @@ real uzzzzzz
                        ! THIS ADDED March 24, 2023 *** CHECK ME ***
                        fv(m)=0.
                      else if( forcingOption.eq.twilightZoneForcing )then
-                       if( nd.eq.2 )then
-                           call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,ev(m) )
-                           call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
-                           call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evxx(m) )
-                           call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evyy(m) )
-                         fv(m) = evtt(m) - csq*( evxx(m) + evyy(m) )
-                       else
                            call ogDeriv(ep, 0,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,ev(m) )
                            call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
                            call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxx(m) )
                            call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyy(m) )
                            call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzz(m) )
                          fv(m) = evtt(m) - csq*( evxx(m) + evyy(m)  + evzz(m) )
-                      end if
+                       if( damp.ne.0. )then
+                             call ogDeriv(ep, 1,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evt(m) )
+                         fv(m) = fv(m) + damp*evt(m)
+                       end if   
                     else if( forcingOption.eq.helmholtzForcing )then
                        ! forcing for solving the Helmholtz equation   
                        ! NOTE: change sign of forcing since for Helholtz we want to solve
@@ -4228,6 +4321,7 @@ real uzzzzzz
                          omega = frequencyArray(freq)
                          coswt = cosFreqt(freq)    
                           ! if( i1.eq.2 .and. i2.eq.2 )then 
+                          ! if( .true. )then 
                           !   write(*,'(" adv: forcing f(i1,i2,i3)=",1pe12.4," coswt=",1pe12.4," t=",1pe12.4," omega=",1pe12.4)') f(i1,i2,i3,0),coswt,t,omega
                           ! end if
                           ! fv(m) = -f(i1,i2,i3,0)*coswt  
@@ -4238,7 +4332,7 @@ real uzzzzzz
                     end if
                     ! --- SECOND 2 ---
                       ! --- THREE DIMENSIONS ---
-                       un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( etax(i1,0)*uxx23r(i1,i2,i3,0) + etax(i1,1)*ux23r(i1,i2,i3,0) + etay(i2,0)*uyy23r(i1,i2,i3,0) + etay(i2,1)*uy23r(i1,i2,i3,0) + etaz(i3,0)*uzz23r(i1,i2,i3,0) + etaz(i3,1)*uz23r(i1,i2,i3,0) ) +tsf*fv(m)
+                       un(i1,i2,i3,m)= cn*u(i1,i2,i3,m) +cm*um(i1,i2,i3,m) + cLap*( etax(i1,0)*uxx23r(i1,i2,i3,0) + etax(i1,1)*ux23r(i1,i2,i3,0) + etay(i2,0)*uyy23r(i1,i2,i3,0) + etay(i2,1)*uy23r(i1,i2,i3,0) + etaz(i3,0)*uzz23r(i1,i2,i3,0) + etaz(i3,1)*uz23r(i1,i2,i3,0) ) +cf*fv(m)
                   ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
                   ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
                   ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
@@ -4264,229 +4358,332 @@ real uzzzzzz
              stop 468
            end if
          end if           
-             if( (debug.gt.3) .and. t.lt.2*dt )then
-               write(*,'("advWave: ADVANCE IMPLICIT dim=3 order=2 orderInTime=2, grid=rectangular, t=",e10.2)') t
-             end if
-             ! --- IMPLICIT TAYLOR TIME-STEPPING --- 
-             !  D+t D-t u = c^2 Delta( cImp(1) *u^{n+1} + cImp(0) *u^n + cImp(-1)* u^{n-1} )
-             m=0 ! component number 
-             ec = 0 ! component number
-             ! #If "rectangular" eq "curvilinear"
-             !   #If "2" eq "4" && "2" eq "4"
-             !     computeLaplacianOrder2(3)
-             !   #End
-             ! #End
-             if( forcingOption.eq.helmholtzForcing .and. addForcing.ne.0 )then
-               do freq=0,numberOfFrequencies-1
-                 coswt = cos(frequencyArray(freq)*t) ! is this used?
-                 omega = frequencyArray(freq)
-                 coswtAve(freq) = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))
-               end do
-               ! coswt = cos(omega*t)
-               ! coswtAve = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))    
-             end if 
-             fv(m)=0.
-               do i3=n3a,n3b
-               do i2=n2a,n2b
-               do i1=n1a,n1b
-                 if( mask(i1,i2,i3).gt.0 )then
-                 if( addForcing.eq.0 )then ! *wdh* Tues March 28, 2023
-                   fv(m) = 0.
-                 else if( forcingOption.eq.twilightZoneForcing )then
-                   if( nd.eq.2 )then
-                     ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
-                       call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,t, ec,evtt(m) )
-                     fv(m) = evtt(m)
-                     ! We weight the TZ forcing with the implicit weights to make the solution exact for polynomials
-                     do mt=-1,1
-                       tm = t + dt*mt
-                         call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,tm, ec,evxx(m) )
-                         call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),0.,tm, ec,evyy(m) )
-                       fv(m) = fv(m) -csq*( cImp(mt,0)*( evxx(m) + evyy(m) )  )
+         if( useSuperGrid == 0 .or. gridType==curvilinear )then
+               if( (debug.gt.1) .and. t.lt.2*dt )then
+                 write(*,'("advWave: ADVANCE IMPLICIT dim=3 order=2 orderInTime=2, grid=rectangular, t=",e10.2)') t
+               end if
+               ! --- IMPLICIT TAYLOR TIME-STEPPING --- 
+               !  D+t D-t u = c^2 Delta( cImp(1) *u^{n+1} + cImp(0) *u^n + cImp(-1)* u^{n-1} )
+               m=0 ! component number 
+               ec = 0 ! component number
+               if( forcingOption.eq.helmholtzForcing .and. addForcing.ne.0 )then
+                 do freq=0,numberOfFrequencies-1
+                   coswt = cos(frequencyArray(freq)*t) ! is this used?
+                   omega = frequencyArray(freq)
+                   coswtAve(freq) = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))
+                 end do
+                 ! coswt = cos(omega*t)
+                 ! coswtAve = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))    
+               end if 
+               fv(m)=0.
+                 do i3=n3a,n3b
+                 do i2=n2a,n2b
+                 do i1=n1a,n1b
+                   if( mask(i1,i2,i3).gt.0 )then
+                   if( addForcing.eq.0 )then ! *wdh* Tues March 28, 2023
+                     fv(m) = 0.
+                   else if( forcingOption.eq.twilightZoneForcing )then
+                       ! OGDERIV3D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
+                         call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
+                       fv(m) = evtt(m)
+                       ! We weight the TZ forcing with the implicit weights to make the solution exact for polynomials
+                       do mt=-1,1
+                         tm = t + dt*mt       
+                           call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evxx(m) )
+                           call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evyy(m) )
+                           call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evzz(m) )
+                         fv(m) = fv(m) -csq*( cImp(mt,0)*( evxx(m) + evyy(m) + evzz(m) )  ) 
+                       end do
+                     if( damp .ne. 0. )then
+                           call ogDeriv(ep, 1,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evt(m) )
+                       fv(m) = fv(m) + damp*evt(m) 
+                     end if  
+                  else if( forcingOption.eq.helmholtzForcing )then
+                    ! forcing for solving the Helmholtz equation   
+                    ! NOTE: change sign of forcing since for Helholtz we want to solve
+                    !      ( omega^2 I + c^2 Delta) w = f    
+                    ! Define
+                    !   coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
+                     fv(m)=0. 
+                     do freq=0,numberOfFrequencies-1
+                       omega = frequencyArray(freq)
+                         fv(m) = fv(m) -f(i1,i2,i3,freq)*coswtAve(freq)    
                      end do
-                   else
-                     ! OGDERIV3D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
-                       call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
-                     fv(m) = evtt(m)
-                     ! We weight the TZ forcing with the implicit weights to make the solution exact for polynomials
-                     do mt=-1,1
-                       tm = t + dt*mt       
-                         call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evxx(m) )
-                         call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evyy(m) )
-                         call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evzz(m) )
-                       fv(m) = fv(m) -csq*( cImp(mt,0)*( evxx(m) + evyy(m) + evzz(m) )  ) 
-                     end do
+                  else if( addForcing.ne.0 )then  
+                     fv(m) = f(i1,i2,i3,0)
                   end if
-                else if( forcingOption.eq.helmholtzForcing )then
-                  ! forcing for solving the Helmholtz equation   
-                  ! NOTE: change sign of forcing since for Helholtz we want to solve
-                  !      ( omega^2 I + c^2 Delta) w = f    
-                  ! Define
-                  !   coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
-                   fv(m)=0. 
-                   do freq=0,numberOfFrequencies-1
-                     omega = frequencyArray(freq)
-                       fv(m) = fv(m) -f(i1,i2,i3,freq)*coswtAve(freq)    
-                   end do
-                else if( addForcing.ne.0 )then  
-                   fv(m) = f(i1,i2,i3,0)
-                end if
-                ! --- SECOND 2 ---
-                  ! --- THREE DIMENSIONS ---
-                   un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) + ts2*um(i1,i2,i3,m) + ts3*(  uxx23r(i1,i2,i3,0) +  uyy23r(i1,i2,i3,0) +  uzz23r(i1,i2,i3,0) )  + ts4*( umxx23r(i1,i2,i3,0) + umyy23r(i1,i2,i3,0) + umzz23r(i1,i2,i3,0) )  + tsf*fv(m)       
-                    ! #If #FIRSTSTEP eq "firstStep"
-                    !   ! first-step implicit:
-                    !   !   Assumes um = ut(t=0) 
-                    !   ! AND 
-                    !   !   cImp(1,0) = cImp(-1,0)
-                    !   !   RHS = u + dt*ut + (dt^2/2)*L * ( cImp(0,0)*u - 2.*dt*cImp(1,0)*ut ) + .5*dt^2 * f
-                    !   !
-                    !   un(i1,i2,i3,m)= u(i1,i2,i3,m) +dt*um(i1,i2,i3,m) + (.5*cdtSq)*(       cImp( 0,0) *(  uxx23r(i1,i2,i3,0) +  uyy23r(i1,i2,i3,0) +  uzz23r(i1,i2,i3,0) )  !                                                                  -2.*dt*cImp(-1,0) *( umxx23r(i1,i2,i3,0) + umyy23r(i1,i2,i3,0) + umzz23r(i1,i2,i3,0) ) )  !                                                     + .5*dtSq*fv(m)
-                    ! #Else
-                    !   un(i1,i2,i3,m)= 2.*u(i1,i2,i3,m) - um(i1,i2,i3,m) + (cdtSq)*( cImp( 0,0) *(  uxx23r(i1,i2,i3,0) +  uyy23r(i1,i2,i3,0) +  uzz23r(i1,i2,i3,0) ) + !                                                                 cImp(-1,0) *( umxx23r(i1,i2,i3,0) + umyy23r(i1,i2,i3,0) + umzz23r(i1,i2,i3,0) ) )  !                                                     + dtSq*fv(m)
-                    ! #End
-              ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
-              ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
-              ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
-              ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
-                 end if
-               end do
-               end do
-               end do
+                  ! --- SECOND 2 ---
+                    ! --- THREE DIMENSIONS ---
+                     un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) + ts2*um(i1,i2,i3,m) + ts3*(  uxx23r(i1,i2,i3,0) +  uyy23r(i1,i2,i3,0) +  uzz23r(i1,i2,i3,0) )  + ts4*( umxx23r(i1,i2,i3,0) + umyy23r(i1,i2,i3,0) + umzz23r(i1,i2,i3,0) )  + tsf*fv(m) 
+                ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
+                ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
+                ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
+                ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
+               else 
+                 un(i1,i2,i3,0)=0.  ! set value to zero at mask==0 (for active unused points)
+                   end if
+                 end do
+                 end do
+                 end do
+         else
+           ! write(*,'(" advWave: Use SUPER-GRID + IMPLICIT + RECTANGULAR")') 
+           !  stop 1111
+               if( (debug.gt.3) .and. t.lt.2*dt )then
+                 write(*,'("advWave: ADVANCE IMPLICIT SUPERGRID dim=3 order=2 orderInTime=2, grid=rectangular, t=",e10.2)') t
+               end if
+               ! --- IMPLICIT TAYLOR TIME-STEPPING --- 
+               !  D+t D-t u = c^2 Delta( cImp(1) *u^{n+1} + cImp(0) *u^n + cImp(-1)* u^{n-1} )
+               m=0 ! component number 
+               ec = 0 ! component number
+               ! #If "rectangular" eq "curvilinear"
+               !   #If "2" eq "4" && "2" eq "4"
+               !     computeLaplacianOrder2(3,IMPLICIT)
+               !   #End
+               ! #End
+               if( forcingOption.eq.helmholtzForcing .and. addForcing.ne.0 )then
+                 do freq=0,numberOfFrequencies-1
+                   coswt = cos(frequencyArray(freq)*t) ! is this used?
+                   omega = frequencyArray(freq)
+                   coswtAve(freq) = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))
+                 end do
+                 ! coswt = cos(omega*t)
+                 ! coswtAve = cImp(-1,0)*cos(omega*(t-dt)) + cImp(0,0)*cos(omega*t) + cImp(1,0)*cos(omega*(t+dt))    
+               end if 
+               fv(m)=0.
+                 do i3=n3a,n3b
+                 do i2=n2a,n2b
+                 do i1=n1a,n1b
+                   if( mask(i1,i2,i3).gt.0 )then
+                   if( addForcing.eq.0 )then ! *wdh* Tues March 28, 2023
+                     fv(m) = 0.
+                   else if( forcingOption.eq.twilightZoneForcing )then
+                       ! OGDERIV3D( 0,0,0,0,i1,i2,i3,t, ec, ev(m)  )
+                         call ogDeriv(ep, 2,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evtt(m) )
+                       fv(m) = evtt(m)
+                       ! We weight the TZ forcing with the implicit weights to make the solution exact for polynomials
+                       do mt=-1,1
+                         tm = t + dt*mt       
+                           call ogDeriv(ep, 0,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evxx(m) )
+                           call ogDeriv(ep, 0,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evyy(m) )
+                           call ogDeriv(ep, 0,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evzz(m) )
+                         fv(m) = fv(m) -csq*( cImp(mt,0)*( evxx(m) + evyy(m) + evzz(m) )  ) 
+                       end do
+                     if( damp .ne. 0. )then
+                           call ogDeriv(ep, 1,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evt(m) )
+                       fv(m) = fv(m) + damp*evt(m) 
+                     end if  
+                  else if( forcingOption.eq.helmholtzForcing )then
+                    ! forcing for solving the Helmholtz equation   
+                    ! NOTE: change sign of forcing since for Helholtz we want to solve
+                    !      ( omega^2 I + c^2 Delta) w = f    
+                    ! Define
+                    !   coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
+                     fv(m)=0. 
+                     do freq=0,numberOfFrequencies-1
+                       omega = frequencyArray(freq)
+                         fv(m) = fv(m) -f(i1,i2,i3,freq)*coswtAve(freq)    
+                     end do
+                  else if( addForcing.ne.0 )then  
+                     fv(m) = f(i1,i2,i3,0)
+                  end if
+                  ! --- SECOND 2 ---
+                    ! --- THREE DIMENSIONS ---
+                     un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) + ts2*um(i1,i2,i3,m)                         + ts3*(  etax(i1,0)*uxx23r(i1,i2,i3,0)  + etax(i1,1)*ux23r(i1,i2,i3,0)    +  etay(i2,0)*uyy23r(i1,i2,i3,0)  + etay(i2,1)*uy23r(i1,i2,i3,0)    +  etaz(i3,0)*uzz23r(i1,i2,i3,0)  + etaz(i3,1)*uz23r(i1,i2,i3,0) )  + ts4*( etax(i1,0)*umxx23r(i1,i2,i3,0)  + etax(i1,1)*umx23r(i1,i2,i3,0)   + etay(i2,0)*umyy23r(i1,i2,i3,0)  + etay(i2,1)*umy23r(i1,i2,i3,0)   + etaz(i3,0)*umzz23r(i1,i2,i3,0)  + etaz(i3,1)*umz23r(i1,i2,i3,0) ) + tsf*fv(m)       
+                ! write(*,'("i1,i2=",2i3," u-ue=",e10.2)') i1,i2,u(i1,i2,i3,m)-ev(m)
+                ! write(*,'(" uxx-uxxe =",e10.2)') uxx22r(i1,i2,i3,0)-evxx(m)
+                ! OGDERIV2D( 0,0,0,0,i1,i2,i3,t+dt, ec, ev(m)  )
+                ! write(*,'(" un-ue=",e10.2)') un(i1,i2,i3,m)-ev(m)
+               else 
+                 un(i1,i2,i3,0)=0.  ! set value to zero at mask==0 (for active unused points)
+                   end if
+                 end do
+                 end do
+                 end do
+         end if
          ! --- Add contributions from upwind dissipation ---
          if( useImplicitUpwindDissipation.eq.1 )then
-             if( (.true. .or. debug.gt.3) .and. t.lt.2*dt )then
-               write(*,'("addUpwindDissImplicit: UPWIND DISS dim=3 order=2 grid=rectangular... t=",e10.2)') t
-               write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
-             end if
-             ! from formImplicitTimeSteppingMatrix
-               ! // fourth-order dissipation for 2nd-order scheme:
-               ! Real upwindCoeff4[4][5] = { 1.,-4.,6.,-4.,1.,
-               !                             1.,-3.,3.,-1.,0.,   // extrap right-most point D-^3 u(2)
-               !                             0.,-1.,3.,-3.,1.,   // extrap left -most point D+^3 u(-2)
-               !                             0.,-1.,2.,-1.,0.
-               !                           };
-               ! // sixth-order dissipation for 4th-order scheme
-               ! Real upwindCoeff6[4][7] = {1.,-6.,15.,-20.,15.,-6.,1.,
-               !                            1.,-5.,10.,-10., 5.,-1.,0.,  // extrap right-most point D-^5 u(3)
-               !                            0.,-1., 5.,-10.,10., 5.,1.,  // extrap left -most point D+^5 u(-3)
-               !                            0.,-1., 4., -6., 4.,-1.,0.
-               !                           };
-             ! -- Note: Could adjust loop bounds to avoid Dirichlet boundaries
-             m=0 ! component number 
-             ec = 0 ! component number
-             ! Compute some things needed in the loops below
-             if( adjustHelmholtzForUpwinding.eq.1 )then
-               do freq=0,numberOfFrequencies-1
-                 cosineFactor(freq) = cos(frequencyArray(freq)*(t+dt)) - cos(frequencyArray(freq)*(t-dt))
-               end do
-             end if 
-             ! stencil width = order + 1
-             ! upwind stencil = stencilWidth + 2 = order+1 + 2
-             upwindHalfStencilWidth = (orderOfAccuracy+2)/2 
-               do i3=n3a,n3b
-               do i2=n2a,n2b
-               do i1=n1a,n1b
-                 if( mask(i1,i2,i3).gt.0 )then
-               ! --- loop over directions ---
-               do dir=0,nd-1
-                 idv(0)=0; idv(1)=0; idv(2)=0
-                 idv(dir)=1 ! active direction
-                 ! check if left-most and right-most entries in the upwind stencil are valid 
-                 i1l = i1-upwindHalfStencilWidth*idv(0); i1r = i1+upwindHalfStencilWidth*idv(0);
-                 i2l = i2-upwindHalfStencilWidth*idv(1); i2r = i2+upwindHalfStencilWidth*idv(1);
-                 i3l = i3-upwindHalfStencilWidth*idv(2); i3r = i3+upwindHalfStencilWidth*idv(2);
-                 !  Note: there are at most four cases at any order, since we have order/2 layers of interpolation points 
-                 !   Example, order=2, upwind-order=4
-                 !     X---X---C---X---X           C = center point = valid discretization point
-                 !     X---X---C---X               missing right-most 
-                 !         X---C---X---X           missing left-most
-                 !         X---C---X               missing left and right-most
-                 upwCase=0 
-                 if( mask(i1l,i2l,i3l) .ne. 0 .and. mask(i1r,i2r,i3r) .ne. 0 ) then
-                   upwCase=0  ! centred, full-width stencil
-                 else if( mask(i1l,i2l,i3l) .ne. 0 ) then
-                   upwCase=1  ! left biased stencil
-                 else if( mask(i1r,i2r,i3r) .ne. 0 ) then
-                   upwCase=2  ! right biased stencil   
-                 else  
-                   upwCase=3  ! centred smaller stencil     
+           if( useSuperGrid==1 .and. gridType==curvilinear )then
+             ! for superGrid and curvilinear grids use upwinding based on Cartesian grid 
+             ! addUpwindDissImplicitOld(3,2,rectangular)
+               if( (.true. .or. debug.gt.3) .and. t.lt.4*dt )then
+                 write(*,'(/,"advWave:addUpwindDissImplicit: UPWIND DISS dim=3 order=2 grid=rectangular... t=",e10.2)') t
+                 if( gridType==rectangular )then
+                   write(*,'(" upwind-diss-coeff: adxSosup=",3(1pe12.4,1x))') adxSosup(0), adxSosup(1),adxSosup(2)
+                 else
+                   write(*,'(" upwind-diss-coeff: adSosup=",1pe12.4)') adSosup
                  end if
-                 upw = 0. 
-                 do iStencil=-upwindHalfStencilWidth,upwindHalfStencilWidth
-                   j1 = i1 + iStencil*idv(0);  j2 = i2 + iStencil*idv(1);  j3 = i3 + iStencil*idv(2)
-                   umj = um(j1,j2,j3,0)
-                   if( adjustHelmholtzForUpwinding.eq.1 )then
-                     do freq=0,numberOfFrequencies-1
-                       umj = umj + cosineFactor(freq)*vh(j1,j2,j3,freq)
-                     end do
+               end if
+               ! -- Note: Could adjust loop bounds to avoid Dirichlet boundaries
+               m=0 ! component number 
+               ec = 0 ! component number
+               ! Compute some things needed in the loops below
+               if(  solveHelmholtz==1 .and. adjustHelmholtzForUpwinding==1 )then
+                 do freq=0,numberOfFrequencies-1
+                   cosineFactor(freq) = cos(frequencyArray(freq)*(t+dt)) - cos(frequencyArray(freq)*(t-dt))
+                 end do
+                 write(*,'(" FINISH ME: add imp upwind : adjustHelmholtzForUpwinding")')
+                 stop 2964
+               end if 
+                 do i3=n3a,n3b
+                 do i2=n2a,n2b
+                 do i1=n1a,n1b
+                   if( mask(i1,i2,i3).gt.0 )then
+                 ! NOTE: USE um instead of uDot in the dissipation
+                 ! Note minus sign 
+                     un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - ((-6.*um(i1,i2,i3,ec)+4.*(um(i1+1,i2,i3,ec)+um(i1-1,i2,i3,ec))-(um(i1+2,i2,i3,ec)+um(i1-2,i2,i3,ec)))*adxSosup(0)+(-6.*um(i1,i2,i3,ec)+4.*(um(i1,i2+1,i3,ec)+um(i1,i2-1,i3,ec))-(um(i1,i2+2,i3,ec)+um(i1,i2-2,i3,ec)))*adxSosup(1)+(-6.*um(i1,i2,i3,ec)+4.*(um(i1,i2,i3+1,ec)+um(i1,i2,i3-1,ec))-(um(i1,i2,i3+2,ec)+um(i1,i2,i3-2,ec)))*adxSosup(2)) 
                    end if
-                   upw = upw + upwindCoeff(iStencil,upwCase)*umj
-                   ! upw = upw + upwindCoeff(iStencil,upwCase)*um(j1,j2,j3,ec)  ! *** CHECK ME 
-                   ! write(*,'("upw-rhs: i1,i2=",2i4," j1,j2=",2i4," upwindCoeff=",1pe9.2, " um=",1pe9.2," upw=",1pe9.2)') i1,i2,j1,j2,upwindCoeff(iStencil,upwCase),um(j1,j2,j3,ec),upw
-                 end do 
-                 ! if( abs(upw).gt.1e-10 )then
-                 !   write(*,'(">>upw-rhs: i1,i2=",2i4," upw=",1pe9.2)') i1,i2,upw
-                 ! end if 
-                 ! This is the coeff of um in
-                 !         + adxSosup(dir)*(UpwindStencil)( un - um )
-                 un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - adxSosup(dir)*upw 
-                 ! TEST un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - adxSosup(dir)*upw 
-               end do
+                 end do
+                 end do
+                 end do
+           else
+             ! addUpwindDissImplicitOld(3,2,rectangular)
+               if( (.true. .or. debug.gt.3) .and. t.lt.4*dt )then
+                 write(*,'(/,"advWave:addUpwindDissImplicit: UPWIND DISS dim=3 order=2 grid=rectangular... t=",e10.2)') t
+                 if( gridType==rectangular )then
+                   write(*,'(" upwind-diss-coeff: adxSosup=",3(1pe12.4,1x))') adxSosup(0), adxSosup(1),adxSosup(2)
+                 else
+                   write(*,'(" upwind-diss-coeff: adSosup=",1pe12.4)') adSosup
                  end if
-               end do
-               end do
-               end do
+               end if
+               ! -- Note: Could adjust loop bounds to avoid Dirichlet boundaries
+               m=0 ! component number 
+               ec = 0 ! component number
+               ! Compute some things needed in the loops below
+               if(  solveHelmholtz==1 .and. adjustHelmholtzForUpwinding==1 )then
+                 do freq=0,numberOfFrequencies-1
+                   cosineFactor(freq) = cos(frequencyArray(freq)*(t+dt)) - cos(frequencyArray(freq)*(t-dt))
+                 end do
+                 write(*,'(" FINISH ME: add imp upwind : adjustHelmholtzForUpwinding")')
+                 stop 2964
+               end if 
+                 do i3=n3a,n3b
+                 do i2=n2a,n2b
+                 do i1=n1a,n1b
+                   if( mask(i1,i2,i3).gt.0 )then
+                 ! NOTE: USE um instead of uDot in the dissipation
+                 ! Note minus sign 
+                     un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - ((-6.*um(i1,i2,i3,ec)+4.*(um(i1+1,i2,i3,ec)+um(i1-1,i2,i3,ec))-(um(i1+2,i2,i3,ec)+um(i1-2,i2,i3,ec)))*adxSosup(0)+(-6.*um(i1,i2,i3,ec)+4.*(um(i1,i2+1,i3,ec)+um(i1,i2-1,i3,ec))-(um(i1,i2+2,i3,ec)+um(i1,i2-2,i3,ec)))*adxSosup(1)+(-6.*um(i1,i2,i3,ec)+4.*(um(i1,i2,i3+1,ec)+um(i1,i2,i3-1,ec))-(um(i1,i2,i3+2,ec)+um(i1,i2,i3-2,ec)))*adxSosup(2)) 
+                   end if
+                 end do
+                 end do
+                 end do
+           end if
          end if 
        end if
      else
        ! ---- add upwind dissipation -----
        ! preComputeUpwindUt : true=precompute Ut in upwind dissipation,  (uses v=uDot computed above)
        !                      false=compute Ut inline in Gauss-Seidel fashion 
-       if( preComputeUpwindUt.eq.1 )then
-         ! precompute Ut in upwind dissipation,  (uses v=uDot computed above)
-           if( debug.gt.3 .and. t.lt.4*dt )then
-             write(*,'("addUpwindDiss: UPWIND DISS using u.t=v dim=3 order=2 grid=rectangular... t=",e10.2)') t
-             write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
-           end if
-           m=0 ! component number 
-           ec = 0 ! component number
-           ! +++ ADD UPWIND DISSIPATION +++
-           ! beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
-             do i3=n3a,n3b
-             do i2=n2a,n2b
-             do i1=n1a,n1b
-               if( mask(i1,i2,i3).gt.0 )then
-              ! --- SECOND 2 ---
-                ! --- THREE DIMENSIONS ---
-                  un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+(-6.*v(i1,i2,i3,ec)+4.*(v(i1+1,i2,i3,ec)+v(i1-1,i2,i3,ec))-(v(i1+2,i2,i3,ec)+v(i1-2,i2,i3,ec)))*adxSosup(0)+(-6.*v(i1,i2,i3,ec)+4.*(v(i1,i2+1,i3,ec)+v(i1,i2-1,i3,ec))-(v(i1,i2+2,i3,ec)+v(i1,i2-2,i3,ec)))*adxSosup(1)+(-6.*v(i1,i2,i3,ec)+4.*(v(i1,i2,i3+1,ec)+v(i1,i2,i3-1,ec))-(v(i1,i2,i3+2,ec)+v(i1,i2,i3-2,ec)))*adxSosup(2)
+       if( useSimplifiedDissipation==0  )then
+         if( preComputeUpwindUt.eq.1 )then
+           ! precompute Ut in upwind dissipation,  (uses v=uDot computed above)
+             if( debug.gt.1 .and. t.lt.4*dt )then
+               write(*,'("addUpwindDiss: UPWIND DISS using u.t=v dim=3 order=2 grid=rectangular... t=",e10.2)') t
+               if( gridType==rectangular )then
+                 write(*,'(" useSimplifiedDissipation=",i2," adxSosup=",3(1pe12.4))') useSimplifiedDissipation, adxSosup(0), adxSosup(1),adxSosup(2)
+               else
+                 write(*,'(" useSimplifiedDissipation=",i2," adSosup=",(1pe12.4))') useSimplifiedDissipation, adSosup
                end if
-             end do
-             end do
-             end do
-           ! endLoops()
+             end if
+             m=0 ! component number 
+             ec = 0 ! component number
+             ! +++ ADD UPWIND DISSIPATION +++
+             ! beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+               do i3=n3a,n3b
+               do i2=n2a,n2b
+               do i1=n1a,n1b
+                 if( mask(i1,i2,i3).gt.0 )then
+                ! --- SECOND 2 ---
+                  ! --- THREE DIMENSIONS ---
+                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+((-6.*v(i1,i2,i3,ec)+4.*(v(i1+1,i2,i3,ec)+v(i1-1,i2,i3,ec))-(v(i1+2,i2,i3,ec)+v(i1-2,i2,i3,ec)))*adxSosup(0)+(-6.*v(i1,i2,i3,ec)+4.*(v(i1,i2+1,i3,ec)+v(i1,i2-1,i3,ec))-(v(i1,i2+2,i3,ec)+v(i1,i2-2,i3,ec)))*adxSosup(1)+(-6.*v(i1,i2,i3,ec)+4.*(v(i1,i2,i3+1,ec)+v(i1,i2,i3-1,ec))-(v(i1,i2,i3+2,ec)+v(i1,i2,i3-2,ec)))*adxSosup(2))
+                 end if
+               end do
+               end do
+               end do
+             ! endLoops()
+         else
+           ! compute Ut inline in Gauss-Seidel fashion (this is more stable)
+             if( debug.gt.1 .and. t.lt.4*dt )then
+               write(*,'("addUpwindDiss: UPWIND DISS using u.t=Dztu dim=3 order=2 grid=rectangular... t=",e10.2)') t
+               if( gridType==rectangular )then
+                 write(*,'(" useSimplifiedDissipation=",i2," adxSosup=",3(1pe12.4))') useSimplifiedDissipation, adxSosup(0), adxSosup(1),adxSosup(2)
+               else
+                 write(*,'(" useSimplifiedDissipation=",i2," adSosup=",(1pe12.4))') useSimplifiedDissipation, adSosup
+               end if
+             end if
+             m=0 ! component number 
+             ec = 0 ! component number
+             ! +++ ADD UPWIND DISSIPATION +++
+             ! beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+               do i3=n3a,n3b
+               do i2=n2a,n2b
+               do i1=n1a,n1b
+                 if( mask(i1,i2,i3).gt.0 )then
+                ! --- SECOND 2 ---
+                  ! --- THREE DIMENSIONS ---
+                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+((-6.*Dztu(i1,i2,i3,ec)+4.*(Dztu(i1+1,i2,i3,ec)+Dztu(i1-1,i2,i3,ec))-(Dztu(i1+2,i2,i3,ec)+Dztu(i1-2,i2,i3,ec)))*adxSosup(0)+(-6.*Dztu(i1,i2,i3,ec)+4.*(Dztu(i1,i2+1,i3,ec)+Dztu(i1,i2-1,i3,ec))-(Dztu(i1,i2+2,i3,ec)+Dztu(i1,i2-2,i3,ec)))*adxSosup(1)+(-6.*Dztu(i1,i2,i3,ec)+4.*(Dztu(i1,i2,i3+1,ec)+Dztu(i1,i2,i3-1,ec))-(Dztu(i1,i2,i3+2,ec)+Dztu(i1,i2,i3-2,ec)))*adxSosup(2))
+                 end if
+               end do
+               end do
+               end do
+             ! endLoops()
+         end if
        else
-         ! compute Ut inline in Gauss-Seidel fashion (this is more stable)
-           if( debug.gt.3 .and. t.lt.4*dt )then
-             write(*,'("addUpwindDiss: UPWIND DISS using u.t=Dztu dim=3 order=2 grid=rectangular... t=",e10.2)') t
-             write(*,'(" adxSosup=",3e12.4)') adxSosup(0), adxSosup(1),adxSosup(2)
-           end if
-           m=0 ! component number 
-           ec = 0 ! component number
-           ! +++ ADD UPWIND DISSIPATION +++
-           ! beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
-             do i3=n3a,n3b
-             do i2=n2a,n2b
-             do i1=n1a,n1b
-               if( mask(i1,i2,i3).gt.0 )then
-              ! --- SECOND 2 ---
-                ! --- THREE DIMENSIONS ---
-                  un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+(-6.*Dztu(i1,i2,i3,ec)+4.*(Dztu(i1+1,i2,i3,ec)+Dztu(i1-1,i2,i3,ec))-(Dztu(i1+2,i2,i3,ec)+Dztu(i1-2,i2,i3,ec)))*adxSosup(0)+(-6.*Dztu(i1,i2,i3,ec)+4.*(Dztu(i1,i2+1,i3,ec)+Dztu(i1,i2-1,i3,ec))-(Dztu(i1,i2+2,i3,ec)+Dztu(i1,i2-2,i3,ec)))*adxSosup(1)+(-6.*Dztu(i1,i2,i3,ec)+4.*(Dztu(i1,i2,i3+1,ec)+Dztu(i1,i2,i3-1,ec))-(Dztu(i1,i2,i3+2,ec)+Dztu(i1,i2,i3-2,ec)))*adxSosup(2)
+         ! -- simplified upwind dissipation ---
+         !   Use rectangular grid formulation with special values 
+         if( preComputeUpwindUt.eq.1 )then
+           ! precompute Ut in upwind dissipation,  (uses v=uDot computed above)
+             if( debug.gt.1 .and. t.lt.4*dt )then
+               write(*,'("addUpwindDiss: UPWIND DISS using u.t=v dim=3 order=2 grid=rectangular... t=",e10.2)') t
+               if( gridType==rectangular )then
+                 write(*,'(" useSimplifiedDissipation=",i2," adxSosup=",3(1pe12.4))') useSimplifiedDissipation, adxSosup(0), adxSosup(1),adxSosup(2)
+               else
+                 write(*,'(" useSimplifiedDissipation=",i2," adSosup=",(1pe12.4))') useSimplifiedDissipation, adSosup
                end if
-             end do
-             end do
-             end do
-           ! endLoops()
+             end if
+             m=0 ! component number 
+             ec = 0 ! component number
+             ! +++ ADD UPWIND DISSIPATION +++
+             ! beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+               do i3=n3a,n3b
+               do i2=n2a,n2b
+               do i1=n1a,n1b
+                 if( mask(i1,i2,i3).gt.0 )then
+                ! --- SECOND 2 ---
+                  ! --- THREE DIMENSIONS ---
+                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+((-6.*v(i1,i2,i3,ec)+4.*(v(i1+1,i2,i3,ec)+v(i1-1,i2,i3,ec))-(v(i1+2,i2,i3,ec)+v(i1-2,i2,i3,ec)))*adxSosup(0)+(-6.*v(i1,i2,i3,ec)+4.*(v(i1,i2+1,i3,ec)+v(i1,i2-1,i3,ec))-(v(i1,i2+2,i3,ec)+v(i1,i2-2,i3,ec)))*adxSosup(1)+(-6.*v(i1,i2,i3,ec)+4.*(v(i1,i2,i3+1,ec)+v(i1,i2,i3-1,ec))-(v(i1,i2,i3+2,ec)+v(i1,i2,i3-2,ec)))*adxSosup(2))
+                 end if
+               end do
+               end do
+               end do
+             ! endLoops()
+         else
+           ! compute Ut inline in Gauss-Seidel fashion (this is more stable)
+             if( debug.gt.1 .and. t.lt.4*dt )then
+               write(*,'("addUpwindDiss: UPWIND DISS using u.t=Dztu dim=3 order=2 grid=rectangular... t=",e10.2)') t
+               if( gridType==rectangular )then
+                 write(*,'(" useSimplifiedDissipation=",i2," adxSosup=",3(1pe12.4))') useSimplifiedDissipation, adxSosup(0), adxSosup(1),adxSosup(2)
+               else
+                 write(*,'(" useSimplifiedDissipation=",i2," adSosup=",(1pe12.4))') useSimplifiedDissipation, adSosup
+               end if
+             end if
+             m=0 ! component number 
+             ec = 0 ! component number
+             ! +++ ADD UPWIND DISSIPATION +++
+             ! beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+               do i3=n3a,n3b
+               do i2=n2a,n2b
+               do i1=n1a,n1b
+                 if( mask(i1,i2,i3).gt.0 )then
+                ! --- SECOND 2 ---
+                  ! --- THREE DIMENSIONS ---
+                    un(i1,i2,i3,ec)=un(i1,i2,i3,ec)+((-6.*Dztu(i1,i2,i3,ec)+4.*(Dztu(i1+1,i2,i3,ec)+Dztu(i1-1,i2,i3,ec))-(Dztu(i1+2,i2,i3,ec)+Dztu(i1-2,i2,i3,ec)))*adxSosup(0)+(-6.*Dztu(i1,i2,i3,ec)+4.*(Dztu(i1,i2+1,i3,ec)+Dztu(i1,i2-1,i3,ec))-(Dztu(i1,i2+2,i3,ec)+Dztu(i1,i2-2,i3,ec)))*adxSosup(1)+(-6.*Dztu(i1,i2,i3,ec)+4.*(Dztu(i1,i2,i3+1,ec)+Dztu(i1,i2,i3-1,ec))-(Dztu(i1,i2,i3+2,ec)+Dztu(i1,i2,i3-2,ec)))*adxSosup(2))
+                 end if
+               end do
+               end do
+               end do
+             ! endLoops()
+         end if
        end if
      end if
      return

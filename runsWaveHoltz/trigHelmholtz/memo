@@ -1,8 +1,10 @@
 
 
 *************************************************
-********** Mon May 15, 2023
+********** Wed Jul 12, 2023
 
+REVISIT MULTI-FREQ for CHECKS
+cgwh -noplot trigHelmholtz.cmd -g=square64.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=1 -matlab=square64o2ImpThreeFreqNp4 -go=dk
 
 
 *************************************************

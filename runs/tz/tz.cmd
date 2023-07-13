@@ -9,11 +9,11 @@
 $omega=30.1; $x0=0; $y0=0; $z0=0; $beta=400; $numPeriods=1; $omegaSOR=1; $tol=1.e-3; 
 # $ad4=0; # OLD
 $upwind=0; # new
-$debug=3; $debugmg=1; 
+$debug=3; $debugmg=1; $debugOges=0; 
 $ts="explicit"; $implicitUpwind=0; 
 $rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat rectangular grids explicitly
 $beta2=.5; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping 
-$dtMax=1e10; 
+$dtMax=1e10; $damp=0; 
 $bc="d"; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $meApproach="std"; # or "ha"
@@ -30,8 +30,8 @@ GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\
             "fx=f"=>\$fx,"fy=f"=>\$fy,"fz=f"=>\$fz,"ft=f"=>\$ft,"rectangular=s"=>\$rectangular,\
             "beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,\
             "useKnownFirstStep=i"=>\$useKnownFirstStep,"meApproach=s"=>\$meApproach,"implicitUpwind=i"=>\$implicitUpwind,\
-            "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"debugmg=i"=>\$debugmg,\
-            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"go=s"=>\$go );
+            "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"debugmg=i"=>\$debugmg,"debugOges=i"=>\$debugOges,\
+            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"damp=f"=>\$damp,"go=s"=>\$go );
 #
 if( $tz eq "trig" ){ $tz="trigonometric"; }
 if( $tz eq "poly" ){ $tz="polynomial"; }
@@ -46,6 +46,7 @@ cfl $cfl
 tPlot $tp 
 tFinal $tf
 dtMax $dtMax
+damp $damp
 #
 $cmd="#";
 if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }
@@ -71,7 +72,7 @@ debug $debug
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
 #
-if( $bc eq "d" ){ $cmd="bc=dirichlet"; }elsif( $bc eq "n" ){ $cmd="bc=neumann"; }elsif( $bc eq "e" ){ $cmd="bc=exact"; }else{ $cmd="bc=dirichlet"; }
+if( $bc eq "d" ){ $cmd="bc=dirichlet"; }elsif( $bc eq "n" ){ $cmd="bc=neumann"; }elsif( $bc eq "e" ){ $cmd="bc=exact"; }elsif( $bc eq "a" ){ $cmd="bc=absorbing"; }else{ $cmd="bc=dirichlet"; }
 $cmd
 turn on forcing 1
 twilightZoneForcing
@@ -89,6 +90,7 @@ trig frequencies $fx $fy $fz $ft
 # omegaSOR $omegaSOR
 # if( $ad4>0. ){ $upwind=1; }# for backward compatibility
 upwind dissipation $upwind
+implicit upwind $implicitUpwind
 # artificial dissipation $ad4
 # tol $tol 
 # number of periods $numPeriods

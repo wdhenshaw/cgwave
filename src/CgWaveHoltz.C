@@ -1,5 +1,5 @@
 #include "CgWaveHoltz.h"
-#include "CompositeGridOperators.h";	
+#include "CompositeGridOperators.h"	
 #include "PlotStuff.h"
 #include "display.h"
 #include "ParallelOverlappingGridInterpolator.h"
@@ -87,8 +87,8 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
   logFile = fopen("cgWaveHoltz.out","w" );        // log file 
 
   FILE *& checkFile = dbase.put<FILE*>("checkFile");
-  checkFile = fopen("cgWaveHoltz.check","w" );        // for regression and convergence tests
-  fPrintF(checkFile,"# Check file for CgWaveHoltz\n"); // check file has one title line
+  // checkFile = fopen("cgWaveHoltz.check","w" );        // for regression and convergence tests
+  // fPrintF(checkFile,"# Check file for CgWaveHoltz\n"); // check file has one title line
 
   // here is the CgWave solver for the time dependent wave equation
   CgWave *& cgWave = dbase.put<CgWave*>("cgWave");
@@ -104,7 +104,7 @@ CgWaveHoltz::
 {
   fclose(dbase.get<FILE*>("debugFile"));
   fclose(dbase.get<FILE*>("logFile"));
-  fclose(dbase.get<FILE*>("checkFile"));
+  // fclose(dbase.get<FILE*>("checkFile"));
 
   delete dbase.get<CgWave*>("cgWave");
 }
@@ -200,6 +200,8 @@ int CgWaveHoltz::interactiveUpdate()
 
   CgWave & cgWave                 = *dbase.get<CgWave*>("cgWave");
 
+  int & filterTimeDerivative = cgWave.dbase.get<int>("filterTimeDerivative");
+
   // Build a dialog menu for changing parameters
   GUIState gui;
   DialogData & dialog=gui;
@@ -225,11 +227,13 @@ int CgWaveHoltz::interactiveUpdate()
   aString tbCommands[] = {"save matlab file",
                           "monitor residuals",
                           "adjust omega",
+                          "filter time derivative",
                            ""};
   int tbState[10];
   tbState[0] = saveMatlabFile;
   tbState[1] = monitorResiduals;
   tbState[2] = adjustOmega;
+  tbState[3] = filterTimeDerivative;
   int numColumns=1;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
 
@@ -415,6 +419,10 @@ int CgWaveHoltz::interactiveUpdate()
       printF("Setting adjustOmega=%d: 1=adjust omega for the discrete symbol pf D+t D-t \n"
              " This will make WaveHoltz solution be closer to the discrete Helhmhotz problem\n",adjustOmega);
     }
+    else if( dialog.getToggleValue(answer,"filter time derivative",filterTimeDerivative) )
+    {
+      printF("Setting filterTimeDerivative=%d: 1=filter time-derivative of the initial condition.\n",filterTimeDerivative);
+    }    
 
     else
     {
@@ -667,7 +675,7 @@ int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
   fPrintF(matlabFile,"tol=%12.4e;\n",tol);
   fPrintF(matlabFile,"timeSteppingMethod='%s';\n",(timeSteppingMethod==CgWave::explicitTimeStepping ? "explicit" : "implicit") );
 
-  printF("saveMatlab: dt=%9.3e\n",dt);
+  // printF("saveMatlab: dt=%9.3e\n",dt);
   fPrintF(matlabFile,"dt=%20.14e;\n",dt);
 
   // --- Save the quadrature weights ---
@@ -774,7 +782,13 @@ int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
 int CgWaveHoltz::setup()
 {
   const int & numberOfFrequencies = dbase.get<int>("numberOfFrequencies");
-  printF("cgWaveHoltz::setup: numberOfFrequencies=%d\n",numberOfFrequencies);
+
+  CgWave & cgWave                  = *dbase.get<CgWave*>("cgWave");
+  const int & filterTimeDerivative = cgWave.dbase.get<int>("filterTimeDerivative");
+  int & numCompWaveHoltz           = cgWave.dbase.get<int>("numCompWaveHoltz");
+  numCompWaveHoltz = filterTimeDerivative ? 2 : numberOfFrequencies;  
+
+  printF("cgWaveHoltz::setup: numberOfFrequencies=%d, filterTimeDerivative=%d, numCompWaveHoltz=%d\n",numberOfFrequencies,filterTimeDerivative,numCompWaveHoltz);
 
   // realCompositeGridFunction & vOld = dbase.get<realCompositeGridFunction>("vOld");
   // Range all;
@@ -782,8 +796,8 @@ int CgWaveHoltz::setup()
 
   realCompositeGridFunction & residual = dbase.get<realCompositeGridFunction>("residual");
   Range all;
-  residual.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
-  for( int freq=0; freq<numberOfFrequencies; freq++ )
+  residual.updateToMatchGrid(cg,all,all,all,numCompWaveHoltz);
+  for( int freq=0; freq<numCompWaveHoltz; freq++ )
   {
     residual.setName(sPrintF("r%d",freq),freq);
   }
@@ -792,200 +806,283 @@ int CgWaveHoltz::setup()
   return 0;
 }
 
+// // ================================================================================================
+// /// \brief Compute the residual in the current solution
+// /// \param useAdjustedOmega (input) : 0 = use standard omega
+// ///                                   1 = compute residual using the adjusted omega, 
+// ///                                   2 = compute resdiual for both omega and adjusted omega.
+// /// \param maxRes (output) : maxRes(freq)
+// /// \return value : max(maxRes)
+// // ================================================================================================
+// real CgWaveHoltz::residual( RealArray & maxRes, int useAdjustedOmega /* = 2 */ )
+// {
+//   CgWave & cgWave               = *dbase.get<CgWave*>("cgWave");
+//   realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+//   realCompositeGridFunction & f = cgWave.dbase.get<realCompositeGridFunction>("f");
+
+//   return residual( v, f, maxRes, useAdjustedOmega );
+// }
 
 
-// ================================================================================================
-/// \brief Compute the residual in the current solution
-/// \param useAdjustedOmega (input) : 0 = use standard omega
-///                                   1 = compute residual using the adjusted omega, 
-///                                   2 = compute resdiual for both omega and adjusted omega.
-// ================================================================================================
-real CgWaveHoltz::residual( int useAdjustedOmega /* = 2 */ )
-{
+// // ================================================================================================
+// /// \brief Compute the residual in the current solution
+// /// \param useAdjustedOmega (input) : 0 = use standard omega
+// ///                                   1 = compute residual using the adjusted omega, 
+// ///                                   2 = compute resdiual for both omega and adjusted omega.
+// /// \param maxRes (output) : maxRes(freq)
+// /// \return value : max(maxRes)
+// // ================================================================================================
+// real CgWaveHoltz::residual( RealCompositeGridFunction & v, RealArray & maxRes, int useAdjustedOmega /* = 2 */ )
+// {
+//   CgWave & cgWave               = *dbase.get<CgWave*>("cgWave");
+//   realCompositeGridFunction & f = cgWave.dbase.get<realCompositeGridFunction>("f");
 
-  const int & debug                       = dbase.get<int>("debug");
+//   return residual( v, f, maxRes, useAdjustedOmega );
+// }
 
-  CgWave & cgWave                         = *dbase.get<CgWave*>("cgWave");
-  const real & omega                      = cgWave.dbase.get<real>("omega");
-  const int & adjustOmega                 = cgWave.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+
+// // ================================================================================================
+// /// \brief Compute the residual in the current solution
+// /// \param useAdjustedOmega (input) : 0 = use standard omega
+// ///                                   1 = compute residual using the adjusted omega, 
+// ///                                   2 = compute resdiual for both omega and adjusted omega.
+// /// \param maxRes (output) : maxRes(freq)
+// /// \return value : max(maxRes)
+// // ================================================================================================
+// real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFunction & f, RealArray & maxRes, int useAdjustedOmega /* = 2 */ )
+// {
+
+//   const int & debug                       = dbase.get<int>("debug");
+
+//   CgWave & cgWave                         = *dbase.get<CgWave*>("cgWave");
+//   const real & omegaCgWave                = cgWave.dbase.get<real>("omega");
+//   const int & adjustOmega                 = cgWave.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
     
-  const real & dt                         = cgWave.dbase.get<real>("dt");
-  const real & c                          = cgWave.dbase.get<real>("c");
-  const int & upwind                      = cgWave.dbase.get<int>("upwind");
-  const int & adjustHelmholtzForUpwinding = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding");
-  const int & computeEigenmodes           = cgWave.dbase.get<int>("computeEigenmodes");
+//   const real & dt                         = cgWave.dbase.get<real>("dt");
+//   const real & c                          = cgWave.dbase.get<real>("c");
+//   const real & damp                       = cgWave.dbase.get<real>("damp");
 
-  const int & numberOfFrequencies         = cgWave.dbase.get<int>("numberOfFrequencies");
-  const RealArray & frequencyArray        = cgWave.dbase.get<RealArray>("frequencyArray");
+//   const int & upwind                      = cgWave.dbase.get<int>("upwind");
+//   const int & adjustHelmholtzForUpwinding = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding");
+//   const int & computeEigenmodes           = cgWave.dbase.get<int>("computeEigenmodes");
+//   const int & numCompWaveHoltz            = cgWave.dbase.get<int>("numCompWaveHoltz");
+//   const int & filterTimeDerivative        = cgWave.dbase.get<int>("filterTimeDerivative"); 
+
+//   const int & numberOfFrequencies         = cgWave.dbase.get<int>("numberOfFrequencies");
+//   const RealArray & frequencyArray        = cgWave.dbase.get<RealArray>("frequencyArray");
+//   const RealArray & frequencyArrayAdjusted= cgWave.dbase.get<RealArray>("frequencyArrayAdjusted");
     
-  realCompositeGridFunction & v           = cgWave.dbase.get<realCompositeGridFunction>("v");
-  realCompositeGridFunction & f           = cgWave.dbase.get<realCompositeGridFunction>("f");
-  CompositeGridOperators & operators      = cgWave.dbase.get<CompositeGridOperators>("operators");
+//   // realCompositeGridFunction & v           = cgWave.dbase.get<realCompositeGridFunction>("v");
+//   // realCompositeGridFunction & f           = cgWave.dbase.get<realCompositeGridFunction>("f");
+//   CompositeGridOperators & operators      = cgWave.dbase.get<CompositeGridOperators>("operators");
 
 
-  // Symbol of D+t D-t : 
-  // D+tD-t exp(i*omega*t^n) = -4*sin^2(omega*dt/2)/dt^2 * exp(i*omega*t^n )
-  // 
-  //  omegaTilde = (2/dt)*sin(omega*dt/2)
-  const Real omegas = (2./dt)*sin(omega*dt/2.);
+//   Real omega = frequencyArray(0);
 
-  // bool computeResidualUsingDiscreteSymbol = true;
-  // bool adjustOmega = true;
-  // const Real omegar = adjustOmega ? omegas : omega; // omega to use for residual
+//   if( omegaCgWave!=omega )
+//   {
+//     printF("\n @@@@@@@ CgWaveHoltz::residual WARNING: omega=%g is NOT EQUAL TO frequencyArray(0)=%g @@@@@@@\n\n",omegaCgWave,omega);
+//   }
 
-  // printF("\n +++++ ENTERING CgWaveHoltz::residual +++++ \n");
+//   // Symbol of D+t D-t : 
+//   // D+tD-t exp(i*omega*t^n) = -4*sin^2(omega*dt/2)/dt^2 * exp(i*omega*t^n )
+//   // 
+//   //  omegaTilde = (2/dt)*sin(omega*dt/2)
+//   const Real omegas = (2./dt)*sin(omega*dt/2.);
 
-  // printF("CgWaveHoltz::residual: c=%g, omega=%14.7e, omegas=%14.7e (from symbol of D+D-), dt=%12.6e, adjustOmega=%d, upwind=%d\n",c,omega,omegas,dt,adjustOmega,upwind);
-  if( upwind && !adjustHelmholtzForUpwinding )
-  {
-    printF("\n **** WARNING: upwinding is ON! Correcting omega for the discrete-time-symbol will not fully work to give a small residual ! *****\n\n");
-  }
-  realCompositeGridFunction & res = dbase.get<realCompositeGridFunction>("residual");
+//   // bool computeResidualUsingDiscreteSymbol = true;
+//   // bool adjustOmega = true;
+//   // const Real omegar = adjustOmega ? omegas : omega; // omega to use for residual
 
-  RealArray maxRes(numberOfFrequencies), maxResFromDiscreteSymbol(numberOfFrequencies);
-  maxRes=0.;
-  maxResFromDiscreteSymbol=0.;
+//   // printF("\n +++++ ENTERING CgWaveHoltz::residual +++++ \n");
 
-  Index I1,I2,I3;
-  Index Ib1,Ib2,Ib3;
+//   // printF("CgWaveHoltz::residual: c=%g, omega=%14.7e, omegas=%14.7e (from symbol of D+D-), dt=%12.6e, adjustOmega=%d, upwind=%d\n",c,omega,omegas,dt,adjustOmega,upwind);
+//   if( upwind && !adjustHelmholtzForUpwinding )
+//   {
+//     printF("\n **** WARNING: upwinding is ON! Correcting omega for the discrete-time-symbol will not fully work to give a small residual ! *****\n\n");
+//   }
+//   realCompositeGridFunction & res = dbase.get<realCompositeGridFunction>("residual");
 
-  // If we have not adjusted omega, then final residual is with standard omega
-  // If we have adjusted omega, then final residual is with the adjusted
-  int numRes=1;  // number of residuals we compute 
-  bool computeResidualWithAdjustedOmega[2] ={ false,false };
+//   // RealArray maxRes(numCompWaveHoltz), maxResFromDiscreteSymbol(numCompWaveHoltz);
+//   RealArray maxResFromDiscreteSymbol(numCompWaveHoltz);
+//   maxRes.redim(numCompWaveHoltz);
+//   maxRes=0.;
+//   maxResFromDiscreteSymbol=0.;
 
-  if( useAdjustedOmega==0 || numberOfFrequencies>1 || computeEigenmodes )
-  {
-    numRes=1;  computeResidualWithAdjustedOmega[0]=false;
-  }
-  else if( useAdjustedOmega==1 )
-  {
-    numRes=1;  computeResidualWithAdjustedOmega[0]=true;
-  }
-  else
-  {
-    numRes=2; // compute redisuals in two ways
-    if( adjustOmega )
-    {
-      computeResidualWithAdjustedOmega[0]=false;
-      computeResidualWithAdjustedOmega[1]=true;
-    }
-    else
-    {
-      computeResidualWithAdjustedOmega[0]=true;
-      computeResidualWithAdjustedOmega[1]=false;
-    }
-  }
+//   Index I1,I2,I3;
+//   Index Ib1,Ib2,Ib3;
 
-  for( int ires=0; ires<numRes; ires++ )
-  {
+//   // If we have not adjusted omega, then final residual is with standard omega
+//   // If we have adjusted omega, then final residual is with the adjusted
+//   int numRes=1;  // number of residuals we compute 
+//   bool computeResidualWithAdjustedOmega[2] ={ false,false };
 
-    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-    {
-      MappedGrid & mg = cg[grid];
+//   if( useAdjustedOmega==0 || numberOfFrequencies>1 || computeEigenmodes )
+//   {
+//     numRes=1;  computeResidualWithAdjustedOmega[0]=false;
+//   }
+//   else if( useAdjustedOmega==1 )
+//   {
+//     numRes=1;  computeResidualWithAdjustedOmega[0]=true;
+//   }
+//   else
+//   {
+//     numRes=2; // compute redisuals in two ways
+//     if( adjustOmega )
+//     {
+//       computeResidualWithAdjustedOmega[0]=false;
+//       computeResidualWithAdjustedOmega[1]=true;
+//     }
+//     else
+//     {
+//       computeResidualWithAdjustedOmega[0]=true;
+//       computeResidualWithAdjustedOmega[1]=false;
+//     }
+//   }
 
-      OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+//   for( int ires=0; ires<numRes; ires++ )
+//   {
 
-      OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-      OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
-      OV_GET_SERIAL_ARRAY(real,res[grid],resLocal);
+//     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+//     {
+//       MappedGrid & mg = cg[grid];
 
-      int extra=0; // -1;
-      getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra); 
+//       OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+//       OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+//       OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
+//       OV_GET_SERIAL_ARRAY(real,res[grid],resLocal);
+
+//       int extra=0; // -1;
+//       getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra); 
       
-      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
-      if( ok )
-      {
-        resLocal=0.;
+//       bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
+//       if( ok )
+//       {
+//         resLocal=0.;
         
-        RealArray lap(I1,I2,I3,numberOfFrequencies);
-        operators[grid].derivative(MappedGridOperators::laplacianOperator,vLocal,lap,I1,I2,I3);
+//         RealArray lap(I1,I2,I3,numCompWaveHoltz);
+//         operators[grid].derivative(MappedGridOperators::laplacianOperator,vLocal,lap,I1,I2,I3);
 
-        for( int freq=0; freq<numberOfFrequencies; freq++ )
-        {
-          // Real om = omega;
-          Real om = frequencyArray(freq);
-          if( computeResidualWithAdjustedOmega[ires] )
-          {
-            // --- Compute the residual using omegas (from discrete symbol) ---
-            if( grid==0 && debug & 1 )
-              printF("CgWaveHoltz::residual: compute residual with adjusted omegas=%20.12e\n",omegas);
-            om = omegas;
-          }
+//         for( int freq=0; freq<numberOfFrequencies; freq++ )
+//         {
+//           // Real om = omega;
+//           Real om = frequencyArray(freq);
+//           if( computeResidualWithAdjustedOmega[ires] )
+//           {
+//             // --- Compute the residual using omegas (from discrete symbol) ---
+//             if( grid==0 && debug & 1 )
+//               printF("CgWaveHoltz::residual: compute residual with adjusted omegas=%20.12e\n",omegas);
+//             om = omegas;
+//           }
 
-          // --- Compute the residual ---
-          if( computeEigenmodes )
-          {
-            FOR_3D(i1,i2,i3,I1,I2,I3)
-            {
-              if( maskLocal(i1,i2,i3)>0 )
-              {
-                // relative residual : scale by 1/omega^2
-                resLocal(i1,i2,i3,freq) = ( (c*c)/(om*om) )*lap(i1,i2,i3,freq) + vLocal(i1,i2,i3,freq);
-              }
-            }
-          }
-          else
-          {
-            where( maskLocal(I1,I2,I3)>0 )
-            {
-              // resLocal(I1,I2,I3) = (c*c)*lap(I1,I2,I3) + (omega*omega)*vLocal(I1,I2,I3) + fLocal(I1,I2,I3); // change sign on f for cgWave **FIX ME**
-              resLocal(I1,I2,I3,freq) = (c*c)*lap(I1,I2,I3,freq) + (om*om)*vLocal(I1,I2,I3,freq) - fLocal(I1,I2,I3,freq); 
-            }
-          }
-        }
-      }
+//           // --- Compute the residual ---
+//           if( computeEigenmodes )
+//           {
+//             FOR_3D(i1,i2,i3,I1,I2,I3)
+//             {
+//               if( maskLocal(i1,i2,i3)>0 )
+//               {
+//                 // relative residual : scale by 1/omega^2
+//                 resLocal(i1,i2,i3,freq) = ( (c*c)/(om*om) )*lap(i1,i2,i3,freq) + vLocal(i1,i2,i3,freq);
+//               }
+//             }
+//           }
+//           else
+//           {
+//             if( filterTimeDerivative==0 )
+//             {
+//               where( maskLocal(I1,I2,I3)>0 )
+//               {
+//                 resLocal(I1,I2,I3,freq) = (c*c)*lap(I1,I2,I3,freq) + (om*om)*vLocal(I1,I2,I3,freq) - fLocal(I1,I2,I3,freq); 
+//               }
+//             }
+//             else
+//             {
+//               //    c^2 * Delta u + omega^2 u + sigma*omega*damp*v = f(x)
+//               //    c^2 * Delta v + omega^2 v - sigma*omega*damp*u = 0    
 
-      Range all;
-      ForBoundary(side,axis)
-      {
-         // set residual to zero on dirichlet boundaries 
-         if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
-         {
-           getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
-           resLocal(Ib1,Ib2,Ib3,all)=0.;
-         }
+//               Real sigma = -1.;       // SIGN FOR exp( sigma*I*omega*t)    ** FIX ME ***   MUST MATCH VALUE IN solveHelmholtzDirect
+//               // *** FIX ME : NEED TO KNOW Whether we are solving the direct Helmoltz problem or not **********
 
-      }
+//               // Real viFactor = -sigma*dt/sin(frequencyArrayAdjusted(0)*dt); // adjust for D0t -- *check me*
+//               // Real viFactor;
+//               // if( useAdjustedOmega==0 )
+//               //   viFactor = -sigma*dt/sin(frequencyArraySave(0)*dt); 
+//               // else
+//               //   viFactor = -sigma*dt/sin(frequencyArrayAdjusted(0)*dt); // adjust for D0t 
 
-      // ::display(res[grid],"residual","%8.2e ");
-    }
+//               // Real viFactor = 1.; // Input function should not hold (ur,ui)
+//               // printF("CgWaveHoltz::residual: c=%g, omega=%16.8e, damp=%16.8e\n",c,omega,damp);
+//               where( maskLocal(I1,I2,I3)>0 )
+//               {
+//                 resLocal(I1,I2,I3,0) = (c*c)*lap(I1,I2,I3,0) + (omega*omega)*vLocal(I1,I2,I3,0) + (sigma*omega*damp)*vLocal(I1,I2,I3,1) - fLocal(I1,I2,I3,freq); 
+//                 resLocal(I1,I2,I3,1) = (c*c)*lap(I1,I2,I3,1) + (omega*omega)*vLocal(I1,I2,I3,1) - (sigma*omega*damp)*vLocal(I1,I2,I3,0); 
+//               }              
 
-    const int maskOption=1;  // maskOption=1 : check points with mask>0
-    for( int freq=0; freq<numberOfFrequencies; freq++ )
-    {
-      if( computeResidualWithAdjustedOmega[ires]  )
-        maxResFromDiscreteSymbol(freq) = maxNorm(res,freq,maskOption);
-      else
-        maxRes(freq)                   = maxNorm(res,freq,maskOption);
-    }
-  }
+//             }
+//           }
+//         }
+//       }
+
+//       Range all;
+//       ForBoundary(side,axis)
+//       {
+//          // set residual to zero on dirichlet boundaries 
+//          if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
+//          {
+//            getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+//            resLocal(Ib1,Ib2,Ib3,all)=0.;
+//          }
+
+//       }
+
+//       // ::display(res[grid],"residual","%8.2e ");
+//     }
+
+//     const int maskOption=1;  // maskOption=1 : check points with mask>0
+//     for( int freq=0; freq<numberOfFrequencies; freq++ )
+//     {
+//       if( computeResidualWithAdjustedOmega[ires]  )
+//         maxResFromDiscreteSymbol(freq) = maxNorm(res,freq,maskOption);
+//       else
+//         maxRes(freq)                   = maxNorm(res,freq,maskOption);
+//       if( filterTimeDerivative )
+//         maxRes(1)                      = maxNorm(res,1,maskOption);
+//     }
+//   }
 
 
-  for( int freq=0; freq<numberOfFrequencies; freq++ )
-  {
-    if( computeEigenmodes )
-    {
-       printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-rel-res=%9.3e.\n",freq,frequencyArray(freq),maxRes(freq));
-    }  
-    else if( useAdjustedOmega==0 || numberOfFrequencies>1 || computeEigenmodes )
-    {
-       printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e.\n",freq,frequencyArray(freq),maxRes(freq));
-    }        
-    else if( useAdjustedOmega==2 )
-    {
-      printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e (using omega), max-res=%9.3e (using omega from discrete symbol)\n",
-               freq,frequencyArray(freq),maxRes(freq),maxResFromDiscreteSymbol(freq));
-    } 
-    else
-    {
-      printF("CgWaveHoltz::residual: freq=%d, omega=%g, max-res=%9.3e (using omega from discrete symbol)\n",freq,frequencyArray(freq),maxResFromDiscreteSymbol(freq));
-    }
-  }
+//   for( int freq=0; freq<numberOfFrequencies; freq++ )
+//   {
+//     if( filterTimeDerivative  )
+//     {
+//       if( debug & 1)
+//         printF("CgWaveHoltz::residual (complex): omega=%14.9f, max-res=[Re,Im]=[%9.3e,%9.3e].\n",freq,frequencyArray(0),maxRes(0),maxRes(1));
+//     }
+//     else if( computeEigenmodes )
+//     {
+//        printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-rel-res=%9.3e.\n",freq,frequencyArray(freq),maxRes(freq));
+//     }  
+//     else if( useAdjustedOmega==0 || numberOfFrequencies>1 || computeEigenmodes )
+//     {
+//        printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e.\n",freq,frequencyArray(freq),maxRes(freq));
+//     }        
+//     else if( useAdjustedOmega==2 )
+//     {
+//       printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e (using omega), max-res=%9.3e (using omega from discrete symbol)\n",
+//                freq,frequencyArray(freq),maxRes(freq),maxResFromDiscreteSymbol(freq));
+//     } 
+//     else
+//     {
+//       printF("CgWaveHoltz::residual: freq=%d, omega=%g, max-res=%9.3e (using omega from discrete symbol)\n",freq,frequencyArray(freq),maxResFromDiscreteSymbol(freq));
+//     }
 
-  return max(maxRes);
+//   }
 
-}
+//   return max(maxRes);
+
+// }
 
 
 // ================================================================================================
@@ -1014,6 +1111,8 @@ solve()
   RealArray & periodArray         = dbase.get<RealArray>("periodArray");
   IntegerArray & numPeriodsArray  = dbase.get<IntegerArray>("numPeriodsArray");
 
+ 
+
 
   // here is the CgWave solver for the time dependent wave equation
   CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
@@ -1021,6 +1120,8 @@ solve()
     Tperiod=numPeriods*twoPi/omega;  
   else
     Tperiod=1;
+
+  const int & numCompWaveHoltz = cgWave.dbase.get<int>("numCompWaveHoltz");
 
   printF("CgWaveHoltz::solve: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
  
@@ -1092,7 +1193,7 @@ solve()
   realCompositeGridFunction & v    = cgWave.dbase.get<realCompositeGridFunction>("v");
   realCompositeGridFunction & vOld = cgWave.dbase.get<realCompositeGridFunction>("vOld");
   Range all;
-  vOld.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+  vOld.updateToMatchGrid(cg,all,all,all,numCompWaveHoltz);
 
 
 
@@ -1209,6 +1310,13 @@ int CgWaveHoltz::outputHeader()
 // ===================================================================================
 int CgWaveHoltz::saveCheckFile( int checkFileCounter, Real maxErr, Real solutionNorm )
 {
+
+  // ****** OLD WAY ****
+
+  OV_ABORT("CgWaveHoltz::saveCheckFile CALLED -- but this is the old way\n");
+
+
+
   // *************************************************************
   // write to the check file for regression and convergence tests
   // *************************************************************

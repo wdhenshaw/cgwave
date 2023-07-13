@@ -1,7 +1,7 @@
 // =======================================================================================
 // Macro: get the parameters for calling the optimized fortran BC routine
 // =======================================================================================
-#beginMacro getBcOptParameters(u,uLocal)   
+#beginMacro getBcOptParameters(u,uLocal,unLocal)   
 
   IntegerArray indexRangeLocal(2,3), dimLocal(2,3), bcLocal(2,3);
   ParallelGridUtility::getLocalIndexBoundsAndBoundaryConditions( u[grid],indexRangeLocal,dimLocal,bcLocal );
@@ -79,6 +79,25 @@
     bcApproach,                      // ipar(17)
     numberOfFrequencies              // ipar(18)
                };
+
+  Real cEM2 = c;
+  if( solveHelmholtz ) 
+  {
+    // Adjust c for the EM2 absorbing BC to account for time-discretization errors
+    //   D+t (Dx ) w + A+( ... )
+    if( frequencyArraySave(0)*dt>0 )
+    {
+      cEM2 = c*tan(frequencyArray(0)*dt/2.)/(frequencyArraySave(0)*dt/2.);
+      // printF("\n XXXXXXX cEM2=%e XXXXXXX\n\n",cEM2);
+    }
+    else
+    {
+      if( frequencyArraySave(0)==0 )
+        printF("WARNING: bcOpt: frequencyArraySave(0)=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",frequencyArraySave(0));
+      if( dt<=0 )
+        printF("WARNING: bcOpt: dt<= 0 ! dt=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",dt);
+    }
+  }           
   real rpar[] = {
     t                , //  rpar( 0)
     dt               , //  rpar( 1)
@@ -90,10 +109,12 @@
     mg.gridSpacing(2), //  rpar( 7)
     (real &)(dbase.get<OGFunction* >("tz")) ,        //  rpar( 8) ! pointer for exact solution -- new : 110311 
     REAL_MIN,         //  rpar( 9)
-    c                 //  rpar(10)
+    c,                //  rpar(10)
+    cEM2              //  rpar(11)
                 };
 
   real *pu = uLocal.getDataPointer();
+  real *pun = unLocal.getDataPointer();
   int *pmask = maskLocal.getDataPointer();
   real temp, *pxy=&temp, *prsxy=&temp;
   if( !isRectangular )

@@ -223,11 +223,6 @@
 ! #endMacro
 
 
-! ! #beginMacro getThirdDerivatives2d(ORDER,GRIDTYPE,OPTION,i1,i2,i3)
-! ! #endMacro
-
-! #beginMacro getThirdDerivatives3d(ORDER,GRIDTYPE,OPTION,i1,i2,i3)
-! #endMacro
 
 ! define macros to evaluate derivatives for the 6th order method (from maple/makeGetDerivativesMacros.maple)
 !! turned off May 4, 2023
@@ -510,6 +505,8 @@
 
 ! --- construct the different files ----
 
+! buildFile(bcOptWave2dOrder4,2,4)
+! buildFile(bcOptWave3dOrder4,3,4)
 
 
 ! buildFile(bcOptWave2dOrder4,2,6)
@@ -518,7 +515,7 @@
 
 
 
-subroutine bcOptWave( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr ) 
+subroutine bcOptWave( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr ) 
 ! ===================================================================================
 !  Boundary conditions for CgWave
 !
@@ -534,6 +531,7 @@ subroutine bcOptWave( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,i
   integer nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b, ndb, ierr
 
   real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
+  real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
   integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
   real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
   real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
@@ -557,17 +555,17 @@ subroutine bcOptWave( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,i
 
   if( nd.eq.2 )then
     if( orderOfAccuracy.eq.2 )then
-      call bcOptWave2dOrder2( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
+      call bcOptWave2dOrder2( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
     elseif( orderOfAccuracy.eq.4 )then
-      call bcOptWave2dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
+      call bcOptWave2dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
     else
       stop 6666
     end if
   else
     if( orderOfAccuracy.eq.2 )then
-      call bcOptWave2dOrder2( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
+      call bcOptWave2dOrder2( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
     elseif( orderOfAccuracy.eq.4 )then
-      call bcOptWave2dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
+      call bcOptWave2dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
     else
       stop 7777
     end if    

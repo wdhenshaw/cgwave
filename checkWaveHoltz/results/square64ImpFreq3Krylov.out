@@ -1,0 +1,1279 @@
+Usage: `mpirun -np N cgwh [-noplot] [file.cmd] [-g=<gridName>]'
+Look for Overture configuration file=[/home/henshw/.overturerc]
+Successfully opened /home/henshw/Overture.g/overturerc for reading
+User commands are being saved in the file `cgWaveHoltz.cmd'
+Searching for grids in locations specified by the `OvertureGridDirectories' environment variable
+look for /home/henshw/Overture.g/sampleGrids/square64.order2 
+look for /home/henshw/grids/square64.order2 
+ ***** Mounting file /home/henshw/grids/square64.order2.hdf****
+getFromADataBase: number of CompositeGrid(s) found =1, name[0]=square64.order2
+Time to read in the grid is 8.93e-03(s)
+#
+#  cgWaveHoltz script:
+#   known = [boxHelmholtz|polyPeriodic|computedHelmholtz]
+#   solver = [fixedPoint|krylov] : fixed-point or Krylov
+#   imode =1 : do not wait in cgWave
+#   go = [halt|go|direct|krylov|both]
+#      go=dk  : direct and krylov
+#      go=dfk : solve for direct, fixed-point, krylov
+#
+$known="boxHelmholtz"; $setKnownOnBoundaries=0;  $degreeInSpaceForPolyPeriodic=1;
+$omega=30.1; $beta=50.; $x0=0.5; $y0=0.5; $z0=0.5; $t0=0.; $go="halt"; $matlab="cgWaveHoltz";
+$beta=400; $numPeriods=1; $omegaSOR=1; $tol=1.e-3;
+$numberOfFrequencies=1;
+@freq = ();  # this must be null for GetOptions to work, defaults are given below
+$ts="explicit"; $dtMax=1e10;
+$minStepsPerPeriod=10;   # min is 5
+# beta2=0 = TRAP, beta2=.5 = Full weighting
+$beta2=.0; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping
+# $ad4=0; # old way
+$upwind=0; # new way
+$tp=.5; $imode=0; $adjustOmega=0; $show="trigHelmholtz.show";
+$solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIterations=100; $orderInTime=-1;  # -1 = use default
+$cfl=.9; $bc="d";
+$bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$deflateWaveHoltz=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf";
+$solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
+$solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
+GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"numPeriods=i"=>\$numPeriods,            "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,            "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"adjustOmega=i"=>\$adjustOmega,"known=s"=>\$known,            "matlab=s"=>\$matlab,"maxIterations=i"=>\$maxIterations,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,            "degreeInSpaceForPolyPeriodic=i"=>\$degreeInSpaceForPolyPeriodic,"orderInTime=i"=>\$orderInTime,            "beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,            "numberOfFrequencies=i"=>\$numberOfFrequencies,"nf=i"=>\$numberOfFrequencies,"freq=f{1,}"=>\@freq,            "solverh=s"=>\$solverh,"rtolh=f"=>\$rtolh,"atolh=f"=>\$atolh,"maxith=i"=>\$maxith,"restart=i"=>\$restart,"iluh=i"=>\$iluh,            "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,            "deflateWaveHoltz=i"=>\$deflateWaveHoltz,"numToDeflate=i"=>\$numToDeflate,            "eigenVectorFile=s"=>\$eigenVectorFile,"show=s"=>\$show,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"go=s"=>\$go );
+#
+if( $bc eq "d" ){ $bc="dirichlet"; }
+if( $bc eq "n" ){ $bc="neumann"; }
+if( $bc eq "e" ){ $bc="evenSymmetry"; }
+if( $bc eq "r" ){ $bc="radiation"; }
+if( $freq[0] eq "" ){ @freq=(1,2,3,4,5,6,7,8,9,10); }
+#
+$omega = $freq[0];
+# pause
+# -------- Start CgWaveHoltz Options ------
+# debug $debug
+Gaussian params $beta $x0 $y0 0 (beta,x0,y0,z0)
+CgWaveHoltz:ERROR: unknown answer=[Gaussian params 400 0.5 0.5 0 (beta,x0,y0,z0)]
+omega $omega
+Setting omega=5.1
+omegaSOR $omegaSOR
+Setting omega=5.1
+tol $tol
+Setting tol=1e-14 (tolerence for Krylov solvers)
+number of frequencies $numberOfFrequencies
+Setting numberOfFrequencies=3
+frequencies $freq[0] $freq[1] $freq[2] $freq[3] $freq[4] $freq[5] $freq[6] $freq[7] $freq[8]
+Setting frequency 0 = 5.100000e+00
+Setting frequency 1 = 1.200000e+01
+Setting frequency 2 = 1.550000e+01
+number of periods $numPeriods
+Setting numPeriods=4
+adjust omega $adjustOmega
+Setting adjustOmega=1: 1=adjust omega for the discrete symbol pf D+t D-t 
+ This will make WaveHoltz solution be closer to the discrete Helhmhotz problem
+matlab filename: $matlab
+Setting matlabFileName=[cgWaveHoltz]
+#
+# choose parameters for the direct Helmholtz solver
+direct solver parameters
+Set the Oges parameters for the direct Helmholtz solver
+if( $solverh ne "yale" ){ $cmd="choose best iterative solver\n $solverh"; }else{ $cmd="choose best direct solver"; }
+$cmd
+Choosing: yale, solver=[direct sparse solver, no pivoting + ]
+number of incomplete LU levels
+$iluh
+number of GMRES vectors
+$restart
+maximum number of iterations
+#
+$maxith
+relative tolerance
+$rtolh
+absolute tolerance
+$atolh
+# gmres restart length
+#   30
+# pause
+#  PETSc
+exit
+# pause
+exit
+cgWaveHoltz::setup: numberOfFrequencies=3, filterTimeDerivative=0, numCompWaveHoltz=3
+CgWave::setup SETTING orderOfAccuracy=2
+# ------ Start cgWave Options ------
+interactiveMode $imode
+Setting interactiveMode=0 (0=normal, 1=advance and finish)
+# time-stepping: (explicit or implicit)
+$ts
+if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
+$cmd
+Setting orderOfAccuracyInTime=2 (-1 means use same as order in space)
+cfl $cfl
+setting cfl=1000
+tPlot $tp
+ tPlot=1000
+dtMax $dtMax
+Setting dtMax=100
+implicit weights $beta2 $beta4 $beta6 $beta8
+Setting implicit time-stepping weights to beta2=0, beta4=0, beta6=0, beta8=0
+if( $known eq "polyPeriodic" ){ $setKnownOnBoundaries=1; }
+set known on boundaries $setKnownOnBoundaries
+Setting applyKnownSolutionAtBoundaries=0 (1=apply known solution on boundaries).
+Answer=set known on boundaries 0 found in getBoundaryConditionOption
+# -- Here is input for cgWave
+#
+$cmd="#";
+if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }
+if( $bcApproach eq "cbc"      ){ $cmd="useCompatibilityBCs"; }
+if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
+$cmd
+Setting approach for boundary conditions to useOneSidedBCs
+Answer=useOneSidedBCs found in getBoundaryConditionOption
+#
+bc=$bc
+Setting all boundary conditions to bc=[dirichlet]
+Answer=bc=dirichlet found in getBoundaryConditionOption
+#
+# if( $ad4>0. ){ $upwind=1; }# for backward compatibility
+upwind dissipation $upwind
+Setting upwind=1 (upwind dissipation is on or off).
+#
+deflate WaveHoltz $deflateWaveHoltz
+Setting deflateWaveHoltz=0 (1=apply deflate to WaveHoltz iteration
+Answer=deflate WaveHoltz 0 found in getWaveHoltzOption
+number to deflate $numToDeflate
+Setting numToDeflate=1 (deflate this many eigenvectors for WaveHoltz)
+Answer=number to deflate 1 found in getWaveHoltzOption
+eigenVectorFile $eigenVectorFile
+Setting eigenVectorFile=eigenVectors.hdf (file holding eigenvectors for deflation)
+Answer=eigenVectorFile eigenVectors.hdf found in getEigenWaveOption
+min steps per period $minStepsPerPeriod
+Setting minStepsPerPeriod=10 (for WaveHoltz)
+Answer=min steps per period 10 found in getEigenWaveOption
+# pause
+#
+implicit solver parameters
+Set the Oges parameters for the implicit solver.
+# NOTE: bcgs = bi-CG stab
+if( $solveri ne "yale" ){ $cmd="choose best iterative solver\n $solveri"; }else{ $cmd="choose best direct solver"; }
+$cmd
+Choosing: yale, solver=[direct sparse solver, no pivoting + ]
+number of incomplete LU levels
+3
+number of GMRES vectors
+20
+maximum number of iterations
+#
+$maxiti
+relative tolerance
+$rtoli
+absolute tolerance
+$atoli
+#
+multigrid parameters
+choose good parameters: 1
+choose good parameters: 0=OFF, 1=ON, 2=Use more robust parameters. Setting value to 1
+OgesParameters: relativeTolerance=1.000000e-03 
+residual tolerance $rtoli
+absolute tolerance $atoli
+# debug
+#   1
+# show smoothing rates
+# Coarse level solver:
+Oges parameters
+choose best direct solver
+Choosing: yale, solver=[direct sparse solver, no pivoting + ]
+# choose best iterative solver
+relative tolerance
+1.e-10
+absolute tolerance
+1.e-10
+number of incomplete LU levels
+3
+exit
+OgmgParameters::display direct solver ogesParameters:
+name = yale, solver=[direct sparse solver, no pivoting + ]
+solverType = yale
+solverMethod = direct sparse solver, no pivoting
+parallel solverMethod = direct sparse solver, no pivoting
+preconditioner = incomplete LU preconditioner
+parallelPreconditioner = block Jacobi preconditioner
+matrix ordering = reverse Cuthill-McKee ordering
+maximumNumberOfIterations = 100
+minimumNumberOfIterations = 0
+relativeTolerance = 1.00e-10
+absoluteTolerance = 1.00e-10
+maximumAllowableIncreaseInResidual = 1.00e+05
+compatibilityConstraint = 0
+gmresRestartLength = 20
+numberOfIncompleteLULevels = 3
+incompleteLUExpectedFill = 20
+minimumNumberOfIterations = 20
+maximumNumberOfIterations = 20
+solveForTranspose = 20
+rescaleRowNorms = 1
+matrixCutoff= 0.00e+00
+fixupRightHandSide= 1
+zeroRatio    = 0.00e+00
+fillinRatio  = 0.00e+00
+fillinRatio2 = 0.00e+00
+harwellPivotingTolerance = 1.00e-01
+nullVectorScaling = 1.00e+00
+maximumInterpolationWidth = 100
+iterativeImprovement = 0
+sorOmega = 1.01e+00
+userSuppliedCompatibilityConstraint = 0
+userSuppliedEquations = 0
+exit
+#pause
+exit
+#
+# helmholtzForcing
+solve Helmholtz 1
+ solveHelmholtz=true: CgWave is being used to solve the Helmholtz equation (time-periodic wave equation)
+ using CgWaveHoltz
+Answer=solve Helmholtz 1 found in getWaveHoltzOption
+#
+adjust omega $adjustOmega
+CgWave:ERROR: unknown answer=[adjust omega 1]
+#   --- eigenmode-like solution
+user defined known solution...
+if( $known eq "boxHelmholtz"){ $cmd="box Helmholtz\n $omega $kx $ky $kz"; }
+if( $known eq "computedHelmholtz"){ $cmd="computed Helmholtz\n $omega $kx $ky $kz"; }
+if( $known eq "polyPeriodic"){ $cmd="poly periodic\n $omega $degreeInSpaceForPolyPeriodic"; }
+$cmd
+box Helmholtz
+----------------- box helmholtz -----------------
+ Define a time-periodic solution for a square or box that depends on a forcing term.
+   We solve :   utt = c^2 * Delta(u) - f(x)*cos(omega*t) 
+                u=0 on the boundary                    ) 
+The solution is of the form: cos(omega*t)*sin(kx*2*pi*x)*sin(ky*2*pi*y)
+5.1 1.75 1.75 1
+ Setting omega=5.1, [kx,ky,kz]=[1.75,1.75,1]
+# box helmholtz
+# $omega $kx $ky $kz
+done
+$cmd="#";
+if( ($known eq "boxHelmholtz") || ($known eq "computedHelmholtz") ){ $cmd="helmholtzForcing\n user defined forcing...\n box Helmholtz\n exit"; }
+if( $known eq "polyPeriodic" ){ $cmd="helmholtzForcing\n user defined forcing...\n poly periodic\n exit"; }
+$cmd
+helmholtzForcing
+user defined forcing...
+box Helmholtz
+----------------- FORCING FOR the box helmholtz Solution-----------------
+ Define a time-periodic solution for a square or box that depends on a forcing term.
+   We solve :   utt = c^2 * Delta(u) - f(x)*cos(omega*t) 
+                u=0 on the boundary                    ) 
+The solution is of the form: cos(omega*t)*sin(kx*2*pi*x)*sin(ky*2*pi*y)
+exit
+# user defined forcing...
+#   box Helmholtz
+# exit
+exit
+CgWave::initialize and assign forcing... numberOfFrequencies=3
+CgWave::initialize: ***ASSIGN HELMHOLTZ FORCING***
+userDefinedForcing: t=0.000e+00 option=[boxHelmholtz] fSign=-1
+userDefinedForcing: eval boxHelmholtz FORCING: numberOfFrequencies=3, freq=0, omega=5.1, kx=10.9956, ky=10.9956, kz=6.28319 fSign=-1 at t=0.000e+00
+userDefinedForcing: eval boxHelmholtz FORCING: numberOfFrequencies=3, freq=1, omega=12, kx=16.4934, ky=16.4934, kz=9.42478 fSign=-1 at t=0.000e+00
+userDefinedForcing: eval boxHelmholtz FORCING: numberOfFrequencies=3, freq=2, omega=15.5, kx=21.9911, ky=21.9911, kz=12.5664 fSign=-1 at t=0.000e+00
+CgWave::getTimeStep: c=1, cfl=1000, timeSteppingMethod=1
+getTimeStep: grid=0 : dx= 1.56e-02, dy= 1.56e-02, dt=1.105e+01
+cgWave::getTimeStep: cfl=1000, explicit dt= 1.10e+01, implicit dt= 1.00e+02, ratio=  9.05
+cgWave:chooseTimeStep: chooseImplicitTimeStepFromCFL : setting dt= 1.10e+01, cfl=1000
+getTimeStep: grid=0: gridCFL = c/dx =  9.05e+01, gridCFL*dt=  1.00e+03
+CgWave::initialize: dt=11.0485
+
+*********************************************************************************
+           CgWave : Wave Equation Solver                    
+           -----------------------------                  
+ tFinal=1.000000, dt=1.105e+01, tPlot=1.000e+03 cfl=1000.00, damp=0
+ modifiedEquationApproach = standard modified equation
+ orderOfAccuracy=2, orderOfAccuracyInTime=2 
+ timeSteppingMethod = implicit
+ ---- implicit time stepping parameters ----
+   implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+   implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+   All grids are implicit.
+   takeImplicitFirstStep = 0.
+   implicit time-stepping weights: cImp(-1,0)=0.5, cImp(0,0)=0, cImp(1,0)=0.5 (2nd-order term)
+                                 : cImp(-1,1)=0.208333, cImp(0,1)=0, cImp(1,1)=0.208333 (4th-order term)
+   chooseImplicitTimeStepFromCFL=1 (1=choose implicit dt from cfl, 0=choose dt from dtMax)
+ upwind dissipation is on, dissipationFrequency=1
+ upwind dissipation: preComputeUpwindUt=0 
+                     true=precompute Ut in upwind dissipation,
+                     false=compute Ut inline in Gauss-Seidel fashion)
+ implicitUpwind=0 : if true, include upwinding in implicit matrix when implicit time-stepping.
+ assignInterpNeighbours = interpolate (for wider upwind stencil)
+ twilightZone = polynomial, degreeInSpace=2, degreeInTime=2
+ knownSolutionOption=userDefinedKnownSolution, userKnownSolution=boxHelmholtz
+ useKnownSolutionForFirstStep=0, applyKnownSolutionAtBoundaries=0
+ BC approach = useOneSidedBCs. [useDefault|useOneSided|useCompatibility|useLocalCompatibility]
+ useSuperGrid=0, superGridWidth=0.2
+ solveHelmholtz=1 (1= we are solving a Helmholtz problem).
+   **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=0 (for discrete symbol of D+tD-t) ****
+   computeTimeIntegral=1
+   adjust Helmholtz for upwinding=1. Minimum time-steps per period=10.
+   deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ computeEigenmodes=0 (1= solve from eigenvalues and eigenvectors using the WaveHoltz algorithm).
+ forcingOption=helmholtzForcing.
+ computeErrors=1
+ number of processors=1
+
+ Grid: /home/henshw/grids/square64.order2.hdf 
+               Grid Data
+               ---------
+grid     name      gridIndexRange(0:1,0:2)           gridPoints        hmx      hmn   time-stepping
+   0: square   ([ 0:   64],[ 0:   64],[ 0:    0])          4225   1.56e-02 1.56e-02    implicit
+ total number of grid points =4225, min(hmn)=1.56e-02, max(hmn)=1.56e-02, max(hmx)=1.56e-02,  
+
+ grid   name     side axis    boundary condition and name
+ ----   ----     ---- ----    ---------------------------
+    0: square     0    0      1 : dirichlet 
+    0: square     1    0      1 : dirichlet 
+    0: square     0    1      1 : dirichlet 
+    0: square     1    1      1 : dirichlet 
+*********************************************************************************
+
+# --- end cgWave ---
+show file $show
+Setting nameOfShowFile=trigHelmholtz.show
+max iterations $maxIterations
+Setting maximumNumberOfIterations=70
+if( $solver eq "fixedPoint" ){ $cmd="compute with fixed-point"; }else{ $cmd="#"; }
+if( $solver eq "krylov" ){ $cmd="compute with petsc"; }
+$cmd
+contour
+exit
+$cmd="#";
+if( $go eq "go" ){ $cmd="compute with krylov\nexit"; }
+if( $go eq "direct" ){ $cmd="solve Helmholtz directly\n exit"; }
+if( $go eq "krylov" ){ $cmd="compute with krylov\n exit"; }
+if( $go eq "dk" ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\nexit"; }
+if( $go eq "df" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\nexit"; }
+if( $go eq "dfk" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
+$cmd
+solve Helmholtz directly
+
+ ============== DIRECT SOLVE OF THE HELMHOLTZ EQUATION =============
+    c=1, numberOfFrequencies=3, orderOfAccuracy=2, solveComplex=0
+  freq(0) = 5.1
+  freq(1) = 12
+  freq(2) = 15.5
+  useSuperGrid=0
+superGrid
+    (0) 
+(0)  0
+ ===================================================================
+frequencyArray
+    (        0) (        1) (        2) 
+(0)  5.1000e+00  1.2000e+01  1.5500e+01 
+CgWave::getHelmholtzForcing: ***FILL IN RHS FOR DIRECT HELMHOLTZ SOLVER***
+userDefinedForcing: t=0.000e+00 option=[boxHelmholtz] fSign=-1
+userDefinedForcing: eval boxHelmholtz FORCING: numberOfFrequencies=3, freq=0, omega=5.1, kx=10.9956, ky=10.9956, kz=6.28319 fSign=-1 at t=0.000e+00
+userDefinedForcing: eval boxHelmholtz FORCING: numberOfFrequencies=3, freq=1, omega=12, kx=16.4934, ky=16.4934, kz=9.42478 fSign=-1 at t=0.000e+00
+userDefinedForcing: eval boxHelmholtz FORCING: numberOfFrequencies=3, freq=2, omega=15.5, kx=21.9911, ky=21.9911, kz=12.5664 fSign=-1 at t=0.000e+00
+WARNING: bcOpt: frequencyArraySave(0)=  0.0000e+00. NOT ADJUSTING c for EM2 absorbing BC
+
+ @@@@ solveHelmholtzDirect: boxHelmholtz: kxBoxHelmholtz=10.9956
+
+solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. 
+Set new fillinRatio = 44
+
+ === Direct Helmholtz Solver:
+ yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+Oges::allocateWorkSpace: numberOfNonzeros=21429 fillinRatio=4.400000e+01
+allocateWorkSpace: numberOfEquations=4761, nsp = 942876, fillinRatio= 44, numberOfNonzeros = 21429
+
+*** freq=0: omega=5.1, max residual=0.00e+00, time for direct Helmholtz solve = 5.67e-03 (s) (iterations=0) ***
+solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. 
+Set new fillinRatio = 44
+Oges::allocateWorkSpace: numberOfNonzeros=21429 fillinRatio=4.400000e+01
+allocateWorkSpace: numberOfEquations=4761, nsp = 942876, fillinRatio= 44, numberOfNonzeros = 21429
+
+*** freq=1: omega=12, max residual=0.00e+00, time for direct Helmholtz solve = 5.25e-03 (s) (iterations=0) ***
+solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. 
+Set new fillinRatio = 44
+Oges::allocateWorkSpace: numberOfNonzeros=21429 fillinRatio=4.400000e+01
+allocateWorkSpace: numberOfEquations=4761, nsp = 942876, fillinRatio= 44, numberOfNonzeros = 21429
+
+*** freq=2: omega=15.5, max residual=0.00e+00, time for direct Helmholtz solve = 4.39e-03 (s) (iterations=0) ***
+getErrors: t=0.000e+00, freq=  0, omega=   5.100, maxErr=3.220e-03
+getErrors: t=0.000e+00, freq=  1, omega=  12.000, maxErr=1.010e-02
+getErrors: t=0.000e+00, freq=  2, omega=  15.500, maxErr=1.321e-02
+cgwh: max-err =1.32e-02 (between WaveHoltz and known solution, all frequencies)
+zero initial condition
+compute with krylov
+CgWaveHoltz::solvePETSc: setting tFinal = Tperiod*numPeriods = 4.928e+00 (numPeriods=4) 
+Make a Matrix Free Shell: numEquations=14283
+solvePETSc: Set initial guess to v, max-norm(v)=0.00e+00, numberOfActivePoints=14283
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=-2
+ **************** MatVec for PETSc iteration=-2 *************
+
+ >>>> Call cgWave to COMPUTE the Right-hand-side to Ax=b : b = Pi * v(0) 
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.1888e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.8644e+00, ... corrected for numPeriods   4.4590e+00
+
+ >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<
+ it=-2, dt=  4.008625718278e-02, omega=  5.056181625578e+00,  tFinal=  4.970695890665e+00
+ adjustOmega=1, adjustHelmholtzForUpwinding=1 
+ freq=0 frequency=  5.056181625578e+00 period=  4.970695890665e+00, numberOfPeriods=4
+ freq=1 frequency=  1.146131676714e+01 period=  4.933871815389e+00, numberOfPeriods=9
+ freq=2 frequency=  1.438942994656e+01 period=  4.803181129181e+00, numberOfPeriods=11
+ nextTimeToPlot=4.928e+00, numPlotSteps=31, new dt=4.009e-02 (dtMax=1.105e+01)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+
+ ==================== FORM MATRIX FOR IMPLICIT TIME-STEPPING ===================
+   c=1, dt=4.009e-02, orderOfAccuracy=2, orderOfAccuracyInTime=2  bcApproach=1
+ upwind=1, add upwinding to implicit matrix=0, useSuperGrid=0
+ ================================================================================
+CgWave::formImplicitTimeSteppingMatrix: Changing the implicit solver parameters. 
+
+ === Implicit Time-Stepping Solver:
+ yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+
+ >>>>>>> CgWave::implicitSolver: use predfined equations <<<<<<< 
+
+CgWave::implicitSolver: A = I -alpha (c*dt)^2 Delta, c=1, dt= 4.01e-02
+Oges::allocateWorkSpace: numberOfNonzeros=21429 fillinRatio=2.000000e+01
+allocateWorkSpace: numberOfEquations=4761, nsp = 428580, fillinRatio= 20, numberOfNonzeros = 21429
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 8.22e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 8.39e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+COMPUTE b = Pi * v(0) 
+solvePETSc: RHS is b: l2-norm(b)=6.107e+01, L2h-norm(b)= 5.11e-01
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=-1
+ **************** MatVec for PETSc iteration=-1 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<
+ it=-1, dt=  4.008625718278e-02, omega=  5.056181625578e+00,  tFinal=  4.970695890665e+00
+ adjustOmega=1, adjustHelmholtzForUpwinding=1 
+ freq=0 frequency=  5.056181625578e+00 period=  4.970695890665e+00, numberOfPeriods=4
+ freq=1 frequency=  1.146131676714e+01 period=  4.933871815389e+00, numberOfPeriods=9
+ freq=2 frequency=  1.438942994656e+01 period=  4.803181129181e+00, numberOfPeriods=11
+ nextTimeToPlot=4.928e+00, numPlotSteps=31, new dt=4.009e-02 (dtMax=1.105e+01)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.42e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.57e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=0
+ **************** MatVec for PETSc iteration=0 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<
+ it=0, dt=  4.008625718278e-02, omega=  5.056181625578e+00,  tFinal=  4.970695890665e+00
+ adjustOmega=1, adjustHelmholtzForUpwinding=1 
+ freq=0 frequency=  5.056181625578e+00 period=  4.970695890665e+00, numberOfPeriods=4
+ freq=1 frequency=  1.146131676714e+01 period=  4.933871815389e+00, numberOfPeriods=9
+ freq=2 frequency=  1.438942994656e+01 period=  4.803181129181e+00, numberOfPeriods=11
+ nextTimeToPlot=4.928e+00, numPlotSteps=31, new dt=4.009e-02 (dtMax=1.105e+01)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.50e+00, cpu= 6.45e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.94e+00, cpu= 6.60e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=0: L2h-residual= 5.11e-01 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=1
+ **************** MatVec for PETSc iteration=1 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<
+ it=1, dt=  4.008625718278e-02, omega=  5.056181625578e+00,  tFinal=  4.970695890665e+00
+ adjustOmega=1, adjustHelmholtzForUpwinding=1 
+ freq=0 frequency=  5.056181625578e+00 period=  4.970695890665e+00, numberOfPeriods=4
+ freq=1 frequency=  1.146131676714e+01 period=  4.933871815389e+00, numberOfPeriods=9
+ freq=2 frequency=  1.438942994656e+01 period=  4.803181129181e+00, numberOfPeriods=11
+ nextTimeToPlot=4.928e+00, numPlotSteps=31, new dt=4.009e-02 (dtMax=1.105e+01)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.54e+00, cpu= 6.49e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.97e+00, cpu= 6.64e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=1: L2h-residual= 3.05e-02 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=2
+ **************** MatVec for PETSc iteration=2 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.50e+00, cpu= 6.42e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.94e+00, cpu= 6.57e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=2: L2h-residual= 1.58e-02 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=3
+ **************** MatVec for PETSc iteration=3 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.53e+00, cpu= 6.42e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.57e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=3: L2h-residual= 1.04e-02 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=4
+ **************** MatVec for PETSc iteration=4 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.42e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.57e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=4: L2h-residual= 1.45e-03 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=5
+ **************** MatVec for PETSc iteration=5 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.44e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.95e+00, cpu= 6.59e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=5: L2h-residual= 1.52e-04 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=6
+ **************** MatVec for PETSc iteration=6 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.50e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.67e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=6: L2h-residual= 5.62e-05 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=7
+ **************** MatVec for PETSc iteration=7 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.50e+00, cpu= 6.56e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.71e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=7: L2h-residual= 1.68e-05 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=8
+ **************** MatVec for PETSc iteration=8 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.53e+00, cpu= 6.45e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.60e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=8: L2h-residual= 4.53e-06 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=9
+ **************** MatVec for PETSc iteration=9 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.43e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.58e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=9: L2h-residual= 6.71e-07 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=10
+ **************** MatVec for PETSc iteration=10 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.42e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.95e+00, cpu= 6.57e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=10: L2h-residual= 1.61e-07 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=11
+ **************** MatVec for PETSc iteration=11 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.48e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.63e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=11: L2h-residual= 2.48e-08 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=12
+ **************** MatVec for PETSc iteration=12 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.40e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.55e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=12: L2h-residual= 4.53e-09 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=13
+ **************** MatVec for PETSc iteration=13 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 1.00e-06(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.44e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.59e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=13: L2h-residual= 7.63e-10 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=14
+ **************** MatVec for PETSc iteration=14 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.51e+00, cpu= 6.42e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.95e+00, cpu= 6.57e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=14: L2h-residual= 8.56e-11 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=15
+ **************** MatVec for PETSc iteration=15 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.53e+00, cpu= 6.50e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.65e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=15: L2h-residual= 2.35e-11 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=16
+ **************** MatVec for PETSc iteration=16 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.51e+00, cpu= 6.47e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.62e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=16: L2h-residual= 5.13e-12 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=17
+ **************** MatVec for PETSc iteration=17 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 1.00e-06(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.41e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.56e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=17: L2h-residual= 9.44e-13 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=18
+ **************** MatVec for PETSc iteration=18 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.41e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.56e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=18: L2h-residual= 1.17e-13 
+
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=19
+ **************** MatVec for PETSc iteration=19 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 1.62e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 2.52e+00, cpu= 6.44e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 2.96e+00, cpu= 6.60e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=19: L2h-residual= 2.60e-14 
+
+***** DONE KSP SOLVE ******
+***** CALL AGAIN TO CHECK SOLUTION ******
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=-3
+ **************** MatVec for PETSc iteration=-3 *************
+
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  4.0086257183e-02 (dt=  1.5896737020e-01) omegaAdjusted=  5.056182e+00 (omega=  5.100000e+00)##
+freq=0: numPeriodsArray=4, periodArraySave=  4.9280e+00, ... corrected for numPeriods   4.9280e+00
+freq=1: numPeriodsArray=9, periodArraySave=  4.7124e+00, ... corrected for numPeriods   4.7124e+00
+freq=2: numPeriodsArray=11, periodArraySave=  4.4590e+00, ... corrected for numPeriods   4.4590e+00
+
+ >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<
+ it=-3, dt=  4.008625718278e-02, omega=  5.056181625578e+00,  tFinal=  4.970695890665e+00
+ adjustOmega=1, adjustHelmholtzForUpwinding=1 
+ freq=0 frequency=  5.056181625578e+00 period=  4.970695890665e+00, numberOfPeriods=4
+ freq=1 frequency=  1.146131676714e+01 period=  4.933871815389e+00, numberOfPeriods=9
+ freq=2 frequency=  1.438942994656e+01 period=  4.803181129181e+00, numberOfPeriods=11
+ nextTimeToPlot=4.928e+00, numPlotSteps=31, new dt=4.009e-02 (dtMax=1.105e+01)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ ##### getFilterWeights #####
+
+cgWave:FD22u t=0.000e+00 (  0 steps) dt=4.009e-02 ||u||= 2.56e+00, cpu= 0.00e+00(s)
+cgWave:FD22u t=4.931e+00 (123 steps) dt=4.009e-02 ||u||= 1.71e+00, cpu= 6.46e-02(s)
+getMultiFrequencyWaveHoltzMatrix: A(0,0)=  1.00000000e+00 (exact)   =  1.00000000e+00 (quadrature)  diff=-4.44e-16
+getMultiFrequencyWaveHoltzMatrix: A(1,0)=  7.29643943e-03 (exact)   =  7.35529818e-03 (quadrature)  diff=-5.89e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,0)=  2.41184313e-02 (exact)   =  2.42409554e-02 (quadrature)  diff=-1.23e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,1)=  1.42603066e-02 (exact)   =  1.40693862e-02 (quadrature)  diff=1.91e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,1)=  1.00000000e+00 (exact)   =  1.00003245e+00 (quadrature)  diff=-3.25e-05
+getMultiFrequencyWaveHoltzMatrix: A(2,1)=  7.19393705e-02 (exact)   =  7.24014384e-02 (quadrature)  diff=-4.62e-04
+getMultiFrequencyWaveHoltzMatrix: A(0,2)=  1.66332806e-02 (exact)   =  1.62417535e-02 (quadrature)  diff=3.92e-04
+getMultiFrequencyWaveHoltzMatrix: A(1,2)=  6.66840701e-02 (exact)   =  6.61078232e-02 (quadrature)  diff=5.76e-04
+getMultiFrequencyWaveHoltzMatrix: A(2,2)=  1.00000000e+00 (exact)   =  9.99916801e-01 (quadrature)  diff=8.32e-05
+cgWave:FD22u t=4.971e+00 (124 steps) dt=4.009e-02 ||u||= 1.69e+00, cpu= 6.61e-02(s)
+RESET periodArray
+freq=0: periodArray=  4.9280e+00
+freq=1: periodArray=  4.7124e+00
+freq=2: periodArray=  4.4590e+00
+it=-3:  max(residual) = max(|v-vOld|)=1.10e-13, tol=1e-14
+
+ ######## DONE KYRLOV ITERATIONS -- KSP residual=5.44e-15 (max-res=1.10e-13) (tol=1.00e-14) numIts=21 #######
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+                          Real Solution 
+
+ grid=/home/henshw/grids/square64.order2.hdf
+ Convergence rate CR=0.216, CR-perPeriod=0.682, Time to solve = 1.56e+00(s) : CgWave= 1.55e+00(s) 98.94%, advance= 1.54e+00(s) 98.34%
+ max-residual=1.10e-13 (WaveHoltz its), numberOfIterations = 21 (Krylov) (maximumNumberOfIterations=70)
+ numberOfFrequencies= 3, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=1000.00, dt=4.009e-02, minStepsPerPeriod=10, numberOfStepsPerSolve=124, totalTimeStepsStaken=2852, aveItsPerImplicitSolve=  0.0
+  takeImplicitFirstStep=0
+ implicitUpwind=0 (1= add upwind diss. to implicit matrix)
+ grid-CFL= 3.63e+00 for grid=0 (square)
+ c=1, useSuperGrid=0, damp=0
+ filterTimeDerivative=0, useFilterWeights=1, viFactor=6.95299e-310
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ freq= 0, omega=   5.100, (adjusted=   5.056) T= 1.23200, Tbar= 4.92799, numPeriods=  4, Tbar(0)/T=  4.00
+ freq= 1, omega=  12.000, (adjusted=  11.461) T= 0.52360, Tbar= 4.71239, numPeriods=  9, Tbar(0)/T=  9.41
+ freq= 2, omega=  15.500, (adjusted=  14.389) T= 0.40537, Tbar= 4.45903, numPeriods= 11, Tbar(0)/T= 12.16
+Direct solve Helmholtz: cpu= 2.07e-02(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=4.343e-10.
+CgWaveHoltz::residual: freq= 1, omega=  12.000, max-res=4.294e-10.
+CgWaveHoltz::residual: freq= 2, omega=  15.500, max-res=5.182e-10.
+solveHelmholtz: max-res=5.182e-10 (all frequencies)
+solveHelmholtz: rel-max-diff=3.30e-14 for freq0 =   5.1000e+00, |v|_max= 1.00e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.78e-14 for freq1 =   1.2000e+01, |v|_max= 1.01e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.12e-13 for freq2 =   1.5500e+01, |v|_max= 1.01e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.12e-13, |v|_max= 1.01e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+Wrote results to the check file [cgWaveHoltz.check]
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzKrylov.m]
+getErrors: t=0.000e+00, freq=  0, omega=   5.100, maxErr=3.220e-03
+getErrors: t=0.000e+00, freq=  1, omega=  12.000, maxErr=1.010e-02
+getErrors: t=0.000e+00, freq=  2, omega=  15.500, maxErr=1.321e-02
+cgwh: max-err =1.32e-02 (between WaveHoltz and known solution, all frequencies)
+exit
+
+              -------------------CgWave Summary----------------- 
+                       Wed Jul 12 20:34:08 2023
+               Grid:   /home/henshw/grids/square64.order2.hdf 
+  ==== final time= 4.93e+00, numberOfStepsTaken =     2852, grids=1, gridpts =4225, interp pts=0, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=54.9883,ave=54.9883,max=54.9883](Mb), max-recorded=0 (Mb), total=54.9883 (Mb)
+ applyBoundaryConditions called 2852 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  1.55e+00    5.42e-04    1.28e-07   100.000   1.546e+00   1.546e+00
+setup and initialize................  1.34e-03    4.69e-07    1.11e-10     0.087   1.339e-03   1.339e-03
+initialize BCs......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+initial conditions..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+advance.............................  1.54e+00    5.39e-04    1.28e-07    99.394   1.537e+00   1.537e+00
+  advance rectangular grids.........  1.77e-01    6.22e-05    1.47e-08    11.466   1.773e-01   1.773e-01
+  advance curvilinear grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+    implicit solve..................  6.69e-01    2.34e-04    5.55e-08    43.251   6.686e-01   6.686e-01
+  add dissipation...................  1.67e-01    5.86e-05    1.39e-08    10.809   1.671e-01   1.671e-01
+  boundary conditions...............  2.38e-01    8.33e-05    1.97e-08    15.366   2.376e-01   2.376e-01
+  interpolation.....................  1.03e-02    3.62e-06    8.56e-10     0.667   1.031e-02   1.031e-02
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  1.76e-01    6.17e-05    1.46e-08    11.377   1.759e-01   1.759e-01
+  get errors........................  7.87e-04    2.76e-07    6.53e-11     0.051   7.870e-04   7.870e-04
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+ Memory usage: reals/grid-point = 1705.90.
+--------------------------------------------------------------------------------------------------------
+ ======== Parallel Distribution for CgWave (np=1)============
+ numberOfGrids=1, gridDistributionList.size()=1l 
+  grid=0: procs=1 [0,0], proc-decomp=[1]x[1]x[1], pts=4761=[69]x[69]x[1], pts/proc=4761=[69]x[69]x[1], ratio=69/69=  1, ghost=[0,0,0]
+
+ >>>> See the file mx.log for further timings, memory usage and other statistics <<<< 
+
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 

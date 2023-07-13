@@ -1,0 +1,35 @@
+#
+# REGRESSION TESTS FOR WAVEHOLTZ
+#     Tests are run using the perl script checkWaveHoltz.p
+#
+# Type "make" in this folder to run all checks.
+#
+# Type checkWaveHoltz.p <checkName.check> to run one check.
+#    e.g. "checkWaveHoltz.p sice4.check"
+#
+# To replace a check file use
+#   checkWaveHoltz.p -replace <checkName.check> 
+#
+# Here is the executable:
+../bin/cgwh
+# CGBUILDPREFIX/mx/bin/cgmx
+#
+# here is the name of the check file
+cgWaveHoltz.check
+# Here is a list of commands to run for tests
+#
+# Square, implicit time-stepping, order=2, Krylov
+square64ImpKrylov.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -bc=d -minStepsPerPeriod=20 -go=dk
+#
+# Square, implicit time-stepping, order=2, fixedPoint
+square64ImpFP.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -bc=d -minStepsPerPeriod=20 -go=df
+#
+# MULTI-FREQ
+square64ImpFreq3Krylov.check ../runsWaveHoltz/trigHelmholtz/trigHelmholtz.cmd -g=square64.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=1 -go=dk
+#
+# Square, IMP, SUPERGRID
+square64ImpSuperGridKrylov.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -minStepsPerPeriod=20 -go=dk
+
+
+
+

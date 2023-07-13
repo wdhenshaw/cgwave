@@ -9,15 +9,23 @@
 
 // -------- function prototypes for Fortran routines --------
 #define bcOptWave EXTERN_C_NAME(bcoptwave)
+#define abcWave EXTERN_C_NAME(abcwave)
 extern "C"
 {
 
 void bcOptWave( const int&nd, 
                                 const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
-                                const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const int&mask,
+                                const int&gridIndexRange, const int& dimRange, const int &isPeriodic, real&u, const real&un, const int&mask,
                                 const real&rsxy, const real&xy, real &uTemp1, real & uTemp2, 
                                 const int&boundaryCondition, const real & frequencyArray,
                                 const DataBase *pdb, const int&ipar, const real&rpar, int&ierr );
+
+void abcWave(const int&nd,
+            const int&nd1a,const int&nd1b,const int&nd2a,const int&nd2b,const int&nd3a,const int&nd3b,
+            const int&ndf1a,const int&ndf1b,const int&ndf2a,const int&ndf2b,const int&ndf3a,const int&ndf3b,
+            const int & gid,
+            const real&u, const real&un, const real&f, const int&mask, const real&rsxy, const real&xy,
+            const int&bc, const int&boundaryCondition, const int&ipar, const real&rpar, int&ierr );
 
 }
 
@@ -42,12 +50,13 @@ void bcOptWave( const int&nd,
 /// \brief Apply boundary conditions to a composite grid function.
 /// 
 /// \param u (input/output) : apply BCs to this grid function
+/// \param un (input/output) : solution at the previous time
 /// \param t (input) : current time
 /// \param applyExplicitBoundaryConditions (input) : if true, apply explicit boundary conditions, even if
 ///    a grid is advanced implicitly. This can be used to set the BC's for initial conditions, for example.
 // ======================================================================================================
 int CgWave::
-applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplicitBoundaryConditions /* = false */ )
+applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunction & un, real t, bool applyExplicitBoundaryConditions /* = false */ )
 {
     const int myid = max(0,Communication_Manager::My_Process_Number);
     const int np   = max(1,Communication_Manager::numberOfProcessors());
@@ -84,11 +93,13 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
 
     const int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
     const RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");  
+    const RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");  
 
     const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
 
     const AssignInterpolationNeighboursEnum & assignInterpNeighbours = 
                                                           dbase.get<AssignInterpolationNeighboursEnum>("assignInterpNeighbours");
+
 
     BoundaryConditionParameters bcParams;
     bcParams.orderOfExtrapolation=orderOfAccuracy+1;
@@ -230,6 +241,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
           // const IntegerArray & gid = mg.gridIndexRange();
                     
                     OV_GET_SERIAL_ARRAY(Real,u[grid],uLocal);
+                    OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
                     OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
 
           // get parameters for calling fortran
@@ -301,6 +313,24 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
                             bcApproach,                      // ipar(17)
                             numberOfFrequencies              // ipar(18)
                                                   };
+                        Real cEM2 = c;
+                        if( solveHelmholtz ) 
+                        {
+              // Adjust c for the EM2 absorbing BC to account for time-discretization errors
+              //   D+t (Dx ) w + A+( ... )
+                            if( frequencyArraySave(0)*dt>0 )
+                            {
+                                cEM2 = c*tan(frequencyArray(0)*dt/2.)/(frequencyArraySave(0)*dt/2.);
+                // printF("\n XXXXXXX cEM2=%e XXXXXXX\n\n",cEM2);
+                            }
+                            else
+                            {
+                                if( frequencyArraySave(0)==0 )
+                                    printF("WARNING: bcOpt: frequencyArraySave(0)=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",frequencyArraySave(0));
+                                if( dt<=0 )
+                                    printF("WARNING: bcOpt: dt<= 0 ! dt=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",dt);
+                            }
+                        }           
                         real rpar[] = {
                             t                , //  rpar( 0)
                             dt               , //  rpar( 1)
@@ -312,9 +342,11 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
                             mg.gridSpacing(2), //  rpar( 7)
                             (real &)(dbase.get<OGFunction* >("tz")) ,        //  rpar( 8) ! pointer for exact solution -- new : 110311 
                             REAL_MIN,         //  rpar( 9)
-                            c                 //  rpar(10)
+                            c,                //  rpar(10)
+                            cEM2              //  rpar(11)
                                                     };
                         real *pu = uLocal.getDataPointer();
+                        real *pun = unLocal.getDataPointer();
                         int *pmask = maskLocal.getDataPointer();
                         real temp, *pxy=&temp, *prsxy=&temp;
                         if( !isRectangular )
@@ -374,9 +406,33 @@ applyBoundaryConditions( realCompositeGridFunction & u, real t, bool applyExplic
                                         uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
                                         uLocal.getBase(2),uLocal.getBound(2),
                                         indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                                        *pu, *pmask, *prsxy, *pxy, *puTemp1, *puTemp2,
+                                        *pu, *pun, *pmask, *prsxy, *pxy, *puTemp1, *puTemp2,
                                         bcLocal(0,0), frequencyArray(0),
                                         pdb, ipar[0],rpar[0], ierr );
+
+
+
+          // Non-reflecting and Absorbing boundary conditions
+          // ***NOTE*** symmetry corners and edges are assigned in this next routine *fix me*
+          // OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
+
+                    Real *uptr = uLocal.getDataPointer();
+                    Real *uOldptr = unLocal.getDataPointer();
+
+                    RealArray ff(2,2);
+                    Real *fptr = ff.getDataPointer();
+
+                    abcWave( mg.numberOfDimensions(), 
+                                            uLocal.getBase(0),uLocal.getBound(0),
+                                            uLocal.getBase(1),uLocal.getBound(1),
+                                            uLocal.getBase(2),uLocal.getBound(2),
+                                            ff.getBase(0),ff.getBound(0),
+                                            ff.getBase(1),ff.getBound(1),
+                                            ff.getBase(2),ff.getBound(2),
+                                            indexRangeLocal(0,0),
+                                            *uOldptr, *uptr, *fptr, *pmask, *prsxy, *pxy,
+                                            bcLocal(0,0), bcLocal(0,0), ipar[0], rpar[0], ierr );
+
                 }
 
         // ...swap periodic edges ....

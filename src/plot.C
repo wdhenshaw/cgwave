@@ -38,9 +38,12 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
     
     int numberOfComponents=1;
 
-    const int & addForcing = dbase.get<int>("addForcing");
+    const Real & c                          = dbase.get<real>("c");
+    const int & addForcing                  = dbase.get<int>("addForcing");
     const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
-    const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
+    const aString & knownSolutionOption     = dbase.get<aString>("knownSolutionOption");
+
+    const int & plotScatteredField          = dbase.get<int>("plotScatteredField");
 
   // ** FIX ME: 
     int & computeErrors = dbase.get<int>("computeErrors");
@@ -56,6 +59,10 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
     int numberToPlot=numberOfComponents;                  // save fields
     int nErr=numberToPlot;    numberToPlot += numberOfComponents*int(saveErrors);
 
+    const int nScat =numberToPlot;
+    if( plotScatteredField ) 
+        numberToPlot += numberOfComponents;
+
   // we build a grid function with more components (errors, dissipation) for plotting
     v.updateToMatchGrid(cg,all,all,all,numberToPlot);
 
@@ -63,6 +70,8 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
     v.setName("u",0);
     if( plotErrors )
         v.setName("err",1);
+    if( plotScatteredField )
+        v.setName("scat",2);
 
     if( t<0. )
     {
@@ -70,7 +79,7 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
         return v;
     }
 
-
+    Index I1,I2,I3;
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
         MappedGrid & mg = cg[grid];
@@ -87,6 +96,31 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
         {
             OV_GET_SERIAL_ARRAY(real,error[grid],errLocal);
             vLocal(all,all,all,nErr)=errLocal(all,all,all);
+        }
+
+        if( plotScatteredField )
+        {
+      // Parameters for the plane wave defining the incident field
+      //   sin( kx*x + ky*y +kz*z - omega*t + phi )
+            const Real amp   = dbase.get<Real>("ampPlaneWave");
+            const Real kx    = dbase.get<Real>("kxPlaneWave");
+            const Real ky    = dbase.get<Real>("kyPlaneWave");
+            const Real kz    = dbase.get<Real>("kzPlaneWave");
+            const Real phi   = dbase.get<Real>("phiPlaneWave");
+            const Real omega = dbase.get<Real>("omegaPlaneWave");
+
+            printF("plotScatteredField: Using amp=%g, [kx,ky,kz]=[%g,%g,%g]*2*pi, phi=%g\n",amp,kx/twoPi,ky/twoPi,kz/twoPi,phi);
+
+            mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
+            OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
+            getIndex(mg.dimension(),I1,I2,I3);
+
+            Real omegat = omega*t - phi; 
+            if( numberOfDimensions==2 )
+                vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) - amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) - omegat );
+            else
+                vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) - amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) - omegat );
+
         }
     }
 

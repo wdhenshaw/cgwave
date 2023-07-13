@@ -1,4 +1,964 @@
 
+*************************************************
+**** Wed July 12, 2023
+
+ADD new check's for WaveHoltz
+
+
+SQUARE: 
+
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -minStepsPerPeriod=20 -go=halt
+
+BC=d 
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -bc=d -minStepsPerPeriod=20 -go=halt
+
+Convergence rate CR=0.217, CR-perPeriod=0.466, Time to solve = 2.68e-01(s) : CgWave= 2.59e-01(s) 96.75%, advance= 2.53e-01(s) 94.43%
+ max-residual=3.76e-12 (WaveHoltz its), numberOfIterations = 17 (Krylov) (maximumNumberOfIterations=1000)
+ 
+CgWaveHoltz::residual: freq= 0, omega=  20.000, max-res=5.439e-11 (using omega), max-res=1.145e+01 (using omega from discrete symbol)
+solveHelmholtz: max-res=5.439e-11 (all frequencies)
+solveHelmholtz: rel-max-diff=3.41e-13, |v|_max= 8.81e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+*************************************************
+**** Tues July 11, 2023
+
+
+SISE -- do not match yet , WHY??
+cgwh gaussian.cmd -g=sise2.order2 -ts=implicit -cfl=1000 -x0=0.0 -y0=0.0 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+Check residual for Cartesian grid + superGrid : grid=0
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-1.768, betaUpwind=-1.768
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 5.47e-10, 1.12e-08], max|rhs|= 1.32e-45
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 5.47e-10, 1.12e-08], max|rhs|= 1.32e-45
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 5.47e-10, 1.12e-08], max|rhs|= 1.32e-45
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 5.47e-10, 1.12e-08], max|rhs|= 1.32e-45
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-1.768, betaUpwind=-1.768
+solveHelmholtz: max-residual [Re,Im]=[4.34e-02,3.08e-02]
+solveHelmholtz: rel-max-diff [Re,Im]=[1.56e-02,2.09e-02],  norm [Re,Im]=[2.08e+00,2.91e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
++++++++++ IMP + SG + IUW  **BROKEN ... FIXED*
+**SOLUTIONS MATCH**
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+
+
+
+
+FIXED DIRECT HELMHOLTZ SOLVER : WIDE UPWIND STENCIL: UPWIND
+  >>> ADDED active point to SparseRep
+
+
+
+
+
+TROUBLE sise1 for some reason
+cgwh gaussian.cmd -g=sise1.order2 -ts=implicit -cfl=1000 -x0=0.0 -y0=0.0 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+
+
+cgwh gaussian.cmd -g=sbs.hdf -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt -debugOges=63
+
+*************************************************
+**** Sun July 9, 2023
+
+
+FIX DIRECT HELMHOLTZ SOLVER : WIDE UPWIND STENCIL: UPWIND
+
+
+cgwh gaussian.cmd -g=sise2.order2 -ts=implicit -cfl=1000 -x0=0.0 -y0=0.0 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
+ ++++ CIC IMP ++++
+
+CIC IMP : why don't solutions match ??
+
+cgwh gaussian.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -go=halt
+
+cgwh gaussian.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -go=halt
+
+
+solveHelmholtz: max-residual [Re,Im]=[1.36e-01,1.28e-01]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[8.12e-02,8.11e-02],  norm [Re,Im]=[2.26e+00,2.76e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+cgwh gaussian.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+
+RSIS
+cgwh gaussian.cmd -g=rsise4.order2 -ts=implicit -cfl=1000 -x0=0.0 -y0=0.0 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+
+SIS 
+   -- residual zero except near interpolation boundary where special upwind formula is used.
+   -- solution looks funny --> use default superGridWidth !!
+
+cgwh gaussian.cmd -g=sise4.order2 -ts=implicit -cfl=1000 -x0=0.0 -y0=0.0 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+Direct: 
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-1.768, betaUpwind=-1.768
+CgWaveHoltz: omega=2.000e+01, max-res=2.079e-12 (direct Helmholtz solution)
+
+
+
+<<<<<<<<<<<<<<<<<,
+
+
+IMP + Exp-UW-PC 
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -minStepsPerPeriod=20 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[2.60e-03,6.42e-03]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.38e-03,1.77e-02],  norm [Re,Im]=[8.04e-01,1.58e+00] (between WaveHoltz and Direct Helmholtz)
+
+
++++++++++ IMP + SG + IUW
+**SOLUTIONS MATCH**
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+*************************************************
+**** Sat July 8, 2023
+
+>>>> residual: check EM2 BC residual
+
+BUG FIXED: direct-Helm : add upwinding on the boundary
+
+BUG FIXED: gridCFL was WRONG -- NOW STORE c/dx instead since dt can change
+
+XXXXXX Increase minStepsPerPeriod
+
+--> BETTER But not matching MATLAB yet
+
+*** CHECK CORRECTION TO UPWIND PARAMETER***
+
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -minStepsPerPeriod=20 -go=halt
+
+CgWave: 
+ Time stepping = implicit, cfl=100.00, dt=1.604e-02, minStepsPerPeriod=20, numberOfStepsPerSolve=40, totalTimeStepsStaken=1160, aveItsPerImplicitSolve=  0.0
+  takeImplicitFirstStep=0
+ implicitUpwind=0 (1= add upwind diss. to implicit matrix)
+ grid-CFL= 1.45e+00 for grid=0 (square)
+ c=1, useSuperGrid=1, damp=0
+ filterTimeDerivative=1, useFilterWeights=1, viFactor=1
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ freq= 0, omega=  20.000, (adjusted=  19.585) T= 0.31416, Tbar= 0.62832, numPeriods=  2, Tbar(0)/T=  2.00
+
+solveHelmholtz: max-residual [Re,Im]=[5.78e-02,4.85e-02]
+solveHelmholtz: rel-max-diff [Re,Im]=[1.44e-02,1.88e-02],  norm [Re,Im]=[8.04e-01,1.58e+00] (between WaveHoltz and Direct Helmholtz)
+
+INTERIOR ERRORS 
+solveHelmholtz: rel-max-diff [Re,Im]=[2.69e-03,1.81e-02],  norm [Re,Im]=[8.04e-01,1.58e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+MATLAB:
+==============================================================================
+========================= WaveHoltz SUMMARY ==================================
+  ms=gaussian, tol= 1.00e-16, numFixPointIterations=20
+  Gaussian parameters: amp=1000, beta=20, [x0,y0]=[0.5,0.5]
+  nd=2, [ax,bx]x[ay,by]=[0,1]x[0,1], Nx=64, Ny=64, numGhost=2, cfl=1000
+  bc = [EM2,EM2,EM2,EM2]
+  damp=0, filterTimeDerivative=1, useFilterWeights=1, viFactor=1 
+  isign=-1 : exp( isign*I*omegat), phase=0 : for cos( omega*t + phase*pi ) forcing 
+  upwind=1 (WaveHoltz), upwindh=1 (Helmholtz), upwindScaleFactor=0.688772, implicitUpwind=0
+  useUpwindCoeff=0 : 1= compute UPW coeff arrays uwx(:,:), uwy(:,:) using getUpwindCoefficients
+  superGrid=1, superGridWidth=0.2,  superGridh=1 (HelmHoltz)
+  Nf=1, Np=2, adjustOmega=1, useDiscreteBetaFunction=1
+  implicit=1, tFinal=  0.6416, minStepsPerPeriod=20, Nt=40, adjustForcingForImplicitTimeStepping=0
+  deflateRitz=0, ritzConvergenceTol= 1.00e-08
+  freq=1: omega=2.000000e+01, omega(adj)=1.958487e+01, Tbar=6.283185e-01, Tbar(adj)=6.416368e-01, Np=2
+  Krylov: average-CR=0.3474, FPI-ACR=0.9999, its=26, ||res||_h= 1.01e-13
+==============================================================================
+  freq=1: max || H v -f ||/omega^2  = 2.05e-01 (residual in WaveHoltz solution v)
+  freq=1: max || v - Helmholtz ||   = 4.18e-03 (error in WaveHoltz - Helmholtz)
+
+
+
+
+
+
+
+>>>>>>>>>>>> TRY EXPLICIT-UW : trouble: 
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+CFL=1 : OK 
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+solveHelmholtz: max-residual [Re,Im]=[2.05e-02,2.59e-02]
+solveHelmholtz: rel-max-diff [Re,Im]=[4.67e-03,4.18e-03],  norm [Re,Im]=[8.05e-01,1.56e+00] (between WaveHoltz and Direct Helmholtz)
+
+<<<<<<<<<<<<<<<<<<<<
+
+
+FREQ=40
+cgwh gaussian.cmd -g=square128.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=40 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -saveShow=squareImpSuperGridIUW.show -go=halt
+
+CURV: 
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+ bcOpt: implicit BC for absorbing/EM2 -- CURVILINEAR : finish me
+STOP 4444
+
++++++++++ IMP + SG + IUW
+**SOLUTIONS MATCH**
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+>>>>>>solveHelmholtzDirect: upwindDissipationCoefficient=0.0883883, old-way=0.0883883
+ Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 1.85e-14, 2.49e-14], max|rhs|= 2.87e-36
+ Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 1.07e-14, 2.13e-14], max|rhs|= 2.87e-36
+ Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 1.60e-14, 2.44e-14], max|rhs|= 2.87e-36
+ Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 1.24e-14, 1.60e-14], max|rhs|= 2.87e-36
+
+ ^^^^^^ solveHelmholtzDirect: max-rel-res [re,Im]=[1.54e-12,1.08e-12] ^^^^^^^^
+
+
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-1.768, betaUpwind=-1.768
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 5.30e-11, 1.34e-09], max|rhs|= 6.51e-44
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 5.30e-11, 1.34e-09], max|rhs|= 6.51e-44
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 5.30e-11, 1.34e-09], max|rhs|= 6.51e-44
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 5.30e-11, 1.34e-09], max|rhs|= 6.51e-44
+Check residual for Cartesian grid + superGrid : grid=0
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-1.768, betaUpwind=-1.768
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 5.30e-11, 1.34e-09], max|rhs|= 6.51e-44
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 5.30e-11, 1.34e-09], max|rhs|= 6.51e-44
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 5.30e-11, 1.34e-09], max|rhs|= 6.51e-44
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 5.30e-11, 1.34e-09], max|rhs|= 6.51e-44
+
+solveHelmholtz: max-residual [Re,Im]=[3.15e-12,1.44e-12]
+solveHelmholtz: rel-max-diff [Re,Im]=[2.28e-12,1.24e-12],  norm [Re,Im]=[8.05e-01,1.55e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+*************************************************
+**** Fri July 7, 2023
+
+>>> CLEAN UP adSosup : NEW function:: getUpwindDissipationCoeff(grid)
+
+>>> ADD EM2 ABC to direct helmholtz solve:
+
+explicit-upwind
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[3.61e-04,1.26e-03]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[3.61e-03,4.08e-03],  norm [Re,Im]=[8.05e-01,1.56e+00] (between WaveHoltz and Direct Helmholtz)
+
++++++++++++++++++++
+
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -go=halt
+
+ ^^^^^^ solveHelmholtzDirect: max-rel-res [re,Im]=[1.52e-12,1.51e-12] ^^^^^^^^
+
+solveHelmholtz: max-residual [Re,Im]=[4.30e-13,1.11e-12]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[5.33e-05,7.26e-05],  norm [Re,Im]=[8.05e-01,1.55e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+EM2 + IMP + SG + IUW : MATCH TO MATLAB ( ***CHANGED BETA*** )
+>>> FIX RESIDUAL
+
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+RESIDUAL IS NOW ZERO
+solveHelmholtz: max-residual [Re,Im]=[1.85e-12,1.40e-12]
+solveHelmholtz: rel-max-diff [Re,Im]=[3.98e-03,3.60e-03],  norm [Re,Im]=[1.95e+00,2.91e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+residual: upwindDissipationCoefficient=    8.7180e-02, betaUpwindOld=-1.768, betaUpwind=-1.744
+solveHelmholtz: max-residual [Re,Im]=[4.38e-03,5.42e-03]
+solveHelmholtz: rel-max-diff [Re,Im]=[3.98e-03,3.60e-03],  n
+
+
+solveHelmholtz: max-residual [Re,Im]=[1.95e-02,1.70e-02]
+solveHelmholtz: rel-max-diff [Re,Im]=[4.38e-03,4.02e-03],  norm [Re,Im]=[1.95e+00,2.91e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+EM2 + EXP + SG + IUW : MATCH TO MATLAB ( ***CHANGED BETA*** )
+>>> FIX RESIDUAL
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[3.10e-02,4.10e-02]
+solveHelmholtz: rel-max-diff [Re,Im]=[4.62e-03,4.25e-03],  norm [Re,Im]=[1.95e+00,2.92e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+EM2 + IMP + SG + NO-UW : MATCH TO MATLAB ( ***CHANGED BETA*** )
+>>> NOTE: MANY ITERATIONS NEEDED *EXACT**
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[2.75e-12,2.48e-12]
+solveHelmholtz: rel-max-diff [Re,Im]=[1.85e-11,9.51e-12],  norm [Re,Im]=[8.44e+00,8.02e-11] (between WaveHoltz and Direct Helmholtz)
+
+
+
+EM2 + EXPLICIT + SG + Exp-UW:
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[3.61e-04,1.26e-03]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[7.00e-03,4.08e-03],  norm [Re,Im]=[8.05e-01,1.56e+00] (between WaveHoltz and Direct Helmholtz)
+
+EM2 + EXPLICIT + SG + NO-UW:
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[4.65e-08,4.36e-08]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[9.05e-07,1.00e+00],  norm [Re,Im]=[3.27e+00,3.63e-06] (between WaveHoltz and Direct Helmholtz)
+
+
+
+EM2 + IMP : **EXACT** after correction to c in EM2
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[1.46e-12,8.48e-13]
+solveHelmholtz: rel-max-diff [Re,Im]=[4.84e-12,2.23e-12],  norm [Re,Im]=[8.08e-01,1.54e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+EM2 + EXPLICIT : **EXACT** after correction to c in EM2
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[2.05e-13,3.60e-13]
+solveHelmholtz: rel-max-diff [Re,Im]=[4.30e-12,2.45e-12],  norm [Re,Im]=[8.08e-01,1.54e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+TEST EM2: .. starts to work
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -go=halt
+
+
+solveHelmholtz: max-residual [Re,Im]=[8.31e-13,8.17e-13]
+solveHelmholtz: rel-max-diff [Re,Im]=[3.99e-02,1.94e-02],  norm [Re,Im]=[8.09e-01,1.51e+00] (between WaveHoltz and Direct Helmholtz)
+
+*************************************************
+**** Thurs July 6, 2023
+
+>>> CLEAN UP adSosup : NEW function:: getUpwindDissipationCoeff(grid)
+
+>>> ADD EM2 ABC to direct helmholtz solve:
+TEST EM2: 
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=1.e-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -go=halt
+
+
+
+RETURN TO WAVEHOLTZ + SUPERGRID + IMP + IMP-Upwind --> THIS SHOULD BE EXACT MATCH AFTER WE ADJUST UPWIND COEFF
+
+UWI
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=1.e-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -go=halt
+
+AFTER adjust *not working yet**
+solveHelmholtz: max-residual [Re,Im]=[1.08e-06,5.68e-07]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.25e-03,8.09e-04],  norm [Re,Im]=[8.05e-04,1.55e-03] (between WaveHoltz and Direct Helmholtz)
+
+
+Before adjust
+solveHelmholtz: max-residual [Re,Im]=[2.05e-07,1.42e-06]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.46e-03,7.97e-04],  norm [Re,Im]=[8.05e-04,1.56e-03] (between WaveHoltz and Direct Helmholtz)
+
+
+
+*************************************************
+**** Wed July 5, 2023
+
+RETURN TO WAVEHOLTZ + SUPERGRID + IMP + IMP-Upwind --> THIS SHOULD BE EXACT MATCH AFTER WE ADJUST UPWIND COEFF
+
+UWI
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=1.e-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -go=halt
+
+Before adjust
+solveHelmholtz: max-residual [Re,Im]=[2.05e-07,1.42e-06]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.46e-03,7.97e-04],  norm [Re,Im]=[8.05e-04,1.56e-03] (between WaveHoltz and Direct Helmholtz)
+
+
+
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=1.e-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+
+*************************************************
+**** Wed June 28, 2023
+
+RETURN TO WAVEHOLTZ + SUPERGRID
+
+SHAPES + Implicit  starts to work?? but off from direct : needs adjustements maybe
+cgwh gaussian.cmd -g=shapesBige2.order2 -x0=-1.25 -y0=0.0 -nf=1 -freq=30 -amp=500 -beta=20 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -go=halt -minStepsPerPeriod=40
+
+
+solveHelmholtz: max-residual [Re,Im]=[5.81e-02,5.89e-02]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.54e-01,1.61e-01],  norm [Re,Im]=[3.29e-01,6.09e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+SHAPES + explicit : dos not match direct ??
+cgwh gaussian.cmd -g=shapesBige2.order2 -x0=-1.25 -y0=0.0 -nf=1 -freq=30 -amp=500 -beta=20 -adjustOmega=1 -ts=explicit -cfl=.95 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -go=halt -minStepsPerPeriod=40
+
+solveHelmholtz: max-residual [Re,Im]=[2.24e-01,8.85e-02]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[6.58e-01,4.32e-01],  norm [Re,Im]=[2.80e-01,4.65e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+
+*************************************************
+**** Sun June 25, 2023
+
+FIX IMP + SUPER GRID + CARTESIAN
+
+TEST: 
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=1.e-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+
+IMP CART: ***STARTS TO WORK**
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+Convergence rate CR=0.303, CR-perPeriod=0.551, Time to solve = 1.02e+00(s) : CgWave= 1.01e+00(s) 98.48%, advance= 9.98e-01(s) 97.64%
+solveHelmholtz: max-residual [Re,Im]=[3.15e-03,1.93e-02]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.06e-02,5.61e-03],  norm [Re,Im]=[8.04e-01,1.56e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+IMP CURV: 
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+Convergence rate CR=0.454, CR-perPeriod=0.673, Time to solve = 3.43e-01(s) : CgWave= 3.21e-01(s) 93.65%, advance= 3.09e-01(s) 90.11%
+solveHelmholtz: max-residual [Re,Im]=[6.59e-03,2.21e-02]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.19e-02,2.79e-02],  norm [Re,Im]=[8.03e-01,1.60e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+CIC IMP ** trouble ***
+  ---> NO SUPER GRID ON IMPLICIT CARTESIAN YET 
+cgwh gaussian.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -go=halt
+
+CIC EXP : OK 
+cgwh gaussian.cmd -g=cice4.order2 -ts=explicit -cfl=.95 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[2.81e-02,2.46e-02]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[5.11e-02,5.51e-02],  norm [Re,Im]=[2.77e+00,2.65e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+IMP : OK
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+New diss
+solveHelmholtz: max-residual [Re,Im]=[6.59e-03,2.21e-02]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.19e-02,2.79e-02],  norm [Re,Im]=[8.03e-01,1.60e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+OLD dissipation: 
+solveHelmholtz: max-residual [Re,Im]=[1.84e-02,2.49e-02]
+solveHelmholtz: rel-max-diff [Re,Im]=[1.49e-02,5.56e-02],  norm [Re,Im]=[7.99e-01,1.65e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+EXP : OK 
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+
+
+
+REVISIT WAVE HOLTZ + UPWIND + IMPLICIT : USE NEW UPWIND DISS COEFF
+
+cgwh gaussian.cmd -g=shapesBige4.order2 -x0=-1.25 -y0=0.0 -nf=1 -freq=30 -amp=500 -beta=20 -adjustOmega=1 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -go=halt -minStepsPerPeriod=40
+
+cgwh gaussian.cmd -g=shapesBige2.order2 -x0=-1.25 -y0=0.0 -nf=1 -freq=30 -amp=500 -beta=20 -adjustOmega=1 -ts=explicit -cfl=.95 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -go=halt -minStepsPerPeriod=40
+
+
+TRY SHAPES: -- seems OK 
+cgwh gaussian.cmd -g=shapese2.order2 -x0=0.1 -y0=-0.5 -nf=1 -freq=30 -amp=500 -beta=20 -adjustOmega=1 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -go=halt
+
+
+SHAPES NO SUPERGRID ** TROUBLE ***
+cgwh gaussian.cmd -g=shapesBige2.order2 -x0=-1.25 -y0=0.0 -nf=1 -freq=30 -amp=500 -beta=20 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.1 -bc=d -go=halt -minStepsPerPeriod=40
+
+
+cgwh gaussian.cmd -g=nonSquare128.order2 -ts=implicit -cfl=1 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[3.61e-04,2.60e-03]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[6.73e-04,1.06e-03],  norm [Re,Im]=[7.99e-01,1.54e+00] (between WaveHoltz and Direct Helmholtz)
+
+IMP + SIMP-UPWIND : OK 
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=implicit -cfl=1 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[3.17e-03,1.93e-02]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.11e-02,5.69e-03],  norm [Re,Im]=[8.03e-01,1.57e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+*************************************************
+**** Sat June 24, 2023
+
+PLOTS FOR DOC: 
+
+SHAPES BIG
+cgwh gaussian.cmd -g=shapesBige4.order2 -x0=-1.25 -y0=0.0 -nf=1 -freq=30 -amp=500 -beta=20 -adjustOmega=1 -ts=explicit -cfl=.95 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -go=halt
+
+cgwh gaussian.cmd -g=shapesBige2.order2 -x0=-1.25 -y0=0.0 -nf=1 -freq=30 -amp=500 -beta=20 -adjustOmega=1 -ts=explicit -cfl=.95 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -go=halt
+
+SHAPES -- explicit needs too many steps
+cgwh gaussian.cmd -g=shapese4.order2 -x0=0.1 -y0=-0.5 -nf=1 -freq=40 -amp=500 -beta=20 -adjustOmega=1 -ts=explicit -cfl=.95 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -go=halt
+
+
+cgwh gaussian.cmd -g=shapese2.order2 -x0=0.1 -y0=-0.5 -nf=1 -freq=30 -amp=500 -beta=20 -adjustOmega=1 -ts=explicit -cfl=.95 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -go=halt
+
+
+
+cgwh gaussian.cmd -g=cice8.order2 -ts=explicit -cfl=.95 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -go=halt
+
+cgwh gaussian.cmd -g=cice4.order2 -ts=explicit -cfl=.95 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -go=halt
+
+
+
+ ^^^^^^ solveHelmholtzDirect: max-rel-res [re,Im]=[1.01e-11,1.44e-11] ^^^^^^^^
+
+
+cgwh -noplot gaussian.cmd -g=shapese4.order2 -x0=0.25 -0.55 0.5 -y0=-0.6 0.5 0.5 -nf=1 -freq=30 -amp=100 50 50 -beta=400 400 400 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=20 -cfl=10000 -matlab=shapesG4O2freq30Np8Deflate20 -eigenVectorFile=shapesG4O2Ev300.show -deflateWaveHoltz=1 -numToDeflate=20 -go=dfk > shapesG4O2freq30Np8Deflate20.out
+
+
+
+>> START TEST IMPLICIT
+
+*BUG FOUND: -- advWave was REDUCING THE DISSIPATION COEFF
+
+IMP: USe IMPLICIT UPWIND FOR NOW: **FIX ME** something is wrong 
+
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=implicit -cfl=1 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -implicitUpwind=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+IMP -- low CFL OK 
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=implicit -cfl=1 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+solveHelmholtz: rel-max-diff [Re,Im]=[8.25e-03,4.22e-03],  norm [Re,Im]=[8.05e-01,1.57e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+IMP -- converged but not correct
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+TROUBLE: 
+advWave: gridIsImplicit: t=  0.69E-01 REDUCE UPWIND DISS COEFF by gridCFL=  0.91E+02
+
+EXP
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+
+solveHelmholtz: max-residual [Re,Im]=[3.60e-04,1.26e-03]
+INFO: Set errors to zero in the SuperGrid layers
+!!!! adjustSolutionForSuperGrid : Adjust plot for SuperGrid
+solveHelmholtz: rel-max-diff [Re,Im]=[7.41e-03,4.19e-03],  norm [Re,Im]=[8.05e-01,1.57e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+*************************************************
+**** Fri June 23, 2023
+
+
+
+>>> ADD option to NOT PLOT SuperGrid Layers 
+
+cgwh gaussian.cmd -g=square256.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.55 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=40 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -superGridWidth=0.1 -go=halt
+
+ADJUST ERRORS AND RESIDUALS FOR SUPERGRID 
+cgwh gaussian.cmd -g=square128.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.55 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=40 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -superGridWidth=0.1 -go=halt
+
+!!!! adjustSolutionForSuperGrid : Adjust plot for SuperGrid
+solveHelmholtz: max-residual [Re,Im]=[1.19e-04,6.78e-05]
+INFO: Set errors to zero in the SuperGrid layers
+!!!! adjustSolutionForSuperGrid : Adjust plot for SuperGrid
+solveHelmholtz: rel-max-diff [Re,Im]=[3.34e-03,3.65e-03],  norm [Re,Im]=[4.91e-01,7.19e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+>> FIX residual for CgWaveHoltz
+
+TRY THIS: CIC GRID 
+cgwh gaussian.cmd -g=cice16.order2 -ts=explicit -cfl=.95 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -go=halt
+
+cgwh gaussian.cmd -g=cice8.order2 -ts=explicit -cfl=.95 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -go=halt
+
+!!!! adjustSolutionForSuperGrid : Adjust plot for SuperGrid
+solveHelmholtz: max-residual [Re,Im]=[1.72e-04,4.48e-04]
+INFO: Set errors to zero in the SuperGrid layers
+!!!! adjustSolutionForSuperGrid : Adjust plot for SuperGrid
+solveHelmholtz: rel-max-diff [Re,Im]=[1.44e-03,1.07e-03],  norm [Re,Im]=[8.47e+00,9.16e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+cgwh gaussian.cmd -g=cice4.order2 -ts=explicit -cfl=.95 -x0=0.8 -y0=0.8 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a  -bc3=a -bc4=a -go=halt
+
+OVERSET:
+cgwh gaussian.cmd -g=sise4.order2 -ts=explicit -cfl=.95 -x0=.0 -y0=.0 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+
+
+
+
+CARTESIAN : 
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+
+solveHelmholtz: max-residual [Re,Im]=[1.65e-02,2.18e-02]
+solveHelmholtz: rel-max-diff [Re,Im]=[7.56e-03,4.16e-03],  norm [Re,Im]=[8.05e-01,1.56e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+*************************************************
+**** Thurs June 22, 2023
+
+FIX direct Helmholtz solve + upwinding
+
+FINISH ME: DirectHelmholtz + SuperGrid + Cartesian
+
+CARTESIAN : Direct solve starts to work, residual wrong still ... WORKS NOW 
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+^^^^^^ solveHelmholtzDirect: max-rel-res [re,Im]=[2.10e-13,1.87e-13] ^^^^^^^^
+solveHelmholtz: rel-max-diff [Re,Im]=[7.56e-03,4.16e-03],  norm [Re,Im]=[8.05e-01,1.56e+00] (between WaveHoltz and Direct Helmholtz)
+
+solveHelmholtz: rel-max-diff [Re,Im]=[7.56e-03,4.16e-03],  norm [Re,Im]=[8.05e-01,1.56e+00] (between WaveHoltz and Direct Helmholtz)
+
+CURV: THIS works now
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+ ########## ADD UPWIND TO DIRECT HELMHOLTZ SOLVER Upwind-stencil=5 ####### 
+ ^^^^^^ solveHelmholtzDirect: max-res [re,Im]=[1.86e-10,1.52e-10] ^^^^^^^^
+
+solveHelmholtz: max-residual [Re,Im]=[7.04e+01,8.39e+01]
+solveHelmholtz: rel-max-diff [Re,Im]=[7.51e-03,4.19e-03],  norm [Re,Im]=[8.05e-01,1.57e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+OLD: 
+2nd-order upwinding
+ ^^^^^^ solveHelmholtzDirect: max-res [re,Im]=[3.69e-11,8.10e-11] ^^^^^^^^
+*************************************************
+**** Wed June 21, 2023
+
+START TEST Upwind in direct Helmholtz solve:
+
+TURN OFF adjustHelmholtzForUpwinding 
+
+FIX SUPERGRID FOR CURVILINEAR : need original metrics for upwinding
+
+
+START TEST: superGrid -- compare to matlab
+FLIP SIGN OF AMP
+
+TRY THIS: BROKEN: 
+cgwh gaussian.cmd -g=sice2.order2 -ts=explicit -cfl=.95 -x0=0 -y0=0 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=10 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+Higher freq: 
+cgwh gaussian.cmd -g=square128.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=40 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+
+CURVILINEAR: 
+  FIX directSolver: 
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+off center: 
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.55 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+CARTESIAN : STARTS TO WORK
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -go=halt
+
+
+cgwh gaussian.cmd -g=nonSquare64.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.55 -nf=1 -amp=500 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -go=halt
+
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.55 -nf=1 -amp=500 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -go=halt
+
+
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.55 -nf=1 -amp=500 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=2 -freq=8 -filterTimeDerivative=0 -damp=0 -adjustHelmholtzForUpwinding=0 -go=halt
+
+*************************************************
+**** Tues June 20, 2023
+
+**BUG FOUND WHEN USING viFactor --> boundary terms in the filter for w.t need to be scaled too
+
+COMPARE TO MATLAB --> Looks OK CR=.75 ACR=.76
+cgwh gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.55 -nf=1 -amp=100 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -freq=8 -filterTimeDerivative=1 -damp=0.5 -go=halt
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+                          Complex Solution 
+
+ grid=/home/henshw/grids/square64.order2.hdf
+ Convergence rate CR=0.750, CR-perPeriod=0.866, Time to solve = 2.79e+00(s) : CgWave= 2.78e+00(s) 99.65%, advance= 2.75e+00(s) 98.57%
+ max-residual=3.16e-15 (WaveHoltz its), numberOfIterations = 100 (FP) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = explicit, cfl=  0.95, dt=5.236e-03, minStepsPerPeriod=10, numberOfStepsPerSolve=300, totalTimeStepsStaken=37500, aveItsPerImplicitSolve=  0.0
+ c=1, damp=0.5
+ filterTimeDerivative=1, useFilterWeights=1
+    implicit solver : none
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ freq= 0, omega=   8.000, (adjusted=   8.001) T= 0.78540, Tbar= 1.57080, numPeriods=  2, Tbar(0)/T=  2.00
+Direct solve Helmholtz: cpu= 6.49e-02(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+
+solveHelmholtz: max-residual [Re,Im]=[1.05e-11,3.69e-12]
+solveHelmholtz: rel-max-diff [Re,Im]=[2.71e-13,1.62e-12],  norm [Re,Im]=[3.27e-01,6.40e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+MATLAB
+waveHoltz -ms=gaussian -nd=2 -implicit=0 -cfl=.95 -N0=64 -useFixPoint=1 -useGMRES=1 -kx1=1 -adjustOmega=1 -upwind=0 -tol=1e-14 -numFPI=100 -numPer=2 -numFreq=1 -omega1=8 -amp1=100 -beta1=15 -useDiscreteBetaFunction=1 -bc=dddd -x0=.55 -y0=.55 -useFilterWeights=1 -damp=.5
+==============================================================================
+========================= WaveHoltz SUMMARY ==================================
+  ms=gaussian, tol= 1.00e-14, numFixPointIterations=100
+  Gaussian parameters: amp=100, beta=15, [x0,y0]=[0.55,0.55]
+  nd=2, [ax,bx]x[ay,by]=[0,1]x[0,1], Nx=64, Ny=64, numGhost=0, cfl=0.95
+  bc = [dirichlet,dirichlet,dirichlet,dirichlet]
+  damp=0.5, filterTimeDerivative=1, useFilterWeights=1, viFactor=7.99298 
+  isign=-1 : exp( isign*I*omegat), phase=0 : for cos( omega*t + phase*pi ) forcing 
+  upwind=0 (WaveHoltz), upwindh=0 (Helmholtz)
+  superGrid=0, superGridWidth=0.2,  superGridh=0 (HelmHoltz)
+  Nf=1, Np=2, adjustOmega=1, useDiscreteBetaFunction=1
+  implicit=0, tFinal=  1.5703, minStepsPerPeriod=10, Nt=150, adjustForcingForImplicitTimeStepping=0
+  deflateRitz=0, ritzConvergenceTol= 1.00e-08
+  freq=1: omega=8.000000e+00, omega(adj)=8.002340e+00, Tbar=1.570796e+00, Tbar(adj)=1.570337e+00, Np=2
+  FPI:    average-CR=0.7477, ACR(deflate=0)=0.7678
+  Krylov: average-CR=0.2583, FPI-ACR=0.7678, its=17, ||res||_h= 1.70e-11
+==============================================================================
+  freq=1: max || H v -f ||/omega^2  = 2.57e-10 (residual in WaveHoltz solution v)
+  freq=1: max || v - Helmholtz ||   = 5.20e-11 (error in WaveHoltz - Helmholtz)
+ 
+
+*************************************************
+**** Mon June 19, 2023
+
+>>> BUG FOUND: WRONG dt used when computing dampTilde
+
+>>> CLEAN UP viFactor : one definition
+
+>>> Start on implicit:
+
+>> CLEAN UP output
+
+
+########### CHANGE beta to beta^2 in Gaussian source ###################
+
+DAMP + IMP -- increase numPer or numIterations
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=100 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=4 -freq=8 -filterTimeDerivative=1 -damp=0.5 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[3.55e-12,2.83e-12]
+solveHelmholtz: rel-max-diff [Re,Im]=[1.18e-14,2.44e-14],  norm [Re,Im]=[3.53e-01,4.74e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+cgwh: rel-max-diff [Re,Im]=[1.18e-14,2.44e-14],  norm [Re,Im]=[3.53e-01,4.74e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+>>>>> OLD beta def
+
+DAMP + IMP -- increase numPer or numIterations
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=100 -beta=225 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-16 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=4 -freq=8 -filterTimeDerivative=1 -damp=0.5 -go=halt
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+                            Complex Solution 
+
+ grid=/home/henshw/grids/square64.order2.hdf
+ Convergence rate CR=0.370, CR-perPeriod=0.780, Time to solve = 4.64e-01(s) : CgWave= 4.42e-01(s) 95.28%, advance= 4.31e-01(s) 92.77%
+ max-residual=2.78e-16 (WaveHoltz its), numberOfIterations = 35 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=1000.00, dt=8.589e-02, minStepsPerPeriod=10, numberOfStepsPerSolve=40, totalTimeStepsStaken=1480, aveItsPerImplicitSolve=  0.0
+ c=1, damp=0.5
+ filterTimeDerivative=1, useFilterWeights=1
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ freq= 0, omega=   8.000, (adjusted=   7.315) T= 0.78540, Tbar= 3.14159, numPeriods=  4, Tbar(0)/T=  4.00
+
+CgWaveHoltz::residual (complex): omega=   8.000000000, max-res=[Re,Im]=[3.553e-12,2.832e-12].
+CgWaveHoltz: max-res=3.553e-12 (all frequencies)
+
+Direct solve Helmholtz: cpu= 6.23e-02(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+saveMatlab: dt=8.589e-02
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzKrylov.m]
+cgwh: rel-max-diff [Re,Im]=[1.18e-14,2.44e-14],  norm [Re,Im]=[3.53e-01,4.74e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+
+FPI needs larger Np :  Use numPer=4 **CHECK ME : rate seems to match Theory better than matlab version
+cgwh gaussian.cmd -g=square64.order2 -x0=0.5 -y0=0.5 -nf=1 -amp=100 -beta=225 -adjustOmega=1 -cfl=.95 -orderInTime=2 -solver=none -tol=1e-16 -upwind=0 -imode=1 -maxIterations=35 -numPeriods=4 -freq=8 -filterTimeDerivative=1 -damp=0.5 -go=halt
+
+Theory: ACR = .4 
+Convergence rate CR=0.396, CR-perPeriod=0.793, Time to solve = 3.83e+00(s) : CgWave= 3.82e+00(s) 99.90%, advance= 3.81e+00(s) 99.55%
+
+
+
+Convergence rate CR=0.483, CR-perPeriod=0.834, Time to solve = 5.21e+00(s) : CgWave= 5.21e+00(s) 99.91%, advance= 5.19e+00(s) 99.56%
+cgwh: rel-max-diff [Re,Im]=[5.76e-13,2.24e-12],  norm [Re,Im]=[3.53e-01,4.74e-02] (between WaveHoltz and Direct Helmholtz)
+
+EXPLICIT:  NOW exact 
+cgwh gaussian.cmd -g=square64.order2 -x0=0.5 -y0=0.5 -nf=1 -amp=100 -beta=225 -adjustOmega=1 -cfl=.95 -orderInTime=2 -solver=none -tol=1e-16 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -freq=8 -filterTimeDerivative=1 -damp=0.5 -go=halt
+
+*FIXED* 
+cgwh: rel-max-diff [Re,Im]=[8.64e-15,1.36e-14],  norm [Re,Im]=[3.53e-01,4.74e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+cfl=.1
+cgwh: rel-max-diff [Re,Im]=[4.98e-12,6.79e-11],  norm [Re,Im]=[3.53e-01,4.74e-02] (between WaveHoltz and Direct Helmholtz)
+
+cfl=.95:
+CgWaveHoltz::residual (complex): omega=   8.000000000, max-res=[Re,Im]=[9.746e-08,7.258e-07].
+CgWaveHoltz: max-res=7.258e-07 (all frequencies)
+
+cgwh: rel-max-diff [Re,Im]=[8.36e-09,5.02e-07],  norm [Re,Im]=[3.53e-01,4.74e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+Matalab: exact: 
+waveHoltz -ms=gaussian -nd=2 -implicit=0 -cfl=.9 -N0=50 -useFixPoint=1 -useGMRES=1 -kx1=1 -adjustOmega=1 -upwind=0 -tol=1e-16 -numFPI=50 -numPer=2 -numFreq=1 -omega1=8 -amp1=100 -beta1=15 -useDiscreteBetaFunction=1 -bc=dddd -x0=.5 -damp=.5
+
+  freq=1: max || H v -f ||/omega^2  = 5.51e-13 (residual in WaveHoltz solution v)
+  freq=1: max || v - Helmholtz ||   = 4.75e-14 (error in WaveHoltz - Helmholtz)
+
+
+*************************************************
+**** Sun June 18, 2023
+
+CoNT ON FILTER TIME DERIVATIVE
+
+WaveHoltz + damping
+EXPLICIT:  starts to work
+cgwh gaussian.cmd -g=square64.order2 -x0=0.5 -y0=0.5 -nf=1 -amp=50 -beta=144 -adjustOmega=1 -cfl=.95 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -freq=6 -filterTimeDerivative=1 -damp=1 -go=halt
+
+>>> LATEST: fixed omega used in forming complex solution 
+CgWaveHoltz::residual (complex): omega=   6.000000000, max-res=[Re,Im]=[9.632e-05,1.131e-03].
+CgWaveHoltz: max-res=1.131e-03 (all frequencies)
+
+Direct solve Helmholtz: cpu= 6.43e-02(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+saveMatlab: dt=1.047e-02
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzFP.m]
+cgwh: rel-max-diff [Re,Im]=[4.46e-08,1.29e-07],  norm [Re,Im]=[1.91e-01,9.77e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+--> residual is not quite correct yet:
+CgWaveHoltz::residual (complex): omega=   6.000, max-res=[Re,Im]=[9.632e-05,1.131e-03]. 
+
+cgwh: rel-max-diff [Re,Im]=[4.46e-08,1.64e-04],  norm [Re,Im]=[1.91e-01,9.77e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+cgwh: rel-max-diff=4.46e-08, |v|_max= 1.91e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+*************************************************
+**** Sat June 17, 2023
+
+CoNT ON FILTER TIME DERIVATIVE
+
+START WaveHoltz + damping
+EXPLICIT:  looks OK with damp=0 
+cgwh gaussian.cmd -g=square64.order2 -x0=0.5 -y0=0.5 -nf=1 -amp=50 -beta=144 -adjustOmega=1 -cfl=.95 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -freq=6 -filterTimeDerivative=1 -damp=0 -go=halt
+
+
+
+FIX Direct Helmholtz solver : damping
+
+cgwh gaussian.cmd -g=square64.order2 -x0=0.6 -y0=0.45 -nf=1 -amp=50 -beta=150 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -freq=5 -filterTimeDerivative=1 -go=halt
+
+*************************************************
+**** Fri June 16, 2023
+
+START ON FILTER TIME DERIVATIVE
+
+
+EXP NF=1
+cgwh gaussian.cmd -g=square128.order2 -x0=0.6 -y0=0.45 -nf=1 -amp=50 -beta=150 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -freq=5 -filterTimeDerivative=1 -go=halt
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+
+ grid=/home/henshw/grids/square128.order2.hdf
+ Convergence rate CR=0.022, CR-perPeriod=0.022, Time to solve = 1.43e-01(s) : CgWave= 1.30e-01(s) 91.04%, advance= 1.26e-01(s) 88.21%
+ max-residual=1.01e-12 (WaveHoltz its), numberOfIterations = 7 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=1000.00, dt=6.871e-01, minStepsPerPeriod=10, numberOfStepsPerSolve=10, totalTimeStepsStaken=90, aveItsPerImplicitSolve=  0.0
+ filterTimeDerivative=0, useFilterWeights=1
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ freq= 0, omega=   1.000, (adjusted=   0.914) T= 6.28319, Tbar= 6.28319, numPeriods=  1, Tbar(0)/T=  1.00
+
+CgWaveHoltz::residual: freq= 0, omega=   1.000, max-res=2.707e-10 (using omega), max-res=1.191e-02 (using omega from discrete symbol)
+CgWaveHoltz: max-res=2.707e-10 (all frequencies)
+
+Direct solve Helmholtz: cpu= 5.60e-02(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+saveMatlab: dt=6.871e-01
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzKrylov.m]
+cgwh: rel-max-diff=4.57e-13, |v|_max= 3.67e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
++++++++++ TESTS +++++++++++ 
+
+IMP NF=2
+cgwh gaussian.cmd -g=square128.order2 -x0=0.6 0.4 -y0=0.45 0.55 -nf=2 -amp=50 50 -beta=150 150 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=3 -freq=5 9 -go=dfk
+
+
+--NEW-- useFilterWeights=1 
+cgwh: rel-max-diff=1.97e-13 for freq0 =   5.0000e+00, |v|_max= 7.33e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=3.04e-09 for freq1 =   9.0000e+00, |v|_max= 6.20e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=3.04e-09, |v|_max= 7.33e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+
+ grid=/home/henshw/grids/square128.order2.hdf
+ Convergence rate CR=0.109, CR-perPeriod=0.477, Time to solve = 8.41e-01(s) : CgWave= 8.12e-01(s) 96.49%, advance= 8.05e-01(s) 95.76%
+ max-residual=1.55e-13 (WaveHoltz its), numberOfIterations = 13 (Krylov) (maximumNumberOfIterations=100)
+ numberOfFrequencies= 2, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=1000.00, dt=7.165e-02, minStepsPerPeriod=10, numberOfStepsPerSolve=54, totalTimeStepsStaken=6210, aveItsPerImplicitSolve=  0.0
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ freq= 0, omega=   5.000, (adjusted=   4.872) T= 1.25664, Tbar= 3.76991, numPeriods=  3, Tbar(0)/T=  3.00
+ freq= 1, omega=   9.000, (adjusted=   8.311) T= 0.69813, Tbar= 3.49066, numPeriods=  5, Tbar(0)/T=  5.40
+
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=4.269e-11.
+CgWaveHoltz::residual: freq= 1, omega=   9.000, max-res=3.968e-11.
+CgWaveHoltz: max-res=4.269e-11 (all frequencies)
+
+Direct solve Helmholtz: cpu= 9.43e-02(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+saveMatlab: dt=7.165e-02
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzKrylov.m]
+cgwh: rel-max-diff=2.06e-13 for freq0 =   5.0000e+00, |v|_max= 7.33e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=3.04e-09 for freq1 =   9.0000e+00, |v|_max= 6.20e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=3.04e-09, |v|_max= 7.33e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+cgwh: rel-max-diff=2.06e-13 for freq0 =   5.0000e+00, |v|_max= 7.33e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=3.04e-09 for freq1 =   9.0000e+00, |v|_max= 6.20e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=3.04e-09, |v|_max= 7.33e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+EXP NF=2
+cgwh gaussian.cmd -g=square128.order2 -x0=0.6 0.4 -y0=0.45 0.55 -nf=2 -amp=50 50 -beta=150 150 -adjustOmega=1 -ts=explicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=3 -cfl=0.95 freq=5 9 -go=halt
+
+cgwh: rel-max-diff=2.80e-13 for freq0 =   5.0000e+00, |v|_max= 7.33e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=3.04e-09 for freq1 =   9.0000e+00, |v|_max= 6.20e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=3.04e-09, |v|_max= 7.33e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+IMP NF=1
+cgwh gaussian.cmd -g=square128.order2 -x0=0.6 0.4 -y0=0.45 0.55 -nf=2 -amp=50 50 -beta=150 150 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 freq=5 9 -go=halt
+
+cgwh: rel-max-diff=2.81e-13 for freq0 =   1.0000e+00, |v|_max= 3.67e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=4.62e-09 for freq1 =   2.0000e+00, |v|_max= 4.08e-01 (between WaveHoltz and Direct Helmholtz solution)
+cgwh: rel-max-diff=4.62e-09, |v|_max= 4.08e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
 
 *************************************************
 **** Thurs May 18, 2023

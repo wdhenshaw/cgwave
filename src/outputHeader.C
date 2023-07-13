@@ -16,6 +16,7 @@ outputHeader()
   const real & cfl                          = dbase.get<real>("cfl");
   const real & tFinal                       = dbase.get<real>("tFinal");
   const real & tPlot                        = dbase.get<real>("tPlot");
+  const Real & damp                         = dbase.get<Real>("damp");
       
   const int & upwind                        = dbase.get<int>("upwind");
   // const real & ad4                          = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
@@ -101,7 +102,7 @@ outputHeader()
 	    "           CgWave : Wave Equation Solver                    \n"
 	    "           -----------------------------                  \n");
 
-    fPrintF(file," tFinal=%f, dt=%9.3e, tPlot=%9.3e cfl=%3.2f\n",tFinal,dt,tPlot,cfl );
+    fPrintF(file," tFinal=%f, dt=%9.3e, tPlot=%9.3e cfl=%3.2f, damp=%g\n",tFinal,dt,tPlot,cfl,damp );
     fPrintF(file," modifiedEquationApproach = %s\n",
           (modifiedEquationApproach==standardModifiedEquation     ? "standard modified equation" : 
            modifiedEquationApproach==hierarchicalModifiedEquation ? "hierarchical modified equation" :

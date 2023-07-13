@@ -11,7 +11,7 @@ $go="go"; $forcing="gaussian";
 $omega=30.1; $beta=50.; $x0=0.5; $y0=0.5; $z0=0.5; $t0=0.; $amp=1.; $debug=0; 
 $ad4=0;    # old way
 $upwind=1; # new way
-$tf=5.; $tp=.5; $imode=0; 
+$tf=5.; $tp=.5; $imode=0;  $implicitUpwind=0; 
 $kx=1; $ky=1; $kz=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $meApproach="std"; # or "ha"
@@ -25,7 +25,7 @@ GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"ad4=f"=>\$ad4,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"tf=f"=>\$tf,"iMode=i"=>\$imode,\
             "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,\
             "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,"useSuperGrid=i"=>\$useSuperGrid,\
-            "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f"=>\$amp,"show=s"=>\$show,"upwind=i"=>\$upwind,\
+            "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f"=>\$amp,"show=s"=>\$show,"upwind=i"=>\$upwind,"implicitUpwind=i"=>\$implicitUpwind,\
             "debug=i"=>\$debug,"bcApproach=s"=>\$bcApproach,"meApproach=s"=>\$meApproach,"rectangular=s"=>\$rectangular );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
@@ -39,6 +39,8 @@ if( $bc eq "a" ){ $bc="absorbing"; }
 $ts
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
+# $beta2=0; $beta4=0; # beta2=0 : Trapezoidal, what should beta4 be ? 
+# implicit weights $beta2 $beta4
 dtMax $dtMax
 if( $rectangular eq "explicit" ){ $chooseImplicitTimeStepFromCFL=0; }
 choose implicit dt from cfl $chooseImplicitTimeStepFromCFL 
@@ -47,6 +49,7 @@ interactiveMode $imode
 debug $debug
 tPlot $tp 
 tFinal $tf
+omega $omega
 #
 use superGrid $useSuperGrid
 # pause
@@ -69,6 +72,7 @@ $cmd
 #
 if( $ad4>0. ){ $upwind=1; }# for backward compatibility
 upwind dissipation $upwind
+implicit upwind $implicitUpwind
 # artificial dissipation $ad4
 # 
 helmholtzForcing

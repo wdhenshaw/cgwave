@@ -17,7 +17,7 @@ $upwind=0;
 $debug=3;  $go="halt"; $bc="d"; $dissFreq=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $useKnownFirstStep=0; $checkKnown=0; 
-$computeErrors=1; 
+$computeErrors=1; $plotScatteredField=0; 
 $setKnownOnBoundaries=-1; #-1 : use default
 $tf=5.; $tp=.05; $cfl=.9; 
 $ts="explicit"; $dtMax=1e10; $implicitUpwind=0; 
@@ -30,13 +30,15 @@ $assignInterpNeighbours="extrap"; # by default extrap interp neighbours
 $nBessel=1; $mTheta=1; 
 $mPhi=1; $mr=1; 
 $show=""; $flushFrequency=10; 
+$solveri="yale"; $maxiti=2000; $rtoli=1.0e-10; $atoli=1.0e-10; # parameters for implicit time-stepping solver
 GetOptions( "cfl=f"=>\$cfl,"amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"debug=i"=>\$debug,\
-            "tf=f"=>\$tf,"tp=f"=>\$tp,"bc=s"=>\$bc,"dissFreq=i"=>\$dissFreq,"omega=f"=>\$omega,\
+            "tf=f"=>\$tf,"tp=f"=>\$tp,"bc=s"=>\$bc,"dissFreq=i"=>\$dissFreq,"omega=f"=>\$omega,"beta2=f"=>\$beta2,"beta4=f"=>\$beta4,\
             "known=s"=>\$known,"orderInTime=i"=>\$orderInTime,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,"upwind=i"=>\$upwind,\
             "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"k0=f"=>\$k0,"beta=f"=>\$beta,"computeErrors=i"=>\$computeErrors,\
             "setKnownOnBoundaries=s"=>\$setKnownOnBoundaries,"show=s"=>\$show,"useKnownFirstStep=i"=>\$useKnownFirstStep,\
             "flushFrequency=i"=>\$flushFrequency,"bcApproach=s"=>\$bcApproach,"meApproach=s"=>\$meApproach,\
             "nBessel=i"=>\$nBessel,"mPhi=i"=>\$mPhi,"mTheta=i"=>\$mTheta,"mr=i"=>\$mr,"rectangular=s"=>\$rectangular,\
+            "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"plotScatteredField=i"=>\$plotScatteredField,\
             "assignInterpNeighbours=s"=>\$assignInterpNeighbours,"checkKnown=s"=>\$checkKnown,"implicitUpwind=i"=>\$implicitUpwind,"go=s"=>\$go );
 # 
 #
@@ -62,6 +64,7 @@ omega $omega
 set known on boundaries $setKnownOnBoundaries
 use known for first step $useKnownFirstStep
 compute errors $computeErrors
+plot scattered field $plotScatteredField
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
 if( $show ne "" ){ $cmd="show file name $show\n save show file 1\n flush frequency $flushFrequency"; }else{ $cmd="#"; }
@@ -85,6 +88,8 @@ if( $ts eq "implicit" ){ $cmd="choose grids for implicit\n  rectangular=$rectang
 $cmd
 # implicitUpwind = 1 : include upwinding in implicit matrix
 implicit upwind $implicitUpwind
+# beta2=0 : trap, beta2=.5 = FW
+implicit weights $beta2 $beta4
 #
 if( $assignInterpNeighbours eq "interp" ){ $cmd="interpolateInterpNeighbours"; }else{ $cmd="#"; }
 $cmd
@@ -113,6 +118,10 @@ done
 #
 # if( $ad4>0. ){ $upwind=1; }# for backward compatibility
 upwind dissipation $upwind
+#
+if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }
+$cmd
+#
 # artificial dissipation $ad4
 dissipation frequency $dissFreq
 exit

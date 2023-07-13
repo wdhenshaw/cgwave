@@ -13,6 +13,7 @@
 #include "ProcessorInfo.h"
 
 
+
 #define FOR_3(i1,i2,i3,I1,I2,I3) for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
@@ -43,6 +44,7 @@ extern "C"
 
 }
 
+// #defineMacro ARGLIST() nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,//                        mask,xy,rsxy,  um,u,un, f, stencilCoeff, v, vh, lapCoeff, //                        etax, etay, etaz, bc, frequencyArray, pdb, ipar, rpar, ierr
 extern "C"
 {
     /*  Optimized Advance Routine  */
@@ -54,7 +56,7 @@ extern "C"
             const real&um, const real&u, real&un, const real&f, 
             const real&stencilCoeff, const real& v, const real& vh, real & lapCoeffPtr,
             const real & etax, const real & etay, const real & etaz, 
-            const int&bc, const real & frequencyArray, const int&ipar, const real&rpar, int&ierr );
+            const int&bc, const real & frequencyArray, const DataBase *pdb, const int&ipar, const real&rpar,  int&ierr );
 
 }
 
@@ -105,6 +107,8 @@ advance( int it )
     Real & tFinal                     = dbase.get<real>("tFinal");
     Real & tPlot                      = dbase.get<real>("tPlot");
     Real & dtMax                      = dbase.get<Real>("dtMax"); 
+    Real & damp                       = dbase.get<Real>("damp"); 
+    Real & dampSave                   = dbase.get<Real>("dampSave"); 
 
     const int & upwind                = dbase.get<int>("upwind");
     const int & implicitUpwind        = dbase.get<int>("implicitUpwind");
@@ -128,6 +132,7 @@ advance( int it )
     int & plotFrequency               = dbase.get<int>("plotFrequency");
 
     const int & useSuperGrid          = dbase.get<int>("useSuperGrid");
+    IntegerArray & superGrid          = dbase.get<IntegerArray>("superGrid");
     
     const int & solveHelmholtz              = dbase.get<int>("solveHelmholtz");
     const int & computeTimeIntegral         = dbase.get<int>("computeTimeIntegral");
@@ -342,6 +347,7 @@ advance( int it )
                 periodArrayAdjusted.redim(numberOfFrequencies);
                 periodArraySave.redim(numberOfFrequencies);
                 periodArraySave    = periodArray;     // save original values 
+                dampSave = damp;
                 Real dts=dt, omegas=omega; 
                 if( timeSteppingMethod == implicitTimeStepping )
                 {
@@ -376,11 +382,13 @@ advance( int it )
                           printF("\n >>> cgWave:implicit: freq=%d : frequencyArray(freq)/frequencyArray(0) =%6.3f, numPeriodsArray(freq)=%d\n",
                                         freq,frequencyArray(freq)/frequencyArray(0),numPeriodsArray(freq));
                     }
+          // Adjustment for damping with implicit time-stepping 
+                    damp = dampSave*( frequencyArraySave(0)*dts )/tan(frequencyArray(0)*dts);
                     if( false )
                     {
                         for( int freq=0; freq<numberOfFrequencies; freq++ )
                         {
-                          printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e (implicit)\n",freq,frequencyArraySave(freq),frequencyArray(freq));
+                          printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e dampAdjusted=%14.6e (implicit)\n",freq,frequencyArraySave(freq),frequencyArray(freq),damp);
                         }
                     }
           // if( numberOfFrequencies>1 )
@@ -440,12 +448,16 @@ advance( int it )
                           numPeriodsArray(freq) = floor( frequencyArray(freq)*numPeriodsArray(0)/frequencyArray(0) ); //  integrate over this many periods for the "T2" integral
                           periodArray(freq)=(twoPi/frequencyArray(freq))*numPeriodsArray(freq);
                       }
+           // Adjustment for damping with explicit time-stepping 
+                      damp = dampSave/( cos(frequencyArray(0)*dts/2) );
                       for( int freq=0; freq<numberOfFrequencies; freq++ )
                       {
                           printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e\n",freq,frequencyArraySave(freq),frequencyArray(freq));
                       }
                 }
-                printF("\n### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=%18.10e (dt=%18.10e) omegaAdjusted=%14.6e (omega=%14.6e)##\n\n",dts,dt,omegas,omega);
+                printF("\n### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=%18.10e (dt=%18.10e) omegaAdjusted=%14.6e (omega=%14.6e)##\n",dts,dt,omegas,omega);
+                if( damp!=0. )
+                    printF("### CgWave: dampAdjusted=%18.10e, damp=%18.10e##\n",damp,dampSave);
         // The number of periods may have changed --- fix the un-adjusted period array: *wdh* Feb 3, 2023
                 for( int freq=0; freq<numberOfFrequencies; freq++ )
                 {
@@ -533,7 +545,7 @@ advance( int it )
         // Include CPU with initialization ( to include LCBC init cost )
                 Real cpuBC = getCPU();
                 bool applyExplicitBoundaryConditions=true;
-                applyBoundaryConditions( u1, t, applyExplicitBoundaryConditions );  
+                applyBoundaryConditions( u1,u1, t, applyExplicitBoundaryConditions );  
                 cpuBC = getCPU()-cpuBC;
                 timing(timeForInitializeBCs)      += cpuBC;  // add to initBC cpu
                 timing(timeForBoundaryConditions) -= cpuBC;  // remove from BC cpu
@@ -548,7 +560,7 @@ advance( int it )
         // *wdh* March 22, 2023
         // Appy BC's to v -- important when we use Slepc ??
                 bool applyExplicitBoundaryConditions=true;
-                applyBoundaryConditions( v, t, applyExplicitBoundaryConditions );  // **TRY THIS** -- not sure it is needed??
+                applyBoundaryConditions( v,v, t, applyExplicitBoundaryConditions );  // **TRY THIS** -- not sure it is needed??
             }
       // u1=v;
       // ---- u1 : sum of solutions for each frequency ----
@@ -562,8 +574,9 @@ advance( int it )
                     u1Local(I1,I2,I3) += vLocal(I1,I2,I3,freq);
             }      
             bool applyExplicitBoundaryConditions=true;
-            applyBoundaryConditions( u1, t, applyExplicitBoundaryConditions );  // *wdh* Mar 6, 2020 -- try this 
-            if( computeEigenmodes )
+            applyBoundaryConditions( u1, u1, t, applyExplicitBoundaryConditions );  // *wdh* Mar 6, 2020 -- try this 
+            if( false ||              // *** TESTING TEMP *********
+                    computeEigenmodes )
             {
         // --- forcing for computing eigenmodes ----
         //   force = v * cos(omega t) 
@@ -587,7 +600,7 @@ advance( int it )
   // --------------------------------------------
     if( forcingOption==helmholtzForcing )
     {
-        takeFirstStep( cur, t ); // -- NOTE: for now initial step is only called for Helmholtz problems *fix me*
+        takeFirstStep( cur, t ); 
     }
     else
     {
@@ -791,6 +804,7 @@ advance( int it )
                         int numberOfForcingFunctions=1;
                         int fCurrent=0;
                         real sosupParameter=1.;
+                        Real upwindDissipationCoefficient = getUpwindDissipationCoefficient( grid ); 
                         OGFunction *tz = dbase.get<OGFunction*>("tz");
                         const bool isRectangular = mg.isRectangular();
                         int gridType = isRectangular? 0 : 1;
@@ -818,11 +832,12 @@ advance( int it )
                                                 adjustHelmholtzForUpwinding,     // ipar[17]
                                                 modifiedEquationApproach,        // ipar[18]
                                                 takeFirstStepImplicit,           // ipar[19]
-                                                useSuperGrid                     // ipar[20]
+                                                superGrid(grid)                  // ipar[20]
                                                                         };  //
                         real dx[3]={1.,1.,1.};
                         if( isRectangular )
                             mg.getDeltaX(dx);
+                        DataBase *pdb = &dbase;
                         real rpar[20];
                         rpar[ 0]=c;
                         rpar[ 1]=dt;
@@ -840,7 +855,8 @@ advance( int it )
                         rpar[13]=bImp(1);
                         rpar[14]=bImp(2);
                         rpar[15]=bImp(3);
-                        rpar[16]=gridCFL(grid);
+                        rpar[16]=gridCFL(grid)*dt;                 // gridCFL(grid) hold "c/dx"
+                        rpar[17]=upwindDissipationCoefficient;
                         intArray & mask = mg.mask();
                         OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
                         int *maskptr = maskLocal.getDataPointer(); 
@@ -860,16 +876,27 @@ advance( int it )
                             }
                             RealArray uDot;
                             if( ( option==1 && preComputeUpwindUt ) || 
-                                    ( orderOfAccuracy==4 && (!isRectangular || useSuperGrid) ) )
+                                    ( orderOfAccuracy==4 && (!isRectangular || superGrid(grid) ) ) )
                             {
-                                uDot.redim(uLocal);
+                // v is used to hold uLap for fourth-order curvilinear
+                                if( orderOfAccuracy==4 && orderOfAccuracyInTime==4 )
+                                {
+                  // For orderInTime==4 we also need umLap
+                                    Index D1,D2,D3;
+                                    getIndex(mg.dimension(),D1,D2,D3);
+                                    uDot.redim(D1,D2,D3,2);
+                                }
+                                else
+                                    uDot.redim(uLocal);
                                 vptr = uDot.getDataPointer();  // do this for now 
                             }
-                            real *fptr  = umptr;  // use this if there is nor forcing 
+                            real *fptr  = umptr;  // use this if there is no forcing 
                             if( forcingOption != noForcing )
                             {
                                 OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
                                 fptr  = fLocal.getDataPointer();
+                // if( true )
+                //   ::display(fLocal,"advance: fLocal","%6.2f");
                             }
               // real *faptr  = fptr;   // do this for now 
                             real *rxptr;
@@ -879,8 +906,15 @@ advance( int it )
                             }
                             else
                             {
+                // mg.update( MappedGrid::THEinverseVertexDerivative );
                                 OV_GET_SERIAL_ARRAY(real,mg.inverseVertexDerivative(),rxLocal);
                                 rxptr = rxLocal.getDataPointer();
+                                if( superGrid(grid) && option==1 )
+                                {
+                  // -- SuperGrid changes the metrics but upwinding uses the original metrics: 
+                                    RealArray *& rxOriginal = dbase.get<RealArray*>("rxOriginal");
+                                    rxptr = rxOriginal[grid].getDataPointer();
+                                }
                             }
                             real *xyptr = uptr;
                             const bool centerNeeded = forcingOption == twilightZoneForcing; // **** IS THIS TRUE ?
@@ -910,7 +944,7 @@ advance( int it )
                             }
                             real temp; 
                             real *petaxSuperGrid=&temp, *petaySuperGrid=&temp, *petazSuperGrid=&temp;
-                            if( useSuperGrid )
+                            if( superGrid(grid) )
                             {
                 // useAbsorbingLayer(axis,grid) = true or false if we use an absorbing layer for this axis and grid 
                                 IntegerArray & useAbsorbingLayer = dbase.get<IntegerArray>("useAbsorbingLayer");
@@ -924,11 +958,13 @@ advance( int it )
                                 if( mg.numberOfDimensions()>2 && useAbsorbingLayer(2,grid) )
                                     petazSuperGrid = etazSuperGrid[grid].getDataPointer();
                             }
+          // #defineMacro ARGLIST() nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,//                        mask,xy,rsxy,  um,u,un, f, stencilCoeff, v, vh, lapCoeff, //                        etax, etay, etaz, bc, frequencyArray, pdb, ipar, rpar, ierr
                             int ierr;
                             Real cyclesStart = ProcessorInfo::getCycles();
                             advWave(mg.numberOfDimensions(),
                                             I1.getBase(),I1.getBound(),I2.getBase(),I2.getBound(),I3.getBase(),I3.getBound(),
-                                            uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
+                                            uLocal.getBase(0),uLocal.getBound(0),
+                                            uLocal.getBase(1),uLocal.getBound(1),
                                             uLocal.getBase(2),uLocal.getBound(2),
                                             uLocal.getBase(3),uLocal.getBound(3),
                                             *maskptr,*xyptr, *rxptr,  
@@ -938,14 +974,14 @@ advance( int it )
                                             *vhptr,  // Pointer to current Helmholtz solution
                                             *lapCoeffptr, // coefficients in Laplacian for HA scheme are stored here
                                             *petaxSuperGrid, *petaySuperGrid, *petazSuperGrid,   // superGrid layer functions
-                                            mg.boundaryCondition(0,0), frequencyArray(0), ipar[0], rpar[0], ierr );
+                                            mg.boundaryCondition(0,0), frequencyArray(0), pdb, ipar[0], rpar[0],  ierr );
                             Real cycles = ProcessorInfo::getCycles() - cyclesStart;
                             if( false )
                             { // print cycles:
                                 const IntegerArray & gid = mg.gridIndexRange();
                                 Real numGridPoints = (gid(1,0)-gid(0,0)+1)*(gid(1,1)-gid(0,1)+1)*(gid(1,2)-gid(0,2)+1);
                                 printF("advWave: grid=%d: numGridPoints=%9.3e, cycles/grid-point = %9.2e\n",grid,numGridPoints,cycles/numGridPoints);
-                          }
+                            }
                             if( false && option==0 )
                             {
                                 ::display(uDot,"v=Lap2h(u)","%8.2e ");
@@ -978,7 +1014,7 @@ advance( int it )
                         {
               // testing: apply BC's after dissipation is added
 
-                            applyBoundaryConditions( u[cur],t);  // 
+                            applyBoundaryConditions( u[cur],u[prev],t);  // 
                         }   
                         else
                         {
@@ -1013,6 +1049,7 @@ advance( int it )
                     int numberOfForcingFunctions=1;
                     int fCurrent=0;
                     real sosupParameter=1.;
+                    Real upwindDissipationCoefficient = getUpwindDissipationCoefficient( grid ); 
                     OGFunction *tz = dbase.get<OGFunction*>("tz");
                     const bool isRectangular = mg.isRectangular();
                     int gridType = isRectangular? 0 : 1;
@@ -1040,11 +1077,12 @@ advance( int it )
                                             adjustHelmholtzForUpwinding,     // ipar[17]
                                             modifiedEquationApproach,        // ipar[18]
                                             takeFirstStepImplicit,           // ipar[19]
-                                            useSuperGrid                     // ipar[20]
+                                            superGrid(grid)                  // ipar[20]
                                                                     };  //
                     real dx[3]={1.,1.,1.};
                     if( isRectangular )
                         mg.getDeltaX(dx);
+                    DataBase *pdb = &dbase;
                     real rpar[20];
                     rpar[ 0]=c;
                     rpar[ 1]=dt;
@@ -1062,7 +1100,8 @@ advance( int it )
                     rpar[13]=bImp(1);
                     rpar[14]=bImp(2);
                     rpar[15]=bImp(3);
-                    rpar[16]=gridCFL(grid);
+                    rpar[16]=gridCFL(grid)*dt;                 // gridCFL(grid) hold "c/dx"
+                    rpar[17]=upwindDissipationCoefficient;
                     intArray & mask = mg.mask();
                     OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
                     int *maskptr = maskLocal.getDataPointer(); 
@@ -1082,16 +1121,27 @@ advance( int it )
                         }
                         RealArray uDot;
                         if( ( option==1 && preComputeUpwindUt ) || 
-                                ( orderOfAccuracy==4 && (!isRectangular || useSuperGrid) ) )
+                                ( orderOfAccuracy==4 && (!isRectangular || superGrid(grid) ) ) )
                         {
-                            uDot.redim(uLocal);
+              // v is used to hold uLap for fourth-order curvilinear
+                            if( orderOfAccuracy==4 && orderOfAccuracyInTime==4 )
+                            {
+                // For orderInTime==4 we also need umLap
+                                Index D1,D2,D3;
+                                getIndex(mg.dimension(),D1,D2,D3);
+                                uDot.redim(D1,D2,D3,2);
+                            }
+                            else
+                                uDot.redim(uLocal);
                             vptr = uDot.getDataPointer();  // do this for now 
                         }
-                        real *fptr  = umptr;  // use this if there is nor forcing 
+                        real *fptr  = umptr;  // use this if there is no forcing 
                         if( forcingOption != noForcing )
                         {
                             OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
                             fptr  = fLocal.getDataPointer();
+              // if( true )
+              //   ::display(fLocal,"advance: fLocal","%6.2f");
                         }
             // real *faptr  = fptr;   // do this for now 
                         real *rxptr;
@@ -1101,8 +1151,15 @@ advance( int it )
                         }
                         else
                         {
+              // mg.update( MappedGrid::THEinverseVertexDerivative );
                             OV_GET_SERIAL_ARRAY(real,mg.inverseVertexDerivative(),rxLocal);
                             rxptr = rxLocal.getDataPointer();
+                            if( superGrid(grid) && option==1 )
+                            {
+                // -- SuperGrid changes the metrics but upwinding uses the original metrics: 
+                                RealArray *& rxOriginal = dbase.get<RealArray*>("rxOriginal");
+                                rxptr = rxOriginal[grid].getDataPointer();
+                            }
                         }
                         real *xyptr = uptr;
                         const bool centerNeeded = forcingOption == twilightZoneForcing; // **** IS THIS TRUE ?
@@ -1132,7 +1189,7 @@ advance( int it )
                         }
                         real temp; 
                         real *petaxSuperGrid=&temp, *petaySuperGrid=&temp, *petazSuperGrid=&temp;
-                        if( useSuperGrid )
+                        if( superGrid(grid) )
                         {
               // useAbsorbingLayer(axis,grid) = true or false if we use an absorbing layer for this axis and grid 
                             IntegerArray & useAbsorbingLayer = dbase.get<IntegerArray>("useAbsorbingLayer");
@@ -1146,11 +1203,13 @@ advance( int it )
                             if( mg.numberOfDimensions()>2 && useAbsorbingLayer(2,grid) )
                                 petazSuperGrid = etazSuperGrid[grid].getDataPointer();
                         }
+        // #defineMacro ARGLIST() nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,//                        mask,xy,rsxy,  um,u,un, f, stencilCoeff, v, vh, lapCoeff, //                        etax, etay, etaz, bc, frequencyArray, pdb, ipar, rpar, ierr
                         int ierr;
                         Real cyclesStart = ProcessorInfo::getCycles();
                         advWave(mg.numberOfDimensions(),
                                         I1.getBase(),I1.getBound(),I2.getBase(),I2.getBound(),I3.getBase(),I3.getBound(),
-                                        uLocal.getBase(0),uLocal.getBound(0),uLocal.getBase(1),uLocal.getBound(1),
+                                        uLocal.getBase(0),uLocal.getBound(0),
+                                        uLocal.getBase(1),uLocal.getBound(1),
                                         uLocal.getBase(2),uLocal.getBound(2),
                                         uLocal.getBase(3),uLocal.getBound(3),
                                         *maskptr,*xyptr, *rxptr,  
@@ -1160,14 +1219,14 @@ advance( int it )
                                         *vhptr,  // Pointer to current Helmholtz solution
                                         *lapCoeffptr, // coefficients in Laplacian for HA scheme are stored here
                                         *petaxSuperGrid, *petaySuperGrid, *petazSuperGrid,   // superGrid layer functions
-                                        mg.boundaryCondition(0,0), frequencyArray(0), ipar[0], rpar[0], ierr );
+                                        mg.boundaryCondition(0,0), frequencyArray(0), pdb, ipar[0], rpar[0],  ierr );
                         Real cycles = ProcessorInfo::getCycles() - cyclesStart;
                         if( false )
                         { // print cycles:
                             const IntegerArray & gid = mg.gridIndexRange();
                             Real numGridPoints = (gid(1,0)-gid(0,0)+1)*(gid(1,1)-gid(0,1)+1)*(gid(1,2)-gid(0,2)+1);
                             printF("advWave: grid=%d: numGridPoints=%9.3e, cycles/grid-point = %9.2e\n",grid,numGridPoints,cycles/numGridPoints);
-                      }
+                        }
                         if( false && option==0 )
                         {
                             ::display(uDot,"v=Lap2h(u)","%8.2e ");
@@ -1223,7 +1282,7 @@ advance( int it )
             if( true || (timeSteppingMethod != implicitTimeStepping) ) // ** TEST ********
             {
                 bool applyExplicitBoundaryConditions=true;
-                applyBoundaryConditions( u[next],t, applyExplicitBoundaryConditions );
+                applyBoundaryConditions( u[next],u[cur],t, applyExplicitBoundaryConditions );
             }
     
             if( debug & 16 )
@@ -1268,6 +1327,7 @@ advance( int it )
           Tperiod = TperiodSave;
           dt      = dtSave; 
           tFinal  = Tperiod; // reset too *wdh* Jul 25, 2021
+          damp = dampSave;
 
         frequencyArray = frequencyArraySave;  // reset to original values 
         periodArray    = periodArraySave;     // reset to original values

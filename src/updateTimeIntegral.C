@@ -293,8 +293,19 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
   RealArray & periodArray           = dbase.get<RealArray>("periodArray");  
   const int & deflateWaveHoltz      = dbase.get<int>("deflateWaveHoltz");
 
+  const int & filterTimeDerivative = dbase.get<int>("filterTimeDerivative");
+  const int & useFilterWeights      = dbase.get<int>("useFilterWeights"); 
+
+
   Index I1,I2,I3;
 
+  const int & numCompWaveHoltz = dbase.get<int>("numCompWaveHoltz");
+  if( filterTimeDerivative )
+    assert( numCompWaveHoltz==2 );
+  else
+    assert( numCompWaveHoltz==numberOfFrequencies );
+
+  // numCompWaveHoltz = filterTimeDerivative ? 2 : numberOfFrequencies;   // ******* MOVE THIS *****
 
   if( !solveHelmholtz )
   {
@@ -353,16 +364,21 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
   // sigma(0:Nt,0:numFreq-1) : integration weights
   if( !dbase.has_key("sigma") )
   {
-    dbase.put<RealArray>("sigma"); // holds integration weights
+    dbase.put<RealArray>("sigma");         // holds integration weights
+    dbase.put<RealArray>("filterWeights"); // holds *new* integration weights
   }
   RealArray & sigma = dbase.get<RealArray>("sigma");  
+  RealArray & filterWeights = dbase.get<RealArray>("filterWeights");  
 
   if( stepOption==firstStep )
   {
     assert( t==0. && step==0 );
 
     // --- Evaluate the integration weights for each of the frequencies ---
-    getIntegrationWeights( Nt, numberOfFrequencies, periodArray, orderOfAccuracy, sigma );
+    if( useFilterWeights )
+      getFilterWeights( Nt, numberOfFrequencies, periodArray, orderOfAccuracy, sigma, filterWeights );
+    else 
+      getIntegrationWeights( Nt, numberOfFrequencies, periodArray, orderOfAccuracy, sigma );
 
   }
 
@@ -383,8 +399,8 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
       
       OV_ABORT("ERROR");
     }
-    
   }
+
   
   if( stepOption==firstStep )
   {
@@ -398,11 +414,18 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
       bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
       if( ok )
       {
-        for( int freq=0; freq<numberOfFrequencies; freq++ )
+        for( int freq=0; freq<numCompWaveHoltz; freq++ )
         {
           // vLocal = ( .5*( cos(omega*(t))-.25 ) )*uLocal;  // Trapezoidal first term (.5)
-          const Real omegaFreq = frequencyArray(freq); 
-          vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+          if( useFilterWeights )
+          {
+            vLocal(I1,I2,I3,freq) = filterWeights(step,freq)*uLocal(I1,I2,I3);
+          }
+          else
+          {
+            const Real omegaFreq = frequencyArray(freq); 
+            vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+          }
         }
       }
   
@@ -426,41 +449,53 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
       bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
       if( ok )
       {
-        if( true )
+        for( int freq=0; freq<numCompWaveHoltz; freq++ )
         {
-          for( int freq=0; freq<numberOfFrequencies; freq++ )
+          if( useFilterWeights )
+          {
+            vLocal(I1,I2,I3,freq) += filterWeights(step,freq)*uLocal(I1,I2,I3);
+          }
+          else
           {
             const Real omegaFreq = frequencyArray(freq); 
             vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);
           }
-          if( stepOption==lastStep )
-          {
-            for( int freq=0; freq<numberOfFrequencies; freq++ )
-            {
-              vLocal(I1,I2,I3,freq) *= (2./periodArray(freq));  //  normalize the time integral  
-            }        
-          }
         }
-        else
+        if( stepOption==lastStep && useFilterWeights==0 )
         {
-          // -- old way 
-          vLocal += ( trapFactor*( cos(omega*(t))-.25 ) )*uLocal;
-
-          if( stepOption==lastStep )
-            vLocal *= (2./tFinal)*dt;  // multiply by dt and normalize the time integral
-        } 
+          for( int freq=0; freq<numberOfFrequencies; freq++ )
+          {
+            vLocal(I1,I2,I3,freq) *= (2./periodArray(freq));  //  normalize the time integral  
+          }        
+        }
+  
       }
        
     } // end for grid 
     if( stepOption==lastStep )
     {
       
-      if( false || (false && numberOfFrequencies==1) )  // ***************** Oct 31, 2021 NOT valid for multi-freq
-      {
-        bool applyExplicitBoundaryConditions=true;
-        applyBoundaryConditions( v, t, applyExplicitBoundaryConditions );
-      }
+      // if( false || (false && numberOfFrequencies==1) )  // ***************** Oct 31, 2021 NOT valid for multi-freq
+      // {
+      //   bool applyExplicitBoundaryConditions=true;
+      //   applyBoundaryConditions( v,v, t, applyExplicitBoundaryConditions );
+      // }
 
+      if( filterTimeDerivative )
+      {
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+          getIndex(cg[grid].dimension(),I1,I2,I3);
+
+          OV_GET_SERIAL_ARRAY(real,v[grid],vLocal); 
+
+          Real vMax    = max(abs(vLocal(I1,I2,I3,0)));
+          Real vDotMax = max(abs(vLocal(I1,I2,I3,1)));
+          printF(">>>>>> INFO: max(v)=%9.2e, max(vDot) = %9.2e (useFilterWeights=%d)\n",vMax,vDotMax,useFilterWeights);
+
+          // vLocal(I1,I2,I3,1)=0.; // TEST ****************************
+        }       
+      }
 
       // ---- MULTI-FREQUENCY PROJECTION -----
       if( numberOfFrequencies > 1 )
@@ -509,13 +544,26 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
                 printF("updateTimeIntegral:ERROR return from Triangular solve: getrs: info=%d\n",info);
                 OV_ABORT("error");
               }
-
-
               // --- over-write v with projected value ---
               for( int freq=0; freq<numberOfFrequencies; freq++ )
               {
                 vLocal(i1,i2,i3,freq) = b(freq);
               }
+
+              // if( filterTimeDerivative )
+              // {
+              //   const int nwt=1;   // component number for wt 
+              //   b(0) = vLocal(i1,i2,i3,nwt);
+              //   GETRS( "N", numberOfFrequencies, nrhs, A(0,0), numberOfFrequencies, ipiv(0), b(0), ldb, info );
+              //   assert( info==0 );
+
+              //   vLocal(i1,i2,i3,nwt) = b(0);
+
+              //   vLocal(i1,i2,i3,nwt) = 0.; // test *********************************
+
+              // }
+
+
             }
           }
         }
@@ -556,6 +604,124 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
 
   return 0;
 }
+
+// =================================================================================
+/// \brief Compute the filter weights in time for the WaveHoltz integrals
+///
+/// \param Nt (input) : number of time steps 
+/// \param numFreq (input) : number of frequencies
+/// \param Tv(0:numFreq-1) (input) : periods
+/// \param orderOfAccuracy (input) : order of accuracy of the quadrature
+///
+/// \param sigma(0:Nt,0:numFreq-1) (output) : integration weights
+/// \param filterWeights(0:Nt,0:numFreq-1) (output) : filter weights
+///
+// =================================================================================
+int CgWave::getFilterWeights( int Nt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma, RealArray & filterWeights  )
+{
+  printF("\n ##### getFilterWeights #####\n\n");
+
+  const int & useFilterWeights = dbase.get<int>("useFilterWeights"); 
+
+  getIntegrationWeights( Nt, numFreq, Tv, orderOfAccuracy,sigma );
+
+  if( useFilterWeights )
+  {
+    // alpha=.5;
+    // for( freq=1:numFreq )
+    //   omega = par.frequencyArray(freq);
+    //   T     = par.periodArray(freq);     
+    //   for n=1:Nt+1
+    //     t = (n-1)*dt; 
+    //     par.fw(n,freq) = par.sigma(n,freq)*( (cos(omega*t) - .5*alpha ) )*(2/T);
+    //   end
+    // end
+
+    const int & filterTimeDerivative = dbase.get<int>("filterTimeDerivative"); 
+    RealArray & frequencyArray       = dbase.get<RealArray>("frequencyArray");
+    RealArray & frequencyArraySave   = dbase.get<RealArray>("frequencyArraySave");
+
+    const Real dt = Tv(0)/Nt; 
+
+    int & numCompWaveHoltz = dbase.get<int>("numCompWaveHoltz");
+    // numCompWaveHoltz = filterTimeDerivative ? 2 : numFreq;   // ******* MOVE THIS *****
+
+    filterWeights.redim(Nt+1,numCompWaveHoltz); 
+    filterWeights=0.;
+
+    const Real alpha = 0.5;
+    for( int freq=0; freq<numFreq; freq++ )
+    {
+      const Real omega = frequencyArray(freq);
+      for( int n=0; n<=Nt; n++ )
+      {
+        Real t = n*dt;
+        filterWeights(n,freq) = sigma(n,freq)*( cos(omega*t) - .5*alpha )*(2./Tv(freq));
+      }
+    }
+
+    if( filterTimeDerivative )
+    {
+      // -- integrate weights for the time derivative ---
+      //  Use integration by parts: 
+      //  
+      //   INT (cos(omega*t)-1/4) w_t dt = [(cos(omega*t)-1/4) w] + omega INT sin(omega*t) w dt
+      //   
+      const Real omega = frequencyArray(0);
+      const Real T = Tv(0);
+
+      const Real & damp     = dbase.get<real>("damp"); // coeff of linear damping 
+      const Real & viFactor = dbase.get<Real>("viFactor"); 
+
+      // **NOTE**
+      // viFactor must match in
+      //     getFilterWeights
+      //     takeFirstStep
+      //     solveHelmholtz : definition of Im(u)
+      // omegaTilde must match 1/viFactor in the definition of ui from vDot,  in u = ur*cos(omega*t) + ui*sin(omega*t)
+      Real omegaTilde = omega; 
+      if( true )
+      {
+        omegaTilde = viFactor; // *new way* June 19, 2023
+      }
+      else if( true )
+      {
+        omegaTilde = omega; // adjusted 
+      }
+      else if( true || damp != 0. ) 
+      {
+        //  --- adjust omega to match D0t used in damping: ----
+        const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+
+        if( true || timeSteppingMethod==CgWave::implicitTimeStepping )
+          omegaTilde = sin(omega*dt)/dt; 
+        else
+          omegaTilde = frequencyArraySave(0);  // unadjusted
+      }
+
+      const int nct = 1; // component number for time derivative in filterWeights
+
+      Real t;
+      for( int n=0; n<=Nt; n++ )
+      {
+        t = n*dt;
+        filterWeights(n,nct) = sigma(n,0)*( omegaTilde* sin(omega*t) )*(2./T);
+        // filterWeights(n,nct) = sigma(n,0)*( omegaTilde*omega sin(omega*t) )*(2./T);
+      }
+      // add boundary terms from IBP's
+      t=0; 
+      filterWeights( 0,nct) += -(omegaTilde/omega)* (cos(omega*t) - .5*alpha )*(2./T);
+      t = Nt*dt; 
+      filterWeights(Nt,nct) +=  (omegaTilde/omega)* (cos(omega*t) - .5*alpha )*(2./T);   
+
+    }
+
+  } // end useFilterWeights
+
+  return 0;
+
+}
+
 
 // =================================================================================
 /// \brief Compute the integration weights in time for the WaveHoltz integrals

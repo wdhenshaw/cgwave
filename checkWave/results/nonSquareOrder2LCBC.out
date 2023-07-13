@@ -1,0 +1,278 @@
+Usage: `mpirun -np N cgWave [-noplot] [file.cmd] [-g=<gridName>]'
+Look for Overture configuration file=[/home/henshw/.overturerc]
+Successfully opened /home/henshw/Overture.g/overturerc for reading
+User commands are being saved in the file `cgWave.cmd'
+ ***** Mounting file grids/nonSquare16.order2.hdf****
+getFromADataBase: number of CompositeGrid(s) found =1, name[0]=nonSquare
+Time to read in the grid is 6.99e-04(s)
+CgWave::setup SETTING orderOfAccuracy=2
+#
+#  cgWave: test twilightZone
+#     cgWave [-noplot] tz.cmd -g=<grid-name> -bc=[d|n|e] -cfl=<f> -tz=[polyl|trig] -degreeInSpace=<i> -degreeInTime=<i> ...
+#                              -upwind=[0|1] -fx= -fy= -fz= -ft= -ts=[explicit|implicit] -rectangular=[implicit|explicit] -debug=<i>
+#                              -bcApproach=[cbc|lcbc|oneSided] -meApproach=[std|ha|stencil] -implicitUpwind=[0|1]
+#
+# $aa=1./15.;
+# printf("aa=%24.20e\n",$aa);
+$omega=30.1; $x0=0; $y0=0; $z0=0; $beta=400; $numPeriods=1; $omegaSOR=1; $tol=1.e-3;
+# $ad4=0; # OLD
+$upwind=0; # new
+$debug=3; $debugmg=1; $debugOges=0;
+$ts="explicit"; $implicitUpwind=0;
+$rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat rectangular grids explicitly
+$beta2=.5; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping
+$dtMax=1e10; $damp=0;
+$bc="d";
+$bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$meApproach="std"; # or "ha"
+$useKnownFirstStep=0; $takeImplicitFirstStep=0;
+$orderInTime=-1;  # -1 = use default
+$tz="polynomial";
+$tf=1.; $tp=.1; $cfl=.9; $go="halt; "
+$degreeInSpace=2; $degreeInTime=2;
+$fx=2.; $fy=-1; $fz=-1; $ft=-1; # -1 : set equal to $fx
+$solveri="yale"; $maxiti=2000; $rtoli=1.0e-10; $atoli=1.0e-10; # parameters for implicit time-stepping solver
+GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\$degreeInTime,"cfl=f"=>\$cfl,            "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"debug=i"=>\$debug,"orderInTime=i"=>\$orderInTime,            "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"bc=s"=>\$bc,"tf=f"=>\$tf,"tp=f"=>\$tp,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,            "fx=f"=>\$fx,"fy=f"=>\$fy,"fz=f"=>\$fz,"ft=f"=>\$ft,"rectangular=s"=>\$rectangular,            "beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,            "useKnownFirstStep=i"=>\$useKnownFirstStep,"meApproach=s"=>\$meApproach,"implicitUpwind=i"=>\$implicitUpwind,            "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"debugmg=i"=>\$debugmg,"debugOges=i"=>\$debugOges,            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"damp=f"=>\$damp,"go=s"=>\$go );
+#
+if( $tz eq "trig" ){ $tz="trigonometric"; }
+if( $tz eq "poly" ){ $tz="polynomial"; }
+if( $fy eq -1 ){ $fy=$fx; }
+if( $fz eq -1 ){ $fz=$fx; }
+if( $ft eq -1 ){ $ft=$fx; }
+#
+# time-stepping: (explicit or implicit)
+$ts
+#
+cfl $cfl
+setting cfl=0.9
+tPlot $tp
+ tPlot=0.1
+tFinal $tf
+Setting tFinal=0.2
+dtMax $dtMax
+Setting dtMax=1e+10
+damp $damp
+Setting damp=0 (coefficient of linear damping)
+#
+$cmd="#";
+if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }
+if( $bcApproach eq "cbc"      ){ $cmd="useCompatibilityBCs"; }
+if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
+$cmd
+Setting approach for boundary conditions to useLocalCompatibilityBCs
+Answer=useLocalCompatibilityBCs found in getBoundaryConditionOption
+#
+$cmd="#";
+if( $meApproach eq "std" ){ $cmd="standard modified equation"; }
+if( $meApproach eq "ha" ){ $cmd="hierarchical modified equation"; }
+if( $meApproach eq "stencil" ){ $cmd="stencil modified equation"; }
+# printf("meApproach=$meApproach\n");
+# printf("cmd=$cmd\n");
+# pause
+$cmd
+Setting modifiedEquationApproach=hierarchical modified equation
+#
+#  Set options for implicit time-stepping:
+if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }
+$cmd
+take implicit first step $takeImplicitFirstStep
+Setting takeImplicitFirstStep=0 (1=take an implicit first step when implicit time-stepping
+#
+debug $debug
+Setting debug=3
+if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
+$cmd
+#
+if( $bc eq "d" ){ $cmd="bc=dirichlet"; }elsif( $bc eq "n" ){ $cmd="bc=neumann"; }elsif( $bc eq "e" ){ $cmd="bc=exact"; }elsif( $bc eq "a" ){ $cmd="bc=absorbing"; }else{ $cmd="bc=dirichlet"; }
+$cmd
+Setting all boundary conditions to bc=[dirichlet]
+Answer=bc=dirichlet found in getBoundaryConditionOption
+turn on forcing 1
+twilightZoneForcing
+$tz
+#
+use known for first step $useKnownFirstStep
+Setting useKnownSolutionForFirstStep (use known solution for first time step if possible).
+#
+degreeInSpace $degreeInSpace
+Setting degreeInSpace=2
+degreeInTime $degreeInTime
+Setting degreeInTime=2
+#
+trig frequencies $fx $fy $fz $ft
+Setting trig frequencies: fx=2, fy=2, fz=2, ft=2
+#
+#Gaussian params $beta $x0 $y0 0 (beta,x0,y0,z0)
+# omega $omega
+# omegaSOR $omegaSOR
+# if( $ad4>0. ){ $upwind=1; }# for backward compatibility
+upwind dissipation $upwind
+Setting upwind=1 (upwind dissipation is on or off).
+implicit upwind $implicitUpwind
+Setting implicitUpwind=0 (1=include upwinding in implicit matrix when implicit time-stepping
+# artificial dissipation $ad4
+# tol $tol
+# number of periods $numPeriods
+exit
+CgWave::initialize and assign forcing... numberOfFrequencies=1
+
+ $$$$$$$ setup TZ: build OGPolyFunction: numCompTz=1 degreeSpace=2, degreeTime=2 ndp=5 $$$$
+timeCoefficientsForTZ
+    (   0) (   1) (   2) (   3) (   4) 
+(0)  1.000  0.500  0.333  0.000  0.000 
+CgWave::getTimeStep: c=1, cfl=0.9, timeSteppingMethod=0
+getTimeStep: grid=0, dxMin= 4.42e-02, dxMax= 4.42e-02, dt=3.977e-02
+getTimeStep: grid=0: gridCFL = c/dx =  2.26e+01, gridCFL*dt=  9.00e-01
+CgWave::initialize: dt=0.0397748
+initializeLCBC: grid=0 orderOfAccuracyInSpace=2, orderOfAccuracyInTime=2
+
+======= p = 1 ======
+getLcbcCoef (side,axis)=(0,0) I1=[-1,1] I2=[-1,17] I3=[0,0]
+getLcbcCoef (side,axis)=(1,0) I1=[15,17] I2=[-1,17] I3=[0,0]
+getLcbcCoef (side,axis)=(0,1) I1=[-1,17] I2=[-1,1] I3=[0,0]
+getLcbcCoef (side,axis)=(1,1) I1=[-1,17] I2=[15,17] I3=[0,0]
+initializeLCBC: Call the LCBC constructor...
+... done LCBC constructor
+initializeLCBC: Finished grid = 0
+initializeLCBC: time to initialize LCBC = 5.470e-04 (s)
+
+*********************************************************************************
+           CgWave : Wave Equation Solver                    
+           -----------------------------                  
+ tFinal=0.200000, dt=3.977e-02, tPlot=1.000e-01 cfl=0.90, damp=0
+ modifiedEquationApproach = hierarchical modified equation
+ orderOfAccuracy=2, orderOfAccuracyInTime=2 
+ timeSteppingMethod = explicit (modified equation)
+ upwind dissipation is on, dissipationFrequency=1
+ upwind dissipation: preComputeUpwindUt=0 
+                     true=precompute Ut in upwind dissipation,
+                     false=compute Ut inline in Gauss-Seidel fashion)
+ implicitUpwind=0 : if true, include upwinding in implicit matrix when implicit time-stepping.
+ assignInterpNeighbours = interpolate (for wider upwind stencil)
+ twilightZone = polynomial, degreeInSpace=2, degreeInTime=2
+ knownSolutionOption=noKnownSolution
+ useKnownSolutionForFirstStep=0, applyKnownSolutionAtBoundaries=0
+ BC approach = useLocalCompatibilityBoundaryConditions. [useDefault|useOneSided|useCompatibility|useLocalCompatibility]
+ useSuperGrid=0, superGridWidth=0.2
+ solveHelmholtz=0 (1= we are solving a Helmholtz problem).
+ computeEigenmodes=0 (1= solve from eigenvalues and eigenvectors using the WaveHoltz algorithm).
+ forcingOption=twilightZoneForcing.
+ computeErrors=1
+ Twilightzone flow is on. number of processors=1
+
+ Grid: grids/nonSquare16.order2.hdf 
+               Grid Data
+               ---------
+grid     name      gridIndexRange(0:1,0:2)           gridPoints        hmx      hmn   time-stepping
+   0: square   ([ 0:   16],[ 0:   16],[ 0:    0])           289   4.42e-02 4.42e-02    explicit
+ total number of grid points =289, min(hmn)=4.42e-02, max(hmn)=4.42e-02, max(hmx)=4.42e-02,  
+
+ grid   name     side axis    boundary condition and name
+ ----   ----     ---- ----    ---------------------------
+    0: square     0    0      1 : dirichlet 
+    0: square     1    0      1 : dirichlet 
+    0: square     0    1      1 : dirichlet 
+    0: square     1    1      1 : dirichlet 
+*********************************************************************************
+
+#
+solve
+CgWave:advance: nextTimeToPlot=1.000e-01, numPlotSteps=3, new dt=3.333e-02 (dtMax=3.977e-02)
+++++++++++++ getInitialConditions current=0, t=0.000e+00, dt=3.333e-02 ++++++++++++++ 
+++++++ getTimeDerivative=0, initialConditionOption=1 ++++++
+$$$$ Get TZ initial conditions: t=0.000e+00, getTimeDerivative=0 $$$
+$$$$ Get TZ initial conditions: ntd=0 $$$
+CgWave: done initial conditions
+Overture::checkMemoryUsage: Interpolant::explicitInterpolate:after periodic and updateGhost, myid=0: memory usage has increased to 39.3867 (Mb)
+assignLCBC: t=0.000e+00, cpu = 3.120e-04 (s)
+*******  CgWave::takeFirstStep t=0.000e+00, cur=0, dt=3.333e-02 *************
+++++++++++++ getInitialConditions current=2, t=0.000e+00, dt=3.333e-02 ++++++++++++++ 
+++++++ getTimeDerivative=1, initialConditionOption=1 ++++++
+$$$$ Get TZ initial conditions: t=0.000e+00, getTimeDerivative=1 $$$
+$$$$ Get TZ initial conditions: ntd=1 $$$
+CgWave: done initial conditions
+assignLCBC: t=3.333e-02, cpu = 8.300e-05 (s)
+cgWave:FD22u t=0.000e+00 (0 steps) dt=3.333e-02 maxErr= 0.00e+00, ||u||= 2.77e+00, cpu= 0.00e+00(s)
+Skip first step since set to exact, or used time-periodic
+assignLCBC: t=6.667e-02, cpu = 8.500e-05 (s)
+assignLCBC: t=1.000e-01, cpu = 8.000e-05 (s)
+cgWave:FD22u t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 1.33e-15, ||u||= 2.92e+00, cpu= 9.22e-04(s)
+assignLCBC: t=1.333e-01, cpu = 8.000e-05 (s)
+assignLCBC: t=1.667e-01, cpu = 7.800e-05 (s)
+assignLCBC: t=2.000e-01, cpu = 7.800e-05 (s)
+cgWave:FD22u t=2.000e-01 (6 steps) dt=3.333e-02 maxErr= 1.33e-15, ||u||= 3.08e+00, cpu= 2.09e-03(s)
+
+              -------------------CgWave Summary----------------- 
+                       Wed Jul 12 20:33:50 2023
+               Grid:   grids/nonSquare16.order2.hdf 
+  ==== final time= 2.00e-01, numberOfStepsTaken =        6, grids=1, gridpts =289, interp pts=0, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=41,ave=41,max=41](Mb), max-recorded=41 (Mb), total=41 (Mb)
+ applyBoundaryConditions called 7 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  3.33e-03    5.55e-04    1.92e-06   100.000   3.330e-03   3.330e-03
+setup and initialize................  7.16e-04    1.19e-04    4.13e-07    21.502   7.160e-04   7.160e-04
+initialize BCs......................  1.14e-03    1.89e-04    6.55e-07    34.084   1.135e-03   1.135e-03
+initial conditions..................  8.90e-05    1.48e-05    5.13e-08     2.673   8.900e-05   8.900e-05
+advance.............................  2.17e-03    3.61e-04    1.25e-06    65.105   2.168e-03   2.168e-03
+  advance rectangular grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  advance curvilinear grids.........  7.86e-04    1.31e-04    4.53e-07    23.604   7.860e-04   7.860e-04
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  2.88e-04    4.80e-05    1.66e-07     8.649   2.880e-04   2.880e-04
+  boundary conditions...............  7.06e-04    1.18e-04    4.07e-07    21.201   7.060e-04   7.060e-04
+  interpolation.....................  1.17e-04    1.95e-05    6.75e-08     3.514   1.170e-04   1.170e-04
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.71e-04    2.85e-05    9.86e-08     5.135   1.710e-04   1.710e-04
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+ Memory usage: reals/grid-point = 18594.99.
+--------------------------------------------------------------------------------------------------------
+ ======== Parallel Distribution for CgWave (np=1)============
+ numberOfGrids=1, gridDistributionList.size()=1l 
+  grid=0: procs=1 [0,0], proc-decomp=[1]x[1]x[1], pts=462=[21]x[22]x[1], pts/proc=462=[21]x[22]x[1], ratio=22/21=  1, ghost=[0,0,0]
+
+ >>>> See the file mx.log for further timings, memory usage and other statistics <<<< 
+
+contour
+exit
+if( $go eq "go" ){ $cmd="exit"; }else{ $cmd="#"; }
+$cmd
+advWaveME: option=   0 grid=   0
+advWaveME: orderOfAccuracy= 2 orderInTime= 2
+advWaveME: addForcing= 1 forcingOption= 1
+advWaveME: useUpwindDissipation= 1(explicit), useImplicitUpwindDissipation= 0 (implicit)
+advWaveME: useSosupDissipation= 0(1= add upwind dissipation in this stage)
+advWaveME: t,dt,c,omega=  0.33E-01  0.33E-01  0.10E+01  0.30E+02
+advWaveME: gridIsImplicit= 0 adjustOmega= 0 solveHelmholtz= 0
+advWaveME: ADVANCE dim=2 order=2 orderInTime=2, grid=curvilinear... t=  0.33E-01
+ ASSIGN SCALED LAPLACIAN COEFF
+advWave: option=   1 grid=   0
+advWave: orderOfAccuracy= 2 orderInTime= 2
+advWave: addForcing= 1 forcingOption= 1
+advWave: useUpwindDissipation= 1 (explicit), useImplicitUpwindDissipation= 0 (implicit)
+advWave: useSosupDissipation= 1 (1= add upwind dissipation in this stage)
+advWave: t= 6.667E-02 dt= 3.333E-02 c=  1.00E+00 omega= 3.010E+01 gridCFL= 7.542E-01
+advWave: damp=  0.0000000000E+00
+advWave: gridIsImplicit= 0 takeImplicitFirstStep= 0
+advWave: adjustOmega= 0 solveHelmholtz= 0 adjustHelmholtz= 1
+XX advWave XX: grid=  0 gridType= 1 orderOfAccuracy= 2 useImplicitUpwindDissipation= 0
+         : t=  6.67E-02 dt=  3.333333E-02
+  ****** useSosupDissipation *******
+         : upwindDissipationCoefficient=  2.9463E-03 adSosupOld/(c*dt)=         NaN
+         : useSosupDissipation= 1 sosupParameter=  1.00E+00 preComputeUpwindUt= 0
+addUpwindDiss: UPWIND DISS using u.t=Dztu dim=2 order=2 grid=curvilinear... t=  0.67E-01
+ useSimplifiedDissipation= 0 adSosup=  2.9463E-03
+advWave: option=   1 grid=   0
+advWave: orderOfAccuracy= 2 orderInTime= 2
+advWave: addForcing= 1 forcingOption= 1
+advWave: useUpwindDissipation= 1 (explicit), useImplicitUpwindDissipation= 0 (implicit)
+advWave: useSosupDissipation= 1 (1= add upwind dissipation in this stage)
+advWave: t= 1.000E-01 dt= 3.333E-02 c=  1.00E+00 omega= 3.010E+01 gridCFL= 7.542E-01
+advWave: damp=  0.0000000000E+00
+advWave: gridIsImplicit= 0 takeImplicitFirstStep= 0
+advWave: adjustOmega= 0 solveHelmholtz= 0 adjustHelmholtz= 1
+addUpwindDiss: UPWIND DISS using u.t=Dztu dim=2 order=2 grid=curvilinear... t=  0.10E+00
+ useSimplifiedDissipation= 0 adSosup=  2.9463E-03

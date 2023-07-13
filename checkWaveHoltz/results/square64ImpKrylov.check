@@ -1,0 +1,14 @@
+# Check file for cgWaveHoltz, grid=square64, Wed Jul 12 09:12:53 2023
+grid=square64;
+timeStepping=implicit;
+orderOfAccuracy=2;
+numPeriods=2;
+numberOfFrequencies=1;
+filterTimeDerivative=0;
+useFixedPoint=0;
+minStepsPerPeriod=20;
+numberOfStepsPerSolve=40;
+convergenceRate=0.217;
+numberOfIterations=17;
+maxRes=2.757e-10;
+errorBetweenWaveHoltzAndHelmholtz=1.084e-12;

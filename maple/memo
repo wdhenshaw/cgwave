@@ -1,4 +1,38 @@
 ***************************
+**** Tues July 4, 2023
+
+START ON GETTING (Lap2h)^2 coefficients for 4th order implicit scheme
+
+*NEW* laplacianCoefficients.mpl
+
+
+#defineMacro lapSqCoeff2DOrder2b(is,dr,ds) 
+( (rx**4+2*ry**2*rx**2+ry**4)/dr**4-1/.*(6*rx**2*rxx+6*ry**2*ryy+2*ry*(2*rxy*rx+ry*rxx)+2*ryy*rx**2+4*ry*rxy*rx)*is/dr**3 ) 
+
+lprint(LapPow[2, 2]);
+
+(rx^4+2*ry^2*rx^2+ry^4)*urrrr+(4*rx^3*sx+4*ry^3*sy+2*ry*(sy*rx^2+2*ry*sx*rx)+2*
+sy*ry*rx^2)*urrrs+(6*rx^2*sx^2+6*ry^2*sy^2+2*ry*(2*sy*sx*rx+ry*sx^2)+2*sy*(sy*
+rx^2+2*ry*sx*rx))*urrss+(4*rx*sx^3+4*ry*sy^3+2*ry*sy*sx^2+2*sy*(2*sy*sx*rx+ry*
+sx^2))*ursss+(sx^4+2*sy^2*sx^2+sy^4)*ussss+(6*rx^2*rxx+6*ry^2*ryy+2*ry*(2*rxy*
+rx+ry*rxx)+2*ryy*rx^2+4*ry*rxy*rx)*urrr+(ry*(3*syy*ry+3*sy*ryy)+7*sy*ry*ryy+ry*
+(2*syy*ry+2*sy*ryy)+syy*ry^2+2*ry*(2*sxy*rx+sy*rxx+2*sx*rxy+ry*sxx)+2*sy*(2*rxy
+*rx+ry*rxx)+4*ryy*sx*rx+2*ry*(2*sxy*rx+2*sx*rxy)+2*syy*rx^2+4*sy*rxy*rx+rx*(3*
+sxx*rx+3*sx*rxx)+7*sx*rx*rxx+rx*(2*sxx*rx+2*sx*rxx)+sxx*rx^2)*urrs+(7*ry*sy*syy
++sy*(3*syy*ry+3*sy*ryy)+ryy*sy^2+sy*(2*syy*ry+2*sy*ryy)+2*ry*(2*sx*sxy+sxx*sy)+
+2*sy*(2*sxy*rx+sy*rxx+2*sx*rxy+ry*sxx)+2*ryy*sx^2+4*ry*sx*sxy+4*syy*sx*rx+2*sy*
+(2*sxy*rx+2*sx*rxy)+7*rx*sx*sxx+sx*(3*sxx*rx+3*sx*rxx)+rxx*sx^2+sx*(2*sxx*rx+2*
+sx*rxx))*urss+(6*sx^2*sxx+6*sy^2*syy+2*sy*(2*sx*sxy+sxx*sy)+2*syy*sx^2+4*sy*sx*
+sxy)*usss+(4*rx*rxxx+4*rxyy*rx+3*rxx^2+2*ryy*rxx+4*ry*rxxy+4*rxy^2+4*ry*ryyy+3*
+ryy^2)*urr+(4*sxxx*rx+4*sxyy*rx+6*sxx*rxx+2*syy*rxx+4*sx*rxxx+4*sy*rxxy+8*sxy*
+rxy+4*sx*rxyy+4*ry*sxxy+4*syyy*ry+2*ryy*sxx+6*syy*ryy+4*sy*ryyy)*urs+(4*sx*sxxx
++4*sx*sxyy+3*sxx^2+2*sxx*syy+4*sxxy*sy+4*sxy^2+4*sy*syyy+3*syy^2)*uss+(rxxxx+2*
+rxxyy+ryyyy)*ur+(sxxxx+2*sxxyy+syyyy)*us
+
+
+
+
+***************************
 **** Sun April 23, 2023
 
 writeStencilFiles.mpl

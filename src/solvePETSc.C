@@ -193,7 +193,9 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
     // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
-    const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
+
+    const int & numCompWaveHoltz          = cgWave.dbase.get<int>("numCompWaveHoltz");
+    // const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
 
     // -- cgWave solution is stored here: 
     realCompositeGridFunction & v    = cgWave.dbase.get<realCompositeGridFunction>("v");
@@ -205,7 +207,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     {
       realCompositeGridFunction & bcg = cgWaveHoltz.dbase.put<realCompositeGridFunction>("bcg");
       Range all;
-      bcg.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+      bcg.updateToMatchGrid(cg,all,all,all,numCompWaveHoltz);
     }
     realCompositeGridFunction & bcg = cgWaveHoltz.dbase.get<realCompositeGridFunction>("bcg");    
 
@@ -223,7 +225,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
     Index I1,I2,I3;
     int i=0;
-    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    for( int freq=0; freq<numCompWaveHoltz; freq++ )
     {
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
       {
@@ -315,7 +317,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
       //compute y = Pi * x 
       // set y = v 
       int i=0;
-      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      for( int freq=0; freq<numCompWaveHoltz; freq++ )
       {      
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
@@ -402,7 +404,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
       // set y = v 
       int i=0;
-      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      for( int freq=0; freq<numCompWaveHoltz; freq++ )
       {       
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
@@ -498,9 +500,14 @@ solvePETSc(int argc,char **args)
   const int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t   
   const int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
   Real & numberOfActivePoints           = dbase.get<Real>("numberOfActivePoints");
+
+
   
   // here is the CgWave solver for the time dependent wave equation
   CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
+  const int & numCompWaveHoltz          = cgWave.dbase.get<int>("numCompWaveHoltz");
+  const int & filterTimeDerivative      = cgWave.dbase.get<int>("filterTimeDerivative");
+
   if( omega!=0. )
     Tperiod=numPeriods*twoPi/omega; 
   else 
@@ -532,7 +539,8 @@ solvePETSc(int argc,char **args)
 
   realCompositeGridFunction & vOld = cgWave.dbase.get<realCompositeGridFunction>("vOld");
   Range all;
-  vOld.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+  // const int & numCompWaveHoltz = cgWave.dbase.get<int>("numCompWaveHoltz");  
+  vOld.updateToMatchGrid(cg,all,all,all,numCompWaveHoltz);
 
   // <<<<
   if( computeEigenmodes )
@@ -608,7 +616,9 @@ solvePETSc(int argc,char **args)
       getIndex(cg[grid].dimension(),I1,I2,I3);
       numEquations += I1.getLength()*I2.getLength()*I3.getLength();
     }
-    numEquations *= numberOfFrequencies;
+    numEquations *= numCompWaveHoltz;
+
+    // numEquations *= numberOfFrequencies;    
   }
   printF("Make a Matrix Free Shell: numEquations=%d\n",numEquations);
 
@@ -697,7 +707,7 @@ solvePETSc(int argc,char **args)
       Real normV=0; 
       numberOfActivePoints = 0.; // count active points for scaling norm.
       int i=0;
-      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      for( int freq=0; freq<numCompWaveHoltz; freq++ )
       {
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
@@ -763,6 +773,10 @@ solvePETSc(int argc,char **args)
     // ====================================================
     // =============== COMPUTE EIGENMODES =================
     // ====================================================
+
+
+    OV_ABORT("solvePETSc -- computeEigenmodes should be obsolete"); // *******************
+
 
     int & numEigsToCompute           = cgWave.dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute
 

@@ -1,0 +1,1316 @@
+Usage: `mpirun -np N cgwh [-noplot] [file.cmd] [-g=<gridName>]'
+Look for Overture configuration file=[/home/henshw/.overturerc]
+Successfully opened /home/henshw/Overture.g/overturerc for reading
+User commands are being saved in the file `cgWaveHoltz.cmd'
+Searching for grids in locations specified by the `OvertureGridDirectories' environment variable
+look for /home/henshw/Overture.g/sampleGrids/square64.order2 
+look for /home/henshw/grids/square64.order2 
+ ***** Mounting file /home/henshw/grids/square64.order2.hdf****
+getFromADataBase: number of CompositeGrid(s) found =1, name[0]=square64.order2
+Time to read in the grid is 8.83e-03(s)
+#
+#  cgWaveHoltz command script:
+#
+#     cgwh waveHoltz.cmd -g=<grid-name> -x0=<f> -y0=<f> -omega=<f> -solver=[none|fixedPoint|krylov] -tol=<f> -tp=<f> ...
+#                         -kx=<f> -ky=<f> -kz=<f> -forcing=[gaussian|sine] -adjustOmega=[0|1] -maxIterations=<>
+#                          -upwind=[0|1] -imode=[0|1] -bcApproach=[cbc|lcbc|oneSided] -go=[go|og|halt]
+#
+#   -solver=[fixedPoint|krylov] : fixed-point or Krylov
+#   -imode=1 : do not wait in cgWave
+#   -maxIterations=<>
+#
+$go="go"; $forcing="gaussian"; $debug=0; $debugOges=0;
+$omega=30.1;
+# $beta=50.; # $x0=0.5; $y0=0.5; $z0=0.5;
+@beta= (); @amp = (); @x0 = (); @y0 = (); @z0 = (); # this must be null for GetOptions to work, defaults are given below
+$t0=0.;
+# $amp=1.;
+$numPeriods=1; $omegaSOR=1; $tol=1.e-3; $damp=0.;
+$minStepsPerPeriod=10;   # min is 5
+$numberOfFrequencies=1;
+@freq = ();  # this must be null for GetOptions to work, defaults are given below
+# beta2=0 = TRAP, beta2=.5 = Full weighting
+$beta2=.0; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping
+$upwind=0; $implicitUpwind=0;
+$tp=.5; $imode=1;
+$filterTimeDerivative=0;
+$solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIterations=100; $adjustOmega=0;
+$matlab="cgWaveHoltz"; $show="gaussian.show";
+$cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1;
+$bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$orderInTime=-1;  # -1 = use default
+$deflateWaveHoltz=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf";
+$adjustHelmholtzForUpwinding=1; # remove upwinding from Helmholtz solution
+$useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsForSuperGrid=1;
+$solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
+$solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
+$bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6="";
+#
+GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,            "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,"debugOges=i"=>\$debugOges,            "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,            "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,            "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f{1,}"=>\@amp,"show=s"=>\$show,"debug=i"=>\$debug,            "bcApproach=s"=>\$bcApproach,"upwind=i"=>\$upwind,"beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"implicitUpwind=i"=>\$implicitUpwind,            "numberOfFrequencies=i"=>\$numberOfFrequencies,"nf=i"=>\$numberOfFrequencies,"freq=f{1,}"=>\@freq,"superGridWidth=f"=>\$superGridWidth,            "solverh=s"=>\$solverh,"rtolh=f"=>\$rtolh,"atolh=f"=>\$atolh,"maxith=i"=>\$maxith,"restart=i"=>\$restart,"iluh=i"=>\$iluh,            "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"adjustHelmholtzForUpwinding=i"=>\$adjustHelmholtzForUpwinding,            "deflateWaveHoltz=i"=>\$deflateWaveHoltz,"numToDeflate=i"=>\$numToDeflate,"damp=f"=>\$damp,"useSuperGrid=i"=>\$useSuperGrid,            "eigenVectorFile=s"=>\$eigenVectorFile,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"filterTimeDerivative=i"=>\$filterTimeDerivative,            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,            ,"adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid );
+#
+if( $bc eq "d" ){ $bc="dirichlet"; }
+if( $bc eq "n" ){ $bc="neumann"; }
+if( $bc eq "e" ){ $bc="evenSymmetry"; }
+if( $bc eq "r" ){ $bc="radiation"; }
+if( $bc eq "a" ){ $bc="absorbing"; }
+#
+if( $amp[0] eq "" ){ @amp=(1,1,1,1,1,1,1,1,1); }
+if( $beta[0] eq "" ){ @beta=(50,50,50,50,50,50,50,50); }
+if( $x0[0] eq ""  ){ @x0=(0,0,0,0,0,0,0,0); }
+if( $y0[0] eq ""  ){ @y0=(0,0,0,0,0,0,0,0); }
+if( $z0[0] eq ""  ){ @z0=(0,0,0,0,0,0,0,0); }
+if( $freq[0] eq "" ){ @freq=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15); }
+#
+$omega = $freq[0];
+#
+# pause
+## Gaussian params $beta $x0 $y0 0 (beta,x0,y0,z0)
+omega $omega
+Setting omega=20
+maximum number of iterations $maxIterations
+Setting maximumNumberOfIterations=50
+tol $tol
+Setting tol=1e-12 (tolerence for Krylov solvers)
+filter time derivative $filterTimeDerivative
+Setting filterTimeDerivative=0: 1=filter time-derivative of the initial condition.
+number of periods $numPeriods
+Setting numPeriods=2
+adjust omega $adjustOmega
+Setting adjustOmega=1: 1=adjust omega for the discrete symbol pf D+t D-t 
+ This will make WaveHoltz solution be closer to the discrete Helhmhotz problem
+number of frequencies $numberOfFrequencies
+Setting numberOfFrequencies=1
+frequencies $freq[0] $freq[1] $freq[2] $freq[3] $freq[4] $freq[5] $freq[6] $freq[7] $freq[8] $freq[9] $freq[10] $freq[11]] $freq[12]
+Setting frequency 0 = 2.000000e+01
+matlab filename: $matlab
+Setting matlabFileName=[cgWaveHoltz]
+# choose parameters for the direct Helmholtz solver
+direct solver parameters
+Set the Oges parameters for the direct Helmholtz solver
+if( $solverh ne "yale" ){ $cmd="choose best iterative solver\n $solverh"; }else{ $cmd="choose best direct solver"; }
+$cmd
+Choosing: yale, solver=[direct sparse solver, no pivoting + ]
+number of incomplete LU levels
+$iluh
+number of GMRES vectors
+$restart
+maximum number of iterations
+#
+$maxith
+relative tolerance
+$rtolh
+absolute tolerance
+$atolh
+debug
+$debugOges
+Setting Oges::debug=0
+# gmres restart length
+#   30
+# pause
+#  PETSc
+exit
+# pause
+exit
+cgWaveHoltz::setup: numberOfFrequencies=1, filterTimeDerivative=0, numCompWaveHoltz=1
+CgWave::setup SETTING orderOfAccuracy=2
+# ------ Start cgWave setup ------
+# time-stepping : explicit/implicit
+$ts
+if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
+$cmd
+Setting orderOfAccuracyInTime=2 (-1 means use same as order in space)
+dtMax $dtMax
+Setting dtMax=1
+implicit weights $beta2 $beta4 $beta6 $beta8
+Setting implicit time-stepping weights to beta2=0, beta4=0, beta6=0, beta8=0
+cfl $cfl
+setting cfl=1000
+interactiveMode $imode
+Setting interactiveMode=1 (0=normal, 1=advance and finish)
+tPlot $tp
+ tPlot=0.5
+#
+debug $debug
+Setting debug=0
+damp $damp
+Setting damp=0 (coefficient of linear damping)
+#
+use superGrid $useSuperGrid
+Setting useSuperGrid=0 (1=use superGrid absorbing layers).
+Answer=use superGrid 0 found in getBoundaryConditionOption
+superGrid width $superGridWidth
+Setting superGridWidth=0.2 (layer width in parameter space)
+Answer=superGrid width 0.2 found in getBoundaryConditionOption
+adjust plots for superGrid $adjustPlotsForSuperGrid
+Setting adjustPlotsForSuperGrid=1 (1=do not plot solution in the superGrid layers
+adjust errors for superGrid $adjustErrorsForSuperGrid
+Setting adjustErrorsForSuperGrid=1 (1=do not compute errors in the superGrid layers
+#
+# -- Here is input for cgWave
+#
+$cmd="#";
+if( $bcApproach eq "oneSided" ){ $cmd="useOneSidedBCs"; }
+if( $bcApproach eq "cbc"      ){ $cmd="useCompatibilityBCs"; }
+if( $bcApproach eq "lcbc"     ){ $cmd="useLocalCompatibilityBCs"; }
+$cmd
+Setting approach for boundary conditions to useOneSidedBCs
+Answer=useOneSidedBCs found in getBoundaryConditionOption
+#
+bc=$bc
+Setting all boundary conditions to bc=[dirichlet]
+Answer=bc=dirichlet found in getBoundaryConditionOption
+$cmd="#";
+if( $bc1 ne "" ){ $cmd .="\n bcNumber1=$bc1"; }
+if( $bc2 ne "" ){ $cmd .="\n bcNumber2=$bc2"; }
+if( $bc3 ne "" ){ $cmd .="\n bcNumber3=$bc3"; }
+if( $bc4 ne "" ){ $cmd .="\n bcNumber4=$bc4"; }
+if( $bc5 ne "" ){ $cmd .="\n bcNumber5=$bc5"; }
+if( $bc6 ne "" ){ $cmd .="\n bcNumber6=$bc6"; }
+printf('cmd=$cmd\n");')
+$cmd
+# pause
+# -- put his here for now:
+omega $freq[0]
+Setting omega=20 (and frequencyArray(0))
+Answer=omega 20 found in getWaveHoltzOption
+# if( $ad4>0. ){ $upwind=1; }# for backward compatibility
+upwind dissipation $upwind
+Setting upwind=0 (upwind dissipation is on or off).
+implicit upwind $implicitUpwind
+Setting implicitUpwind=0 (1=include upwinding in implicit matrix when implicit time-stepping
+adjust Helmholtz for upwinding $adjustHelmholtzForUpwinding
+Setting adjustHelmholtzForUpwinding=1 (1=correct Helmholtz solution for upwinding)
+Answer=adjust Helmholtz for upwinding 1 found in getWaveHoltzOption
+#
+deflate WaveHoltz $deflateWaveHoltz
+Setting deflateWaveHoltz=0 (1=apply deflate to WaveHoltz iteration
+Answer=deflate WaveHoltz 0 found in getWaveHoltzOption
+number to deflate $numToDeflate
+Setting numToDeflate=1 (deflate this many eigenvectors for WaveHoltz)
+Answer=number to deflate 1 found in getWaveHoltzOption
+eigenVectorFile $eigenVectorFile
+Setting eigenVectorFile=eigenVectors.hdf (file holding eigenvectors for deflation)
+Answer=eigenVectorFile eigenVectors.hdf found in getEigenWaveOption
+min steps per period $minStepsPerPeriod
+Setting minStepsPerPeriod=20 (for WaveHoltz)
+Answer=min steps per period 20 found in getEigenWaveOption
+# pause
+#
+#
+if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }
+$cmd
+Pushing the current command file onto a stack
+#
+#  Include file to set options for implicit time-stepping
+#
+# ---- set defaults:  *finish me*
+#
+if( $ts eq "" ){ $ts="implicit"; }
+if( $implicitUpwind eq "" ){ $implicitUpwind=0; }
+if( $solveri eq "" ){ $solveri="yale"; }
+# weights in implicit time-stepping:
+if( $beta2 eq "" ){ $beta2=0.5; }
+if( $beta4 eq "" ){ $beta4=0; }
+if( $beta6 eq "" ){ $beta6=0; }
+if( $beta8 eq "" ){ $beta8=0; }
+if( $rtoli eq "" ){ $rtoli=1.e-8; }
+if( $atoli eq "" ){ $atoli=1.e-8; }
+if( $maxiti eq "" ){ $maxiti=500; }
+if( $mgMaxIts eq "" ){ $mgMaxIts=15; } # max MG iterations
+if( $debugmg eq "" ){ $debugmg=0; }
+if( $debugOges eq "" ){ $debugOges=0; }
+if( $rectangular eq "" ){ $rectangular="implicit"; } # set  $rectangular="explicit" to treat rectangular grids explicitly
+#
+if( $ts eq "implicit" ){ $cmd="choose grids for implicit\n  rectangular=$rectangular\n done"; }else{ $cmd="#"; }
+$cmd
+choose grids for implicit
+Set grids to be implicit, or explicit. Type 'done' to finish. 
+ Examples: (type `help' for more examples)
+  square=explicit 
+  annulus=implicit 
+  all=implicit 
+rectangular=implicit
+Setting time stepping to be implicit for grid square
+done
+# implicitUpwind = 1 : include upwinding in implicit matrix
+implicit upwind $implicitUpwind
+Setting implicitUpwind=0 (1=include upwinding in implicit matrix when implicit time-stepping
+#
+implicit weights $beta2 $beta4 $beta6 $beta8
+Setting implicit time-stepping weights to beta2=0, beta4=0, beta6=0, beta8=0
+#
+# $solveri="multigrid";
+# $solveri="yale";
+implicit solver parameters
+Set the Oges parameters for the implicit solver.
+# NOTE: bcgs = bi-CG stab
+if( $solveri ne "yale" ){ $cmd="choose best iterative solver\n $solveri"; }else{ $cmd="choose best direct solver"; }
+$cmd
+Choosing: yale, solver=[direct sparse solver, no pivoting + ]
+number of incomplete LU levels
+3
+number of GMRES vectors
+20
+maximum number of iterations
+#
+$maxiti
+relative tolerance
+$rtoli
+absolute tolerance
+$atoli
+debug
+$debugOges
+Setting Oges::debug=0
+#
+multigrid parameters
+choose good parameters: 1
+choose good parameters: 0=OFF, 1=ON, 2=Use more robust parameters. Setting value to 1
+OgesParameters: relativeTolerance=1.000000e-03 
+residual tolerance $rtoli
+absolute tolerance $atoli
+maximum number of iterations
+$mgMaxIts
+debug
+$debugmg
+if( $debugmg > 1 ){ $cmdmg="show smoothing rates"; }else{ $cmdmg="#"; }
+$cmdmg
+# printf("debugmg=$debugmg, cmdmg = $cmdmg\n");
+# pause
+# maximum number of extra levels
+#  1
+#
+# do not average coarse grid equations
+# pause
+# Coarse level solver:
+Oges parameters
+choose best direct solver
+Choosing: yale, solver=[direct sparse solver, no pivoting + ]
+# choose best iterative solver
+relative tolerance
+1.e-10
+absolute tolerance
+1.e-10
+number of incomplete LU levels
+3
+# debug
+#   7
+minimum number of iterations
+2
+exit
+OgmgParameters::display direct solver ogesParameters:
+name = yale, solver=[direct sparse solver, no pivoting + ]
+solverType = yale
+solverMethod = direct sparse solver, no pivoting
+parallel solverMethod = direct sparse solver, no pivoting
+preconditioner = incomplete LU preconditioner
+parallelPreconditioner = block Jacobi preconditioner
+matrix ordering = reverse Cuthill-McKee ordering
+maximumNumberOfIterations = 100
+minimumNumberOfIterations = 2
+relativeTolerance = 1.00e-10
+absoluteTolerance = 1.00e-10
+maximumAllowableIncreaseInResidual = 1.00e+05
+compatibilityConstraint = 0
+gmresRestartLength = 20
+numberOfIncompleteLULevels = 3
+incompleteLUExpectedFill = 20
+minimumNumberOfIterations = 20
+maximumNumberOfIterations = 20
+solveForTranspose = 20
+rescaleRowNorms = 1
+matrixCutoff= 0.00e+00
+fixupRightHandSide= 1
+zeroRatio    = 0.00e+00
+fillinRatio  = 0.00e+00
+fillinRatio2 = 0.00e+00
+harwellPivotingTolerance = 1.00e-01
+nullVectorScaling = 1.00e+00
+maximumInterpolationWidth = 100
+iterativeImprovement = 0
+sorOmega = 1.01e+00
+userSuppliedCompatibilityConstraint = 0
+userSuppliedEquations = 0
+exit
+#pause
+exit
+readLineFromCommandFile:End of file or a null line was read.
+pop the stack of read command files...
+# implicit solver parameters
+#   # NOTE: bcgs = bi-CG stab
+#   if( $solveri ne "yale" ){ $cmd="choose best iterative solver\n $solveri"; }else{ $cmd="choose best direct solver"; }
+#   $cmd
+#   number of incomplete LU levels
+#     3
+#   number of GMRES vectors
+#     20
+#   maximum number of iterations
+#     #
+#     $maxiti
+#   relative tolerance
+#     $rtoli
+#   absolute tolerance
+#     $atoli
+#  #
+#   multigrid parameters
+#     choose good parameters: 1
+#     residual tolerance $rtoli
+#     absolute tolerance $atoli
+#     # debug
+#     #   1
+#     # show smoothing rates
+#     # Coarse level solver:
+#     Oges parameters
+#       choose best direct solver
+#       # choose best iterative solver
+#       relative tolerance
+#         1.e-10
+#       absolute tolerance
+#         1.e-10
+#       number of incomplete LU levels
+#       3
+#     exit
+#   exit
+#   #pause
+# exit
+# artificial dissipation $ad4
+#
+helmholtzForcing
+solve Helmholtz 1
+ solveHelmholtz=true: CgWave is being used to solve the Helmholtz equation (time-periodic wave equation)
+ using CgWaveHoltz
+Answer=solve Helmholtz 1 found in getWaveHoltzOption
+#
+# ------ Gaussian sources ----
+# amp, beta, omega, p,
+# $amp = 10.*$omega*$omega;
+#
+$numTerms=1; # each source has 1 term
+$p=1;        # power in exponent
+$cmd =  "user defined forcing...\n"       . " gaussian sources\n";
+for( $i=0; $i<$numberOfFrequencies; $i++ ){   $cmd .= "$numTerms\n $amp[$i] $beta[$i] $omega $p $x0[$i] $y0[$i] $z0[$i] $t0\n";}
+$cmd .= "exit";
+#
+#   --- eigenmode-like exact solution : sin(kx*x)*sin(ky*y)*cos(omega*t)
+if( $forcing eq "sine" ){  $cmd = " user defined known solution...\n"       . " box helmholtz\n"       . "  $omega $kx $ky $kz\n"       . " done\n"       . " user defined forcing...\n"       . "   box Helmholtz\n"       . " exit\n"; }
+$cmd
+user defined forcing...
+gaussian sources
+The Gaussian source in 2D is of the form:
+ u(x,y,t) = a*cos(omega*(t-t0) )*exp( -beta^2*[ (x-x0)^2 + (y-y0)^2 ]^p )
+1
+-1000 20 20 1 0.5 0.5 0 0
+Gaussian source 0, freq=0: setting a=-1.00e+03, beta=2.00e+01, omega=2.00e+01, p=1.00e+00, x0=5.00e-01, y0=5.00e-01, z0=0.00e+00, t0=0.00e+00
+exit
+#
+exit
+CgWave::initialize and assign forcing... numberOfFrequencies=1
+CgWave::initialize: ***ASSIGN HELMHOLTZ FORCING***
+userDefinedForcing: t=0.000e+00 option=[gaussianSources] fSign=-1
+
+ >>> Gaussian source 0, freq=0: setting a=-1.00e+03, beta=2.00e+01, omega=2.00e+01, p=1.00e+00, x0=5.00e-01, y0=5.00e-01, z0=0.00e+00, t0=0.00e+00, t=0.00e+00, fSign=-1
+
+CgWave::getTimeStep: c=1, cfl=1000, timeSteppingMethod=1
+getTimeStep: grid=0 : dx= 1.56e-02, dy= 1.56e-02, dt=1.105e+01
+cgWave::getTimeStep: cfl=1000, explicit dt= 1.00e+00, implicit dt= 1.00e+00, ratio=  1.00
+cgWave:chooseTimeStep: chooseImplicitTimeStepFromCFL : setting dt= 1.00e+00, cfl=1000
+getTimeStep: grid=0: gridCFL = c/dx =  9.05e+01, gridCFL*dt=  9.05e+01
+CgWave::initialize: dt=1
+
+*********************************************************************************
+           CgWave : Wave Equation Solver                    
+           -----------------------------                  
+ tFinal=1.000000, dt=1.000e+00, tPlot=5.000e-01 cfl=1000.00, damp=0
+ modifiedEquationApproach = standard modified equation
+ orderOfAccuracy=2, orderOfAccuracyInTime=2 
+ timeSteppingMethod = implicit
+ ---- implicit time stepping parameters ----
+   implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+   implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+   All grids are implicit.
+   takeImplicitFirstStep = 0.
+   implicit time-stepping weights: cImp(-1,0)=0.5, cImp(0,0)=0, cImp(1,0)=0.5 (2nd-order term)
+                                 : cImp(-1,1)=0.208333, cImp(0,1)=0, cImp(1,1)=0.208333 (4th-order term)
+   chooseImplicitTimeStepFromCFL=1 (1=choose implicit dt from cfl, 0=choose dt from dtMax)
+ upwind dissipation is off, dissipationFrequency=1
+ upwind dissipation: preComputeUpwindUt=0 
+                     true=precompute Ut in upwind dissipation,
+                     false=compute Ut inline in Gauss-Seidel fashion)
+ implicitUpwind=0 : if true, include upwinding in implicit matrix when implicit time-stepping.
+ assignInterpNeighbours = interpolate (for wider upwind stencil)
+ twilightZone = polynomial, degreeInSpace=2, degreeInTime=2
+ knownSolutionOption=noKnownSolution
+ useKnownSolutionForFirstStep=0, applyKnownSolutionAtBoundaries=0
+ BC approach = useOneSidedBCs. [useDefault|useOneSided|useCompatibility|useLocalCompatibility]
+ useSuperGrid=0, superGridWidth=0.2
+ solveHelmholtz=1 (1= we are solving a Helmholtz problem).
+   **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=0 (for discrete symbol of D+tD-t) ****
+   computeTimeIntegral=1
+   adjust Helmholtz for upwinding=1. Minimum time-steps per period=20.
+   deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ computeEigenmodes=0 (1= solve from eigenvalues and eigenvectors using the WaveHoltz algorithm).
+ forcingOption=helmholtzForcing.
+ computeErrors=1
+ number of processors=1
+
+ Grid: /home/henshw/grids/square64.order2.hdf 
+               Grid Data
+               ---------
+grid     name      gridIndexRange(0:1,0:2)           gridPoints        hmx      hmn   time-stepping
+   0: square   ([ 0:   64],[ 0:   64],[ 0:    0])          4225   1.56e-02 1.56e-02    implicit
+ total number of grid points =4225, min(hmn)=1.56e-02, max(hmn)=1.56e-02, max(hmx)=1.56e-02,  
+
+ grid   name     side axis    boundary condition and name
+ ----   ----     ---- ----    ---------------------------
+    0: square     0    0      1 : dirichlet 
+    0: square     1    0      1 : dirichlet 
+    0: square     0    1      1 : dirichlet 
+    0: square     1    1      1 : dirichlet 
+*********************************************************************************
+
+# --- end cgWave setup  ---
+show file $show
+Setting nameOfShowFile=gaussian.show
+contour
+exit
+if( $solver eq "fixedPoint" ){ $cmd="compute with fixed-point"; }elsif( $solver eq "krylov" ){ $cmd="compute with petsc"; }else{ $cmd="#" };
+if( $go eq "go" && $cmd ne "#" ){ $cmd .= "\n exit"; }
+if( $go eq "dk"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\nexit"; }
+if( $go eq "df"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with fixed-point\nexit"; }
+if( $go eq "dks"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\n save to show\n exit"; }
+if( $go eq "fk" ){ $cmd="zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
+if( $go eq "dfk" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
+if( $go eq "ks"  ){ $cmd="zero initial condition\n compute with krylov\n save to show\n exit"; }
+$cmd
+solve Helmholtz directly
+
+ ============== DIRECT SOLVE OF THE HELMHOLTZ EQUATION =============
+    c=1, numberOfFrequencies=1, orderOfAccuracy=2, solveComplex=0
+  freq(0) = 20
+  useSuperGrid=0
+superGrid
+    (0) 
+(0)  0
+ ===================================================================
+frequencyArray
+    (        0) 
+(0)  2.0000e+01 
+CgWave::getHelmholtzForcing: ***FILL IN RHS FOR DIRECT HELMHOLTZ SOLVER***
+userDefinedForcing: t=0.000e+00 option=[gaussianSources] fSign=-1
+
+ >>> Gaussian source 0, freq=0: setting a=-1.00e+03, beta=2.00e+01, omega=2.00e+01, p=1.00e+00, x0=5.00e-01, y0=5.00e-01, z0=0.00e+00, t0=0.00e+00, t=0.00e+00, fSign=-1
+
+solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. 
+
+ === Direct Helmholtz Solver:
+ yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+Oges::allocateWorkSpace: numberOfNonzeros=21429 fillinRatio=2.000000e+01
+allocateWorkSpace: numberOfEquations=4761, nsp = 428580, fillinRatio= 20, numberOfNonzeros = 21429
+
+*** freq=0: omega=20, max residual=0.00e+00, time for direct Helmholtz solve = 5.57e-03 (s) (iterations=0) ***
+CgWaveHoltz::residual: freq= 0, omega=  20.000, max-res=1.259e-09.
+CgWaveHoltz: omega=2.000e+01, max-res=1.259e-09 (direct Helmholtz solution)
+cgwh: max-err =0.00e+00 (between WaveHoltz and known solution, all frequencies)
+zero initial condition
+compute with fixed-point
+CgWaveHoltz::solve: setting tFinal = Tperiod*numPeriods = 6.283e-01 (numPeriods=2) 
+
+ =========================  WAVE EQUATION HELMHOLTZ SOLVER ==========================
+CgWaveHoltz::solve using omega=  2.0000e+01 Tperiod=  6.2832e-01 (before adjust) numPeriods=2
+#################### CgWaveHoltz: CALL cgWave : it=0 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<
+ it=0, dt=  1.604092021024e-02, omega=  1.958486553399e+01,  tFinal=  6.416368084097e-01
+ adjustOmega=1, adjustHelmholtzForUpwinding=1 
+ freq=0 frequency=  1.958486553399e+01 period=  6.416368084097e-01, numberOfPeriods=2
+ nextTimeToPlot=6.283e-01, numPlotSteps=20, new dt=1.604e-02 (dtMax=1.000e+00)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 0.00e+00, cpu= 1.00e-06(s)
+
+ ==================== FORM MATRIX FOR IMPLICIT TIME-STEPPING ===================
+   c=1, dt=1.604e-02, orderOfAccuracy=2, orderOfAccuracyInTime=2  bcApproach=1
+ upwind=0, add upwinding to implicit matrix=0, useSuperGrid=0
+ ================================================================================
+CgWave::formImplicitTimeSteppingMatrix: Changing the implicit solver parameters. 
+
+ === Implicit Time-Stepping Solver:
+ yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+
+ >>>>>>> CgWave::implicitSolver: use predfined equations <<<<<<< 
+
+CgWave::implicitSolver: A = I -alpha (c*dt)^2 Delta, c=1, dt= 1.60e-02
+Oges::allocateWorkSpace: numberOfNonzeros=21429 fillinRatio=2.000000e+01
+allocateWorkSpace: numberOfEquations=4761, nsp = 428580, fillinRatio= 20, numberOfNonzeros = 21429
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.94e-01, cpu= 1.82e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.30e-01, cpu= 1.85e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=0:  l2Norm( v-vOld )=1.80e-01 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=1 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<
+ it=1, dt=  1.604092021024e-02, omega=  1.958486553399e+01,  tFinal=  6.416368084097e-01
+ adjustOmega=1, adjustHelmholtzForUpwinding=1 
+ freq=0 frequency=  1.958486553399e+01 period=  6.416368084097e-01, numberOfPeriods=2
+ nextTimeToPlot=6.283e-01, numPlotSteps=20, new dt=1.604e-02 (dtMax=1.000e+00)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 6.15e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.19e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.09e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=1:  l2Norm( v-vOld )=6.58e-02 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=2 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 6.67e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 7.88e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 7.91e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=2:  l2Norm( v-vOld )=4.41e-02 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=3 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 7.14e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 7.77e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 7.93e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=3:  l2Norm( v-vOld )=3.45e-02 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=4 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 7.40e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 7.80e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.01e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=4:  l2Norm( v-vOld )=2.78e-02 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=5 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 7.61e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 7.85e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.09e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=5:  l2Norm( v-vOld )=2.26e-02 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=6 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 7.77e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 7.90e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.17e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=6:  l2Norm( v-vOld )=1.85e-02 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=7 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 7.90e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 7.95e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.23e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=7:  l2Norm( v-vOld )=1.52e-02 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=8 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.01e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 7.98e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.29e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=8:  l2Norm( v-vOld )=1.25e-02 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=9 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.10e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.01e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.33e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=9:  l2Norm( v-vOld )=1.03e-02 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=10 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.18e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.03e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.37e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=10:  l2Norm( v-vOld )=8.55e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=11 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.24e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.06e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.40e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=11:  l2Norm( v-vOld )=7.10e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=12 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.30e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.12e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.43e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=12:  l2Norm( v-vOld )=5.91e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=13 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.34e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.17e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.48e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=13:  l2Norm( v-vOld )=4.93e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=14 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.20e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.53e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=14:  l2Norm( v-vOld )=4.12e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=15 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.41e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.24e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.58e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=15:  l2Norm( v-vOld )=3.45e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=16 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.43e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.26e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.62e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=16:  l2Norm( v-vOld )=2.89e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=17 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.49e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.28e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.65e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=17:  l2Norm( v-vOld )=2.43e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=18 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.54e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.30e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.68e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=18:  l2Norm( v-vOld )=2.04e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=19 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.59e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.31e-01, cpu= 1.18e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.70e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=19:  l2Norm( v-vOld )=1.71e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=20 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.62e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.32e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.72e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=20:  l2Norm( v-vOld )=1.44e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=21 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.65e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.33e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.73e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=21:  l2Norm( v-vOld )=1.21e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=22 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.68e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.34e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.74e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=22:  l2Norm( v-vOld )=1.02e-03 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=23 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.70e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.35e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.76e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=23:  l2Norm( v-vOld )=8.61e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=24 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.72e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.35e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.76e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=24:  l2Norm( v-vOld )=7.26e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=25 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.73e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.36e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.77e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=25:  l2Norm( v-vOld )=6.12e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=26 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.75e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.36e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.78e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=26:  l2Norm( v-vOld )=5.16e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=27 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.76e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.37e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.78e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=27:  l2Norm( v-vOld )=4.35e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=28 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.77e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.37e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.79e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=28:  l2Norm( v-vOld )=3.67e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=29 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.77e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.37e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.79e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=29:  l2Norm( v-vOld )=3.09e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=30 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.78e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.37e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=30:  l2Norm( v-vOld )=2.61e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=31 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.79e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.37e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=31:  l2Norm( v-vOld )=2.20e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=32 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.79e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=32:  l2Norm( v-vOld )=1.86e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=33 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.79e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=33:  l2Norm( v-vOld )=1.57e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=34 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=34:  l2Norm( v-vOld )=1.32e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=35 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=35:  l2Norm( v-vOld )=1.12e-04 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=36 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=36:  l2Norm( v-vOld )=9.42e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=37 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=37:  l2Norm( v-vOld )=7.95e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=38 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.80e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=38:  l2Norm( v-vOld )=6.71e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=39 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.00e-06(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=39:  l2Norm( v-vOld )=5.67e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=40 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=40:  l2Norm( v-vOld )=4.78e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=41 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=41:  l2Norm( v-vOld )=4.04e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=42 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=42:  l2Norm( v-vOld )=3.41e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=43 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=43:  l2Norm( v-vOld )=2.88e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=44 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=44:  l2Norm( v-vOld )=2.43e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=45 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=45:  l2Norm( v-vOld )=2.05e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=46 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=46:  l2Norm( v-vOld )=1.73e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=47 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.22e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=47:  l2Norm( v-vOld )=1.46e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=48 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=48:  l2Norm( v-vOld )=1.23e-05 (tol=1e-12)
+#################### CgWaveHoltz: CALL cgWave : it=49 #########################
+
+### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=  1.6040920210e-02 (dt=  3.1415926536e-02) omegaAdjusted=  1.958487e+01 (omega=  2.000000e+01)##
+freq=0: numPeriodsArray=2, periodArraySave=  6.2832e-01, ... corrected for numPeriods   6.2832e-01
+
+ ##### getFilterWeights #####
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 0.00e+00(s)
+cgWave:FD22 t=6.256e-01 (39 steps) dt=1.604e-02 ||u||= 8.38e-01, cpu= 1.19e-02(s)
+cgWave:FD22 t=6.416e-01 (40 steps) dt=1.604e-02 ||u||= 8.81e-01, cpu= 1.23e-02(s)
+RESET periodArray
+freq=0: periodArray=  6.2832e-01
+it=49:  l2Norm( v-vOld )=1.04e-05 (tol=1e-12)
+$$$$$$$$ CgWaveHoltz:ERROR -- number of iterations reached the maximum allowed = 50 $$$$$$$$
+###### DONE CgWaveHoltz: CALL cgWave : number of WaveHoltz iteration =50 ######
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+                          Real Solution 
+
+ grid=/home/henshw/grids/square64.order2.hdf
+ Convergence rate CR=0.823, CR-perPeriod=0.907, Time to solve = 6.37e-01(s) : CgWave= 6.33e-01(s) 99.45%, advance= 6.20e-01(s) 97.35%
+ max-residual=-1.00e+00 (WaveHoltz its), numberOfIterations = 50 (FP) (maximumNumberOfIterations=50)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ Time stepping = implicit, cfl=1000.00, dt=1.604e-02, minStepsPerPeriod=20, numberOfStepsPerSolve=40, totalTimeStepsStaken=2000, aveItsPerImplicitSolve=  0.0
+  takeImplicitFirstStep=0
+ implicitUpwind=0 (1= add upwind diss. to implicit matrix)
+ grid-CFL= 1.45e+00 for grid=0 (square)
+ c=1, useSuperGrid=0, damp=0
+ filterTimeDerivative=0, useFilterWeights=1, viFactor=6.95289e-310
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ freq= 0, omega=  20.000, (adjusted=  19.585) T= 0.31416, Tbar= 0.62832, numPeriods=  2, Tbar(0)/T=  2.00
+Direct solve Helmholtz: cpu= 7.85e-03(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+
+CgWaveHoltz::residual: freq= 0, omega=  20.000, max-res=1.079e-02 (using omega), max-res=1.145e+01 (using omega from discrete symbol)
+solveHelmholtz: max-res=1.079e-02 (all frequencies)
+solveHelmholtz: rel-max-diff=1.82e-04, |v|_max= 8.81e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+Wrote results to the check file [cgWaveHoltz.check]
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzFP.m]
+exit
+
+              -------------------CgWave Summary----------------- 
+                       Wed Jul 12 20:34:06 2023
+               Grid:   /home/henshw/grids/square64.order2.hdf 
+  ==== final time= 6.28e-01, numberOfStepsTaken =     2000, grids=1, gridpts =4225, interp pts=0, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=45.543,ave=45.543,max=45.543](Mb), max-recorded=0 (Mb), total=45.543 (Mb)
+ applyBoundaryConditions called 2000 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  6.33e-01    3.17e-04    7.50e-08   100.000   6.334e-01   6.334e-01
+setup and initialize................  1.22e-03    6.12e-07    1.45e-10     0.193   1.224e-03   1.224e-03
+initialize BCs......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+initial conditions..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+advance.............................  6.20e-01    3.10e-04    7.34e-08    97.887   6.200e-01   6.200e-01
+  advance rectangular grids.........  1.14e-01    5.70e-05    1.35e-08    18.014   1.141e-01   1.141e-01
+  advance curvilinear grids.........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+    implicit solve..................  3.33e-01    1.67e-04    3.94e-08    52.626   3.333e-01   3.333e-01
+  add dissipation...................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  boundary conditions...............  2.09e-02    1.04e-05    2.47e-09     3.292   2.085e-02   2.085e-02
+  interpolation.....................  6.47e-03    3.23e-06    7.65e-10     1.021   6.466e-03   6.466e-03
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  7.92e-02    3.96e-05    9.37e-09    12.497   7.915e-02   7.915e-02
+  get errors........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+ Memory usage: reals/grid-point = 1412.88.
+--------------------------------------------------------------------------------------------------------
+ ======== Parallel Distribution for CgWave (np=1)============
+ numberOfGrids=1, gridDistributionList.size()=1l 
+  grid=0: procs=1 [0,0], proc-decomp=[1]x[1]x[1], pts=4761=[69]x[69]x[1], pts/proc=4761=[69]x[69]x[1], ratio=69/69=  1, ghost=[0,0,0]
+cmd=$cmd\n");
+ >>>> See the file mx.log for further timings, memory usage and other statistics <<<< 
+
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 
+abcWave: t=0: DO NOTHING since past time is not known 

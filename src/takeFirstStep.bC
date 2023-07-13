@@ -25,11 +25,13 @@
     Range C=Range(0,0);
     int isRectangular=0;
 
-    RealArray f(I1,I2,I3), utt(I1,I2,I3), uxx(I1,I2,I3), uyy(I1,I2,I3), uzz(I1,I2,I3);
+    RealArray f(I1,I2,I3), utt(I1,I2,I3), ut(I1,I2,I3), uxx(I1,I2,I3), uyy(I1,I2,I3), uzz(I1,I2,I3);
 
     e.gd( utt,xLocal,numberOfDimensions,isRectangular,2,0,0,0,I1,I2,I3,C,t ); 
     e.gd( uxx,xLocal,numberOfDimensions,isRectangular,0,2,0,0,I1,I2,I3,C,t ); 
     e.gd( uyy,xLocal,numberOfDimensions,isRectangular,0,0,2,0,I1,I2,I3,C,t );
+
+
 
     // ----------- CORRECT u_tt with f = ue_ttt - c^2*Lap(ue )
     if( numberOfDimensions==2 )
@@ -41,6 +43,12 @@
       e.gd( uzz,xLocal,numberOfDimensions,isRectangular,0,0,0,2,I1,I2,I3,C,t );
       f = (.5*dt2)*( utt - (c*c)*( uxx + uyy + uzz ) );
     }
+
+    if( damp!=0. )
+    {
+      e.gd( ut,xLocal,numberOfDimensions,isRectangular,1,0,0,0,I1,I2,I3,C,t ); 
+      f += (.5*dt2*damp)*ut; 
+    }    
 
     if( orderOfAccuracy>=4 )
     {
@@ -302,6 +310,7 @@ takeFirstStep( int cur, real t )
   const real & dt             = dbase.get<real>("dt");
   const real & omega          = dbase.get<real>("omega");
   const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
+  const Real & damp           = dbase.get<Real>("damp");
 
   if( true || debug & 4 )
     printF("*******  CgWave::takeFirstStep t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
@@ -391,9 +400,12 @@ takeFirstStep( int cur, real t )
       operators[grid].derivative(MappedGridOperators::laplacianOperator,ucLocal,lap,J1,J2,J3);
  
       unLocal(I1,I2,I3) = ucLocal(I1,I2,I3) + dt*upLocal(I1,I2,I3) + (.5*cdt2)*lap(I1,I2,I3);
-
-
-
+      if( damp!=0. )
+      {
+        // u.tt = c^2 Delta(u) - damp* u.t 
+        // u.t = up 
+        unLocal(I1,I2,I3) += (-.5*dt*dt*damp)*upLocal(I1,I2,I3);
+      }
 
       // if( false )
       // {
@@ -423,6 +435,11 @@ takeFirstStep( int cur, real t )
       if( orderOfAccuracy>=4 )
       { 
 
+        if( damp!=0. )
+        {
+          OV_ABORT("takeFirstStep: ORDER>=4: FINISH ME FOR damping");
+        }
+
         operators[grid].derivative(MappedGridOperators::laplacianOperator,upLocal,lap,I1,I2,I3); // Delta( ut )
         unLocal(I1,I2,I3) += ( c2*dt3/6.)*lap(I1,I2,I3); 
 
@@ -441,6 +458,10 @@ takeFirstStep( int cur, real t )
       
       if( orderOfAccuracy>=6 )
       { 
+        if( damp!=0. )
+        {
+          OV_ABORT("takeFirstStep: ORDER>=6: FINISH ME FOR damping");
+        }
 
         // --  compute Delta^2 ( ut ) to fourth order ---
         // *check me* is this stencil too wide?
@@ -482,7 +503,7 @@ takeFirstStep( int cur, real t )
   } // end for grid
 
   bool applyExplicitBoundaryConditions=true;
-  applyBoundaryConditions( u[next], t+dt,applyExplicitBoundaryConditions  );
+  applyBoundaryConditions( u[next],u[cur], t+dt,applyExplicitBoundaryConditions  );
   
   // u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%6.2f ");
 
@@ -509,15 +530,17 @@ takeFirstStepHelmholtz( int cur, real t )
   if( debug & 4 )
     printF("*******  CgWave::takeFirstStep GET SOLUTION at dt *************\n");
   
-  const real & c              = dbase.get<real>("c");
-  const real & dt             = dbase.get<real>("dt");
-  const real & omega          = dbase.get<real>("omega");
-  const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
+  const real & c                        = dbase.get<real>("c");
+  const real & dt                       = dbase.get<real>("dt");
+  const real & omega                    = dbase.get<real>("omega");
+  const int & orderOfAccuracy           = dbase.get<int>("orderOfAccuracy");
 
-  const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
-  const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");  
+  const int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
+  const RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");  
+  const RealArray & frequencyArraySave  = dbase.get<RealArray>("frequencyArraySave");  
 
-  const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz");
+  const int & solveHelmholtz            = dbase.get<int>("solveHelmholtz");
+  const int & filterTimeDerivative      = dbase.get<int>("filterTimeDerivative");
 
   ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
@@ -593,12 +616,48 @@ takeFirstStepHelmholtz( int cur, real t )
            // Real diff = max(fabs(ucLocal(I1,I2,I3)-vLocal(I1,I2,I3,0)));
            // printF(" >> diff | uc - v |=%9.2e\n",diff);
 
-           unLocal(I1,I2,I3) = vLocal(I1,I2,I3,0)*cos( frequencyArray(0)*dt );
-           for( int freq=1; freq<numberOfFrequencies; freq++ )
-           {
+          if( filterTimeDerivative==0 )
+          {
+            unLocal(I1,I2,I3) = vLocal(I1,I2,I3,0)*cos( frequencyArray(0)*dt );
+            for( int freq=1; freq<numberOfFrequencies; freq++ )
+            {
              unLocal(I1,I2,I3) += vLocal(I1,I2,I3,freq)*cos( frequencyArray(freq)*dt );
-           }
-           // unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) * cos(omega*dt);        
+            }
+          }
+          else
+          {
+            // Periodic solution is 
+            //   w(x,t) = vk*cos(omega*t) + (1/omega)*vDotk*sin(omega*t)
+            // 
+            // This includes the fix for the time-discretization error
+            //   un(J) = vk(J,1)*cos(par.frequencyArray(1)*dt) + isign*vk(J,2)*dt; 
+            // const Real isign=-1.; // FIX ME : for exp( isign*I*omega*t )
+
+            const Real isign=+1.; // FIX ME : for exp( isign*I*omega*t )
+
+            // **NOTE**
+            // viFactor must match in
+            //     getFilterWeights
+            //     takeFirstStep
+            //     solveHelmholtz : definition of Im(u)
+            if( true )
+            { // *new way* June 19, 2023
+              const Real & viFactor = dbase.get<Real>("viFactor");
+              unLocal(I1,I2,I3) = vLocal(I1,I2,I3,0)*cos(frequencyArray(0)*dt ) + viFactor*vLocal(I1,I2,I3,1)*sin(frequencyArray(0)*dt);
+            }
+            else if( true || timeSteppingMethod==explicitTimeStepping )
+            {
+              Real viFactor = isign/frequencyArray(0);     
+              unLocal(I1,I2,I3) = vLocal(I1,I2,I3,0)*cos(frequencyArray(0)*dt ) + viFactor*vLocal(I1,I2,I3,1)*sin(frequencyArray(0)*dt);
+            }
+            else
+            {
+              // viFactor = dt/sin(om*dt) from filter weights
+              unLocal(I1,I2,I3) = vLocal(I1,I2,I3,0)*cos(frequencyArray(0)*dt ) + isign*vLocal(I1,I2,I3,1)*dt;
+            }
+          }
+
+
         }
       }
       else
@@ -661,7 +720,7 @@ takeFirstStepHelmholtz( int cur, real t )
     //   OV_ABORT("error");
     // }
     bool applyExplicitBoundaryConditions=true;
-    applyBoundaryConditions( u[next], t+dt, applyExplicitBoundaryConditions );
+    applyBoundaryConditions( u[next],u[cur], t+dt, applyExplicitBoundaryConditions );
   }
   
   // u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%6.2f ");
@@ -761,7 +820,7 @@ takeFirstBackwardStep( int cur, real t )
   } // end for grid
 
   bool applyExplicitBoundaryConditions=true;
-  applyBoundaryConditions( u[prev], t-dt, applyExplicitBoundaryConditions );
+  applyBoundaryConditions( u[prev],u[cur], t-dt, applyExplicitBoundaryConditions );
   
 
   return 0;

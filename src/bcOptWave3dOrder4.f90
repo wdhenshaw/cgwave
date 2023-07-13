@@ -1,6 +1,5 @@
 ! This file automatically generated from bcOptWave.bf90 with bpp.
- subroutine bcOptWave3dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
- ! subroutine bcOptWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,!                       gridIndexRange, dimRange, isPeriodic, u, mask,rsxy, xy, boundaryCondition, !                       frequencyArray, pdb, ipar, rpar, ierr )
+ subroutine bcOptWave3dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
  ! ===================================================================================
  !  Boundary conditions for CgWave
  !
@@ -13,6 +12,7 @@
    implicit none
    integer nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b, ndb, ierr
    real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
+   real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
    integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
    real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
    real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
@@ -69,6 +69,7 @@
    real fLap,ftt,gtttt
    real gg,nDotGradF,crv(0:3)
    integer side,axis,axisp1,axisp2,i1,i2,i3,is1,is2,is3,j1,j2,j3,js1,js2,js3,k1,k2,k3,ks1,ks2,ks3,is,js
+   integer i1p,i2p,i3p
    integer l1,l2,l3
    integer numGhost,numberOfGhostPoints,extraForNeumann,extraForDirichlet,numberOfFrequencies
    integer side1,side2,side3
@@ -79,6 +80,7 @@
    integer extra1a,extra1b,extra2a,extra2b,extra3a,extra3b,extram
    integer cornerBC(0:2,0:2,0:2), iparc(0:10), orderOfExtrapolationForCorners
    real rparc(0:10)
+   real ca
    ! boundary conditions parameters and interfaceType values
    ! #Include "bcDefineFortran.h"
    ! These should mauch the values in Parameters.h
@@ -1444,7 +1446,7 @@ real uzzzz
    ! numberOfGhostPoints=orderOfAccuracy/2
    numberOfGhostPoints=numGhost ! now passed in 
    ! write(*,'(" bcOptWave3dOrder4: dim=3, order=4")')
-   if( t.le.dt .and. debug.gt.1 )then
+   if( t.le.3*dt .and. debug.gt.1 )then
    ! if( .true. )then
      write(*,'(" bcOptWave: grid=",i4," gridType=",i2," orderOfAccuracy=",i2," uc=",i3," twilightZone=",i2)') grid,gridType,orderOfAccuracy,uc,twilightZone
      write(*,'("  addForcingBC=",i4," forcingOption=",i4," assignKnownSolutionAtBoundaries=",i4)') addForcingBC, forcingOption, assignKnownSolutionAtBoundaries
@@ -1465,10 +1467,10 @@ real uzzzz
    do side=0,1
      do axis=0,2
        bc(side,axis)=boundaryCondition(side,axis)
-       if( bc(side,axis).eq.absorbing )then
-         ! DO THIS FOR NOW : use dirichlet for absorbing boundaries 
-         bc(side,axis)=dirichlet
-       end if
+       ! if( bc(side,axis).eq.absorbing )then
+       !   ! DO THIS FOR NOW : use dirichlet for absorbing boundaries 
+       !   bc(side,axis)=dirichlet
+       ! end if
      end do
    end do
    if( .true. ) then
@@ -1910,8 +1912,9 @@ real uzzzz
            stop 1111
          end if
        else if( bc(side,axis) == exactBC )then
-         write(*,*) "bcOpt: implicit BC for exactBc -- finish me"
-         stop 4444
+         ! These atre now assigned in **takeImplicitStep** 
+         ! write(*,*) "bcOpt: implicit BC for exactBc -- finish me"
+         ! stop 4444
        else if( bc(side,axis) == neumann )then
          if( gridType.eq.rectangular )then
            ! compute the outward normal (an1,an2,an3)
@@ -2026,6 +2029,40 @@ real uzzzz
           end do
           end do
           end do
+       else if( bc(side,axis) == absorbing .or. bc(side,axis) == abcEM2 )then
+         if( t<=4.*dt )then
+           write(*,*) "bcOpt: implicit BC for absorbing/EM2 "
+         end if
+         ! stop 4444
+         ca = c;  ! Adjusted c 
+         if( gridType.eq.rectangular )then
+            do i3=n3a,n3b
+            do i2=n2a,n2b
+            do i1=n1a,n1b
+             if( mask(i1,i2,i3).ne.0 )then
+               j1  = i1-is1; j2  = i2-is2; j3  = i3-is3;     ! ghost 
+               i1p = i1+is1; i2p = i2+is2; i3p = i3+is3;     ! first line inside
+               ! We need current solution un here
+               ! res = -is*(unx-ucx)/dt + (.5*c)*( unxx + ucxx) + (.25*c)*( unyy + ucyy );
+               if( axis==0 )then
+                 u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                    - 0*.5*(   ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   - 0.*.5*(.5*ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) ) 
+               else
+                 u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                     - .5*( .5*ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   - .5*(    ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) )                   
+               end if 
+               do ghost=2,numGhost
+                 j1=i1-is1*ghost
+                 j2=i2-is2*ghost
+                 j3=i3-is3*ghost
+                 u(j1,j2,j3,uc) = 0.
+               end do                
+             end if
+            end do
+            end do
+            end do
+         else
+          write(*,*) "bcOpt: implicit BC for absorbing/EM2 -- CURVILINEAR : finish me"
+           stop 4444          
+         end if
        else if( bc(side,axis) > 0 )then
          write(*,'("bcOptWave:fill RHS for direct Helmholtz solver, unexpected boundaryCondition=",i4)') bc(side,axis)
          stop 6666
@@ -2481,7 +2518,7 @@ real uzzzz
         end if
       end if ! if bc>0 
       assignTwilightZone=twilightZone
-     if( ( (bc(side,axis).ne.dirichlet .and. bc(side,axis).ne.exactBC ) .or. bcApproach.eq.useCompatibilityBoundaryConditions ) .and. bc(side,axis).gt.0 )then
+     if( ( (bc(side,axis).ne.dirichlet .and. bc(side,axis).ne.exactBC .and. bc(side,axis).ne.absorbing .and. bc(side,axis).ne.abcEM2 ) .or. bcApproach.eq.useCompatibilityBoundaryConditions ) .and. bc(side,axis).gt.0 )then
        if( orderOfAccuracy.eq.2 )then
        else if( orderOfAccuracy.eq.4 )then
            ! ghost-loops will assign extra points in tangential directions
@@ -6431,6 +6468,10 @@ real uzzzz
            stop 8888
          end if
        end if
+     else if( bc(side,axis) == absorbing .or. bc(side,axis) == abcEM2 )then
+       ! --- ABC's are done elsewhere ---
+       ! write(*,'("bcOptWave: bc=absorbing/EM2 called??")')
+       ! stop 3434
      else if(  bc(side,axis).eq.dirichlet .or. bc(side,axis).eq.exactBC .or. bc(side,axis).le.0 )then
        ! do nothing
      else

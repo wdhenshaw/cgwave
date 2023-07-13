@@ -1,0 +1,73 @@
+#
+# REGRESSION TESTS FOR CGWAVE
+#     Tests are run using the perl script check.p
+#
+# REGRESSION TESTS FOR WAVEHOLTZ
+#
+# Type "make" in this folder to run all checks.
+#
+# Type check.p <checkName.check> to run one check.
+#    e.g. "check.p diskEig6LCBC.check"
+#
+# To replace a check file use
+#   check.p -replace <checkName.check> 
+#
+# Here is the executable:
+../bin/cgWave
+# CGBUILDPREFIX/mx/bin/cgmx
+#
+# here is the name of the check file
+cgWave.check
+#
+# Here is a list of commands to run for tests
+#
+# TZ explicit tests
+squareOrder2.check    ../runs/tz/tz.cmd -g=grids/square16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+squareOrder4.check    ../runs/tz/tz.cmd -g=grids/square16.order4.ng3 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+boxOrder2.check       ../runs/tz/tz.cmd -g=grids/box1.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+boxOrder4.check       ../runs/tz/tz.cmd -g=grids/box1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+nonSquareOrder2.check ../runs/tz/tz.cmd -g=grids/nonSquare16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+nonSquareOrder4.check ../runs/tz/tz.cmd -g=grids/nonSquare16.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+nonBoxOrder2.check    ../runs/tz/tz.cmd -g=grids/nonBox1.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+nonBoxOrder4.check    ../runs/tz/tz.cmd -g=grids/nonBox1.order4 -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+# FAME + LCBC
+squareOrder2LCBC.check    ../runs/tz/tz.cmd -g=grids/square16.order2     -meApproach=ha -bcApproach=lcbc -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+squareOrder4LCBC.check    ../runs/tz/tz.cmd -g=grids/square16.order4.ng3 -meApproach=ha -bcApproach=lcbc -upwind=0 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+squareOrder6LCBC.check    ../runs/tz/tz.cmd -g=grids/square16.order6.ng4 -meApproach=ha -bcApproach=lcbc -upwind=0 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
+squareOrder8LCBC.check    ../runs/tz/tz.cmd -g=grids/square16.order8.ng5 -meApproach=ha -bcApproach=lcbc -upwind=0 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
+nonSquareOrder2LCBC.check    ../runs/tz/tz.cmd -g=grids/nonSquare16.order2     -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -go=go
+nonSquareOrder4LCBC.check    ../runs/tz/tz.cmd -g=grids/nonSquare16.order4.ng3 -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=4 -degreeInSpace=4 -tf=.2 -tp=.1 -go=go
+nonSquareOrder6LCBC.check    ../runs/tz/tz.cmd -g=grids/nonSquare16.order6.ng4 -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
+nonSquareOrder8LCBC.check    ../runs/tz/tz.cmd -g=grids/nonSquare16.order8.ng5 -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
+#
+# TZ implicit tests
+squareOrder2Imp.check    ../runs/tz/tz.cmd -g=grids/square16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+squareOrder4Imp.check    ../runs/tz/tz.cmd -g=grids/square16.order4.ng3 -upwind=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
+boxOrder2Imp.check       ../runs/tz/tz.cmd -g=grids/box1.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+boxOrder4Imp.check       ../runs/tz/tz.cmd -g=grids/box1.order4 -upwind=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
+nonSquareOrder2Imp.check ../runs/tz/tz.cmd -g=grids/nonSquare16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+nonSquareOrder4Imp.check ../runs/tz/tz.cmd -g=grids/nonSquare16.order4 -upwind=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
+nonBoxOrder2Imp.check    ../runs/tz/tz.cmd -g=grids/nonBox1.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+nonBoxOrder4Imp.check    ../runs/tz/tz.cmd -g=grids/nonBox1.order4 -upwind=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
+#
+# planeWave : square grids
+planeWaveOrder2.check ../runs/known/planeWave.cmd -g=grids/square16.order2 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+planeWaveOrder4.check ../runs/known/planeWave.cmd -g=grids/square16.order4.ng3 -upwind=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+#
+# planeWave : cic grid 
+planeWaveCicOrder2.check ../runs/known/planeWave.cmd -g=grids/cice2.order2 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+planeWaveCicOrder4.check ../runs/known/planeWave.cmd -g=grids/cice2.order4.ng3 -upwind=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+#
+# disk eigenfunction : CBC conditions
+diskEig2.check ../runs/known/known.cmd -g=grids/sice2.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
+diskEig4.check ../runs/known/known.cmd -g=grids/sice2.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
+# disk eig - FAME + LCBC
+diskEig2LCBC.check ../runs/known/known.cmd -g=grids/sice2.order2     -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+diskEig4LCBC.check ../runs/known/known.cmd -g=grids/sice2.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+diskEig6LCBC.check ../runs/known/known.cmd -g=grids/sice2.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+diskEig8LCBC.check ../runs/known/known.cmd -g=grids/sice2.order8.ng5 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+#
+# Forced Helmholtz solve
+helmHoltzCicOrder2.check ../cmd/helmholtz.cmd -g=grids/cice2.order2 -upwind=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+helmHoltzCicOrder4.check ../cmd/helmholtz.cmd -g=grids/cice2.order4.ng3 -upwind=1 -kx=1 -ky=1 -tp=.1 -tf=.1 -go=go
+#

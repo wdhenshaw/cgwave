@@ -5,6 +5,233 @@ alias testHighDerivatives $wave/bin/testHighDerivatives
 set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDerivatives
 
 
+
+****************************************************
+****** Sun July 9, 2023
+
+REWORK Implicit upwind dissipation
+
+EXACT
+cgWave -noplot tz.cmd -g=rsise2.order2 -upwind=1 -degreeInTime=2 -degreeInSpace=2 -tf=.5 -tp=.1 -ts=implicit -implicitUpwind=1 -dtMax=.1 -go=go
+
+
+EXACT NOW: 
+cgWave tz.cmd -g=sbs.hdf -upwind=1 -degreeInTime=2 -degreeInSpace=2 -tf=.5 -tp=.1 -ts=implicit -implicitUpwind=1 -dtMax=.1 -debugOges=0 -go=halt
+
+
+cgWave tz.cmd -g=sbs.hdf -upwind=1 -degreeInTime=0 -degreeInSpace=0 -tf=.2 -tp=.01 -ts=implicit -implicitUpwind=1 -dtMax=.1 -debugOges=63 -go=halt
+
+cgWave noplot tz.cmd -g=sise2.order2 -upwind=1 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -implicitUpwind=1 -dtMax=.1 -go=go
+
+EXACT NOW: 
+cgWave tz.cmd -g=sise1.order2 -upwind=1 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.01 -ts=implicit -implicitUpwind=1 -dtMax=.1 -go=halt
+
+
+cgWave noplot tz.cmd -g=square16.order2 -upwind=1 -degreeInTime=2 -degreeInSpace=2 -tf=.5 -tp=.1 -ts=implicit -implicitUpwind=1 -dtMax=.1 -go=go
+
+****************************************************
+****** Sun July 9, 2023
+
+START REWORK Implicit upwind dissipation
+
+
+
+cgWave noplot tz.cmd -g=square16.order2 -upwind=1 -degreeInTime=2 -degreeInSpace=2 -tf=.5 -tp=.1 -ts=implicit -implicitUpwind=1 -dtMax=.1 -go=go
+
+++++ OLD: 
+cgWave:FD22u t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 1.35e-14, ||u||= 3.08e+00, cpu= 4.16e-03(s)
+cgWave:FD22u t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 2.62e-14, ||u||= 3.27e+00, cpu= 5.36e-03(s)
+cgWave:FD22u t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 4.53e-14, ||u||= 3.47e+00, cpu= 6.56e-03(s)
+cgWave:FD22u t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 5.95e-14, ||u||= 3.69e+00, cpu= 7.75e-03(s)
+
+
+
+
+****************************************************
+****** Wed July 5, 2023
+
+RUNS CHECKS:
+
+
+THESE ARE BROKEN: *FIXED* 
+../bin/cgWave noplot ./../runs/tz/tz.cmd -g=box1.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+
+NON SQUARE BROKEN *FIXED*
+cgWave noplot tz.cmd -g=nonSquare16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+
+cgWave:FD22 t=1.000e-01 (3 steps) dt=3.333e-02 maxErr= 1.43e-03, ||u||= 2.92e+00, cpu= 2.26e-03(s)
+cgWave:FD22 t=2.000e-01 (6 steps) dt=3.333e-02 maxErr= 6.55e-03, ||u||= 3.08e+00, cpu= 3.43e-03(s)
+
+SQUARE OK 
+cgWave noplot tz.cmd -g=square16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
+cgWave:FD22 t=2.000e-01 (6 steps) dt=3.333e-02 maxErr= 1.20e-14, ||u||= 3.08e+00, cpu= 3.29e-03(s)
+
+
+START TEST 3D IMP ORDER 4: 
+
+
+CURV BOX : EXACT 
+cgWave -noplot tz.cmd -g=nonBox2.order4.hdf -orderInTime=4 -tz=poly -tf=.5 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go  -degreeInTime=4 -degreeInSpace=4
+
+cgWave:FD44 t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 5.51e-14, ||u||= 9.18e+00, cpu= 2.16e+00(s)
+cgWave:FD44 t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 1.29e-13, ||u||= 9.73e+00, cpu= 2.47e+00(s)
+cgWave:FD44 t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 2.23e-13, ||u||= 1.04e+01, cpu= 2.78e+00(s)
+cgWave:FD44 t=4.000e-01 (16 steps) dt=2.500e-02 maxErr= 3.26e-13, ||u||= 1.11e+01, cpu= 3.08e+00(s)
+cgWave:FD44 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 4.07e-13, ||u||= 1.20e+01, cpu= 3.39e+00(s)
+
+
+CART BOX : EXACT 
+cgWave -noplot tz.cmd -g=box2.order4.hdf -orderInTime=4 -tz=poly -tf=.5 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go  -degreeInTime=4 -degreeInSpace=4
+
+cgWave:FD44 t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 5.51e-14, ||u||= 9.18e+00, cpu= 1.73e+00(s)
+cgWave:FD44 t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 1.28e-13, ||u||= 9.73e+00, cpu= 2.02e+00(s)
+cgWave:FD44 t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 2.23e-13, ||u||= 1.04e+01, cpu= 2.31e+00(s)
+cgWave:FD44 t=4.000e-01 (16 steps) dt=2.500e-02 maxErr= 3.24e-13, ||u||= 1.11e+01, cpu= 2.60e+00(s)
+cgWave:FD44 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 4.03e-13, ||u||= 1.20e+01, cpu= 2.89e+00(s)
+
+
+
+EXACT
+cgWave -noplot tz.cmd -g=rsise4.order4.hdf -orderInTime=4 -tz=poly -tf=.5 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go  -degreeInTime=4 -degreeInSpace=4
+
+
+EXACT
+cgWave -noplot tz.cmd -g=sise4.order4.hdf -orderInTime=4 -tz=poly -tf=.5 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go  -degreeInTime=4 -degreeInSpace=4
+
+cgWave:FD44 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 1.95e-14, ||u||= 4.71e+00, cpu= 2.42e-01(s)
+cgWave:FD44 t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 5.73e-14, ||u||= 4.99e+00, cpu= 4.35e-01(s)
+cgWave:FD44 t=3.000e-01 (18 steps) dt=1.667e-02 maxErr= 1.07e-13, ||u||= 5.31e+00, cpu= 6.28e-01(s)
+
+
+****************************************************
+****** Tues July 4, 2023
+
+START IMPLICIT ORDER=4
+
+COMPARE CART TO CURV:
+CURV WORKS NOW
+cgWave -noplot tz.cmd -g=nonSquare8.order4.hdf -orderInTime=4 -tz=poly -tf=.5 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go  -degreeInTime=4 -degreeInSpace=4
+
+cgWave:FD44 t=2.000e-01 (4 steps) dt=5.000e-02 maxErr= 4.88e-15, ||u||= 4.99e+00, cpu= 4.25e-03(s)
+cgWave:FD44 t=3.000e-01 (6 steps) dt=5.000e-02 maxErr= 9.33e-15, ||u||= 5.31e+00, cpu= 5.60e-03(s)
+cgWave:FD44 t=4.000e-01 (8 steps) dt=5.000e-02 maxErr= 1.51e-14, ||u||= 5.69e+00, cpu= 6.93e-03(s)
+cgWave:FD44 t=5.000e-01 (10 steps) dt=5.000e-02 maxErr= 2.35e-14, ||u||= 6.15e+00, cpu= 8.26e-03(s)
+
+
+cgWave -noplot tz.cmd -g=square8.order4.hdf -orderInTime=4 -tz=poly -tf=.03 -tp=0.01 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go  -degreeInTime=2 -degreeInSpace=4
+
+cgWave:FD44 t=2.000e-02 (2 steps) dt=1.000e-02 maxErr= 1.33e-15, ||u||= 4.51e+00, cpu= 1.82e-03(s)
+advWave: option=   0 grid=   0
+advWave: orderOfAccuracy= 4 orderInTime= 4
+advWave: addForcing= 1 forcingOption= 1
+advWave: useUpwindDissipation= 0 (explicit), useImplicitUpwindDissipation= 0 (implicit)
+advWave: useSosupDissipation= 0 (1= add upwind dissipation in this stage)
+advWave: t,dt,c,omega,gridCFL,damp=  2.00E-02   1.00E-02   1.00E+00   3.01E+01   9.50E-01
+advWave: damp=  0.0000000000E+00
+advWave: gridIsImplicit= 1 takeImplicitFirstStep= 0
+advWave: adjustOmega= 0 solveHelmholtz= 0 adjustHelmholtz= 1
+  Implicit coeff: cImp(-1:1,0) =   2.50E-01   5.00E-01   2.50E-01 (for 2nd-order)
+  Implicit coeff: cImp(-1:1,1) =   8.33E-02   0.00E+00   8.33E-02 (for 4th-order)
+
+i1,i2=   2   2 un=  1.31572739888878E+00 u=  1.30909378228253E+00 um=  1.30248437927668E+00  
+i1,i2=   2   2 un=  1.31572741076340E+00 u=  1.30909378623378E+00 um=  1.30248437927668E+00
+
+ bcOptWave: grid=   0 gridType= 0 orderOfAccuracy= 4 uc=  0 twilightZone= 1
+  addForcingBC=   1 forcingOption=   1 assignKnownSolutionAtBoundaries=   0
+  t=  0.30E-01 dt=  0.10E-01 knownSolutionOption=   0 REAL_MIN=  0.22-307
+  useUpwindDissipation= 0 numGhost= 2
+  assignBCForImplicitForImplicit=   1 bcApproach=   1
+  boundaryCondition=   1   1   1   1  -1  -1
+ bcOptWave: grid=   0 gridType= 0 orderOfAccuracy= 4 uc=  0 twilightZone= 1
+  addForcingBC=   1 forcingOption=   1 assignKnownSolutionAtBoundaries=   0
+  t=  0.30E-01 dt=  0.10E-01 knownSolutionOption=   0 REAL_MIN=  0.22-307
+  useUpwindDissipation= 0 numGhost= 2
+  assignBCForImplicitForImplicit=   0 bcApproach=   1
+  boundaryCondition=   1   1   1   1  -1  -1
+cgWave:FD44 t=3.000e-02 (3 steps) dt=1.000e-02 maxErr= 4.00e-15, ||u||= 4.54e+00, cpu= 2.48e-03(s)
+
+
+CURV: FD44i  
+cgWave -noplot tz.cmd -g=nonSquare16.order4.hdf -orderInTime=4 -tz=poly -tf=.5 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go  -degreeInTime=2 -degreeInSpace=4
+
+cgWave -noplot tz.cmd -g=nonSquare8.order4.hdf -orderInTime=4 -tz=poly -tf=.5 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go  -degreeInTime=2 -degreeInSpace=4
+
+
+cgWave tz.cmd -g=nonSquare8.order4.hdf -orderInTime=4 -tz=poly -tf=.5 -tp=0.01 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=halt  -degreeInTime=2 -degreeInSpace=4
+
+
+CARTESIAN: FD44i  *EXACT*
+cgWave -noplot tz.cmd -g=square16.order4.hdf -orderInTime=4 -tz=poly -tf=.5 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go  -degreeInTime=4 -degreeInSpace=4
+
+cgWave:FD44 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 1.64e-14, ||u||= 4.99e+00, cpu= 9.48e-03(s)
+cgWave:FD44 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 3.33e-14, ||u||= 5.31e+00, cpu= 1.39e-02(s)
+cgWave:FD44 t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 6.00e-14, ||u||= 5.69e+00, cpu= 1.83e-02(s)
+cgWave:FD44 t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 8.35e-14, ||u||= 6.15e+00, cpu= 2.27e-02(s)
+
+FD24i
+cgWave -noplot tz.cmd -g=square16.order4.hdf -orderInTime=2 -tz=poly -degreeInTime=2 -degreeInSpace=4 -tf=1 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -debug=3 -upwind=0 -bc=d -go=go
+
+cgWave:FD24 t=9.000e-01 (27 steps) dt=3.333e-02 maxErr= 3.60e-14, ||u||= 7.69e+00, cpu= 2.45e-02(s)
+cgWave:FD24 t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 4.00e-14, ||u||= 8.19e+00, cpu= 2.70e-02(s)
+
+
+****************************************************
+****** Sun July 2, 2023
+
+START ABC's
+
+
+cgWave -noplot tz.cmd -g=square32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -cfl=.95 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -bc=a -go=go
+
+
+CURV: **NOTE** TZ NOT SUPPORTED YET
+cgWave tz.cmd -g=nonSquare8.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.1 -tp=0.01 -ts=explicit -cfl=.95 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -bc=a -go=halt
+
+CART: starts to work: TZ 
+cgWave tz.cmd -g=square8.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.1 -tp=0.01 -ts=explicit -cfl=.95 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -bc=a -go=halt
+
+
+****************************************************
+****** Sat July 1, 2023
+
+REVISIT IMPLICIT UPWIND 
+
+
+implicitUpwind : exact: 
+cgWave -noplot tz.cmd -g=box2.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=implicit -cfl=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=1 -damp=1 -implicitUpwind=1 -go=go
+
+cgWave:FD22u t=9.000e-01 (36 steps) dt=2.500e-02 maxErr= 3.65e-13, ||u||= 7.01e+00, cpu= 1.88e+00(s)
+cgWave:FD22u t=1.000e+00 (40 steps) dt=2.500e-02 maxErr= 3.51e-13, ||u||= 7.47e+00, cpu= 1.95e+00(s)
+
+implicitUpwind : exact: 
+cgWave -noplot tz.cmd -g=square32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=implicit -cfl=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=1 -damp=1 -implicitUpwind=1 -go=go
+
+
+cgWave:FD22u t=9.000e-01 (45 steps) dt=2.000e-02 maxErr= 2.88e-13, ||u||= 4.76e+00, cpu= 4.72e-02(s)
+cgWave:FD22u t=1.000e+00 (50 steps) dt=2.000e-02 maxErr= 2.57e-13, ||u||= 5.08e+00, cpu= 5.19e-02(s)
+
+
+
+****************************************************
+****** Sat June 17, 2023
+
+START TEST TZ WITH DAMPING 
+
+
+3D IMP :  exact 
+cgWave -noplot tz.cmd -g=box2.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=implicit -cfl=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -damp=1 -go=go
+
+2D IMP :  exact 
+cgWave -noplot tz.cmd -g=square32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=implicit -cfl=1 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -damp=1 -go=go
+
+
+
+3D EXACT
+cgWave -noplot tz.cmd -g=box2.order2 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=.95 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -debug=3 -damp=1 -go=go
+
+2D EXACT
+cgWave -noplot tz.cmd -g=square32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -cfl=.95 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -damp=1 -go=go
+
 ****************************************************
 ****** Mon May 15, 2023
 

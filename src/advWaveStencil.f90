@@ -8,6 +8,16 @@
 ! =======================================================================
 !
 
+! From bcOptSmFOS.bf
+! DataBase *pdb = &parameters.dbase;
+! double precision pdb  ! pointer to data base
+! ====================================================================
+! Look up an integer parameter from the data base
+! ====================================================================
+
+! ====================================================================
+! Look up a real parameter from the data base
+! ====================================================================
 
 ! ======================================================================================
 !   Evaluate the TZ exact solution in 2D
@@ -129,7 +139,7 @@
 
 
 
-      subroutine advWaveStencil( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,sc,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+      subroutine advWaveStencil( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,sc,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
 !======================================================================
 !   Advance a time step for Maxwells eqution
 !     OPTIMIZED MODIFIED EQUATION VERSIONS
@@ -157,6 +167,7 @@
    integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
    integer bc(0:1,0:2),ierr  
    real frequencyArray(0:*)
+   double precision pdb  ! pointer to the data base
    integer ipar(0:*)
    real rpar(0:*)
 
@@ -205,7 +216,7 @@
   if( orderOfAccuracy.eq.2 )then
 
     if( nd.eq.2 .and. gridType.eq.rectangular ) then
-      call advWaveStencil2dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,sc,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+      call advWaveStencil2dOrder2r( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,sc,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
 
     ! else if( nd.eq.2 .and. gridType.eq.curvilinear ) then
     !   call advWaveStencil2dOrder2c( ARGLIST() )

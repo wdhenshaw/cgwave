@@ -16,6 +16,8 @@ if( $atoli eq "" ){ $atoli=1.e-8; }
 if( $maxiti eq "" ){ $maxiti=500; }
 if( $mgMaxIts eq "" ){ $mgMaxIts=15; } # max MG iterations
 if( $debugmg eq "" ){ $debugmg=0; }
+if( $debugOges eq "" ){ $debugOges=0; }
+if( $rectangular eq "" ){ $rectangular="implicit"; } # set  $rectangular="explicit" to treat rectangular grids explicitly 
 #
 if( $ts eq "implicit" ){ $cmd="choose grids for implicit\n  rectangular=$rectangular\n done"; }else{ $cmd="#"; }
 $cmd
@@ -41,6 +43,8 @@ implicit solver parameters
     $rtoli
   absolute tolerance
     $atoli
+  debug
+    $debugOges
  # 
   multigrid parameters
     choose good parameters: 1

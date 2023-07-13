@@ -7,6 +7,30 @@
 ! =======================================================================
 !
 
+! From bcOptSmFOS.bf
+! DataBase *pdb = &parameters.dbase;
+! double precision pdb  ! pointer to data base
+! ====================================================================
+! Look up an integer parameter from the data base
+! ====================================================================
+#beginMacro getIntParameter(name)
+ ok=getInt(pdb,'name',name) 
+ if( ok.eq.0 )then
+   write(*,'("*** advWaveStencil:getInt:ERROR: unable to find name")') 
+   stop 1122
+ end if
+#endMacro
+
+! ====================================================================
+! Look up a real parameter from the data base
+! ====================================================================
+#beginMacro getRealParameter(name)
+ ok=getReal(pdb,'name',name) 
+ if( ok.eq.0 )then
+   write(*,'("*** advWaveStencil:getReal:ERROR: unable to find name")') 
+   stop 1133
+ end if
+#endMacro
 
 ! ======================================================================================
 !   Evaluate the TZ exact solution in 2D
@@ -842,7 +866,7 @@ end if
 ! Argument list
 #defineMacro ARGLIST() nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,\
                        mask,xy,rsxy,  um,u,un, f, sc, v, vh, lapCoeff, \
-                       etax, etay, etaz, bc, frequencyArray, ipar, rpar, ierr
+                       etax, etay, etaz, bc, frequencyArray, pdb, ipar, rpar, ierr
 
 ! ==================================================================
 ! ==================================================================
@@ -871,6 +895,8 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
  integer bc(0:1,0:2),ierr  
 
  real frequencyArray(0:*)
+
+ double precision pdb  ! pointer to the data base
 
  integer ipar(0:*)
  real rpar(0:*)
@@ -1021,7 +1047,8 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
  real evyyzzzz(0:1)
  real evxxyyzz(0:1)
 
- real omega, coswt
+ real omega, coswt, damp
+ integer ok,getInt,getReal
 
  integer maxFreq
  parameter( maxFreq=500 )
@@ -1138,6 +1165,13 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
   adjustOmega                  = ipar(15)
   solveHelmholtz               = ipar(16)
   adjustHelmholtzForUpwinding  = ipar(17)
+
+  ! new way: extract parameters from the dataBase
+  getRealParameter(damp) 
+  if( damp.ne.0. )then
+    write(*,*) "advWaveStencil: FINISH ME FOR damping"
+    stop 1010
+  end if 
 
   fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
   fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))

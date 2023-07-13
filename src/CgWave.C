@@ -55,16 +55,16 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   checkFile = fopen("cgWave.check","w" );        // for regression and convergence tests
   fPrintF(checkFile,"# Check file for CgWave\n"); // check file has one title line
 
-  dbase.put<real>("c")=1.;
-  dbase.put<real>("cfl")=.7; // .25;
-  dbase.put<real>("tFinal")=1.;
-  dbase.put<real>("tPlot")=.1;
-  dbase.put<real>("dt")=-1.;
-  dbase.put<real>("dtUsed")=-1.; // dt actually used
+  dbase.put<Real>("c")=1.;
+  dbase.put<Real>("cfl")=.7; // .25;
+  dbase.put<Real>("tFinal")=1.;
+  dbase.put<Real>("tPlot")=.1;
+  dbase.put<Real>("dt")=-1.;
+  dbase.put<Real>("dtUsed")=-1.; // dt actually used
   dbase.put<Real>("dtMax")=-1.;  // save maximum allowable dt (before corrections to reach a given time)
 
   dbase.put<int>("upwind")=0;  // use upwind dissipation
-  dbase.put<real>("ad4")=0.;   // coeff of the artificial dissipation. (*old)
+  dbase.put<Real>("ad4")=0.;   // coeff of the artificial dissipation. (*old)
   dbase.put<int>("dissipationFrequency")=1; // apply dissipation every this many steps (1= every step)
   // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
   //                      false=compute Ut inline in Gauss-Seidel fashion  
@@ -87,6 +87,12 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   dbase.put<int>("secondOrderGrid")=1;
   dbase.put<int>("debug")=0;
+
+  dbase.put<int>("useFilterWeights")     = 1;           //  1 = new filter weights for WaveHoltz
+  dbase.put<int>("filterTimeDerivative") = 0;           //  filter time-derivative for WaveHoltz
+  dbase.put<int>("numCompWaveHoltz")     = 0;           //  number of components in WaveHoltz
+
+
 
   dbase.put<int>("deflateWaveHoltz") = 0;           //  set to 1 to turn on deflation for WaveHoltz
   dbase.put<int>("numToDeflate")     = 1;           //  number of eigenvectors to deflate
@@ -111,16 +117,16 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   //   2 = stencil
   dbase.put<ModifiedEquationApproachEnum>("modifiedEquationApproach")=standardModifiedEquation;
 
-  // coefficients in implicit time-stepping  
+  // coefficients in implicit time-stepping  *check me*
   //  D+t D-t u =              c^2 Delta( cImp(1,0) *u^{n+1} + cImp(0,0) *u^n + cImp(-1,0)* u^{n-1} )   :  second-order coeff cImp(-1:1,0)
-  //              -(c^4*dt^2/12) Delta^2( cImp(1,1) *u^{n+1} + cImp(0,1) *u^n + cImp(-1,1)* u^{n-1}  )  :  foruth-order ceoff cImp(-1:1,1) 
+  //                 -(c^4*dt^2) Delta^2( cImp(1,1) *u^{n+1} + cImp(0,1) *u^n + cImp(-1,1)* u^{n-1}  )  :  foruth-order ceoff cImp(-1:1,1) 
   RealArray & bImp = dbase.put<RealArray>("bImp");
   RealArray & cImp = dbase.put<RealArray>("cImp");
   const int maxOrderOfAccuracy=12; // being rather hopeful here 
   bImp.redim(2,maxOrderOfAccuracy);             bImp=0.; 
   cImp.redim(Range(-1,1),maxOrderOfAccuracy);   cImp=0.; 
   // For accuracy the weights depend on one parameter beta2 for second-order,
-  // and a second parameter beta4 for fourth-order: (See notes in implicitTaylorSchemes.pdf)
+  // and a second parameter beta4 for fourth-order: (See notes in research/timeStepping/implicitTaylorSchemes.pdf)
   // Full-weighting for second-order part by default: 
   Real beta2=.5, beta4=0.; 
   bImp(0)=beta2;
@@ -139,7 +145,12 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
 
   dbase.put<int>("useSuperGrid")=0;      
-  dbase.put<real>("superGridWidth")=.2;          // superGrid layer width (in parameter space)
+  dbase.put<Real>("superGridWidth")=.2;          // superGrid layer width (in parameter space)
+  dbase.put<int>("initializeSuperGrid")=1;
+  dbase.put<IntegerArray>("superGrid");          // superGrid(grid) = 1 if this grid uses superGrid
+  dbase.put<int>("adjustPlotsForSuperGrid")=1;    // set solution to zero in any superGridLayers
+  dbase.put<int>("adjustErrorsForSuperGrid")=1;  // set errors and residuals to zero in any superGridLayers
+
   dbase.put<IntegerArray>("useAbsorbingLayer");  //  useAbsorbingLayer(axis,grid) 
 
   // interactiveMode :
@@ -148,8 +159,17 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("interactiveMode")=0;
   dbase.put<int>("plotFrequency")= INT_MAX; // another way to turn on plotting every this many steps
 
+  dbase.put<int>("plotScatteredField")= 0;  // 1=plot scattered field for scattering problems
+  // Parameters for the plane wave defining the incident field
+  //   sin( kx*x + ky*y +kz*z - omega*t + phi )
+  dbase.put<Real>("ampPlaneWave")   = 1.;
+  dbase.put<Real>("kxPlaneWave")    = twoPi;
+  dbase.put<Real>("kyPlaneWave")    = 0.;
+  dbase.put<Real>("kzPlaneWave")    = 0.;
+  dbase.put<Real>("phiPlaneWave")   = 0.;       // phase 
+  dbase.put<Real>("omegaPlaneWave") = twoPi*1;  // c*k 
 
-  dbase.put<real>("numberOfGridPoints")=0.;
+  dbase.put<Real>("numberOfGridPoints")=0.;
   dbase.put<int>("numberOfStepsTaken")=0;            // total steps taken
   dbase.put<int>("numberOfStepsPerSolve")=0;         // number of steps take per solve
   dbase.put<int>("totalImplicitIterations")=0;       // total iterations used in implicit solves
@@ -158,8 +178,8 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<RealArray>("dxMinMax");
   dbase.put<aString>("nameOfGridFile")="unknown";
 
-  dbase.put<real>("maxError")=0.;      // save max-error here 
-  dbase.put<real>("solutionNorm")=1.;  // save solution norm here 
+  dbase.put<Real>("maxError")=0.;      // save max-error here 
+  dbase.put<Real>("solutionNorm")=1.;  // save solution norm here 
   // dbase.put<int>("computeErrors")=0;   // true of we compute errors 
 
   // For Helmholtz solve with CgWaveHoltz
@@ -178,14 +198,14 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   dbase.put<int>("adjustOmega")=0;                    // 1 : choose omega from the symbol of D+t D-t 
   dbase.put<int>("adjustHelmholtzForUpwinding")=1;    // 1 : correct Helmholtz for upwinding (when adjustOmega=1)
-  real & omega = dbase.put<real>("omega")=30.1;
-  dbase.put<real>("Tperiod")=twoPi/omega;
+  real & omega = dbase.put<Real>("omega")=30.1;
+  dbase.put<Real>("Tperiod")=twoPi/omega;
   dbase.put<int>("numPeriods")=10;
   dbase.put<int>("minStepsPerPeriod")= 10; // take at least this many steps for implicit time-stepping
   dbase.put<int>("numberOfRitzVectors")=10; // maximum number of Rayleigh-Ritz vectors to use 
   dbase.put<int>("assignRitzFrequency")=5;  // set solution to latest Ritz vector every this many steps
 
-  dbase.put<real>("waveHoltzAsymptoticConvergenceRate")=-1.; // in some cases we can compute this 
+  dbase.put<Real>("waveHoltzAsymptoticConvergenceRate")=-1.; // in some cases we can compute this 
 
   dbase.put<Real>("omegaSave")   = -1.;  // used when we adjust omega 
   dbase.put<Real>("TperiodSave") = -1.;
@@ -209,18 +229,27 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   RealArray & frequencyArraySave = dbase.put<RealArray>("frequencyArraySave");
   frequencyArraySave.redim(numberOfFrequencies); frequencyArraySave=0.; 
+
+  frequencyArrayAdjusted.redim(numberOfFrequencies); frequencyArrayAdjusted=0.; 
+
   RealArray & periodArraySave    = dbase.put<RealArray>("periodArraySave");
   periodArraySave.redim(numberOfFrequencies);   periodArraySave=0.;
-  
-  dbase.put<real>("tol")=1.e-4;  // tolerance for Krylov solvers 
 
-  real & omegaSOR = dbase.put<real>("omegaSOR")=1.;
+  dbase.put<Real>("damp")                = 0.;          //  coefficient of linear damping
+  dbase.put<Real>("dampSave")            = 0.;          //  saved value when adjusting
+  
+  Real & omegaSign = dbase.put<Real>("omegaSign")= -1.;         //  time dependence is exp( omegaSign*I*omega*t ) for complex Helmholtz problems
+  dbase.put<Real>("viFactor")                    = -omegaSign;  //  factor relating vk(:,:,2) to ui in u = ur*cos(omega*t) + ui*sin(omega*t)
+  
+  dbase.put<Real>("tol")=1.e-4;  // tolerance for Krylov solvers 
+
+  real & omegaSOR = dbase.put<Real>("omegaSOR")=1.;
 
   // // Gaussian forcing: 
-  // dbase.put<real>("beta")=100.;
-  // dbase.put<real>("x0")=0.;
-  // dbase.put<real>("y0")=0.;
-  // dbase.put<real>("z0")=0.;
+  // dbase.put<Real>("beta")=100.;
+  // dbase.put<Real>("x0")=0.;
+  // dbase.put<Real>("y0")=0.;
+  // dbase.put<Real>("z0")=0.;
 
   int & numberOfTimeLevelsStored = dbase.put<int>("numberOfTimeLevelsStored")=3;
 
@@ -398,6 +427,11 @@ CgWave::
     delete [] dbase.get<RealArray*>("stencilCoeff");
   }  
 
+  if( dbase.has_key("rxOriginal") )
+  {
+    delete [] dbase.get<RealArray*>("rxOriginal");
+  }
+
 }
 
 // ================================================================================================
@@ -534,11 +568,14 @@ int CgWave::initialize()
     CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
 
     realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
-    v.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+    
+    const int & numCompWaveHoltz = dbase.get<int>("numCompWaveHoltz");
+
+    v.updateToMatchGrid(cg,all,all,all,numCompWaveHoltz);
     v.setOperators(operators); 
     v=0.;
     v.setName("v");
-    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    for( int freq=0; freq<numCompWaveHoltz; freq++ )
       v.setName(sPrintF("v%d",freq),freq);
 
     // realCompositeGridFunction & vOld = dbase.get<realCompositeGridFunction>("vOld");
@@ -573,6 +610,8 @@ int CgWave::initialize()
     {
       ipar[0]=grid;
       userDefinedForcing( f[grid], ipar,rpar );
+      // if( true )
+      //   ::display(f[grid],"forcing","%6.2f");
     }
     
   }
@@ -950,6 +989,10 @@ getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerA
     {
       bcType=neumann;
     }
+    else if( bcName=="absorbing" || bcName=="a" )
+    {
+      bcType=absorbing;
+    }    
     else
     {
       printF("ERROR: unknown bcName=[%s]\n",(const char*)bcName);
@@ -1054,6 +1097,9 @@ getWaveHoltzOption(const aString & answer,
   int & computeTimeIntegral            = dbase.get<int>("computeTimeIntegral");
   int & deflateWaveHoltz               = dbase.get<int>("deflateWaveHoltz");
   real & omega                         = dbase.get<real>("omega");
+  RealArray & frequencyArray           = dbase.get<RealArray>("frequencyArray");
+  RealArray & frequencyArraySave       = dbase.get<RealArray>("frequencyArraySave");
+  RealArray & frequencyArrayAdjusted   = dbase.get<RealArray>("frequencyArrayAdjusted");
 
   int found=true; 
   char buff[180];
@@ -1078,7 +1124,11 @@ getWaveHoltzOption(const aString & answer,
   }   
   else if( dialog.getTextValue(answer,"omega","%e",omega) )
   {
-    printF("Setting omega=%g\n",omega);
+    printF("Setting omega=%g (and frequencyArray(0))\n",omega);
+
+    frequencyArray(0)         = omega;
+    frequencyArraySave(0)     = omega;
+    frequencyArrayAdjusted(0) = omega;
   }   
   else if( dialog.getToggleValue(answer,"solve Helmholtz",solveHelmholtz) )
   {
@@ -1332,6 +1382,8 @@ int CgWave::interactiveUpdate()
   real & tFinal                        = dbase.get<real>("tFinal");
   real & tPlot                         = dbase.get<real>("tPlot");
   Real & dtMax                         = dbase.get<Real>("dtMax"); 
+  Real & damp                          = dbase.get<Real>("damp");
+
   real & omega                         = dbase.get<real>("omega");
   real & Tperiod                       = dbase.get<real>("Tperiod");
   int & numPeriods                     = dbase.get<int>("numPeriods");
@@ -1353,6 +1405,10 @@ int CgWave::interactiveUpdate()
   int & preComputeUpwindUt             = dbase.get<int>("preComputeUpwindUt");
   int & takeImplicitFirstStep          = dbase.get<int>("takeImplicitFirstStep");
 
+  int & adjustPlotsForSuperGrid        =  dbase.get<int>("adjustPlotsForSuperGrid");    // set solution to zero in any superGridLayers
+  int & adjustErrorsForSuperGrid       =  dbase.get<int>("adjustErrorsForSuperGrid");  
+
+
   ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
        
   int & computeErrors                  = dbase.get<int>("computeErrors");                         // by default, compute errors for TZ or a known solution
@@ -1360,6 +1416,9 @@ int CgWave::interactiveUpdate()
   int & useKnownSolutionForFirstStep   = dbase.get<int>("useKnownSolutionForFirstStep"); 
   int & debug                          = dbase.get<int>("debug");
   int & interactiveMode                = dbase.get<int>("interactiveMode");
+
+  int & plotScatteredField             = dbase.get<int>("plotScatteredField");
+
          
   int & solveHelmholtz                 = dbase.get<int>("solveHelmholtz");
   real & tol                           = dbase.get<real>("tol");
@@ -1461,6 +1520,9 @@ int CgWave::interactiveUpdate()
                           "use known for first step",
                           "implicit upwind",
                           "take implicit first step",
+                          "adjust plots for superGrid",
+                          "adjust errors for superGrid",
+                          "plot scattered field",
                             ""};
   int tbState[15];
   tbState[ 0] = saveShowFile;
@@ -1472,6 +1534,9 @@ int CgWave::interactiveUpdate()
   tbState[ 6] = useKnownSolutionForFirstStep;
   tbState[ 7] = implicitUpwind;
   tbState[ 8] = takeImplicitFirstStep;
+  tbState[ 9] = adjustPlotsForSuperGrid;
+  tbState[10] = adjustErrorsForSuperGrid;
+  tbState[11] = plotScatteredField;
 
   int numColumns=2;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -1527,6 +1592,9 @@ int CgWave::interactiveUpdate()
 
   textCommands[nt] = "dtMax";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g",dtMax);  nt++; 
+
+ textCommands[nt] = "damp";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%g",damp);  nt++;   
 
   textCommands[nt] = "implicit weights";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g, %g, %g, %g, %g (beta2,beta4,...)",bImp(0),bImp(1),bImp(2),bImp(3),bImp(4));  nt++; 
@@ -1708,7 +1776,11 @@ int CgWave::interactiveUpdate()
     else if( dialog.getTextValue(answer,"dtMax","%e",dtMax) )
     {
       printF("Setting dtMax=%g\n",dtMax);
-    }   
+    }
+    else if( dialog.getTextValue(answer,"damp","%e",damp) )
+    {
+      printF("Setting damp=%g (coefficient of linear damping)\n",damp);
+    }       
 
     else if( dialog.getTextValue(answer,"flush frequency","%i",flushFrequency) )
     {
@@ -1763,6 +1835,21 @@ int CgWave::interactiveUpdate()
       printF("Setting takeImplicitFirstStep=%i (1=take an implicit first step when implicit time-stepping\n",takeImplicitFirstStep);
     } 
 
+    else if( dialog.getToggleValue(answer,"adjust plots for superGrid",adjustPlotsForSuperGrid) )
+    {
+      printF("Setting adjustPlotsForSuperGrid=%i (1=do not plot solution in the superGrid layers\n",adjustPlotsForSuperGrid);
+    }
+
+    else if( dialog.getToggleValue(answer,"adjust errors for superGrid",adjustErrorsForSuperGrid) )
+    {
+      printF("Setting adjustErrorsForSuperGrid=%i (1=do not compute errors in the superGrid layers\n",adjustErrorsForSuperGrid);
+    }
+
+    else if( dialog.getToggleValue(answer,"plot scattered field",plotScatteredField) )
+    {
+      printF("Setting plotScatteredField=%i.\n",plotScatteredField);
+    }             
+
     else if( answer=="explicit" || answer=="implicit" )
     {
       timeSteppingMethod = ( answer=="explicit" ? explicitTimeStepping :
@@ -1787,6 +1874,7 @@ int CgWave::interactiveUpdate()
       cImp(-1,0)=alpha2;
       cImp( 0,0)= beta2;
       cImp( 1,0)=alpha2;
+
       cImp(-1,1)=alpha4;
       cImp( 0,1)= beta4;
       cImp( 1,1)=alpha4;
@@ -2163,8 +2251,6 @@ int CgWave::setup()
 {
   real cpu0 = getCPU();
   
-
-
   realCompositeGridFunction *& ucg = dbase.get<realCompositeGridFunction*>("ucg");
 
   CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
@@ -2203,7 +2289,10 @@ int CgWave::setup()
   gridIsImplicit.redim(cg.numberOfComponentGrids());
   gridIsImplicit=0;
 
-
+  // superGrid(grid) = 1 if this grid has superGrid layers
+  IntegerArray & superGrid =  dbase.get<IntegerArray>("superGrid");
+  superGrid.redim(cg.numberOfComponentGrids());
+  superGrid=0;
 
   timing(timeForInitialize) += getCPU()-cpu0;
 
@@ -2645,3 +2734,191 @@ sortArray( RealArray & eigenValues, IntegerArray & iperm )
 
   return 0;
 }
+
+
+// =============================================================================
+/// \brief : return the coefficient of upwind dissipation for a given grid
+/// \param dtUpwind (input) : if positive, use this value for dt 
+// =============================================================================
+Real CgWave::
+getUpwindDissipationCoefficient( int grid, Real dtUpwind /* = -1. */, bool adjustForTimeStep /* = true */    )
+{
+  Real & c                          = dbase.get<real>("c");
+  const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
+  const int & upwind                = dbase.get<int>("upwind");
+  const int & implicitUpwind        = dbase.get<int>("implicitUpwind"); 
+
+  const int & useSuperGrid          = dbase.get<int>("useSuperGrid"); 
+
+  RealArray & gridCFL               = dbase.get<RealArray>("gridCFL");
+  const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz");
+  const int & adjustOmega           = dbase.get<int>("adjustOmega");
+  RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+  RealArray & frequencyArrayAdjusted= dbase.get<RealArray>("frequencyArrayAdjusted");
+  RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+  Real & dt                         = dbase.get<real>("dt");
+  Real & dtUsed                     = dbase.get<real>("dtUsed");  // dt actually used
+
+  const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+  IntegerArray & gridIsImplicit     = dbase.get<IntegerArray>("gridIsImplicit");
+  const RealArray & bImp            = dbase.get<RealArray>("bImp");
+  const RealArray & cImp            = dbase.get<RealArray>("cImp");
+
+
+  Real upwindCoefficient = 1.;
+
+  const int numberOfDimensions = cg.numberOfDimensions();
+
+
+  if( dtUpwind <=0. )
+    dtUpwind = dt; 
+
+  // Default coeff for explicit UPWIND Predictor corrector
+  if( timeSteppingMethod==explicitTimeStepping )
+  {
+    // --- explicit time-stepping + Upwind predictor-corrector ---
+    // NOTE: For stability we must limit the upwind coefficient : see AMP/ssmx/ssmx.pdf 
+
+    upwindCoefficient = (c*dtUpwind)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) );
+    // printF("getUpwindDissipationCoefficient: c=%g, dt=%g, upwindCoefficient=%g\n",c,dt,upwindCoefficient);
+  }
+  else
+  {
+    // --- implicit time-stepping ---
+
+    // **FIX ME: use Allison's new formula ...
+    upwindCoefficient = (c*dtUpwind)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) );
+
+
+    if( upwind && !implicitUpwind && adjustForTimeStep )
+    {
+      // --- implicit time-stepping + explicit upwind PC ---
+
+      // NOTE: For stability we must limit the upwind coefficient : see notes in AMP/wimp/wimp.pdf
+
+      // **CHECK ME**
+
+      Real adjustmentFactor=1.;
+      
+      assert( dt>0. );
+
+      Real myGridCFL = dt*gridCFL(grid);   // gridCFL is really c/dx , i.e. does not have the factor of "dt"
+
+      adjustmentFactor = 1./myGridCFL;
+
+      upwindCoefficient *= adjustmentFactor;
+
+      if( false )
+        printF("$$$$ getUpwindDissipationCoefficient: Adjust useUpwindDissipationCoeff by adjustmentFactor=%9.2e, 1/gridCFL = %9.2e\n\n",
+         adjustmentFactor, 1./myGridCFL);
+    }
+
+    if( false && upwind && implicitUpwind && adjustForTimeStep ) 
+    {
+      // **TESTING:  implicit Upwind :  increase upwind with CFL 
+      
+      assert( dt>0. );
+
+      Real myGridCFL = dt*gridCFL(grid);   // gridCFL is really c/dx , i.e. does not have the factor of "dt"
+      // Real adjustmentFactor = max( 1., myGridCFL );
+      Real adjustmentFactor = 1.; // 
+
+      upwindCoefficient *= adjustmentFactor;      
+    } 
+     
+  }
+
+  
+  if( adjustForTimeStep )
+  {
+    // -- make adjustments to correct for tie-discretization errors if we are trying to match to a direct Helmholtz solver 
+
+    if( timeSteppingMethod==implicitTimeStepping )
+    {
+      if( solveHelmholtz )
+      // if( upwind && implicitUpwind && solveHelmholtz )
+      {
+        // -- adjust for implicit time-stepping and implicitUpwind (upwinding included in implicit matrix) --
+
+        Real omega = frequencyArray(0);
+        if( adjustOmega )
+        {
+          omega = frequencyArrayAdjusted(0);
+
+          if( frequencyArrayAdjusted(0)==0. )
+          {
+            printF("\n XXXX getUpwindDissipationCoefficient:ERROR: adjustOmega *but* frequencyArrayAdjusted==0 ! XXXX\n\n");
+            OV_ABORT("etUpwindDissipationCoefficient:ERROR: fix me");
+          }
+
+        }
+        if( dtUsed>0. )
+        {
+
+          Real adjustmentFactor = (frequencyArraySave(0)*dt)/tan(omega*dt);
+          // Real adjustmentFactor = (frequencyArraySave(0)*dt)/tan(frequencyArrayAdjusted(0)*dt);
+
+          if( false )
+            printF("\n $$$$ getUpwindDissipationCoefficient: frequencyArray(0)=%14.6e, frequencyArrayAdjusted(0)=%14.6e, frequencyArraySave(0)=%14.6e, dt=%9.2e, dtUsed=%e, adjustmentFactor=%12.4e $$$$\n\n",
+              frequencyArray(0),frequencyArrayAdjusted(0),frequencyArraySave(0),dt,dtUsed,adjustmentFactor);
+          upwindCoefficient *= adjustmentFactor;
+        }
+        else
+        {
+          printF("\n $$$$ WARNING: getUpwindDissipationCoefficient: no adjustment made to upwind dissipation coefficient"
+                 " since dt=%e has not been set yet $$$$\n\n",dt);
+        }
+      }
+
+    }
+  }
+
+  // if( par.implicitUpwind && par.upwind )
+  //    if( par.useWaveHoltz )
+  //       betaAdjusted = (par.frequencyArraySaved(1)*par.dt)/tan(par.frequencyArrayAdjusted(1)*par.dt);
+  //     else
+  //       betaAdjusted=1;
+  //     end
+
+
+  // Implicit scheme + explicit UPC -- limit coeff by the gridCFL
+
+  //  adSosup = adSosup/gridCFL
+
+  // Adjust for solveHelmholtz 
+
+  // Implicit monolithic scheme 
+
+  return upwindCoefficient;
+
+}
+
+// // =============================================================================
+// /// \brief : Return Helmholtz related parameter values that have been adjusted for 
+// ///    time-discretization errors
+// // =============================================================================
+// int CgWave::
+// getHelmholtzAdjustedParameters( Real 
+// {
+//   Real & c                          = dbase.get<real>("c");
+//   const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
+//   const int & upwind                = dbase.get<int>("upwind");
+//   const int & implicitUpwind        = dbase.get<int>("implicitUpwind");  
+
+//   RealArray & gridCFL               = dbase.get<RealArray>("gridCFL");
+//   const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz");
+//   RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+//   RealArray & frequencyArrayAdjusted= dbase.get<RealArray>("frequencyArrayAdjusted");
+//   RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+//   Real & dt                         = dbase.get<real>("dt");
+//   Real & dtUsed                     = dbase.get<real>("dtUsed");  // dt actually used
+
+//   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+//   IntegerArray & gridIsImplicit     = dbase.get<IntegerArray>("gridIsImplicit");
+//   const RealArray & bImp            = dbase.get<RealArray>("bImp");
+//   const RealArray & cImp            = dbase.get<RealArray>("cImp");
+
+
+//   Real upwindCoefficient = 1.;
+
+//   const int numberOfDimensions = cg.numberOfDimensions();

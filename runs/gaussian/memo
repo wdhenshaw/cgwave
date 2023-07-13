@@ -1,4 +1,208 @@
 
+***************************************************
+****** Sat July 8, 2023
+
+TEST SG + UWPC
+
+CFL=100 --  maybe OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=100 -upwind=1 -tf=100 -tp=5 -orderInTime=-1 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+ ****** useSosupDissipation *******
+         : adSosupOld=  4.4194E-02 upwindDissipationCoefficient=  4.4194E-04 adSosupOld/(c*dt)=  8.8388E-02
+         : useSosupDissipation= 1 sosupParameter=  1.00E+00 preComputeUpwindUt= 0
+         : adxSosup  2.828427E-02  2.828427E-02  2.209709E-04
+
+
+CFL=10 -- looks OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=10 -upwind=1 -tf=100 -tp=1 -orderInTime=-1 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+
+****************************************************
+****** Mon July 3, 2023
+
+BACK TO UW + EM2
+
+>>>> BUG FOUND : IMPLICIT_UPWIND : RHS HAD **WRONG SIGN**
+
+>>> FIXED: extrap extra ghost line in ABC
+
+
+IMP + EM2 + IUW +SG : **TROUBLE** .. OK NOW
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1 -go=halt
+
+
+cgWave:FD22u t=1.000e-01 (   20 steps) dt=5.000e-03 ||u||= 1.13e+00, cpu= 2.37e+01(s)
+
+EXP
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+cgWave:FD22u t=1.000e-01 (   20 steps) dt=5.000e-03 ||u||= 1.14e+00, cpu= 2.12e+00(s)
+
+
+TEST IUW: 
+  IUW : GOES BAD -- t=50
+  NO UW : goes bad t=30 ... OK NOW till t=100
+  UW : ok till t=100
+cgWave gaussian.cmd -g=sice8.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=10 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=d -debug=3 -implicitUpwind=1 -go=halt
+
+IMP + E-UW : OK 
+cgWave gaussian.cmd -g=sice8.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=10 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=d -debug=3 -implicitUpwind=0 -go=halt
+
+
+
+
+cgWave gaussian.cmd -g=sice4.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=d -debug=3 -implicitUpwind=1 -go=halt
+
+cgWave gaussian.cmd -g=rsise8.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=d -debug=3 -implicitUpwind=1 -go=halt
+
+
+IMP + EM2 + IUW +SG : **TROUBLE** .. OK NOW
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1 -go=halt
+
+
+IMP + EM2 + IUW : OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -implicitUpwind=1 -go=halt
+
+
+IMP + EM2 + UW + SG : OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+
+IMP + EM2 + UW : OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+IMP + EM2 + OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+
+EXP + EM2 + UW + SG : OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+
+EXP + EM2 + UW ** Trouble --> *OK**
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+EXP + EM2 = NO-UW : OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=0.95 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+
+EXP + EM2  = OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=0.95 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+
+****************************************************
+****** Sun July 2, 2023
+
+START TEST EM2 
+
+** BUG FIXED *** "c" was wrong as int c=0 for compnent!!
+
+CART + IMP + EM2 + SG + IUW **STILL TROUBLE!!
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1 -go=halt
+
+CART + IMP + EM2 + SG + UW  **TROUBLE**
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+CART + EXP + EM2 + SG + UW  **TROUBLE***
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+IMP check residual
+cgWave -noplot gaussian.cmd -g=square16.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -go=go
+
+
+CART + IMP + EM2 + UW ***TROUBLE WITH EM2 and UPWIND***
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -go=halt
+
+
+
+CART + IMP + EM2 -> works now
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -go=halt
+
+
+
+
+CART + SG : OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=explicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -go=halt
+
+CURV : OK 
+cgWave gaussian.cmd -g=nonSquare128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=explicit -cfl=0.95 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -go=halt
+
+ORDER=4 : OK 
+cgWave gaussian.cmd -g=square128.order4 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=explicit -cfl=0.95 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -go=halt
+
+
+CART + UPWIND : OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=explicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -go=halt
+
+CART : OK 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=explicit -cfl=0.95 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=a -debug=3 -go=halt
+
+****************************************************
+****** Sat July 1, 2023
+
+REVISIT IMPLICIT UPWIND 
+
+
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.02 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1 -go=halt
+
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.02 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+
+cgWave gaussian.cmd -g=square64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.02 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+SQUARE IMP + IUW + SG : trouble **CHECK BC's 
+cgWave gaussian.cmd -g=square64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.02 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1  -go=halt
+
+cgWave gaussian.cmd -g=nonSquare64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.02 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1  -go=halt
+
+cgWave gaussian.cmd -g=square64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.01 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+Trouble with SG + 
+cgWave gaussian.cmd -g=square64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1  -go=halt
+
+NONSQUARE IMP + IUW + SG : trouble 
+cgWave gaussian.cmd -g=nonSquare128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1  -go=halt
+
+
+SQUARE IMP + IUW + SG : trouble **CHECK BC's 
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1  -go=halt
+
+
+IMP + UW + SG : looks ok 
+cgWave gaussian.cmd -g=nonSquare128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+
+
+EXP : OK
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=explicit -cfl=0.9 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1  -go=halt
+
+
+cgWave gaussian.cmd -g=square64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -ts=implicit -cfl=0.9 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=d -debug=3 -implicitUpwind=1  -go=halt
+
+
+*************************************************
+**** Wed June 21, 2023
+
+SUPERGRID IS BROKEN: for cartesian ??
+*Bug found* advWave : tsf used for SG forcing : use cf 
+
+TRY SUPER GRID FOR OVERSET: **Trouble**
+   NEED TO CHECK superGRrid BY GRID 
+cgWave gaussian.cmd -g=sicFixede8.order2 -beta=10 -x0=.2 -y0=0 -omega=10 -amp=1000 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a -debug=3  -go=halt
+
+
+
+SUPERGRID
+cgWave gaussian.cmd -g=square16.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -upwind=1 -tf=100 -tp=.001 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a -debug=3  -go=halt
+
+NO SUPERGRID -OK
+cgWave gaussian.cmd -g=square16.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -upwind=1 -tf=100 -tp=.001 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=0 -bc=d -debug=3  -go=halt
+
+
+cgWave gaussian.cmd -g=square64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -upwind=1 -tf=100 -tp=.01 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a -debug=3  -go=halt
+
+
+cgWave gaussian.cmd -g=nonSquare64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=1000 -upwind=1 -tf=100 -tp=.01 -orderInTime=-1 -dtMax=.05 -cfl=0.9 -useSuperGrid=1 -bc=a -debug=3  -go=halt
 
 **************************************************
 **** Thurs June 15, 2023

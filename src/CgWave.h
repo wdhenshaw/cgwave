@@ -110,10 +110,12 @@ CgWave(CompositeGrid & cg, GenericGraphicsInterface & gi);
 
 int adjustEigenWaveFrequency();
 
+int adjustSolutionForSuperGrid( realCompositeGridFunction & q, Real superGridLayerValue = 0. );
+
 // advance the solution 
 int advance( int it );
 
-int applyBoundaryConditions( realCompositeGridFunction & u, real t, 
+int applyBoundaryConditions( realCompositeGridFunction & u,  realCompositeGridFunction & un,  real t, 
                              bool applyExplicitBoundaryConditions = false );
 
 // Apply BC's to an eigenfunction
@@ -161,6 +163,9 @@ int getErrorInEigenPair( const Real lambda, realCompositeGridFunction & eigVecto
                          Real & lambdaTrue, Real & relErrEigenvalue, Real & relErrEigenvector, 
                          int & eigIndex, int & multipleEigIndex, bool saveErrors = false );
 
+// Get weights for WaveHoltz filters
+int getFilterWeights( int Nt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma, RealArray & filterWeights );
+
 // Fill RHS for direct Helmholtz solver
 int getHelmholtzForcing( realCompositeGridFunction & f  );
 
@@ -181,6 +186,8 @@ Real getRayleighQuotient( realCompositeGridFunction & v, int component =0 );
 int getTimeStep();
   
 void getTimeSteppingLabel( real dt, aString & label ) const;
+
+Real getUpwindDissipationCoefficient( int grid, Real dtUpwind = -1., bool adjustForTimeStep = true );
 
 int getUserDefinedKnownSolution(real t,  int grid, realArray & ua, const Index & I1a, const Index &I2a, const Index &I3a, 
 				int numberOfTimeDerivatives = 0 );

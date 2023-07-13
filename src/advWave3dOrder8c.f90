@@ -1,5 +1,5 @@
 ! This file automatically generated from advWave.bf90 with bpp.
-    subroutine advWave3dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,ipar,rpar,ierr )
+    subroutine advWave3dOrder8c( nd,n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b,mask,xy,rsxy,um,u,un,f,stencilCoeff,v,vh,lapCoeff,etax,etay,etaz,bc,frequencyArray,pdb,ipar,rpar,ierr )
    !======================================================================
    !   Advance a time step for Waves equations
    !
@@ -29,6 +29,7 @@
      integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
      integer bc(0:1,0:2),ierr  
      real frequencyArray(0:*)
+     double precision pdb  ! pointer to the data base
      integer ipar(0:*)
      real rpar(0:*)
     ! integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
@@ -2299,7 +2300,7 @@ real uzzzzzz
     real evyyyyzz(0:1)
     real evyyzzzz(0:1)
     real evxxyyzz(0:1)
-    real omega, coswt
+    real omega, coswt, damp
     integer maxFreq
     parameter( maxFreq=500 )
     real cosFreqt(0:maxFreq), coswtAve(0:maxFreq), cosineFactor(0:maxFreq)
@@ -2309,7 +2310,9 @@ real uzzzzzz
     integer takeImplicitFirstStep
     real upw,maxDiff,umj
     real upwindCoeff(-3:3,0:3) 
+    real cn,cm,cLap,cLapSq,cf
     real ts1,ts2,ts3,ts4,tsf
+    integer ok,getInt,getReal
     integer forcingOption
     ! forcingOptions -- these should match ForcingEnum in CgWave.h 
     ! enum ForcingOptionEnum
@@ -3498,6 +3501,12 @@ real uzzzzzz
      modifiedEquationApproach     = ipar(18)
      takeImplicitFirstStep        = ipar(19)
      useSuperGrid                 = ipar(20)
+     ! new way: extract parameters from the dataBase
+      ok=getReal(pdb,'damp',damp) 
+      if( ok.eq.0 )then
+        write(*,'("*** advWave:getReal:ERROR: unable to find damp")') 
+        stop 1133
+      end if
      fprev = mod(fcur-1+numberOfForcingFunctions,max(1,numberOfForcingFunctions))
      fnext = mod(fcur+1                         ,max(1,numberOfForcingFunctions))
      ! ** fix me ***
@@ -3587,27 +3596,45 @@ real uzzzzzz
          stop 2222
        end if
       end if
-     ! Scheme is 
-     !   un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) +ts2*um(i1,i2,i3,m) + ts3*( uxx22r(i1,i2,i3,0) +  uyy22r(i1,i2,i3,0) )  
-     !                                                         + ts4*(umxx22r(i1,i2,i3,0) + umyy22r(i1,i2,i3,0) ) )  
-     !                                                         + tsf*fv(m)       
-     if( takeImplicitFirstStep.eq.0 )then
-       ts1=2. 
-       ts2=-1.
-       ts3=cdtSq*cImp( 0,0)
-       ts4=cdtSq*cImp(-1,0)
-       tsf=dtSq
-     else
-       ! first-step implicit:
-       !   Assumes um = ut(t=0) 
-       ! AND 
-       !   cImp(1,0) = cImp(-1,0)
-       !   RHS = u + dt*ut + (dt^2/2)*L * ( cImp(0,0)*u - 2.*dt*cImp(1,0)*ut ) + .5*dt^2 * f    
-       ts1=1. 
-       ts2=dt
-       ts3= .5*cdtSq*cImp( 0,0)
-       ts4=-dt*cdtSq*cImp(-1,0)
-       tsf=.5*dtSq    
+     ! ! ---- DAMPING COEFF ----
+     ! cn    =               2./(1+damp*dt*.5);
+     ! cm    = (-1 +damp*dt*.5)/(1+damp*dt*.5);
+     ! cLap  =         (c*dt)^2/(1+damp*dt*.5);
+     ! cf    =             dt^2/(1+damp*dt*.5); 
+     ! ---- explicit ----
+     cn     =                2./(1.+damp*dt*.5); 
+     cm     = (-1. +damp*dt*.5)/(1.+damp*dt*.5); 
+     cLap   =             cdtSq/(1.+damp*dt*.5); 
+     cLapSq =           cdtsq12/(1.+damp*dt*.5); 
+     cf     =              dtSq/(1.+damp*dt*.5); 
+     if( gridIsImplicit==1 )then
+       ! Implicit Scheme is 
+       !   un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) +ts2*um(i1,i2,i3,m) + ts3*( uxx22r(i1,i2,i3,0) +  uyy22r(i1,i2,i3,0) )  
+       !                                                         + ts4*(umxx22r(i1,i2,i3,0) + umyy22r(i1,i2,i3,0) ) )  
+       !                                                         + tsf*fv(m)      
+       if( damp.ne.0. )then
+         write(*,*) "advWave: Finish Implicit for damping"
+         stop 777
+       end if
+       if( takeImplicitFirstStep.eq.0 )then
+         ts1=2. 
+         ts2=-1.
+         ts3=cdtSq*cImp( 0,0)
+         ts4=cdtSq*cImp(-1,0)
+         tsf=dtSq
+       else
+         ! first-step implicit:
+         !   Assumes um = ut(t=0) 
+         ! AND 
+         !   cImp(1,0) = cImp(-1,0)
+         !   RHS = u + dt*ut + (dt^2/2)*L * ( cImp(0,0)*u - 2.*dt*cImp(1,0)*ut ) + .5*dt^2 * f    
+         ts1=1. 
+         ts2=dt
+         ts3= .5*cdtSq*cImp( 0,0)
+         ts4=-dt*cdtSq*cImp(-1,0)
+         tsf=.5*dtSq    
+       end if
+       cf = tsf
      end if
      if( (.false. .or. debug.gt.1) .and. t.le.3*dt )then
        write(*,'("advWave: option=",i4," grid=",i4)') option,grid
@@ -3615,7 +3642,7 @@ real uzzzzzz
        write(*,'("advWave: addForcing=",i2," forcingOption=",i2)') addForcing,forcingOption
        write(*,'("advWave: useUpwindDissipation=",i2," (explicit), useImplicitUpwindDissipation=",i2," (implicit)")') useUpwindDissipation,useImplicitUpwindDissipation
        write(*,'("advWave: useSosupDissipation=",i2," (1= add upwind dissipation in this stage)")') useSosupDissipation
-       write(*,'("advWave: t,dt,c,omega,gridCFL=",5(1pe10.2,1x))') t,dt,cc,omega,gridCFL
+       write(*,'("advWave: t,dt,c,omega,gridCFL,damp=",6(1pe10.2,1x))') t,dt,cc,omega,gridCFL,damp
        write(*,'("advWave: gridIsImplicit=",i2," takeImplicitFirstStep=",i2)') gridIsImplicit,takeImplicitFirstStep
        write(*,'("advWave: adjustOmega=",i2," solveHelmholtz=",i2," adjustHelmholtz=",i2)') adjustOmega,solveHelmholtz,adjustHelmholtzForUpwinding
        if( forcingOption.eq.helmholtzForcing )then

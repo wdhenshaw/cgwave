@@ -1003,11 +1003,13 @@ updateUserDefinedKnownSolution()
                 k = sqrt( kx*kx + ky*ky +kz*kz );
             const real omega = c*k;      
 
-            dbase.put<Real>("ampPlaneWave")   = amp;
-            dbase.put<Real>("kxPlaneWave")    = kx;
-            dbase.put<Real>("kyPlaneWave")    = ky;
-            dbase.put<Real>("kzPlaneWave")    = kz;
-            dbase.put<Real>("omegaPlaneWave") = omega;
+      // --new way: store variables here: 
+            dbase.get<Real>("ampPlaneWave")   = amp;
+            dbase.get<Real>("kxPlaneWave")    = kx;
+            dbase.get<Real>("kyPlaneWave")    = ky;
+            dbase.get<Real>("kzPlaneWave")    = kz;
+            dbase.get<Real>("phiPlaneWave")   = 0.; 
+            dbase.get<Real>("omegaPlaneWave") = omega;
 
             
         }
