@@ -13,8 +13,9 @@ git clone ssh://wdhenshaw@git.code.sf.net/p/cgwave/code cgwave
 
 
 (3) Run the regression tests:
-   > cd cgwave/check
-   > make
+   > make check 
+ of 
+   > make check-quiet
 
 (4) Goto the cgwave/cmd directory to see some sample command files. 
     The cgwave/cmd/memo file has some examples of different runs.

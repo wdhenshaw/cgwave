@@ -379,7 +379,7 @@
 !   ff=0.
 !   beginLoops(m1a,m1b,m2a,m2b,m3a,m3b)
 !     if( mask(i1,i2,i3).ne.0 )then
-     
+          
 !       do ghost=0,numGhost
 !         j1=i1-is1*ghost
 !         j2=i2-is2*ghost
@@ -390,7 +390,7 @@
 !         u(j1,j2,j3,uc) = ff
 
 !       end do
-  
+    
 !     end if ! mask .ne. 0
 !   endLoops3d()
 
@@ -526,52 +526,52 @@ subroutine bcOptWave( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,i
 ! which is defined below. 
 ! ===================================================================================
 
-  implicit none
+    implicit none
 
-  integer nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b, ndb, ierr
+    integer nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b, ndb, ierr
 
-  real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
-  real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
-  integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
-  real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
-  real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
+    real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
+    real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
+    integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+    real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+    real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
 
-  real uTemp(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
-  real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
+    real uTemp(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
+    real v(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:0)
 
-  integer gridIndexRange(0:1,0:2),boundaryCondition(0:1,0:2), dimRange(0:1,0:2), isPeriodic(0:*)
-  real frequencyArray(0:*)
+    integer gridIndexRange(0:1,0:2),boundaryCondition(0:1,0:2), dimRange(0:1,0:2), isPeriodic(0:*)
+    real frequencyArray(0:*)
 
-  double precision pdb  ! pointer to data base
+    double precision pdb  ! pointer to data base
 
 
-  integer ipar(0:*)
-  real rpar(0:*)
+    integer ipar(0:*)
+    real rpar(0:*)
 
-  integer orderOfAccuracy
+    integer orderOfAccuracy
 
   ! extract parameters we need: 
-  orderOfAccuracy  = ipar( 4)
+    orderOfAccuracy  = ipar( 4)
 
-  if( nd.eq.2 )then
-    if( orderOfAccuracy.eq.2 )then
-      call bcOptWave2dOrder2( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
-    elseif( orderOfAccuracy.eq.4 )then
-      call bcOptWave2dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
+    if( nd.eq.2 )then
+        if( orderOfAccuracy.eq.2 )then
+            call bcOptWave2dOrder2( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
+        elseif( orderOfAccuracy.eq.4 )then
+            call bcOptWave2dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
+        else
+            stop 6666
+        end if
     else
-      stop 6666
+        if( orderOfAccuracy.eq.2 )then
+            call bcOptWave2dOrder2( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
+        elseif( orderOfAccuracy.eq.4 )then
+            call bcOptWave2dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
+        else
+            stop 7777
+        end if    
+
     end if
-  else
-    if( orderOfAccuracy.eq.2 )then
-      call bcOptWave2dOrder2( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
-    elseif( orderOfAccuracy.eq.4 )then
-      call bcOptWave2dOrder4( nd,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,gridIndexRange,dimRange,isPeriodic,u,un,mask,rsxy,xy,uTemp,v,boundaryCondition,frequencyArray,pdb,ipar,rpar,ierr )
-    else
-      stop 7777
-    end if    
 
-  end if
-
-  return
-  end
+    return
+    end
 
