@@ -156,7 +156,7 @@ all: $(all);
 
 info:; @echo "INFO: type 'make check' or 'make check-quiet' to run regression tests"
 # ----- RUN REGRESSION TESTS ---
-check-all:
+check:
 	$(MAKE) -C checkEigen
 	$(MAKE) -C checkWave
 	$(MAKE) -C checkWaveHoltz

@@ -25,6 +25,7 @@ for( int side=0; side<=1; side++ )
 /* Create Global Variable for LCBC function pointers */
 
 #define dimBasedValue(dim,n1,n2) ((dim == 2) ? (n1) : (n2))
+#undef ind2
 #define ind2(i,j,N1) (i + j*(N1))
 
 OGFunction *ogFun;
