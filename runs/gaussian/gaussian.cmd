@@ -2,7 +2,7 @@
 #  cgWave command script: 
 # 
 #     cgwave gaussian.cmd -g=<grid-name> -x0=<f> -y0=<f> -omega=<f> -tol=<f> -tp=<f> ...
-#                         -kx=<f> -ky=<f> -kz=<f> -forcing=[gaussian|sine] -upwind=[0|1] -imode=[0|1] 
+#                         -kx=<f> -ky=<f> -kz=<f> -forcing=[gaussian|sine] -upwind=[0|1] -imode=[0|1] -useSuperGrid=[0|1]
 #                         -bcApproach=[cbc|lcbc|oneSided] -meApproach=[std,ha] -rectangular=[implicit|explicit] -go=[go|og|halt]
 #
 #   -imode=1 : do not wait in cgWave
@@ -15,7 +15,7 @@ $tf=5.; $tp=.5; $imode=0;  $implicitUpwind=0;
 $kx=1; $ky=1; $kz=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $meApproach="std"; # or "ha"
-$matlab="cgWave"; $show="gaussian.show"; 
+$matlab="cgWave"; $show=""; $flushFrequency=10;
 $cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1; 
 $rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat rectangular grids explicitly
 $orderInTime=-1;  # -1 = use default
@@ -26,7 +26,8 @@ GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>
             "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,\
             "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,"useSuperGrid=i"=>\$useSuperGrid,\
             "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f"=>\$amp,"show=s"=>\$show,"upwind=i"=>\$upwind,"implicitUpwind=i"=>\$implicitUpwind,\
-            "debug=i"=>\$debug,"bcApproach=s"=>\$bcApproach,"meApproach=s"=>\$meApproach,"rectangular=s"=>\$rectangular );
+            "debug=i"=>\$debug,"bcApproach=s"=>\$bcApproach,"meApproach=s"=>\$meApproach,"rectangular=s"=>\$rectangular,\
+            "flushFrequency=i"=>\$flushFrequency );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -78,6 +79,9 @@ implicit upwind $implicitUpwind
 helmholtzForcing
 solve Helmholtz 0
 #
+if( $show ne "" ){ $cmd="show file name $show\n save show file 1\n flush frequency $flushFrequency"; }else{ $cmd="#"; }
+$cmd
+#
 # ------ Gaussian source ----
 # amp, beta, omega, p, 
 # $amp = 10.*$omega*$omega; 
@@ -104,7 +108,7 @@ exit
 solve
 contour
 exit
-if( $go eq "go" ){ $cmd .= "movie mode\n exit"; }else{ $cmd="#"; }
+if( $go eq "go" ){ $cmd = "exit"; }else{ $cmd="#"; }
 $cmd
 
 

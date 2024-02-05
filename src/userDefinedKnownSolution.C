@@ -190,10 +190,10 @@ getUserDefinedKnownSolution(real t,  int grid,
         const Real kNorm = max( REAL_MIN*100., sqrt(SQR(kv[0]) + SQR(kv[1]) + SQR(kv[2])) );
         const Real kx=kv[0]/kNorm, ky=kv[1]/kNorm, kz=kv[2]/kNorm;
 
-        if( true && t<= 2.*dt )
-            printF("CgWave::userDefinedKS -- GaussianPlaneWave, t=%9.3e, (kx,ky,kz)=(%g,%g,%g), (x0,y0,z0)=(%g,%g,%g),"
+        if( true && t<= 2.*dt && grid<5 )
+            printF("CgWave::userDefinedKS -- GaussianPlaneWave, grid=%d, t=%9.3e, (kx,ky,kz)=(%g,%g,%g), (x0,y0,z0)=(%g,%g,%g),"
                           " k0=(%g)*2*pi, beta=%g, c=%g numberOfTimeDerivatives=%d\n",
-                      t,kv[0],kv[1],kv[2],x0v[0],x0v[1],x0v[2],k0,beta,c,numberOfTimeDerivatives);    
+                      grid,t,kv[0],kv[1],kv[2],x0v[0],x0v[1],x0v[2],k0,beta,c,numberOfTimeDerivatives);    
 
         RealArray xei(I1,I2,I3);
         if( numberOfDimensions==2 )
@@ -461,10 +461,10 @@ getUserDefinedKnownSolution(real t,  int grid,
 
     else if( userKnownSolution=="squareEigenfunction" )
     {
-
-        const Real kx  = rpar[0]*twoPi;
-        const Real ky  = rpar[1]*twoPi;
-        const Real kz  = rpar[2]*twoPi;
+        const int bcOpt = ipar[0]; 
+        const Real kx   = rpar[0]*twoPi;
+        const Real ky   = rpar[1]*twoPi;
+        const Real kz   = rpar[2]*twoPi;
 
         Real omega;
         if( numberOfDimensions==2 )
@@ -474,7 +474,7 @@ getUserDefinedKnownSolution(real t,  int grid,
 
         if( t<=2*dt )
         {
-            printf("Eval square eigenfuction: t=%12.3e, [kx,ky,kz]=[%g,%g,%g]\n",t,rpar[0],rpar[1],rpar[2]);
+            printf("Eval square eigenfuction: t=%12.3e, [kx,ky,kz]=[%g,%g,%g], bcOpt=%d\n",t,rpar[0],rpar[1],rpar[2],bcOpt);
         }
 
         Real coswt;
@@ -501,7 +501,11 @@ getUserDefinedKnownSolution(real t,  int grid,
                     x=XC(iv,0);
                     y=XC(iv,1);
                 }
-                uLocal(i1,i2,i3,0) = sin( kx*x )*sin( ky*y )*coswt;  // fix for Neumann BC
+                if( bcOpt==0 )
+                    uLocal(i1,i2,i3,0) = sin( kx*x )*sin( ky*y )*coswt;
+                else
+                    uLocal(i1,i2,i3,0) = cos( kx*x )*cos( ky*y )*coswt;  
+
             }
         }
         else
@@ -520,7 +524,10 @@ getUserDefinedKnownSolution(real t,  int grid,
                     y=XC(iv,1);
                     z=XC(iv,2);
                 }
-                uLocal(i1,i2,i3,0) = sin( kx*x )*sin( ky*y )*sin( kz*z )*coswt;        
+                if( bcOpt==0 )
+                    uLocal(i1,i2,i3,0) = sin( kx*x )*sin( ky*y )*sin( kz*z )*coswt;
+                else        
+                    uLocal(i1,i2,i3,0) = cos( kx*x )*cos( ky*y )*cos( kz*z )*coswt;        
 
 
             }
@@ -530,17 +537,20 @@ getUserDefinedKnownSolution(real t,  int grid,
 
     else if( userKnownSolution=="diskEigenfunction" )
     {
-    // --- Eigenfunction for the wave equation in a disk ---
+    // --- Eigenfunction for the wave equation in a disk or 3D cylinder  ---
 
     // --- we could avoid building the vertex array on Cartesian grids ---
         GET_VERTEX_ARRAY(x);
 
-        const int n     = ipar[0];  // angular number, n=0,1,... --> Jn(omega*r)
-        const int m     = ipar[1];  // radial number m=0,... 
-        const int bcOpt = ipar[2];
+        const int n      = ipar[0];  // angular number, n=0,1,... --> Jn(omega*r)
+        const int m      = ipar[1];  // radial number m=0,... 
+        const int bcOpt  = ipar[2];
+        const int & mz   = ipar[3];  // axial number 
 
-        const Real a   = rpar[0];  // radius of disk
-        const Real amp = rpar[1];  // amplitude 
+        const Real a     = rpar[0];  // radius of disk
+        const Real amp   = rpar[1];  // amplitude 
+        const Real & za  = rpar[2];
+        const Real & zb  = rpar[3];
 
         Real lambda; 
         if( bcOpt==0 )
@@ -562,25 +572,50 @@ getUserDefinedKnownSolution(real t,  int grid,
             lambda=jzmn/a;
         }
           
-
         if( t<=3.*dt )
-            printF("Disk: Bessel function solution: a=%g, n=%i, m=%i, lambda=%e, bcOpt=%d \n",a,n,m,lambda,bcOpt);
+            printF("Disk: Bessel function solution: a=%g, n=%i, m=%i, lambda=%16.8e, bcOpt=%d, mz=%d, za=%g, zb=%g \n",a,n,m,lambda,bcOpt,mz,za,zb);
 
-        const Real omega = c*lambda;  
+        const Real Lz=zb-za;
+        const Real kz = .5*twoPi*mz/Lz; 
+
+        Real omega = c*lambda; 
+        if( numberOfDimensions==3 )  
+        {
+            omega = c * sqrt( SQR(lambda) + SQR(kz) );  // ***check me**
+        }
+
         Real coswt;
         if( numberOfTimeDerivatives==0 )
             coswt = cos(omega*t);
         else
             coswt = -omega*sin(omega*t);       
 
-        FOR_3D(i1,i2,i3,I1,I2,I3)
-        { 
-            const Real xd = x(i1,i2,i3,0), yd = x(i1,i2,i3,1);
-            const Real theta = atan2(yd,xd);
-            const Real r = sqrt( xd*xd + yd*yd );
+        if( numberOfDimensions==2 )
+        {
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            { 
+                const Real xd = x(i1,i2,i3,0), yd = x(i1,i2,i3,1);
+                const Real theta = atan2(yd,xd);
+                const Real r = sqrt( xd*xd + yd*yd );
 
-            uLocal(i1,i2,i3,0) = jn(n,lambda*r)*cos(n*theta)*coswt;
+                uLocal(i1,i2,i3,0) = jn(n,lambda*r)*cos(n*theta)*coswt;
+            }
         }
+        else
+        {
+      // --- 3D Cylinder ----
+
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            { 
+                const Real xd = x(i1,i2,i3,0), yd = x(i1,i2,i3,1), zd = x(i1,i2,i3,2);
+                const Real theta = atan2(yd,xd);
+                const Real r = sqrt( xd*xd + yd*yd );
+
+                Real csz = bcOpt==0 ? sin( kz*(zd-za) ) : cos( kz*(zd-za) );
+
+                uLocal(i1,i2,i3,0) = jn(n,lambda*r)*cos( n*theta )* csz *coswt;
+            }
+        }    
 
     }
 
@@ -733,6 +768,8 @@ getUserDefinedKnownSolution(real t,  int grid,
         }
         else
         {
+            printF("UDKS: sphereEig: mPhi=%d, mTheta=%d, mr=%d, a=%g\n",mPhi,mTheta,mr);
+            printF("UDKS: sphereEig: ERROR: bcOpt=%d not implemented. Only bcopt=0 (Dirichlet) is currently implemented\n",bcOpt);
               OV_ABORT("finish me");
         }
           
@@ -843,6 +880,475 @@ getUserDefinedKnownSolution(real t,  int grid,
 
     }
 
+    else if( userKnownSolution=="cylinderScattering" )
+    {
+    // **************New way**************
+        
+    // --- Scattering solution of a wave impinging on a circular inclusion ---
+    // --- this is a series solution made up of Hankel functions ---
+
+    // *** inclusion must be at (0,0) (for now) ***
+    // *** only cos( k*(x-c*t) ) for the incident wave (for now) *** 
+
+    // --- we could avoid building the vertex array on Cartesian grids ---
+        GET_VERTEX_ARRAY(x);
+
+        const int & bcOption  = ipar[0];      
+
+        const Real & ra       = rpar[0];
+        const Real & k        = rpar[1];
+        const Real & amp      = rpar[2];
+        
+                  
+        assert( numberOfDimensions == 2 );
+
+        
+    // if( t<=3.*dt )
+    //   printF("UDKS: Cylindrical Scattering: ra=%e, k=%e, amp=%e, bcOption=%d \n",ra,k,amp,bcOption);
+
+        if( !db.has_key("cylScatSolution") )
+        {
+      // Create a array to keep track of when the solution is initialized
+            IntegerArray & initStage = db.put<IntegerArray>("initStage");
+            initStage.redim(cg.numberOfComponentGrids());
+            initStage=true;
+
+      // create an array tp store the real and imag parts of the solution
+            realCompositeGridFunction & cylScatSolution = db.put<realCompositeGridFunction>("cylScatSolution");
+            Range all;
+            cylScatSolution.updateToMatchGrid(cg,all,all,all,2); // store real and imaginary parts
+
+        }
+
+        realCompositeGridFunction & cylScatSolution = db.get<realCompositeGridFunction>("cylScatSolution");
+        OV_GET_SERIAL_ARRAY(Real,cylScatSolution[grid],cylLocal);
+
+        IntegerArray & initStage = db.get<IntegerArray>("initStage");   
+        if( initStage(grid) )
+        {
+      // ---- initialization stage -----
+            initStage(grid)=false;
+
+            printF("\n --- INFO: userDefinedKnownSolution: Initialize cylinder scattering solution for grid=%d -----\n\n",grid);
+            printF("UDKS: Cylindrical Scattering: ra=%e, k=%e, amp=%e, bcOption=%d \n",ra,k,amp,bcOption);      
+
+      // declaring some things for the solution
+            Real Jp, HpReal, HpImag, dividedReal, dividedImag, tol, thing;
+
+      // Estimate how many terms are needed **THIS IS FROM THE CGMX SOLUTION : CHECK ME ****
+      // ! I estimate that the number of terms, N, should satisfy
+      // !        ??? N * eps**(1/N) > e*k*a/2 * 1/(2*pi)**(1/N)
+      // ! where eps=size of the final term (series is alternating)
+      // ! Take N = max( e*k*a, log(1/eps) ) 
+            const Real ka = k*ra;      
+            int ntermEstimated = max( fabs(7.*ka), log10(1./REAL_EPSILON) );
+
+
+            int maxTerms=1000;
+            RealArray coeffReal(maxTerms), coeffImag(maxTerms);
+      // Real coefReal[NtermsMax+1];
+      // Real coefImag[NtermsMax+1];
+            int Nterms;
+
+
+      // declaring some things for plotting the scattered field
+            Real & ampPlaneWave   = dbase.get<Real>("ampPlaneWave");
+            Real & kxPlaneWave    = dbase.get<Real>("kxPlaneWave");
+            Real & kyPlaneWave    = dbase.get<Real>("kyPlaneWave");
+            Real & kzPlaneWave    = dbase.get<Real>("kzPlaneWave");
+            Real & phiPlaneWave   = dbase.get<Real>("phiPlaneWave");
+            Real & omegaPlaneWave = dbase.get<Real>("omegaPlaneWave");
+
+            ampPlaneWave   = amp;
+            kxPlaneWave    = k; // because of the current specific incident wave
+            kyPlaneWave    = 0; // because of the current specific incident wave
+            kzPlaneWave    = 0; // because of the current specific incident wave
+            phiPlaneWave   = twoPi/4; // is there something for just pi?
+            omegaPlaneWave = c*k;
+
+            
+      // defining the coefficients in the series solution
+      // it depends on the term number and k, so we can define it outside of the for 3D loop
+
+            tol = pow(10,-50); // must be quite small, as this is just the coefficient, [10^{-60},10^{-40}] suggested
+
+            thing = 1; // will be the magnitude of the coefficient
+            Nterms=-1;
+      //for ( int l=0; l<=Nterms; ++l )
+            while( thing > tol  )
+            {
+                Nterms = Nterms+1;
+                if( Nterms>=maxTerms )
+                {
+                    printF("UDKS:ERROR: too many terms in scattering solution, Nterms=%d. FIX ME\n",Nterms);
+                    OV_ABORT("UKDS: ERROR");
+                }
+                
+                if( bcOption == 1 )
+                {
+          // Neumann BC
+                    Jp     = -jn(Nterms+1,k*ra) + (Nterms/(k*ra))*jn(Nterms,k*ra);
+                    HpReal = -jn(Nterms+1,k*ra) + (Nterms/(k*ra))*jn(Nterms,k*ra);
+                    HpImag = -yn(Nterms+1,k*ra) + (Nterms/(k*ra))*yn(Nterms,k*ra);
+                }
+                else 
+                {
+          // Dirichlet BC
+                    Jp     = jn(Nterms,k*ra);
+                    HpReal = jn(Nterms,k*ra);
+                    HpImag = yn(Nterms,k*ra);
+                }
+
+        // dividing them as complex numbers
+                dividedReal =  Jp*HpReal/( pow(HpReal,2) + pow(HpImag,2) );
+                dividedImag = -Jp*HpImag/( pow(HpReal,2) + pow(HpImag,2) );
+
+        // multiplying by I^l
+                if( Nterms%4 == 0 )
+                {
+                    coeffReal(Nterms) = dividedReal;
+                    coeffImag(Nterms) = dividedImag;
+                }
+                else if( Nterms%4 == 1 )
+                {
+                    coeffReal(Nterms) = -dividedImag;
+                    coeffImag(Nterms) =  dividedReal;
+                }
+                else if( Nterms%4 == 2 )
+                {
+                    coeffReal(Nterms) = -dividedReal;
+                    coeffImag(Nterms) = -dividedImag;
+                }
+                else
+                {
+                    coeffReal(Nterms) = dividedImag;
+                    coeffImag(Nterms) = -dividedReal;
+                }
+
+                if( Nterms == 0 )
+                {
+                    coeffReal(Nterms) = -amp*coeffReal(Nterms);
+                    coeffImag(Nterms) = -amp*coeffImag(Nterms);
+                }
+                else
+                {
+                    coeffReal(Nterms) = -2*amp*coeffReal(Nterms);
+                    coeffImag(Nterms) = -2*amp*coeffImag(Nterms);
+                }
+
+        // magnitude of the coefficient decides the number of terms in the series
+                thing = sqrt( pow(coeffReal(Nterms),2) + pow(coeffImag(Nterms),2) );
+                
+                
+            }
+
+      // quit if too many terms/series not converging
+            
+      //printF("%d terms kept in scattering series solution, size of coef: %e\n",Nterms,thing);
+            if( t<=3.*dt )
+                printF("UDKS: cylScat: There were %d terms kept in scattering series solution, grid=%d. (ntermEstimated=%d) *********\n",Nterms,grid,ntermEstimated);
+            
+            
+      // declaring some stuff we need to create the solution in the 3D loop
+            Real termReal, termImag, HankelReal, HankelImag, arg;
+            Real usReal, usImag; // scattered part of the solution 
+            Real uiReal, uiImag; // incident wave
+            Real utReal, utImag; // total solution
+      //Real phiReal, phiImag;
+            Real uReal, uImag;
+
+            Real xd, yd, theta, r;
+            
+            Index J1,J2,J3; // evaluate solution at all points on the grid
+            getIndex(mg.dimension(),J1,J2,J3);
+
+            FOR_3D(i1,i2,i3,J1,J2,J3)
+            {
+                if( !isRectangular )
+                {
+                    xd = x(i1,i2,i3,0);
+                    yd = x(i1,i2,i3,1);
+                }
+                else
+                {
+                    xd = XC(iv,0);
+                    yd = XC(iv,1);
+                }
+                theta = atan2(yd,xd);
+                r = sqrt( xd*xd + yd*yd );
+
+        // resetting the summed solution
+                usReal = 0;
+                usImag = 0;
+
+        // computing scattering solution first (the series part)
+                for ( int l=0; l<=Nterms; ++l )
+                {
+          // defining Hankel function
+                    arg = k*r;
+                    HankelReal = jn(l,arg);
+                    HankelImag = yn(l,arg);
+                    
+          // the scattered solution
+                    termReal = ( coeffReal(l)*HankelReal - coeffImag(l)*HankelImag )*cos( l*theta );
+                    termImag = ( coeffReal(l)*HankelImag + coeffImag(l)*HankelReal )*cos( l*theta );
+                    
+          // adding together
+                    usReal = usReal + termReal;
+                    usImag = usImag + termImag;
+                    
+                }
+
+        // save real and imaginary parts
+                cylLocal(i1,i2,i3,0)=usReal;
+                cylLocal(i1,i2,i3,1)=usImag;
+            } 
+
+
+        } // end initialization stage
+
+        Real cost,sint;
+        if( numberOfTimeDerivatives==0 )
+        {
+            cost = cos( -c*k*t );
+            sint = sin( -c*k*t );
+        }
+        else if( numberOfTimeDerivatives==1 )
+        {
+            cost =  c*k*sin( -c*k*t );  // time derivative 
+            sint = -c*k*cos( -c*k*t );
+        }
+        else
+        {
+            printF("cylinderScattering:ERROR: numberOfTimeDerivatives=%d not implemented\n");
+            OV_ABORT("ERROR");
+        }
+
+    // --- Evaluate the solution at the requested point  ---
+        Real xd,yd; 
+        FOR_3D(i1,i2,i3,I1,I2,I3)
+        {
+            if( !isRectangular )
+            {
+                xd = x(i1,i2,i3,0);
+        // yd = x(i1,i2,i3,1);
+            }
+            else
+            {
+                xd = XC(iv,0);
+        // yd = XC(iv,1);
+            }
+
+            Real uReal = cylLocal(i1,i2,i3,0)*cost - cylLocal(i1,i2,i3,1)*sint;
+      // Real uReal = cylLocal(i1,i2,i3,0)*cos( -c*k*t ) - cylLocal(i1,i2,i3,1)*sin( -c*k*t );
+      // uImag = cylLocal(i1,i2,i3,1)*cos( -c*k*t ) + cylLocal(i1,i2,i3,0)*sin( -c*k*t );
+
+      // add the incident wave
+            if( numberOfTimeDerivatives==0 )
+            {
+                uReal += cos( k*(xd-c*t) );
+        // uImag += sin( k*(xd-c*t) );
+            }
+            else
+            {
+                uReal += (c*k)*sin( k*(xd-c*t) ); // time derivative of incident field
+            }
+
+            uLocal(i1,i2,i3,0) = amp*uReal;
+            
+        }
+
+    }
+    
+    else if( userKnownSolution=="cylindrical scattering" )
+    {
+    // *************OLD WAY****************
+
+    // --- Scattering solution of a wave impinging on a circular inclusion ---
+    // --- this is a series solution made up of Hankel functions ---
+
+    // *** inclusion must be at (0,0) (for now) ***
+    // *** only cos( k*(x-c*t) ) for the incident wave (for now) *** 
+
+    // --- we could avoid building the vertex array on Cartesian grids ---
+        GET_VERTEX_ARRAY(x);
+
+        const int NtermsMax = ipar[0];  // number of terms included in the series solution
+        const int bcOpt     = ipar[1];
+
+        const Real ra       = rpar[0];  // radius of inclusion
+        const Real k        = rpar[1];  // wave number
+        const Real amp      = rpar[2];
+        
+                  
+        assert( numberOfDimensions == 2 );
+
+        
+        if( t<=3.*dt )
+            printF("UDKS: Cylindrical Scattering: ra=%e, k=%e, amp=%e, NtermsMax=%d, bcOpt=%d \n",ra,k,amp,NtermsMax,bcOpt);
+
+
+    // declaring some things for the solution
+        Real Jp, HpReal, HpImag, dividedReal, dividedImag, tol, thing;
+        Real coefReal[NtermsMax+1];
+        Real coefImag[NtermsMax+1];
+        int Nterms;
+
+
+    // declaring some things for plotting the scattered field
+        Real & ampPlaneWave   = dbase.get<Real>("ampPlaneWave");
+        Real & kxPlaneWave    = dbase.get<Real>("kxPlaneWave");
+        Real & kyPlaneWave    = dbase.get<Real>("kyPlaneWave");
+        Real & kzPlaneWave    = dbase.get<Real>("kzPlaneWave");
+        Real & phiPlaneWave   = dbase.get<Real>("phiPlaneWave");
+        Real & omegaPlaneWave = dbase.get<Real>("omegaPlaneWave");
+
+        ampPlaneWave   = amp;
+        kxPlaneWave    = k; // because of the current specific incident wave
+        kyPlaneWave    = 0; // because of the current specific incident wave
+        kzPlaneWave    = 0; // because of the current specific incident wave
+        phiPlaneWave   = twoPi/4; // is there something for just pi?
+        omegaPlaneWave = c*k;
+
+        
+    // defining the coefficients in the series solution
+    // it depends on the term number and k, so we can define it outside of the for 3D loop
+        tol = pow(10,-50); // must be quite small, as this is just the coefficient, [10^{-60},10^{-40}] suggested
+        thing = 1; // will be the magnitude of the coefficient
+        Nterms=-1;
+    //for ( int l=0; l<=Nterms; ++l )
+        while( thing > tol && Nterms <= NtermsMax )
+        {
+            Nterms = Nterms+1;
+            
+            if( bcOpt == 1 )
+            {
+        // definition of derivatives
+                Jp     = -jn(Nterms+1,k*ra) + (Nterms/(k*ra))*jn(Nterms,k*ra);
+                HpReal = -jn(Nterms+1,k*ra) + (Nterms/(k*ra))*jn(Nterms,k*ra);
+                HpImag = -yn(Nterms+1,k*ra) + (Nterms/(k*ra))*yn(Nterms,k*ra);
+            }
+            else 
+            {
+                Jp     = jn(Nterms,k*ra);
+                HpReal = jn(Nterms,k*ra);
+                HpImag = yn(Nterms,k*ra);
+            }
+
+      // dividing them as complex numbers
+            dividedReal =  Jp*HpReal/( pow(HpReal,2) + pow(HpImag,2) );
+            dividedImag = -Jp*HpImag/( pow(HpReal,2) + pow(HpImag,2) );
+
+      // multiplying by I^l
+            if( Nterms%4 == 0 )
+            {
+                coefReal[Nterms] = dividedReal;
+                coefImag[Nterms] = dividedImag;
+            }
+            else if( Nterms%4 == 1 )
+            {
+                coefReal[Nterms] = -dividedImag;
+                coefImag[Nterms] =  dividedReal;
+            }
+            else if( Nterms%4 == 2 )
+            {
+                coefReal[Nterms] = -dividedReal;
+                coefImag[Nterms] = -dividedImag;
+            }
+            else
+            {
+                coefReal[Nterms] = dividedImag;
+                coefImag[Nterms] = -dividedReal;
+            }
+
+            if( Nterms == 0 )
+            {
+                coefReal[Nterms] = -amp*coefReal[Nterms];
+                coefImag[Nterms] = -amp*coefImag[Nterms];
+            }
+            else
+            {
+                coefReal[Nterms] = -2*amp*coefReal[Nterms];
+                coefImag[Nterms] = -2*amp*coefImag[Nterms];
+            }
+
+      // magnitude of the coefficient decides the number of terms in the series
+            thing = sqrt( pow(coefReal[Nterms],2) + pow(coefImag[Nterms],2) );
+            
+            
+        }
+
+    // quit if too many terms/series not converging
+        assert( Nterms < NtermsMax );
+        
+    //printF("%d terms kept in scattering series solution, size of coef: %e\n",Nterms,thing);
+        if( t<=3.*dt )
+            printF("%d terms kept in scattering series solution\n",Nterms);
+        
+        
+    // declaring some stuff we need to create the solution in the 3D loop
+        Real termReal, termImag, HankelReal, HankelImag, arg;
+        Real usReal, usImag; // scattered part of the solution 
+        Real uiReal, uiImag; // incident wave
+        Real utReal, utImag; // total solution
+    //Real phiReal, phiImag;
+        Real uReal, uImag;
+
+        Real xd, yd, theta, r;
+        
+        
+        FOR_3D(i1,i2,i3,I1,I2,I3)
+        {
+              if( !isRectangular )
+                {
+                    xd = x(i1,i2,i3,0);
+                    yd = x(i1,i2,i3,1);
+                }
+                else
+                {
+                    xd = XC(iv,0);
+                    yd = XC(iv,1);
+                }
+              theta = atan2(yd,xd);
+              r = sqrt( xd*xd + yd*yd );
+
+      // resetting the summed solution
+            usReal = 0;
+            usImag = 0;
+              
+
+      // computing scattering solution first (the series part)
+            for ( int l=0; l<=Nterms; ++l )
+            {
+        // defining Hankel function
+                arg = k*r;
+                HankelReal = jn(l,arg);
+                HankelImag = yn(l,arg);
+                
+        // the scattered solution
+                termReal = ( coefReal[l]*HankelReal - coefImag[l]*HankelImag )*cos( l*theta );
+                termImag = ( coefReal[l]*HankelImag + coefImag[l]*HankelReal )*cos( l*theta );
+                
+        // adding together
+                usReal = usReal + termReal;
+                usImag = usImag + termImag;
+                
+            }
+
+      // multiplying by time part
+
+            uReal = usReal*cos( -c*k*t ) - usImag*sin( -c*k*t );
+            uImag = usImag*cos( -c*k*t ) + usReal*sin( -c*k*t );
+
+      // adding the incident wave
+            uReal = uReal + cos( k*(xd-c*t) );
+            uImag = uImag + sin( k*(xd-c*t) );
+
+            uLocal(i1,i2,i3,0) = uReal;
+            
+        }
+
+    }
 
     else
     {
@@ -926,6 +1432,8 @@ updateUserDefinedKnownSolution()
                                                 "annulus eigenfunction",
                                                 "square eigenfunction",
                                                 "sphere eigenfunction",
+                                                "scattering from a cylinder",
+                                                "cylindrical scattering",      // old way 
                                                 "done",    
                                                 ""};
     int numRows=3;
@@ -1159,44 +1667,59 @@ updateUserDefinedKnownSolution()
         else if( answer=="square eigenfunction" ) 
         {
             printF("----------------- Eigenfunction on a square or box -----------------\n"
-                          "The solution is of the form: \n"
-                          "     u(x,y,z,t) = sin(kx*2*pi*x)*sin(ky*2*pi*y)*sin(kz*2*pi*z)*cos(omega*t)*\n");
+                          "The solution is of the form:\n" 
+                          "bcOpt=0: u(x,y,z,t) = sin(kx*2*pi*x)*sin(ky*2*pi*y)*sin(kz*2*pi*z)*cos(omega*t)*\n"
+                          "bcOpt=1: u(x,y,z,t) = cos(kx*2*pi*x)*cos(ky*2*pi*y)*cos(kz*2*pi*z)*cos(omega*t)*\n");
             
             userKnownSolution="squareEigenfunction";
             dbase.get<bool>("knownSolutionIsTimeDependent")=true;  // known solution depends on time
             
-            gi.inputString(answer,"Enter kx,ky,kz");
-            sScanF(answer,"%e %e %e",&rpar[0],&rpar[1],&rpar[2]);
-            printF(" Setting [kx,ky,kz]=[%g,%g,%g]\n",rpar[0],rpar[1],rpar[2]);
+            int & bcOpt = ipar[0]; 
+            bcOpt =0; // 0= Dirichlet BC 
+            gi.inputString(answer,"Enter kx,ky,kz,bcOpt");
+            sScanF(answer,"%e %e %e %i",&rpar[0],&rpar[1],&rpar[2],&bcOpt);
+            printF(" Setting [kx,ky,kz]=[%g,%g,%g], bcOpt=%d\n",rpar[0],rpar[1],rpar[2],bcOpt);
 
         }
 
         else if( answer=="disk eigenfunction" )
         {
+
             userKnownSolution="diskEigenfunction";
 
             int & n     = ipar[0];
             int & m     = ipar[1];
             int & bcOpt = ipar[2];      
+            int & mz    = ipar[3];      
 
             Real & a   = rpar[0];
             Real & amp = rpar[1];
+            Real & za  = rpar[2];
+            Real & zb  = rpar[3];
 
             m=0; n=0; amp=1.; a=1.;
+            mz = 1;
+            za=0.; zb=1.; 
             
-            printF("--- Eigenfunction for the Wave Equation in the unit disk ---\n"
+            printF("--- Eigenfunction for the Wave Equation on a disk or 3D cylinder ---\n"
                           "    u = cos( c*lambda_{m,n} *t ) * Jn(lambda_m*r) * cos(n*theta)  [2D, Dirichlet BCs]\n"
+                          "    u = cos( c*lambda_{m,n} *t ) * Jn(lambda_m*r) * cos(n*theta) *sin( mz*(z-za)/(zb-za)) [3D, Dirichlet BCs]\n"
                           "    n = angular number, n=0,1,2,\n"
                           "    m = radial number (m'th zero of Bessel Jn(lambda*a)=0 \n"
+                          "    mz = axial (z-axis) number (3D cyl)\n"
                           "    a = radius of the disk\n"
                           "    amp = amplitude\n"
-                          "    bcOpt : 0=Dirichlet, 1=Neumann BCs on the annulus.\n"             
+                          "    za,zb : extent in z-direction\n"
+                          "    bcOpt : 0=Dirichlet, 1=Neumann BCs\n"             
                 );
             
-            gi.inputString(answer,"Enter n,m,a,amp,bcOpt for the exact solution");
-            sScanF(answer,"%i %i %e %e %i",&n,&m,&a,&amp,&bcOpt);
+            gi.inputString(answer,"Enter n, m, a, amp, bcOpt, mz, za, zb for the exact solution");
+            sScanF(answer,"%i %i %e %e %i %i %e %e",&n,&m,&a,&amp,&bcOpt,&mz,&za,&zb);
 
-            printF("Disk eigenfuncton: n=%i, m=%i, a=%g, amp=%g, bcOpt=%d\n",n,m,a,amp,bcOpt);
+            if( cg.numberOfDimensions()==2 )
+                printF("Disk eigenfuncton: n=%i, m=%i, a=%g, amp=%g, bcOpt=%d\n",n,m,a,amp,bcOpt);
+            else
+                printF("Disk eigenfuncton: n=%i, m=%i, mz=%i, a=%g, [za,zb]=[%g,%g] amp=%g, bcOpt=%d\n",n,m,mz,za,zb,a,amp,bcOpt);
 
             dbase.get<bool>("knownSolutionIsTimeDependent")= true;  // known solution is time dependent
 
@@ -1268,6 +1791,62 @@ updateUserDefinedKnownSolution()
 
         }  
 
+        else if( answer=="scattering from a cylinder" )
+        {
+      // *new way* Dec 2023 *wdh*
+            userKnownSolution="cylinderScattering";
+
+            int & bcOption = ipar[0];      
+
+            Real & ra       = rpar[0];
+            Real & k        = rpar[1];
+            Real & amp      = rpar[2];
+            
+            printF("--- Scattering of a plane wave from a cylinder  ---\n"
+                          "    ra        = radius of the cylinder.\n"
+                          "    k         = wave number of incident wave.\n"
+                          "    amp       = amplitude of the incident wave.\n"
+                          "    bcOption : 0=Dirichlet, 1=Neumann BCs on the cylinder.\n"             
+                );
+            
+            gi.inputString(answer,"Enter ra,k,amp,bcOption for the exact solution");
+            sScanF(answer,"%e %e %e %i",&ra,&k,&amp,&bcOption);
+
+            printF("Scattering: ra=%e, k=%e, amp=%e, bcOption=%d (0=Dirichlet, 1=Neumann)\n",ra,k,amp,bcOption);
+
+            dbase.get<bool>("knownSolutionIsTimeDependent")= true;  // known solution is time dependent
+
+        }  
+
+        else if( answer=="cylindrical scattering" )
+        {
+      // Old way Allison Carson
+            userKnownSolution="cylindrical scattering";
+
+            int & NtermsMax = ipar[0];
+            int & bcOpt     = ipar[1];      
+
+            Real & ra       = rpar[0];
+            Real & k        = rpar[1];
+            Real & amp      = rpar[2];
+            
+            
+            printF("--- Scattering from a cylinder in two dimensions ---\n"
+                          "    ra        = radius of the cylinder\n"
+                          "    k         = wave number\n"
+                          "    amp       = amplitude of the incident wave\n"
+                          "    NtermsMax = max number of terms in the series solution\n"
+                          "    bcOpt : 0=Dirichlet, 1=Neumann BCs on the annulus.\n"             
+                );
+            
+            gi.inputString(answer,"Enter ra,k,amp,NtermsMax,bcOpt for the exact solution");
+            sScanF(answer,"%e %e %e %i %i",&ra,&k,&amp,&NtermsMax,&bcOpt);
+
+            printF("Scattering: ra=%e, k=%e, amp=%e, NtermsMax=%d, bcOpt=%d\n",ra,k,amp,NtermsMax,bcOpt);
+
+            dbase.get<bool>("knownSolutionIsTimeDependent")= true;  // known solution is time dependent
+
+        }  
 
         else if( dialog.getTextValue(answer,"beta:","%e",beta) )
         {

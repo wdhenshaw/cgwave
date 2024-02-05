@@ -146,6 +146,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
     const IntegerArray & superGrid       = cgWave.dbase.get<IntegerArray>("superGrid");
     const int & adjustPlotsForSuperGrid  = cgWave.dbase.get<int>("adjustPlotsForSuperGrid");
     const int & adjustErrorsForSuperGrid = cgWave.dbase.get<int>("adjustErrorsForSuperGrid");
+    const int & solveForScatteredField   = cgWave.dbase.get<int>("solveForScatteredField");
     
     const Real & damp                    = cgWave.dbase.get<Real>("damp");
     const Real & dampSave                = cgWave.dbase.get<Real>("dampSave");
@@ -161,15 +162,18 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
     printF("    c=%.4g, numberOfFrequencies=%d, orderOfAccuracy=%d, solveComplex=%d\n", c,numberOfFrequencies,orderOfAccuracy,(int)solveComplex);
     for( int freq=0; freq<numberOfFrequencies; freq++ )
     {
-        printF("  freq(%d) = %.6g\n",freq,frequencyArray(freq));
+        printF(" freq(%d) = %.6g\n",freq,frequencyArray(freq));
     }
     if( damp!=0. )
-        printF("  Damping is on: damp=%14.6e, dampSave=%14.6e\n",damp,dampSave);
-    printF("  useSuperGrid=%d\n",useSuperGrid);
-    ::display(superGrid,"superGrid","%2i");
+        printF(" Damping is on: damp=%14.6e, dampSave=%14.6e\n",damp,dampSave);
+    printF(" useSuperGrid=%d, superGrid[grid] = [",useSuperGrid);
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        printF("%i,",superGrid(grid));
+    printF("]\n");
+  // ::display(superGrid,"superGrid","%2i");
     printF(" ===================================================================\n");
 
-    ::display(frequencyArray,"frequencyArray");
+  // ::display(frequencyArray,"frequencyArray");
 
     if( omega != frequencyArray(0) )
     {
@@ -202,7 +206,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
 
   // --- DO THIS FOR NOW : **FIX ME** -----
-    const int boxHelmholtz=3; 
+
+    const int planeWave=1, gaussianPlaneWave=2, boxHelmholtz=3;
+
     Real kxBoxHelmholtz=1., kyBoxHelmholtz=1., kzBoxHelmholtz=1.;
     int knownSolutionOption=0; // no known solution
     if( cgWave.dbase.has_key("userDefinedKnownSolutionData") )
@@ -212,15 +218,15 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
         const aString & userKnownSolution = db.get<aString>("userKnownSolution");
         if( userKnownSolution=="planeWave"  )
         {
-            knownSolutionOption=1;                   // this number must match in bcOptWave.bf90
+            knownSolutionOption=planeWave;                   // this number must match in bcOptWave.bf90
         }
         else if( userKnownSolution=="gaussianPlaneWave"  ) 
         {
-            knownSolutionOption=2;                   // this number must match in bcOptWave.bf90
+            knownSolutionOption=gaussianPlaneWave;           // this number must match in bcOptWave.bf90
         }    
         else if( userKnownSolution=="boxHelmholtz"  ) 
         {
-            knownSolutionOption=boxHelmholtz;                   // this number must match in bcOptWave.bf90
+            knownSolutionOption=boxHelmholtz;                // this number must match in bcOptWave.bf90
             kxBoxHelmholtz = cgWave.dbase.get<Real>("kxBoxHelmholtz");
             kyBoxHelmholtz = cgWave.dbase.get<Real>("kyBoxHelmholtz");
             kzBoxHelmholtz = cgWave.dbase.get<Real>("kzBoxHelmholtz"); 
@@ -833,10 +839,11 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     if( true )
                     {
                         Real adSosup = (c)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) );
-                        printF(">>>>>>solveHelmholtzDirect: upwindDissipationCoefficient=%g, old-way=%g\n",upwindDissipationCoefficient,adSosup);
+                        printF(">>>>>>solveHelmholtzDirect: upwindDissipationCoefficient=%g, old-way=%g, omega=%g\n",upwindDissipationCoefficient,adSosup,omega);
                     }
           // Real betaUpwind = (omegaSign*omega*c)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) ); // OLD
                     Real betaUpwind = (omegaSign*omega)*upwindDissipationCoefficient;
+          // betaUpwind *= 10; // ** TEST ***
           // betaUpwind =0.; // *** TEMP TEST
                     if( isRectangular )
                     {
@@ -972,7 +979,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1013,7 +1020,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1054,7 +1061,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1095,7 +1102,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1140,7 +1147,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1181,7 +1188,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1222,7 +1229,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1263,7 +1270,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1391,7 +1398,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1432,7 +1439,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1473,7 +1480,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1514,7 +1521,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1559,7 +1566,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1600,7 +1607,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1641,7 +1648,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -1682,7 +1689,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 if( true || classify(j1,j2,j3,eq) !=  SparseRepForMGF::active ) // this point may have already been extrapolated
                                                 {
                                                     const int ice = eq; // interpolate this component
-                                                    if( true )
+                                                    if( false )
                                                         printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
@@ -2178,7 +2185,23 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
     // ---- FILL IN RHS ---- 
     // OV_ABORT("**FINISH ME");
 
+        Real amp,kx,ky,kz,phi; // for plane wave incident field
+        if( solveForScatteredField && knownSolutionOption==planeWave )
+        {
+      // Get planeWave parameters: 
+            amp   = cgWave.dbase.get<Real>("ampPlaneWave");
+            kx    = cgWave.dbase.get<Real>("kxPlaneWave");
+            ky    = cgWave.dbase.get<Real>("kyPlaneWave");
+            kz    = cgWave.dbase.get<Real>("kzPlaneWave");
+            phi   = cgWave.dbase.get<Real>("phiPlaneWave");
+
+            Real omegaPlaneWave = cgWave.dbase.get<Real>("omegaPlaneWave");
+            printF("\n solveHelmholtzDirect: omega=%14.6e, omegaPlaneWave=%14.6e\n",omega,omegaPlaneWave);
+        }
+
     // Index I1,I2,I3; 
+    // Index Ib1,Ib2,Ib3; 
+    // Index Ig1,Ig2,Ig3; 
         for( int grid=0; grid<numberOfComponentGrids; grid++ )
         {
             MappedGrid & mg = cg[grid];
@@ -2191,6 +2214,11 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
       // -- make sure the RHS is zero at active points (unused points which are extrpolated for upwinding)
             FOR_3D(i1,i2,i3,I1,I2,I3)
             {
+        // if( isnan(fcLocal(i1,i2,i3,0)) )
+        // {
+        //   printF("solveHelmholtzDirect: ERROR: fc(%d,%d,%d,0) isnan\n",i1,i2,i3);
+        //   OV_ABORT("error");
+        // }
                 if( maskLocal(i1,i2,i3) > 0 )
                     fcLocal(i1,i2,i3,0)=fLocal(i1,i2,i3);
                 else
@@ -2198,6 +2226,41 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
             }
       // fcLocal(I1,I2,I3,0) = fLocal(I1,I2,I3);
             fcLocal(I1,I2,I3,1) = 0.;
+
+      // --- ASSIGN SPECIAL boundary conditions --- 
+      //  Boundary conditions will be filled in by getHelmholtzForcing, but these are not all correct for the complex case
+
+            ForBoundary(side,axis)
+            {
+                if( mg.boundaryCondition(side,axis)==CgWave::dirichlet )
+                {
+                    getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+          // OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
+
+                    if( solveForScatteredField && knownSolutionOption==planeWave )
+                    {
+                        OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
+
+            // The INCIDENT field is 
+            //    exp( i ( k.x - omega*t + phi ))
+            //    phi = -pi/2 to change cos() into sin(), and sin into -cos() 
+            //      --> The incident field for the wave solver is sin( k.x - omega*t) for some reason
+
+            // we substract off the incident field of amp*[ sin( k.x+ phi ) - I cos( k.x + phi ) ]
+                        if( mg.numberOfDimensions()==2 )
+                        { // *check me*
+                            fcLocal(Ib1,Ib2,Ib3,0)= -amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi );
+                            fcLocal(Ib1,Ib2,Ib3,1)=  amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi );
+                        }
+                        else
+                        {
+                            fcLocal(Ib1,Ib2,Ib3,0)= -amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi );
+                            fcLocal(Ib1,Ib2,Ib3,1)= +amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi );                  
+                        }
+                    }
+                }
+            } // end ForBoundary
+
 
       // 
       // *** CHECK that active points have a zero RHS ****
@@ -2224,6 +2287,10 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                 printF("INFO: There are %d active points on grid=%d. (active points = unused points which are extrapolated for upwinding)\n",numActive,grid);
 
             }
+
+      // if( solveForScatteredField )
+      //   ::display(fcLocal,"solveHelmholtzDirect: fcLocal","%9.2e ");
+
         }
 
 
@@ -2306,7 +2373,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     RealArray & rsxyLocal = useOriginalMetrics ? cgWave.dbase.get<RealArray*>("rxOriginal")[grid] : rsxyLocalNew;
 
                 int extra=0; // -1;
-                getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra); 
+                getIndex(cg[grid].indexRange(),I1,I2,I3,extra); 
                 
                 bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3);
                 if( ok )
@@ -2347,7 +2414,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                         Range R2 = numberOfComponents;
                         RealArray ddDeriv(I1,I2,I3,R2), dDeriv(I1,I2,I3,R2);
 
-                        getIndex(mg.gridIndexRange(),I1,I2,I3,extra);
+                        getIndex(mg.indexRange(),I1,I2,I3,extra);
             // --- Eval xx and x derivatives ---
                         mgop.derivative( MappedGridOperators::xxDerivative,uLocal,ddDeriv,I1,I2,I3,R2);
                         mgop.derivative( MappedGridOperators::xDerivative, uLocal, dDeriv,I1,I2,I3,R2);
@@ -2418,10 +2485,11 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                             if( true )
                             {
                                 Real adSosup = (c)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) );
-                                printF(">>>>>>solveHelmholtzDirect: upwindDissipationCoefficient=%g, old-way=%g\n",upwindDissipationCoefficient,adSosup);
+                                printF(">>>>>>solveHelmholtzDirect: upwindDissipationCoefficient=%g, old-way=%g, omega=%g\n",upwindDissipationCoefficient,adSosup,omega);
                             }
               // Real betaUpwind = (omegaSign*omega*c)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) ); // OLD
                             Real betaUpwind = (omegaSign*omega)*upwindDissipationCoefficient;
+              // betaUpwind *= 10; // ** TEST ***
               // betaUpwind =0.; // *** TEMP TEST
                             if( isRectangular )
                             {
@@ -2452,18 +2520,48 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     Range all;
                     ForBoundary(side,axis)
                     {
-                          int is = 1 -2*side;
-             // set residual to zero on dirichlet boundaries 
-                          if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
-                          {
-                              getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+                        int is = 1 -2*side;
+            // set residual to zero on dirichlet boundaries 
+                        if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
+                        {
+                            getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+                            if( solveForScatteredField==0 )
+                            {
                               resLocal(Ib1,Ib2,Ib3,all)=0.;
+                            }
+                            else
+                            {
+                // --- scattering from a Dirichlet BC ----
+                                OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
+                                if( mg.numberOfDimensions()==2 )
+                                { 
+                                    resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
+                                    resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
+                                }
+                                else
+                                {
+                                    resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
+                                    resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
+                                }
+                                where( maskLocal(Ib1,Ib2,Ib3)<=0 )
+                                {
+                                    resLocal(Ib1,Ib2,Ib3,0)=0.;
+                                    resLocal(Ib1,Ib2,Ib3,1)=0.;
+                                }
+
+                                Range R2=2;
+                                Real maxResBC1 = max(abs(resLocal(Ib1,Ib2,Ib3,0)));
+                                Real maxResBC2 = max(abs(resLocal(Ib1,Ib2,Ib3,1)));
+
+                                printF(" Scattering Dirichlet BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e]\n",side,axis,grid,maxResBC1,maxResBC2);
+                            }
+
                           }
                           else if( mg.boundaryCondition(side,axis) == CgWave::absorbing ||
                                             mg.boundaryCondition(side,axis) == CgWave::abcEM2 )
                           {
-                                getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
-                                getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,1);
+                                getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+                                getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,1);
 
                 // EM2: BC: 
                 //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
@@ -2511,6 +2609,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     } // end for boundary
 
           // -- zero residual at unused points ---
+                    getIndex(mg.dimension(),I1,I2,I3);
                     where( maskLocal(I1,I2,I3) <=0  )   
                     {
                         resLocal(I1,I2,I3,0)=0.;
@@ -2518,6 +2617,17 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     }        
 
                 }
+
+                if( true )
+                {
+          // ::display(resLocal,"resLocal","%7.0e ");
+                    Real maxRes = max(abs(resLocal));
+                    if( false && maxRes > .01 )
+                    {
+                        ::display(resLocal,"resLocal","%7.0e ");
+                    }
+                    printF("grid=%d : maxRes=%9.2e\n",grid,maxRes);
+                }     
 
             }  // end for grid
 
@@ -2529,7 +2639,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
         } // end check residual
 
-        bool plotSolution = false; // for debugging we plot the solution
+        bool plotSolution = false; // true; // for debugging we plot the solution
 
         if( plotSolution )
         {

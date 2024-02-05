@@ -52,6 +52,7 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
   const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
   const aString & knownSolutionOption     = dbase.get<aString>("knownSolutionOption");
 
+  const int & solveForScatteredField      = dbase.get<int>("solveForScatteredField");
   const int & plotScatteredField          = dbase.get<int>("plotScatteredField");
 
   // ** FIX ME: 
@@ -79,8 +80,14 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
   v.setName("u",0);
   if( plotErrors )
     v.setName("err",1);
+
   if( plotScatteredField )
-    v.setName("scat",2);
+  {
+    if( solveForScatteredField )
+      v.setName("total",2); // plot total field 
+    else
+      v.setName("scat",2);
+  }
 
   if( t<0. )
   {
@@ -109,6 +116,10 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
 
     if( plotScatteredField )
     {
+      // -- plot the SCATTERED FIELD (if solveForScatteredField=0)
+      // OR
+      // -- plot the TOTAL FIELD (if solveForScatteredField=1)
+
       // Parameters for the plane wave defining the incident field
       //   sin( kx*x + ky*y +kz*z - omega*t + phi )
       const Real amp   = dbase.get<Real>("ampPlaneWave");
@@ -118,7 +129,9 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
       const Real phi   = dbase.get<Real>("phiPlaneWave");
       const Real omega = dbase.get<Real>("omegaPlaneWave");
 
-      printF("plotScatteredField: Using amp=%g, [kx,ky,kz]=[%g,%g,%g]*2*pi, phi=%g\n",amp,kx/twoPi,ky/twoPi,kz/twoPi,phi);
+      // Add or subtract the plane wave from the solution
+      const Real fieldSign = solveForScatteredField ? 1. : -1.;
+      // printF("plotScatteredField: Using amp=%g, [kx,ky,kz]=[%g,%g,%g]*2*pi, phi=%g, fieldSign=%g\n",amp,kx/twoPi,ky/twoPi,kz/twoPi,phi,fieldSign);
 
       mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
       OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
@@ -126,11 +139,25 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
 
       Real omegat = omega*t - phi; 
       if( numberOfDimensions==2 )
-        vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) - amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) - omegat );
+        vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) + (fieldSign)*amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) - omegat );
       else
-        vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) - amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) - omegat );
+        vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) + (fieldSign)*amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) - omegat );
 
     }
+  }
+
+  if( plotScatteredField )
+    { // interpolate scattered field 
+    v.interpolate();
+  }
+
+  const int & useSuperGrid            = dbase.get<int>("useSuperGrid");
+  const int & adjustPlotsForSuperGrid = dbase.get<int>("adjustPlotsForSuperGrid");    // set solution to zero in any superGridLayers
+  if( adjustPlotsForSuperGrid && useSuperGrid )
+  {
+    printF("getAugmentedSolution: adjustPlotsForSuperGrid...\n");
+
+    adjustSolutionForSuperGrid( v );
   }
 
   return v;

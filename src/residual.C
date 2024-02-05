@@ -58,6 +58,7 @@ real CgWaveHoltz::residual( RealArray & maxRes, int useAdjustedOmega /* = 2 */ )
 }
 
 
+
 // ================================================================================================
 /// \brief Compute the residual in the current solution
 /// \param useAdjustedOmega (input) : 0 = use standard omega
@@ -116,6 +117,8 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
   // realCompositeGridFunction & f           = cgWave.dbase.get<realCompositeGridFunction>("f");
     CompositeGridOperators & operators      = cgWave.dbase.get<CompositeGridOperators>("operators");
 
+
+    const int numberOfComponents = filterTimeDerivative ? 2 : numberOfFrequencies;
 
     Real omega = frequencyArray(0);
     const Real cSq = c*c;
@@ -241,7 +244,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                 RealArray & rsxyLocal = useOriginalMetrics ? cgWave.dbase.get<RealArray*>("rxOriginal")[grid] : rsxyLocalNew;
 
             int extra=0; // -1;
-            getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra); 
+            getIndex(cg[grid].indexRange(),I1,I2,I3,extra); 
             
             bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
             if( ok )
@@ -290,7 +293,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                  // set residual to zero on dirichlet boundaries 
                                   if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
                                   {
-                                      getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+                                      getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
                                       resLocal(Ib1,Ib2,Ib3,all)=0.;
                                   }
                             }              
@@ -337,7 +340,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                     Range R2 = numberOfComponents;
                                     RealArray ddDeriv(I1,I2,I3,R2), dDeriv(I1,I2,I3,R2);
                                     int extra=0; // -1;
-                                    getIndex(mg.gridIndexRange(),I1,I2,I3,extra);
+                                    getIndex(mg.indexRange(),I1,I2,I3,extra);
                   // --- Eval xx and x derivatives ---
                                     mgop.derivative( MappedGridOperators::xxDerivative,vLocal,ddDeriv,I1,I2,I3,R2);
                                     mgop.derivative( MappedGridOperators::xDerivative, vLocal, dDeriv,I1,I2,I3,R2);
@@ -458,14 +461,14 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                    // set residual to zero on dirichlet boundaries 
                                       if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
                                       {
-                                          getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+                                          getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
                                           resLocal(Ib1,Ib2,Ib3,all)=0.;
                                       }
                                       else if( mg.boundaryCondition(side,axis) == CgWave::absorbing ||
                                                         mg.boundaryCondition(side,axis) == CgWave::abcEM2 )
                                       {
-                                            getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
-                                            getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,1);
+                                            getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+                                            getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,1);
                       // EM2: BC: 
                       //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
                       // => 
@@ -520,6 +523,22 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                 }
             }
 
+            getIndex(mg.dimension(),I1,I2,I3);
+            where( maskLocal(I1,I2,I3) <=0  )   
+            {
+                for( int ic=0; ic<numberOfComponents; ic++ )
+                    resLocal(I1,I2,I3,ic)=0.;
+            } 
+            if( true )
+            {
+        // ::display(resLocal,"resLocal","%7.0e ");
+                Real maxRes = max(abs(resLocal));
+                if( false && maxRes > .01 )
+                {
+                    ::display(resLocal,"resLocal","%7.0e ");
+                }
+                printF("CgWaveHoltz::residual: grid=%d : maxRes=%9.2e\n",grid,maxRes);
+            }      
       // ::display(res[grid],"residual","%8.2e ");
         }
 

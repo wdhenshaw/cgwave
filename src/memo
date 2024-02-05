@@ -1,6 +1,14 @@
 
 
 *******************************************************
+*********** Mon Aug 21, 2023
+
+FILE FROM Allison Carson -- scattering solution from a disk 
+
+scp henshw@cg6.math.rpi.edu:/home/carsoa/cgwave/src/userDefinedKnownSolution.bC userDefinedKnownSolutionAC.bC 
+
+
+*******************************************************
 *********** Tues May 16, 2023
 
 FILES FROM NOUR -- cg6 or rtg1

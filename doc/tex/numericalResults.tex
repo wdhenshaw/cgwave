@@ -129,3 +129,145 @@ Upwinding needs CFL=.5 for some reason, unstable at the boundary at cfl=.9
 \input tables/annulusEigannuluscbcOrder4maxNormConvTable.tex
 
 
+
+% ----------------------------------------------------------
+\section{Implicit time-stepping numerical results} \label{sec:implicitTimeSteppingResults}
+
+
+% ----------------------------------------------------------
+\subsection{Square domains with implicit time-stepping} \label{sec:squareEigenModes}
+
+\mni
+\textbf{Square, EigenMode, Order=4, BC=D, CBC, implicit, cfl=1.5}
+\input tables/squareEigsquareImplicitUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+\mni
+\textbf{Square, EigenMode, Order=4, BC=N, CBC, implicit, cfl=1.5}
+\input tables/squareEigsquareImplicitUWCcbcNeumannOrder4stdcbcmaxNormConvTable.tex
+
+\mni
+\textbf{NonSquare, EigenMode, Order=4, BC=D, CBC, implicit, cfl=1, $\beta_2=\beta_4=0$ (TRAP)}
+\input tables/squareEignonSquareImplicitUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+
+\mni
+\textbf{rotatedSquare, TRIG-TZ, Order=4, BC=D, CBC, implicit, cfl=1, $\beta_2=\beta_4=0$ (TRAP)}
+\input tables/squareEignonSquareImplicitUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+% ----------------------------------------------------------
+\subsection{Wiggley Square domains with implicit or explicit time-stepping} \label{sec:wiggleySquare}
+
+This is an example of a non-orthogonal grid.
+
+\mni
+\textbf{wiggleySquare, TRIG-TZ, Order=2, BC=D, CBC, EXPLICIT, cfl=.9 : {\blue OK}}
+\input tables/tzwiggleyUWCcbcOrder2stdcbcmaxNormConvTable.tex
+
+\mni
+\textbf{wiggleySquare, TRIG-TZ, Order=2, BC=D, CBC, IMPLICIT, $\beta_2=0$, dtMax set, {\blue OK} }
+\input tables/tzwiggleyImplicitUWCOrder2stdoneSidedmaxNormConvTable.tex
+
+
+
+\mni
+\textbf{wiggleySquare, TRIG-TZ, Order=4, BC=D, CBC, EXPLICIT, cfl=.5}
+{\red Trouble at cfl=.9 -- lower right corner is trouble. cfl=.5 is ok}
+\input tables/tzwiggleyUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+\mni
+\textbf{wiggleySquare, TRIG-TZ, Order=4, BC=D, CBC, implicit, $\beta_2=\beta_4=0$ (TRAP), dtMax set}
+{\blue Uses new Hierachical implicit coefficients for $\Delta_{2h}^2$. *BUT* trouble on fine grids at larger dtMax. Treatment of lower right corner probably needs to be improved.}
+\input tables/tzwiggleyImplicitUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+
+% ----------------------------------------------------------
+\subsection{Disk eigenmodes with implicit time-stepping} \label{sec:diskEigenModes}
+
+
+\mni
+\textbf{Disk, Order=4, BC=D, CBC, implicit, upwind, cfl=1.5}
+\input tables/diskEigsicImplicitUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+\mni
+\textbf{Disk, Order=4, BC=N, CBC, implicit, upwind, cfl=1.5}
+\input tables/diskEigsicImplicitUWCcbcNeumannOrder4stdcbcmaxNormConvTable.tex
+
+
+% ----------------------------------------------------------
+\subsection{Scattering from a 2D cylinder with implicit time-stepping} \label{sec:cylinderScattering }
+
+Results for scattering of a plane wave from a cylinder in 2D.
+
+\mni
+\textbf{CylScat, Order=2, BC=D, implicit, upwind, dtMax=.02}
+\input tables/cylScatcicFixedImplicitUWCOrder2stdoneSidedmaxNormConvTable.tex
+
+\mni
+\textbf{CylScat, Order=4, BC=D, CBC, implicit, upwind, dtMax=.02}
+\input tables/cylScatcicFixedImplicitUWCOrder4stdoneSidedmaxNormConvTable.tex
+
+
+% ----------------------------------------------------------
+\subsection{Box eigenmodes with implicit time-stepping} \label{sec:boxEigenModes}
+
+\mni
+\textbf{Box, Order=4, BC=D, CBC, implicit, cfl=1}
+\input tables/squareEigboxImplicitUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+
+
+\mni
+\textbf{\red Note: Still need to fix 3D CBC Neumann BCs}
+
+
+
+% ----------------------------------------------------------
+\clearpage
+\subsection{3D Cylinder eigenmodes with implicit time-stepping} \label{sec:cylEigenModes}
+
+\mni
+\textbf{PIPE, Order=2, BC=D, implicit, cfl=1}
+\input tables/diskEigpipezImplicitUWCOrder2stdoneSidedmaxNormConvTable.tex
+
+
+\mni
+\textbf{PIPE, Order=4, BC=D, CBC, implicit, dtMax=.02}
+{\blue Uses new Hierachical implicit coefficients for $\Delta_{2h}^2$.}
+\input tables/diskEigpipezImplicitUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+
+% ----------------------------------------------------------
+\clearpage
+\subsection{Orthographic Sphere Patch with implicit time-stepping} \label{sec:orthoSphere}
+
+Orthographic patch on a sphere.
+
+\mni
+\textbf{ORTHO-SPHERE, TRIG-TZ, Order=4, BC=D, CBC, implicit, dtMax=.02}
+
+\input tables/tzorthoSphereImplicitUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+
+% ----------------------------------------------------------
+\clearpage
+\subsection{3D Sphere eigenmodes with implicit time-stepping} \label{sec:sphereEigenModes}
+
+\mni
+\textbf{SPHERE (fixed), Order=2, BC=D, implicit, dtMax=.02}
+\input tables/sphereEigsphereFixedImplicitUWCOrder2stdoneSidedmaxNormConvTable.tex
+% \input tables/sphereEigsphereImplicitUWCOrder2stdoneSidedmaxNormConvTable.tex
+
+
+\mni
+\textbf{SPHERE, Order=4, BC=D, CBC, implicit, dtMax=.02}
+{\blue Uses new Hierachical implicit coefficients for $\Delta_{2h}^2$.}
+\input tables/sphereEigsphereFixedImplicitUWCcbcOrder4stdcbcmaxNormConvTable.tex
+
+
+
+
+
+
+
+
+

@@ -161,6 +161,12 @@ saveSequencesToShowFile()
       }
     }
   }
+  
+  const int & computeEnergy  = dbase.get<int>("computeEnergy"); 
+  if( computeEnergy )
+  {
+    name[numberOfComponents] = "energy";
+  }
 
   // display(sequence(I,N),"saveSequencesToShowFile: sequence(I,N)");
   

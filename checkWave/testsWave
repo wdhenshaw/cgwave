@@ -40,7 +40,7 @@ nonSquareOrder4LCBC.check    ../runs/tz/tz.cmd -g=grids/nonSquare16.order4.ng3 -
 nonSquareOrder6LCBC.check    ../runs/tz/tz.cmd -g=grids/nonSquare16.order6.ng4 -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
 nonSquareOrder8LCBC.check    ../runs/tz/tz.cmd -g=grids/nonSquare16.order8.ng5 -meApproach=ha -bcApproach=lcbc -upwind=1 -degreeInTime=6 -degreeInSpace=6 -tf=.2 -tp=.1 -go=go
 #
-# TZ implicit tests
+# TZ implicit tests 
 squareOrder2Imp.check    ../runs/tz/tz.cmd -g=grids/square16.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go
 squareOrder4Imp.check    ../runs/tz/tz.cmd -g=grids/square16.order4.ng3 -upwind=0 -degreeInTime=2 -degreeInSpace=4 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -orderInTime=2 -go=go
 boxOrder2Imp.check       ../runs/tz/tz.cmd -g=grids/box1.order2 -upwind=0 -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -dtMax=.1 -go=go

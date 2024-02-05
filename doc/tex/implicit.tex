@@ -1,0 +1,341 @@
+% -------------------------------------------------------------------------------------------------------
+\section{Implicit time-stepping} \label{sec:implicitTimeStepping}
+
+The govering equation is written as 
+\ba
+   \p_t^2 u = L u + f
+\ea
+where $L=c^2 \Delta$.
+
+\subsection{Second-order accurate implicit schemes}
+
+\subsection{Fourth-order accurate implicit schemes}
+
+% -------------------------------------------------------------
+\subsection{Implicit first time-step : second-order accurate}
+
+We show how to take an implicit first step that uses the same implicit operator as
+a general time-step. This will avoid having to form a separate implicit operator.
+
+\mni
+Consider the second-order accurate implicit scheme
+\ba
+ \f{U_\iv^{n+1} - 2 U_\iv^n + U_\iv^{n-1}}{\dt^2} = 
+       L_{2h}\Big[ \alpha_2 U_\iv^{n+1} + \beta_2 U_\iv^n + \alpha_2 U_\iv^{n-1}  \Big] + F_\iv^n  \label{eq:implicitOrder2}
+\ea 
+where 
+which has the implicit operator
+\ba
+  A_2 =  I - \f{\alpha_2 \dt^2}{2} L_{2h}  ,
+\ea
+and where $F_\iv^n$ can take different forms, but one option is to use the weighting 
+\ba
+  F_\iv^n =  \alpha_2 f_\iv^{n+1} + \beta_2 f_\iv^n +  \alpha_2 f_\iv^{n-1},
+\ea
+which is a good option with polynomial manufactured solutions.
+
+Suppose we are given initial conditions,
+\ba
+    u(\xv,0)      & = u_0(\xv), \\
+    \p_t u(\xv,0) & = u_1(\xv).  \label{eq:initialCondition2}
+\ea
+Approximate~\eqref{eq:initialCondition2} to second-order using
+\ba
+   \Dzt U_\iv^n = \f{U_\iv^{n+1} - U_\iv^{n-1}}{2\dt} = u_{1,\iv}
+\ea
+with $n=0$. Solving for $ U_\iv^{n-1}$ 
+\ba
+   U_\iv^{n-1} = U_\iv^{n+1} - (2\dt)u_{1,\iv}
+\ea
+and substituting into~\eqref{eq:implicitOrder2} gives the implicit scheme for the first step ($n=0$),
+\ba
+ \f{ 2 U_\iv^{n+1} - 2 U_\iv^n - (2\dt)u_{1,\iv} }{\dt^2} = 
+      L_{2h}\Big[ 2 \alpha_2 U_\iv^{n+1} + \beta_2 U_\iv^n - \alpha_2 (2\dt)u_{1,\iv}  \Big] + F_\iv^n 
+\ea
+Dividing by 2,
+\ba
+ \f{ U_\iv^{n+1} - U_\iv^n -  \dt u_{1,\iv} }{\dt^2} = 
+      L_{2h}\Big[ \alpha_2 U_\iv^{n+1} + \half \beta_2 U_\iv^n - \alpha_2 \dt u_{1,\iv}  \Big]  + \half F_\iv^n .
+\ea
+This gives the update for the first time-step ($n=0$)
+\ba
+  A_2 U_\iv^{n+1}  = U_\iv^n +  \dt\, u_{1,\iv} + \dt^2 L_{2h}\Big[  \half \beta_2 U_\iv^n - \alpha_2 \dt u_{1,\iv}  \Big] + \half \dt^2  F_\iv^n ,
+  \label{eq:impFirstStepOrder2}
+\ea
+that uses the same implicit operator $A_2$.
+
+
+% \bigskip
+% \bigskip
+
+% Written out this gives the scheme ($n=0$)
+% \ba
+%   \Big[ I - \f{\alpha_2 (c\dt)^2}{2} \Delta_{2h}  \Big] U_\iv^{n+1}
+%     = \Big[ I + \f{\beta_2(c\dt)^2}{2} \Delta_{2h}  \Big] U_\iv^n 
+%       + \dt\, u_{1,\iv}  - {\blue  \alpha_2 c^2\dt^3 \Delta_{2h} u_{1,\iv}} \label{eq:impFirstStepOrder2A}
+% \ea
+% For accuracy, we can drop the last $O(\dt^3)$ {\blue blue} term, to give **CHECK ME**
+% \ba
+%   \Big[ I - \f{\alpha_2 (c\dt)^2}{2} \Delta_{2h}  \Big] U_\iv^{n+1}
+%     =  U_\iv^n + \dt\, u_{1,\iv} + \f{\beta_2(c\dt)^2}{2} \Delta_{2h}  U_\iv^n 
+%          \label{eq:impFirstStepOrder2}
+% \ea
+% Note that scheme~\eqref{eq:impFirstStepOrder2} has the same implicit operator $A_2$ as scheme~\eqref{eq:implicitOrder2}.
+
+\mni
+\textbf{Unified notation.}
+With a unified approach, the update for the interior points can be used for the first time-step as well by adjusting the 
+coefficients in the update.
+Write the update for the interior and the first time-step in the general form
+\ba
+ & A_2 U_\iv^{n+1}
+    =  K_1 U_\iv^n + K_2 V_\iv 
+       + L_{2h}\Big[  K_3 U_\iv^n  + K_4 V_\iv \Big] +  \dt^2 G 
+    \label{eq:unifiedScheme2}
+\ea
+The interior scheme 
+\ba
+   A_2  U_\iv^{n+1} = 2 U_\iv^n - U_\iv^{n-1} + \dt^2  L_{2h}\Big[ \beta_2 U_\iv^n + \alpha_2 U_\iv^{n-1}  \Big] + \dt^2  F_\iv^n 
+\ea
+uses
+\ba
+ V_\iv=U_\iv^{n-1}, 
+ \quad  K_1 = 2, \quad K_2=-1,  \quad K_3 = \beta_2 \dt^2, \quad K_4 = \alpha_2 \dt^2,
+ \quad G  = F_\iv^n 
+\ea
+The first time-step
+\ba
+  A_2 U_\iv^{n+1}  = U_\iv^n +  \dt\, u_{1,\iv} + \dt^2 L_{2h}\Big[  \half \beta_2 U_\iv^n - \alpha_2 \dt u_{1,\iv}  \Big]
+       + \half \dt^2  F_\iv^n  , 
+  \label{eq:impFirstStepOrder2A}
+\ea
+uses
+\ba
+ V_\iv=u_{1,\iv}, 
+ \quad  K_1 = 1, 
+ \quad K_2=\dt, 
+\quad K_3 = \half \beta_2 \dt^2, 
+\quad K_4 ={\blue  - \alpha_2 \dt^3},
+ \quad G  = \half F_\iv^n 
+\ea
+Note that, for accuracy, we could set the {\blue blue} term $K_4$ to zero. 
+It is straigtforward to keep the term, however, as it fits in the general formula~\eqref{eq:unifiedScheme2}.
+
+
+
+% \bigskip
+
+% The interior implicit scheme and first-step scheme are 
+% \ba
+%  & A_2 U_\iv^{n+1}
+%     =  2 U_\iv^n - U_\iv^{n-1} 
+%        + \f{\beta_2(c\dt)^2}{2} \Delta_{2h}  U_\iv^n 
+%        + \f{\alpha_2(c\dt)^2}{2} \Delta_{2h}  U_\iv^{n-1} \\
+%  & A_2 U_\iv^{n+1}
+%     =  U_\iv^n + \dt\, u_{1,\iv} + \f{\beta_2(c\dt)^2}{2} \Delta_{2h}  U_\iv^n    
+% \ea
+% Write the time-step for both cases as 
+% \ba
+%  & A_2 U_\iv^{n+1}
+%     =  K_1 U_\iv^n + K_2 V_\iv 
+%        + \Delta_{2h}\Big[  K_3 U_\iv^n  + K_4 V_\iv \Big] 
+% \ea
+% The interior update uses
+% \ba
+%  V_\iv=U_\iv^{n-1}, 
+%  \quad  K_1 = 2, \quad K_2=-1,  \quad K_3 = \beta_2 \dt^2, \quad K_4 = \alpha_2 \dt^2
+% \ea
+% while the first-step implicit update uses
+% \ba
+%   V_\iv=u_{1,\iv} , \quad
+%   K_1 = 1, \quad K_2=\dt,  \quad K_3 = \f{\beta_2(c\dt)^2}{2}, \quad K_4 = - {\blue  \alpha_2 c^2\dt^3}
+% \ea
+
+% \clearpage
+% -------------------------------------------------------------
+\subsection{Implicit first time-step : fourth-order accurate}
+
+We show how to take an implicit first step that uses the same implicit operator as
+a general time-step. This will avoid having to form a separate implicit operator.
+
+\mni
+Consider the fourth-order accurate implicit scheme
+\ba
+ \f{U_\iv^{n+1} - 2 U_\iv^n + U_\iv^{n-1}}{\dt^2} = 
+      L_{4h}\Big[ \alpha_2 U_\iv^{n+1} + \beta_2 U_\iv^n + \alpha_2 U_\iv^{n-1}  \Big]  
+    -\dt^2 L_{2h}^2 \Big[ \alpha_4 U_\iv^{n+1} + \beta_4 U_\iv^n + \alpha_4 U_\iv^{n-1}  \Big] + F_\iv^n  
+      \label{eq:implicitOrder4}
+\ea 
+which has the implicit operator
+\ba
+  A_4 \eqdef  I - \f{ \alpha_2 \dt^2}{2} L_{4h} + \alpha_4 \dt^4 L_{2h}^2 . 
+\ea
+and forcing $F_\iv^n$
+that approximates
+\ba
+      F_\iv^n \approx \left[ f + \f{\dt^2}{12}( L f + \p_t^2 f)\right]_{\xv_\iv,t^n}
+\ea
+% I think we choose **CHECK ME**
+% \ba
+%   F_\iv^n =  \alpha_2 f_\iv^{n+1} + \beta_2 f_\iv^n +  \alpha_2 f_\iv^{n-1}.
+% \ea
+
+We want to approximate the second initial condition~\eqref{eq:initialCondition2} to fourth-order accuracy.
+To this end note that 
+\ba
+  & \p_t u = \Dzt u  - \f{\dt^2}{6} \p_t^3 u + O(\dt^4), 
+\ea
+Using the time derivative of the equation $\p_t^2 u =L u + f $,
+\ba
+  \p_t^3 u = \p_t^2 (\p_t u) =L( \p_t u) + \p_t f 
+\ea
+% Thus, using $\p_t^2 u =L u + f $, approximate the second initial condition~\eqref{eq:initialCondition2} to fourth-order using
+leads to 
+\ba
+   \Dzt U_\iv^n - \f{\dt^2}{6}[ L_{2h} u_{1,\iv} +\p_t f]  = u_{1,\iv} 
+\ea
+with $n=0$. Solving for $ U_\iv^{n-1}$ 
+\ba
+   U_\iv^{n-1} &= U_\iv^{n+1} - (2\dt)u_{1,\iv} - \f{\dt^3}{3} [ L_{2h} u_{1,\iv} + (\p_t f)_\iv^n ], \\
+               &= U_\iv^{n+1} - W_\iv, \\
+  W_\iv &\eqdef  (2\dt)u_{1,\iv} + \f{\dt^3}{3} [ L_{2h} u_{1,\iv} + (\p_t f)_\iv^n ],
+\ea
+and substituting into~\eqref{eq:implicitOrder4} gives the implicit scheme for the first step ($n=0$),
+\ba
+\f{ 2 U_\iv^{n+1} - 2 U_\iv^n - W_\iv}{\dt^2} & = 
+      L_{4h}\Big[ 2 \alpha_2 U_\iv^{n+1} + \beta_2 U_\iv^n - \alpha_2 W_\iv  \Big]  \\
+    &  -\dt^2  L_{2h}^2 \Big[ 2 \alpha_4 U_\iv^{n+1} + \beta_4 U_\iv^n - \alpha_4 W_\iv  \Big]  + F_\iv^n 
+\ea
+Dividing through by $2$ gives a fourth-order accurate scheme for the first time-step ($n=0$),
+\ba
+\f{ U_\iv^{n+1} - U_\iv^n - \half W_\iv}{\dt^2} & = 
+      L_{4h}\Big[  \alpha_2 U_\iv^{n+1} + \half \beta_2 U_\iv^n - \half\alpha_2 W_\iv  \Big] \\
+    &  - \dt^2  L_{2h}^2\Big[  \alpha_4 U_\iv^{n+1} + \half\beta_4 U_\iv^n - \half\alpha_4 W_\iv  \Big]  + \half F_\iv^n
+    \label{eq:impFirstStepOrder4A}
+\ea
+Expanding gives the update equation ($n=0$) for the first time-step
+\ba
+A_4 U_\iv^{n+1} &= U_\iv^n + \half W_\iv + \dt^2 L_{4h}\Big[  \half \beta_2 U_\iv^n - \half\alpha_2 W_\iv  \Big]
+                 - \dt^4  L_{2h}^2\Big[  \half\beta_4 U_\iv^n - \half\alpha_4 W_\iv  \Big]  + \half \dt^2 F_\iv^n
+\ea                
+Substituting for $W_\iv$ gives the scheme for the first time-step ($n=0$)
+\bse
+\label{eq:impFirstStepOrder4}
+\ba
+A_4 U_\iv^{n+1} &= U_\iv^n + \dt\, u_{1,\iv} + \f{\dt^3}{6} L_{2h} u_{1,\iv}  \\
+                & + \dt^2 L_{4h}\Big(  \half \beta_2 U_\iv^n - \alpha_2(\dt\, u_{1,\iv}  {\blue + \f{\dt^3}{6} L_{2h} u_{1,\iv}})  \Big) \\
+                & - \dt^4  L_{2h}^2\Big(  \half\beta_4 U_\iv^n - \alpha_4 (\dt\, u_{1,\iv} {\blue + \f{\dt^3}{6} L_{2h} u_{1,\iv}})  \Big) \\
+                &  + \half \dt^2 F_\iv^n + \f{\dt^3}{6} (\p_t f)_\iv^n + {\blue O(\dt^5) L_h (\p_t f)_\iv^n }
+\ea
+\ese
+The terms in {\blue blue} can be dropped based on accuracy.
+Note that scheme~\eqref{eq:impFirstStepOrder4} has the same implicit operator $A_4$ as scheme~\eqref{eq:implicitOrder4}.
+
+
+For TwilightZone with solution $u^e(x,t)$ we can set the term $\p_t f$ in ~\eqref{eq:impFirstStepOrder4} to be 
+\ba
+ \p_t f = \p_t^3 u^e - L( \p_t u^e) 
+\ea
+Otherwise, if the forcing is only known at discrete times we can use the second-order approximation
+\ba
+   \p_t f = Dzt f 
+\ea
+
+% Otherwise, the forcing term can be approximated by 
+% \ba
+%   \half \dt^2 F_\iv^n + \f{\dt^3}{6} (\p_t f)_\iv^n
+%       & = \dt^2\Big[    \alpha_2 f_\iv^{n+1} + \beta_2 f_\iv^n +  \alpha_2 f_\iv^{n-1} + \f{\dt^3}{6} \Dzt f_\iv^n \Big]\\
+%       & = \dt^2\Big[    \alpha_2 f_\iv^{n+1} + \beta_2 f_\iv^n +  \alpha_2 f_\iv^{n-1} + \f{\dt^2}{12} ( f_\iv^{n+1}- f_\iv^{n-1} ) \Big]\\
+%       &=  \dt^2\Big[   (  \alpha_2 + \f{\dt^2}{12} ) f_\iv^{n+1} + \beta_2 f_\iv^n +  (\alpha_2 - \f{\dt^2}{12}) f_\iv^{n-1}
+% \ea
+
+
+
+% \bigskip
+% \bigskip
+
+
+% \ba
+% A_4 U_\iv^{n+1} &= [I+ \f{ \beta_2 (c \dt)^2}{2} \Delta_{4h} - \f{\beta_4 (c \dt)^4}{12} \Delta_{2h}^2  ] U_\iv^n
+%      + \half \Big[ (2\dt)u_{1,\iv} - \f{c^2\dt^3}{3} \Delta_{2h} u_{1,\iv} \Big] \\
+%      & - \f{ (c\dt)^2}{2} {\red \Delta_{4h}}\Big[ (2\dt)u_{1,\iv} {\blue - \f{c^2\dt^3}{3} \Delta_{2h} u_{1,\iv}}  \Big]
+%      {\blue -\f{ (c \dt)^4 \alpha_4}{24} \Delta_{2h}^2\Big[ (2\dt)u_{1,\iv} - \f{c^2\dt^3}{3} \Delta_{2h} u_{1,\iv} \Big]}
+%     \label{eq:impFirstStepOrder4B}
+% \ea
+% For accuracy, we can drop the terms in {\blue blue} and change the term in {\red red} to $\Delta_{2h}$.
+% Whence 
+% \ba
+% A_4 U_\iv^{n+1} &= [I+ \f{ \beta_2 (c \dt)^2}{2} \Delta_{4h} - \f{\beta_4 (c \dt)^4}{12} \Delta_{2h}^2  ] U_\iv^n
+%      + \half \Big[ (2\dt)u_{1,\iv} - \f{c^2\dt^3}{3} \Delta_{2h} u_{1,\iv} \Big] 
+%      - \f{ (c\dt)^2}{2} \Delta_{2h} \Big[ (2\dt)u_{1,\iv}   \Big] 
+% \ea
+% or **CHECK ME**
+% \ba
+% \Big[ I - \f{ \alpha_2 (c\dt)^2}{2} \Delta_{4h} + \f{ \alpha_4 (c \dt)^4}{12} \Delta_{2h}^2 \Big] U_\iv^{n+1}
+%     &=  U_\iv^n
+%      + \dt\, u_{1,\iv} 
+%      + \f{ \beta_2 (c \dt)^2}{2} \Delta_{4h} U_\iv^n
+%      - \f{7 c^2 \dt^3}{6} \Delta_{2h} \, u_{1,\iv} 
+%      - \f{\beta_4 (c \dt)^4}{12} \Delta_{2h}^2  U_\iv^n
+%     \label{eq:impFirstStepOrder4}
+% \ea
+
+
+
+\clearpage
+\mni
+\textbf{Unified notation.}
+With a unified approach, the update for the interior points can be used for the first time-step as well by adjusting the 
+coefficients in the update.
+Write the update for the interior and the first time-step as 
+\ba
+ & A_4 U_\iv^{n+1}
+    =  K_1 U_\iv^n + K_2 V_\iv 
+       + L_{4h}\Big[  K_3 U_\iv^n  + K_4 V_\iv \Big] 
+       + L_{2h}^2\Big[  K_5 U_\iv^n  + K_6 V_\iv \Big]  + \dt^2 G
+\ea
+The interior update 
+\ba
+ A_4 U_\iv^{n+1} & =  2 U_\iv^n -  U_\iv^{n-1}  
+        + \dt^2 L_{4h}\Big( \beta_2 U_\iv^n + \alpha_2 U_\iv^{n-1}  \Big) 
+        - \dt^4 L_{2h}^2 \Big( \beta_4 U_\iv^n + \alpha_4 U_\iv^{n-1}  \Big)  +\dt^2 F_\iv^n 
+\ea 
+uses
+\ba
+ & V_\iv=U_\iv^{n-1}, \quad K_1 = 2, \quad K_2=-1,  \quad K_3 = \beta_2 \dt^2, \quad K_4 = \alpha_2 \dt^2, \\
+ &   K_5 = -\beta_4 \dt^2, \quad K_6 = -\alpha_4 \dt^2,\\
+&  G = F_\iv^n 
+\ea
+while the first-step implicit update 
+\bse
+\label{eq:impFirstStepOrder4A}
+\ba
+A_4 U_\iv^{n+1} &= U_\iv^n + \dt\, u_{1,\iv} + \f{\dt^3}{6} L_{2h} u_{1,\iv} \\
+                & + \dt^2 L_{4h}\Big(  \half \beta_2 U_\iv^n - \alpha_2(\dt\, u_{1,\iv}  {\blue + \f{\dt^3}{6} L_{2h} u_{1,\iv}})  \Big) \\
+                & - \dt^4  L_{2h}^2\Big(  \half\beta_4 U_\iv^n - \alpha_4 (\dt\, u_{1,\iv} {\blue + \f{\dt^3}{6} L_{2h} u_{1,\iv}})  \Big) \\
+              &  + \half \dt^2 F_\iv^n + \f{\dt^3}{6} (\p_t f)_\iv^n + {\blue O(\dt^5) L_h (\p_t f)_\iv^n }                
+\ea
+\ese
+uses 
+\ba
+ & V_\iv=u_{1,\iv} ,\quad  K_1 = 1, \quad K_2=\dt,  \\
+ &  K_3 = \f{\beta_2 \dt^2}{2},
+    \quad K_4 =  - \alpha_2 \dt^3 + {\green \f{\dt^3}{6}}, \\
+ &   K_5 = -\f{\beta_4 \dt^4 }{2}, 
+     \quad K_6 = {\blue \alpha_4 \dt^5},\\
+  & G =  \half F_\iv^n  + \f{\dt^3}{6} (\p_t f)_\iv^n
+%   & G =  (  \alpha_2 + \f{\dt^2}{12} ) f_\iv^{n+1} + \beta_2 f_\iv^n +  (\alpha_2 - \f{\dt^2}{12}) f_\iv^{n-1}  
+\ea
+Here we have kept one blue term ($K_6$, since it fits easily) 
+and changed $\f{\dt^3}{6} L_{2h} u_{1,\iv}$ to ${\green \f{\dt^3}{6} L_{4h} u_{1,\iv}}$.
+
+
+% Written out this gives the scheme ($n=0$)
+% \ba
+%   \Big[ I - \f{\alpha\dt^2}{2} \Delta_{2h}  \Big] U_\iv^{n+1}
+%     = \Big[ I - \f{\beta\dt^2}{2} \Delta_{2h}  \Big] U_\iv^n 
+%       + \dt\, u_{1,\iv}  - \alpha \dt^3 \Delta_{2h} u_{1,\iv} \label{eq:impFirstStepOrder2}
+% \ea
+% Maybe, for accuracy, we do not need the last $O(\dt^3)$ term. 
+% Note that scheme~\eqref{eq:impFirstStepOrder2} has the same implicit operator $A_2$ as scheme~\eqref{eq:implicitOrder2}.
+

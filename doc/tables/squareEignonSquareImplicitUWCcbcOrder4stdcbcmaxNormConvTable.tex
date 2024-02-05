@@ -1,0 +1,15 @@
+\begin{table}[H]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+\begin{center}
+\begin{tabular}{|l|c|c|c|} \hline 
+grid  & N &  $ u $ & r \\ \hline 
+  nonSquare8 &     1 & \num{8.8}{-2} &        \\ \hline
+ nonSquare16 &     2 & \num{3.6}{-3} & 24.30  \\ \hline
+ nonSquare32 &     4 & \num{1.4}{-4} & 25.93  \\ \hline
+ nonSquare64 &     8 & \num{5.9}{-6} & 23.65  \\ \hline
+nonSquare128 &    16 & \num{2.8}{-7} & 21.14  \\ \hline
+    rate             &       &  $4.58$       &       \\ \hline
+\end{tabular}
+\caption{CgWave, squareEig, max norm, order=$4$, ts=implicit, orderInTime=-1, dtMax0=$2e-2$, $t=.6$, cfl=$1$, upwind=1, bc=d, bcApproach=cbc, meApproach=std, -known=squareEig, kx=1, ky=1, kz=1, nBessel=1, mTheta=1, mz=1, rad=1, tz=poly, solveri=yale, rtoli=1e-10, atoli=1e-10, maxiti=2000, , beta2=0, beta4=0,rectangular=implicit, implicitUpwind=0, Wed Dec 20 13:49:00 2023}\label{table:squareEigOrder4max}
+\end{center}
+\end{table}

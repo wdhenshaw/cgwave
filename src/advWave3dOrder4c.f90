@@ -2287,8 +2287,11 @@ real uzzzzzz
     integer updateSolution,updateDissipation,computeUt
     integer ec 
     real ep 
-    real fv(0:1) , ev(0:1), evt(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1)
+    real fv(0:1) , ev(0:1), evt(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1), evttt(0:1), evxxt(0:1), evyyt(0:1)
     real evxxxx(0:1), evxxyy(0:1), evyyyy(0:1), evxxzz(0:1), evyyzz(0:1), evzzzz(0:1), evtttt(0:1)
+    real evxxttt(0:1), evyyttt(0:1), evxxxxt(0:1), evxxyyt(0:1), evyyyyt(0:1)
+    real evzzt(0:1), evzzttt(0:1), evzzzzt(0:1), evxxzzt(0:1), evyyzzt(0:1)
+    real evxxxxttt(0:1), evxxyyttt(0:1), evyyyyttt(0:1)
     real evtttttt(0:1)
     real evxxxxxx(0:1)
     real evyyyyyy(0:1)
@@ -3644,34 +3647,25 @@ real uzzzzzz
          tsf=dtSq
        else
          ! first-step implicit:
+         ! SEE NOTES IN CGWAVE DOCUMENTATIION
          !
-         ! *NOTE* 
-         !    We need to adjust the coefficients so that we can use the SAME IMPLICI SOLVER as the later steps
-         !   u(t+dt) = u(0) + dt*ut(0) + .5*dt^2* u.tt
-         !   u(0) = known
-         !   ut(0) = known
-         !
-         ! FINISH ME: 
-         !   u.tt = Lu - damp*u.t 
-         !   Lu = cImp(1,0)*Lu(t+dt) + cImp(0)*Lu(t) + cImp(1)*Lu(t-dt)
-         !   
-         !   u(t+dt) = u(0) + dt*ut(0) + .5*dt^2* [ cImp(1,0)*Lu(t+dt) + cImp(0)*Lu(t) + cImp(1)*Lu(t-dt) ] + .5*dt^2( u(t+dt) - u(t-dt))/(2*dt) 
-         !
-         !  [ I - dt^2* cImp(1,0)*L + damp*.5*dt] u(t+dt) =  u(0) + dt*ut(0) 
-         !   Assumes um = ut(t=0) 
-         ! AND 
-         !   cImp(1,0) = cImp(-1,0)
-         !   RHS = u + dt*ut + (dt^2/2)*L * ( cImp(0,0)*u - 2.*dt*cImp(1,0)*ut ) + .5*dt^2 * f
          ! CHECK ME FOR DAMPING     
          ts1=1. + .5*damp*dt
          ts2=dt - .5*dt*dt*damp
          ts3= .5*cdtSq*cImp( 0,0)
          ts4=-dt*cdtSq*cImp(-1,0)
-         if( orderInTime.eq.4 )then
-           write(*,'("advWave: finish me : IMP orderInTime=4")') 
-           stop 4445
-         end if
          tsf=.5*dtSq    
+         if( orderInTime.eq.4 )then
+           ! FIX ME FOR DAMPING 
+           ts4 = ts4 + dt*cdtSq/6.
+           ts5 = -.5*cdtSq**2 * cImp( 0,1) 
+           ts6 =  dt*cdtSq**2 * cImp(-1,1)
+           ! FORCING NEEDS ADJUSTMENT TOO 
+           if( addForcing.ne.0 )then
+             write(*,'(/,"**** advWave: TAKE IMPLICIT FIRST STEP : finish me for orderInTime=4 and ADD FORCING*****")') 
+           ! stop 4445
+           end if
+         end if
        end if
        cf = tsf
      end if
@@ -4222,7 +4216,7 @@ real uzzzzzz
        else
          ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----
          if( takeImplicitFirstStep.eq.1 )then
-           if( orderInTime.eq.2 )then
+           if( orderInTime.eq.2 .or. orderInTime.eq.4 )then
              write(*,'(" advWave: TAKE IMPLICIT FIRST STEP ")')
            else
              write(*,'(" advWave: TAKE IMPLICIT FIRST STEP : FINISH ME, orderInTime =",i2)') orderInTime
@@ -4389,6 +4383,29 @@ real uzzzzzz
                              call ogDeriv(ep, 0,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evzzzz(m) )
                            fv(m) = fv(m) + (dt**2 * c**4)*( cImp(mt,1)*(  evxxxx(m) + 2.*evxxyy(m) + 2.*evxxzz(m) + 2.*evyyzz(m) + evyyyy(m) + evzzzz(m) )  )
                          end do
+                         if( takeImplicitFirstStep.eq.1 )then
+                           ! implicit first step: adjust forcing
+                           write(*,'("advWave: Adjust forcing for takeImplicitFirstStep in 3D , t=",e10.2)') t
+                           ! dt^3/6 * f_t 
+                           !  f_t = ue_ttt - L ue_t
+                             call ogDeriv(ep, 3,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evttt(m) )
+                             call ogDeriv(ep, 1,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxt(m) )
+                             call ogDeriv(ep, 1,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyt(m) )
+                             call ogDeriv(ep, 1,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzt(m) )
+                           fv(m) = fv(m) + (1./cf)*(dt**3/6.)*( evttt(m) - cSq*( evxxt(m) + evyyt(m) + evzzt(m) ) ) 
+                           ! -alpha2 * dt^5/6 *( L f_t )
+                           ! L f_t = (L ue)_ttt - L^2(ue)_t 
+                             call ogDeriv(ep, 3,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxttt(m) )
+                             call ogDeriv(ep, 3,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyttt(m) )
+                             call ogDeriv(ep, 3,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzttt(m) )
+                             call ogDeriv(ep, 1,4,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxt(m) )
+                             call ogDeriv(ep, 1,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyt(m) )
+                             call ogDeriv(ep, 1,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzzt(m) )
+                             call ogDeriv(ep, 1,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyt(m) )
+                             call ogDeriv(ep, 1,2,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzzt(m) )
+                             call ogDeriv(ep, 1,0,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzzt(m) )
+                           fv(m) = fv(m) - (1./cf)*(cImp(-1,0)*dt**5/6.)*( cSq*(evxxttt(m) + evyyttt(m) + evzzttt(m)) - cSq**2*( evxxxxt(m) + evyyyyt(m) + evzzzzt(m) + 2.*(evxxyyt(m) + evxxzzt(m) + evyyzzt(m) )) ) 
+                         end if
                     else if( forcingOption.eq.helmholtzForcing )then
                       ! forcing for solving the Helmholtz equation   
                       ! NOTE: change sign of forcing since for Helholtz we want to solve
@@ -4562,6 +4579,29 @@ real uzzzzzz
                              call ogDeriv(ep, 0,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),tm, ec,evzzzz(m) )
                            fv(m) = fv(m) + (dt**2 * c**4)*( cImp(mt,1)*(  evxxxx(m) + 2.*evxxyy(m) + 2.*evxxzz(m) + 2.*evyyzz(m) + evyyyy(m) + evzzzz(m) )  )
                          end do
+                         if( takeImplicitFirstStep.eq.1 )then
+                           ! implicit first step: adjust forcing
+                           write(*,'("advWave: Adjust forcing for takeImplicitFirstStep in 3D , t=",e10.2)') t
+                           ! dt^3/6 * f_t 
+                           !  f_t = ue_ttt - L ue_t
+                             call ogDeriv(ep, 3,0,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evttt(m) )
+                             call ogDeriv(ep, 1,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxt(m) )
+                             call ogDeriv(ep, 1,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyt(m) )
+                             call ogDeriv(ep, 1,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzt(m) )
+                           fv(m) = fv(m) + (1./cf)*(dt**3/6.)*( evttt(m) - cSq*( evxxt(m) + evyyt(m) + evzzt(m) ) ) 
+                           ! -alpha2 * dt^5/6 *( L f_t )
+                           ! L f_t = (L ue)_ttt - L^2(ue)_t 
+                             call ogDeriv(ep, 3,2,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxttt(m) )
+                             call ogDeriv(ep, 3,0,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyttt(m) )
+                             call ogDeriv(ep, 3,0,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzttt(m) )
+                             call ogDeriv(ep, 1,4,0,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxxxt(m) )
+                             call ogDeriv(ep, 1,0,4,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyyyt(m) )
+                             call ogDeriv(ep, 1,0,0,4, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evzzzzt(m) )
+                             call ogDeriv(ep, 1,2,2,0, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxyyt(m) )
+                             call ogDeriv(ep, 1,2,0,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evxxzzt(m) )
+                             call ogDeriv(ep, 1,0,2,2, xy(i1,i2,i3,0),xy(i1,i2,i3,1),xy(i1,i2,i3,2),t, ec,evyyzzt(m) )
+                           fv(m) = fv(m) - (1./cf)*(cImp(-1,0)*dt**5/6.)*( cSq*(evxxttt(m) + evyyttt(m) + evzzttt(m)) - cSq**2*( evxxxxt(m) + evyyyyt(m) + evzzzzt(m) + 2.*(evxxyyt(m) + evxxzzt(m) + evyyzzt(m) )) ) 
+                         end if
                     else if( forcingOption.eq.helmholtzForcing )then
                       ! forcing for solving the Helmholtz equation   
                       ! NOTE: change sign of forcing since for Helholtz we want to solve

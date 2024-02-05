@@ -44,12 +44,14 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
   // bool useUpwindDissipation   = ad4  > 0.;
     bool useUpwindDissipation   = upwind!=0;
     const int & solveHelmholtz  = dbase.get<int>("solveHelmholtz");
+    const IntegerArray & gridIsImplicit    = dbase.get<IntegerArray>("gridIsImplicit");
 
     const int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
     const RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");
     const RealArray & frequencyArraySave  = dbase.get<RealArray>("frequencyArraySave");  
 
     const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption"); 
+    const int & solveForScatteredField  = dbase.get<int>("solveForScatteredField");
 
     const int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
 
@@ -64,7 +66,7 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
     
     Index I1,I2,I3;
 
-    if( forcingOption==helmholtzForcing )
+    if( forcingOption==helmholtzForcing && !solveForScatteredField )
     {
         printF("CgWave::getHelmholtzForcing: ***FILL IN RHS FOR DIRECT HELMHOLTZ SOLVER***\n");
         
@@ -96,6 +98,9 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
     if( useUpwindDissipation ) numGhost++;
 
     const int assignBCForImplicit = 1; 
+  // assignCornerGhostPoints = true if bcOptWave -> cornerWave will assign corner ghost points
+    const int assignCornerGhostPoints = bcApproach==useCompatibilityBoundaryConditions ||
+                                                                            bcApproach==useLocalCompatibilityBoundaryConditions;
 
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
@@ -150,7 +155,7 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
             if( applyKnownSolutionAtBoundaries )
                 addForcingBC=1; 
             int gridType = isRectangular ? 0 : 1;
-            int gridIsImplicit = 0; 
+      // int gridIsImplicit = 0; 
             int numberOfComponents = 1;          // for now CgWave only has a single component 
             int uc = 0;                          // first component
             int ipar[] = {
@@ -159,7 +164,7 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
                 grid                ,            // ipar( 2)
                 gridType            ,            // ipar( 3)
                 orderOfAccuracy     ,            // ipar( 4)
-                gridIsImplicit      ,            // ipar( 5)
+                gridIsImplicit(grid),            // ipar( 5)  // added Nov 22, 2023
                 twilightZone        ,            // ipar( 6)
                 np                  ,            // ipar( 7)
                 debug               ,            // ipar( 8)
@@ -172,7 +177,8 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
                 numGhost,                        // ipar(15)
                 assignBCForImplicit,             // ipar(16)
                 bcApproach,                      // ipar(17)
-                numberOfFrequencies              // ipar(18)
+                numberOfFrequencies,             // ipar(18)
+                assignCornerGhostPoints          // ipar(19)
                                       };
             Real cEM2 = c;
             if( solveHelmholtz ) 

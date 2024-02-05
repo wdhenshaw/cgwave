@@ -39,14 +39,21 @@ outputHeader()
   const IntegerArray & gridIsImplicit       = dbase.get<IntegerArray>("gridIsImplicit");
   const RealArray & bImp                    = dbase.get<RealArray>("bImp");
   const RealArray & cImp                    = dbase.get<RealArray>("cImp");
-  const int & chooseImplicitTimeStepFromCFL = dbase.get<int>("chooseImplicitTimeStepFromCFL");
+  // const int & chooseImplicitTimeStepFromCFL = dbase.get<int>("chooseImplicitTimeStepFromCFL");
+  const int & chooseTimeStepFromExplicitGrids= dbase.get<int>("chooseTimeStepFromExplicitGrids"); 
 
   const int & computeErrors                 = dbase.get<int>("computeErrors");
+  const int & computeEnergy                 = dbase.get<int>("computeEnergy");   
   const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep"); 
   const int & takeImplicitFirstStep         = dbase.get<int>("takeImplicitFirstStep");
 
   const int & useSuperGrid                  = dbase.get<int>("useSuperGrid");
   const Real & superGridWidth               = dbase.get<real>("superGridWidth");
+  const int & adjustPlotsForSuperGrid       =  dbase.get<int>("adjustPlotsForSuperGrid");    // set solution to zero in any superGridLayers
+  const int & adjustErrorsForSuperGrid      =  dbase.get<int>("adjustErrorsForSuperGrid");  
+
+  const int & solveForScatteredField        = dbase.get<int>("solveForScatteredField");
+  const int & plotScatteredField            = dbase.get<int>("plotScatteredField");
 	      
   const int & solveHelmholtz                = dbase.get<int>("solveHelmholtz");
   const int & computeEigenmodes             = dbase.get<int>("computeEigenmodes");
@@ -71,6 +78,7 @@ outputHeader()
   TwilightZoneEnum & twilightZone = dbase.get<TwilightZoneEnum>("twilightZone");
   const int & degreeInSpace = dbase.get<int>("degreeInSpace");
   const int & degreeInTime =  dbase.get<int>("degreeInTime");
+  const InitialConditionOptionEnum & initialConditionOption = dbase.get<InitialConditionOptionEnum>("initialConditionOption");
 
   const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
@@ -139,10 +147,14 @@ outputHeader()
       else
       {
         fPrintF(file,"  Some grids are implicit and some are explicit:\n");
+
+        const RealArray & gridCFL = dbase.get<RealArray>("gridCFL");
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
-          if( !gridIsImplicit(grid) )
-            fPrintF(file,"   grid %3d (%s) is explicit.\n",grid,(const char*)cg[grid].getName());
+          if( gridIsImplicit(grid) )
+            fPrintF(file,"   grid %3d (%s) is implicit. CFL=%10.2e.\n",grid,(const char*)cg[grid].getName(),gridCFL(grid)*dt);
+          else
+            fPrintF(file,"   grid %3d (%s) is explicit. CFL=%10.2e.\n",grid,(const char*)cg[grid].getName(),gridCFL(grid)*dt);
         }
       }
 
@@ -150,9 +162,11 @@ outputHeader()
       fPrintF(file,"   implicit time-stepping weights: cImp(-1,0)=%g, cImp(0,0)=%g, cImp(1,0)=%g (2nd-order term)\n",cImp(-1,0),cImp(0,0),cImp(1,0));
       fPrintF(file,"                                 : cImp(-1,1)=%g, cImp(0,1)=%g, cImp(1,1)=%g (4th-order term)\n",cImp(-1,1),cImp(0,1),cImp(1,1));
     
-      fPrintF(file,"   chooseImplicitTimeStepFromCFL=%d (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
-    }   
-
+      fPrintF(file,"   chooseTimeStepFromExplicitGrids=%i\n"
+                   "      1=choose dt from cfl and explicit grids only (provided not all grids are implicit)\n"        
+                   "      0=choose dt from cfl and all grids\n",chooseTimeStepFromExplicitGrids);    
+      // fPrintF(file,"   chooseImplicitTimeStepFromCFL=%d (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
+    } 
 
 
 
@@ -165,8 +179,6 @@ outputHeader()
         (assignInterpNeighbours==interpolateInterpNeighbours ? "interpolate" : 
          assignInterpNeighbours==extrapolateInterpNeighbours ? "extrapolate" :
                                                                "interpolate" )); // default 
-    
-
 
     fPrintF(file," twilightZone = %s, degreeInSpace=%d, degreeInTime=%d\n",
             (twilightZone==polynomial ? "polynomial" : "trigonometric"), degreeInSpace,degreeInTime);
@@ -187,8 +199,17 @@ outputHeader()
                     bcApproach==useCompatibilityBoundaryConditions      ? "useCompatibilityBCs"                     :
                     bcApproach==useLocalCompatibilityBoundaryConditions ? "useLocalCompatibilityBoundaryConditions" : 
                                                                           "unknown" ));
+    fPrintF(file," initial condition = %s.\n",
+           (initialConditionOption==zeroInitialCondition           ? "zero initial condition"           :
+            initialConditionOption==twilightZoneInitialCondition   ? "twilightZone initial condition"   :
+            initialConditionOption==knownSolutionInitialCondition  ? "known solution initial condition" :
+            initialConditionOption==pulseInitialCondition          ? "pulse initial condition"          :
+            initialConditionOption==randomInitialCondition         ? "random initial condition"         :
+                                                                     "unknown initial condition"));
 
-    fPrintF(file," useSuperGrid=%d, superGridWidth=%g\n",useSuperGrid,superGridWidth);
+    fPrintF(file," solveForScatteredField=%d, plotScatteredField=%d.\n",solveForScatteredField, plotScatteredField);
+    fPrintF(file," useSuperGrid=%d, superGridWidth=%g, adjustPlotsForSuperGrid=%d, adjustErrorsForSuperGrid=%d\n",
+      useSuperGrid,superGridWidth,adjustPlotsForSuperGrid,adjustErrorsForSuperGrid);
 
     fPrintF(file," solveHelmholtz=%d (1= we are solving a Helmholtz problem).\n",solveHelmholtz);
     if( solveHelmholtz )
@@ -215,8 +236,7 @@ outputHeader()
                                          forcingOption==userForcing         ? "userForcing"         :
                                          forcingOption==helmholtzForcing    ? "helmholtzForcing"    : 
                                                                               "unknown"));      
-    fPrintF(file," computeErrors=%d\n",computeErrors);
-    
+    fPrintF(file," computeErrors=%d, computeEnergy=%d.\n",computeErrors,computeEnergy);
 
     if( forcingOption==twilightZoneForcing )
       fPrintF(file," Twilightzone flow is on.");

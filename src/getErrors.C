@@ -17,6 +17,7 @@ getErrors( realCompositeGridFunction & u, real t )
   FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
 
   const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
+  
   const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");
   // printF("\n >>> CgWave::getErrors: numberOfFrequencies=%d\n",numberOfFrequencies);
 

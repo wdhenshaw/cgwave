@@ -1,0 +1,378 @@
+
+****************************************************
+****** Tues Jan 15, 2024
+
+###########  Knife edge grid ############
+
+MOVIES - ORDER-4
+
+FD44 : SPIE k0=20 
+cgWave -noplot scat.cmd -g=tipGridThine64.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bc5=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG64O5SPIEk20.show  -go=go > tipGridG64O5SPIEk20.out 
+
+>>>>chooseTimeStep: implicit-time-stepping: choose c*dt/dxMin from explicit grids only, or dtMax: setting dt= 9.94e-04, dtMax= 1.00e+10 cfl=0.9,  dtRatio=dtExplicit/dtAllGrids=19.10
+cgWave:FD44u t=1.500e+00 (1530 steps) dt=9.804e-04 maxErr= 1.14e+00, ||u||= 1.19e+00, cpu= 3.57e+01(s)
+
+EME
+cgWave -noplot scat.cmd -g=tipGridThine64.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bc5=d -bcApproach=cbc -ts=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG64O5EMEk20.show  -go=go > tipGridG64O5EMEk20.out 
+
+cgWave:FD44u t=1.500e+00 (28830 steps) dt=5.203e-05 maxErr= 1.14e+00, ||u||= 1.19e+00, cpu= 3.97e+02(s)
+
+
+SPIE44 G64 BC=N *trouble*
+cgWave scat.cmd -g=tipGridThini64.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+G64 : BC=d **OK**
+cgWave scat.cmd -g=tipGridThini64.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc5=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+
+SPIE44 G32 BC=N trouble at later times
+cgWave scat.cmd -g=tipGridThini32.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=40 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+cgWave scat.cmd -g=tipGridThini32.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+BC5=d
+cgWave scat.cmd -g=tipGridThini32.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bc5=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+BC=d OK 
+cgWave scat.cmd -g=tipGridThini32.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+
+****************************************************
+****** Mon Jan 15, 2024
+
+###########  Sharp tip grid ############
+
+
+k0=80: 
+cgWave -noplot scat.cmd -g=tipGridThine64.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=80 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG64O2SPIEk80.show -go=go >tipGridG64O2SPIEk80.out
+
+
+
+Thin grid 
+k0=40: explicit
+cgWave -noplot scat.cmd -g=tipGridThine64.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=40 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG64O2EMEk40.show -go=go >tipGridG64O2EMEk40.out
+
+cgWave:FD22u t=1.500e+00 (29880 steps) dt=5.020e-05 maxErr= 1.31e+00, ||u||= 4.29e-01, cpu= 3.15e+02(s)
+total time..........................  3.16e+02    1.06e-02    1.14e-08   100.000   3.158e+02   3.158e+02
+
+
+k0=40: 
+cgWave -noplot scat.cmd -g=tipGridThine64.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=40 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG64O2SPIEk40.show -go=go >tipGridG64O2SPIEk40.out
+
+cgWave:FD22u t=1.500e+00 (1530 steps) dt=9.804e-04 maxErr= 1.07e+00, ||u||= 3.02e-01, cpu= 2.74e+01(s)
+total time..........................  2.76e+01    1.81e-02    1.94e-08   100.000   2.762e+01   2.762e+01
+
+
+
+k0=20: 
+cgWave -noplot scat.cmd -g=tipGridThine64.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG64O2SPIEk20.show -go=go >tipGridG64O2SPIEk20.out
+
+
+k0=10: 
+cgWave -noplot scat.cmd -g=tipGridThine64.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=10 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG64O2SPIEk10.show -go=go >tipGridG64O2SPIEk10.out
+
+
+
+cgWave scat.cmd -g=tipGridThine64.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=40 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+>>>>chooseTimeStep: implicit-time-stepping: choose c*dt/dxMin from explicit grids only, or dtMax: setting dt= 9.94e-04, dtMax= 1.00e+10 cfl=0.9,  dtRatio=dtExplicit/dtAllGrids=19.81
+
+****************************************************
+****** Sun Jan 14, 2024
+
+###########  Sharp tip grid ############
+
+Thin grid 
+cgWave scat.cmd -g=tipGridThine32.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=4.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+
+
+SHOW FILE: 
+cgWave -noplot scat.cmd -g=tipGride32.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG32O2.show -go=go > tipGridG32O2.out
+
+
+FD44u G32 : **TROUBLE**:  ---> check upwind coeff for stretched grid may be too big ??
+cgWave scat.cmd -g=tipGride32.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=4.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+FD44u G16 : OK 
+cgWave scat.cmd -g=tipGride16.order4.ng3.hdf -kx=1 -ky=0 -tp=.05 -tf=4.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+FD22u G32 OK 
+cgWave scat.cmd -g=tipGride32.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=4.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+>>>>chooseTimeStep: implicit-time-stepping: choose c*dt/dxMin from explicit grids only, or dtMax: setting dt= 1.99e-03, dtMax= 1.00e+10 cfl=0.9,  dtRatio=dtExplicit/dtAllGrids=13.77
+
+
+cgWave scat.cmd -g=tipGride16.order2.hdf -kx=1 -ky=0 -tp=.05 -tf=4.5 -known=gpw -k0=10 -beta=40 -x0=-.75 -y0=0 -bc=n -bcApproach=oneSided -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+ >>>>chooseTimeStep: implicit-time-stepping: choose c*dt/dxMin from explicit grids only, or dtMax: setting dt= 3.98e-03, dtMax= 1.00e+10 cfl=0.9,  dtRatio=dtExplicit/dtAllGrids=17.43
+
+
+****************************************************
+****** Mon Jan 8, 2024
+
+CONTINUE ON FANCY EXAMPLE
+
+TIMINGS:
+
+ORDER=2 SPIE  speedup = 120/49 = 2.4x 
+cgWave -noplot scat.cmd -g=holesGridRad01LongN7M26e16np.order2.hdf -kx=1 -ky=0 -tp=.5 -tf=4.5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=go > holesRad01Order2G16N7M26SPIE.out
+
+total time..........................  4.91e+01    4.33e-02    5.55e-08   100.000   4.907e+01   4.907e+01
+
+ORDER2 EME
+cgWave -noplot scat.cmd -g=holesGridRad01LongN7M26e16np.order2.hdf -kx=1 -ky=0 -tp=.5 -tf=4.5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=go > holesRad01Order2G16N7M26EME.out
+
+total time..........................  1.20e+02    2.46e-02    3.15e-08   100.000   1.197e+02   1.197e+02
+
+
+****************************************************
+****** Mon Jan 8, 2024
+
+CONTINUE ON FANCY EXAMPLE -- bigger domain
+
+***MOVIE OFFSET
+G16 7x26 rad=.01 blf=4 :  SPIE 
+cgWave -noplot scat.cmd -g=holesGridRad01LongOffsetN7M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.005 -tf=4.5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01OffsetG16N7M26SPIEMovie.show -go=go > holesRad01OffsetG16N7M26SPIEMovie.out
+
+
+**MOVIE: LONGER domain
+G16 7x26 rad=.01 blf=4 :  SPIE 
+cgWave -noplot scat.cmd -g=holesGridRad01LongN7M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.005 -tf=4.5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01G16N7M26SPIEMovie.show -go=go > holesRad01G16N7M26SPIEMovie.out
+
+****************************************************
+****** Sun Jan 7, 2024
+
+CONTINUE ON FANCY EXAMPLE
+
+ogen -noplot holesGrid -order=2 -interp=e -blf=2 -innerRad=.05 -periodic=np -xa=-3 -nCylx=7 -nCyly=15 -deltaX=.25 -deltaY=.25 -factor=8
+
+SHOW FILES:
+
+
+OFFSET COLUMNS
+G16 7x26 rad=.01 blf=4 :  SPIE 
+cgWave -noplot scat.cmd -g=holesGridRad01OffsetN7M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=4 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -computeErrors=0 -ic=known -debug=0 -show=holesRad01OffsetG16N7M26SPIE.show -go=go > holesRad01OffsetG16N7M26SPIE.out
+
+
++++++++++++++++++++++++ 7x26  2x times faster
+G16 7x26 rad=.01 blf=4 :  SPIE 
+cgWave -noplot scat.cmd -g=holesGridRad01N7M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=4 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01G16N7M26SPIE.show -go=go > holesRad01G16N7M26SPIE.out
+total time..........................  8.36e+01    8.04e-02    1.22e-07   100.000   8.359e+01   8.359e+01
+
+G16 7x26 rad=.01 blf=4 :  EME 
+cgWave -noplot scat.cmd -g=holesGridRad01N7M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=4 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01G16N7M26EME.show -go=go > holesRad01G16N7M26EME.out
+total time..........................  1.56e+02    3.36e-02    5.10e-08   100.000   1.560e+02   1.560e+02
+
+
++++++++++++++++++++++++ 3x26  2x times faster
+G16 3x26 rad=.01 blf=4 :  SPIE 
+cgWave -noplot scat.cmd -g=holesGridRad01N3M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=4 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01G16N3M26SPIE.show -go=go > holesRad01G16N3M26SPIE.out
+
+
+total time..........................  4.01e+01    3.85e-02    6.69e-08   100.000   4.007e+01   4.007e+01
+
+G16 3x26 EME 
+cgWave -noplot scat.cmd -g=holesGridRad01N3M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=4 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01G16N3M26EME.show -go=go > holesRad01G16N3M26EME.out
+
+total time..........................  8.19e+01    1.77e-02    3.07e-08   100.000   8.193e+01   8.193e+01
+
+
+
++++++++++++++++++++++++ 1x26  2.5 times faster
+G16 1x26 rad=.01 blf=4 :  SPIE 
+cgWave -noplot scat.cmd -g=holesGridRad01N1M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=4 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01G16N1M26SPIE.show -go=go > holesRad01G16N1M26SPIE.out
+total time..........................  2.13e+01    2.05e-02    3.84e-08   100.000   2.131e+01   2.131e+01
+
+G16 1x26 EME 
+cgWave -noplot scat.cmd -g=holesGridRad01N1M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=4 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01G16N1M26EME.show -go=go > holesRad01G16N1M26EME.out
+total time..........................  5.08e+01    1.09e-02    2.05e-08   100.000   5.077e+01   5.077e+01
+
+
+
+ SHOW FILES: 
+G16 7x26 rad=.01 blf=4 :  SPIE 
+cgWave -noplot scat.cmd -g=holesGridRad01N7M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=4 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01G16N7M26SPIE.show -go=go > holesRad01G16N7M26SPIE.out
+
+cgWave:FD44u t=3.800e+00 ( 988 steps) dt=3.846e-03 maxErr= 1.19e+00, ||u||= 8.94e-01, cpu= 7.73e+01(s)
+cgWave:FD44u t=3.900e+00 (1014 steps) dt=3.846e-03 maxErr= 1.22e+00, ||u||= 9.50e-01, cpu= 7.93e+01(s)
+cgWave:FD44u t=4.000e+00 (1040 steps) dt=3.846e-03 maxErr= 1.25e+00, ||u||= 8.82e-01, cpu= 8.13e+01(s)
+
+              -------------------CgWave Summary----------------- 
+                       Sun Jan  7 08:58:56 2024
+               Grid:   holesGridRad01N7M26e16np.order4.ng3.hdf 
+  ==== final time= 4.00e+00, numberOfStepsTaken =     1040, grids=183, gridpts =659041, interp pts=31668, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=577.055,ave=577.055,max=577.055](Mb), max-recorded=576.34 (Mb), total=577.055 (Mb)
+ applyBoundaryConditions called 2080 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  8.15e+01    7.84e-02    1.19e-07   100.000   8.152e+01   8.152e+01
+setup and initialize................  1.37e+00    1.32e-03    2.00e-09     1.682   1.371e+00   1.371e+00
+initialize BCs......................  3.58e-02    3.44e-05    5.23e-11     0.044   3.582e-02   3.582e-02
+initial conditions..................  9.99e-02    9.60e-05    1.46e-10     0.123   9.987e-02   9.987e-02
+advance.............................  8.13e+01    7.82e-02    1.19e-07    99.788   8.135e+01   8.135e+01
+  advance rectangular grids.........  1.95e+00    1.88e-03    2.85e-09     2.397   1.954e+00   1.954e+00
+  advance curvilinear grids.........  1.75e+01    1.68e-02    2.55e-08    21.432   1.747e+01   1.747e+01
+    implicit solve..................  3.66e+01    3.52e-02    5.34e-08    44.871   3.658e+01   3.658e+01
+  add dissipation...................  1.21e+01    1.17e-02    1.77e-08    14.865   1.212e+01   1.212e+01
+  boundary conditions...............  1.27e+01    1.22e-02    1.86e-08    15.626   1.274e+01   1.274e+01
+  interpolation.....................  2.57e+00    2.47e-03    3.75e-09     3.150   2.568e+00   2.568e+00
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.46e+00    1.41e-03    2.14e-09     1.796   1.464e+00   1.464e+00
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+ Memory usage: reals/grid-point = 114.77.
+
+ 
+G16 7x26 rad=.01 blf=4 : EXPLICIT ME 
+cgWave -noplot scat.cmd -g=holesGridRad01N7M26e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=4 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=holesRad01G16N7M26EME.show -go=go > holesRad01G16N7M26EME.out
+
+
+
+cgWave:FD44u t=3.700e+00 (4292 steps) dt=8.621e-04 maxErr= 1.18e+00, ||u||= 9.98e-01, cpu= 1.37e+02(s)
+cgWave:FD44u t=3.800e+00 (4408 steps) dt=8.621e-04 maxErr= 1.19e+00, ||u||= 8.96e-01, cpu= 1.41e+02(s)
+cgWave:FD44u t=3.900e+00 (4524 steps) dt=8.621e-04 maxErr= 1.22e+00, ||u||= 9.52e-01, cpu= 1.44e+02(s)
+cgWave:FD44u t=4.000e+00 (4640 steps) dt=8.621e-04 maxErr= 1.25e+00, ||u||= 8.84e-01, cpu= 1.48e+02(s)
+
+              -------------------CgWave Summary----------------- 
+                       Sun Jan  7 09:05:30 2024
+               Grid:   holesGridRad01N7M26e16np.order4.ng3.hdf 
+  ==== final time= 4.00e+00, numberOfStepsTaken =     4640, grids=183, gridpts =659041, interp pts=31668, processors=1, clock=2.99 GHz ==== 
+  ==== memory per-proc: [min=158.285,ave=158.285,max=158.285](Mb), max-recorded=157.855 (Mb), total=158.285 (Mb)
+ applyBoundaryConditions called 4641 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  1.48e+02    3.20e-02    4.85e-08   100.000   1.483e+02   1.483e+02
+setup and initialize................  5.60e-02    1.21e-05    1.83e-11     0.038   5.603e-02   5.603e-02
+initialize BCs......................  3.79e-02    8.17e-06    1.24e-11     0.026   3.792e-02   3.792e-02
+initial conditions..................  1.09e-01    2.35e-05    3.57e-11     0.074   1.091e-01   1.091e-01
+advance.............................  1.48e+02    3.19e-02    4.84e-08    99.874   1.481e+02   1.481e+02
+  advance rectangular grids.........  8.58e+00    1.85e-03    2.81e-09     5.785   8.579e+00   8.579e+00
+  advance curvilinear grids.........  4.23e+01    9.12e-03    1.38e-08    28.540   4.232e+01   4.232e+01
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  5.33e+01    1.15e-02    1.74e-08    35.929   5.328e+01   5.328e+01
+  boundary conditions...............  3.21e+01    6.92e-03    1.05e-08    21.639   3.209e+01   3.209e+01
+  interpolation.....................  8.25e+00    1.78e-03    2.70e-09     5.566   8.255e+00   8.255e+00
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  1.44e+00    3.11e-04    4.72e-10     0.973   1.442e+00   1.442e+00
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+ Memory usage: reals/grid-point =  31.48.
+
+
+
+G16 11x27 rad=.01 blf=4 :  OK 
+cgWave scat.cmd -g=holesGridRad01N11M27e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+
+G16 7x18 rad=.01 blf=4 :  OK 
+cgWave scat.cmd -g=holesGridRad01N7M18e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+
+G16 7x18 rad=.01 :  OK 
+cgWave scat.cmd -g=holesGridN7M18e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+G16 7x17 rad=.02 :  OK 
+cgWave scat.cmd -g=holesGridN7M17e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+
+G16 7x15 rad=.05 : OK 
+cgWave scat.cmd -g=holesGridN7M15e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+G16 7x19 holes *TROUBLE WITH HIGH STRETCHING **
+cgWave scat.cmd -g=holesGridN7M19e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=5 -dtMax=.001 -beta2=0 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+
++++++++++ FD22
+ 
+G8 7x19 holes
+cgWave scat.cmd -g=holesGridN7M19e8np.order2.hdf -kx=1 -ky=0 -tp=.5 -tf=5 -known=gpw -k0=4 -beta=20 -x0=-2.0 -y0=0 -bc=d -ts=implicit  -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+cgWave scat.cmd -g=holesGridN7M15e8np.order2.hdf -kx=1 -ky=0 -tp=.5 -tf=5 -known=gpw -k0=4 -beta=20 -x0=-2.0 -y0=0 -bc=d -ts=implicit  -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -go=halt
+
+
+***************************************************
+****** Sun July 16, 2023
+
+ADJUST SUPER-GRID PARAMETERS FOR ORDER OF ACCURACY
+
+ORDER=4
+cgWave scat.cmd -g=cice4.order4.ng3 -useSuperGrid=1 -superGridWidth=.2 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0
+
+
+ORDER=2
+cgWave scat.cmd -g=cice4.order2 -useSuperGrid=1 -superGridWidth=.2 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 
+
+
+***************************************************
+****** Sat July 15, 2023
+
+cgWave scat.cmd -g=cice4.order2 -useSuperGrid=1 -superGridWidth=.2 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 
+
+
+cgWave scat.cmd -g=cicBige4.order2 -useSuperGrid=1 -superGridWidth=.15 -known=pw -bc=d -ic=zero -upwind=1 -kx=2 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 
+
+
+cgWave scat.cmd -g=cice8.order2 -useSuperGrid=1 -superGridWidth=.15 -known=pw -bc=d -ic=zero -upwind=1 -kx=2 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 
+
+
+cgWave scat.cmd -g=cice4.order2 -useSuperGrid=1 -superGridWidth=.15 -known=pw -bc=d -ic=zero -upwind=1 -kx=2 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 
+
+***************************************************
+****** Fri July 14, 2023
+
+
+cgWave scat.cmd -g=shapesBiggere8.order2 -useSuperGrid=1 -superGridWidth=.1 -known=pw -bc=d -ic=zero -upwind=1 -kx=6 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+
+***************************************************
+****** Thurs July 13, 2023
+
+
+START ON scattering examples.
+
+
+ORDER=4 + SUPERGRID : looks OK 
+cgWave scat.cmd -g=cice4.order4.ng3  -useSuperGrid=1 -superGridWidth=.15 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+
+ORDER=4 : looks OK
+cgWave scat.cmd -g=cice4.order4.ng3 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+
+Higer freq: 
+cgWave scat.cmd -g=shapesBiggere8.order2 -useSuperGrid=1 -superGridWidth=.1 -known=pw -bc=d -ic=zero -upwind=1 -kx=6 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+
+SHAPES + SG
+cgWave scat.cmd -g=shapesBiggere4.order2 -useSuperGrid=1 -superGridWidth=.1 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+SHAPES
+cgWave scat.cmd -g=shapesBiggere4.order2 -useSuperGrid=0 -superGridWidth=.15 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+
+IMPLICIT + SG : looks OK 
+cgWave scat.cmd -g=cice4.order2 -useSuperGrid=1 -superGridWidth=.15 -ts=implicit -cfl=1 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+
+SUPERGRID : OK 
+cgWave scat.cmd -g=cice4.order2 -useSuperGrid=1 -superGridWidth=.15 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+
+IMPLICIT : looks OK 
+cgWave scat.cmd -g=cice4.order2 -ts=implicit -cfl=1 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+Gaussian plane wave: *need to fix total field plots **
+cgWave scat.cmd -g=cice4.order2 -known=gpw -bc=d -ic=zero -upwind=1 -kx=3 -x0=-.75 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+STARTS to work: 
+EM2 BCS on outer boundary: 
+cgWave scat.cmd -g=cice4.order2 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a
+
+cgWave scat.cmd -g=square128.order2 -known=pw -bc=d -ic=zero -kx=3 -tf=10 -tp=.1 

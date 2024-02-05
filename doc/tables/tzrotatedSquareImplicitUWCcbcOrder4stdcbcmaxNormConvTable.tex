@@ -1,0 +1,16 @@
+\begin{table}[H]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+\begin{center}
+\begin{tabular}{|l|c|c|c|} \hline 
+grid  & N &  $ u $ & r \\ \hline 
+      rotatedSquare8 &     1 & \num{8.1}{-2} &        \\ \hline
+     rotatedSquare16 &     2 & \num{3.2}{-3} & 25.49  \\ \hline
+     rotatedSquare32 &     4 & \num{1.2}{-4} & 25.93  \\ \hline
+     rotatedSquare64 &     8 & \num{7.9}{-6} & 15.49  \\ \hline
+    rotatedSquare128 &    16 & \num{5.7}{-7} & 13.86  \\ \hline
+    rotatedSquare256 &    32 & \num{3.8}{-8} & 15.00  \\ \hline
+    rate             &       &  $4.18$       &       \\ \hline
+\end{tabular}
+\caption{CgWave, tz, max norm, order=$4$, ts=implicit, orderInTime=-1, dtMax0=$2e-2$, $t=.6$, cfl=$1$, upwind=1, bc=d, bcApproach=cbc, meApproach=std, -known=unknown, kx=1, ky=1, kz=1, nBessel=1, mTheta=1, mz=1, rad=1, tz=trig, solveri=yale, rtoli=1e-10, atoli=1e-10, maxiti=2000, , beta2=0, beta4=0,rectangular=implicit, implicitUpwind=0degreeInSpace=2, -degreeInTime=2, -fx=2 -fy=2 -fz=2 -ft=2, mPhi=1, mr=1, takeImplicitFirstStep=1, Wed Dec 20 13:59:34 2023}\label{table:tzOrder4max}
+\end{center}
+\end{table}

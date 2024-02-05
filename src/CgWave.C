@@ -75,6 +75,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<AssignInterpolationNeighboursEnum>("assignInterpNeighbours")=defaultAssignInterpNeighbours;
 
   dbase.put<int>("computeErrors") = 1;                  // by default, compute errors for TZ or a known solution
+  dbase.put<int>("computeEnergy") = 0;                  // 1= compute energy
   dbase.put<int>("applyKnownSolutionAtBoundaries") = 0; // by default, do NOT apply known solution at boundaries
   dbase.put<int>("bcCount") = 0;                        // count the number of times applyBC is called
 
@@ -119,7 +120,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   // coefficients in implicit time-stepping  *check me*
   //  D+t D-t u =              c^2 Delta( cImp(1,0) *u^{n+1} + cImp(0,0) *u^n + cImp(-1,0)* u^{n-1} )   :  second-order coeff cImp(-1:1,0)
-  //                 -(c^4*dt^2) Delta^2( cImp(1,1) *u^{n+1} + cImp(0,1) *u^n + cImp(-1,1)* u^{n-1}  )  :  foruth-order ceoff cImp(-1:1,1) 
+  //                 -(c^4*dt^2) Delta^2( cImp(1,1) *u^{n+1} + cImp(0,1) *u^n + cImp(-1,1)* u^{n-1}  )  :  fourth-order ceoff cImp(-1:1,1) 
   RealArray & bImp = dbase.put<RealArray>("bImp");
   RealArray & cImp = dbase.put<RealArray>("cImp");
   const int maxOrderOfAccuracy=12; // being rather hopeful here 
@@ -140,8 +141,12 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   cImp( 0,1)= beta4;
   cImp( 1,1)=alpha4;  
 
-  // By default choose the implicit dt based on the CFL: (otherwise us dtMax)
-  dbase.put<int>("chooseImplicitTimeStepFromCFL")=1;
+  // Old way: By default choose the implicit dt based on the CFL: (otherwise us dtMax)
+  // dbase.put<int>("TImplicitTimeStepFromCFL")=1;
+  // New way: 
+  //   chooseTimeStepFromExplicitGrids = 1 : choose dt from CFL and grid spacing on explicit grids only, or if all grids are implicit
+  //                                   = 0 : choose dt from CFL and grid spacing on all grids
+  dbase.put<int>("chooseTimeStepFromExplicitGrids")=1;
 
 
   dbase.put<int>("useSuperGrid")=0;      
@@ -159,6 +164,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("interactiveMode")=0;
   dbase.put<int>("plotFrequency")= INT_MAX; // another way to turn on plotting every this many steps
 
+  dbase.put<int>("solveForScatteredField")= 0;  // 1=we are solving for the scattered field
   dbase.put<int>("plotScatteredField")= 0;  // 1=plot scattered field for scattering problems
   // Parameters for the plane wave defining the incident field
   //   sin( kx*x + ky*y +kz*z - omega*t + phi )
@@ -500,6 +506,7 @@ int CgWave::initialize()
 
   const int & addForcing = dbase.get<int>("addForcing");
   const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
+  const int & solveForScatteredField      = dbase.get<int>("solveForScatteredField");
 
   const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
   bool twilightZone = addForcing && forcingOption==twilightZoneForcing;
@@ -608,8 +615,15 @@ int CgWave::initialize()
     // -- evaluate the forcing for a Helmholtz solve ---
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
-      ipar[0]=grid;
-      userDefinedForcing( f[grid], ipar,rpar );
+      if( !solveForScatteredField )
+      {
+        ipar[0]=grid;
+        userDefinedForcing( f[grid], ipar,rpar );
+      }
+      else
+      {
+        f[grid]=0.; 
+      }
       // if( true )
       //   ::display(f[grid],"forcing","%6.2f");
     }
@@ -1392,7 +1406,8 @@ int CgWave::interactiveUpdate()
   IntegerArray & gridIsImplicit        = dbase.get<IntegerArray>("gridIsImplicit");
   RealArray & bImp                     = dbase.get<RealArray>("bImp");
   RealArray & cImp                     = dbase.get<RealArray>("cImp");
-  int & chooseImplicitTimeStepFromCFL  = dbase.get<int>("chooseImplicitTimeStepFromCFL");
+  // int & chooseImplicitTimeStepFromCFL  = dbase.get<int>("chooseImplicitTimeStepFromCFL");
+  int & chooseTimeStepFromExplicitGrids= dbase.get<int>("chooseTimeStepFromExplicitGrids");
 
   int & numberOfFrequencies            = dbase.get<int>("numberOfFrequencies");
   RealArray & frequencyArray           = dbase.get<RealArray>("frequencyArray");
@@ -1412,22 +1427,23 @@ int CgWave::interactiveUpdate()
   ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
        
   int & computeErrors                  = dbase.get<int>("computeErrors");                         // by default, compute errors for TZ or a known solution
+  int & computeEnergy                  = dbase.get<int>("computeEnergy");                         // by default, compute errors for TZ or a known solution
   // int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
   int & useKnownSolutionForFirstStep   = dbase.get<int>("useKnownSolutionForFirstStep"); 
   int & debug                          = dbase.get<int>("debug");
   int & interactiveMode                = dbase.get<int>("interactiveMode");
 
+  int & solveForScatteredField         = dbase.get<int>("solveForScatteredField");
   int & plotScatteredField             = dbase.get<int>("plotScatteredField");
-
          
   int & solveHelmholtz                 = dbase.get<int>("solveHelmholtz");
   real & tol                           = dbase.get<real>("tol");
-
        
   bool & saveShowFile                  = dbase.get<bool>("saveShowFile"); 
   aString & nameOfShowFile             = dbase.get<aString>("nameOfShowFile"); // name of the show file
   int & flushFrequency                 = dbase.get<int>("flushFrequency");     // number of solutions per show file  
-                 
+  int & numberOfSequences              = dbase.get<int>("numberOfSequences");
+
   real & omegaSOR                      = dbase.get<real>("omegaSOR");
 
   TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
@@ -1470,7 +1486,7 @@ int CgWave::interactiveUpdate()
                                      "pulse initial condition", 
                                      "random initial condition", 
                                      "" };
-  dialog.addOptionMenu("Initial conndtions:", initialConditionLabel, initialConditionLabel, (int)initialConditionOption );
+  dialog.addOptionMenu("Initial condtions:", initialConditionLabel, initialConditionLabel, (int)initialConditionOption );
 
   aString forcingLabel[] = {"no forcing", "twilightZoneForcing", "userForcing", "helmholtzForcing", "" };
   dialog.addOptionMenu("forcing:", forcingLabel, forcingLabel, (int)forcingOption );
@@ -1516,13 +1532,16 @@ int CgWave::interactiveUpdate()
                           "compute errors",
                           "pre-compute upwind Ut",
                           // "set known on boundaries",
-                          "choose implicit dt from cfl",
+                          // old "choose implicit dt from cfl",
+                          "choose dt from explicit grids",
                           "use known for first step",
                           "implicit upwind",
                           "take implicit first step",
                           "adjust plots for superGrid",
                           "adjust errors for superGrid",
+                          "solve for scattered field",
                           "plot scattered field",
+                          "compute energy",
                             ""};
   int tbState[15];
   tbState[ 0] = saveShowFile;
@@ -1530,13 +1549,16 @@ int CgWave::interactiveUpdate()
   tbState[ 2] = addForcing;
   tbState[ 3] = computeErrors;
   tbState[ 4] = preComputeUpwindUt;
-  tbState[ 5] = chooseImplicitTimeStepFromCFL;
+  // tbState[ 5] = chooseImplicitTimeStepFromCFL;
+  tbState[ 5] = chooseTimeStepFromExplicitGrids;
   tbState[ 6] = useKnownSolutionForFirstStep;
   tbState[ 7] = implicitUpwind;
   tbState[ 8] = takeImplicitFirstStep;
   tbState[ 9] = adjustPlotsForSuperGrid;
   tbState[10] = adjustErrorsForSuperGrid;
-  tbState[11] = plotScatteredField;
+  tbState[11] = solveForScatteredField;
+  tbState[12] = plotScatteredField;
+  tbState[13] = computeEnergy;
 
   int numColumns=2;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -1797,6 +1819,11 @@ int CgWave::interactiveUpdate()
       printF("Setting computeErrors=%d (1=compute errors for TZ or known solutions.\n",computeErrors);
     }
 
+    else if( dialog.getToggleValue(answer,"compute energy",computeEnergy) )
+    {
+      printF("Setting computeEnergy=%d.\n",computeEnergy);
+      numberOfSequences = 2;
+    }
     // else if( dialog.getToggleValue(answer,"set known on boundaries",applyKnownSolutionAtBoundaries) )
     // {
     //   printF("Setting applyKnownSolutionAtBoundaries=%d (1=apply known solution on boundaries).\n",applyKnownSolutionAtBoundaries);
@@ -1820,11 +1847,19 @@ int CgWave::interactiveUpdate()
       printF("        : true  = precompute Ut in upwind dissipation.\n"
             "         : false = compute Ut inline in Gauss-Seidel fashion (allows a bigger upwind coefficient).\n");
     }   
-    else if( dialog.getToggleValue(answer,"choose implicit dt from cfl",chooseImplicitTimeStepFromCFL) )
+    // else if( dialog.getToggleValue(answer,"choose implicit dt from cfl",chooseImplicitTimeStepFromCFL) )
+    // {
+    //   printF("Setting chooseImplicitTimeStepFromCFL=%i (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
+    // }
+
+    else if( dialog.getToggleValue(answer,"choose time step from explicit grids",chooseTimeStepFromExplicitGrids) ||
+             dialog.getToggleValue(answer,"choose dt from explicit grids",chooseTimeStepFromExplicitGrids) )
     {
-      printF("Setting chooseImplicitTimeStepFromCFL=%i (1=choose implicit dt from cfl, 0=choose dt from dtMax)\n",chooseImplicitTimeStepFromCFL);
-    }
-     
+      printF("Setting chooseTimeStepFromExplicitGrids=%i\n"
+             "  1=choose dt from cfl and explicit grids only (or if all grids are implicit)\n"
+             "  0=choose dt from cfl and all grids\n",    chooseTimeStepFromExplicitGrids);
+    }    
+
     else if( dialog.getToggleValue(answer,"implicit upwind",implicitUpwind) )
     {
       printF("Setting implicitUpwind=%i (1=include upwinding in implicit matrix when implicit time-stepping\n",implicitUpwind);
@@ -1849,7 +1884,10 @@ int CgWave::interactiveUpdate()
     {
       printF("Setting plotScatteredField=%i.\n",plotScatteredField);
     }             
-
+    else if( dialog.getToggleValue(answer,"solve for scattered field",solveForScatteredField) )
+    {
+      printF("Setting solveForScatteredField=%i.\n",solveForScatteredField);
+    }    
     else if( answer=="explicit" || answer=="implicit" )
     {
       timeSteppingMethod = ( answer=="explicit" ? explicitTimeStepping :
@@ -1866,6 +1904,7 @@ int CgWave::interactiveUpdate()
     {
       sScanF(answer(len,answer.length()-1),"%e %e %e %e %e",&bImp(0),&bImp(1),&bImp(2),&bImp(3),&bImp(4));
       printF("Setting implicit time-stepping weights to beta2=%g, beta4=%g, beta6=%g, beta8=%g\n",bImp(0),bImp(1),bImp(2),bImp(2));
+      
       Real beta2=bImp(0), beta4=bImp(1); 
       bImp(0)=beta2;
       bImp(1)=beta4; 
@@ -1894,6 +1933,7 @@ int CgWave::interactiveUpdate()
                                  answer=="pulse initial condition"          ? pulseInitialCondition : 
                                  answer=="random initial condition"         ? randomInitialCondition : 
                                                                               zeroInitialCondition );
+      printF("Setting initialConditionOption=%s\n",(const char*)answer);
     }
 
 
@@ -2686,6 +2726,11 @@ outputResults( int current, real t )
   
   const int & numberOfComponents= 1;
 
+  const int & computeEnergy  = dbase.get<int>("computeEnergy"); 
+  Real energyNorm=0.; 
+  if( computeEnergy ) 
+    energyNorm = getEnergyNorm( current,t  );
+
   int numberToOutput =numberOfComponents;
 
   fPrintF(checkFile,"%9.2e %i  ",t,numberToOutput);
@@ -2697,8 +2742,11 @@ outputResults( int current, real t )
   }
   fPrintF(checkFile,"\n");
 
-  RealArray solutionNormVector(1);
+  const int & numberOfSequences = dbase.get<int>("numberOfSequences");
+  RealArray solutionNormVector(numberOfSequences);
   solutionNormVector(0)=solutionNorm;
+  if( computeEnergy )
+    solutionNormVector(1)=energyNorm;
   saveSequenceInfo( t, solutionNormVector );
 
   return 0;
@@ -2788,7 +2836,8 @@ getUpwindDissipationCoefficient( int grid, Real dtUpwind /* = -1. */, bool adjus
 
     // **FIX ME: use Allison's new formula ...
     upwindCoefficient = (c*dtUpwind)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) );
-
+    if( false && debug & 1 )
+      printF("$$$$ getUpwindDissipationCoefficient: Set upwindCoefficient = (c*dtUpwind)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) ) = %10.2e\n",upwindCoefficient); 
 
     if( upwind && !implicitUpwind && adjustForTimeStep )
     {
@@ -2808,7 +2857,7 @@ getUpwindDissipationCoefficient( int grid, Real dtUpwind /* = -1. */, bool adjus
 
       upwindCoefficient *= adjustmentFactor;
 
-      if( false )
+      if( false && debug & 1 )
         printF("$$$$ getUpwindDissipationCoefficient: Adjust useUpwindDissipationCoeff by adjustmentFactor=%9.2e, 1/gridCFL = %9.2e\n\n",
          adjustmentFactor, 1./myGridCFL);
     }
@@ -2821,7 +2870,8 @@ getUpwindDissipationCoefficient( int grid, Real dtUpwind /* = -1. */, bool adjus
 
       Real myGridCFL = dt*gridCFL(grid);   // gridCFL is really c/dx , i.e. does not have the factor of "dt"
       // Real adjustmentFactor = max( 1., myGridCFL );
-      Real adjustmentFactor = 1.; // 
+
+      Real adjustmentFactor = 1.; // ################# TEST ##############
 
       upwindCoefficient *= adjustmentFactor;      
     } 
@@ -2831,7 +2881,7 @@ getUpwindDissipationCoefficient( int grid, Real dtUpwind /* = -1. */, bool adjus
   
   if( adjustForTimeStep )
   {
-    // -- make adjustments to correct for tie-discretization errors if we are trying to match to a direct Helmholtz solver 
+    // -- make adjustments to correct for time-discretization errors if we are trying to match to a direct Helmholtz solver 
 
     if( timeSteppingMethod==implicitTimeStepping )
     {

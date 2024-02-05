@@ -957,7 +957,7 @@ end do
   cEM2      = rpar(11)
 
   if( t==0. )then
-    write(*,'("abcWave: t=0: DO NOTHING since past time is not known ")') 
+    ! write(*,'("abcWave: t=0: DO NOTHING since past time is not known ")') 
     return
   end if
 

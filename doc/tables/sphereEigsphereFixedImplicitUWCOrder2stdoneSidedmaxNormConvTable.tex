@@ -1,0 +1,14 @@
+\begin{table}[H]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+\begin{center}
+\begin{tabular}{|l|c|c|c|} \hline 
+grid  & N &  $ u $ & r \\ \hline 
+  sphereFixed2 &     1 & \num{3.5}{-3} &        \\ \hline
+  sphereFixed4 &     2 & \num{8.4}{-4} &  4.12  \\ \hline
+  sphereFixed8 &     4 & \num{2.1}{-4} &  4.07  \\ \hline
+ sphereFixed16 &     8 & \num{5.1}{-5} &  4.03  \\ \hline
+    rate             &       &  $2.03$       &       \\ \hline
+\end{tabular}
+\caption{CgWave, sphereEig, max norm, order=$2$, ts=implicit, orderInTime=-1, dtMax0=$2e-2$, $t=.4$, cfl=$100$, upwind=1, bc=d, bcApproach=oneSided, meApproach=std, -known=sphereEig, kx=1, ky=0, kz=0, nBessel=1, mTheta=0, mz=1, rad=1, tz=poly, solveri=cgs, rtoli=1e-10, atoli=1e-10, maxiti=2000, , beta2=0.5, beta4=0,rectangular=implicit, implicitUpwind=0, Fri Dec 22 10:48:37 2023}\label{table:sphereEigOrder2max}
+\end{center}
+\end{table}

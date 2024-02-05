@@ -2,7 +2,7 @@
 // ====================== CgWave: advance  =====================
 
 #include "CgWave.h"
-#include "CompositeGridOperators.h";    
+#include "CompositeGridOperators.h"  
 #include "PlotStuff.h"
 #include "display.h"
 #include "ParallelOverlappingGridInterpolator.h"
@@ -299,7 +299,8 @@ advance( int it )
             nextTimeToPlot=tFinal;
 
   // For now we do not adjust dt when using implicit time-stepping:
-    bool adjustTimeStep = timeSteppingMethod==explicitTimeStepping;
+  // ** TURN OFF ADJUST TIME STEP *wdh* Nov 23, 2023
+    bool adjustTimeStep = FALSE; // timeSteppingMethod==explicitTimeStepping;
 
   // NOTE: dtMax is the initial time-step determined by getTimeStep
     int numPlotSteps    =  ceil( nextTimeToPlot/dtMax );  // max number of steps 
@@ -539,17 +540,36 @@ advance( int it )
         if( !solveHelmholtz )
         {
             getInitialConditions( cur,t );
+            if( debug & 16 )
+            {
+                fprintf(debugFile,"AFTER getInitialConditions, BEFORE applyBoundaryConditions\n");
+                getErrors( u[cur], t );
+            }    
             if( true )
             { 
         // apply BC's at initial time *wdh* Nov 26, 2022
         // Include CPU with initialization ( to include LCBC init cost )
+                if( true || debug & 1 )
+                    printF("\n *** advance: After getInitialConditions: applyExplicitBoundaryConditions\n\n");
                 Real cpuBC = getCPU();
                 bool applyExplicitBoundaryConditions=true;
-                applyBoundaryConditions( u1,u1, t, applyExplicitBoundaryConditions );  
+        // applyBoundaryConditions( u1,u1, t, applyExplicitBoundaryConditions );  
+                applyBoundaryConditions( u[cur],u[cur], t, applyExplicitBoundaryConditions );  
                 cpuBC = getCPU()-cpuBC;
                 timing(timeForInitializeBCs)      += cpuBC;  // add to initBC cpu
                 timing(timeForBoundaryConditions) -= cpuBC;  // remove from BC cpu
             }
+            if( debug & 4 || debug & 16 )
+            {
+                printf("\n *** AFTER getInitialConditions, AFTER applyBoundaryConditions write to debug file\n\n");
+                fprintf(debugFile,"AFTER getInitialConditions, AFTER applyBoundaryConditions\n");
+                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                {
+                    ::display(u[cur][grid],sPrintF("Initial conditions: grid=%d t   =%9.3e",grid,t),debugFile,"%11.3e ");
+                }
+                fprintf(debugFile,"AFTER getInitialConditions, AFTER applyBoundaryConditions\n");
+                getErrors( u[cur], t );
+            }    
         }
         else
         {
@@ -598,20 +618,23 @@ advance( int it )
   // --------------------------------------------
   // --------------- FIRST STEP -----------------  
   // --------------------------------------------
-    if( forcingOption==helmholtzForcing )
+    if( forcingOption==helmholtzForcing )  
     {
         takeFirstStep( cur, t ); 
     }
     else
     {
         if( !useKnownSolutionForFirstStep 
-                && ( timeSteppingMethod==explicitTimeStepping || takeImplicitFirstStep )
+        // *wdh* Dec 23, 2023 && ( timeSteppingMethod==explicitTimeStepping || takeImplicitFirstStep )
                 && orderOfAccuracy < 8 ) // do this for now 
-        { // *new* wdh Nov 19, 2021
+        { 
             takeFirstStep( cur, t ); 
         }
         else
         { // Just get solution at t=dt from IC function
+            if( debug>0 )
+                printF("\n $$$$$$ CgWave:advance: Take First Step using KNOWN solution $$$$$$$$\n\n");   
+
             getInitialConditions( next,t+dt );
         }
     }
@@ -623,8 +646,6 @@ advance( int it )
     //      v  = (1/(2*T)* Int_0^T [  ( cos(omega*t)-.25)*u(x,t) dt ] 
         updateTimeIntegral( 0, firstStep, t, u[cur] );
     }
-
-
 
 
     
@@ -658,7 +679,7 @@ advance( int it )
         // -- output with a nice format ---
         // sPrintF(buff,"%%4i: %%%is   ([%%2i:%%5i],[%%2i:%%5i],[%%2i:%%5i])  %%12g   %%8.2e %%8.2e    %%s\n",maxNameLength);
                 const Real cpuTime = getCPU()- cpua;
-                const int numDigits = ceil( log10(numberOfTimeSteps) );
+                const int numDigits = ceil( log10(numberOfTimeSteps+1) );
                 char myFormat[180];
                 aString upwindChar="";
                 if( upwind ) upwindChar="u";
@@ -703,7 +724,10 @@ advance( int it )
                     Real timeInterval = nextTimeToPlot-prevTimeToPlot;
                     int numPlotSteps  = ceil( timeInterval/dtMax ); 
                     if( adjustTimeStep )
+                    {
                         dt = timeInterval/numPlotSteps;
+                        printF("\n ++++++++ WARNING: Adjust the time step at t=%10.3e +++++++++++\n",t);
+                    }
                     if( debug & 4 ) 
                     {
                         printF("CgWave:advance: nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e) ratio=%5.3f\n",
@@ -720,20 +744,24 @@ advance( int it )
       // --- first step has already been taken ----
               t+=dt;
               if( debug & 2 )
-                  printF("Skip first step since set to exact, or used time-periodic\n");
+                  printF("Skip first step since set to exact, or used time-periodic, or used Taylor series method.\n");
         }
         else
         { 
 
-
       // ----------------------------------------------
       // ---------------- take a time-step ------------
       // ----------------------------------------------
-
             for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
             {
                 if( debug & 4 ) printF("Advance grid %i, step=%i, ...\n",grid,step);
                         
+
+                if( step==0 && takeImplicitFirstStep && !gridIsImplicit(grid) )
+                {  // skip explicit grids, since these have been assigned in takeFirstStep
+                      continue;
+                }
+
                 MappedGrid & mg = cg[grid];
                 
         // realArray & upg = up[grid];  // previous 
@@ -1252,7 +1280,7 @@ advance( int it )
                         timing(timeForDissipation) += cpu1-cpuOpt;
                     }
                 
-    
+              
                 if( timeSteppingMethod == explicitTimeStepping && debug & 16 )
                 {
                     ::display(u[next][grid],sPrintF("AFTER advOpt: uNext grid=%d t+dt=%9.3e",grid,t+dt),debugFile,"%11.3e ");
@@ -1266,10 +1294,16 @@ advance( int it )
         // boundary conditions for implicit time-stepping are added here:
                 takeImplicitStep( t+dt );
 
+                if( debug & 4 )
+                {
+                    real maxErr = getErrors( u[next], t+dt );
+                    printF("\n ++++ AFTER takeImplicitStep (before explicit BCs): t+dt=%9.3e, maxErr=%9.2e +++\n\n",t+dt,maxErr);
+                }
+
                 if( debug & 16 )
                 {
                     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-                        ::display(u[next][grid],sPrintF("AFTER takeImplicitStep: uNext grid=%d t+dt=%9.3e",grid,t+dt),debugFile,"%11.3e ");
+                        ::display(u[next][grid],sPrintF("AFTER takeImplicitStep (before explicit BCs): uNext grid=%d t+dt=%9.3e",grid,t+dt),debugFile,"%11.3e ");
                 }
 
             }
@@ -1281,8 +1315,14 @@ advance( int it )
       // ----- apply boundary conditions ------
             if( true || (timeSteppingMethod != implicitTimeStepping) ) // ** TEST ********
             {
+                if( debug & 1 && t <= 2.*dt )
+                    printF("Call applyBoundaryConditions : explicit BC's for step=%d, t(new)=%10.3e, dt=%10.3e\n",step,t,dt);
+
                 bool applyExplicitBoundaryConditions=true;
-                applyBoundaryConditions( u[next],u[cur],t, applyExplicitBoundaryConditions );
+                if( true )
+                    applyBoundaryConditions( u[next],u[cur],t, applyExplicitBoundaryConditions ); 
+                else
+                    printF(" advance: do NOT Apply explicitBCs after implicit solve ############################################################ TEMP \n");
             }
     
             if( debug & 16 )
@@ -1292,6 +1332,9 @@ advance( int it )
                     ::display(u[next][grid],sPrintF("after applyBC uNext grid=%d t=%9.3e",grid,t),debugFile,"%11.3e ");
                 }
             }
+
+          if( debug & 4 )
+            printF("end time step=%d: t=%10.3e, dt=%10.3e\n",step,t,dt);      
     
         } // end take a time-step
 
@@ -1313,7 +1356,7 @@ advance( int it )
     current = next; // curent solution
 
 
-    if( fabs(t-tFinal)/tFinal > REAL_EPSILON*tFinal*1000. )
+    if( fabs(t-tFinal)/tFinal > dt*1e-3 )
     {
         printF("CgWave::advance:ERROR: done time-stepping but t is NOT equal to tFinal! Something is wrong.\n");
         printF("      t=%14.6e tFinal=%14.6e relative-diff=%9.3e\n",t,tFinal,(t-tFinal)/tFinal);

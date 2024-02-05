@@ -1,3 +1,1100 @@
+****************************************************
+****** Sat Feb 3, 2024
+
+**BUG FOUND*** : my version of the scattering solution had a mistake for Neumann BC's (userDefinedKnownSolution.bC)
+
+
+alias cgWave /home/carsoa/cgwave/bin/cgWave
+scp henshw@cg66.math.rpi.edu:/home/henshw/runs/cgWave/known/scatteringAMC.cmd .
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>> cg6
+
+SMALL HOLE:
+cgWave scatteringAMC.cmd -g=cylInclusione0.order2.hdf 
+
+cgWave:FD22u t=1.000e+00 (24 steps) dt=4.167e-02 maxErr= 1.32e-04, ||u||= 1.00e+00, cpu= 1.54e+01(s)
+
+--BC=N 
+
+
+cgWave:FD22u t=0.000e+00 ( 0 steps) dt=2.500e-02 maxErr= 8.67e-04, ||u||= 1.65e+00, cpu= 2.00e-06(s)
+
+
+cgWave scatteringAMC.cmd -g=cice2.order2 -ra=.5 -k=5 -bcCyl=5 -tp=.1
+
+cgWave:FD22u t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 2.03e-03, ||u||= 1.87e+00, cpu= 2.97e+00(s)
+cgWave:FD22u t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 3.12e-02, ||u||= 1.47e+00, cpu= 2.08e+01(s)
+
+--- BC=D
+cgWave scatteringAMC.cmd -g=cice2.order2 -ra=.5 -k=5 -bcCyl=5 -tp=.1 -bc=d
+
+cgWave:FD22u t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 1.55e-03, ||u||= 1.60e+00, cpu= 6.06e+00(s)
+cgWave:FD22u t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 1.10e-02, ||u||= 1.68e+00, cpu= 3.68e+01(s)
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>> cg66:
+
+
+SMALLER HOLE larger k 
+cgWave scatteringAMC.cmd -g=cylInclusione0.order2.hdf -tf=5 -tp=1 -k=2
+
+SMALL HOLE:
+
+IMPLICIT-EXPLICIT:  
+cgWave -noplot scatteringAMC.cmd -g=cylInclusione0.order2.hdf -tf=5 -tp=1 
+cgWave:FD22u t=1.000e+00 ( 24 steps) dt=4.167e-02 maxErr= 1.32e-04, ||u||= 1.00e+00, cpu= 7.28e-01(s)
+cgWave:FD22u t=2.000e+00 ( 48 steps) dt=4.167e-02 maxErr= 2.29e-04, ||u||= 1.00e+00, cpu= 1.43e+00(s)
+cgWave:FD22u t=3.000e+00 ( 72 steps) dt=4.167e-02 maxErr= 2.29e-04, ||u||= 1.00e+00, cpu= 2.13e+00(s)
+cgWave:FD22u t=4.000e+00 ( 96 steps) dt=4.167e-02 maxErr= 1.71e-04, ||u||= 1.00e+00, cpu= 2.84e+00(s)
+cgWave:FD22u t=5.000e+00 (120 steps) dt=4.167e-02 maxErr= 1.90e-04, ||u||= 1.00e+00, cpu= 3.56e+00(s)
+
+EXPLICIT: 
+cgWave -noplot scatteringAMC.cmd -g=cylInclusione0.order2.hdf -tf=5 -tp=1 -ts=explicit
+cgWave:FD22u t=1.000e+00 ( 4732 steps) dt=2.113e-04 maxErr= 4.19e-04, ||u||= 1.00e+00, cpu= 4.92e+01(s)
+cgWave:FD22u t=2.000e+00 ( 9464 steps) dt=2.113e-04 maxErr= 3.73e-04, ||u||= 1.00e+00, cpu= 9.86e+01(s)
+cgWave:FD22u t=3.000e+00 (14196 steps) dt=2.113e-04 maxErr= 4.95e-04, ||u||= 1.00e+00, cpu= 1.48e+02(s)
+cgWave:FD22u t=4.000e+00 (18928 steps) dt=2.113e-04 maxErr= 5.85e-04, ||u||= 1.00e+00, cpu= 1.97e+02(s)
+cgWave:FD22u t=5.000e+00 (23660 steps) dt=2.113e-04 maxErr= 6.01e-04, ||u||= 1.00e+00, cpu= 2.47e+02(s)
+
+
+
+
+
+
+BC=n **BROKEN*
+cgWave scatteringAMC.cmd -g=cice2.order2 -ra=.5 -k=5 -bcCyl=5 -tp=.05 -debug=3
+
+applyBC: Set knownSolution at exact boundary (side,axis,grid)=(0,0,0), numGhost=2
+
+
+FIXED: 
+cgWave:FD22u t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 2.03e-03, ||u||= 1.87e+00, cpu= 5.20e+00(s)
+cgWave:FD22u t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 8.29e-03, ||u||= 1.80e+00, cpu= 1.24e+01(s)
+cgWave:FD22u t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 1.78e-02, ||u||= 1.74e+00, cpu= 1.31e+01(s)
+cgWave:FD22u t=4.000e-01 (16 steps) dt=2.500e-02 maxErr= 2.66e-02, ||u||= 1.63e+00, cpu= 1.39e+01(s)
+cgWave:FD22u t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 3.11e-02, ||u||= 1.47e+00, cpu= 1.46e+01(s)
+cgWave:FD22u t=6.000e-01 (24 steps) dt=2.500e-02 maxErr= 2.91e-02, ||u||= 1.49e+00, cpu= 1.53e+01(s)
+
+OLD: 
+cgWave:FD22u t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 1.57e-01, ||u||= 1.68e+00, cpu= 1.35e+01(s)
+
+
+BC=d : looks ok
+cgWave scatteringAMC.cmd -g=cice4.order2 -ra=.5 -k=5 -bcCyl=5 -tp=.1 -bc=d
+cgWave scatteringAMC.cmd -g=cice2.order2 -ra=.5 -k=5 -bcCyl=5 -tp=.1 -bc=d
+
+G4
+cgWave:FD22u t=5.000e-01 (35 steps) dt=1.429e-02 maxErr= 2.01e-03, ||u||= 1.68e+00, cpu= 1.74e+01(s)
+
+G2
+cgWave:FD22u t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 1.55e-03, ||u||= 1.60e+00, cpu= 4.83e+00(s)
+cgWave:FD22u t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 1.10e-02, ||u||= 1.68e+00, cpu= 3.96e+01(s)
+
+cgWave scatteringAMC.cmd -g=cylInclusione0.order2.hdf 
+
+
+
+
+
+****************************************************
+****** Tues Jan 31, 2024
+
+CONTINUE SMALL HOLE SCATTERING CASE FROM ALLI
+
+Alright, I have things figured out, and did some renaming to make things easier. Previously, I had pointed you to a grid that was discretizing a smaller domain, \xv \in [-5,5]^2 rather than \xv \in [-10,10]^2 which I had used. This was why we had differing results. Frankly, I did not name things well when I had started generating grids, lesson definitely learned. Again, sorry for my mistakes!
+
+I've reorganized my grids for this problem, and reran the simulations to confirm the results are correct for me. 
+
+The grid script I am now using is 
+/home/carsoa/grids/cylInclusion.cmd 
+and the grid is 
+/home/carsoa/grids/cyInclusione0.order2.hdf
+
+Now the commands I am using are 
+for the PIE scheme results:
+cgWave -noplot scattering.cmd -g=cylInclusione0.order2.hdf 
+cgWave scattering.cmd -g=cylInclusione0.order2.hdf 
+
+for the UPC scheme results:
+cgWave -noplot scattering.cmd -g=cylInclusione0.order2.hdf -ts=explicit
+
+I've updated the corresponding tex file for the plot in wimp with the results from these runs, which were just about the same as the other runs I had done (this run just had one extra second for the CPU time of the UPC run).
+-------------------------------
+
+
+>>>>>>>> cg6: 
+
+cgWave scattering.cmd -g=cylInclusione0.order2.hdf 
+cgWave:FD22u t=1.000e+00 (24 steps) dt=4.167e-02 maxErr= 1.32e-04, ||u||= 1.00e+00, cpu= 7.33e+00(s)
+
+
+cgWave scattering.cmd -g=cylInclusione0.order2.hdf -ts=explicit
+
+cgWave:FD22u t=0.000e+00 (   0 steps) dt=2.113e-04 maxErr= 1.82e-05, ||u||= 1.00e+00, cpu= 2.00e-06(s)
+
+
+-------------------------------------
+
+
+
+>> cg66:
+cgWave scatteringAMC.cmd -g=cylInclusione0.order2.hdf 
+
+cgWave:FD22u t=1.000e+00 (24 steps) dt=4.167e-02 maxErr= 1.26e-03, ||u||= 1.00e+00, cpu= 3.76e+00(s)
+
+
+SPIE2:
+ 
+cgWave known.cmd -g=cylInclusione0.order2.hdf -upwind=1 -kx=0.5 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=1 -known=cylScat -bc=n -bcScat=2 -debug=0 -setKnownOnBoundaries=0 -ts=implicit -rectangular=explicit -takeImplicitFirstStep=0 -useKnownFirstStep=1 -bcApproach=cbc -go=halt
+
+
+cgWave known.cmd -g=cylInclusione0.order2.hdf -upwind=1 -kx=0.5 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=1 -known=cylScat -bc=n -bcScat=2 -debug=0 -setKnownOnBoundaries=0 -ts=implicit -rectangular=explicit -takeImplicitFirstStep=1 -bcApproach=cbc -go=halt
+
+cgWave:FD22u t=1.000e+00 (24 steps) dt=4.167e-02 maxErr= 1.26e-03, ||u||= 1.00e+00, cpu= 2.53e+00(s)
+
+
+cgWave known.cmd -g=cylInclusione0.order2.hdf -upwind=1 -kx=0.5 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=n -bcScat=2 -debug=0 -setKnownOnBoundaries=0 -ts=implicit -rectangular=explicit -takeImplicitFirstStep=1 -bcApproach=cbc -go=halt
+
+cgWave:FD22u t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 1.26e-04, ||u||= 1.00e+00, cpu= 2.38e+00(s)
+cgWave:FD22u t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 2.53e-04, ||u||= 1.00e+00, cpu= 1.94e+01(s)
+cgWave:FD22u t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 3.81e-04, ||u||= 1.00e+00, cpu= 2.04e+01(s)
+cgWave:FD22u t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 5.09e-04, ||u||= 1.00e+00, cpu= 2.12e+01(s)
+cgWave:FD22u t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 6.37e-04, ||u||= 1.00e+00, cpu= 2.20e+01(s)
+cgWave:FD22u t=6.000e-01 (18 steps) dt=3.333e-02 maxErr= 7.64e-04, ||u||= 1.00e+00, cpu= 2.51e+01(s)
+cgWave:FD22u t=7.000e-01 (21 steps) dt=3.333e-02 maxErr= 8.91e-04, ||u||= 1.00e+00, cpu= 2.59e+01(s)
+cgWave:FD22u t=8.000e-01 (24 steps) dt=3.333e-02 maxErr= 1.02e-03, ||u||= 1.00e+00, cpu= 2.67e+01(s)
+cgWave:FD22u t=9.000e-01 (27 steps) dt=3.333e-02 maxErr= 1.14e-03, ||u||= 1.00e+00, cpu= 2.73e+01(s)
+cgWave:FD22u t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 1.26e-03, ||u||= 1.00e+00, cpu= 8.10e+01(s)
+
+SPIE BC=n OLD SCAT ROUTINES
+cgWave known.cmd -g=cylInclusione0.order2.hdf -upwind=1 -kx=0.5 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=1 -known=cylScatOld -bc=n -bcScat=2 -debug=0 -setKnownOnBoundaries=0 -ts=implicit -rectangular=explicit -useKnownFirstStep=1 -bcApproach=cbc -go=halt
+
+cgWave:FD22u t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 1.36e-04, ||u||= 1.00e+00, cpu= 5.14e+00(s)
+cgWave:FD22u t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 2.57e-04, ||u||= 1.00e+00, cpu= 6.39e+00(s)
+cgWave:FD22u t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 3.73e-04, ||u||= 1.00e+00, cpu= 7.33e+00(s)
+cgWave:FD22u t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 5.13e-04, ||u||= 1.00e+00, cpu= 8.20e+00(s)
+cgWave:FD22u t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 6.31e-04, ||u||= 1.00e+00, cpu= 9.00e+00(s)
+cgWave:FD22u t=6.000e-01 (18 steps) dt=3.333e-02 maxErr= 7.66e-04, ||u||= 1.00e+00, cpu= 9.82e+00(s)
+cgWave:FD22u t=7.000e-01 (21 steps) dt=3.333e-02 maxErr= 8.87e-04, ||u||= 1.00e+00, cpu= 1.08e+01(s)
+cgWave:FD22u t=8.000e-01 (24 steps) dt=3.333e-02 maxErr= 1.02e-03, ||u||= 1.00e+00, cpu= 1.17e+01(s)
+cgWave:FD22u t=9.000e-01 (27 steps) dt=3.333e-02 maxErr= 1.14e-03, ||u||= 1.00e+00, cpu= 1.27e+01(s)
+cgWave:FD22u t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 1.26e-03, ||u||= 1.00e+00, cpu= 1.38e+01(s)
+
+
+
+EME: 
+cgWave known.cmd -g=cylInclusione0.order2.hdf -upwind=1 -kx=0.5 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=n -bcScat=2 -debug=0 -setKnownOnBoundaries=0 -ts=explicit -useKnownFirstStep=0 -go=halt
+
+cgWave:FD22u t=1.000e-01 ( 474 steps) dt=2.110e-04 maxErr= 2.53e-02, ||u||= 1.00e+00, cpu= 3.40e+00(s)
+cgWave:FD22u t=2.000e-01 ( 948 steps) dt=2.110e-04 maxErr= 1.58e-02, ||u||= 1.01e+00, cpu= 5.40e+00(s)
+cgWave:FD22u t=3.000e-01 (1422 steps) dt=2.110e-04 maxErr= 1.20e-02, ||u||= 1.01e+00, cpu= 7.01e+00(s)
+cgWave:FD22u t=4.000e-01 (1896 steps) dt=2.110e-04 maxErr= 9.73e-03, ||u||= 1.01e+00, cpu= 8.16e+00(s)
+cgWave:FD22u t=5.000e-01 (2370 steps) dt=2.110e-04 maxErr= 9.20e-03, ||u||= 1.01e+00, cpu= 9.81e+00(s)
+cgWave:FD22u t=6.000e-01 (2844 steps) dt=2.110e-04 maxErr= 1.18e-02, ||u||= 1.01e+00, cpu= 1.37e+01(s)
+cgWave:FD22u t=7.000e-01 (3318 steps) dt=2.110e-04 maxErr= 1.20e-02, ||u||= 1.01e+00, cpu= 1.48e+01(s)
+cgWave:FD22u t=8.000e-01 (3792 steps) dt=2.110e-04 maxErr= 1.07e-02, ||u||= 1.01e+00, cpu= 1.60e+01(s)
+cgWave:FD22u t=9.000e-01 (4266 steps) dt=2.110e-04 maxErr= 1.14e-02, ||u||= 1.01e+00, cpu= 1.71e+01(s)
+cgWave:FD22u t=1.000e+00 (4740 steps) dt=2.110e-04 maxErr= 1.12e-02, ||u||= 1.01e+00, cpu= 1.82e+01(s)
+
+
+****************************************************
+****** Tues Jan 31, 2024
+
+SMALL HOLE SCATTERING CASE FROM ALLI
+
+
+++++++++ NEUMANN BC
+
+
+
+
+SPIE2
+cgWave -noplot known.cmd -g=smallHoleGride0.order2 -upwind=1 -kx=0.5 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -ts=implicit -rectangular=explicit -takeImplicitFirstStep=1 -bcApproach=cbc -go=go
+
+cgWave:FD22u t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 4.25e-04, ||u||= 1.12e+00, cpu= 3.35e-02(s)
+cgWave:FD22u t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 5.65e-04, ||u||= 1.12e+00, cpu= 4.07e-02(s)
+cgWave:FD22u t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 6.60e-04, ||u||= 1.12e+00, cpu= 4.78e-02(s)
+cgWave:FD22u t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 7.40e-04, ||u||= 1.12e+00, cpu= 5.50e-02(s)
+cgWave:FD22u t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 8.05e-04, ||u||= 1.11e+00, cpu= 6.21e-02(s)
+cgWave:FD22u t=6.000e-01 (18 steps) dt=3.333e-02 maxErr= 8.58e-04, ||u||= 1.11e+00, cpu= 6.93e-02(s)
+cgWave:FD22u t=7.000e-01 (21 steps) dt=3.333e-02 maxErr= 9.00e-04, ||u||= 1.11e+00, cpu= 7.66e-02(s)
+cgWave:FD22u t=8.000e-01 (24 steps) dt=3.333e-02 maxErr= 9.36e-04, ||u||= 1.11e+00, cpu= 8.37e-02(s)
+cgWave:FD22u t=9.000e-01 (27 steps) dt=3.333e-02 maxErr= 9.67e-04, ||u||= 1.10e+00, cpu= 9.07e-02(s)
+cgWave:FD22u t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 9.87e-04, ||u||= 1.10e+00, cpu= 9.78e-02(s)
+
+
+EME: 
+cgWave -noplot known.cmd -g=smallHoleGride0.order2 -upwind=1 -kx=0.5 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=n -debug=0 -setKnownOnBoundaries=0 -ts=explicit -useKnownFirstStep=0 -go=go
+
+cgWave:FD22u t=1.000e-01 ( 448 steps) dt=2.232e-04 maxErr= 1.26e-04, ||u||= 1.00e+00, cpu= 3.65e-01(s)
+cgWave:FD22u t=2.000e-01 ( 896 steps) dt=2.232e-04 maxErr= 2.53e-04, ||u||= 1.00e+00, cpu= 7.26e-01(s)
+cgWave:FD22u t=3.000e-01 (1344 steps) dt=2.232e-04 maxErr= 3.80e-04, ||u||= 1.00e+00, cpu= 1.09e+00(s)
+cgWave:FD22u t=4.000e-01 (1792 steps) dt=2.232e-04 maxErr= 5.08e-04, ||u||= 1.00e+00, cpu= 1.45e+00(s)
+cgWave:FD22u t=5.000e-01 (2240 steps) dt=2.232e-04 maxErr= 6.35e-04, ||u||= 1.00e+00, cpu= 1.81e+00(s)
+cgWave:FD22u t=6.000e-01 (2688 steps) dt=2.232e-04 maxErr= 7.63e-04, ||u||= 1.00e+00, cpu= 2.17e+00(s)
+cgWave:FD22u t=7.000e-01 (3136 steps) dt=2.232e-04 maxErr= 8.89e-04, ||u||= 1.00e+00, cpu= 2.54e+00(s)
+cgWave:FD22u t=8.000e-01 (3584 steps) dt=2.232e-04 maxErr= 1.01e-03, ||u||= 1.00e+00, cpu= 2.89e+00(s)
+cgWave:FD22u t=9.000e-01 (4032 steps) dt=2.232e-04 maxErr= 1.14e-03, ||u||= 1.00e+00, cpu= 3.26e+00(s)
+cgWave:FD22u t=1.000e+00 (4480 steps) dt=2.232e-04 maxErr= 1.26e-03, ||u||= 1.00e+00, cpu= 3.62e+00(s)
+
+--> smallHoleGrid.cmd
+
+I've rerun the results for the scattering performance figure, the new plots and tex files should be in the wimp folder.
+
+The grid I used is /carsoa/grids/smallholegridf0.order2.hdf and the script to make the grid is /carsoa/grids/smallholegrid.cmd 
+The results correspond to wave number k=.5
+
+SPIE2
+cgWave -noplot known.cmd -g=smallHoleGride0.order2 -upwind=1 -kx=2 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -ts=implicit -rectangular=explicit -takeImplicitFirstStep=1 -bcApproach=cbc -go=go
+
+cgWave known.cmd -g=smallHoleGride0.order2 -upwind=1 -kx=2 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -ts=implicit -rectangular=explicit -takeImplicitFirstStep=1 -bcApproach=cbc -show=cylScatSmallHole.show -go=halt
+
+kx=2
+cgWave:FD22u t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 5.48e-04, ||u||= 1.15e+00, cpu= 3.37e-02(s)
+cgWave:FD22u t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 7.29e-04, ||u||= 1.14e+00, cpu= 4.09e-02(s)
+cgWave:FD22u t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 9.04e-04, ||u||= 1.14e+00, cpu= 4.80e-02(s)
+cgWave:FD22u t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 1.02e-03, ||u||= 1.13e+00, cpu= 5.51e-02(s)
+cgWave:FD22u t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 1.10e-03, ||u||= 1.13e+00, cpu= 6.22e-02(s)
+cgWave:FD22u t=6.000e-01 (18 steps) dt=3.333e-02 maxErr= 1.17e-03, ||u||= 1.13e+00, cpu= 6.93e-02(s)
+cgWave:FD22u t=7.000e-01 (21 steps) dt=3.333e-02 maxErr= 1.43e-03, ||u||= 1.15e+00, cpu= 7.64e-02(s)
+cgWave:FD22u t=8.000e-01 (24 steps) dt=3.333e-02 maxErr= 1.69e-03, ||u||= 1.19e+00, cpu= 8.35e-02(s)
+cgWave:FD22u t=9.000e-01 (27 steps) dt=3.333e-02 maxErr= 1.91e-03, ||u||= 1.21e+00, cpu= 9.07e-02(s)
+cgWave:FD22u t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 2.10e-03, ||u||= 1.20e+00, cpu= 9.78e-02(s)
+
+
+kx=.5: 
+cgWave:FD22u t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 4.25e-04, ||u||= 1.12e+00, cpu= 2.07e+00(s)
+cgWave:FD22u t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 5.65e-04, ||u||= 1.12e+00, cpu= 2.66e+00(s)
+cgWave:FD22u t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 6.60e-04, ||u||= 1.12e+00, cpu= 3.27e+00(s)
+cgWave:FD22u t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 7.40e-04, ||u||= 1.12e+00, cpu= 3.86e+00(s)
+cgWave:FD22u t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 8.05e-04, ||u||= 1.11e+00, cpu= 4.44e+00(s)
+cgWave:FD22u t=6.000e-01 (18 steps) dt=3.333e-02 maxErr= 8.58e-04, ||u||= 1.11e+00, cpu= 5.02e+00(s)
+cgWave:FD22u t=7.000e-01 (21 steps) dt=3.333e-02 maxErr= 9.00e-04, ||u||= 1.11e+00, cpu= 5.57e+00(s)
+cgWave:FD22u t=8.000e-01 (24 steps) dt=3.333e-02 maxErr= 9.36e-04, ||u||= 1.11e+00, cpu= 6.14e+00(s)
+cgWave:FD22u t=9.000e-01 (27 steps) dt=3.333e-02 maxErr= 9.67e-04, ||u||= 1.10e+00, cpu= 6.71e+00(s)
+cgWave:FD22u t=1.000e+00 (30 steps) dt=3.333e-02 maxErr= 9.87e-04, ||u||= 1.10e+00, cpu= 7.52e+00(s)
+
+
++++++++++ EXPLICIT
+
+
+kx=2
+cgWave -noplot known.cmd -g=smallHoleGride0.order2 -upwind=1 -kx=2 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -ts=explicit -bcApproach=cbc -go=go
+
+kx=2
+cgWave:FD22u t=9.000e-01 (4032 steps) dt=2.232e-04 maxErr= 1.82e-03, ||u||= 1.21e+00, cpu= 3.24e+00(s)
+cgWave:FD22u t=1.000e+00 (4480 steps) dt=2.232e-04 maxErr= 2.05e-03, ||u||= 1.20e+00, cpu= 3.60e+00(s)
+
+kx=0.5
+cgWave -noplot known.cmd -g=smallHoleGride0.order2 -upwind=1 -kx=0.5 -ky=0 -ra=.005 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -ts=explicit -useKnownFirstStep=0 -go=go
+
+kx=0.5 : use known first-step .. same 
+
+kx=0.5
+cgWave:FD22u t=1.000e-01 ( 448 steps) dt=2.232e-04 maxErr= 3.91e-04, ||u||= 1.12e+00, cpu= 3.60e-01(s)
+cgWave:FD22u t=2.000e-01 ( 896 steps) dt=2.232e-04 maxErr= 5.53e-04, ||u||= 1.12e+00, cpu= 7.19e-01(s)
+cgWave:FD22u t=3.000e-01 (1344 steps) dt=2.232e-04 maxErr= 6.58e-04, ||u||= 1.12e+00, cpu= 1.08e+00(s)
+cgWave:FD22u t=4.000e-01 (1792 steps) dt=2.232e-04 maxErr= 7.38e-04, ||u||= 1.12e+00, cpu= 1.44e+00(s)
+cgWave:FD22u t=5.000e-01 (2240 steps) dt=2.232e-04 maxErr= 8.01e-04, ||u||= 1.11e+00, cpu= 1.79e+00(s)
+cgWave:FD22u t=6.000e-01 (2688 steps) dt=2.232e-04 maxErr= 8.53e-04, ||u||= 1.11e+00, cpu= 2.15e+00(s)
+cgWave:FD22u t=7.000e-01 (3136 steps) dt=2.232e-04 maxErr= 8.97e-04, ||u||= 1.11e+00, cpu= 2.51e+00(s)
+cgWave:FD22u t=8.000e-01 (3584 steps) dt=2.232e-04 maxErr= 9.35e-04, ||u||= 1.11e+00, cpu= 2.87e+00(s)
+cgWave:FD22u t=9.000e-01 (4032 steps) dt=2.232e-04 maxErr= 9.67e-04, ||u||= 1.10e+00, cpu= 3.23e+00(s)
+cgWave:FD22u t=1.000e+00 (4480 steps) dt=2.232e-04 maxErr= 9.87e-04, ||u||= 1.10e+00, cpu= 3.58e+00(s)
+
+
+****************************************************
+****** Tues Jan 9, 2024
+
+FIX ORDER=2 + CBC
+
+
+cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf= -known=diskEig -ts=implicit -upwind=1 -bcApproach=cbc -takeImplicitFirstStep=1 -debug=1 -go=go
+cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf= -known=diskEig -ts=implicit -upwind=1 -takeImplicitFirstStep=1 -debug=1 -go=go
+
+CBC: 
+cgWave:FD22u t=4.900e+00 (343 steps) dt=1.429e-02 maxErr= 1.26e-02, ||u||= 5.58e-01, cpu= 3.23e-01(s)
+cgWave:FD22u t=5.000e+00 (350 steps) dt=1.429e-02 maxErr= 1.31e-02, ||u||= 5.17e-01, cpu= 3.29e-01(s)
+
+one-sided: 
+cgWave:FD22u t=4.900e+00 (343 steps) dt=1.429e-02 maxErr= 1.23e-02, ||u||= 5.59e-01, cpu= 3.21e-01(s)
+cgWave:FD22u t=5.000e+00 (350 steps) dt=1.429e-02 maxErr= 1.33e-02, ||u||= 5.17e-01, cpu= 3.27e-01(s)
+
+cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf= -known=diskEig -ts=explicit -upwind=1 -bcApproach=cbc -takeImplicitFirstStep=1 -debug=1 -go=go
+cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf= -known=diskEig -ts=explicit -upwind=1 -takeImplicitFirstStep=1 -debug=1 -go=go
+
+
+cbc: 
+cgWave:FD22u t=4.900e+00 (343 steps) dt=1.429e-02 maxErr= 5.92e-03, ||u||= 5.65e-01, cpu= 1.65e-01(s)
+cgWave:FD22u t=5.000e+00 (350 steps) dt=1.429e-02 maxErr= 2.55e-03, ||u||= 5.06e-01, cpu= 1.68e-01(s)
+
+
+oneSided:
+cgWave:FD22u t=4.900e+00 (343 steps) dt=1.429e-02 maxErr= 5.76e-03, ||u||= 5.65e-01, cpu= 1.63e-01(s)
+cgWave:FD22u t=5.000e+00 (350 steps) dt=1.429e-02 maxErr= 2.69e-03, ||u||= 5.06e-01, cpu= 1.67e-01(s)
+
+****************************************************
+****** Sun Jan 7, 2024
+
+CONTUNUE ON FANCY EXAMPLE ---> MOVED TO RUNS/SCATTERING 
+
+G16 7x19 holes
+cgWave known.cmd -g=holesGridN7M19e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.0 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -takeImplicitFirstStep=1 -debug=0 -go=halt
+
+
+****************************************************
+****** Sat Jan 6, 2024
+
+START ON FANCY EXAMPLE
+
+
+FD44u G16 **TROUBLE** --> USE CBC's !!
+cgWave known.cmd -g=randomHolesN7M19e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.1 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.25 -y0=0 -bc=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -debug=0 -go=halt
+
+G16 explicit
+cgWave known.cmd -g=randomHolesN7M19e16np.order4.ng3.hdf -kx=1 -ky=0 -tp=.5 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.25 -y0=0 -bc=d -bcApproach=cbc -ts=explicit  -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -debug=0 -go=halt
+
+
+
+FD44u
+cgWave known.cmd -g=randomHolesN7M19e8np.order4.ng3.hdf -kx=1 -ky=0 -tp=.5 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.25 -y0=0 -bc=d -bcApproach=cbc -ts=implicit  -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -debug=0 -go=halt
+
+
+FD22u
+cgWave known.cmd -g=randomHolesN7M19e8np.order2.hdf -kx=1 -ky=0 -tp=.5 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.25 -y0=0 -bc=d  -ts=implicit  -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -debug=0 -go=halt
+
+cgWave known.cmd -g=randomHolesN7M15e8np.order2.hdf -kx=1 -ky=0 -tp=.5 -tf=5 -known=gpw -k0=8 -beta=20 -x0=-2.25 -y0=0 -bc=d -ts=implicit  -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -debug=0 -go=halt
+
+
+cgWave known.cmd -g=randomHolesN7M15e8np.order2.hdf -kx=1 -ky=0 -tp=.5 -tf=5 -known=gpw -k0=4 -beta=20 -x0=-2.25 -y0=0 -bc=d -ts=implicit  -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -debug=0 -go=halt
+
+
+cgWave known.cmd -g=randomHolese8np.order2.hdf -kx=1 -ky=0 -tp=.5 -tf=5 -known=gpw -k0=4 -beta=20 -x0=-2.25 -y0=0 -bc=d -ts=implicit  -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -go=halt
+
+cgWave known.cmd -g=randomHolese8np.order2.hdf -kx=1 -ky=0 -tp=.5 -tf=5 -known=gpw -k0=4 -beta=20 -x0=-2.25 -y0=0 -bc=d -upwind=1 -setKnownOnBoundaries=0 -go=halt
+
+TINY HOLE:
+ogen -noplot randomHoles -order=2 -interp=e -blf=4 -innerRad=.01 -periodic=np -xa=-3 -factor=8 
+getTimeStep: grid=0: gridSize=  8.84e-03, gridCFL*dt=c*dt/gridSize=  1.43e-01
+getTimeStep: grid=1: gridSize=  1.41e-03, gridCFL*dt=c*dt/gridSize=  9.00e-01
+
+
+
+RUNS FOR PLOTS
+cgWave -noplot known.cmd -g=cice4.order4.ng3 -upwind=1 -kx=10 -ky=0 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -ts=implicit -rectangular=explicit -takeImplicitFirstStep=1 -bcApproach=cbc -show=cylScatG4O4SPIE.show -go=go
+
+cgWave -noplot known.cmd -g=cice8.order4.ng3 -upwind=1 -kx=10 -ky=0 -cfl=.9 -tf=1 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -ts=implicit -rectangular=explicit -takeImplicitFirstStep=1 -bcApproach=cbc -show=cylScatG8O4SPIE.show -go=go
+
+
+****************************************************
+****** Thurs Jan 4, 2024
+
+++++++++++++ SPHERE EIGENMODE
+cgWave -noplot known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=2 -mTheta=1 -mr=1 -tf=.5 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc  -takeImplicitFirstStep=1 -show=sphereG4O4.show -go=go
+
+cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=2 -mTheta=1 -mr=1 -tf=.5 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc  -takeImplicitFirstStep=1 -go=halt
+
+
+
+SPIE FOR diskEig
+
+***CHANGE CALCULATION OF dt in getTimeStep
+
+SPIE *CHECK dt **
+
+SPIE: **TROUBLE WITH -takeImplicitFirstStep=1 ---> FIXED 
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=10 -known=diskEig -ts=implicit -rectangular=explicit -upwind=1 -bcApproach=cbc -takeImplicitFirstStep=1 -debug=0 -go=halt
+
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 1.47e-06, ||u||= 4.43e-01, cpu= 2.54e+00(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 2.58e-06, ||u||= 9.69e-02, cpu= 3.66e+00(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 4.10e-06, ||u||= 2.95e-01, cpu= 4.32e+00(s)
+cgWave:FD44u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 4.35e-06, ||u||= 5.48e-01, cpu= 4.79e+00(s)
+cgWave:FD44u t=5.000e-01 ( 35 steps) dt=1.429e-02 maxErr= 2.53e-06, ||u||= 5.42e-01, cpu= 5.16e+00(s)
+cgWave:FD44u t=1.000e-02 (   1 steps) dt=1.000e-02 maxErr= 5.79e-01, ||u||= 1.16e+00, cpu= 3.74e+00(s)
+
+
+IME: 
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=10 -known=diskEig -ts=implicit -upwind=1 -bcApproach=cbc -takeImplicitFirstStep=1 -debug=0 -go=halt
+
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 2.59e-06, ||u||= 4.43e-01, cpu= 3.43e+00(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 8.31e-06, ||u||= 9.69e-02, cpu= 4.21e+00(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 1.18e-05, ||u||= 2.95e-01, cpu= 1.78e+01(s)
+cgWave:FD44u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 7.85e-06, ||u||= 5.48e-01, cpu= 1.83e+01(s)
+
+
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=10 -known=diskEig -ts=implicit -rectangular=explicit -upwind=1 -bcApproach=cbc -go=halt
+
+SPIE: 
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 1.40e-06, ||u||= 4.43e-01, cpu= 8.24e+01(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 2.53e-06, ||u||= 9.69e-02, cpu= 8.37e+01(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 4.04e-06, ||u||= 2.95e-01, cpu= 8.44e+01(s)
+cgWave:FD44u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 4.28e-06, ||u||= 5.48e-01, cpu= 8.50e+01(s)
+cgWave:FD44u t=5.000e-01 ( 35 steps) dt=1.429e-02 maxErr= 2.49e-06, ||u||= 5.42e-01, cpu= 8.56e+01(s)
+
+
+
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=10 -known=diskEig -ts=implicit -upwind=1 -bcApproach=cbc -go=halt
+
+
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 2.30e-06, ||u||= 4.43e-01, cpu= 3.01e+00(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 7.87e-06, ||u||= 9.69e-02, cpu= 4.61e+00(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 1.14e-05, ||u||= 2.95e-01, cpu= 5.73e+00(s)
+cgWave:FD44u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 7.70e-06, ||u||= 5.48e-01, cpu= 6.34e+00(s)
+cgWave:FD44u t=5.000e-01 ( 35 steps) dt=1.429e-02 maxErr= 4.07e-06, ||u||= 5.42e-01, cpu= 6.71e+00(s)
+
+
+
+****************************************************
+****** Tues/Wed Jan 2/3, 2024
+
+START TEST -- getEnergyNorm
+
+
+cgWave known.cmd -g=nonSquare32.order2 -kx=1 -ky=1 -kz=1 -tf=2 -tp=.1 -known=squareEig -bc=d -computeEnergy=1 -debug=0 -go=halt
+ $$$$$$$$$$ getEnergyNorm: t= 1.00e-01: energyNorm= 9.00e+00
+cgWave:FD22 t=2.000e-01 ( 12 steps) dt=1.667e-02 maxErr= 1.21e-03, ||u||= 2.04e-01, cpu= 2.80e+00(s)
+
+ $$$$$$$$$$ getEnergyNorm: t= 2.00e-01: energyNorm= 1.01e+01
+cgWave:FD22 t=3.000e-01 ( 18 steps) dt=1.667e-02 maxErr= 8.49e-04, ||u||= 8.88e-01, cpu= 3.44e+00(s)
+
+
+
+cgWave -noplot known.cmd -g=square32.order2 -kx=1 -ky=1 -kz=1 -tf=2 -tp=.1 -known=squareEig -bc=d -computeEnergy=1 -debug=0 -show=squareEig.show -go=go
+
+ $$$$$$$$$$ getEnergyNorm: t= 1.00e-01: energyNorm= 9.00e+00
+cgWave:FD22 t=2.000e-01 ( 12 steps) dt=1.667e-02 maxErr= 1.21e-03, ||u||= 2.04e-01, cpu= 3.82e+00(s)
+
+ $$$$$$$$$$ getEnergyNorm: t= 2.00e-01: energyNorm= 1.01e+01
+cgWave:FD22 t=3.000e-01 ( 18 steps) dt=1.667e-02 maxErr= 8.49e-04, ||u||= 8.88e-01, cpu= 4.46e+00(s)
+
+ $$$$$$$$$$ getEnergyNorm: t= 3.00e-01: energyNorm= 1.02e+01
+cgWave:FD22 t=4.000e-01 ( 24 steps) dt=1.667e-02 maxErr= 9.86e-04, ||u||= 9.17e-01, cpu= 5.04e+00(s)
+
+ $$$$$$$$$$ getEnergyNorm: t= 4.00e-01: energyNorm= 9.09e+00
+
+
+****************************************************
+****** Sun Dec 24, 2023
+
+
+++++++++++++ SPHERE EIGENMODE
+cgWave -noplot known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=2 -mTheta=1 -mr=1 -tf=.5 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc  -takeImplicitFirstStep=1 -show=sphereG4O4.show -go=go
+
+
+++++++++ CYL EIGENMODE
+
+PLOTS FOR WIMP
+
+
+cgWave -noplot known.cmd -g=pipeze4.order4.ng3 -amp=1 -nTheta=2 -mr=1 -mz=1 -rad=.5 -tf=.5 -tp=.1 -known=diskEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc -takeImplicitFirstStep=1 -show=pipeG4O4.show -go=go
+
+
+
+****************************************************
+****** Sat Dec 23, 2023
+
+++++++++ DISK EIGENMODE
+
+PLOTS FOR WIMP
+
+cgWave -noplot known.cmd -g=sice4.order4.ng3 -amp=1 -nTheta=2 -mr=1 -tf=1.0 -tp=.1 -known=diskEig -ts=implicit -upwind=1 -bcApproach=cbc -show=diskG4O4.show -go=go
+
++++++++++++ REVISIT CYL SCAT +++
+
+**FIXED*** return time derivative of cyl scat soluion.
+
+
+cgWave known.cmd -g=cice4.order4.ng3 -upwind=1 -kx=10 -ky=0 -cfl=1 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -ts=implicit -takeImplicitFirstStep=1 -bcApproach=cbc -go=halt
+
+IMPLICIT FIRST STEP: 
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 9.58e-05, ||u||= 1.74e+00, cpu= 4.97e+00(s)
+
+
+USE EXPLICIT TAYLOR FIRST STEP:
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 8.37e-05, ||u||= 1.74e+00, cpu= 5.39e+00(s)
+
+
+-takeImplicitFirstStep=1 : broken
+
+-useKnownFirstStep=1
+
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 8.18e-05, ||u||= 1.74e+00, cpu= 3.48e+00(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 2.03e-04, ||u||= 1.69e+00, cpu= 1.29e+01(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 2.49e-04, ||u||= 1.79e+00, cpu= 1.40e+01(s)
+cgWave:FD44u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 3.98e-04, ||u||= 1.74e+00, cpu= 1.48e+01(s)
+cgWave:FD44u t=5.000e-01 ( 35 steps) dt=1.429e-02 maxErr= 4.84e-04, ||u||= 1.70e+00, cpu= 1.56e+01(s)
+
+
+cgWave known.cmd -g=cice4.order2 -upwind=1 -kx=10 -ky=0 -cfl=1 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -ts=implicit -go=halt
+
+cgWave:FD22u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 5.74e-03, ||u||= 1.74e+00, cpu= 2.38e+00(s)
+cgWave:FD22u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 1.76e-02, ||u||= 1.69e+00, cpu= 4.47e+00(s)
+
+
+****************************************************
+****** Thurs Dec 14, 2023
+
+
++++++++++++++ NEW CYLINDER EIGS ++++++++
+
++++++++ PIPE ORDER=4 IMPLICIT  Looks good
+
+cgWave -noplot known.cmd -g=pipeze8.order4.ng3 -amp=1 -nTheta=1 -mr=1 -mz=1 -rad=.5 -tf=.5 -tp=.1 -known=diskEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc -go=go
+
+cgWave -noplot known.cmd -g=pipeze4.order4.ng3 -amp=1 -nTheta=1 -mr=1 -mz=1 -rad=.5 -tf=.5 -tp=.1 -known=diskEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc -go=go
+
+cgWave known.cmd -g=pipeze2.order4.ng3 -amp=1 -nTheta=1 -mr=1 -mz=1 -rad=.5 -tf=.5 -tp=.1 -known=diskEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc -go=halt
+
+G8
+cgWave:FD44u t=1.000e-01 ( 22 steps) dt=4.545e-03 maxErr= 4.46e-06, ||u||= 7.70e-02, cpu= 1.24e+02(s)
+cgWave:FD44u t=2.000e-01 ( 44 steps) dt=4.545e-03 maxErr= 4.79e-06, ||u||= 5.61e-01, cpu= 1.58e+02(s)
+cgWave:FD44u t=3.000e-01 ( 66 steps) dt=4.545e-03 maxErr= 1.01e-05, ||u||= 2.26e-01, cpu= 1.92e+02(s)
+cgWave:FD44u t=4.000e-01 ( 88 steps) dt=4.545e-03 maxErr= 1.25e-05, ||u||= 5.01e-01, cpu= 2.26e+02(s)
+cgWave:FD44u t=5.000e-01 (110 steps) dt=4.545e-03 maxErr= 1.19e-05, ||u||= 3.58e-01, cpu= 2.60e+02(s)
+
+
+G4
+cgWave:FD44u t=1.000e-01 (11 steps) dt=9.091e-03 maxErr= 7.55e-05, ||u||= 7.68e-02, cpu= 2.06e+01(s)
+cgWave:FD44u t=2.000e-01 (22 steps) dt=9.091e-03 maxErr= 1.13e-04, ||u||= 5.58e-01, cpu= 2.37e+01(s)
+cgWave:FD44u t=3.000e-01 (33 steps) dt=9.091e-03 maxErr= 1.40e-04, ||u||= 2.25e-01, cpu= 2.69e+01(s)
+cgWave:FD44u t=4.000e-01 (44 steps) dt=9.091e-03 maxErr= 2.26e-04, ||u||= 4.98e-01, cpu= 3.00e+01(s)
+cgWave:FD44u t=5.000e-01 (55 steps) dt=9.091e-03 maxErr= 1.51e-04, ||u||= 3.57e-01, cpu= 3.31e+01(s)
+
+G2
+cgWave:FD44u t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 2.80e-03, ||u||= 5.46e-01, cpu= 1.28e+01(s)
+cgWave:FD44u t=3.000e-01 (18 steps) dt=1.667e-02 maxErr= 1.65e-03, ||u||= 2.21e-01, cpu= 1.36e+01(s)
+cgWave:FD44u t=4.000e-01 (24 steps) dt=1.667e-02 maxErr= 4.27e-03, ||u||= 4.86e-01, cpu= 1.46e+01(s)
+cgWave:FD44u t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 2.76e-03, ||u||= 3.50e-01, cpu= 1.55e+01(s)
+
+++++++++++ PIPE: order=2
+
+cgWave -noplot known.cmd -g=pipeze8.order2 -amp=1 -nTheta=1 -mr=1 -mz=1 -rad=.5 -tf=.5 -tp=.1 -known=diskEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=-1 -debug=0 -assignInterpNeighbours=interp -bc=d -go=go
+
+cgWave known.cmd -g=pipeze4.order2 -amp=1 -nTheta=1 -mr=1 -mz=1 -rad=.5 -tf=.5 -tp=.1 -known=diskEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=-1 -debug=0 -assignInterpNeighbours=interp -bc=d -go=halt
+
+cgWave known.cmd -g=pipeze2.order2 -amp=1 -nTheta=1 -mr=1 -mz=1 -rad=.5 -tf=.5 -tp=.1 -known=diskEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=-1 -debug=0 -assignInterpNeighbours=interp -bc=d -go=halt
+
+G8
+cgWave:FD22u t=1.000e-01 ( 23 steps) dt=4.348e-03 maxErr= 1.08e-03, ||u||= 7.81e-02, cpu= 1.49e+01(s)
+cgWave:FD22u t=2.000e-01 ( 46 steps) dt=4.348e-03 maxErr= 1.01e-03, ||u||= 5.60e-01, cpu= 3.64e+01(s)
+cgWave:FD22u t=3.000e-01 ( 69 steps) dt=4.348e-03 maxErr= 2.62e-03, ||u||= 2.28e-01, cpu= 4.41e+01(s)
+cgWave:FD22u t=4.000e-01 ( 92 steps) dt=4.348e-03 maxErr= 2.89e-03, ||u||= 4.98e-01, cpu= 5.16e+01(s)
+cgWave:FD22u t=5.000e-01 (115 steps) dt=4.348e-03 maxErr= 3.33e-03, ||u||= 3.62e-01, cpu= 5.94e+01(s)
+
+
+G4
+cgWave:FD42u t=1.000e-01 (12 steps) dt=8.333e-03 maxErr= 4.48e-03, ||u||= 8.12e-02, cpu= 3.24e+00(s)
+cgWave:FD42u t=2.000e-01 (24 steps) dt=8.333e-03 maxErr= 5.87e-03, ||u||= 5.52e-01, cpu= 4.82e+00(s)
+cgWave:FD42u t=3.000e-01 (36 steps) dt=8.333e-03 maxErr= 9.21e-03, ||u||= 2.34e-01, cpu= 6.43e+00(s)
+cgWave:FD42u t=4.000e-01 (48 steps) dt=8.333e-03 maxErr= 1.39e-02, ||u||= 4.85e-01, cpu= 7.46e+00(s)
+cgWave:FD42u t=5.000e-01 (60 steps) dt=8.333e-03 maxErr= 9.99e-03, ||u||= 3.67e-01, cpu= 8.24e+00(s)
+
+G2
+cgWave:FD42u t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 4.04e-02, ||u||= 5.01e-01, cpu= 2.05e+01(s)
+cgWave:FD42u t=3.000e-01 (18 steps) dt=1.667e-02 maxErr= 2.99e-02, ||u||= 2.40e-01, cpu= 2.12e+01(s)
+cgWave:FD42u t=4.000e-01 (24 steps) dt=1.667e-02 maxErr= 7.29e-02, ||u||= 4.17e-01, cpu= 2.18e+01(s)
+cgWave:FD42u t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 3.02e-02, ||u||= 3.60e-01, cpu= 2.31e+01(s)
+
+
+
+
++++++++++++++++++++++++++++++++++++
+IMP + CBC + SPHERE EIGS 
+
+G4: not half the step size though
+cgWave:FD44u t=5.000e-01 (60 steps) dt=8.333e-03 maxErr= 1.33e-06, ||u||= 5.78e-01, cpu= 2.07e+02(s)
+cfl=.7
+cgWave:FD44u t=5.000e-01 (75 steps) dt=6.667e-03 maxErr= 1.12e-06, ||u||= 5.78e-01, cpu= 2.23e+02(s)
+
+G2:
+cgWave:FD44u t=5.000e-01 ( 45 steps) dt=1.111e-02 maxErr= 2.23e-05, ||u||= 5.76e-01, cpu= 6.64e+01(s)
+
+cgWave -noplot known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=.5 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc -go=go
+
+cgWave:FD44u t=1.000e-01 (12 steps) dt=8.333e-03 maxErr= 7.91e-07, ||u||= 8.32e-01, cpu= 1.37e+02(s)
+cgWave:FD44u t=2.000e-01 (24 steps) dt=8.333e-03 maxErr= 2.13e-06, ||u||= 5.75e-01, cpu= 1.54e+02(s)
+cgWave:FD44u t=3.000e-01 (36 steps) dt=8.333e-03 maxErr= 2.31e-06, ||u||= 2.04e-01, cpu= 1.72e+02(s)
+cgWave:FD44u t=4.000e-01 (48 steps) dt=8.333e-03 maxErr= 1.75e-06, ||u||= 2.08e-01, cpu= 1.90e+02(s)
+cgWave:FD44u t=5.000e-01 (60 steps) dt=8.333e-03 maxErr= 1.33e-06, ||u||= 5.78e-01, cpu= 2.07e+02(s)
+
+cgWave -noplot known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=.5 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc -go=go
+
+cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc -go=halt
+
+
+CgWave::takeImplicitStep: implicit solve: max-res= 2.16e-13 (iterations=1) ***
+cgWave:FD44u t=1.000e-01 (  9 steps) dt=1.111e-02 maxErr= 2.72e-06, ||u||= 8.30e-01, cpu= 3.18e+01(s)
+CgWave::takeImplicitStep: implicit solve: max-res= 2.11e-13 (iterations=1) ***
+cgWave:FD44u t=2.000e-01 ( 18 steps) dt=1.111e-02 maxErr= 5.44e-06, ||u||= 5.74e-01, cpu= 5.09e+01(s)
+cgWave:FD44u t=3.000e-01 ( 27 steps) dt=1.111e-02 maxErr= 1.14e-05, ||u||= 2.04e-01, cpu= 5.69e+01(s)
+cgWave:FD44u t=4.000e-01 ( 36 steps) dt=1.111e-02 maxErr= 1.81e-05, ||u||= 2.07e-01, cpu= 6.15e+01(s)
+cgWave:FD44u t=5.000e-01 ( 45 steps) dt=1.111e-02 maxErr= 2.23e-05, ||u||= 5.76e-01, cpu= 6.64e+01(s)
+
+
+
+
+SPLIT BOX: -- looks OK
+cgWave -noplot known.cmd -g=unitBoxSplite4.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -ts=implicit -bc=d -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave -noplot known.cmd -g=unitBoxSplite2.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -ts=implicit -bc=d -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave -noplot known.cmd -g=unitBoxSplite1.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -ts=implicit -bc=d -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+
+G1
+cgWave:FD44 t=2.000e-01 ( 4 steps) dt=5.000e-02 maxErr= 6.49e-03, ||u||= 5.22e-01, cpu= 2.78e-01(s)
+cgWave:FD44 t=3.000e-01 ( 6 steps) dt=5.000e-02 maxErr= 1.80e-03, ||u||= 9.22e-01, cpu= 2.83e-01(s)
+cgWave:FD44 t=4.000e-01 ( 8 steps) dt=5.000e-02 maxErr= 1.70e-02, ||u||= 3.43e-01, cpu= 2.87e-01(s)
+cgWave:FD44 t=5.000e-01 (10 steps) dt=5.000e-02 maxErr= 1.77e-02, ||u||= 6.00e-01, cpu= 2.91e-01(s)
+
+G2
+cgWave:FD44 t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 2.52e-04, ||u||= 4.64e-01, cpu= 1.29e+01(s)
+cgWave:FD44 t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 5.44e-04, ||u||= 5.69e-01, cpu= 1.30e+01(s)
+cgWave:FD44 t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 1.38e-04, ||u||= 9.93e-01, cpu= 1.31e+01(s)
+cgWave:FD44 t=4.000e-01 (16 steps) dt=2.500e-02 maxErr= 1.31e-03, ||u||= 3.53e-01, cpu= 1.32e+01(s)
+cgWave:FD44 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 1.32e-03, ||u||= 6.65e-01, cpu= 1.33e+01(s)
+
+G4:
+cgWave:FD44 t=1.000e-01 ( 8 steps) dt=1.250e-02 maxErr= 1.96e-05, ||u||= 4.64e-01, cpu= 1.84e+03(s)
+cgWave:FD44 t=2.000e-01 (16 steps) dt=1.250e-02 maxErr= 3.89e-05, ||u||= 5.69e-01, cpu= 1.85e+03(s)
+cgWave:FD44 t=3.000e-01 (24 steps) dt=1.250e-02 maxErr= 9.75e-06, ||u||= 9.92e-01, cpu= 1.85e+03(s)
+cgWave:FD44 t=4.000e-01 (32 steps) dt=1.250e-02 maxErr= 9.08e-05, ||u||= 3.52e-01, cpu= 1.86e+03(s)
+cgWave:FD44 t=5.000e-01 (40 steps) dt=1.250e-02 maxErr= 9.11e-05, ||u||= 6.66e-01, cpu= 1.86e+03(s)
+
+****************************************************
+****** Wed Dec 13, 2023
+
+takeImplicitStep -> NOW CALLS APPLY BOUNDARY CONDITIONS
+
+
+
+
+>>>>>>> BOX DIRICHLET
+
+BOX implicit
+cgWave -noplot known.cmd -g=box4.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -ts=implicit -bc=d -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+
+box2:
+cgWave:FD44 t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 2.35e-04, ||u||= 4.64e-01, cpu= 1.97e+00(s)
+cgWave:FD44 t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 5.08e-04, ||u||= 5.69e-01, cpu= 2.01e+00(s)
+cgWave:FD44 t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 1.29e-04, ||u||= 9.93e-01, cpu= 2.05e+00(s)
+cgWave:FD44 t=4.000e-01 (16 steps) dt=2.500e-02 maxErr= 1.22e-03, ||u||= 3.53e-01, cpu= 2.09e+00(s)
+cgWave:FD44 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 1.24e-03, ||u||= 6.65e-01, cpu= 2.13e+00(s)
+
+box1: 
+cgWave:FD44 t=2.000e-01 ( 4 steps) dt=5.000e-02 maxErr= 5.52e-03, ||u||= 4.84e-01, cpu= 5.62e-02(s)
+cgWave:FD44 t=3.000e-01 ( 6 steps) dt=5.000e-02 maxErr= 1.33e-03, ||u||= 8.55e-01, cpu= 5.79e-02(s)
+cgWave:FD44 t=4.000e-01 ( 8 steps) dt=5.000e-02 maxErr= 1.45e-02, ||u||= 3.17e-01, cpu= 5.97e-02(s)
+cgWave:FD44 t=5.000e-01 (10 steps) dt=5.000e-02 maxErr= 1.51e-02, ||u||= 5.58e-01, cpu= 6.15e-02(s)
+
+BOX explicit
+cgWave -noplot known.cmd -g=box4.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=d -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave:FD44 t=1.000e-01 ( 8 steps) dt=1.250e-02 maxErr= 6.63e-07, ||u||= 4.64e-01, cpu= 2.38e-02(s)
+cgWave:FD44 t=2.000e-01 (16 steps) dt=1.250e-02 maxErr= 1.23e-06, ||u||= 5.69e-01, cpu= 4.98e-02(s)
+cgWave:FD44 t=3.000e-01 (24 steps) dt=1.250e-02 maxErr= 2.76e-07, ||u||= 9.92e-01, cpu= 7.56e-02(s)
+cgWave:FD44 t=4.000e-01 (32 steps) dt=1.250e-02 maxErr= 2.80e-06, ||u||= 3.52e-01, cpu= 1.01e-01(s)
+cgWave:FD44 t=5.000e-01 (40 steps) dt=1.250e-02 maxErr= 2.79e-06, ||u||= 6.66e-01, cpu= 1.27e-01(s)
+
+
+
+TEST NEW CYL SCAT ROUTINE ... matches:
+
+cgWave known.cmd -g=cice4.order4.ng3 -upwind=1 -kx=10 -ky=0 -cfl=1 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -ts=implicit -bcApproach=cbc -go=halt
+
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 9.26e-05, ||u||= 1.74e+00, cpu= 2.97e+01(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 2.45e-04, ||u||= 1.69e+00, cpu= 3.76e+01(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 3.18e-04, ||u||= 1.79e+00, cpu= 3.85e+01(s)
+cgWave:FD44u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 3.98e-04, ||u||= 1.74e+00, cpu= 3.96e+01(s)
+
+CYL-SCAT IMPLICIT FD44u -- maybe ok, convergence a bit slow
+
+cgWave known.cmd -g=cice8.order4.ng3 -upwind=1 -kx=10 -ky=0 -cfl=1 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -ts=implicit -bcApproach=cbc -go=halt
+
+cgWave:FD44u t=1.000e-01 (  13 steps) dt=7.692e-03 maxErr= 1.05e-05, ||u||= 1.74e+00, cpu= 1.23e+01(s)
+cgWave:FD44u t=2.000e-01 (  26 steps) dt=7.692e-03 maxErr= 2.10e-05, ||u||= 1.69e+00, cpu= 1.69e+01(s)
+cgWave:FD44u t=3.000e-01 (  39 steps) dt=7.692e-03 maxErr= 2.49e-05, ||u||= 1.79e+00, cpu= 3.54e+01(s)
+cgWave:FD44u t=4.000e-01 (  52 steps) dt=7.692e-03 maxErr= 3.25e-05, ||u||= 1.74e+00, cpu= 4.00e+01(s)
+cgWave:FD44u t=5.000e-01 (  65 steps) dt=7.692e-03 maxErr= 4.47e-05, ||u||= 1.70e+00, cpu= 4.46e+01(s)
+
+cgWave known.cmd -g=cice4.order4.ng3 -upwind=1 -kx=10 -ky=0 -cfl=1 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -ts=implicit -bcApproach=cbc -go=halt
+
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 9.26e-05, ||u||= 1.74e+00, cpu= 3.93e+00(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 2.45e-04, ||u||= 1.69e+00, cpu= 5.70e+00(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 3.18e-04, ||u||= 1.79e+00, cpu= 7.38e+00(s)
+cgWave:FD44u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 3.98e-04, ||u||= 1.74e+00, cpu= 9.02e+00(s)
+cgWave:FD44u t=5.000e-01 ( 35 steps) dt=1.429e-02 maxErr= 4.84e-04, ||u||= 1.70e+00, cpu= 1.06e+01(s)
+cgWave:FD44u t=6.000e-01 ( 42 steps) dt=1.429e-02 maxErr= 5.62e-04, ||u||= 1.79e+00, cpu= 1.22e+01(s)
+cgWave:FD44u t=7.000e-01 ( 49 steps) dt=1.429e-02 maxErr= 7.78e-04, ||u||= 1.75e+00, cpu= 1.86e+01(s)
+cgWave:FD44u t=8.000e-01 ( 56 steps) dt=1.429e-02 maxErr= 9.30e-04, ||u||= 1.71e+00, cpu= 2.02e+01(s)
+cgWave:FD44u t=9.000e-01 ( 63 steps) dt=1.429e-02 maxErr= 8.18e-04, ||u||= 1.77e+00, cpu= 2.17e+01(s)
+cgWave:FD44u t=1.000e+00 ( 70 steps) dt=1.429e-02 maxErr= 1.08e-03, ||u||= 1.76e+00, cpu= 2.60e+01(s)
+
+
+
+cgWave known.cmd -g=square5.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=e -upwind=0 -ts=implicit -orderInTime=-1 -bcApproach=cbc -debugOges=63 -debug=31 -go=halt
+
+
+****************************************************
+****** Tues Dec 12, 2023
+
+FIX EXACT BC
+
+cgWave known.cmd -g=square32.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=e -upwind=0 -ts=implicit -orderInTime=-1 -debug=1 -bcApproach=cbc -go=halt
+cgWave:FD44 t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 2.03e-05, ||u||= 6.31e-01, cpu= 2.11e+00(s)
+cgWave:FD44 t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 5.64e-05, ||u||= 2.05e-01, cpu= 7.20e+00(s)
+
+
+cgWave known.cmd -g=square16.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=e -upwind=0 -ts=implicit -orderInTime=-1 -debug=1 -bcApproach=cbc -go=halt
+
+
+cgWave known.cmd -g=square8.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=e -upwind=0 -ts=implicit -orderInTime=-1 -bcApproach=cbc -debugOges=63 -debug=31 -go=halt
+
++++++++++++ CYL SCAT +++
+
+cgWave known.cmd -g=cice4.order2 -upwind=1 -kx=10 -ky=0 -cfl=1 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -ts=implicit -bcApproach=cbc -go=halt
+cgWave:FD22u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 5.74e-03, ||u||= 1.74e+00, cpu= 2.38e+00(s)
+cgWave:FD22u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 1.76e-02, ||u||= 1.69e+00, cpu= 4.47e+00(s)
+
+
+CYL-SCAT -- errors are not symmetric. *WHY?
+cgWave known.cmd -g=cice8.order4.ng3 -upwind=1 -kx=10 -ky=0 -cfl=1 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -ts=implicit -bcApproach=cbc -go=halt
+cgWave:FD44u t=1.000e-01 (  13 steps) dt=7.692e-03 maxErr= 1.05e-05, ||u||= 1.74e+00, cpu= 1.20e+01(s)
+cgWave:FD44u t=2.000e-01 (  26 steps) dt=7.692e-03 maxErr= 2.10e-05, ||u||= 1.69e+00, cpu= 4.09e+01(s)
+cgWave:FD44u t=3.000e-01 (  39 steps) dt=7.692e-03 maxErr= 2.49e-05, ||u||= 1.79e+00, cpu= 4.97e+01(s)
+cgWave:FD44u t=4.000e-01 (  52 steps) dt=7.692e-03 maxErr= 3.25e-05, ||u||= 1.74e+00, cpu= 5.67e+01(s)
+cgWave:FD44u t=5.000e-01 (  65 steps) dt=7.692e-03 maxErr= 4.47e-05, ||u||= 1.70e+00, cpu= 9.98e+01(s)
+
+
+CYL-SCAT IMPLICIT FD44u --> **LARGE ERRORS IN EXACT-EXACT CORNERS
+cgWave known.cmd -g=cice4.order4.ng3 -upwind=1 -kx=10 -ky=0 -cfl=1 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -ts=implicit -bcApproach=cbc -go=halt
+
+FIXED EXACT BCS
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 9.26e-05, ||u||= 1.74e+00, cpu= 8.42e+00(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 2.45e-04, ||u||= 1.69e+00, cpu= 4.43e+01(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 3.18e-04, ||u||= 1.79e+00, cpu= 4.57e+01(s)
+cgWave:FD44u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 3.98e-04, ||u||= 1.74e+00, cpu= 4.71e+01(s)
+
+
+OLD:
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 5.39e-03, ||u||= 1.74e+00, cpu= 4.68e+01(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 6.12e-03, ||u||= 1.69e+00, cpu= 5.84e+01(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 5.95e-03, ||u||= 1.79e+00, cpu= 6.04e+01(s)
+
+cice8: 
+cgWave:FD44u t=1.000e-01 (  13 steps) dt=7.692e-03 maxErr= 1.51e-03, ||u||= 1.74e+00, cpu= 1.67e+01(s)
+
+cice4: BC=std
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 2.01e-04, ||u||= 1.74e+00, cpu= 3.61e+00(s)
+
+CYL-SCAT EXPLICIT FD44u
+cgWave known.cmd -g=cice4.order4.ng3 -upwind=1 -kx=10 -ky=0 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -bcApproach=cbc -go=halt
+
+cgWave:FD44u t=1.000e-01 (  8 steps) dt=1.250e-02 maxErr= 7.54e-05, ||u||= 1.74e+00, cpu= 5.26e+00(s)
+cgWave:FD44u t=2.000e-01 ( 16 steps) dt=1.250e-02 maxErr= 8.46e-05, ||u||= 1.69e+00, cpu= 9.78e+00(s)
+cgWave:FD44u t=3.000e-01 ( 24 steps) dt=1.250e-02 maxErr= 1.05e-04, ||u||= 1.79e+00, cpu= 1.21e+01(s)
+cgWave:FD44u t=4.000e-01 ( 32 steps) dt=1.250e-02 maxErr= 9.63e-05, ||u||= 1.74e+00, cpu= 1.41e+01(s)
+cgWave:FD44u t=5.000e-01 ( 40 steps) dt=1.250e-02 maxErr= 1.75e-04, ||u||= 1.70e+00, cpu= 1.61e+01(s)
+cgWave:FD44u t=6.000e-01 ( 48 steps) dt=1.250e-02 maxErr= 1.89e-04, ||u||= 1.79e+00, cpu= 1.84e+01(s)
+cgWave:FD44u t=7.000e-01 ( 56 steps) dt=1.250e-02 maxErr= 1.74e-04, ||u||= 1.75e+00, cpu= 2.03e+01(s)
+cgWave:FD44u t=8.000e-01 ( 64 steps) dt=1.250e-02 maxErr= 2.99e-04, ||u||= 1.71e+00, cpu= 2.14e+01(s)
+cgWave:FD44u t=9.000e-01 ( 72 steps) dt=1.250e-02 maxErr= 2.77e-04, ||u||= 1.77e+00, cpu= 2.25e+01(s)
+cgWave:FD44u t=1.000e+00 ( 80 steps) dt=1.250e-02 maxErr= 2.67e-04, ||u||= 1.76e+00, cpu= 2.37e+01(s)
+
+cice8: 
+cgWave:FD44u t=1.000e-01 (  14 steps) dt=7.143e-03 maxErr= 2.33e-06, ||u||= 1.74e+00, cpu= 4.72e+00(s)
+
+
+cgWave known.cmd -g=cice4.order2 -upwind=1 -kx=10 -ky=0 -tf=10 -tp=.1 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -bcApproach=cbc -go=halt
+ORDER=2:
+cgWave:FD22u t=3.000e-02 (   3 steps) dt=1.000e-02 maxErr= 6.47e-04, ||u||= 1.77e+00, cpu= 2.33e+01(s)
+cgWave:FD22u t=4.000e-02 (   4 steps) dt=1.000e-02 maxErr= 8.41e-04, ||u||= 1.76e+00, cpu= 2.44e+01(s)
+cgWave:FD22u t=5.000e-02 (   5 steps) dt=1.000e-02 maxErr= 9.77e-04, ||u||= 1.76e+00, cpu= 2.56e+01(s)
+cgWave:FD22u t=6.000e-02 (   6 steps) dt=1.000e-02 maxErr= 1.18e-03, ||u||= 1.75e+00, cpu= 2.67e+01(s)
+
+
+cgWave:FD22u t=2.000e-02 (  2 steps) dt=1.000e-02 maxErr= 7.12e-04, ||u||= 1.77e+00, cpu= 5.56e+00(s)
+cgWave:FD22u t=3.000e-02 (  3 steps) dt=1.000e-02 maxErr= 6.47e-04, ||u||= 1.77e+00, cpu= 6.76e+00(s)
+cgWave:FD22u t=4.000e-02 (  4 steps) dt=1.000e-02 maxErr= 9.16e-04, ||u||= 1.76e+00, cpu= 7.95e+00(s)
+cgWave:FD22u t=5.000e-02 (  5 steps) dt=1.000e-02 maxErr= 9.81e-04, ||u||= 1.76e+00, cpu= 8.91e+00(s)
+cgWave:FD22u t=6.000e-02 (  6 steps) dt=1.000e-02 maxErr= 1.10e-03, ||u||= 1.75e+00, cpu= 9.63e+00(s)
+
+
++++++++++++++++++++++++++++++++++++
+IMP + CBC + SPHERE EIGS  **trouble**
+
+cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc -go=halt
+
+PETScEquationSolver:ERROR: Solution diverged! reason=-11: 
+     KSP_DIVERGED_NULL                = -2,
+     KSP_DIVERGED_ITS                 = -3,
+     KSP_DIVERGED_DTOL                = -4,
+     KSP_DIVERGED_BREAKDOWN           = -5,
+     KSP_DIVERGED_BREAKDOWN_BICG      = -6,
+     KSP_DIVERGED_NONSYMMETRIC        = -7,
+     KSP_DIVERGED_INDEFINITE_PC       = -8,
+     KSP_DIVERGED_NAN                 = -9,
+     KSP_DIVERGED_INDEFINITE_MAT      = -10
+     KSP_DIVERGED_PC_FAILED           = -11
+
+
+SPHERE : IMP + NO CBC
+cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d  -go=halt
+
+cgWave:FD44u t=2.000e-01 (  2 steps) dt=1.000e-01 maxErr= 5.42e-04, ||u||= 5.74e-01, cpu= 3.15e+01(s)
+
+
+
++++++ DISK EIGS
+
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=10 -known=diskEig -ts=implicit -upwind=1 -bcApproach=cbc -go=halt
+
+
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 2.23e-06, ||u||= 4.43e-01, cpu= 2.12e+00(s)
+cgWave:FD44u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 7.77e-06, ||u||= 9.69e-02, cpu= 1.60e+01(s)
+cgWave:FD44u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 1.13e-05, ||u||= 2.95e-01, cpu= 1.84e+01(s)
+cgWave:FD44u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 7.66e-06, ||u||= 5.48e-01, cpu= 1.92e+01(s)
+
+
+
+****************************************************
+****** Sun Dec 10, 2023
+
+BC=N SQUARE
+cgWave -noplot known.cmd -g=square64.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -ts=implicit -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave -noplot known.cmd -g=square32.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -ts=implicit -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+
+sq64:
+cgWave:FD44 t=5.000e-01 (55 steps) dt=9.091e-03 maxErr= 1.17e-05, ||u||= 2.66e-01, cpu= 9.92e-02(s)
+
+sq32
+cgWave:FD44 t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 1.46e-04, ||u||= 2.66e-01, cpu= 1.09e+01(s)
+
+
+***************************************************
+****** Thurs Dec 7, 2023
+
+
+>>>> SQUARE NEUMANN
+
+TEST TWO STAGE NEUMANN CBC:
+  --> NOW 2 GHOST LOOK TO SATISFY SYMMETRY 
+
+SQUARE -- LOOKS GOOD: 
+cgWave known.cmd -g=square32.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=halt
+
+cgWave:FD44 t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 1.31e-05, ||u||= 2.66e-01, cpu= 4.24e+00(s)
+
+
+>>>> SQUARE BC=NEUMANN -- broken too:
+
+REVERT TO OLD FORMULA FOR a21, a22 -- better
+cgWave known.cmd -g=square32.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=halt
+
+cgWave -noplot known.cmd -g=square32.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave:FD44 t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 2.38e-05, ||u||= 2.66e-01, cpu= 3.71e-03(s)
+
+
+
+cgWave known.cmd -g=square32.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.05 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=halt
+
+
+cgWave -noplot known.cmd -g=nonSquare32.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+
+cgWave:FD44 t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 5.38e-03, ||u||= 2.72e-01, cpu= 5.54e-03(s)
+
+cgWave -noplot known.cmd -g=square32.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave:FD44 t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 1.22e-04, ||u||= 2.66e-01, cpu= 4.19e-03(s)
+
+
+SQ64:
+cgWave:FD44 t=5.000e-01 (55 steps) dt=9.091e-03 maxErr= 4.47e-06, ||u||= 2.66e-01, cpu= 9.38e-03(s)
+
+cgWave:FD44 t=5.000e-01 (105 steps) dt=4.762e-03 maxErr= 5.84e-07, ||u||= 2.66e-01, cpu= 2.80e-02(s)
+
+
+
+>>>>>>> BOX Neumann EXPLICIT --> BROKEN
+
+cgWave -noplot known.cmd -g=box4.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+
+cgWave:FD44 t=5.000e-01 (40 steps) dt=1.250e-02 maxErr= 1.26e-04, ||u||= 6.66e-01, cpu= 1.43e-01(s)
+
+
+BC=n **BROKEN FROM BEFORE -- ERRORS large on face ghost point at t=0, after EXPLICIT BCS
+cgWave -noplot known.cmd -g=box2.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave -noplot known.cmd -g=box2.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave known.cmd -g=box2.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.01 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=halt
+
+**NEW -- broken
+cgWave:FD44 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 1.94e-03, ||u||= 6.66e-01, cpu= 2.08e-02(s)
+
+**OLD: 
+cgWave:FD44 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 4.07e-05, ||u||= 6.66e-01, cpu= 3.47e-02(s)
+
+
+>>> BOX DIRICHLET EXPLICIT CBC4 -- looks OK
+BC=d 
+cgWave -noplot known.cmd -g=box4.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=d -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave:FD44 t=5.000e-01 (40 steps) dt=1.250e-02 maxErr= 2.79e-06, ||u||= 6.66e-01, cpu= 1.27e-01(s)
+
+cgWave -noplot known.cmd -g=box2.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=d -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+
+
+cgWave:FD44 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 4.47e-05, ||u||= 6.66e-01, cpu= 1.92e-02(s)
+
+
+***************************************************
+****** Tues/Wed Nov 28/29, 2023
+
+
+TEST new symmetry CBC for corners
+
+>>> 3D 
+
+BC=N
+cgWave -noplot known.cmd -g=box4.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+cgWave:FD44 t=5.000e-01 (40 steps) dt=1.250e-02 maxErr= 2.77e-06, ||u||= 6.66e-01, cpu= 2.42e-01(s)
+
+cgWave -noplot known.cmd -g=box2.order4 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=go
+
+cgWave:FD44 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 4.07e-05, ||u||= 6.66e-01, cpu= 3.47e-02(s)
+
+
+cgWave known.cmd -g=box1.order4 -kx=1 -ky=1 -kz=1 -tf=.2 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=halt
+
+
+>>>>>>>>>>>  NEUMANN -- BUG FIXED set forcings to zero if noForcing
+
+cgWave -noplot known.cmd -g=nonSquare32.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=1 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go
+cgWave:FD44u t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 1.69e-05, ||u||= 2.66e-01, cpu= 9.03e-03(s)
+
+
+cgWave -noplot known.cmd -g=square32.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=1 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go
+cgWave:FD44u t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 1.24e-05, ||u||= 2.66e-01, cpu= 5.93e-03(s)
+
+
+cgWave -noplot known.cmd -g=nonSquare32.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go
+cgWave:FD44 t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 1.30e-05, ||u||= 2.66e-01, cpu= 7.97e-03(s)
+
+
+cgWave -noplot known.cmd -g=square64.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go
+cgWave:FD44 t=5.000e-01 (55 steps) dt=9.091e-03 maxErr= 5.98e-07, ||u||= 2.66e-01, cpu= 1.27e-01(s)
+
+cgWave -noplot known.cmd -g=square32.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.5 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=go
+cgWave:FD44 t=5.000e-01 (30 steps) dt=1.667e-02 maxErr= 1.30e-05, ||u||= 2.66e-01, cpu= 3.99e-02(s)
+
+
+NEUMANN: TROUBLE **NANS IN GHOST**
+cgWave known.cmd -g=square8.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.2 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=halt
+
+
+cgWave known.cmd -g=square5.order4.ng3 -kx=1 -ky=1 -kz=1 -tf=.2 -tp=.1 -known=squareEig -bc=n -upwind=0 -orderInTime=-1 -debug=1 -bcApproach=cbc -go=halt
+
+++++ DIRICHLET +++=
+
+cgWave known.cmd -g=square128.order4 -kx=3 -ky=3 -kz=1 -tf=1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=halt
+cgWave:FD44 t=3.000e-01 ( 63 steps) dt=4.762e-03 maxErr= 4.33e-06, ||u||= 1.43e-01, cpu= 4.66e+00(s)
+
+cgWave known.cmd -g=square64.order4 -kx=3 -ky=3 -kz=1 -tf=1 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=halt
+
+cgWave:FD44 t=3.000e-01 ( 33 steps) dt=9.091e-03 maxErr= 8.89e-05, ||u||= 1.43e-01, cpu= 6.66e+01(s)
+
+
+Box -- looks ok
+cgWave known.cmd -g=box1.order4 -kx=1 -ky=1 -kz=1 -tf=.2 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=halt 
+
+
+Looks OK: 
+cgWave known.cmd -g=square8.order4 -kx=1 -ky=1 -kz=1 -tf=.2 -tp=.1 -known=squareEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -go=halt 
+
+
+***************************************************
+****** Thurs Nov 23, 2023
+
+
+TEST NEW IMP + CBC + ORDER=4 -- look ok
+
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=10 -known=diskEig -ts=implicit -upwind=1 -bcApproach=cbc -go=halt
+
+cgWave:FD44u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 2.23e-06, ||u||= 4.43e-01, cpu= 2.04e+00(s)
+
+CFL=5 -- errors become large but seems stable
+cgWave known.cmd -g=sice2.order4.ng3 -amp=4 -nTheta=1 -mr=1 -cfl=5 -tp=10 -tf=1000 -known=diskEig -ts=implicit -upwind=1 -bcApproach=cbc -go=halt
+
+cgWave:FD44u t=4.000e+02 (2600 steps) dt=1.538e-01 maxErr= 3.99e-01, ||u||= 1.11e-02, cpu= 9.66e+01(s)
+
+CFL=2 -- seems ok
+cgWave known.cmd -g=sice2.order4.ng3 -amp=4 -nTheta=1 -mr=1 -cfl=2.0 -tp=.5 -tf=10 -known=diskEig -ts=implicit -upwind=1 -bcApproach=cbc -go=halt
+
+cgWave known.cmd -g=sice2.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=10 -known=diskEig -ts=implicit -upwind=1 -bcApproach=cbc -go=halt
+
+cgWave:FD44u t=2.000e+00 ( 80 steps) dt=2.500e-02 maxErr= 1.02e-03, ||u||= 6.24e-02, cpu= 2.16e+01(s)
+
+
+TEST EXP + CBC order=4
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=.5 -known=diskEig -upwind=1 -bcApproach=cbc -go=halt
+
+cgWave:FD44u t=1.000e-01 ( 7 steps) dt=1.429e-02 maxErr= 6.58e-07, ||u||= 4.43e-01, cpu= 3.01e+00(s)
+APPLY BC 4 =4 useCompatibilityBoundaryConditions, side,axis=   1   1
+cgWave:FD44u t=2.000e-01 (14 steps) dt=1.429e-02 maxErr= 1.90e-06, ||u||= 9.69e-02, cpu= 5.55e+00(s)
+cgWave:FD44u t=3.000e-01 (21 steps) dt=1.429e-02 maxErr= 3.17e-06, ||u||= 2.95e-01, cpu= 6.93e+00(s)
+
+
+
+cgWave known.cmd -g=sice2.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=.5 -known=diskEig -upwind=1 -bcApproach=cbc -go=halt
+
+cgWave:FD44u t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 1.47e-05, ||u||= 4.43e-01, cpu= 3.21e+00(s)
+cgWave:FD44u t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 4.10e-05, ||u||= 9.69e-02, cpu= 4.96e+00(s)
+cgWave:FD44u t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 7.52e-05, ||u||= 2.95e-01, cpu= 6.24e+00(s)
+
+***************************************************
+****** Thurs/Fri Sept 7/8, 2023
+
+START TEST Alli Carson's scattering from a cylinder exact solution
+
+NOTES: useKnownForFirstStep : WHY?
+       could compute the radius
+       detect the BC: dirichlet or Neumann
+
+NEUMANN: **NOT CORRECT**
+
+TRY CBC: same 
+cgWave known.cmd -g=cice2.order2 -upwind=1 -kx=10 -ky=0 -tf=10 -tp=.01 -known=cylScat -bc=n -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -bcApproach=cbc -go=halt
+
+cgWave known.cmd -g=cice4.order2 -upwind=1 -kx=10 -ky=0 -tf=10 -tp=.01 -known=cylScat -bc=n -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -go=halt
+35 terms kept in scattering series solution
+cgWave:FD22u t=2.000e-02 (  2 steps) dt=1.000e-02 maxErr= 1.11e-03, ||u||= 1.68e+00, cpu= 2.23e+01(s)
+cgWave:FD22u t=3.000e-02 (  3 steps) dt=1.000e-02 maxErr= 4.22e-02, ||u||= 1.68e+00, cpu= 2.34e+01(s)
+cgWave:FD22u t=4.000e-02 (  4 steps) dt=1.000e-02 maxErr= 1.17e-01, ||u||= 1.67e+00, cpu= 2.45e+01(s)
+cgWave:FD22u t=5.000e-02 (  5 steps) dt=1.000e-02 maxErr= 1.86e-01, ||u||= 1.66e+00, cpu= 2.52e+01(s)
+
+cgWave known.cmd -g=cice2.order2 -upwind=1 -kx=10 -ky=0 -tf=10 -tp=.01 -known=cylScat -bc=n -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -go=halt
+
+cgWave:FD22u t=2.000e-02 (  2 steps) dt=1.000e-02 maxErr= 7.79e-03, ||u||= 1.65e+00, cpu= 7.49e+00(s)
+cgWave:FD22u t=3.000e-02 (  3 steps) dt=1.000e-02 maxErr= 2.11e-02, ||u||= 1.66e+00, cpu= 1.00e+01(s)
+cgWave:FD22u t=4.000e-02 (  4 steps) dt=1.000e-02 maxErr= 6.92e-02, ||u||= 1.65e+00, cpu= 1.12e+01(s)
+cgWave:FD22u t=5.000e-02 (  5 steps) dt=1.000e-02 maxErr= 1.23e-01, ||u||= 1.63e+00, cpu= 1.20e+01(s)
+cgWave:FD22u t=6.000e-02 (  6 steps) dt=1.000e-02 maxErr= 1.85e-01, ||u||= 1.65e+00, cpu= 1.28e+01(s)
+
+>>>>>>>>>DIRICHLET
+cgWave known.cmd -g=cice4.order2 -upwind=1 -kx=10 -ky=0 -tf=10 -tp=.01 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -go=halt
+
+cgWave:FD22u t=2.000e-02 (  2 steps) dt=1.000e-02 maxErr= 7.12e-04, ||u||= 1.77e+00, cpu= 5.56e+00(s)
+cgWave:FD22u t=3.000e-02 (  3 steps) dt=1.000e-02 maxErr= 6.47e-04, ||u||= 1.77e+00, cpu= 6.76e+00(s)
+cgWave:FD22u t=4.000e-02 (  4 steps) dt=1.000e-02 maxErr= 9.16e-04, ||u||= 1.76e+00, cpu= 7.95e+00(s)
+cgWave:FD22u t=5.000e-02 (  5 steps) dt=1.000e-02 maxErr= 9.81e-04, ||u||= 1.76e+00, cpu= 8.91e+00(s)
+cgWave:FD22u t=6.000e-02 (  6 steps) dt=1.000e-02 maxErr= 1.10e-03, ||u||= 1.75e+00, cpu= 9.63e+00(s)
+
+cgWave known.cmd -g=cice2.order2 -upwind=1 -kx=10 -ky=0 -tf=10 -tp=.01 -known=cylScat -bc=d -debug=0 -setKnownOnBoundaries=0 -useKnownFirstStep=1 -go=halt
+
+36 terms kept in scattering series solution
+cgWave:FD22u t=2.000e-02 (  2 steps) dt=1.000e-02 maxErr= 8.66e-03, ||u||= 1.77e+00, cpu= 4.30e+00(s)
+cgWave:FD22u t=3.000e-02 (  3 steps) dt=1.000e-02 maxErr= 8.73e-03, ||u||= 1.76e+00, cpu= 6.11e+00(s)
+cgWave:FD22u t=4.000e-02 (  4 steps) dt=1.000e-02 maxErr= 9.66e-03, ||u||= 1.75e+00, cpu= 6.88e+00(s)
+cgWave:FD22u t=5.000e-02 (  5 steps) dt=1.000e-02 maxErr= 1.14e-02, ||u||= 1.74e+00, cpu= 7.57e+00(s)
+cgWave:FD22u t=6.000e-02 (  6 steps) dt=1.000e-02 maxErr= 1.32e-02, ||u||= 1.73e+00, cpu= 8.37e+00(s)
+cgWave:FD22u t=7.000e-02 (  7 steps) dt=1.000e-02 maxErr= 1.49e-02, ||u||= 1.72e+00, cpu= 9.03e+00(s)
+cgWave:FD22u t=8.000e-02 (  8 steps) dt=1.000e-02 maxErr= 1.67e-02, ||u||= 1.72e+00, cpu= 9.63e+00(s)
+cgWave:FD22u t=9.000e-02 (  9 steps) dt=1.000e-02 maxErr= 1.85e-02, ||u||= 1.72e+00, cpu= 1.04e+01(s)
+cgWave:FD22u t=1.000e-01 ( 10 steps) dt=1.000e-02 maxErr= 2.13e-02, ||u||= 1.72e+00, cpu= 1.16e+01(s)
 
 
 ***************************************************
@@ -23,7 +1120,7 @@ USE TRAP:
 beta2=.5
 
 EUW:  -- THIS IS OK: 
-cgWave known.cmd -g=sice8.order2 -amp=4 -nBessel=1 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=0 -beta2=0 -go=halt
+cgWave known.cmd -g=sice8.order2 -amp=4 -nTheta=1 -mr=1 -tf=1000 -tp=10 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=0 -beta2=0 -go=halt
 
 cgWave:FD22u t=7.200e+02 ( 8352 steps) dt=8.621e-02 maxErr= 7.48e-02, ||u||= 4.47e-01, cpu= 5.72e+01(s)
 cgWave:FD22u t=7.300e+02 ( 8468 steps) dt=8.621e-02 maxErr= 6.39e-01, ||u||= 1.53e-01, cpu= 5.76e+01(s)
@@ -31,7 +1128,7 @@ cgWave:FD22u t=7.400e+02 ( 8584 steps) dt=8.621e-02 maxErr= 1.68e-01, ||u||= 1.9
 
 
 *OLD IMP-UW: OK:
-cgWave known.cmd -g=sice8.order2 -amp=4 -nBessel=1 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=1 -beta2=0 -go=halt
+cgWave known.cmd -g=sice8.order2 -amp=4 -nTheta=1 -mr=1 -tf=1000 -tp=10 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=1 -beta2=0 -go=halt
 cgWave:FD22u t=9.500e+02 (11020 steps) dt=8.621e-02 maxErr= 4.24e-01, ||u||= 3.77e-01, cpu= 1.57e+02(s)
 cgWave:FD22u t=9.600e+02 (11136 steps) dt=8.621e-02 maxErr= 9.86e-01, ||u||= 5.10e-01, cpu= 1.59e+02(s)
 cgWave:FD22u t=9.700e+02 (11252 steps) dt=8.621e-02 maxErr= 7.73e-02, ||u||= 4.52e-01, cpu= 1.60e+02(s)
@@ -45,7 +1142,7 @@ cgWave:FD22u t=1.000e+03 (11600 steps) dt=8.621e-02 maxErr= 8.95e-01, ||u||= 3.6
   ---> BUGS FOUND :   *WRONG SIGN in advWave
                       *AND* add paren's to sosupDiss Macros !!! 
 
-cgWave known.cmd -g=sice8.order2 -amp=4 -nBessel=1 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=1 -beta2=0 -go=halt
+cgWave known.cmd -g=sice8.order2 -amp=4 -nTheta=1 -mr=1 -tf=1000 -tp=10 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=1 -beta2=0 -go=halt
 
 cgWave:FD22u t=9.800e+02 (11368 steps) dt=8.621e-02 maxErr= 2.86e-01, ||u||= 2.27e-01, cpu= 1.14e+02(s)
 cgWave:FD22u t=9.900e+02 (11484 steps) dt=8.621e-02 maxErr= 3.87e-01, ||u||= 8.26e-02, cpu= 1.15e+02(s)
@@ -56,7 +1153,7 @@ cgWave:FD22u t=1.000e+03 (11600 steps) dt=8.621e-02 maxErr= 8.95e-01, ||u||= 3.6
 
 
 CFL=10 -- blows up : 
-cgWave known.cmd -g=sice8.order2 -amp=4 -nBessel=1 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=1 -go=halt
+cgWave known.cmd -g=sice8.order2 -amp=4 -nTheta=1 -mr=1 -tf=1000 -tp=10 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=1 -go=halt
 cgWave:FD22u t=1.000e+01 (  116 steps) dt=8.621e-02 maxErr= 2.85e-02, ||u||= 3.23e-01, cpu= 5.80e+00(s)
 cgWave:FD22u t=2.000e+01 (  232 steps) dt=8.621e-02 maxErr= 5.08e-02, ||u||= 2.34e-01, cpu= 1.82e+01(s)
 cgWave:FD22u t=3.000e+01 (  348 steps) dt=8.621e-02 maxErr= 3.88e-02, ||u||= 5.75e-01, cpu= 1.95e+01(s)
@@ -65,14 +1162,14 @@ cgWave:FD22u t=5.000e+01 (  580 steps) dt=8.621e-02 maxErr= 1.10e+01, ||u||= 1.0
 
 
 CFL=1
-cgWave known.cmd -g=sice8.order2 -amp=4 -nBessel=1 -mTheta=1 -tf=1000 -tp=.5 -known=diskEig -ts=implicit -cfl=1 -upwind=1 -implicitUpwind=1 -go=halt
+cgWave known.cmd -g=sice8.order2 -amp=4 -nTheta=1 -mr=1 -tf=1000 -tp=.5 -known=diskEig -ts=implicit -cfl=1 -upwind=1 -implicitUpwind=1 -go=halt
 cgWave:FD22u t=5.000e-01 (    58 steps) dt=8.621e-03 maxErr= 1.39e-04, ||u||= 5.43e-01, cpu= 2.96e+00(s)
 cgWave:FD22u t=1.000e+00 (   116 steps) dt=8.621e-03 maxErr= 5.15e-04, ||u||= 4.33e-01, cpu= 5.62e+00(s)
 cgWave:FD22u t=1.500e+00 (   174 steps) dt=8.621e-03 maxErr= 1.43e-03, ||u||= 2.66e-01, cpu= 6.55e+00(s)
 cgWave:FD22u t=2.000e+00 (   232 steps) dt=8.621e-03 maxErr= 6.23e-03, ||u||= 6.32e-02, cpu= 7.45e+00(s)
 
 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=1 -mTheta=1 -tf=1000 -tp=.5 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=0 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tf=1000 -tp=.5 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -implicitUpwind=0 -go=halt
 cgWave:FD22u t=1.000e+00 (   6 steps) dt=1.667e-01 maxErr= 1.44e-01, ||u||= 5.75e-01, cpu= 4.20e+00(s)
 cgWave:FD22u t=1.500e+00 (   9 steps) dt=1.667e-01 maxErr= 3.08e-01, ||u||= 5.72e-01, cpu= 7.66e+00(s)
 cgWave:FD22u t=2.000e+00 (  12 steps) dt=1.667e-01 maxErr= 5.07e-01, ||u||= 5.68e-01, cpu= 8.28e+00(s)
@@ -83,28 +1180,28 @@ cgWave:FD22u t=2.500e+00 (  15 steps) dt=1.667e-01 maxErr= 7.13e-01, ||u||= 5.64
 ****** Sat July 8, 2023
 
 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=1 -mTheta=1 -tf=1000 -tp=.5 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -bcApproach=cbc -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tf=1000 -tp=.5 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -bcApproach=cbc -go=halt
 
  
 CFL=100 -- long run  : looks ok (very slow growth with upwind=0)
-cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nBessel=1 -mTheta=1 -tf=100000 -tp=10 -known=diskEig -ts=implicit -cfl=100 -upwind=1 -bcApproach=cbc -go=go
+cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tf=100000 -tp=10 -known=diskEig -ts=implicit -cfl=100 -upwind=1 -bcApproach=cbc -go=go
 
 CFL=10 -- long run  : looks ok
-cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nBessel=1 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -bcApproach=cbc -go=go
+cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tf=1000 -tp=1 -known=diskEig -ts=implicit -cfl=10 -upwind=1 -bcApproach=cbc -go=go
 
 cgWave:FD22u t=1.000e+03 (6000 steps) dt=1.667e-01 maxErr= 3.60e-02, ||u||= 4.96e-01, cpu= 5.73e+00(s)
 
 
 
 
-cgWave noplot known.cmd -g=sice2.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
+cgWave noplot known.cmd -g=sice2.order2 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
 
 ***************************************************
 ****** Thurs July 6, 2023
 
 CLEAN UP UPWIND DISSIPATION: 
 
-cgWave noplot known.cmd -g=sice2.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
+cgWave noplot known.cmd -g=sice2.order2 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -bcApproach=cbc -go=go
 
 
 +++ OLD: 
@@ -121,14 +1218,14 @@ cgWave:FD22u t=1.000e-01 (4 steps) dt=2.500e-02 maxErr= 7.14e-04, ||u||= 4.44e-0
 RUNS CHECKS:
 
 BROKEN: FIXED .cmd file 
-cgWave noplot known.cmd -g=sice2.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+cgWave noplot known.cmd -g=sice2.order6.ng4 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
 
 
 TEST NEW IMP ORDER 4
 
 SPHERE EIGS   FD24 IMP 
 
-cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -go=halt
+cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -go=halt
 
 cgWave:FD44u t=1.000e-01 (  9 steps) dt=1.111e-02 maxErr= 1.04e-05, ||u||= 8.30e-01, cpu= 2.65e+01(s)
 CgWave::takeImplicitStep: implicit solve: max-res= 3.34e-12 (iterations=1) ***
@@ -140,7 +1237,7 @@ cgWave:FD44u t=6.000e-01 ( 54 steps) dt=1.111e-02 maxErr= 2.28e-05, ||u||= 8.31e
 
 
 SPHERE EIGS   FD24 IMP 
-cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=2 -debug=0 -assignInterpNeighbours=interp -bc=d -go=halt
+cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=2 -debug=0 -assignInterpNeighbours=interp -bc=d -go=halt
 
 
 CgWave::takeImplicitStep: implicit solve: max-res= 2.94e-12 (iterations=1) ***
@@ -156,14 +1253,14 @@ cgWave:FD24u t=5.000e-01 ( 50 steps) dt=1.000e-02 maxErr= 2.91e-04, ||u||= 5.76e
 
 
 Long time: OK 
-cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=100 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=4 -debug=0 -ts=implicit -cfl=2 -bc=d -go=halt
+cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=100 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=4 -debug=0 -ts=implicit -cfl=2 -bc=d -go=halt
 
 cgWave:FD44u t=9.900e+01 (5742 steps) dt=1.724e-02 maxErr= 1.18e-02, ||u||= 1.17e-01, cpu= 1.37e+02(s)
 cgWave:FD44u t=1.000e+02 (5800 steps) dt=1.724e-02 maxErr= 1.01e-02, ||u||= 2.49e-01, cpu= 1.38e+02(s)
 
 
 Looks ok 
-cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=4 -debug=0 -ts=implicit -cfl=.9 -bc=d -go=halt
+cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=4 -debug=0 -ts=implicit -cfl=.9 -bc=d -go=halt
 
 cgWave:FD44u t=1.000e-01 ( 13 steps) dt=7.692e-03 maxErr= 9.82e-07, ||u||= 2.43e-01, cpu= 5.00e+00(s)
 cgWave:FD44u t=2.000e-01 ( 26 steps) dt=7.692e-03 maxErr= 2.36e-06, ||u||= 1.62e-01, cpu= 6.13e+00(s)
@@ -174,7 +1271,7 @@ cgWave:FD44u t=5.000e-01 ( 65 steps) dt=7.692e-03 maxErr= 6.10e-06, ||u||= 7.27e
 cgWave:FD44u t=1.000e+00 (130 steps) dt=7.692e-03 maxErr= 2.94e-06, ||u||= 4.10e-01, cpu= 3.34e+01(s)
 
 
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=4 -debug=0 -ts=implicit -cfl=.9 -bc=d -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=4 -debug=0 -ts=implicit -cfl=.9 -bc=d -go=halt
 
 cgWave:FD44u t=1.000e-01 ( 7 steps) dt=1.429e-02 maxErr= 2.71e-05, ||u||= 2.43e-01, cpu= 1.06e+01(s)
 cgWave:FD44u t=2.000e-01 (14 steps) dt=1.429e-02 maxErr= 3.50e-05, ||u||= 1.62e-01, cpu= 1.21e+01(s)
@@ -185,7 +1282,7 @@ cgWave:FD44u t=1.000e+00 (70 steps) dt=1.429e-02 maxErr= 5.27e-05, ||u||= 4.10e-
 
 
 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=d -go=halt 
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=d -go=halt 
 
 
 ****************************************************
@@ -196,15 +1293,15 @@ CONT FIX bc=exact for IMPLICIT
 **NOTE** WE HAVE NOT IMPLEMENTED IMPLICIT ODRER FOUR YET !!
 
 FD22u: 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt 
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt 
 
 cgWave:FD22u t=5.000e-01 (35 steps) dt=1.429e-02 maxErr= 7.83e-03, ||u||= 6.51e-02, cpu= 1.41e+01(s)
 
 FD22u: 
-cgWave known.cmd -g=square128.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt 
+cgWave known.cmd -g=square128.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt 
 
 FD22: 
-cgWave known.cmd -g=square128.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt 
+cgWave known.cmd -g=square128.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt 
 
 cgWave:FD22 t=1.000e+00 (210 steps) dt=4.762e-03 maxErr= 9.17e-04, ||u||= 4.10e-01, cpu= 1.90e+01(s)
 
@@ -216,21 +1313,21 @@ cgWave:FD22 t=1.000e+00 (210 steps) dt=4.762e-03 maxErr= 9.17e-04, ||u||= 4.10e-
 FIX bc=exact for IMPLICIT 
 
 ORDER=4:
-cgWave known.cmd -g=nonSquare128.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt
+cgWave known.cmd -g=nonSquare128.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt
 
 advWave: finish me for IMPLICIT order=4, dim=2
 STOP 4444
 
-cgWave known.cmd -g=square128.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt
+cgWave known.cmd -g=square128.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt
 
 EXP:
 advWave: finish me for rectangular IMPLICIT order=4, dim=2
 STOP 4444
 
 
-cgWave known.cmd -g=square128.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt 
+cgWave known.cmd -g=square128.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=halt 
 
-cgWave -noplot known.cmd -g=square128.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=go 
+cgWave -noplot known.cmd -g=square128.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -ts=implicit -cfl=.9 -bc=e -go=go 
 
 implicit
 cgWave:FD22 t=1.000e+00 (202 steps) dt=4.950e-03 maxErr= 9.54e-04, ||u||= 4.10e-01, cpu= 2.96e-01(s)
@@ -276,7 +1373,7 @@ advance.............................  3.85e+01    1.20e-02    1.14e-08    99.691
 
 
 EXPLICIT
-cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9  -implicitUpwind=0 -dtMax=.5 -go=go
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nTheta=3 -mr=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9  -implicitUpwind=0 -dtMax=.5 -go=go
               -------------------CgWave Summary----------------- 
                        Wed Jun 14 07:12:25 2023
                Grid:   /home/henshw/grids/sice32.order2.hdf 
@@ -304,7 +1401,7 @@ output results......................  0.00e+00    0.00e+00    0.00e+00     0.000
 waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
 
 SEMI-IMPLICIT:  
-cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.5 -rectangular=explicit -go=go
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nTheta=3 -mr=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.5 -rectangular=explicit -go=go
               -------------------CgWave Summary----------------- 
                        Wed Jun 14 07:10:32 2023
                Grid:   /home/henshw/grids/sice32.order2.hdf 
@@ -334,7 +1431,7 @@ waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000
 
 
 ALL IMPLICIT: 
-cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.5 -go=go
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nTheta=3 -mr=1 -tf=2 -tp=2 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.5 -go=go
               -------------------CgWave Summary----------------- 
                        Wed Jun 14 07:09:18 2023
                Grid:   /home/henshw/grids/sice32.order2.hdf 
@@ -371,10 +1468,10 @@ Pre-allocate temp arrays for CBC4
 
 
 +++++++++++ UPWIND: 
-cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
 
 
-cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=5 -tp=5 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nTheta=3 -mr=1 -tf=5 -tp=5 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
 
 advance.............................  1.03e+01    4.08e-03    9.89e-09    98.151   1.030e+01   1.030e+01
   advance rectangular grids.........  1.08e+00    4.26e-04    1.03e-09    10.260   1.077e+00   1.077e+00
@@ -389,7 +1486,7 @@ advance.............................  1.03e+01    4.08e-03    9.89e-09    98.151
 
 
 G32
-cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+cgWave -noplot known.cmd -g=sice32.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
 
 
 Disk: Bessel function solution: a=1, n=3, m=1, lambda=9.761023e+00, bcOpt=0 
@@ -469,7 +1566,7 @@ advance.............................  6.03e-01    1.19e-03    2.89e-09    77.149
 
 
 
-cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
 
 
 MOVE GHOST LOOPS OUTSIDE
@@ -526,7 +1623,7 @@ advance.............................  3.40e-01    1.34e-03    1.29e-08    86.624
 
 
 
-cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=d -go=go 
 
            -------------------CgWave Summary----------------- 
                        Tue Jun 13 07:37:53 2023
@@ -559,12 +1656,12 @@ waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000
 
 
 BC=E: starts to work: 
-cgWave -noplot known.cmd -g=square64.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -orderInTime=-1 -debug=0 -cfl=.9 -bc=e -go=go  
+cgWave -noplot known.cmd -g=square64.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -orderInTime=-1 -debug=0 -cfl=.9 -bc=e -go=go  
 
 
-cgWave -noplot known.cmd -g=square64.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=e -setKnownOnBoundaries=1 -go=go  
+cgWave -noplot known.cmd -g=square64.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=e -setKnownOnBoundaries=1 -go=go  
 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=e -setKnownOnBoundaries=1 -go=go 
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -bc=e -setKnownOnBoundaries=1 -go=go 
 
 
 ****************************************************
@@ -573,7 +1670,7 @@ cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=
 REVISIT IPCU SCHEME
 
 ALL EXPLICIT -- **check BCs and upwinding ***
-cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9  -implicitUpwind=0 -dtMax=.5 -go=go -meApproach=stencil
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9  -implicitUpwind=0 -dtMax=.5 -go=go -meApproach=stencil
 
               -------------------CgWave Summary----------------- 
                        Thu Jun  8 06:09:29 2023
@@ -604,7 +1701,7 @@ waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000
 
 
 ALL IMPLICIT: 
-cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.5 -go=go
+cgWave -noplot known.cmd -g=sice16.order2 -amp=4 -nTheta=3 -mr=1 -tf=1 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.5 -go=go
 
               -------------------CgWave Summary----------------- 
                        Thu Jun  8 06:08:21 2023
@@ -641,7 +1738,7 @@ TEST NEW STENCIL:
 FIXED -- SCALED lapCoeff have no factors of .5 or .25
 
 DISK: ORDER=6 STENCIL 
-cgWave -noplot known.cmd -g=sice8.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=stencil -go=go
+cgWave -noplot known.cmd -g=sice8.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=stencil -go=go
 
 stencil:
 cgWave:FD66 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 7.59e-10, ||u||= 2.43e-01, cpu= 3.99e-02(s)
@@ -650,7 +1747,7 @@ HA:
 cgWave:FD66 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 7.59e-10, ||u||= 2.43e-01, cpu= 1.69e-02(s)
 
 DISK: ORDER=4 STENCIL 
-cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=stencil -go=halt
+cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=stencil -go=halt
 
 STENCIL
 *fixed*
@@ -658,7 +1755,7 @@ cgWave:FD44 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 1.64e-07, ||u||= 2.43e-0
 *old*
 cgWave:FD44 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 2.63e-03, ||u||= 2.43e-01, cpu= 2.00e-02(s)
 
-cgWave -noplot known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave -noplot known.cmd -g=sice8.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 HA:
 cgWave:FD44 t=1.000e-01 (13 steps) dt=7.692e-03 maxErr= 1.64e-07, ||u||= 2.43e-01, cpu= 1.19e-02(s)
@@ -780,7 +1877,7 @@ cgWave:FD66 t=5.000e-02 (21 steps) dt=2.381e-03 maxErr= 8.96e-10, ||u||= 2.36e-0
 
 
 FD66 -- BC=E
-cgWave known.cmd -g=spheree4.order6.ng4 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -assignInterpNeighbours=interp -bcApproach=cbc -bc=e -go=halt
+cgWave known.cmd -g=spheree4.order6.ng4 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -assignInterpNeighbours=interp -bcApproach=cbc -bc=e -go=halt
 
 cgWave:FD66 t=1.000e-01 (  13 steps) dt=7.692e-03 maxErr= 9.59e-03, ||u||= 8.32e-01, cpu= 6.75e+00(s)
 
@@ -788,7 +1885,7 @@ cgWave:FD66 t=1.000e-01 (  13 steps) dt=7.692e-03 maxErr= 9.59e-03, ||u||= 8.32e
 
 
 FD66 -- **TROUBLE** 
-cgWave known.cmd -g=spheree4.order6.ng4 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -assignInterpNeighbours=interp -bcApproach=lcbc -go=halt
+cgWave known.cmd -g=spheree4.order6.ng4 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -assignInterpNeighbours=interp -bcApproach=lcbc -go=halt
 
 cgWave:FD66 t=1.000e-01 (  13 steps) dt=7.692e-03 maxErr= 9.59e-03, ||u||= 8.32e-01, cpu= 9.12e+01(s)
 Overture::checkMemoryUsage: Interpolant::explicitInterpolate:after periodic and updateGhost, myid=0: memory usage has increased to 583.938 (Mb)
@@ -796,18 +1893,18 @@ cgWave:FD66 t=2.000e-01 (  26 steps) dt=7.692e-03 maxErr= 2.15e-02, ||u||= 5.75e
 
 
 FD44 HA **TROUBLE WITH FAME***
-cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=3 -meApproach=ha -bcApproach=cbc -bc=e -go=halt
+cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=3 -meApproach=ha -bcApproach=cbc -bc=e -go=halt
 
 cgWave:FD44 t=1.000e-01 (  12 steps) dt=8.333e-03 maxErr= 6.41e-03, ||u||= 8.32e-01, cpu= 1.56e+01(s)
 
 
 FD44 BC=E 
-cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -bc=e -go=halt
+cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -bcApproach=cbc -bc=e -go=halt
 
 cgWave:FD44 t=1.000e-01 (  12 steps) dt=8.333e-03 maxErr= 3.99e-07, ||u||= 8.32e-01, cpu= 4.65e+00(s)
 
 FD44 G4 -- could be OK
-cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0  -go=halt
+cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0  -go=halt
 
 cgWave:FD44 t=1.000e-01 (  12 steps) dt=8.333e-03 maxErr= 3.99e-07, ||u||= 8.32e-01, cpu= 5.29e+00(s)
 cgWave:FD44 t=2.000e-01 (  24 steps) dt=8.333e-03 maxErr= 3.33e-07, ||u||= 5.75e-01, cpu= 1.49e+01(s)
@@ -822,7 +1919,7 @@ cgWave:FD44 t=3.000e-01 (  36 steps) dt=8.333e-03 maxErr= 3.76e-07, ||u||= 2.04e
 MEASURE CYCLES --
 test FD88
 
-cgWave -noplot known.cmd -g=sice8.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave -noplot known.cmd -g=sice8.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 
 advWave: grid=0: numGridPoints=2.045e+04, cycles/grid-point =  9.69e+01
@@ -847,7 +1944,7 @@ advWave: grid=0: numGridPoints=2.045e+04, cycles/grid-point =  9.64e+01
 advWave: grid=1: numGridPoints=6.482e+03, cycles/grid-point =  5.01e+02
 
 
-cgWave -noplot known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave -noplot known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=.1 -tp=.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 advWave: grid=0: numGridPoints=3.969e+03, cycles/grid-point =  6.99e+01
 advWave: grid=1: numGridPoints=2.954e+03, cycles/grid-point =  5.58e+02
@@ -931,28 +2028,28 @@ TEST IPCU SCHEME
 
 ++++++ ADD GRID CFL: 
 OK: 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=5 -ts=implicit -implicitUpwind=0 -dtMax=.5 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=5 -ts=implicit -implicitUpwind=0 -dtMax=.5 -go=halt
 
 OK: 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=2 -ts=implicit -implicitUpwind=0 -dtMax=.05 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=2 -ts=implicit -implicitUpwind=0 -dtMax=.05 -go=halt
 
 
 IPCU : OK at CFL=.9 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.05 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -implicitUpwind=0 -dtMax=.05 -go=halt
 
 
 IPCU: -- trouble - not stable at CFL=2 --> OF *reduce* upwind coeff
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=2 -ts=implicit -implicitUpwind=0 -dtMax=.05 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=2 -ts=implicit -implicitUpwind=0 -dtMax=.05 -go=halt
 
 IU -  OK
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=2 -ts=implicit -implicitUpwind=1 -dtMax=.05 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=2 -ts=implicit -implicitUpwind=1 -dtMax=.05 -go=halt
 
 ****************************************************
 ****** Fri Aug 12, 2022
 
 TEST SEMI-IMPLICIT
 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -rectangular=explicit -dtMax=.02 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=.9 -ts=implicit -rectangular=explicit -dtMax=.02 -go=halt
 
 ****************************************************
 ****** Fri Aug 12, 2022
@@ -960,7 +2057,7 @@ cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -kno
 TEST IMPLICIT
 
 IM24 
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=2 -debug=0 -cfl=10 -ts=implicit -dtMax=.02 -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=2 -debug=0 -cfl=10 -ts=implicit -dtMax=.02 -go=halt
 
 upwind=1: **trouble with nans**
 upwind=0 : OK
@@ -971,7 +2068,7 @@ cgWave:FD24 t=3.000e+00 (  150 steps) dt=2.000e-02 maxErr= 3.28e-02, ||u||= 2.64
 
 
 IM22
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=10 -ts=implicit -dtMax=.02 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -orderInTime=-1 -debug=0 -cfl=10 -ts=implicit -dtMax=.02 -go=halt
 
 cgWave:FD22u t=1.000e+00 (   50 steps) dt=2.000e-02 maxErr= 4.55e-03, ||u||= 4.14e-01, cpu= 3.22e+00(s)
 cgWave:FD22u t=2.000e+00 (  100 steps) dt=2.000e-02 maxErr= 1.44e-02, ||u||= 3.53e-01, cpu= 5.53e+00(s)
@@ -985,7 +2082,7 @@ cgWave:FD22u t=3.000e+00 (  150 steps) dt=2.000e-02 maxErr= 2.97e-02, ||u||= 2.6
 ** MEMORY LEAK***  FAME? 
 test FD88
 
-cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 Overture::checkMemoryUsage: Interpolant::explicitInterpolate:after periodic and updateGhost, myid=0: memory usage has increased to 1900.93 (Mb)
 cgWave:FD88u t=3.100e+02 (21948 steps) dt=1.412e-02 maxErr= 8.64e-07, ||u||= 3.67e-01, cpu= 7.94e+01(s)
@@ -998,11 +2095,11 @@ cgWave:FD88u t=3.600e+02 (25488 steps) dt=1.412e-02 maxErr= 1.14e-06, ||u||= 4.2
 
 
 FD44 - CBC *no leak*
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=cbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=cbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 
 FD44 -- LCBC *memory leak*
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 cgWave:FD44u t=9.000e+01 ( 5967 steps) dt=1.508e-02 maxErr= 3.36e-03, ||u||= 1.72e-01, cpu= 1.39e+01(s)
 Overture::checkMemoryUsage: Interpolant::explicitInterpolate:after periodic and updateGhost, myid=0: memory usage has increased to 260.105 (Mb)
@@ -1017,11 +2114,11 @@ REVISIT SPHERE
 
 
 FD66
-cgWave known.cmd -g=spheree4.order6.ng4 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -assignInterpNeighbours=interp -bcApproach=lcbc -go=halt
+cgWave known.cmd -g=spheree4.order6.ng4 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=-1 -debug=0 -meApproach=ha -assignInterpNeighbours=interp -bcApproach=lcbc -go=halt
 
 
 FD44 G4
-cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0  -go=halt
+cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0  -go=halt
 
 cgWave:FD44 t=1.000e-01 (  12 steps) dt=8.333e-03 maxErr= 3.99e-07, ||u||= 8.32e-01, cpu= 4.02e+00(s)
 cgWave:FD44 t=2.000e-01 (  24 steps) dt=8.333e-03 maxErr= 3.33e-07, ||u||= 5.75e-01, cpu= 1.04e+01(s)
@@ -1033,9 +2130,9 @@ cgWave:FD44 t=3.000e-01 (  36 steps) dt=8.333e-03 maxErr= 3.76e-07, ||u||= 2.04e
 
 **bug fix** in LCBC1.C
 
-cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
-cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 cgWave:FD88u t=2.000e-02 (    2 steps) dt=1.000e-02 maxErr= 2.88e-10, ||u||= 4.26e-01, cpu= 2.37e+01(s)
 cgWave:FD88u t=3.000e-02 (    3 steps) dt=1.000e-02 maxErr= 2.85e-10, ||u||= 4.16e-01, cpu= 2.84e+01(s)
@@ -1052,7 +2149,7 @@ fixed bug in ME schemes -- coefficients in ghost was bad
 
 +++ FD88   *trouble near branch cut**
 
-cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 cgWave:FD88u t=2.000e-02 (    2 steps) dt=1.000e-02 maxErr= 2.88e-10, ||u||= 4.26e-01, cpu= 8.11e+00(s)
 cgWave:FD88u t=3.000e-02 (    3 steps) dt=1.000e-02 maxErr= 8.98e-08, ||u||= 4.16e-01, cpu= 8.50e+00(s)
@@ -1066,7 +2163,7 @@ cgWave:FD88u t=9.000e-02 (    9 steps) dt=1.000e-02 maxErr= 1.87e-05, ||u||= 2.7
 
 
 +++ FD66
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 cgWave:FD66u t=2.000e-02 (    2 steps) dt=1.000e-02 maxErr= 1.53e-07, ||u||= 4.26e-01, cpu= 4.57e+00(s)
 cgWave:FD66u t=3.000e-02 (    3 steps) dt=1.000e-02 maxErr= 1.59e-07, ||u||= 4.16e-01, cpu= 5.83e+00(s)
@@ -1074,17 +2171,17 @@ cgWave:FD66u t=4.000e-02 (    4 steps) dt=1.000e-02 maxErr= 1.44e-07, ||u||= 4.0
 cgWave:FD66u t=5.000e-02 (    5 steps) dt=1.000e-02 maxErr= 1.40e-07, ||u||= 3.83e-01, cpu= 8.27e+00(s)
 
 ++ FD44
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 cgWave:FD44u t=2.000e-02 (    2 steps) dt=1.000e-02 maxErr= 1.70e-06, ||u||= 4.26e-01, cpu= 3.63e+00(s)
 cgWave:FD44u t=3.000e-02 (    3 steps) dt=1.000e-02 maxErr= 1.74e-06, ||u||= 4.16e-01, cpu= 1.01e+01(s)
 cgWave:FD44u t=4.000e-02 (    4 steps) dt=1.000e-02 maxErr= 1.82e-06, ||u||= 4.01e-01, cpu= 1.12e+01(s)
 
 
-cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=extrap -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=extrap -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 
-cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 Oges::allocateWorkSpace: numberOfNonzeros=173162 fillinRatio=9.200000e+01
 allocateWorkSpace: numberOfEquations=11556, nsp = 15930904, fillinRatio= 92, numberOfNonzeros = 173162
@@ -1108,14 +2205,14 @@ cgWave:FD88u t=7.000e-02 (    7 steps) dt=1.000e-02 maxErr= 4.13e-09, ||u||= 3.3
 FIXES FROM Nour
 
 *FD88** trouble: 
-cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=extrap -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=extrap -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 
 *FD88** trouble: assignInterpNeighbours?
-cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 FD66 *ok*
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 cgWave:FD66u t=2.000e-01 (   14 steps) dt=1.429e-02 maxErr= 1.31e-07, ||u||= 1.62e-01, cpu= 7.82e+00(s)
 cgWave:FD66u t=3.000e-01 (   21 steps) dt=1.429e-02 maxErr= 1.59e-07, ||u||= 4.24e-01, cpu= 8.56e+00(s)
@@ -1126,7 +2223,7 @@ cgWave:FD66u t=5.000e-01 (   35 steps) dt=1.429e-02 maxErr= 2.33e-07, ||u||= 7.2
 
 
 *looks ok*
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=4 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=4 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 
 ****************************************************
@@ -1136,13 +2233,13 @@ START TEST NEW MEHA SCHEMES NEW LCBC:
 
 
 
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=20 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=20 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 TROUBLE: branch cut: with LCBC
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=4 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=4 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 CBC: OK
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=cbc -orderInTime=4 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.01 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=cbc -orderInTime=4 -debug=0 -cfl=.9 -meApproach=ha -go=halt
 
 
 LCBC: OK
@@ -1701,7 +2798,7 @@ cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=2 -mTheta=1 -mr=1 -tf=10 -t
 
 
 FD44 G4
-cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0  -go=halt
+cgWave known.cmd -g=spheree4.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0  -go=halt
 
 cgWave:FD44 t=1.000e-01 (  12 steps) dt=8.333e-03 maxErr= 3.99e-07, ||u||= 8.32e-01, cpu= 1.25e+01(s)
 cgWave:FD44 t=2.000e-01 (  24 steps) dt=8.333e-03 maxErr= 3.33e-07, ||u||= 5.75e-01, cpu= 1.48e+01(s)
@@ -1711,7 +2808,7 @@ cgWave:FD44 t=5.000e-01 (  60 steps) dt=8.333e-03 maxErr= 5.68e-07, ||u||= 5.78e
 cgWave:FD44 t=6.000e-01 (  72 steps) dt=8.333e-03 maxErr= 4.36e-07, ||u||= 8.34e-01, cpu= 3.16e+01(s)
 
 
-cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0  -go=halt
+cgWave known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0  -go=halt
 
 cgWave:FD44 t=1.000e-01 (  9 steps) dt=1.111e-02 maxErr= 1.23e-05, ||u||= 8.30e-01, cpu= 1.74e+01(s)
 cgWave:FD44 t=2.000e-01 ( 18 steps) dt=1.111e-02 maxErr= 1.41e-05, ||u||= 5.74e-01, cpu= 1.96e+01(s)
@@ -1723,8 +2820,8 @@ cgWave:FD44 t=6.000e-01 ( 54 steps) dt=1.111e-02 maxErr= 1.54e-05, ||u||= 8.31e-
 
 ADD CHECK FOR KNOWN SOLUTION
 
-cgWave known.cmd -g=spheree4.order4.hdf -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0 -checkKnown=1 -go=halt
-cgWave known.cmd -g=spheree2.order4.hdf -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0 -checkKnown=1 -go=halt
+cgWave known.cmd -g=spheree4.order4.hdf -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0 -checkKnown=1 -go=halt
+cgWave known.cmd -g=spheree2.order4.hdf -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0 -checkKnown=1 -go=halt
 
 G4: 
 testExact: equation 0:  max-res=1.961e-05, l2-res=6.239e-06
@@ -1734,7 +2831,7 @@ testExact: equation 0:  max-res=3.964e-04, l2-res=1.426e-04
 
 
 
-cgWave known.cmd -g=spheree2.order2.hdf -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -orderInTime=2 -debug=0 -checkKnown=1 -go=halt
+cgWave known.cmd -g=spheree2.order2.hdf -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -orderInTime=2 -debug=0 -checkKnown=1 -go=halt
 
 ****************************************************
 ****** Tues July 5, 2022
@@ -1770,13 +2867,13 @@ cgWave:FD44 t=1.000e+00 ( 110 steps) dt=9.091e-03 maxErr= 8.28e-07, ||u||= 8.58e
 START TEST SPHERE EXACT SOLUTION
 
 SOMETHING IS WRONG
-cgWave known.cmd -g=spheree4.order4.ng3.hdf -amp=1 -mPhi=2 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0 -go=halt
+cgWave known.cmd -g=spheree4.order4.ng3.hdf -amp=1 -mPhi=2 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=0 -orderInTime=4 -debug=0 -go=halt
 
 
-cgWave known.cmd -g=spheree4.order4.ng3.hdf -amp=1 -mPhi=2 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -orderInTime=4 -debug=0 -go=halt
+cgWave known.cmd -g=spheree4.order4.ng3.hdf -amp=1 -mPhi=2 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -orderInTime=4 -debug=0 -go=halt
 
 *trouble**
-cgWave known.cmd -g=spheree2.order2.hdf -amp=1 -mPhi=2 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -orderInTime=2 -debug=0 -go=halt
+cgWave known.cmd -g=spheree2.order2.hdf -amp=1 -mPhi=2 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -orderInTime=2 -debug=0 -go=halt
 
 
 G2
@@ -1785,13 +2882,13 @@ G4
 cgWave:FD22u t=5.000e-01 ( 45 steps) dt=1.111e-02 maxErr= 6.24e-02, ||u||= 4.52e-01, cpu= 9.43e+00(s)
 
 
-cgWave known.cmd -g=spheree2.order2.hdf -amp=1 -mPhi=1 -mTheta=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -orderInTime=2 -debug=0 -go=halt
+cgWave known.cmd -g=spheree2.order2.hdf -amp=1 -mPhi=1 -mr=0 -mr=1 -tf=10 -tp=.1 -known=sphereEig -upwind=1 -orderInTime=2 -debug=0 -go=halt
 
 
 TEMP FIX TO INTERPOLATE TO HIGHER ORDER
 
 TRY - ORDER=8 LCBC needs to be finished
-cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=8 -debug=0 -cfl=.9 -go=halt
+cgWave known.cmd -g=sice4.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=8 -debug=0 -cfl=.9 -go=halt
 
 initializeLCBC: Call the LCBC constructor...
 Extrapolation order 8 is not supported (extrapolation/utility.C)
@@ -1799,7 +2896,7 @@ Extrapolation order 8 is not supported (extrapolation/utility.C)
 
 
 ORDER=6  *FINE* TILL t=1000
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=20 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.9 -go=halt
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=20 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.9 -go=halt
 
 cgWave:FD66u t=8.000e+02 (53520 steps) dt=1.495e-02 maxErr= 2.97e-04, ||u||= 1.65e-01, cpu= 9.09e+02(s)
 cgWave:FD66u t=8.200e+02 (54858 steps) dt=1.495e-02 maxErr= 3.58e-04, ||u||= 3.20e-01, cpu= 9.31e+02(s)
@@ -1815,7 +2912,7 @@ cgWave:FD66u t=1.000e+03 (66900 steps) dt=1.495e-02 maxErr= 3.33e-04, ||u||= 4.3
 
 
 ORDER=6
-cgWave known.cmd -g=sice2.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=100 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.9 -go=halt
+cgWave known.cmd -g=sice2.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=100 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.9 -go=halt
 
 cgWave:FD66u t=8.000e+02 (29720 steps) dt=2.692e-02 maxErr= 2.39e-02, ||u||= 1.40e-01, cpu= 2.50e+02(s)
 cgWave:FD66u t=9.000e+02 (33435 steps) dt=2.692e-02 maxErr= 8.60e-03, ||u||= 2.14e-01, cpu= 2.78e+02(s)
@@ -1831,7 +2928,7 @@ cgWave known.cmd -g=spheree2.order2.hdf -amp=1 -mPhi=2 -mTheta=1 -mr=1 -tf=10 -t
 
 ******* MAY NEED TO INTERPOLATE INTERP NEIGHBOUR *******
 **FIX
-cgWave known.cmd -g=sice2.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.6 -go=halt
+cgWave known.cmd -g=sice2.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=.1 -known=diskEig -upwind=1 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.6 -go=halt
 
 InterpolatePointsOnAGrid::WARNING: optimized sparse interpolation not available for interpolation width=7
 Error occured in file pogip.C, function internalInterpolate, line 2950.
@@ -1841,7 +2938,7 @@ ERROR: un-implemented interpolation width -- finish me!
 
 +++++++++++++++++++++++++++++++++
 TEST DISK EIG -- ORDER=4
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=halt
 
 cgWave:FD44u t=9.800e+02 (64974 steps) dt=1.508e-02 maxErr= 3.43e-02, ||u||= 3.74e-01, cpu= 2.97e+02(s)
 cgWave:FD44u t=9.900e+02 (65637 steps) dt=1.508e-02 maxErr= 3.03e-02, ||u||= 4.00e-01, cpu= 3.00e+02(s)
@@ -1855,7 +2952,7 @@ cgWave:FD44u t=1.000e+03 (66300 steps) dt=1.508e-02 maxErr= 2.48e-02, ||u||= 4.0
 
 
 TEST DISK EIG -- ORDER=6 CFL=.6 
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.6 -go=halt
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=6 -debug=0 -cfl=.6 -go=halt
 
 cgWave:FD66u t=2.800e+02 ( 28084 steps) dt=9.970e-03 maxErr= 5.65e-04, ||u||= 4.32e-01, cpu= 4.86e+02(s)
 cgWave:FD66u t=2.900e+02 ( 29087 steps) dt=9.970e-03 maxErr= 9.01e-04, ||u||= 4.31e-01, cpu= 5.03e+02(s)
@@ -1883,7 +2980,7 @@ cgWave:FD66u t=5.000e+02 ( 50150 steps) dt=9.970e-03 maxErr= 8.25e+02, ||u||= 8.
 
 
 TEST DISK EIG -- ORDER=6 **TROUBLE***
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=6 -debug=0 -go=halt
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=6 -debug=0 -go=halt
 
 cgWave:FD66u t=2.000e+01 ( 1338 steps) dt=1.495e-02 maxErr= 4.22e-06, ||u||= 3.92e-01, cpu= 1.16e+02(s)
 cgWave:FD66u t=3.000e+01 ( 2007 steps) dt=1.495e-02 maxErr= 3.59e-06, ||u||= 3.42e-01, cpu= 1.53e+02(s)
@@ -1902,14 +2999,14 @@ cgWave:FD66u t=5.500e+02 (36795 steps) dt=1.495e-02 maxErr= 8.40e+00, ||u||= 8.6
 
 
 LCBC
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=10 -tp=.1 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=6 -debug=0 -go=halt
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=10 -tp=.1 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=6 -debug=0 -go=halt
 
 cgWave:FD66u t=1.000e-01 (  7 steps) dt=1.429e-02 maxErr= 8.81e-08, ||u||= 2.43e-01, cpu= 3.98e+00(s)
 cgWave:FD66u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 1.31e-07, ||u||= 1.62e-01, cpu= 7.92e+00(s)
 cgWave:FD66u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 1.59e-07, ||u||= 4.24e-01, cpu= 9.06e+00(s)
 cgWave:FD66u t=4.000e-01 ( 28 steps) dt=1.429e-02 maxErr= 1.12e-07, ||u||= 3.14e-01, cpu= 1.00e+01(s)
 
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=3 -mTheta=1 -tf=10 -tp=.1 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=6 -debug=0 -go=halt
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=3 -mr=1 -tf=10 -tp=.1 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=6 -debug=0 -go=halt
 
 cgWave:FD66u t=2.000e-01 ( 14 steps) dt=1.429e-02 maxErr= 1.31e-07, ||u||= 1.62e-01, cpu= 1.12e+01(s)
 cgWave:FD66u t=3.000e-01 ( 21 steps) dt=1.429e-02 maxErr= 1.59e-07, ||u||= 4.24e-01, cpu= 2.31e+01(s)
@@ -1924,12 +3021,12 @@ cgWave:FD66u t=5.000e-01 ( 35 steps) dt=1.429e-02 maxErr= 2.31e-07, ||u||= 7.26e
 TEST NEW INTERP INTERP NEIGHBOURS
 
 FD44u : lokks OK
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -bcApproach=cbc -assignInterpNeighbours=interp -orderInTime=4 -debug=0 -go=halt
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=10 -known=diskEig -upwind=1 -bcApproach=cbc -assignInterpNeighbours=interp -orderInTime=4 -debug=0 -go=halt
 
 FD22u - Looks OK: 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -bcApproach=cbc -assignInterpNeighbours=interp -orderInTime=2 -debug=0 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=1000 -tp=1 -known=diskEig -upwind=1 -bcApproach=cbc -assignInterpNeighbours=interp -orderInTime=2 -debug=0 -go=halt
 
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=10 -tp=.1 -known=diskEig -upwind=1 -bcApproach=cbc -assignInterpNeighbours=interp -orderInTime=2 -debug=0 -go=halt
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=3 -mr=1 -tf=10 -tp=.1 -known=diskEig -upwind=1 -bcApproach=cbc -assignInterpNeighbours=interp -orderInTime=2 -debug=0 -go=halt
 
 
 ****************************************************
@@ -1937,15 +3034,15 @@ cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=3 -mTheta=1 -tf=10 -tp=.1 -know
 
 ++++++++++++TEST LCBC
 
-cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=3 -mTheta=1 -tf=10 -tp=.1 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=halt
+cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nTheta=3 -mr=1 -tf=10 -tp=.1 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=halt
 
 
 --> FIXED LCBC FOR UPWIND
 
-cgWave known.cmd -g=annulus4.order4 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -upwind=0 -known=annulusEig -bc=d -bcApproach=lcbc
+cgWave known.cmd -g=annulus4.order4 -amp=4 -nTheta=2 -mr=2 -tp=.1 -tf=100 -upwind=0 -known=annulusEig -bc=d -bcApproach=lcbc
 
 
-cgWave -noplot known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tf=10 -tp=1 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=go
+cgWave -noplot known.cmd -g=sice8.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tf=10 -tp=1 -known=diskEig -upwind=1 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=go
 
 LCBC
 cgWave:FD44u t=0.000e+00 (   0 steps) dt=7.752e-03 maxErr= 0.00e+00, ||u||= 5.82e-01, cpu= 0.00e+00(s)
@@ -1974,7 +3071,7 @@ cgWave:FD44u t=9.000e+00 (1161 steps) dt=7.752e-03 maxErr= 3.13e-07, ||u||= 5.54
 cgWave:FD44u t=1.000e+01 (1290 steps) dt=7.752e-03 maxErr= 2.70e-06, ||u||= 2.94e-01, cpu= 1.61e+00(s)
 
 
-cgWave -noplot known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tf=10 -tp=1 -known=diskEig -upwind=0 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=go
+cgWave -noplot known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tf=10 -tp=1 -known=diskEig -upwind=0 -bcApproach=lcbc -orderInTime=4 -debug=0 -go=go
 
 LCBC: 
 cgWave:FD44 t=1.000e+01 (670 steps) dt=1.493e-02 maxErr= 6.74e-05, ||u||= 2.93e-01, cpu= 1.36e+00(s)
@@ -1986,7 +3083,7 @@ cgWave:FD44 t=1.000e+01 (670 steps) dt=1.493e-02 maxErr= 6.74e-05, ||u||= 2.93e-
 
 
 
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tf=100 -tp=.1 -known=diskEig -upwind=0 -bcApproach=lcbc -orderInTime=4 -debug=1 
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tf=100 -tp=.1 -known=diskEig -upwind=0 -bcApproach=lcbc -orderInTime=4 -debug=1 
 
 cgWave:FD44 t=5.000e-01 (  35 steps) dt=1.429e-02 maxErr= 1.33e-06, ||u||= 5.42e-01, cpu= 7.74e+00(s)
 
@@ -1995,14 +3092,14 @@ cgWave:FD44 t=5.000e-01 (  35 steps) dt=1.429e-02 maxErr= 1.33e-06, ||u||= 5.42e
 ****** Wed April 13, 2022
 
 FD44
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.5 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=4 -debug=1
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.5 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=4 -debug=1
 
 FD22
-cgWave known.cmd -g=sice4.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.5 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=4 -debug=1
+cgWave known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=.5 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=4 -debug=1
 
 
 FD44
-cgWave known.cmd -g=annulus4.order4 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=annulusEig -bc=d -bcApproach=cbc
+cgWave known.cmd -g=annulus4.order4 -amp=4 -nTheta=2 -mr=2 -tp=.1 -tf=100 -known=annulusEig -bc=d -bcApproach=cbc
 
 
 cgWave known.cmd -g=square128.order8.ng5 -upwind=0 -kx=2 -ky=1 -tp=1 -tf=1 -known=planeWave -bc=e -useKnownFirstStep=1 -go=halt
@@ -2016,8 +3113,8 @@ START TEST - ORDER 6 with CBC6 --> NOTE: for now run with cfl=.5 for upwind
 
 
 TEST FD26 -- upwind ok , but time-step is smaller than MFD66 scheme
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.5 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=2 -debug=3 
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.5 -tf=100 -known=diskEig -upwind=0 -bcApproach=cbc -orderInTime=2 -debug=3 
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=1 -mr=1 -tp=.5 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -orderInTime=2 -debug=3 
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=1 -mr=1 -tp=.5 -tf=100 -known=diskEig -upwind=0 -bcApproach=cbc -orderInTime=2 -debug=3 
 
 
 CFL=.01
@@ -2055,7 +3152,7 @@ cgWave:FD26 t=5.000e+00 (  560 steps) dt=8.929e-03 maxErr= 1.66e-03, ||u||= 5.02
 
 
 
-cgWave known.cmd -g=sice8.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3 -cfl=.5
+cgWave known.cmd -g=sice8.order6.ng4 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3 -cfl=.5
 
 RATIO = 64 
 cgWave:FD66u t=1.000e+00 (  240 steps) dt=4.167e-03 maxErr= 3.40e-10, ||u||= 4.33e-01, cpu= 1.98e+01(s)
@@ -2075,8 +3172,8 @@ cgWave:FD66u t=1.100e+01 ( 2563 steps) dt=4.292e-03 maxErr= 8.76e-09, ||u||= 1.1
 
 
 
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3 -cfl=.5
-cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=0 -bcApproach=cbc -debug=3
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3 -cfl=.5
+cgWave known.cmd -g=sice4.order6.ng4 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=100 -known=diskEig -upwind=0 -bcApproach=cbc -debug=3
 
 cgWave:FD66u t=1.000e+00 (  130 steps) dt=7.692e-03 maxErr= 1.61e-08, ||u||= 4.31e-01, cpu= 1.07e+01(s)
 cgWave:FD66  t=1.000e+00 (  70 steps) dt=1.429e-02 maxErr= 2.18e-08, ||u||= 4.31e-01, cpu= 1.20e+01(s)
@@ -2183,11 +3280,11 @@ cgWave:FD66 t=5.000e-01 ( 55 steps) dt=9.091e-03 maxErr= 2.80e-07, ||u||= 9.99e-
 ---- FIX CBC's for upwind -- extrapolate extra ghost
 
 ORDER=4 Look OK NOW:
-cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3
+cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3
 
 
 ORDER=2
-cgWave known.cmd -g=sice8.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3
+cgWave known.cmd -g=sice8.order2 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3
 
 
 ****************************************************
@@ -2195,7 +3292,7 @@ cgWave known.cmd -g=sice8.order2 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -kno
 
 ---- CHECK BRANCH CUT WITH CBC and UPWIND 
 **TROUBLE at branch cut***
-cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3
+cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=100 -known=diskEig -upwind=1 -bcApproach=cbc -debug=3
 
 ****************************************************
 ****** Wed Jan 19, 2022
@@ -2203,7 +3300,7 @@ cgWave known.cmd -g=sice8.order4.ng3 -amp=4 -nBessel=1 -mTheta=1 -tp=.1 -tf=100 
 +++++ START TEST ANNULUS EIGENFUNCTION +++
 
 
-cgWave known.cmd -g=annulus4.order4 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=annulusEig -bc=d -bcApproach=cbc
+cgWave known.cmd -g=annulus4.order4 -amp=4 -nTheta=2 -mr=2 -tp=.1 -tf=100 -known=annulusEig -bc=d -bcApproach=cbc
 
 G4: CBC -- looks ok 
 cgWave:FD44 t=1.000e-01 (  10 steps) dt=1.000e-02 maxErr= 4.90e-05, ||u||= 3.16e-01, cpu= 3.12e+00(s)
@@ -2228,21 +3325,21 @@ cgWave:FD44 t=2.000e-01 (  10 steps) dt=2.000e-02 maxErr= 2.25e-03, ||u||= 7.28e
 TEST BC=N
 
 BC=N: Looks OK: 
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=diskEig -beta=40 -x0=.4 -y0=.0 -bc=n
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=2 -mr=2 -tp=.1 -tf=100 -known=diskEig -beta=40 -x0=.4 -y0=.0 -bc=n
 cgWave:FD44 t=1.000e-01 (   7 steps) dt=1.429e-02 maxErr= 4.22e-06, ||u||= 2.64e-01, cpu= 1.28e+01(s)
 cgWave:FD44 t=2.000e-01 (  14 steps) dt=1.429e-02 maxErr= 9.17e-06, ||u||= 2.00e-01, cpu= 2.81e+01(s)
 cgWave:FD44 t=3.000e-01 (  21 steps) dt=1.429e-02 maxErr= 3.05e-06, ||u||= 4.80e-01, cpu= 2.93e+01(s)
 
 
 TRY CBC: -- looks ok 
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=diskEig -bcApproach=cbc -bc=d -debug=3
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=2 -mr=2 -tp=.1 -tf=100 -known=diskEig -bcApproach=cbc -bc=d -debug=3
 
 cgWave:FD44 t=1.000e-01 (   7 steps) dt=1.429e-02 maxErr= 9.90e-06, ||u||= 1.92e-01, cpu= 7.67e+00(s)
 cgWave:FD44 t=2.000e-01 (  14 steps) dt=1.429e-02 maxErr= 1.57e-05, ||u||= 3.31e-01, cpu= 1.47e+01(s)
 cgWave:FD44 t=3.000e-01 (  21 steps) dt=1.429e-02 maxErr= 1.09e-05, ||u||= 4.55e-01, cpu= 1.57e+01(s)
 
 
-cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nBessel=2 -mTheta=2 -tp=.1 -tf=100 -known=diskEig -beta=40 -x0=.4 -y0=.0 -bc=d
+cgWave known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=2 -mr=2 -tp=.1 -tf=100 -known=diskEig -beta=40 -x0=.4 -y0=.0 -bc=d
 
 cgWave:FD44 t=1.000e-01 (   7 steps) dt=1.429e-02 maxErr= 2.58e-05, ||u||= 1.92e-01, cpu= 8.36e+00(s)
 cgWave:FD44 t=2.000e-01 (  14 steps) dt=1.429e-02 maxErr= 2.13e-05, ||u||= 3.31e-01, cpu= 8.88e+00(s)

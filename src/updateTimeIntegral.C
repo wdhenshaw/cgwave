@@ -481,8 +481,9 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
       //   applyBoundaryConditions( v,v, t, applyExplicitBoundaryConditions );
       // }
 
-      if( filterTimeDerivative )
+      if( false && filterTimeDerivative )
       {
+        // ** testing ***
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
           getIndex(cg[grid].dimension(),I1,I2,I3);
@@ -493,7 +494,6 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
           Real vDotMax = max(abs(vLocal(I1,I2,I3,1)));
           printF(">>>>>> INFO: max(v)=%9.2e, max(vDot) = %9.2e (useFilterWeights=%d)\n",vMax,vDotMax,useFilterWeights);
 
-          // vLocal(I1,I2,I3,1)=0.; // TEST ****************************
         }       
       }
 

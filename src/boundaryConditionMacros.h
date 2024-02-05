@@ -55,7 +55,7 @@
     addForcingBC=1; 
 
   int gridType = isRectangular ? 0 : 1;
-  int gridIsImplicit = 0; 
+  // int gridIsImplicit = 0; 
   int numberOfComponents = 1;          // for now CgWave only has a single component 
   int uc = 0;                          // first component
   int ipar[] = {
@@ -64,7 +64,7 @@
     grid                ,            // ipar( 2)
     gridType            ,            // ipar( 3)
     orderOfAccuracy     ,            // ipar( 4)
-    gridIsImplicit      ,            // ipar( 5)
+    gridIsImplicit(grid),            // ipar( 5)  // added Nov 22, 2023
     twilightZone        ,            // ipar( 6)
     np                  ,            // ipar( 7)
     debug               ,            // ipar( 8)
@@ -77,7 +77,8 @@
     numGhost,                        // ipar(15)
     assignBCForImplicit,             // ipar(16)
     bcApproach,                      // ipar(17)
-    numberOfFrequencies              // ipar(18)
+    numberOfFrequencies,             // ipar(18)
+    assignCornerGhostPoints          // ipar(19)
                };
 
   Real cEM2 = c;

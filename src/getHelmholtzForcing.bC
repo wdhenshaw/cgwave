@@ -41,12 +41,14 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
   // bool useUpwindDissipation   = ad4  > 0.;
   bool useUpwindDissipation   = upwind!=0;
   const int & solveHelmholtz  = dbase.get<int>("solveHelmholtz");
+  const IntegerArray & gridIsImplicit    = dbase.get<IntegerArray>("gridIsImplicit");
 
   const int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
   const RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");
   const RealArray & frequencyArraySave  = dbase.get<RealArray>("frequencyArraySave");  
 
   const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption"); 
+  const int & solveForScatteredField  = dbase.get<int>("solveForScatteredField");
 
   const int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
 
@@ -61,7 +63,7 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
   
   Index I1,I2,I3;
 
-  if( forcingOption==helmholtzForcing )
+  if( forcingOption==helmholtzForcing && !solveForScatteredField )
   {
     printF("CgWave::getHelmholtzForcing: ***FILL IN RHS FOR DIRECT HELMHOLTZ SOLVER***\n");
     
@@ -93,6 +95,9 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
   if( useUpwindDissipation ) numGhost++;
 
   const int assignBCForImplicit = 1; 
+  // assignCornerGhostPoints = true if bcOptWave -> cornerWave will assign corner ghost points
+  const int assignCornerGhostPoints = bcApproach==useCompatibilityBoundaryConditions ||
+                                      bcApproach==useLocalCompatibilityBoundaryConditions;
 
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
   {

@@ -1,4 +1,54 @@
 
+
+
+***************************************************
+****** Thurs July 19, 2023
+
+
+MAKE A MOVIE:
+
+mv multiObjectsFreq10.mpg ~/movies
+
+ppm2mpeg multiObjectsFreq10 0000 1500
+
+plotStuff plotMovie.cmd -show=multiObjectsFreq10.show -name=multiObjectsFreq10 -emin=-2 -emax=1.5
+
+$cgWave -noplot gaussian.cmd -g=multiObjectsGride4.order2 -beta=10 -x0=1.3 -y0=-.7 -omega=10 -amp=-200 -ts=explicit -cfl=.95 -upwind=1 -tf=30 -tp=.02 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -show=multiObjectsFreq10.show -flushFrequency=50 -go=go > multiObjectsFreq10.out
+
+
+***************************************************
+****** Wed July 19, 2023
+
+
+MAKE A MOVIE:
+
+$cgWave -noplot gaussian.cmd -g=multiObjectsGride4.order2 -beta=10 -x0=1.3 -y0=-.7 -omega=10 -amp=-200 -ts=explicit -cfl=.95 -upwind=1 -tf=20 -tp=.02 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -show=multiObjectsFreq10.show -flushFrequency=50 -go=go > multiObjectsFreq10.out
+
+
+$cgWave -noplot gaussian.cmd -g=multiObjectsGride4.order2 -beta=10 -x0=1.3 -y0=-.7 -omega=10 -amp=-200 -ts=explicit -cfl=.95 -upwind=1 -tf=30 -tp=.05 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -show=multiObjectsFreq10.show -flushFrequency=50 -go=go > multiObjectsFreq10.out
+
+TEST: 
+$cgWave -noplot gaussian.cmd -g=multiObjectsGride4.order2 -beta=10 -x0=1.3 -y0=-.7 -omega=10 -amp=-200 -ts=explicit -cfl=.95 -upwind=1 -tf=0.1 -tp=.05 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -show=multiObjectsFreq10.show -go=go
+
+cgWave gaussian.cmd -g=multiObjectsGride4.order2 -beta=10 -x0=1.3 -y0=-.7 -omega=10 -amp=-200 -ts=explicit -cfl=.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -go=halt
+
+
+G4 MIN MAX -2.4 2.4 
+cgWave gaussian.cmd -g=multiObjectsGride4.order2 -beta=10 -x0=-2.0 -y0=-2.75 -omega=10 -amp=-200 -ts=explicit -cfl=.95 -upwind=1 -tf=100 -tp=.05 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -go=halt
+
+G2: 
+cgWave gaussian.cmd -g=multiObjectsGride2.order2 -beta=10 -x0=-2.0 -y0=-2.75 -omega=10 -amp=-200 -ts=explicit -cfl=.95 -upwind=1 -tf=100 -tp=.05 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -go=halt
+
+
+
+cgWave gaussian.cmd -g=multiObjectsGride2.order2 -beta=10 -x0=-2.0 -y0=-2.75 -omega=10 -amp=-200 -ts=implicit -cfl=100 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -go=halt
+
+ ln -s $mx/runs/scattering/objectsGrid.cmd .
+
+ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=4
+
+ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=2
+
 ***************************************************
 ****** Sat July 8, 2023
 

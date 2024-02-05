@@ -176,7 +176,7 @@ fprintf(ifile,"! ****** File written by makeGetDerivativesMacros.maple  ******\n
 
 outputFile:=false;
 for components from 0 to 1 do
-  fprintf(mfile,"\n#beginMacro define%sParameticDerivativesComponents%d(u)\n",dName,components);
+  fprintf(mfile,"\n#beginMacro define%sParametricDerivativesComponents%d(u)\n",dName,components);
   for myOrder from 2 to maxOrder by 2 do
     maxDeriv:= maxOrder +2  -myOrder:
     # maxDeriv:= maxOrder+2-myOrder:
@@ -217,38 +217,60 @@ for dim from 2 to numberOfDimensions do
 
 
   fprintf(mfile,"\n#If #GRIDTYPE eq \"rectangular\" \n"):
-  fprintf(mfile,"! ---------- RECTANGULAR  ---------\n"):  
+  fprintf(mfile,"! ---------- %s RECTANGULAR  ---------\n",dName):  
   fprintf(mfile,"! This assumes dr(0:2) = dx(0:2)\n"):  
 
   # Just use parametric derivatives for cartesain derivatives, assuming dr(:) = dx(:)
-  fprintf(mfile,"define%sParameticDerivativesComponents1(u)\n",dName);
+  fprintf(mfile,"define%sParametricDerivativesComponents1(u)\n",dName);
 
-  ndv := ndd;
+  ndv := ndd;              # ndd = number of derivatives
   nddMod2 := modp(ndd,2);  
   if dim=2 then ndv3:=0; else ndv3:=ndv; end if;  
   for jt from 0 to ndv3 do   # t derivatives 
   for js from 0 to ndv do    # s derivatives 
     for jr from 0 to ndv do  # r derivatives
       # Define all even or odd derivatives up to order ndv 
-      if (jr+js+jt) >0 and (jr+js+jt)<=ndv and modp(jr,2)=nddMod2 and modp(js,2)=nddMod2 and modp(jt,2)=nddMod2 then
-        uName := u; urName:=u; 
+      # *wdh* Nov 24 2023 if (jr+js+jt) >0 and (jr+js+jt)<=ndv and modp(jr,2)=nddMod2 and modp(js,2)=nddMod2 and modp(jt,2)=nddMod2 then
+      if (jr+js+jt) >0 and (jr+js+jt)<=ndv and modp(jr+js+jt,2)=nddMod2 then
+        uName := u; urName := u;
         for kr from 1 by 1 to jr do uName := cat(uName,x); urName := cat(urName,r); end do;
         for ks from 1 by 1 to js do uName := cat(uName,y); urName := cat(urName,s); end do;
         for kt from 1 by 1 to jt do uName := cat(uName,z); urName := cat(urName,t); end do;
-        # Choose the biggest stencil that fits
-        if ( jr<=2 and js<=2 and jt<=2 ) then
-            myOrder:=maxOrder: 
-        elif ( jr<=4 and js<=4 and jt<=4 ) then
-            myOrder:=maxOrder-2:   
-        elif ( jr<=6 and js<=6 and jt<=6 ) then
-            myOrder:=maxOrder-4: 
-        elif ( jr<=8 and js<=8 and jt<=8 ) then
-            myOrder:=maxOrder-6:                              
+
+        if 1=1 then
+          # do NOT choose biggest stencil that fits *wdh* Dec 1, 2023
+          # total derivatives   order             Examples
+          #    1,2              maxOrder        ux,uy, uxx, uxy, ...
+          #    3,4              maxOrder-2      uxxx, uxyy, uxyz, uxxxx, uxxyy, ...
+          if( jr+js+jt <=2 )then
+            myOrder := maxOrder;
+          elif( jr+js+jt <= 4 )then
+            myOrder := maxOrder-2;
+          elif( jr+js+jt <= 6 )then
+            myOrder := maxOrder-4; 
+          elif( jr+js+jt <= 8 )then
+            myOrder := maxOrder-6; 
+          else  
+            myOrder := maxOrder-8; 
+          end if:                   
         else
-            myOrder:=maxOrder-8:
-        end if:        
+          # Choose the biggest stencil that fits
+          if ( jr<=2 and js<=2 and jt<=2 ) then
+              myOrder:=maxOrder: 
+          elif ( jr<=4 and js<=4 and jt<=4 ) then
+              myOrder:=maxOrder-2:   
+          elif ( jr<=6 and js<=6 and jt<=6 ) then
+              myOrder:=maxOrder-4: 
+          elif ( jr<=8 and js<=8 and jt<=8 ) then
+              myOrder:=maxOrder-6:                              
+          else
+              myOrder:=maxOrder-8:
+          end if: 
+        end if:
+
         # Just use parametric derivatives 
         fprintf(mfile,"%-8s = %s%dMacro(i1,i2,i3,0)\n",uName,urName,myOrder);
+        printf("%-8s = %s%dMacro(i1,i2,i3,0)\n",uName,urName,myOrder);
       end if;
     end do;
   end do;
@@ -273,24 +295,24 @@ for dim from 2 to numberOfDimensions do
   fprintf(mfile,"\n#Else\n"):
 
 
-  fprintf(mfile,"! ---------- START CURVILINEAR  ---------\n"):
+  fprintf(mfile,"! ---------- START CURVILINEAR %s ---------\n",dName):
 
-  fprintf(mfile,"define%sParameticDerivativesComponents1(u)\n",dName);
+  fprintf(mfile,"define%sParametricDerivativesComponents1(u)\n",dName);
   
   fprintf(mfile,"#If #OPTION eq \"evalMetrics\"\n");
-    fprintf(mfile,"define%sParameticDerivativesComponents0(rx)\n",dName);
-    fprintf(mfile,"define%sParameticDerivativesComponents0(ry)\n",dName);
+    fprintf(mfile,"define%sParametricDerivativesComponents0(rx)\n",dName);
+    fprintf(mfile,"define%sParametricDerivativesComponents0(ry)\n",dName);
     
-    fprintf(mfile,"define%sParameticDerivativesComponents0(sx)\n",dName);
-    fprintf(mfile,"define%sParameticDerivativesComponents0(sy)\n",dName);
+    fprintf(mfile,"define%sParametricDerivativesComponents0(sx)\n",dName);
+    fprintf(mfile,"define%sParametricDerivativesComponents0(sy)\n",dName);
     if dim=3 then
-      fprintf(mfile,"define%sParameticDerivativesComponents0(rz)\n",dName);
-      fprintf(mfile,"define%sParameticDerivativesComponents0(sz)\n",dName);
-      fprintf(mfile,"define%sParameticDerivativesComponents0(tx)\n",dName);
-      fprintf(mfile,"define%sParameticDerivativesComponents0(ty)\n",dName);
-      fprintf(mfile,"define%sParameticDerivativesComponents0(tz)\n",dName);
+      fprintf(mfile,"define%sParametricDerivativesComponents0(rz)\n",dName);
+      fprintf(mfile,"define%sParametricDerivativesComponents0(sz)\n",dName);
+      fprintf(mfile,"define%sParametricDerivativesComponents0(tx)\n",dName);
+      fprintf(mfile,"define%sParametricDerivativesComponents0(ty)\n",dName);
+      fprintf(mfile,"define%sParametricDerivativesComponents0(tz)\n",dName);
     end if;
-  fprintf(mfile,"#End\n"); # end If #OPTION eq \"evalMetrics\"\n");
+  fprintf(mfile,"#End\n"); # end If OPTION eq "evalMetrics" 
 
   fprintf(mfile,"\n! ---------- Parametric derivatives ---------\n"):  
   numVar:= dim^2;
@@ -326,16 +348,31 @@ for dim from 2 to numberOfDimensions do
           uNameString := convert(uName,string); 
 
           # printf(" jr=%d, js=%d, uName=%s\n",jr,js,uNameString);
-          if ( jr<=2 and js<=2 and jt<=2 ) then
-              myOrder:=maxOrder: 
-          elif ( jr<=4 and js<=4 and jt<=4 ) then
-              myOrder:=maxOrder-2:   
-          elif ( jr<=6 and js<=6 and jt<=6 ) then
-              myOrder:=maxOrder-4: 
-          elif ( jr<=8 and js<=8 and jt<=8 ) then
-              myOrder:=maxOrder-6:                              
-          else
-              myOrder:=maxOrder-8:
+          if 1=1 then
+            # do NOT choose biggest stencil that fits *wdh* Dec 1, 2023
+            if( jr+js+jt <=2 )then
+              myOrder := maxOrder;
+            elif( jr+js+jt <= 4 )then
+              myOrder := maxOrder-2;
+            elif( jr+js+jt <= 6 )then
+              myOrder := maxOrder-4; 
+            elif( jr+js+jt <= 8 )then
+              myOrder := maxOrder-6; 
+            else  
+              myOrder := maxOrder-8; 
+            end if:                   
+          else          
+            if ( jr<=2 and js<=2 and jt<=2 ) then
+                myOrder:=maxOrder: 
+            elif ( jr<=4 and js<=4 and jt<=4 ) then
+                myOrder:=maxOrder-2:   
+            elif ( jr<=6 and js<=6 and jt<=6 ) then
+                myOrder:=maxOrder-4: 
+            elif ( jr<=8 and js<=8 and jt<=8 ) then
+                myOrder:=maxOrder-6:                              
+            else
+                myOrder:=maxOrder-8:
+            end if:
           end if:             
          
 
@@ -379,8 +416,8 @@ for dim from 2 to numberOfDimensions do
     for iz from 0 to ndvz do 
     for iy from 0 to ndvy do 
       for ix from 0 to ndvx do 
-        # if (ix+iy+iz) >0 and (ix+iy+iz)<=ndv then
-        if (ix+iy+iz)=currentDeriv then
+        if (ix+iy+iz) >0 and (ix+iy+iz)<=ndv then
+        # if (ix+iy+iz)=currentDeriv then
           ud := DuDx[ix,iy,iz,dim];
           uds := convert(ud,string);
           # uds := SubstituteAll( uds,"rx","rxi");
@@ -403,13 +440,16 @@ for dim from 2 to numberOfDimensions do
 
           uds := SubstituteAll( uds,"u",rxn);
 
-          derivName := ""; # name of derivative: "x", "xx", "xy, "yy", etc 
+          derivName := ""; # name of derivative: "x", "xx", "xy", "yy", etc. 
           for jx from 1 to ix do derivName := cat(derivName,"x"); end do;
           for jy from 1 to iy do derivName := cat(derivName,"y"); end do;
           for jz from 1 to iz do derivName := cat(derivName,"z"); end do;
 
           fprintf(mfile,"%s%-6s = %s\n",rxn,derivName,uds);
-          if dim=3 then fprintf(ifile,"real %s%s\n",rxn,derivName); end if;
+          if dim=3 then 
+            fprintf(ifile,"real %s%s\n",rxn,derivName); 
+            printf("DECLARE: real %s%s\n",rxn,derivName); 
+          end if;
 
         end if; 
       end do; # ix 
@@ -418,7 +458,7 @@ for dim from 2 to numberOfDimensions do
   end do;
   end do;
   end do:
-  fprintf(mfile,"#End\n"); # end If #OPTION eq \"evalMetrics\"\n");
+  fprintf(mfile,"#End\n"); # end If #OPTION eq \"evalMetrics\"
   fprintf(mfile,"! ---- end OPTION eq evalMetrics ---\n");
 
 
@@ -432,7 +472,8 @@ for dim from 2 to numberOfDimensions do
   for ix from 0 to ndd do 
     # printf("?? ndv=%d: ix=%d, iy=%d, iz=%d, nddMod2=%d modp(iy,2)=%d modp(iz,2)=%d\n",ndv, ix,iy,iz,nddMod2,modp(iy,2),modp(iz,2));
 
-    if (ix+iy+iz) >0 and (ix+iy+iz)<=ndv and modp(ix,2)=nddMod2 and modp(iy,2)=nddMod2 and modp(iz,2)=nddMod2 then
+    # if (ix+iy+iz) >0 and (ix+iy+iz)<=ndv and modp(ix,2)=nddMod2 and modp(iy,2)=nddMod2 and modp(iz,2)=nddMod2 then
+    if (ix+iy+iz) >0 and (ix+iy+iz)<=ndv and modp(ix+iy+iz,2)=nddMod2  then
 
 
       derivName := "u"; # name of derivative: "uxxx", "uxyy", etc. 
@@ -460,7 +501,10 @@ for dim from 2 to numberOfDimensions do
       uds := SubstituteAll( uds,"^","**");      # convert power symbol "^" to "**"   
 
       fprintf(mfile,"%-8s = %s\n",derivName,uds); 
-      if dim=3 then fprintf(ifile,"real %s\n",derivName); end if;
+      if dim=3 then 
+        fprintf(ifile,"real %s\n",derivName); 
+        printf("DECLARE real %s\n",derivName); 
+      end if;
 
     end if;
   end do; # ix 

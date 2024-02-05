@@ -1,0 +1,213 @@
+//
+//
+//
+#include "CompositeGridOperators.h"
+
+#include "display.h"
+
+#include "cgux2a.h"
+
+
+#define FOR_3D(i1,i2,i3,I1,I2,I3) \
+int I1Base =I1.getBase(),   I2Base =I2.getBase(),  I3Base =I3.getBase();  \
+int I1Bound=I1.getBound(),  I2Bound=I2.getBound(), I3Bound=I3.getBound(); \
+for(int i3=I3Base; i3<=I3Bound; i3++) \
+for(int i2=I2Base; i2<=I2Bound; i2++) \
+for(int i1=I1Base; i1<=I1Bound; i1++)
+
+#define ForStencil(m1,m2,m3)   \
+for( m3=-halfWidth3; m3<=halfWidth3; m3++) \
+for( m2=-halfWidth2; m2<=halfWidth2; m2++) \
+for( m1=-halfWidth1; m1<=halfWidth1; m1++)
+
+#define M123(m1,m2,m3) (m1+halfWidth1+width*(m2+halfWidth2+width*(m3+halfWidth3)))
+
+// ===============================================================================
+/// \brief Compute the coefficients in a finite difference stencil by the delta approach
+///
+/// \param Rv[dir] (input) : eval coefficients at these points.
+/// \param coeffOption=4 (input) : return coefficients of (Delta_{2h})^2
+///  
+// ================================================================================
+int coefficientsByDelta( CompositeGrid & cg, realArray & coeff, int grid, Index Rv[3], int coeffOption=4 )
+{
+
+  int orderOfAccuracy=4;
+
+  // int i1=2, i2=2, i3=2;
+
+  // for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+  // {
+
+    MappedGrid & mg = cg[grid];
+    const bool isRectangular = mg.isRectangular();
+
+    OV_GET_SERIAL_ARRAY(Real,coeff,lapSqCoeff);
+
+    mg.update(MappedGrid::THEinverseVertexDerivative );    
+
+    // const bool isRectangular = mg.isRectangular();
+    Real dx[3]={1.,1.,1.};
+    Real dr[3]={1.,1.,1.};
+    if( isRectangular )
+    { // rectangular grid grid-spacings: 
+      mg.getDeltaX(dx);
+    }
+    else
+    {
+      // unit square grid spacings: 
+      for( int dir=0; dir<3; dir++ )
+      {
+        dr[dir]=mg.gridSpacing(dir);   
+        dx[dir] = dr[dir];       
+      }
+    }     
+
+    OV_GET_SERIAL_ARRAY(Real,mg.inverseVertexDerivative(),rxLocal);
+
+    RealArray & inverseVertexDerivative = rxLocal;
+
+    //    needs d12(kd) = 1/(2*h(kd))
+    //          d22(kd) = 1/(h(kd)**2)
+    RealArray d12(3), d22(3);
+    for( int dir=0; dir<3; dir++ )
+    {
+      d12(dir)=1./(2.*dr[dir]);
+      d22(dir)=1./(dr[dir]*dr[dir]);
+    }
+
+
+    Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
+    getIndex(mg.dimension(),I1,I2,I3);
+    RealArray uLocal(I1,I2,I3), uLap(I1,I2,I3);
+    uLocal=0.;
+    uLap=0.; 
+
+    const int numberOfDimensions = cg.numberOfDimensions();
+
+    const int hw2=1; 
+    const int hw3 = numberOfDimensions==2 ? 0 : hw2;
+    // Range R3(-hw2,hw2);
+    // RealArray uLap(R3,R3);
+
+    // Range M0=125;
+    // RealArray lapSqCoeff(M0,I1,I2,I3);
+
+    const int width = orderOfAccuracy+1;
+    // const int width      = stencilWidth;
+    const int halfWidth1 = (width-1)/2;
+    const int halfWidth2 = numberOfDimensions>1 ? halfWidth1 : 0;
+    const int halfWidth3 = numberOfDimensions>2 ? halfWidth1 : 0;  
+
+    getIndex(mg.gridIndexRange(),I1,I2,I3);
+
+    // I2 = Range(2,2);
+    // I3 = Range(2,2);
+    for( int dir=0; dir<3; dir++ )
+    {
+      if( Rv[dir].getBound()>=Rv[dir].getBase() )
+        Iv[dir] = Rv[dir];
+    }
+
+    printF("\n ---------coefficientsByDelta: Eval coefficients of Laplacian-squared by the delta approach -------\n"
+           "     grid=%d I1=[%d,%d] I2=[%d,%d] I3=[%d,%d]-----------\n",grid, 
+           I1.getBase(),I1.getBound(),I2.getBase(),I2.getBound(),I3.getBase(),I3.getBound() );
+    FOR_3D(i1,i2,i3,I1,I2,I3)
+    {
+
+      int m1,m2,m3;
+      ForStencil(m1,m2,m3)
+      {
+        int m  = M123(m1,m2,m3); 
+
+        uLocal(i1+m1,i2+m2,i3+m3) = 1.; // delta 
+
+        #define U(I1,I2,I3,KD) uLocal(I1,I2,I3)
+        #define UR2(I1,I2,I3,KD) ( (U(I1+1,I2,I3,KD)-U(I1-1,I2,I3,KD))*d12(0) )
+        #define US2(I1,I2,I3,KD) ( (U(I1,I2+1,I3,KD)-U(I1,I2-1,I3,KD))*d12(1) )
+        #define UT2(I1,I2,I3,KD) ( (U(I1,I2,I3+1,KD)-U(I1,I2,I3-1,KD))*d12(2) )
+      
+
+
+        // eval Lap(uLocal) on a stencil 3x3x3
+        for( int j3=i3-hw3; j3<=i3+hw3; j3++ )
+        for( int j2=i2-hw2; j2<=i2+hw2; j2++ )
+        for( int j1=i1-hw2; j1<=i1+hw2; j1++ )
+        {
+           if( numberOfDimensions==2 )
+           {
+             // printF("(j1,j2,j3)=(%3d,%3d,%3d) rx=%10.2e\n",j1,j2,j3,RX(j1,j2,j3));
+             // printF("(j1,j2,j3)=(%3d,%3d,%3d) urr2=%10.2e\n",j1,j2,j3,URR2(j1,j2,j3,0));
+
+             // Real uLapj = LAPLACIAN22(j1,j2,j3,0);
+             // printF("(j1,j2,j3)=(%23d,%3d,%3d) uLocal=%12.4e, uLapj=%12.4e\n",j1,j2,j3,uLocal(j1,j2,j3),uLapj);
+
+             uLap(j1,j2,j3) = LAPLACIAN22(j1,j2,j3,0);
+           }
+          else
+          {
+            uLap(j1,j2,j3) =  LAPLACIAN23(j1,j2,j3,0);
+          }           
+        }
+      
+        #define U(I1,I2,I3,KD) uLap(I1,I2,I3)
+        #define UR2(I1,I2,I3,KD) ( (U(I1+1,I2,I3,KD)-U(I1-1,I2,I3,KD))*d12(0) )
+        #define US2(I1,I2,I3,KD) ( (U(I1,I2+1,I3,KD)-U(I1,I2-1,I3,KD))*d12(1) )
+        #define UT2(I1,I2,I3,KD) ( (U(I1,I2,I3+1,KD)-U(I1,I2,I3-1,KD))*d12(2) )
+      
+      
+        // Eval Lap( uLap )
+        if( numberOfDimensions==2 )
+        {
+          lapSqCoeff(m,i1,i2,i3) =  LAPLACIAN22(i1,i2,i3,0);
+        }
+        else
+        {
+          lapSqCoeff(m,i1,i2,i3) =  LAPLACIAN23(i1,i2,i3,0);
+        }
+
+        uLocal(i1+m1,i2+m2,i3+m3) = 0.; // reset 
+
+      }
+
+      if( true && i1==2 && i2==2 && (numberOfDimensions==2 || i3==2 ))
+      {
+        printf("lapSqCoeff(m1,m2,m3) (i1,i2,i3)=(%3d,%3d,%3d):\n",i1,i2,i3);
+        for( int m3=-halfWidth3; m3<=halfWidth3; m3++ )
+        {
+          printf("m3=%2d\n",m3);
+          for( int m2=-halfWidth2; m2<=halfWidth2; m2++ ) 
+          {
+            printf("m2=%2d, m1=[%2d,%2d] : ",m2,-halfWidth1,halfWidth1);
+            for( int m1=-halfWidth1; m1<=halfWidth1; m1++ )
+            {
+              int m  = M123(m1,m2,m3); 
+              printF(" %10.2e ",lapSqCoeff(m,i1,i2,i3));
+            }
+            printF("\n");
+          }
+        }
+ // Range all;
+ //  ::display(lapSqCoeff(all,2,2,2),"coeff by delta I: lapSqCoeff(all,2,2,2)");        
+ //  ::display(coeff[0](all,2,2,2),"coeff by delta I: coeff[0](all,2,2,2)");        
+      }
+
+    }
+    printF("... done grid=%d\n",grid);
+
+
+ //  } // end for grid
+
+  // Range all;
+  // ::display(coeff[0](all,2,2,2),"coeff by delta: coeff[0](all,2,2,2)");
+
+  // for( int j3=i3-hw2; j3<=i3+hw2; j3++ )
+  // for( int j2=i2-hw2; j2<=i2+hw2; j2++ )
+  // for( int j1=i1-hw2; j1<=i1+hw2; j1++ )
+  // {
+  //    uLocal(j1,j2,j3) = uLap(j1,j2,j3);
+  // }
+
+
+  return 0;
+}

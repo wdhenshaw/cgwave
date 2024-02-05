@@ -1188,6 +1188,35 @@ end if
         fv(m) = fv(m) + (dt**2 * c**4)*( cImp(mt,1)*(  evxxxx(m) + 2.*evxxyy(m) + evyyyy(m) )  )
       end do
 
+      if( takeImplicitFirstStep.eq.1 )then
+        ! implicit first step: adjust forcing
+        ! write(*,'("advWave: Adjust forcing for takeImplicitFirstStep, t=",e10.2)') t
+
+        ! dt^3/6 * f_t 
+        !  f_t = ue_ttt - L ue_t
+        OGDERIV2D( 3,0,0,0,i1,i2,i3,t, ec, evttt(m) )
+        OGDERIV2D( 1,2,0,0,i1,i2,i3,t, ec, evxxt(m) )
+        OGDERIV2D( 1,0,2,0,i1,i2,i3,t, ec, evyyt(m) )
+        fv(m) = fv(m) + (1./cf)*(dt**3/6.)*( evttt(m) - cSq*( evxxt(m) + evyyt(m) )) 
+
+        ! -alpha2 * dt^5/6 *( L f_t )
+        ! L f_t = (L ue)_ttt - L^2(ue)_t 
+        OGDERIV2D( 3,2,0,0,i1,i2,i3,t, ec, evxxttt(m) )
+        OGDERIV2D( 3,0,2,0,i1,i2,i3,t, ec, evyyttt(m) )
+
+        OGDERIV2D( 1,4,0,0,i1,i2,i3,t, ec, evxxxxt(m) )
+        OGDERIV2D( 1,2,2,0,i1,i2,i3,t, ec, evxxyyt(m) )
+        OGDERIV2D( 1,0,4,0,i1,i2,i3,t, ec, evyyyyt(m) )
+
+        fv(m) = fv(m) - (1./cf)*(cImp(-1,0)*dt**5/6.)*( cSq*(evxxttt(m) + evyyttt(m)) - cSq**2*( evxxxxt(m) + 2.*evxxyyt(m) + evyyyyt(m) )) 
+
+        ! OGDERIV2D( 3,4,0,0,i1,i2,i3,t, ec, evxxxxttt(m) )
+        ! OGDERIV2D( 3,2,2,0,i1,i2,i3,t, ec, evxxyyttt(m) )
+        ! OGDERIV2D( 3,0,4,0,i1,i2,i3,t, ec, evyyyyttt(m) )
+        ! fv(m) = fv(m) + (1./cf)*(cImp(-1,1)*dt**7/6.)*( cSq**2*( evxxxxttt(m) + 2.*evxxyyttt(m) + evyyyyttt(m) ) )     
+
+      end if
+
     #Else
 
       OGDERIV3D( 4,0,0,0,i1,i2,i3,t, ec, evtttt(m) )
@@ -1208,6 +1237,39 @@ end if
 
         fv(m) = fv(m) + (dt**2 * c**4)*( cImp(mt,1)*(  evxxxx(m) + 2.*evxxyy(m) + 2.*evxxzz(m) + 2.*evyyzz(m) + evyyyy(m) + evzzzz(m) )  )
       end do
+
+      if( takeImplicitFirstStep.eq.1 )then
+        ! implicit first step: adjust forcing
+        write(*,'("advWave: Adjust forcing for takeImplicitFirstStep in 3D , t=",e10.2)') t
+
+
+        ! dt^3/6 * f_t 
+        !  f_t = ue_ttt - L ue_t
+        OGDERIV3D( 3,0,0,0,i1,i2,i3,t, ec, evttt(m) )
+        OGDERIV3D( 1,2,0,0,i1,i2,i3,t, ec, evxxt(m) )
+        OGDERIV3D( 1,0,2,0,i1,i2,i3,t, ec, evyyt(m) )
+        OGDERIV3D( 1,0,0,2,i1,i2,i3,t, ec, evzzt(m) )
+        fv(m) = fv(m) + (1./cf)*(dt**3/6.)*( evttt(m) - cSq*( evxxt(m) + evyyt(m) + evzzt(m) ) ) 
+
+        ! -alpha2 * dt^5/6 *( L f_t )
+        ! L f_t = (L ue)_ttt - L^2(ue)_t 
+        OGDERIV3D( 3,2,0,0,i1,i2,i3,t, ec, evxxttt(m) )
+        OGDERIV3D( 3,0,2,0,i1,i2,i3,t, ec, evyyttt(m) )
+        OGDERIV3D( 3,0,0,2,i1,i2,i3,t, ec, evzzttt(m) )
+
+        OGDERIV3D( 1,4,0,0,i1,i2,i3,t, ec, evxxxxt(m) )
+        OGDERIV3D( 1,0,4,0,i1,i2,i3,t, ec, evyyyyt(m) )
+        OGDERIV3D( 1,0,0,4,i1,i2,i3,t, ec, evzzzzt(m) )
+
+        OGDERIV3D( 1,2,2,0,i1,i2,i3,t, ec, evxxyyt(m) )
+        OGDERIV3D( 1,2,0,2,i1,i2,i3,t, ec, evxxzzt(m) )
+        OGDERIV3D( 1,0,2,2,i1,i2,i3,t, ec, evyyzzt(m) )
+
+        fv(m) = fv(m) - (1./cf)*(cImp(-1,0)*dt**5/6.)*( cSq*(evxxttt(m) + evyyttt(m) + evzzttt(m)) \
+                              - cSq**2*( evxxxxt(m) + evyyyyt(m) + evzzzzt(m) + 2.*(evxxyyt(m) + evxxzzt(m) + evyyzzt(m) )) ) 
+
+      end if
+
 
     #End
    #End
@@ -1785,7 +1847,7 @@ end if
 ! ========================================================================================
 #beginMacro addUpwindDissImplicitOld(DIM,ORDER,GRIDTYPE)
 
-  if( (.true. .or. debug.gt.3) .and. t.lt.4*dt )then
+  if( (.false. .or. debug.gt.3) .and. t.lt.4*dt )then
     write(*,'(/,"advWave:addUpwindDissImplicitOld: UPWIND DISS dim=DIM order=ORDER grid=GRIDTYPE... t=",e10.2)') t
     if( gridType==rectangular )then
       write(*,'(" upwind-diss-coeff: adxSosup=",3(1pe12.4,1x))') adxSosup(0), adxSosup(1),adxSosup(2)
@@ -2210,6 +2272,7 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
  ! Coefficients in the implicit scheme
  real bImp(0:maxOrderOfAccuracy-1)
  real cImp(-1:1,0:maxOrderOfAccuracy-1)
+
  real alpha2,alpha4,alpha6,alpha8, beta2,beta4,beta6,beta8
 
  integer rectangular,curvilinear
@@ -2270,8 +2333,11 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
 
  integer ec 
  real ep 
- real fv(0:1) , ev(0:1), evt(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1)
+ real fv(0:1) , ev(0:1), evt(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1), evttt(0:1), evxxt(0:1), evyyt(0:1)
  real evxxxx(0:1), evxxyy(0:1), evyyyy(0:1), evxxzz(0:1), evyyzz(0:1), evzzzz(0:1), evtttt(0:1)
+ real evxxttt(0:1), evyyttt(0:1), evxxxxt(0:1), evxxyyt(0:1), evyyyyt(0:1)
+ real evzzt(0:1), evzzttt(0:1), evzzzzt(0:1), evxxzzt(0:1), evyyzzt(0:1)
+ real evxxxxttt(0:1), evxxyyttt(0:1), evyyyyttt(0:1)
  real evtttttt(0:1)
  real evxxxxxx(0:1)
  real evyyyyyy(0:1)
@@ -2603,6 +2669,7 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
   cLapSq =           cdtsq12/(1.+damp*dt*.5); 
   cf     =              dtSq/(1.+damp*dt*.5); 
 
+
   if( gridIsImplicit==1 )then
     ! Implicit Scheme is 
     !   un(i1,i2,i3,m)= ts1*u(i1,i2,i3,m) +ts2*um(i1,i2,i3,m) + ts3*( uxx22r(i1,i2,i3,0) +  uyy22r(i1,i2,i3,0) )  
@@ -2622,41 +2689,34 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
       ts6 = - (cdtSq)**2 *( cImp(-1,1) )
 
       tsf=dtSq
+
     else
       ! first-step implicit:
+      ! SEE NOTES IN CGWAVE DOCUMENTATIION
       !
-      ! *NOTE* 
-      !    We need to adjust the coefficients so that we can use the SAME IMPLICI SOLVER as the later steps
-
-      !   u(t+dt) = u(0) + dt*ut(0) + .5*dt^2* u.tt
-      !   u(0) = known
-      !   ut(0) = known
-      !
-      ! FINISH ME: 
-      !   u.tt = Lu - damp*u.t 
-      !   Lu = cImp(1,0)*Lu(t+dt) + cImp(0)*Lu(t) + cImp(1)*Lu(t-dt)
-      !   
-      !   u(t+dt) = u(0) + dt*ut(0) + .5*dt^2* [ cImp(1,0)*Lu(t+dt) + cImp(0)*Lu(t) + cImp(1)*Lu(t-dt) ] + .5*dt^2( u(t+dt) - u(t-dt))/(2*dt) 
-      !
-      !  [ I - dt^2* cImp(1,0)*L + damp*.5*dt] u(t+dt) =  u(0) + dt*ut(0) 
-
-      !   Assumes um = ut(t=0) 
-      ! AND 
-      !   cImp(1,0) = cImp(-1,0)
-      !   RHS = u + dt*ut + (dt^2/2)*L * ( cImp(0,0)*u - 2.*dt*cImp(1,0)*ut ) + .5*dt^2 * f
-
       ! CHECK ME FOR DAMPING     
       ts1=1. + .5*damp*dt
       ts2=dt - .5*dt*dt*damp
       ts3= .5*cdtSq*cImp( 0,0)
       ts4=-dt*cdtSq*cImp(-1,0)
 
+      tsf=.5*dtSq    
+
       if( orderInTime.eq.4 )then
-        write(*,'("advWave: finish me : IMP orderInTime=4")') 
-        stop 4445
+
+        ! FIX ME FOR DAMPING 
+
+        ts4 = ts4 + dt*cdtSq/6.
+        ts5 = -.5*cdtSq**2 * cImp( 0,1) 
+        ts6 =  dt*cdtSq**2 * cImp(-1,1)
+
+        ! FORCING NEEDS ADJUSTMENT TOO 
+        if( addForcing.ne.0 )then
+          write(*,'(/,"**** advWave: TAKE IMPLICIT FIRST STEP : finish me for orderInTime=4 and ADD FORCING*****")') 
+        ! stop 4445
+        end if
       end if
 
-      tsf=.5*dtSq    
 
     end if
 
@@ -2900,7 +2960,7 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
       ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----
 
       if( takeImplicitFirstStep.eq.1 )then
-        if( orderInTime.eq.2 )then
+        if( orderInTime.eq.2 .or. orderInTime.eq.4 )then
           write(*,'(" advWave: TAKE IMPLICIT FIRST STEP ")')
         else
           write(*,'(" advWave: TAKE IMPLICIT FIRST STEP : FINISH ME, orderInTime =",i2)') orderInTime
@@ -3009,10 +3069,10 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
 
   ! ==== Build separate f90 files for different cases ====
 
-  buildFile(advWave2dOrder2r,2,2,rectangular)
-  buildFile(advWave3dOrder2r,3,2,rectangular)
-  buildFile(advWave2dOrder2c,2,2,curvilinear)
-  buildFile(advWave3dOrder2c,3,2,curvilinear)
+  ! buildFile(advWave2dOrder2r,2,2,rectangular)
+  ! buildFile(advWave3dOrder2r,3,2,rectangular)
+  ! buildFile(advWave2dOrder2c,2,2,curvilinear)
+  ! buildFile(advWave3dOrder2c,3,2,curvilinear)
 
   buildFile(advWave2dOrder4r,2,4,rectangular)
   buildFile(advWave3dOrder4r,3,4,rectangular)

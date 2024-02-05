@@ -1,0 +1,97 @@
+\section{Corner conditions} \label{sec:conrerConditions}
+
+
+Here are notes on filling ghost points at corners.
+Let D-D denote a Dirichlet-Dirichlet corner, D-N and Dirichlet Neumann corner etc.
+
+Consider the corner ghost point $u(-\dr,-\ds)$adject to the corner at $(r,s)=(0,0)$. By Taylor series
+\bse
+\label{eq:TaylorCornerGhost}
+\ba
+  u(-\dr,-\ds) & = u(0,0) - (\dr u_r(0,0)  + \ds u_s(0,0)) + \half\dr^2 u_{rr} + \dr\ds u_{rs} + \half\ds^2 u_{ss} \\
+     &  - \frac{1}{6} \Big( \dr^3 \p_r^3 u + 3 \dr^2 \ds \p_r^2 \p_s u + 3 \dr\ds^2 \p_r \p_s^2 u + \ds^3 \p_s^3 u ) + ... \\
+  u(\dr,\ds) & = u(0,0) + \dr u_r(0,0)  + \ds u_s(0,0) + \half\dr^2 u_{rr} + \dr\ds u_{rs} + \half\ds^2 u_{ss}\\
+       &  + \frac{1}{6} \Big( \dr^3 \p_r^3 u + 3 \dr^2 \ds \p_r^2 \p_s u + 3 \dr\ds^2 \p_r \p_s^2 u + \ds^3 \p_s^3 u ) + ...        
+\ea
+\ese
+
+\mni
+\textbf{Even Symmetry condition.}
+Subtracting the two equations in ~\eqref{eq:TaylorCornerGhost} gives
+\ba
+  u(-\dr,-\ds) &= u(\dr,\ds)
+     - 2 (\dr u_r(0,0)  + \ds u_s(0,0)) \\
+    & - \frac{2}{6} \Big( \dr^3 \p_r^3 u + 3 \dr^2 \ds \p_r^2 \p_s u + 3 \dr\ds^2 \p_r \p_s^2 u + \ds^3 \p_s^3 u )
+    \label{eq:evenSymmetry}
+\ea
+The generalized even symmetry condition~\eqref{eq:evenSymmetry} can be used at a D-D or N-N corner.
+
+\mni 
+\textbf{D-D corner}. Here is a third order accurate condition: 
+\ba
+  & u(-\dr,-\ds) = u(\dr,\ds)
+     - 2 (\dr u_r(0,0)  + \ds u_s(0,0)) , \\
+  & u(0,s,t) = g_1(s,t), \\
+  & u(r,0,t) = g_3(s,t)
+\ea
+Note that for homogeneous BCs the condition reduces to even symmetry.
+
+\mni 
+\textbf{N-N corner}. Here is a third order accurate condition: 
+\ba
+  & u(-\dr,-\ds) = u(\dr,\ds)
+     - 2 (\dr u_r(0,0)  + \ds u_s(0,0)) ,
+\ea
+where $\p_r u$ and $\p_s u$ can be found by solving the following two Nemann conditions,
+\ba
+  & (n_1^{(1)} r_x + n_2^{(1)} r_y) \p_r u (0,s,t) + (n_1^{(1)} s_x + n_2^{(1)} s_y) \p_s u (0,s,t) = g_1(s,t), \\
+  & (n_1^{(3)} r_x + n_2^{(3)} r_y) \p_r u (r,0,t) + (n_1^{(3)} s_x + n_2^{(3)} s_y) \p_s u (r,0,t) = g_3(s,t), 
+\ea
+where $\nv^{(i)}$ is the normal to side $i$.
+Note that for homogeneous BCs the condition reduces to even symmetry.
+
+
+\bni
+\textbf{Odd Symmetry condition.}
+Adding the two equations in ~\eqref{eq:TaylorCornerGhost} gives
+\ba
+  u(-\dr,-\ds) &= 2 u(0,0) - u(\dr,\ds)
+    + 2( \half\dr^2 u_{rr} + \dr\ds u_{rs} + \half\ds^2 u_{ss} ) 
+    + ..
+\label{eq:oddSymmetry}    
+\ea
+The generalized odd symmetry condition~\eqref{eq:evenSymmetry} can be used at a D-N or N-D corner.
+
+
+\mni
+\textbf{D-N corner.}
+Take the case of a D-BC at $r=0$ and a N-BC at $s=0$.
+A fourth-order accurate condition is found from 
+\bse
+\ba
+  u(-\dr,-\ds) &= 2 u(0,0) - u(\dr,\ds)
+    + 2( \half\dr^2 \p_r^2 u + \dr\ds \p_r\p_s u + \half\ds^2 \p_s^2 u )  \label{eq:DNcorner} \\
+  & u(0,s,t) = g_1(s,t),   \\   
+  & (n_1^{(3)} r_x + n_2^{(3)} r_y) \p_r u (r,0,t) + (n_1^{(3)} s_x + n_2^{(3)} s_y) \p_s u (r,0,t) = g_3(s,t),  
+\ea
+\ese
+To compute the second-derivatives appearing in~\eqref{eq:DNcorner}
+we use derivatives of the boundary conditions \textbf{**CHECK ME**}
+\ba
+ & \p_s^2 u(0,s,t) = \p_s^2 g_1(s,t), \\
+ & \p_s u(r,0,t) = \f{g_3(s,t) - (n_1^{(3)} r_x + n_2^{(3)} r_y) \p_r u (r,0,t)}{(n_1^{(3)} s_x + n_2^{(3)} s_y)}, \\
+ & \p_r\p_s u(r,0,t) = 
+     \p_r\Big[\f{g_3(s,t) - (n_1^{(3)} r_x + n_2^{(3)} r_y) \p_r u (r,0,t)}{(n_1^{(3)} s_x + n_2^{(3)} s_y)} \Big], 
+\ea
+It remains to compute $\p_r u$ and $\p_r^2 u$. This can be found from the PDE on the boundary
+\ba
+   c^2 \Delta u (0,0,t) = \p_t^2 u(0,0,t) = 0 
+\ea 
+In curvilinear coordinates, $\Delta u = 0$ is 
+\ba   
+    c_{2,0} \p_r^2 u + c_{1,1} \p_r\p_s u + c_{0,2} \p_s^2 + c_{1,0} \p_r u + c_{0,1} \p_s u = 0 
+%  & \p_r^2 u \text{from $c^2 \Delta u(0,0) = f$, check me}
+\ea
+
+
+

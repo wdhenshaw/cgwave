@@ -15,6 +15,9 @@
 # plotStuff plotSolution.cmd -show=shapesG4O4freq44Np80 -name=shapesG4O4freq44Np80 -solution=1
 # plotStuff plotSolution.cmd -show=shapesG4O4freq43Np80 -name=shapesG4O4freq43Np80 -solution=1
 #
+#
+# plotStuff plotSolution.cmd -show=multiObjectsFreq10Np8G4Order2Deflate64 -name=multiObjectsFreq10Np8G4Order2Deflate64 -solution=1
+#
 $show="gaussianSquare.show"; $solution="-1"; $name="plot"; $field="Ey"; $emin=0; $emax=-1; $numFreq=1; $clines=0; 
 $tSave=1; $numPerTime=2; $numToSave=5; # save solution at these time intervals
 # get command line arguments

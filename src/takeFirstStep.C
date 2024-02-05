@@ -32,23 +32,20 @@ takeFirstStep( int cur, real t )
 
     assert( t==0. );
 
-    const int & debug           = dbase.get<int>("debug");
-    
-    const real & c              = dbase.get<real>("c");
-    const real & dt             = dbase.get<real>("dt");
-    const real & omega          = dbase.get<real>("omega");
-    const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
-    const Real & damp           = dbase.get<Real>("damp");
+    const int & debug                   = dbase.get<int>("debug");
+    const real & c                      = dbase.get<real>("c");
+    const real & dt                     = dbase.get<real>("dt");
+    const real & omega                  = dbase.get<real>("omega");
+    const int & orderOfAccuracy         = dbase.get<int>("orderOfAccuracy");
+    const Real & damp                   = dbase.get<Real>("damp");
+    const IntegerArray & gridIsImplicit = dbase.get<IntegerArray>("gridIsImplicit");
+
+    FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+    FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
 
     if( true || debug & 4 )
-        printF("*******  CgWave::takeFirstStep t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
+        printF("\n *******  CgWave::takeFirstStep t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
 
-
-  // const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
-  // const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");  
-
-
-    
   
     const int & addForcing = dbase.get<int>("addForcing");
     const bool twilightZone = addForcing && forcingOption==twilightZoneForcing ; 
@@ -71,19 +68,23 @@ takeFirstStep( int cur, real t )
     CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
 
   // --- Get the time-derivative at t=0 and save in up ---
+    if( debug & 1 )
+        printF("*******  CgWave::takeFirstStep; get TIME DERIVATIVE OF INITIAL CONDITIONS t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
     bool getTimeDerivative=true; 
     getInitialConditions( prev,t,getTimeDerivative );
 
 
-    if( takeImplicitFirstStep )
-    {
-    // --- implicit first step:
-    //   Save the time derivative in up, this is used in advWave
+  // if( takeImplicitFirstStep )
+  // {
+  //   // --- implicit first step:
+  //   //   Save the time derivative in up, this is used in advWave
 
-        printF("\n **** takeFirstStep: IMPLICIT FIRST STEP : save time-derivative at t=0 *****\n\n");
-        return 0;
-    }
+  //   printF("\n **** takeFirstStep: IMPLICIT FIRST STEP : save time-derivative at t=0 *****\n\n");
+  //   return 0;
+  // }
 
+      if( debug>0 )
+        printF("\n $$$$$$$ CgWave:takeFirstStep: Take First Step using Taylor Series approach $$$$$$$\n\n");
 
     const Real c2=c*c, c3=c2*c, c4=c2*c2, c6=c4*c2;
     const Real dt2=dt*dt, dt3=dt2*dt, dt4=dt3*dt, dt5=dt4*dt, dt6=dt5*dt; 
@@ -92,6 +93,15 @@ takeFirstStep( int cur, real t )
     Index I1,I2,I3;
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
+        if( gridIsImplicit(grid) && takeImplicitFirstStep )
+        {
+      // --- implicit first step:
+      //   Save the time derivative in up, this is used in advWave
+
+            printF("\n **** takeFirstStep: IMPLICIT FIRST STEP : save time-derivative at t=0 for grid=%d *****\n\n",grid);
+            continue;
+        }
+
         MappedGrid & mg = cg[grid];
         OV_GET_SERIAL_ARRAY(real,up[grid],upLocal);
         OV_GET_SERIAL_ARRAY(real,uc[grid],ucLocal);
@@ -442,9 +452,32 @@ takeFirstStep( int cur, real t )
 
     } // end for grid
 
+  if( debug & 8 )
+    {
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+            ::display(u[next][grid],sPrintF("\nAFTER FIRST-STEP, BEFORE BCs: u  on grid=%d t=%9.3e",grid,t+dt),debugFile,"%10.2e ");
+
+        fprintf(debugFile,"\n *** ERRORS AFTER TAKE FIRST STEP, BEFORE APPLY BCs\n\n");
+        getErrors( u[next], t+dt );
+    }  
+
+    if( debug & 4 )
+        printF("*******  CgWave::takeFirstStep; APPLY BOUNDARY CONDTIONS t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
+
+
     bool applyExplicitBoundaryConditions=true;
     applyBoundaryConditions( u[next],u[cur], t+dt,applyExplicitBoundaryConditions  );
     
+
+    if( debug & 8 )
+    {
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+            ::display(u[next][grid],sPrintF("\nAFTER FIRST-STEP: u  on grid=%d t=%9.3e",grid,t+dt),debugFile,"%10.2e ");
+
+        fprintf(debugFile,"\n *** ERRORS AFTER TAKE FIRST STEP AND APPLY BCs\n\n");
+        getErrors( u[next], t+dt );
+    }
+
   // u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%6.2f ");
 
 

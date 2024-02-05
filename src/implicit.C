@@ -7,6 +7,10 @@
 #include "CompositeGridOperators.h"
 #include "SparseRep.h"
 
+// forward declaration
+int coefficientsByDelta( CompositeGrid & cg, realArray & coeff, int grid, Index Rv[3], int coeffOption =4 );
+
+
 // -------- function prototypes for Fortran routines --------
 #define bcOptWave EXTERN_C_NAME(bcoptwave)
 extern "C"
@@ -174,215 +178,95 @@ int CgWave::takeImplicitStep( Real t )
         rhs.display("RHS before filling BCs");
     }
 
-
-  // uc = 0.; // ** TEST **********************************************************
-
-    const int assignBCForImplicit = 1;  // used in call to bcOptWave
-
     Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
-    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+
+  // ---- Fill boundary conditions for the implicit system ---
+    if( true )
     {
-        MappedGrid & mg = cg[grid];
-        const IntegerArray & gid = mg.gridIndexRange();
+        bool applyExplicitBoundaryConditions = false; // what should this be ? 
+        bool fillImplicitBoundaryConditions  = true;
+        applyBoundaryConditions( rhs, rhs, t, applyExplicitBoundaryConditions, fillImplicitBoundaryConditions );
+    }
+  // else
+  // {
+  //   // ** old way 
+
+  //   const int assignBCForImplicit = 1;  // used in call to bcOptWave
+  //   const IntegerArray & gridIsImplicit = dbase.get<IntegerArray>("gridIsImplicit");
         
-        OV_GET_SERIAL_ARRAY(Real,rhs[grid],rhsLocal);
-        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+  //   // assignCornerGhostPoints = true if bcOptWave -> cornerWave will assign corner ghost points
+  //   const int assignCornerGhostPoints = bcApproach==useCompatibilityBoundaryConditions ||
+  //                                       bcApproach==useLocalCompatibilityBoundaryConditions;  
+
+        
+  //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+  //   {
+  //     MappedGrid & mg = cg[grid];
+  //     const IntegerArray & gid = mg.gridIndexRange();
+            
+  //     OV_GET_SERIAL_ARRAY(Real,rhs[grid],rhsLocal);
+  //     OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
 
 
-        ForBoundary(side,axis) 
-        {
-            if( mg.boundaryCondition(side,axis)==exactBC )
-            {
-        // -- assign boundary and ghost values to be exact ---
-                if( t<=2*dt )
-                    printF("takeImplicitStep: Set knownSolution at exact boundary (side,axis,grid)=(%d,%d,%d)\n",side,axis,grid);
+  //     ForBoundary(side,axis) 
+  //     {
+  //       if( mg.boundaryCondition(side,axis)==exactBC )
+  //       {
+  //         // -- assign boundary and ghost values to be exact ---
 
-                getBoundaryIndex(gid,side,axis,I1,I2,I3);
-        // int extra=0;  // = numGhost 
-        // if( side==0 )
-        //   Iv[axis] = Range(gid(0,axis)-extra,gid(0,axis));
-        // else 
-        //   Iv[axis] = Range(gid(1,axis),gid(1,axis)+extra);
+  //         if( t<=2*dt )
+  //           printF("takeImplicitStep: Set knownSolution at exact boundary (side,axis,grid)=(%d,%d,%d), numGhost=%d\n",side,axis,grid,numGhost);
 
-                getUserDefinedKnownSolution( t, grid, rhs[grid], I1,I2,I3 );
+  //         getBoundaryIndex(gid,side,axis,I1,I2,I3,numGhost);
+  //         if( side==0 )
+  //           Iv[axis] = Range(gid(0,axis)-numGhost,gid(0,axis));
+  //         else 
+  //           Iv[axis] = Range(gid(1,axis),gid(1,axis)+numGhost);
 
-        // should we set values at ghost to zero??
+  // /* ----                    
+  //         if( t<=2*dt )
+  //           printF("takeImplicitStep: Set knownSolution at exact boundary (side,axis,grid)=(%d,%d,%d)\n",side,axis,grid);
 
-            }
-        }
+  //         getBoundaryIndex(gid,side,axis,I1,I2,I3);
+  //         // int extra=0;  // = numGhost 
+  //         // if( side==0 )
+  //         //   Iv[axis] = Range(gid(0,axis)-extra,gid(0,axis));
+  //         // else 
+  //         //   Iv[axis] = Range(gid(1,axis),gid(1,axis)+extra);
+  // ---- */
 
-    // get parameters for calling fortran
-        OV_GET_SERIAL_ARRAY(Real,uc[grid],ucLocal); // *CHECK ME*
-            IntegerArray indexRangeLocal(2,3), dimLocal(2,3), bcLocal(2,3);
-            ParallelGridUtility::getLocalIndexBoundsAndBoundaryConditions( rhs[grid],indexRangeLocal,dimLocal,bcLocal );
-            const bool isRectangular=mg.isRectangular();
-            real dx[3]={1.,1.,1.};
-            if( isRectangular )
-                mg.getDeltaX(dx);
-      // int assignKnownSolutionAtBoundaries = 0;  // changed below 
-            DataBase *pdb = &dbase;
-      // Real cfl1 = pdb->get<real>("cfl");
-      // printF(" CFL from pdb: cfl1=%g\n",cfl1);
-            int knownSolutionOption=0; // no known solution
-            if( dbase.has_key("userDefinedKnownSolutionData") )
-            {
-                DataBase & db =  dbase.get<DataBase>("userDefinedKnownSolutionData");
-                const aString & userKnownSolution = db.get<aString>("userKnownSolution");
-                if( userKnownSolution=="planeWave"  )
-                {
-                    knownSolutionOption=1;                   // this number must match in bcOptWave.bf90
-          // assignKnownSolutionAtBoundaries=1;
-                }
-                else if( userKnownSolution=="gaussianPlaneWave"  ) 
-                {
-                    knownSolutionOption=2;                   // this number must match in bcOptWave.bf90
-          // assignKnownSolutionAtBoundaries=1;  
-                }    
-                else if( userKnownSolution=="boxHelmholtz"  ) 
-                {
-                    knownSolutionOption=3;                   // this number must match in bcOptWave.bf90
-          // assignKnownSolutionAtBoundaries=1;  // not needed for square or box but is needed for cic **fix me**
-                }
-                else if( userKnownSolution=="polyPeriodic"  ) 
-                {
-                    knownSolutionOption=4;                   // this number must match in bcOptWave.bf90
-          // assignKnownSolutionAtBoundaries=1;  
-                } 
-                else
-                {
-                    knownSolutionOption=1000;  // all other user defined known solutions
-                }   
-            }
-            int addForcingBC= forcingOption==noForcing ? 0 : 1;
-            if( applyKnownSolutionAtBoundaries )
-                addForcingBC=1; 
-            int gridType = isRectangular ? 0 : 1;
-            int gridIsImplicit = 0; 
-            int numberOfComponents = 1;          // for now CgWave only has a single component 
-            int uc = 0;                          // first component
-            int ipar[] = {
-                uc                  ,            // ipar( 0)
-                numberOfComponents  ,            // ipar( 1)
-                grid                ,            // ipar( 2)
-                gridType            ,            // ipar( 3)
-                orderOfAccuracy     ,            // ipar( 4)
-                gridIsImplicit      ,            // ipar( 5)
-                twilightZone        ,            // ipar( 6)
-                np                  ,            // ipar( 7)
-                debug               ,            // ipar( 8)
-                myid                ,            // ipar( 9)
-                applyKnownSolutionAtBoundaries,  // ipar(10)
-                knownSolutionOption,             // ipar(11)
-                addForcingBC,                    // ipar(12)
-                forcingOption,                   // ipar(13)
-                useUpwindDissipation,            // ipar(14)
-                numGhost,                        // ipar(15)
-                assignBCForImplicit,             // ipar(16)
-                bcApproach,                      // ipar(17)
-                numberOfFrequencies              // ipar(18)
-                                      };
-            Real cEM2 = c;
-            if( solveHelmholtz ) 
-            {
-        // Adjust c for the EM2 absorbing BC to account for time-discretization errors
-        //   D+t (Dx ) w + A+( ... )
-                if( frequencyArraySave(0)*dt>0 )
-                {
-                    cEM2 = c*tan(frequencyArray(0)*dt/2.)/(frequencyArraySave(0)*dt/2.);
-          // printF("\n XXXXXXX cEM2=%e XXXXXXX\n\n",cEM2);
-                }
-                else
-                {
-                    if( frequencyArraySave(0)==0 )
-                        printF("WARNING: bcOpt: frequencyArraySave(0)=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",frequencyArraySave(0));
-                    if( dt<=0 )
-                        printF("WARNING: bcOpt: dt<= 0 ! dt=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",dt);
-                }
-            }           
-            real rpar[] = {
-                t                , //  rpar( 0)
-                dt               , //  rpar( 1)
-                dx[0]            , //  rpar( 2)
-                dx[1]            , //  rpar( 3)
-                dx[2]            , //  rpar( 4)
-                mg.gridSpacing(0), //  rpar( 5)
-                mg.gridSpacing(1), //  rpar( 6)
-                mg.gridSpacing(2), //  rpar( 7)
-                (real &)(dbase.get<OGFunction* >("tz")) ,        //  rpar( 8) ! pointer for exact solution -- new : 110311 
-                REAL_MIN,         //  rpar( 9)
-                c,                //  rpar(10)
-                cEM2              //  rpar(11)
-                                        };
-            real *pu = rhsLocal.getDataPointer();
-            real *pun = ucLocal.getDataPointer();
-            int *pmask = maskLocal.getDataPointer();
-            real temp, *pxy=&temp, *prsxy=&temp;
-            if( !isRectangular )
-            {
-                mg.update(MappedGrid::THEinverseVertexDerivative); 
-                #ifdef USE_PPP
-                  prsxy=mg.inverseVertexDerivative().getLocalArray().getDataPointer();
-                #else
-                  prsxy=mg.inverseVertexDerivative().getDataPointer();
-                #endif  
-            }
-            bool vertexNeeded = twilightZone || knownSolutionOption!=0;
-            if( vertexNeeded )
-            {
-                mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter ); 
-                #ifdef USE_PPP
-                  pxy=mg.vertex().getLocalArray().getDataPointer();
-                #else
-                  pxy=mg.vertex().getDataPointer();
-                #endif    
-            }
-            real *puTemp1=&temp, *puTemp2=&temp;
-            if( orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions )
-            {
-        // WE currently need work space for bcOptWave and standard CBC at order four ******************FIX ME: just make a stencil ****
-                if( !dbase.has_key("uTemp1") )
-                {
-                    RealArray & uTemp1 = dbase.put<RealArray>("uTemp1");
-                    RealArray & uTemp2 = dbase.put<RealArray>("uTemp2");
-          // -- find the grid with physical boundaries with the most points ---
-                    int numElements=0;
-                    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-                    {
-                        MappedGrid & mg = cg[grid];
-                        const IntegerArray & boundaryCondition = mg.boundaryCondition();
-                        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-                        if( max(boundaryCondition)>0 )
-                            numElements = max( numElements, maskLocal.elementCount() );
-                    }
-                    printF(">>> INFO CgWave::applyBC: allocate uTemp1 and utemp2 for order 4 CBC: numElements=%d\n",numElements);
-                    if( numElements>0 )
-                    {
-                        uTemp1.redim(numElements);
-                        uTemp2.redim(numElements);
-                    }
-                }
-                RealArray & uTemp1 = dbase.get<RealArray>("uTemp1");
-                RealArray & uTemp2 = dbase.get<RealArray>("uTemp2");
-                puTemp1 = uTemp1.getDataPointer();
-                puTemp2 = uTemp2.getDataPointer();
-            }
+  //         getUserDefinedKnownSolution( t, grid, rhs[grid], I1,I2,I3 );
 
-        int ierr=0;
-    // if( true )
-    //   ::display(bcLocal,"implicit: bcLocal","%3i ");
+  //         // should we set values at ghost to zero??
 
-        bcOptWave(mg.numberOfDimensions(),
-                            rhsLocal.getBase(0),rhsLocal.getBound(0),rhsLocal.getBase(1),rhsLocal.getBound(1),
-                            rhsLocal.getBase(2),rhsLocal.getBound(2),
-                            indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-                            *rhsLocal.getDataPointer(), *pun, *pmask, *prsxy, *pxy, *puTemp1, *puTemp2,
-                            bcLocal(0,0), frequencyArray(0),
-                            pdb, ipar[0],rpar[0], ierr );
+  //       }
+  //     }
+
+  //     // get parameters for calling fortran
+  //     OV_GET_SERIAL_ARRAY(Real,uc[grid],ucLocal); // *CHECK ME*
+  //     getBcOptParameters(rhs,rhsLocal,ucLocal);
+
+  //     int ierr=0;
+  //     // if( true )
+  //     //   ::display(bcLocal,"implicit: bcLocal","%3i ");
+
+  //     bcOptWave(mg.numberOfDimensions(),
+  //               rhsLocal.getBase(0),rhsLocal.getBound(0),rhsLocal.getBase(1),rhsLocal.getBound(1),
+  //               rhsLocal.getBase(2),rhsLocal.getBound(2),
+  //               indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
+  //               *rhsLocal.getDataPointer(), *pun, *pmask, *prsxy, *pxy, *puTemp1, *puTemp2,
+  //               bcLocal(0,0), frequencyArray(0),
+  //               pdb, ipar[0],rpar[0], ierr );
 
 
-    } // end for grid 
+  //   } // end for grid 
+  // } // end old way
 
 
+    if( debug & 16 )
+    {
+        rhs.display("RHS AFTER filling BCs");
+    }
 
   // ------- SOLVE THE IMPLICIT EQUATIONS -----
 
@@ -584,6 +468,34 @@ int CgWave::takeImplicitStep( Real t )
 ///  
 // ============================================================================================  
 
+// ------------------------------------------------------
+// Macro: FILL MATRIX WITH THE DIRICHLET OR EXACT BC
+// ------------------------------------------------------
+
+// ------------------------------------------------------
+// Macro: FILL MATRIX WITH THE NEUMANN BC
+// ------------------------------------------------------
+
+
+// ============================================================================================
+// Macro to set the extrapolation width
+// ============================================================================================
+
+
+
+// ============================================================================================
+// Macro to add foruth order correction terms to the implicit matrix
+//  
+// Add modified equation term 
+//        (L_2h)^2  
+// ============================================================================================
+
+// ============================================================================================
+// Macro to add foruth order correction terms to the implicit matrix
+//  
+// Add modified equation term 
+//        (L_2h)^2  
+// ============================================================================================
 
 // ============================================================================================
 /// \brief Form and the matrix for implicit time-stepping
@@ -616,8 +528,50 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
     const BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
 
+    FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+    FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");  
+
   // addUpwinding=false; // *********** TURN OFF FOR NOW ***************
 
+  // CHECK number of ghost points:
+  //   Order=4 + Neumann needs one extra 
+    if( orderOfAccuracy>=4  )
+    {
+        const int orderOfAccuracyInSpace = orderOfAccuracy;
+        const int minGhostNeeded = orderOfAccuracyInSpace/2 +1;
+        Range Rx=cg.numberOfDimensions();
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            MappedGrid & mg=cg[grid];
+            bool hasNeumannBC = false;
+            ForBoundary(side,axis)
+            {
+        // Check for Neumann BC's
+                if( mg.boundaryCondition(side,axis)==neumann )
+                {
+                    hasNeumannBC=true;
+                    break;
+                }
+
+            }  
+      // printF("\n **** hasNeumannBC = %d, minGhostNeeded=%d ***\n\n",hasNeumannBC,minGhostNeeded);
+
+            if( hasNeumannBC )
+            {
+                const IntegerArray & numberOfGhostPoints = mg.numberOfGhostPoints();
+                const int numGhost = min(numberOfGhostPoints(Range(0,1),Rx));
+                if( numGhost < minGhostNeeded )
+                {
+                    printF("CgWave::formImplicitTimeSteppingMatrix:ERROR: the grid does not have enough ghost points.\n"
+                    "   orderOfAccuracy=%i + Neumann Boundary Conditions needs at least %i ghost points.\n"
+                    "   You could remake the grid with more ghost points to fix this error.\n",
+                    orderOfAccuracyInSpace,minGhostNeeded);
+                    OV_ABORT("ERROR");
+                    
+                } 
+            }
+        }
+    }
 
     printF("\n ==================== FORM MATRIX FOR IMPLICIT TIME-STEPPING ===================\n");
     printF("   c=%.4g, dt=%9.3e, orderOfAccuracy=%d, orderOfAccuracyInTime=%d  bcApproach=%d\n",
@@ -720,6 +674,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
   // bool usePredefined = useMultigrid && !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
     bool usePredefined = !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
 
+    usePredefined = usePredefined && bcApproach != useCompatibilityBoundaryConditions;
 
   // We cannot use predefined if there are Cartesian grids with superGrid
     bool isAllRectangular=true;
@@ -956,8 +911,9 @@ int CgWave::formImplicitTimeSteppingMatrix()
         #define M123(m1,m2,m3) (m1+halfWidth1+width*(m2+halfWidth2+width*(m3+halfWidth3)))
     // #define M123CE(m1,m2,m3,c,e) (M123(m1,m2,m3)+CE(c,e))    
 
-        Index I1,I2,I3;
+        Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
         Index Ibv[3], &Ib1=Ibv[0], &Ib2=Ibv[1], &Ib3=Ibv[2];
+        Index Jbv[3], &Jb1=Jbv[0], &Jb2=Jbv[1], &Jb3=Jbv[2];
         Index Igv[3], &Ig1=Igv[0], &Ig2=Igv[1], &Ig3=Igv[2];
         int iv[3], &i1=iv[0], &i2=iv[1], &i3=iv[2];
         int jv[3], &j1=jv[0], &j2=jv[1], &j3=jv[2];
@@ -1029,7 +985,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
             if( gridIsImplicit(grid)==1 )
             {
-        // ----- this grid is adavnced with IMPLICIT time-stepping ----
+        // ----- this grid is advanced with IMPLICIT time-stepping ----
   
 
                 getIndex(mg.gridIndexRange(),I1,I2,I3);
@@ -1105,510 +1061,359 @@ int CgWave::formImplicitTimeSteppingMatrix()
            // Add modified equation term 
            //     (L_2h)^2
 
-                    printF("\n ***ADD Fourth-order in time coefficients to the Implicit Matrix ****\n\n");
+                    if( debug & 1 && grid<3 )
+                        printF("\n ***ADD Fourth-order in time coefficients to the Implicit Matrix ****\n\n");
 
-                    if( isRectangular )
-                    {
-            // 2D: 
-            // (Delta_2h)^2  = (D+xD-x)^2 + (D+yD-y)^2 + 2 (D+xD-x)(D+yD-y)
-            // 3D 
-            // (Delta_2h)^2  = (D+xD-x)^2 + (D+yD-y)^2 + (D+zD-z)^2 + 2 (D+xD-x)(D+yD-y) + 2 (D+xD-x)(D+zD-z)+ 2 (D+yD-y)(D+zD-z)
-
-                        Range R5 = Range(-2,2);
-                        RealArray lapSq(R5,R5,R5);
-                        lapSq = 0.;
-
-                        const Real dx4 = dx[0]*dx[0]*dx[0]*dx[0];
-                        const Real dy4 = dx[1]*dx[1]*dx[1]*dx[1];
-                        lapSq(-2,0,0) +=  1./dx4;  lapSq(0,-2,0) +=  1./dy4;
-                        lapSq(-1,0,0) += -4./dx4;  lapSq(0,-1,0) += -4./dy4;
-                        lapSq( 0,0,0) +=  6./dx4;  lapSq(0, 0,0) +=  6./dy4;
-                        lapSq( 1,0,0) += -4./dx4;  lapSq(0, 1,0) += -4./dy4;
-                        lapSq( 2,0,0) +=  1./dx4;  lapSq(0, 2,0) +=  1./dy4;
-
-                        const Real dxy2 = dx[0]*dx[0]*dx[1]*dx[1];
-                        lapSq(-1, 1,0) += 2./dxy2; lapSq(0, 1,0) +=-4./dxy2; lapSq(1, 1,0) += 2./dxy2;
-                        lapSq(-1, 0,0) +=-4./dxy2; lapSq(0, 0,0) += 8./dxy2; lapSq(1, 0,0) +=-4./dxy2;
-                        lapSq(-1,-1,0) += 2./dxy2; lapSq(0,-1,0) +=-4./dxy2; lapSq(1,-1,0) += 2./dxy2;
-
-                        if( numberOfDimensions==3 )
+                        const Real cLapSq = cImp(-1,1)*(c*dt)*(c*dt)*(c*dt)*(c*dt);  // CHECK ME   
+                        if( isRectangular )
                         {
-                            const Real dz4 = dx[2]*dx[2]*dx[2]*dx[2];
-                            lapSq(0,0,-2) +=  1./dz4;  
-                            lapSq(0,0,-1) += -4./dz4;  
-                            lapSq(0,0, 0) +=  6./dz4;  
-                            lapSq(0,0, 1) += -4./dz4;  
-                            lapSq(0,0, 2) +=  1./dz4; 
-
-                            const Real dxz2 = dx[0]*dx[0]*dx[2]*dx[2];
-                            lapSq(-1,0, 1) += 2./dxz2; lapSq(0,0, 1) +=-4./dxz2; lapSq(1,0, 1) += 2./dxz2;
-                            lapSq(-1,0, 0) +=-4./dxz2; lapSq(0,0, 0) += 8./dxz2; lapSq(1,0, 0) +=-4./dxz2;
-                            lapSq(-1,0,-1) += 2./dxz2; lapSq(0,0,-1) +=-4./dxz2; lapSq(1,0,-1) += 2./dxz2;
-
-                            Real dyz2 = dx[1]*dx[1]*dx[2]*dx[2];
-                            lapSq(0,-1, 1) += 2./dyz2; lapSq(0,0, 1) +=-4./dyz2; lapSq(0,1, 1) += 2./dyz2;
-                            lapSq(0,-1, 0) +=-4./dyz2; lapSq(0,0, 0) += 8./dyz2; lapSq(0,1, 0) +=-4./dyz2;
-                            lapSq(0,-1,-1) += 2./dyz2; lapSq(0,0,-1) +=-4./dyz2; lapSq(0,1,-1) += 2./dyz2;
-                        }
-
-            // coefficients in implicit time-stepping  
-            //  D+t D-t u =              c^2 Delta( cImp(1,0) *u^{n+1} + cImp(0,0) *u^n + cImp(-1,0)* u^{n-1} )   :  second-order coeff cImp(-1:1,0)
-            //              -(c^4*dt^2/12) Delta^2( cImp(1,1) *u^{n+1} + cImp(0,1) *u^n + cImp(-1,1)* u^{n-1}  )  :  foruth-order ceoff cImp(-1:1,1) 
-            // For accuracy the weights depend on one parameter beta2 for second-order,
-            // and a second parameter beta4 for fourth-order: (See notes in research/timeStepping/implicitTaylorSchemes.pdf)
-
-                        const Real cLapSq = cImp(-1,1)*(c*dt)*(c*dt)*(c*dt)*(c*dt);  // CHECK ME 
-                        ForStencil(m1,m2,m3)
-                        {
-                            int m  = M123(m1,m2,m3);   
-                            coeffLocal(m,I1,I2,I3) += cLapSq*lapSq(m1,m2,m3);
-                        }
-
-                    }
-                    else
-                    {
-            // OV_ABORT("implicit matrix: finish me for order=4 CURVLINEAR");
-
-                        printF("implicit matrix: order=4 CURVLINEAR : **CHECK ME**\n");
-
-                        OV_GET_SERIAL_ARRAY(Real,mg.inverseVertexDerivative(),rxLocal);
-            // macro to make the rxLocal array look 5-dimensional 
-                        #define DD(i1,i2,i3,m1,m2) rxLocal(i1,i2,i3,(m1)+numberOfDimensions*(m2))     
-
-            // ----- COMPUTE DERIVATIVES OF METRICS -----
-                        Range Rd2=numberOfDimensions*numberOfDimensions;
-                        RealArray ddx(I1,I2,I3,Rd2), ddy(I1,I2,I3,Rd2);
-                        mgop.derivative( MappedGridOperators::xDerivative,rxLocal,ddx,I1,I2,I3,Rd2);            
-                        mgop.derivative( MappedGridOperators::yDerivative,rxLocal,ddy,I1,I2,I3,Rd2);
-
-                        const int extra=1; 
-                        Index J1,J2,J3;
-                        getIndex(mg.gridIndexRange(),J1,J2,J3,extra);
-                        RealArray ddxx(J1,J2,J3,Rd2), ddxy(J1,J2,J3,Rd2), ddyy(J1,J2,J3,Rd2);          // COMPUTE THESE AT MORE POINTS FOR BELOW
-                        mgop.derivative( MappedGridOperators::xxDerivative,rxLocal,ddxx,J1,J2,J3,Rd2);            
-                        mgop.derivative( MappedGridOperators::xyDerivative,rxLocal,ddxy,J1,J2,J3,Rd2);            
-                        mgop.derivative( MappedGridOperators::yyDerivative,rxLocal,ddyy,J1,J2,J3,Rd2);             
-
-
-                        #define DDX(i1,i2,i3,m1,m2) ddx(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
-                        #define DDY(i1,i2,i3,m1,m2) ddy(i1,i2,i3,(m1)+numberOfDimensions*(m2)) 
-
-                        #define DDXX(i1,i2,i3,m1,m2) ddxx(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
-                        #define DDXY(i1,i2,i3,m1,m2) ddxy(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
-                        #define DDYY(i1,i2,i3,m1,m2) ddyy(i1,i2,i3,(m1)+numberOfDimensions*(m2)) 
-
-
-
-
-            // Define stencils for parametric derivatives 
-                        Range R5 = Range(-2,2);
-                        RealArray rrrrCoeff(R5), ssssCoeff(R5);
-                        rrrrCoeff = 0.;  ssssCoeff=0.;
-                        const Real dr4 = dr[0]*dr[0]*dr[0]*dr[0];
-                        const Real ds4 = dr[1]*dr[1]*dr[1]*dr[1];
-            // (D+D-)^2 stencil 
-                        rrrrCoeff(-2) =  1./dr4;  ssssCoeff(-2) =  1./ds4;
-                        rrrrCoeff(-1) = -4./dr4;  ssssCoeff(-1) = -4./ds4;
-                        rrrrCoeff( 0) =  6./dr4;  ssssCoeff( 0) =  6./ds4;
-                        rrrrCoeff( 1) = -4./dr4;  ssssCoeff( 1) = -4./ds4;
-                        rrrrCoeff( 2) =  1./dr4;  ssssCoeff( 2) =  1./ds4;            
-  
-                        RealArray rrrCoeff(R5), sssCoeff(R5);
-                        rrrCoeff=0.; sssCoeff=0.;
-            // D0(D+D-) stencil 
-                        rrrCoeff(-2) = -1./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff(-2) = -1./(2.*dr[1]*dr[1]*dr[1]);
-                        rrrCoeff(-1) = +2./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff(-1) = +2./(2.*dr[1]*dr[1]*dr[1]);
-                        rrrCoeff( 0) =  0.;                         sssCoeff( 0) =  0.;    
-                        rrrCoeff( 1) = -2./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff( 1) = -2./(2.*dr[1]*dr[1]*dr[1]);
-                        rrrCoeff( 2) =  1./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff( 2) =  1./(2.*dr[1]*dr[1]*dr[1]);
-
-                        RealArray rrCoeff(R5), ssCoeff(R5);
-                        rrCoeff=0.; ssCoeff=0.;
-            // D+D-
-                        rrCoeff(-1) = 1./(dr[0]*dr[0]); ssCoeff(-1) = 1./(dr[1]*dr[1]); 
-                        rrCoeff( 0) =-2./(dr[0]*dr[0]); ssCoeff( 0) =-2./(dr[1]*dr[1]); 
-                        rrCoeff( 1) = 1./(dr[0]*dr[0]); ssCoeff( 1) = 1./(dr[1]*dr[1]); 
-
-                        RealArray rCoeff(R5), sCoeff(R5);
-                        rCoeff=0.; sCoeff=0.;
-            // Dz stencil 
-                        rCoeff(-1) = -1./(2.*dr[0]); sCoeff(-1) = -1./(2.*dr[1]); 
-                        rCoeff( 0) =  0.;            sCoeff( 0) =  0.;
-                        rCoeff( 1) =  1./(2.*dr[0]); sCoeff( 1) =  1./(2.*dr[1]); 
-
-            // Identity stencil 
-                        RealArray iCoeff(R5);
-                        iCoeff=0.;
-                        iCoeff(0)=1.; 
-
-                        const Real cLapSq = cImp(-1,1)*(c*dt)*(c*dt)*(c*dt)*(c*dt);
-                        if( numberOfDimensions==2 )
-                        {      
-                            RealArray ddxxx(I1,I2,I3,Rd2), ddxyy(I1,I2,I3,Rd2), ddyyy(I1,I2,I3,Rd2);
-
-              // Operators have no third x derivative :(
-              // Take x derivative of xx derivative 
-                            for( int dir=0; dir<=Rd2.getBound(); dir++ )
+              // 2D: 
+              // (Delta_2h)^2  = (D+xD-x)^2 + (D+yD-y)^2 + 2 (D+xD-x)(D+yD-y)
+              // 3D 
+              // (Delta_2h)^2  = (D+xD-x)^2 + (D+yD-y)^2 + (D+zD-z)^2 + 2 (D+xD-x)(D+yD-y) + 2 (D+xD-x)(D+zD-z)+ 2 (D+yD-y)(D+zD-z)
+                            Range R5 = Range(-2,2);
+                            RealArray lapSq(R5,R5,R5);
+                            lapSq = 0.;
+                            const Real dx4 = dx[0]*dx[0]*dx[0]*dx[0];
+                            const Real dy4 = dx[1]*dx[1]*dx[1]*dx[1];
+                            lapSq(-2,0,0) +=  1./dx4;  lapSq(0,-2,0) +=  1./dy4;
+                            lapSq(-1,0,0) += -4./dx4;  lapSq(0,-1,0) += -4./dy4;
+                            lapSq( 0,0,0) +=  6./dx4;  lapSq(0, 0,0) +=  6./dy4;
+                            lapSq( 1,0,0) += -4./dx4;  lapSq(0, 1,0) += -4./dy4;
+                            lapSq( 2,0,0) +=  1./dx4;  lapSq(0, 2,0) +=  1./dy4;
+                            const Real dxy2 = dx[0]*dx[0]*dx[1]*dx[1];
+                            lapSq(-1, 1,0) += 2./dxy2; lapSq(0, 1,0) +=-4./dxy2; lapSq(1, 1,0) += 2./dxy2;
+                            lapSq(-1, 0,0) +=-4./dxy2; lapSq(0, 0,0) += 8./dxy2; lapSq(1, 0,0) +=-4./dxy2;
+                            lapSq(-1,-1,0) += 2./dxy2; lapSq(0,-1,0) +=-4./dxy2; lapSq(1,-1,0) += 2./dxy2;
+                            if( numberOfDimensions==3 )
                             {
-                // rxxx.x
-                                ddxxx(I1,I2,I3,dir) = DD(I1,I2,I3,0,0)*( ddxx(I1+1,I2,I3,dir) - ddxx(I1-1,I2,I3,dir) )/(2.*dr[0])
-                                                                          +DD(I1,I2,I3,1,0)*( ddxx(I1,I2+1,I3,dir) - ddxx(I1,I2-1,I3,dir) )/(2.*dr[1]);
-
-                // rxyy.x 
-                                ddxyy(I1,I2,I3,dir) = DD(I1,I2,I3,0,0)*( ddyy(I1+1,I2,I3,dir) - ddyy(I1-1,I2,I3,dir) )/(2.*dr[0])
-                                                                          +DD(I1,I2,I3,1,0)*( ddyy(I1,I2+1,I3,dir) - ddyy(I1,I2-1,I3,dir) )/(2.*dr[1]);                                    
-
-                // rxyy.y
-                                ddyyy(I1,I2,I3,dir) = DD(I1,I2,I3,0,1)*( ddyy(I1+1,I2,I3,dir) - ddyy(I1-1,I2,I3,dir) )/(2.*dr[0])
-                                                                          +DD(I1,I2,I3,1,1)*( ddyy(I1,I2+1,I3,dir) - ddyy(I1,I2-1,I3,dir) )/(2.*dr[1]);  
-                                                                                                                                                    
-                            }  
-
-                            #define DDXXX(i1,i2,i3,m1,m2) ddxxx(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
-                            #define DDXYY(i1,i2,i3,m1,m2) ddxyy(i1,i2,i3,(m1)+numberOfDimensions*(m2))   
-                            #define DDYYY(i1,i2,i3,m1,m2) ddyyy(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
-
-                                                            
-                            FOR_3D(i1,i2,i3,I1,I2,I3) // loop over points on the domain
-                            {
-                                if( maskLocal(i1,i2,i3)>0 )
-                                {
-                                    Real rx    =    DD(i1,i2,i3,0,0);
-                                    Real ry    =    DD(i1,i2,i3,0,1);
-                                    Real rxx   =   DDX(i1,i2,i3,0,0);
-                                    Real rxy   =   DDY(i1,i2,i3,0,0);
-                                    Real ryy   =   DDY(i1,i2,i3,0,1);  // ry.y
-                                    Real rxxx  =  DDXX(i1,i2,i3,0,0);
-                                    Real rxxy  =  DDXY(i1,i2,i3,0,0);  // rx.xy
-                                    Real rxyy  =  DDYY(i1,i2,i3,0,0);  // rx.yy
-                                    Real ryyy  =  DDYY(i1,i2,i3,0,1);  // ry.yy
-                                    Real rxxxx = DDXXX(i1,i2,i3,0,0);  // rx.xxx
-                                    Real rxxyy = DDXYY(i1,i2,i3,0,1);  // ry.xyy
-                                    Real ryyyy = DDYYY(i1,i2,i3,0,1);  // ry.yyy   
-
-                                    Real sx    =    DD(i1,i2,i3,1,0);
-                                    Real sy    =    DD(i1,i2,i3,1,1);
-                                    Real sxx   =   DDX(i1,i2,i3,1,0);
-                                    Real sxy   =   DDY(i1,i2,i3,1,0);
-                                    Real syy   =   DDY(i1,i2,i3,1,1);  
-                                    Real sxxx  =  DDXX(i1,i2,i3,1,0);
-                                    Real sxxy  =  DDXY(i1,i2,i3,1,0);
-                                    Real sxyy  =  DDYY(i1,i2,i3,1,0);  // sx.yy
-                                    Real syyy  =  DDYY(i1,i2,i3,1,1);  
-                                    Real sxxxx = DDXXX(i1,i2,i3,1,0);  // sx.xxx
-                                    Real sxxyy = DDXYY(i1,i2,i3,1,1);  // sy.xyy
-                                    Real syyyy = DDYYY(i1,i2,i3,1,1);  // sy.yyy                                                       
-
-                  // ---- COEFFICIENTS OF LAPLACIAN SQUARED  : from laplacianCoefficients.mpl ----
-                                    Real urrrr = pow(rx, 0.4e1) + 0.2e1 * ry * ry * rx * rx + pow(ry, 0.4e1);
-                                    Real urrrs = 0.4e1 * pow(rx, 0.3e1) * sx + 0.4e1 * pow(ry, 0.3e1) * sy + 0.2e1 * ry * (sy * rx * rx + 0.2e1 * ry * sx * rx) + 0.2e1 * sy * ry * rx * rx;
-                                    Real urrss = 6 * rx * rx * sx * sx + 6 * ry * ry * sy * sy + 2 * ry * (2 * sy * sx * rx + ry * sx * sx) + 2 * sy * (sy * rx * rx + 2 * ry * sx * rx);
-                                    Real ursss = 0.4e1 * rx * pow(sx, 0.3e1) + 0.4e1 * ry * pow(sy, 0.3e1) + 0.2e1 * ry * sy * sx * sx + 0.2e1 * sy * (0.2e1 * sy * sx * rx + ry * sx * sx);
-                                    Real ussss = pow(sx, 0.4e1) + 0.2e1 * sy * sy * sx * sx + pow(sy, 0.4e1);
-                                    Real urrr = 6 * rx * rx * rxx + 6 * ry * ry * ryy + 2 * ry * (2 * rxy * rx + ry * rxx) + 2 * ryy * rx * rx + 4 * ry * rxy * rx;
-                                    Real urrs = ry * (3 * syy * ry + 3 * sy * ryy) + 7 * sy * ry * ryy + ry * (2 * syy * ry + 2 * sy * ryy) + syy * ry * ry + 2 * ry * (2 * sxy * rx + sy * rxx + 2 * sx * rxy + ry * sxx) + 2 * sy * (2 * rxy * rx + ry * rxx) + 4 * ryy * sx * rx + 2 * ry * (2 * sxy * rx + 2 * sx * rxy) + 2 * syy * rx * rx + 4 * sy * rxy * rx + rx * (3 * sxx * rx + 3 * sx * rxx) + 7 * sx * rx * rxx + rx * (2 * sxx * rx + 2 * sx * rxx) + sxx * rx * rx;
-                                    Real urss = 7 * ry * sy * syy + sy * (3 * syy * ry + 3 * sy * ryy) + ryy * sy * sy + sy * (2 * syy * ry + 2 * sy * ryy) + 2 * ry * (2 * sx * sxy + sxx * sy) + 2 * sy * (2 * sxy * rx + sy * rxx + 2 * sx * rxy + ry * sxx) + 2 * ryy * sx * sx + 4 * ry * sx * sxy + 4 * syy * sx * rx + 2 * sy * (2 * sxy * rx + 2 * sx * rxy) + 7 * rx * sx * sxx + sx * (3 * sxx * rx + 3 * sx * rxx) + rxx * sx * sx + sx * (2 * sxx * rx + 2 * sx * rxx);
-                                    Real usss = 6 * sx * sx * sxx + 6 * sy * sy * syy + 2 * sy * (2 * sx * sxy + sxx * sy) + 2 * syy * sx * sx + 4 * sy * sx * sxy;
-                                    Real urr = 4 * rx * rxxx + 4 * rxyy * rx + 3 * rxx * rxx + 2 * ryy * rxx + 4 * ry * rxxy + 4 * rxy * rxy + 4 * ry * ryyy + 3 * ryy * ryy;
-                                    Real urs = 4 * sxxx * rx + 4 * sxyy * rx + 6 * sxx * rxx + 2 * syy * rxx + 4 * sx * rxxx + 4 * sy * rxxy + 8 * sxy * rxy + 4 * sx * rxyy + 4 * ry * sxxy + 4 * syyy * ry + 2 * ryy * sxx + 6 * syy * ryy + 4 * sy * ryyy;
-                                    Real uss = 4 * sx * sxxx + 4 * sx * sxyy + 3 * sxx * sxx + 2 * sxx * syy + 4 * sxxy * sy + 4 * sxy * sxy + 4 * sy * syyy + 3 * syy * syy;
-                                    Real ur = rxxxx + 2 * rxxyy + ryyyy;
-                                    Real us = sxxxx + 2 * sxxyy + syyyy;
-
-                  // printF(" (i1,i2)=(%d,%d) urrrr=%g, urrrs=%g, urrss=%g, ursss=%g, ussss=%g, urrr=%g urrs=%g urss=%g urr=%g urs=%g uss=%g ur=%g us=%g\n",
-                  //   urrrr,urrrs,urrss,ursss,ussss,urrr,urrs,urss,urss,usss,urr,urs,uss,ur,us);
-
-                                    ForStencil(m1,m2,m3)
-                                    {
-                                        int m  = M123(m1,m2,m3);   
-                                        coeffLocal(m,i1,i2,i3) += 
-                                                                        cLapSq*(  urrrr*rrrrCoeff(m1)*   iCoeff(m2) 
-                                                                                        + urrrs* rrrCoeff(m1)*   sCoeff(m2)
-                                                                                        + urrss*  rrCoeff(m1)*  ssCoeff(m2)
-                                                                                        + ursss*   rCoeff(m1)* sssCoeff(m2)
-                                                                                        + ussss*   iCoeff(m1)*ssssCoeff(m2)
-                                                                                        + urrr * rrrCoeff(m1)*   iCoeff(m2)
-                                                                                        + urrs *  rrCoeff(m1)*   sCoeff(m2)
-                                                                                        + urss *   rCoeff(m1)*  ssCoeff(m2)
-                                                                                        + usss *   iCoeff(m1)* sssCoeff(m2)
-                                                                                        + urr  *  rrCoeff(m1)*   iCoeff(m2)
-                                                                                        + urs  *   rCoeff(m1)*   sCoeff(m2)
-                                                                                        + uss  *   iCoeff(m1)*  ssCoeff(m2)
-                                                                                        + ur   *   rCoeff(m1)*   iCoeff(m2)
-                                                                                        + us   *   iCoeff(m1)*   sCoeff(m2)
-                                                                                        );
-                                    }
-                                }
+                                const Real dz4 = dx[2]*dx[2]*dx[2]*dx[2];
+                                lapSq(0,0,-2) +=  1./dz4;  
+                                lapSq(0,0,-1) += -4./dz4;  
+                                lapSq(0,0, 0) +=  6./dz4;  
+                                lapSq(0,0, 1) += -4./dz4;  
+                                lapSq(0,0, 2) +=  1./dz4; 
+                                const Real dxz2 = dx[0]*dx[0]*dx[2]*dx[2];
+                                lapSq(-1,0, 1) += 2./dxz2; lapSq(0,0, 1) +=-4./dxz2; lapSq(1,0, 1) += 2./dxz2;
+                                lapSq(-1,0, 0) +=-4./dxz2; lapSq(0,0, 0) += 8./dxz2; lapSq(1,0, 0) +=-4./dxz2;
+                                lapSq(-1,0,-1) += 2./dxz2; lapSq(0,0,-1) +=-4./dxz2; lapSq(1,0,-1) += 2./dxz2;
+                                Real dyz2 = dx[1]*dx[1]*dx[2]*dx[2];
+                                lapSq(0,-1, 1) += 2./dyz2; lapSq(0,0, 1) +=-4./dyz2; lapSq(0,1, 1) += 2./dyz2;
+                                lapSq(0,-1, 0) +=-4./dyz2; lapSq(0,0, 0) += 8./dyz2; lapSq(0,1, 0) +=-4./dyz2;
+                                lapSq(0,-1,-1) += 2./dyz2; lapSq(0,0,-1) +=-4./dyz2; lapSq(0,1,-1) += 2./dyz2;
                             }
-
+              // coefficients in implicit time-stepping  
+              //  D+t D-t u =              c^2 Delta( cImp(1,0) *u^{n+1} + cImp(0,0) *u^n + cImp(-1,0)* u^{n-1} )   :  second-order coeff cImp(-1:1,0)
+              //              -(c^4*dt^2/12) Delta^2( cImp(1,1) *u^{n+1} + cImp(0,1) *u^n + cImp(-1,1)* u^{n-1}  )  :  fourth-order ceoff cImp(-1:1,1) 
+              // For accuracy the weights depend on one parameter beta2 for second-order,
+              // and a second parameter beta4 for fourth-order: (See notes in research/timeStepping/implicitTaylorSchemes.pdf)
+                            ForStencil(m1,m2,m3)
+                            {
+                                int m  = M123(m1,m2,m3);   
+                                coeffLocal(m,I1,I2,I3) += cLapSq*lapSq(m1,m2,m3);
+                            }
                         }
                         else
                         {
-              // --------------- THREE DIMENSIONS ----------------
-
-                            RealArray rxza(I1,I2,I3,Rd2), ddy(I1,I2,I3,Rd2);
-                            mgop.derivative( MappedGridOperators::zDerivative,rxLocal,rxza,I1,I2,I3,Rd2);            
-
-                            #define DDZ(i1,i2,i3,m1,m2) rxza(i1,i2,i3,(m1)+numberOfDimensions*(m2))
-
-                            const int extra=1; 
-                            Index J1,J2,J3;
-                            getIndex(mg.gridIndexRange(),J1,J2,J3,extra);
-                            RealArray ddxz(J1,J2,J3,Rd2), ddyz(J1,J2,J3,Rd2), ddzz(J1,J2,J3,Rd2);          // COMPUTE THESE AT MORE POINTS FOR BELOW
-                            mgop.derivative( MappedGridOperators::xzDerivative,rxLocal,ddxz,J1,J2,J3,Rd2);            
-                            mgop.derivative( MappedGridOperators::yzDerivative,rxLocal,ddyz,J1,J2,J3,Rd2);            
-                            mgop.derivative( MappedGridOperators::zzDerivative,rxLocal,ddzz,J1,J2,J3,Rd2);             
-
-                            #define DDXZ(i1,i2,i3,m1,m2) ddxz(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
-                            #define DDYZ(i1,i2,i3,m1,m2) ddyz(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
-                            #define DDZZ(i1,i2,i3,m1,m2) ddzz(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
-
-                            RealArray ddxxx(I1,I2,I3,Rd2), ddxyy(I1,I2,I3,Rd2), ddyyy(I1,I2,I3,Rd2);
-                            RealArray ddxzz(I1,I2,I3,Rd2), ddzzz(I1,I2,I3,Rd2), ddyzz(I1,I2,I3,Rd2);
-
-              // Operators have no third x derivative :(
-              // Take x derivative of xx derivative 
-                            for( int dir=0; dir<=Rd2.getBound(); dir++ )
+              // OV_ABORT("implicit matrix: finish me for order=4 CURVLINEAR");
+                            if( debug & 1 )
+                                printF("implicit matrix: order=4 CURVLINEAR: ADD (Lap_2h)^2 correction term\n");
+              // OV_GET_SERIAL_ARRAY(Real,lapSqCoeff[grid],lapSqCoeffLocal);  // for testing
+                            OV_GET_SERIAL_ARRAY(Real,mg.inverseVertexDerivative(),rxLocal);
+              // macro to make the rxLocal array look 5-dimensional 
+                            #define DD(i1,i2,i3,m1,m2) rxLocal(i1,i2,i3,(m1)+numberOfDimensions*(m2)) 
+              // See advWaveStencil.bf90
+              // ! -- Coefficients in the Laplacian (scaled)
+              // c200(i1,i2,i3) = (rx**2 + ry**2   )*dr1i**2
+              // c110(i1,i2,i3) = 2.*(rx*sx + ry*sy)*dr1i*dr2i
+              // c020(i1,i2,i3) = (sx**2 + sy**2   )*dr2i**2
+              // c100(i1,i2,i3) = (rxx + ryy       )*dr1i
+              // c010(i1,i2,i3) = (sxx + syy       )*dr2i 
+                            if( numberOfDimensions==2 )
                             {
-                // rxxx.x
-                                ddxxx(I1,I2,I3,dir) = DD(I1,I2,I3,0,0)*( ddxx(I1+1,I2,I3,dir) - ddxx(I1-1,I2,I3,dir) )/(2.*dr[0])
-                                                                          +DD(I1,I2,I3,1,0)*( ddxx(I1,I2+1,I3,dir) - ddxx(I1,I2-1,I3,dir) )/(2.*dr[1])
-                                                                          +DD(I1,I2,I3,2,0)*( ddxx(I1,I2,I3+1,dir) - ddxx(I1,I2,I3-1,dir) )/(2.*dr[2]);
-
-                // rxyy.x 
-                                ddxyy(I1,I2,I3,dir) = DD(I1,I2,I3,0,0)*( ddyy(I1+1,I2,I3,dir) - ddyy(I1-1,I2,I3,dir) )/(2.*dr[0])
-                                                                          +DD(I1,I2,I3,1,0)*( ddyy(I1,I2+1,I3,dir) - ddyy(I1,I2-1,I3,dir) )/(2.*dr[1])
-                                                                          +DD(I1,I2,I3,2,0)*( ddyy(I1,I2,I3+1,dir) - ddyy(I1,I2,I3-1,dir) )/(2.*dr[2]);
-
-
-                // rxyy.y
-                                ddyyy(I1,I2,I3,dir) = DD(I1,I2,I3,0,1)*( ddyy(I1+1,I2,I3,dir) - ddyy(I1-1,I2,I3,dir) )/(2.*dr[0])
-                                                                          +DD(I1,I2,I3,1,1)*( ddyy(I1,I2+1,I3,dir) - ddyy(I1,I2-1,I3,dir) )/(2.*dr[1])
-                                                                          +DD(I1,I2,I3,2,1)*( ddyy(I1,I2,I3+1,dir) - ddyy(I1,I2,I3-1,dir) )/(2.*dr[2]);
-
-                // rxzz.x 
-                                ddxzz(I1,I2,I3,dir) = DD(I1,I2,I3,0,0)*( ddzz(I1+1,I2,I3,dir) - ddzz(I1-1,I2,I3,dir) )/(2.*dr[0])
-                                                                          +DD(I1,I2,I3,1,0)*( ddzz(I1,I2+1,I3,dir) - ddzz(I1,I2-1,I3,dir) )/(2.*dr[1])
-                                                                          +DD(I1,I2,I3,2,0)*( ddzz(I1,I2,I3+1,dir) - ddzz(I1,I2,I3-1,dir) )/(2.*dr[2]);
-
-                // rxzz.y 
-                                ddyzz(I1,I2,I3,dir) = DD(I1,I2,I3,0,1)*( ddzz(I1+1,I2,I3,dir) - ddzz(I1-1,I2,I3,dir) )/(2.*dr[0])
-                                                                          +DD(I1,I2,I3,1,1)*( ddzz(I1,I2+1,I3,dir) - ddzz(I1,I2-1,I3,dir) )/(2.*dr[1])
-                                                                          +DD(I1,I2,I3,2,1)*( ddzz(I1,I2,I3+1,dir) - ddzz(I1,I2,I3-1,dir) )/(2.*dr[2]);
-
-                // rxzz.z
-                                ddzzz(I1,I2,I3,dir) = DD(I1,I2,I3,0,2)*( ddzz(I1+1,I2,I3,dir) - ddzz(I1-1,I2,I3,dir) )/(2.*dr[0])
-                                                                        +DD(I1,I2,I3,1,2)*( ddzz(I1,I2+1,I3,dir) - ddzz(I1,I2-1,I3,dir) )/(2.*dr[1])
-                                                                        +DD(I1,I2,I3,2,2)*( ddzz(I1,I2,I3+1,dir) - ddzz(I1,I2,I3-1,dir) )/(2.*dr[2]);
-
-                            } 
-
-                            #define DDXXX(i1,i2,i3,m1,m2) ddxxx(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
-                            #define DDXYY(i1,i2,i3,m1,m2) ddxyy(i1,i2,i3,(m1)+numberOfDimensions*(m2))   
-                            #define DDYYY(i1,i2,i3,m1,m2) ddyyy(i1,i2,i3,(m1)+numberOfDimensions*(m2)) 
-                            #define DDXZZ(i1,i2,i3,m1,m2) ddxzz(i1,i2,i3,(m1)+numberOfDimensions*(m2))   
-                            #define DDZZZ(i1,i2,i3,m1,m2) ddzzz(i1,i2,i3,(m1)+numberOfDimensions*(m2))   
-                            #define DDYZZ(i1,i2,i3,m1,m2) ddyzz(i1,i2,i3,(m1)+numberOfDimensions*(m2))   
-
-                            RealArray ttttCoeff(R5);
-                            ttttCoeff = 0.; 
-                            const Real dt4 = dr[2]*dr[2]*dr[2]*dr[2];
-              // (D+D-)^2 stencil 
-                            ttttCoeff(-2) =  1./dt4; 
-                            ttttCoeff(-1) = -4./dt4; 
-                            ttttCoeff( 0) =  6./dt4; 
-                            ttttCoeff( 1) = -4./dt4; 
-                            ttttCoeff( 2) =  1./dt4;             
-      
-                            RealArray tttCoeff(R5);
-                            tttCoeff=0.; 
-              // D0(D+D-) stencil 
-                            tttCoeff(-2) = -1./(2.*dr[2]*dr[2]*dr[2]); 
-                            tttCoeff(-1) = +2./(2.*dr[2]*dr[2]*dr[2]); 
-                            tttCoeff( 0) =  0.;                        
-                            tttCoeff( 1) = -2./(2.*dr[2]*dr[2]*dr[2]); 
-                            tttCoeff( 2) =  1./(2.*dr[2]*dr[2]*dr[2]); 
-
-                            RealArray ttCoeff(R5);
-                            ttCoeff=0.;
-              // D+D-
-                            ttCoeff(-1) = 1./(dr[2]*dr[2]);
-                            ttCoeff( 0) =-2./(dr[2]*dr[2]);
-                            ttCoeff( 1) = 1./(dr[2]*dr[2]);
-
-                            RealArray tCoeff(R5);
-                            tCoeff=0.; 
-              // Dz stencil 
-                            tCoeff(-1) = -1./(2.*dr[2]);
-                            tCoeff( 0) =  0.;           
-                            tCoeff( 1) =  1./(2.*dr[2]);            
-
-                            FOR_3D(i1,i2,i3,I1,I2,I3) // loop over points on the domain
-                            {
-                                if( maskLocal(i1,i2,i3)>0 )
+                                Index J1,J2,J3;
+                                int extra=1;
+                                getIndex(mg.gridIndexRange(),J1,J2,J3,extra);
+                                RealArray c200(J1,J2,J3), c110(J1,J2,J3), c020(J1,J2,J3), c100(J1,J2,J3), c010(J1,J2,J3);
+                // -- evaluate the SCALED coefficients of the Laplacian:
+                //    Delta = c200*Delta+r Delta-r + c110*Delta0r Delta0s + ...
+                // SEE ALSO
+                // research/compatibility/
+                //     lcbcDiff.mpl       : defines Qh 
+                //     writeLcbcFiles.mpl : 
+                                FOR_3D(i1,i2,i3,J1,J2,J3)
                                 {
-                                        Real rx     =     DD(i1,i2,i3,0,0);
-                                        Real ry     =     DD(i1,i2,i3,0,1);
-                                        Real rz     =     DD(i1,i2,i3,0,2);
-                                        Real rxx    =    DDX(i1,i2,i3,0,0);
-                                        Real rxy    =    DDX(i1,i2,i3,0,1);  // .xy 
-                                        Real rxz    =    DDX(i1,i2,i3,0,2);  // .xz
-                                        Real ryy    =    DDY(i1,i2,i3,0,1);  // .yy
-                                        Real ryz    =    DDY(i1,i2,i3,0,2);  // .yz                 
-                                        Real rzz    =    DDZ(i1,i2,i3,0,2);  // .zz
-                                        Real rxxx   =   DDXX(i1,i2,i3,0,0);  // .xxx
-                                        Real rxxy   =   DDXX(i1,i2,i3,0,1);  // .xxy
-                                        Real rxyy   =   DDYY(i1,i2,i3,0,0);  // .xyy
-                                        Real ryyy   =   DDYY(i1,i2,i3,0,1);  // .yyy
-                                        Real rxxz   =   DDXX(i1,i2,i3,0,2);  // .xxz
-                                        Real rxzz   =   DDZZ(i1,i2,i3,0,1);  // .xzz
-                                        Real rzzz   =   DDZZ(i1,i2,i3,0,2);  // .zzz
-                                        Real ryyz   =   DDYY(i1,i2,i3,0,2);  // .yyz
-                                        Real ryzz   =   DDZZ(i1,i2,i3,0,1);  // .yzz
-                                        Real rxxxx  =  DDXXX(i1,i2,i3,0,0);  // .xxxx
-                                        Real rxxyy  =  DDXYY(i1,i2,i3,0,0);  // .xxyy
-                                        Real ryyyy  =  DDYYY(i1,i2,i3,0,1);  // .yyy
-                                        Real rxxzz  =  DDXZZ(i1,i2,i3,0,0);  // .xxzz
-                                        Real rzzzz  =  DDZZZ(i1,i2,i3,0,2);  // .zzzz
-                                        Real ryyzz  =  DDYZZ(i1,i2,i3,0,1);  // .yyzz                        
-                                        Real sx     =     DD(i1,i2,i3,1,0);
-                                        Real sy     =     DD(i1,i2,i3,1,1);
-                                        Real sz     =     DD(i1,i2,i3,1,2);
-                                        Real sxx    =    DDX(i1,i2,i3,1,0);
-                                        Real sxy    =    DDX(i1,i2,i3,1,1);  // .xy 
-                                        Real sxz    =    DDX(i1,i2,i3,1,2);  // .xz
-                                        Real syy    =    DDY(i1,i2,i3,1,1);  // .yy
-                                        Real syz    =    DDY(i1,i2,i3,1,2);  // .yz                 
-                                        Real szz    =    DDZ(i1,i2,i3,1,2);  // .zz
-                                        Real sxxx   =   DDXX(i1,i2,i3,1,0);  // .xxx
-                                        Real sxxy   =   DDXX(i1,i2,i3,1,1);  // .xxy
-                                        Real sxyy   =   DDYY(i1,i2,i3,1,0);  // .xyy
-                                        Real syyy   =   DDYY(i1,i2,i3,1,1);  // .yyy
-                                        Real sxxz   =   DDXX(i1,i2,i3,1,2);  // .xxz
-                                        Real sxzz   =   DDZZ(i1,i2,i3,1,1);  // .xzz
-                                        Real szzz   =   DDZZ(i1,i2,i3,1,2);  // .zzz
-                                        Real syyz   =   DDYY(i1,i2,i3,1,2);  // .yyz
-                                        Real syzz   =   DDZZ(i1,i2,i3,1,1);  // .yzz
-                                        Real sxxxx  =  DDXXX(i1,i2,i3,1,0);  // .xxxx
-                                        Real sxxyy  =  DDXYY(i1,i2,i3,1,0);  // .xxyy
-                                        Real syyyy  =  DDYYY(i1,i2,i3,1,1);  // .yyy
-                                        Real sxxzz  =  DDXZZ(i1,i2,i3,1,0);  // .xxzz
-                                        Real szzzz  =  DDZZZ(i1,i2,i3,1,2);  // .zzzz
-                                        Real syyzz  =  DDYZZ(i1,i2,i3,1,1);  // .yyzz                        
-                                        Real tx     =     DD(i1,i2,i3,2,0);
-                                        Real ty     =     DD(i1,i2,i3,2,1);
-                                        Real tz     =     DD(i1,i2,i3,2,2);
-                                        Real txx    =    DDX(i1,i2,i3,2,0);
-                                        Real txy    =    DDX(i1,i2,i3,2,1);  // .xy 
-                                        Real txz    =    DDX(i1,i2,i3,2,2);  // .xz
-                                        Real tyy    =    DDY(i1,i2,i3,2,1);  // .yy
-                                        Real tyz    =    DDY(i1,i2,i3,2,2);  // .yz                 
-                                        Real tzz    =    DDZ(i1,i2,i3,2,2);  // .zz
-                                        Real txxx   =   DDXX(i1,i2,i3,2,0);  // .xxx
-                                        Real txxy   =   DDXX(i1,i2,i3,2,1);  // .xxy
-                                        Real txyy   =   DDYY(i1,i2,i3,2,0);  // .xyy
-                                        Real tyyy   =   DDYY(i1,i2,i3,2,1);  // .yyy
-                                        Real txxz   =   DDXX(i1,i2,i3,2,2);  // .xxz
-                                        Real txzz   =   DDZZ(i1,i2,i3,2,1);  // .xzz
-                                        Real tzzz   =   DDZZ(i1,i2,i3,2,2);  // .zzz
-                                        Real tyyz   =   DDYY(i1,i2,i3,2,2);  // .yyz
-                                        Real tyzz   =   DDZZ(i1,i2,i3,2,1);  // .yzz
-                                        Real txxxx  =  DDXXX(i1,i2,i3,2,0);  // .xxxx
-                                        Real txxyy  =  DDXYY(i1,i2,i3,2,0);  // .xxyy
-                                        Real tyyyy  =  DDYYY(i1,i2,i3,2,1);  // .yyy
-                                        Real txxzz  =  DDXZZ(i1,i2,i3,2,0);  // .xxzz
-                                        Real tzzzz  =  DDZZZ(i1,i2,i3,2,2);  // .zzzz
-                                        Real tyyzz  =  DDYZZ(i1,i2,i3,2,1);  // .yyzz                        
-
-                  // ---- COEFFICIENTS OF 3D LAPLACIAN SQUARED : from laplacianCoefficients.mpl ----
-                                    Real urrrr = pow(rx, 0.4e1) + 0.2e1 * ry * ry * rx * rx + 0.2e1 * rz * rz * rx * rx + pow(ry, 0.4e1) + 0.2e1 * rz * rz * ry * ry + pow(rz, 0.4e1);
-                                    Real urrrs = 0.4e1 * pow(rx, 0.3e1) * sx + 0.4e1 * pow(rz, 0.3e1) * sz + 0.2e1 * rz * (sz * ry * ry + 0.2e1 * rz * sy * ry) + 0.2e1 * sz * rz * ry * ry + 0.2e1 * rz * (sz * rx * rx + 0.2e1 * rz * sx * rx) + 0.2e1 * sz * rz * rx * rx + 0.4e1 * pow(ry, 0.3e1) * sy + 0.2e1 * ry * (sy * rx * rx + 0.2e1 * ry * sx * rx) + 0.2e1 * sy * ry * rx * rx;
-                                    Real urrss = 6 * rx * rx * sx * sx + 6 * rz * rz * sz * sz + 2 * rz * (2 * sz * sy * ry + rz * sy * sy) + 2 * sz * (sz * ry * ry + 2 * rz * sy * ry) + 2 * rz * (2 * sz * sx * rx + rz * sx * sx) + 2 * sz * (sz * rx * rx + 2 * rz * sx * rx) + 6 * ry * ry * sy * sy + 2 * ry * (2 * sy * sx * rx + ry * sx * sx) + 2 * sy * (sy * rx * rx + 2 * ry * sx * rx);
-                                    Real ursss = 0.4e1 * rx * pow(sx, 0.3e1) + 0.4e1 * rz * pow(sz, 0.3e1) + 0.2e1 * rz * sz * sy * sy + 0.2e1 * sz * (0.2e1 * sz * sy * ry + rz * sy * sy) + 0.2e1 * rz * sz * sx * sx + 0.2e1 * sz * (0.2e1 * sz * sx * rx + rz * sx * sx) + 0.4e1 * ry * pow(sy, 0.3e1) + 0.2e1 * ry * sy * sx * sx + 0.2e1 * sy * (0.2e1 * sy * sx * rx + ry * sx * sx);
-                                    Real ussss = pow(sx, 0.4e1) + 0.2e1 * sy * sy * sx * sx + 0.2e1 * sz * sz * sx * sx + pow(sy, 0.4e1) + 0.2e1 * sz * sz * sy * sy + pow(sz, 0.4e1);
-                                    Real urrrt = 0.4e1 * pow(rz, 0.3e1) * tz + 0.2e1 * rz * (tz * ry * ry + 0.2e1 * rz * ty * ry) + 0.2e1 * tz * rz * ry * ry + 0.2e1 * rz * (tz * rx * rx + 0.2e1 * rz * tx * rx) + 0.2e1 * tz * rz * rx * rx + 0.4e1 * pow(ry, 0.3e1) * ty + 0.2e1 * ry * (ty * rx * rx + 0.2e1 * ry * tx * rx) + 0.2e1 * ty * ry * rx * rx + 0.4e1 * pow(rx, 0.3e1) * tx;
-                                    Real urrtt = 6 * rz * rz * tz * tz + 2 * rz * (2 * tz * ty * ry + rz * ty * ty) + 2 * tz * (tz * ry * ry + 2 * rz * ty * ry) + 2 * rz * (2 * tz * tx * rx + rz * tx * tx) + 2 * tz * (tz * rx * rx + 2 * rz * tx * rx) + 2 * ry * (2 * ty * tx * rx + ry * tx * tx) + 2 * ty * (ty * rx * rx + 2 * ry * tx * rx) + 6 * ry * ry * ty * ty + 6 * rx * rx * tx * tx;
-                                    Real urttt = 0.4e1 * rz * pow(tz, 0.3e1) + 0.2e1 * rz * tz * ty * ty + 0.2e1 * tz * (0.2e1 * tz * ty * ry + rz * ty * ty) + 0.2e1 * rz * tz * tx * tx + 0.2e1 * tz * (0.2e1 * tz * tx * rx + rz * tx * tx) + 0.2e1 * ry * ty * tx * tx + 0.2e1 * ty * (0.2e1 * ty * tx * rx + ry * tx * tx) + 0.4e1 * ry * pow(ty, 0.3e1) + 0.4e1 * rx * pow(tx, 0.3e1);
-                                    Real utttt = pow(tx, 0.4e1) + 0.2e1 * ty * ty * tx * tx + 0.2e1 * tz * tz * tx * tx + pow(ty, 0.4e1) + 0.2e1 * tz * tz * ty * ty + pow(tz, 0.4e1);
-                                    Real ussst = 0.4e1 * pow(sz, 0.3e1) * tz + 0.2e1 * sz * (tz * sy * sy + 0.2e1 * sz * ty * sy) + 0.2e1 * tz * sz * sy * sy + 0.2e1 * sz * (tz * sx * sx + 0.2e1 * sz * tx * sx) + 0.2e1 * tz * sz * sx * sx + 0.2e1 * sy * (ty * sx * sx + 0.2e1 * sy * tx * sx) + 0.2e1 * ty * sy * sx * sx + 0.4e1 * pow(sy, 0.3e1) * ty + 0.4e1 * pow(sx, 0.3e1) * tx;
-                                    Real usstt = 6 * sz * sz * tz * tz + 2 * sz * (2 * tz * ty * sy + sz * ty * ty) + 2 * tz * (tz * sy * sy + 2 * sz * ty * sy) + 2 * sz * (2 * tz * tx * sx + sz * tx * tx) + 2 * tz * (tz * sx * sx + 2 * sz * tx * sx) + 2 * sy * (2 * ty * tx * sx + sy * tx * tx) + 2 * ty * (ty * sx * sx + 2 * sy * tx * sx) + 6 * sy * sy * ty * ty + 6 * sx * sx * tx * tx;
-                                    Real usttt = 0.4e1 * sz * pow(tz, 0.3e1) + 0.2e1 * sz * tz * ty * ty + 0.2e1 * tz * (0.2e1 * tz * ty * sy + sz * ty * ty) + 0.2e1 * sz * tz * tx * tx + 0.2e1 * tz * (0.2e1 * tz * tx * sx + sz * tx * tx) + 0.2e1 * sy * ty * tx * tx + 0.2e1 * ty * (0.2e1 * ty * tx * sx + sy * tx * tx) + 0.4e1 * sy * pow(ty, 0.3e1) + 0.4e1 * sx * pow(tx, 0.3e1);
-                                    Real urrr = 6 * rx * rx * rxx + 6 * rz * rz * rzz + 2 * rz * (2 * ryz * ry + rz * ryy) + 2 * rzz * ry * ry + 4 * rz * ryz * ry + 2 * rz * (2 * rxz * rx + rz * rxx) + 2 * rzz * rx * rx + 4 * rz * rxz * rx + 6 * ry * ry * ryy + 2 * ry * (2 * rxy * rx + ry * rxx) + 2 * ryy * rx * rx + 4 * ry * rxy * rx;
-                                    Real urrs = 7 * sx * rx * rxx + rz * (3 * rz * szz + 3 * sz * rzz) + rz * (2 * rz * szz + 2 * sz * rzz) + szz * rz * rz + 7 * sz * rz * rzz + 2 * rz * (2 * ry * syz + sz * ryy + 2 * ryz * sy + rz * syy) + 2 * sz * (2 * ryz * ry + rz * ryy) + 2 * rz * (2 * ry * syz + 2 * ryz * sy) + 2 * szz * ry * ry + 4 * rzz * sy * ry + 4 * sz * ryz * ry + 2 * rz * (2 * rx * sxz + sz * rxx + 2 * rxz * sx + rz * sxx) + 2 * sz * (2 * rxz * rx + rz * rxx) + 2 * rz * (2 * rx * sxz + 2 * rxz * sx) + 2 * szz * rx * rx + 4 * rzz * sx * rx + 4 * sz * rxz * rx + ry * (3 * syy * ry + 3 * sy * ryy) + ry * (2 * syy * ry + 2 * sy * ryy) + syy * ry * ry + 7 * sy * ry * ryy + 4 * ryy * sx * rx + 4 * sy * rxy * rx + 2 * ry * (2 * sxy * rx + sy * rxx + 2 * sx * rxy + ry * sxx) + 2 * sy * (2 * rxy * rx + ry * rxx) + 2 * ry * (2 * sxy * rx + 2 * sx * rxy) + 2 * syy * rx * rx + rx * (2 * sxx * rx + 2 * sx * rxx) + sxx * rx * rx + rx * (3 * sxx * rx + 3 * sx * rxx);
-                                    Real urss = 7 * rx * sx * sxx + sz * (3 * rz * szz + 3 * sz * rzz) + rzz * sz * sz + sz * (2 * rz * szz + 2 * sz * rzz) + 7 * rz * sz * szz + 2 * sz * (2 * ry * syz + sz * ryy + 2 * ryz * sy + rz * syy) + 2 * rzz * sy * sy + 2 * sz * (2 * ry * syz + 2 * ryz * sy) + 2 * rz * (2 * syz * sy + sz * syy) + 4 * rz * syz * sy + 4 * szz * sy * ry + 2 * rz * (2 * sxz * sx + sz * sxx) + 2 * sz * (2 * rx * sxz + sz * rxx + 2 * rxz * sx + rz * sxx) + 2 * rzz * sx * sx + 2 * sz * (2 * rx * sxz + 2 * rxz * sx) + 4 * rz * sxz * sx + 4 * szz * sx * rx + sy * (3 * syy * ry + 3 * sy * ryy) + ryy * sy * sy + sy * (2 * syy * ry + 2 * sy * ryy) + 7 * ry * sy * syy + 4 * ry * sx * sxy + 4 * syy * sx * rx + 2 * ry * (2 * sx * sxy + sxx * sy) + 2 * sy * (2 * sxy * rx + sy * rxx + 2 * sx * rxy + ry * sxx) + 2 * ryy * sx * sx + 2 * sy * (2 * sxy * rx + 2 * sx * rxy) + sx * (3 * sxx * rx + 3 * sx * rxx) + rxx * sx * sx + sx * (2 * sxx * rx + 2 * sx * rxx);
-                                    Real usss = 6 * sx * sx * sxx + 6 * sz * sz * szz + 2 * sz * (2 * syz * sy + sz * syy) + 2 * szz * sy * sy + 4 * sz * syz * sy + 2 * sz * (2 * sxz * sx + sz * sxx) + 2 * szz * sx * sx + 4 * sz * sxz * sx + 6 * sy * sy * syy + 2 * sy * (2 * sx * sxy + sxx * sy) + 2 * syy * sx * sx + 4 * sy * sx * sxy;
-                                    Real urrt = rz * (3 * tzz * rz + 3 * tz * rzz) + rz * (2 * tzz * rz + 2 * tz * rzz) + tzz * rz * rz + 7 * tz * rz * rzz + 2 * rz * (2 * tyz * ry + tz * ryy + 2 * ty * ryz + rz * tyy) + 2 * tz * (2 * ryz * ry + rz * ryy) + 2 * rz * (2 * tyz * ry + 2 * ty * ryz) + 2 * tzz * ry * ry + 4 * rzz * ty * ry + 4 * tz * ryz * ry + 2 * rz * (2 * txz * rx + tz * rxx + 2 * tx * rxz + rz * txx) + 2 * tz * (2 * rxz * rx + rz * rxx) + 2 * rz * (2 * txz * rx + 2 * tx * rxz) + 2 * tzz * rx * rx + 4 * rzz * tx * rx + 4 * tz * rxz * rx + ry * (2 * tyy * ry + 2 * ty * ryy) + tyy * ry * ry + ry * (3 * tyy * ry + 3 * ty * ryy) + 2 * ry * (2 * txy * rx + ty * rxx + 2 * tx * rxy + ry * txx) + 2 * ty * (2 * rxy * rx + ry * rxx) + 2 * ry * (2 * txy * rx + 2 * tx * rxy) + 2 * tyy * rx * rx + 7 * ty * ry * ryy + 4 * ryy * tx * rx + 4 * ty * rxy * rx + rx * (3 * txx * rx + 3 * tx * rxx) + rx * (2 * txx * rx + 2 * tx * rxx) + txx * rx * rx + 7 * tx * rx * rxx;
-                                    Real urtt = tz * (3 * tzz * rz + 3 * tz * rzz) + rzz * tz * tz + tz * (2 * tzz * rz + 2 * tz * rzz) + 7 * rz * tz * tzz + 2 * rz * (2 * ty * tyz + tyy * tz) + 2 * tz * (2 * tyz * ry + tz * ryy + 2 * ty * ryz + rz * tyy) + 2 * rzz * ty * ty + 2 * tz * (2 * tyz * ry + 2 * ty * ryz) + 4 * rz * ty * tyz + 4 * tzz * ty * ry + 2 * rz * (2 * tx * txz + txx * tz) + 2 * tz * (2 * txz * rx + tz * rxx + 2 * tx * rxz + rz * txx) + 2 * rzz * tx * tx + 2 * tz * (2 * txz * rx + 2 * tx * rxz) + 4 * rz * tx * txz + 4 * tzz * tx * rx + ty * (3 * tyy * ry + 3 * ty * ryy) + ryy * ty * ty + ty * (2 * tyy * ry + 2 * ty * ryy) + 2 * ry * (2 * tx * txy + txx * ty) + 2 * ty * (2 * txy * rx + ty * rxx + 2 * tx * rxy + ry * txx) + 2 * ryy * tx * tx + 2 * ty * (2 * txy * rx + 2 * tx * rxy) + 7 * ry * ty * tyy + 4 * ry * tx * txy + 4 * tyy * tx * rx + tx * (3 * txx * rx + 3 * tx * rxx) + rxx * tx * tx + tx * (2 * txx * rx + 2 * tx * rxx) + 7 * rx * tx * txx;
-                                    Real uttt = 6 * tz * tz * tzz + 2 * tz * (2 * ty * tyz + tyy * tz) + 2 * tzz * ty * ty + 4 * tz * ty * tyz + 2 * tz * (2 * tx * txz + txx * tz) + 2 * tzz * tx * tx + 4 * tz * tx * txz + 2 * ty * (2 * tx * txy + txx * ty) + 2 * tyy * tx * tx + 4 * ty * tx * txy + 6 * ty * ty * tyy + 6 * tx * tx * txx;
-                                    Real usst = sz * (3 * tzz * sz + 3 * tz * szz) + sz * (2 * tzz * sz + 2 * tz * szz) + tzz * sz * sz + 7 * tz * sz * szz + 2 * sz * (2 * tyz * sy + tz * syy + 2 * ty * syz + sz * tyy) + 2 * tz * (2 * syz * sy + sz * syy) + 2 * sz * (2 * tyz * sy + 2 * ty * syz) + 2 * tzz * sy * sy + 4 * szz * ty * sy + 4 * tz * syz * sy + 2 * sz * (2 * txz * sx + tz * sxx + 2 * tx * sxz + sz * txx) + 2 * tz * (2 * sxz * sx + sz * sxx) + 2 * sz * (2 * txz * sx + 2 * tx * sxz) + 2 * tzz * sx * sx + 4 * szz * tx * sx + 4 * tz * sxz * sx + sy * (2 * tyy * sy + 2 * ty * syy) + tyy * sy * sy + sy * (3 * tyy * sy + 3 * ty * syy) + 2 * sy * (2 * txy * sx + ty * sxx + 2 * tx * sxy + sy * txx) + 2 * ty * (2 * sx * sxy + sxx * sy) + 2 * sy * (2 * txy * sx + 2 * tx * sxy) + 2 * tyy * sx * sx + 7 * ty * sy * syy + 4 * syy * tx * sx + 4 * ty * sx * sxy + sx * (3 * txx * sx + 3 * tx * sxx) + sx * (2 * txx * sx + 2 * tx * sxx) + txx * sx * sx + 7 * tx * sx * sxx;
-                                    Real ustt = tz * (2 * tzz * sz + 2 * tz * szz) + tz * (3 * tzz * sz + 3 * tz * szz) + szz * tz * tz + 7 * sz * tz * tzz + 2 * sz * (2 * ty * tyz + tyy * tz) + 2 * tz * (2 * tyz * sy + tz * syy + 2 * ty * syz + sz * tyy) + 2 * szz * ty * ty + 2 * tz * (2 * tyz * sy + 2 * ty * syz) + 4 * sz * ty * tyz + 4 * tzz * ty * sy + 2 * sz * (2 * tx * txz + txx * tz) + 2 * tz * (2 * txz * sx + tz * sxx + 2 * tx * sxz + sz * txx) + 2 * szz * tx * tx + 2 * tz * (2 * txz * sx + 2 * tx * sxz) + 4 * sz * tx * txz + 4 * tzz * tx * sx + ty * (3 * tyy * sy + 3 * ty * syy) + syy * ty * ty + ty * (2 * tyy * sy + 2 * ty * syy) + 2 * sy * (2 * tx * txy + txx * ty) + 2 * ty * (2 * txy * sx + ty * sxx + 2 * tx * sxy + sy * txx) + 2 * syy * tx * tx + 2 * ty * (2 * txy * sx + 2 * tx * sxy) + 7 * sy * ty * tyy + 4 * sy * tx * txy + 4 * tyy * tx * sx + tx * (3 * txx * sx + 3 * tx * sxx) + sxx * tx * tx + tx * (2 * txx * sx + 2 * tx * sxx) + 7 * sx * tx * txx;
-                                    Real urr = 4 * rx * rxxx + 4 * rxyy * rx + 4 * rxzz * rx + 3 * rxx * rxx + 2 * ryy * rxx + 2 * rzz * rxx + 4 * ry * rxxy + 4 * rz * rxxz + 4 * rxy * rxy + 4 * rxz * rxz + 4 * ry * ryyy + 4 * ryzz * ry + 3 * ryy * ryy + 2 * rzz * ryy + 4 * rz * ryyz + 4 * ryz * ryz + 4 * rz * rzzz + 3 * rzz * rzz;
-                                    Real urs = 4 * rz * szzz + 4 * sz * rzzz + 6 * rzz * szz + 4 * rz * syyz + 4 * sz * ryyz + 2 * rzz * syy + 2 * szz * ryy + 4 * ryzz * sy + 8 * ryz * syz + 4 * ry * syzz + 4 * rz * sxxz + 4 * sz * rxxz + 2 * rzz * sxx + 2 * szz * rxx + 4 * rxzz * sx + 8 * rxz * sxz + 4 * rx * sxzz + 4 * sy * ryyy + 6 * syy * ryy + 4 * syyy * ry + 4 * ry * sxxy + 4 * sy * rxxy + 2 * ryy * sxx + 2 * syy * rxx + 4 * sxyy * rx + 8 * sxy * rxy + 4 * sx * rxyy + 4 * sx * rxxx + 6 * sxx * rxx + 4 * sxxx * rx;
-                                    Real uss = 4 * sx * sxxx + 4 * sx * sxyy + 4 * sxzz * sx + 3 * sxx * sxx + 2 * sxx * syy + 2 * szz * sxx + 4 * sxxy * sy + 4 * sz * sxxz + 4 * sxy * sxy + 4 * sxz * sxz + 4 * sy * syyy + 4 * syzz * sy + 3 * syy * syy + 2 * szz * syy + 4 * sz * syyz + 4 * syz * syz + 4 * sz * szzz + 3 * szz * szz;
-                                    Real urt = 4 * tz * rzzz + 6 * tzz * rzz + 4 * tzzz * rz + 4 * rz * tyyz + 4 * tz * ryyz + 2 * rzz * tyy + 2 * tzz * ryy + 4 * tyzz * ry + 8 * tyz * ryz + 4 * ty * ryzz + 4 * rz * txxz + 4 * tz * rxxz + 2 * rzz * txx + 2 * tzz * rxx + 4 * txzz * rx + 8 * txz * rxz + 4 * tx * rxzz + 4 * ty * ryyy + 6 * tyy * ryy + 4 * tyyy * ry + 2 * tyy * rxx + 4 * txyy * rx + 8 * txy * rxy + 4 * tx * rxyy + 4 * ry * txxy + 4 * ty * rxxy + 2 * ryy * txx + 4 * tx * rxxx + 6 * txx * rxx + 4 * txxx * rx;
-                                    Real utt = 4 * tx * txxx + 4 * tx * txyy + 4 * tx * txzz + 3 * txx * txx + 2 * txx * tyy + 2 * txx * tzz + 4 * txxy * ty + 4 * txxz * tz + 4 * txy * txy + 4 * txz * txz + 4 * ty * tyyy + 4 * ty * tyzz + 3 * tyy * tyy + 2 * tyy * tzz + 4 * tyyz * tz + 4 * tyz * tyz + 4 * tz * tzzz + 3 * tzz * tzz;
-                                    Real ust = 4 * tz * szzz + 6 * tzz * szz + 4 * tzzz * sz + 4 * sz * tyyz + 4 * tz * syyz + 2 * szz * tyy + 2 * tzz * syy + 4 * tyzz * sy + 8 * tyz * syz + 4 * ty * syzz + 4 * sz * txxz + 4 * tz * sxxz + 2 * szz * txx + 2 * tzz * sxx + 4 * txzz * sx + 8 * txz * sxz + 4 * tx * sxzz + 4 * ty * syyy + 6 * tyy * syy + 4 * tyyy * sy + 4 * sy * txxy + 4 * ty * sxxy + 2 * syy * txx + 2 * tyy * sxx + 4 * txyy * sx + 8 * txy * sxy + 4 * tx * sxyy + 4 * tx * sxxx + 6 * txx * sxx + 4 * txxx * sx;
-                                    
-                                    Real ur = rxxxx + 2 * rxxyy + 2 * rxxzz + ryyyy + 2 * ryyzz + rzzzz;
-                                    Real us = sxxxx + 2 * sxxyy + 2 * sxxzz + syyyy + 2 * syyzz + szzzz;
-                                    Real ut = txxxx + 2 * txxyy + 2 * txxzz + tyyyy + 2 * tyyzz + tzzzz;
-
-
-
-                  // printF(" (i1,i2)=(%d,%d) urrrr=%g, urrrs=%g, urrss=%g, ursss=%g, ussss=%g, urrr=%g urrs=%g urss=%g urr=%g urs=%g uss=%g ur=%g us=%g\n",
-                  //   urrrr,urrrs,urrss,ursss,ussss,urrr,urrs,urss,urss,usss,urr,urs,uss,ur,us);
-
-                                    ForStencil(m1,m2,m3)
-                                    {
-                                        int m  = M123(m1,m2,m3);   
-                                        coeffLocal(m,i1,i2,i3) += 
-                                                                        cLapSq*(  urrrr*rrrrCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
-                                                                                        + urrrs* rrrCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
-                                                                                        + urrss*  rrCoeff(m1)*  ssCoeff(m2)*   iCoeff(m3) 
-                                                                                        + ursss*   rCoeff(m1)* sssCoeff(m2)*   iCoeff(m3) 
-                                                                                        + ussss*   iCoeff(m1)*ssssCoeff(m2)*   iCoeff(m3) 
-                                                                                        + urrrt* rrrCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
-                                                                                        + urrtt*  rrCoeff(m1)*   iCoeff(m2)*  ttCoeff(m3) 
-                                                                                        + urttt*   rCoeff(m1)*   iCoeff(m2)* tttCoeff(m3) 
-                                                                                        + utttt*   iCoeff(m1)*   iCoeff(m2)*ttttCoeff(m3) 
-                                                                                        + ussst*   iCoeff(m1)* sssCoeff(m2)*   tCoeff(m3) 
-                                                                                        + usstt*   iCoeff(m1)*  ssCoeff(m2)*  ttCoeff(m3) 
-                                                                                        + usttt*   iCoeff(m1)*   sCoeff(m2)* tttCoeff(m3) 
-
-                                                                                        + urrr * rrrCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
-                                                                                        + urrs *  rrCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
-                                                                                        + urss *   rCoeff(m1)*  ssCoeff(m2)*   iCoeff(m3) 
-                                                                                        + usss *   iCoeff(m1)* sssCoeff(m2)*   iCoeff(m3) 
-                                                                                        + urrt *  rrCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
-                                                                                        + urtt *   rCoeff(m1)*   iCoeff(m2)*  ttCoeff(m3) 
-                                                                                        + uttt *   iCoeff(m1)*   iCoeff(m2)* tttCoeff(m3) 
-                                                                                        + usst *   iCoeff(m1)*  ssCoeff(m2)*   tCoeff(m3) 
-                                                                                        + ustt *   iCoeff(m1)*   sCoeff(m2)*  ttCoeff(m3) 
-
-
-                                                                                        + urr  *  rrCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
-                                                                                        + urs  *   rCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
-                                                                                        + uss  *   iCoeff(m1)*  ssCoeff(m2)*   iCoeff(m3) 
-                                                                                        + urt  *   rCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
-                                                                                        + ust  *   iCoeff(m1)*   sCoeff(m2)*   tCoeff(m3) 
-                                                                                        + utt  *   iCoeff(m1)*   iCoeff(m2)*  ttCoeff(m3)                                             
-
-                                                                                        + ur   *   rCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
-                                                                                        + us   *   iCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
-                                                                                        + ut   *   iCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
-                                                                                        );
-                                    }
+                                    Real rx = DD(i1,i2,i3,0,0); 
+                                    Real ry = DD(i1,i2,i3,0,1); 
+                                    Real sx = DD(i1,i2,i3,1,0); 
+                                    Real sy = DD(i1,i2,i3,1,1);         
+                                    c200(i1,i2,i3) = ( SQR(rx) + SQR(ry) )/( SQR(dr[0]) );
+                                    c020(i1,i2,i3) = ( SQR(sx) + SQR(sy) )/( SQR(dr[1]) );
+                                    c110(i1,i2,i3) = 2.*( rx*sx + ry*sy )/( dr[0]*dr[1] ); // **CHECK FACTOR OF 1/4 
+                                    Real rxr = (DD(i1+1,i2,i3,0,0)-DD(i1-1,i2,i3,0,0))/(2.*dr[0]);
+                                    Real ryr = (DD(i1+1,i2,i3,0,1)-DD(i1-1,i2,i3,0,1))/(2.*dr[0]);
+                                    Real sxr = (DD(i1+1,i2,i3,1,0)-DD(i1-1,i2,i3,1,0))/(2.*dr[0]);
+                                    Real syr = (DD(i1+1,i2,i3,1,1)-DD(i1-1,i2,i3,1,1))/(2.*dr[0]);
+                                    Real rxs = (DD(i1,i2+1,i3,0,0)-DD(i1,i2-1,i3,0,0))/(2.*dr[1]);
+                                    Real rys = (DD(i1,i2+1,i3,0,1)-DD(i1,i2-1,i3,0,1))/(2.*dr[1]);
+                                    Real sxs = (DD(i1,i2+1,i3,1,0)-DD(i1,i2-1,i3,1,0))/(2.*dr[1]);
+                                    Real sys = (DD(i1,i2+1,i3,1,1)-DD(i1,i2-1,i3,1,1))/(2.*dr[1]);
+                                    Real rxx= rx*rxr + sx*rxs;
+                                    Real ryy= ry*ryr + sy*rys;
+                                    Real sxx= rx*sxr + sx*sxs;
+                                    Real syy= ry*syr + sy*sys;
+                                    c100(i1,i2,i3) = (rxx + ryy)/(dr[0]); // rxx + ryy  // **CHECK FACTOR OF 1/2
+                                    c010(i1,i2,i3) = (sxx + syy)/(dr[1]); // sxx + syy
                                 }
+                                Range R5(-2,2);
+                                RealArray cp(R5,R5);
+                                FOR_3(i1,i2,i3,I1,I2,I3)
+                                {
+                  // coefficients of Lap^2 (from research/compatibility/writeLcbcFiles.mpl --> lcbcEquationsDirichlet2dOrder4.h)
+                                    if( maskLocal(i1,i2,i3)>0 )
+                                    {
+                                        cp(-2,-2) =1./16.*c110(i1,i2,i3)*c110(i1-1,i2-1,i3);
+                                        cp(-1,-2) =1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(1./4.*c020(i1-1,i2-1,i3)-1./8.*c010(i1-1,i2-1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
+                                        cp( 0,-2) =c020(i1,i2,i3)*(c020(i1,i2-1,i3)-1./2.*c010(i1,i2-1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2-1,i3)-1./16.*c110(i1+1,i2-1,i3))+c010(i1,i2,i3)*(-1./2.*c020(i1,i2-1,i3)+1./4.*c010(i1,i2-1,i3));
+                                        cp( 1,-2) =-1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(-1./4.*c020(i1+1,i2-1,i3)+1./8.*c010(i1+1,i2-1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
+                                        cp( 2,-2) =1./16.*c110(i1,i2,i3)*c110(i1+1,i2-1,i3);
+                                        cp(-2,-1) =1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(1./4.*c200(i1-1,i2-1,i3)-1./8.*c100(i1-1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
+                                        cp(-1,-1) =c200(i1,i2,i3)*(-1./2.*c010(i1-1,i2,i3)+c020(i1-1,i2,i3)-1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(-1./2.*c100(i1,i2-1,i3)+c200(i1,i2-1,i3)-1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(-1./2.*c020(i1-1,i2-1,i3)-1./2.*c200(i1-1,i2-1,i3))+c100(i1,i2,i3)*(1./4.*c010(i1-1,i2,i3)-1./2.*c020(i1-1,i2,i3))+c010(i1,i2,i3)*(1./4.*c100(i1,i2-1,i3)-1./2.*c200(i1,i2-1,i3));
+                                        cp( 0,-1) =c200(i1,i2,i3)*(-1./4.*c110(i1-1,i2,i3)+1./4.*c110(i1+1,i2,i3)+c010(i1,i2,i3)-2*c020(i1,i2,i3))+c020(i1,i2,i3)*(-2*c020(i1,i2-1,i3)-2*c200(i1,i2-1,i3)+c010(i1,i2,i3)-2*c020(i1,i2,i3))+c110(i1,i2,i3)*(1./4.*c200(i1-1,i2-1,i3)-1./4.*c200(i1+1,i2-1,i3)+1./8.*c100(i1-1,i2-1,i3)+1./8.*c100(i1+1,i2-1,i3))+c100(i1,i2,i3)*(1./8.*c110(i1-1,i2,i3)+1./8.*c110(i1+1,i2,i3))+c010(i1,i2,i3)*(c020(i1,i2-1,i3)+c200(i1,i2-1,i3));
+                                        cp( 1,-1) =c200(i1,i2,i3)*(-1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3)+1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(1./2.*c100(i1,i2-1,i3)+c200(i1,i2-1,i3)+1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(1./2.*c020(i1+1,i2-1,i3)+1./2.*c200(i1+1,i2-1,i3))+c100(i1,i2,i3)*(-1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2-1,i3)-1./2.*c200(i1,i2-1,i3));
+                                        cp( 2,-1)=-1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1+1,i2-1,i3)-1./8.*c100(i1+1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
+                                        cp(-2, 0)=c200(i1,i2,i3)*(c200(i1-1,i2,i3)-1./2.*c100(i1-1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2-1,i3)-1./16.*c110(i1-1,i2+1,i3))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)+1./4.*c100(i1-1,i2,i3));
+                                        cp(-1, 0)=c200(i1,i2,i3)*(-2*c020(i1-1,i2,i3)-2*c200(i1-1,i2,i3)+c100(i1,i2,i3)-2*c200(i1,i2,i3))+c020(i1,i2,i3)*(-1./4.*c110(i1,i2-1,i3)+1./4.*c110(i1,i2+1,i3)+c100(i1,i2,i3)-2*c200(i1,i2,i3))+c110(i1,i2,i3)*(1./4.*c020(i1-1,i2-1,i3)-1./4.*c020(i1-1,i2+1,i3)+1./8.*c010(i1-1,i2-1,i3)+1./8.*c010(i1-1,i2+1,i3))+c100(i1,i2,i3)*(c020(i1-1,i2,i3)+c200(i1-1,i2,i3))+c010(i1,i2,i3)*(1./8.*c110(i1,i2-1,i3)+1./8.*c110(i1,i2+1,i3));
+                                        cp( 0, 0)=c200(i1,i2,i3)*(c200(i1-1,i2,i3)+c200(i1+1,i2,i3)+1./2.*c100(i1-1,i2,i3)-1./2.*c100(i1+1,i2,i3)+4*c020(i1,i2,i3)+4*c200(i1,i2,i3))+c020(i1,i2,i3)*(c020(i1,i2-1,i3)+c020(i1,i2+1,i3)+1./2.*c010(i1,i2-1,i3)-1./2.*c010(i1,i2+1,i3)+4*c020(i1,i2,i3)+4*c200(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c110(i1-1,i2-1,i3)+1./16.*c110(i1-1,i2+1,i3)+1./16.*c110(i1+1,i2-1,i3)+1./16.*c110(i1+1,i2+1,i3))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)+1./2.*c200(i1+1,i2,i3)-1./4.*c100(i1-1,i2,i3)-1./4.*c100(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./2.*c020(i1,i2-1,i3)+1./2.*c020(i1,i2+1,i3)-1./4.*c010(i1,i2-1,i3)-1./4.*c010(i1,i2+1,i3));
+                                        cp( 1, 0)=c200(i1,i2,i3)*(-2*c020(i1+1,i2,i3)-2*c200(i1+1,i2,i3)-c100(i1,i2,i3)-2*c200(i1,i2,i3))+c020(i1,i2,i3)*(1./4.*c110(i1,i2-1,i3)-1./4.*c110(i1,i2+1,i3)-c100(i1,i2,i3)-2*c200(i1,i2,i3))+c110(i1,i2,i3)*(-1./4.*c020(i1+1,i2-1,i3)+1./4.*c020(i1+1,i2+1,i3)-1./8.*c010(i1+1,i2-1,i3)-1./8.*c010(i1+1,i2+1,i3))+c100(i1,i2,i3)*(-c020(i1+1,i2,i3)-c200(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./8.*c110(i1,i2-1,i3)-1./8.*c110(i1,i2+1,i3));
+                                        cp( 2, 0)=c200(i1,i2,i3)*(c200(i1+1,i2,i3)+1./2.*c100(i1+1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2-1,i3)-1./16.*c110(i1+1,i2+1,i3))+c100(i1,i2,i3)*(1./2.*c200(i1+1,i2,i3)+1./4.*c100(i1+1,i2,i3));
+                                        cp(-2, 1)=-1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)+1./8.*c100(i1-1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
+                                        cp(-1, 1)=c200(i1,i2,i3)*(1./2.*c010(i1-1,i2,i3)+c020(i1-1,i2,i3)+1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(-1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)+1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(1./2.*c020(i1-1,i2+1,i3)+1./2.*c200(i1-1,i2+1,i3))+c100(i1,i2,i3)*(-1./4.*c010(i1-1,i2,i3)-1./2.*c020(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
+                                        cp( 0, 1)=c200(i1,i2,i3)*(1./4.*c110(i1-1,i2,i3)-1./4.*c110(i1+1,i2,i3)-c010(i1,i2,i3)-2*c020(i1,i2,i3))+c020(i1,i2,i3)*(-2*c020(i1,i2+1,i3)-2*c200(i1,i2+1,i3)-c010(i1,i2,i3)-2*c020(i1,i2,i3))+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)+1./4.*c200(i1+1,i2+1,i3)-1./8.*c100(i1-1,i2+1,i3)-1./8.*c100(i1+1,i2+1,i3))+c100(i1,i2,i3)*(-1./8.*c110(i1-1,i2,i3)-1./8.*c110(i1+1,i2,i3))+c010(i1,i2,i3)*(-c020(i1,i2+1,i3)-c200(i1,i2+1,i3));
+                                        cp( 1, 1)=c200(i1,i2,i3)*(1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3)-1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)-1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(-1./2.*c020(i1+1,i2+1,i3)-1./2.*c200(i1+1,i2+1,i3))+c100(i1,i2,i3)*(1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
+                                        cp( 2, 1)=1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(1./4.*c200(i1+1,i2+1,i3)+1./8.*c100(i1+1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
+                                        cp(-2, 2)=1./16.*c110(i1,i2,i3)*c110(i1-1,i2+1,i3);
+                                        cp(-1, 2)=-1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(-1./4.*c020(i1-1,i2+1,i3)-1./8.*c010(i1-1,i2+1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
+                                        cp( 0, 2)=c020(i1,i2,i3)*(c020(i1,i2+1,i3)+1./2.*c010(i1,i2+1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2+1,i3)-1./16.*c110(i1+1,i2+1,i3))+c010(i1,i2,i3)*(1./2.*c020(i1,i2+1,i3)+1./4.*c010(i1,i2+1,i3));
+                                        cp( 1, 2)=1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(1./4.*c020(i1+1,i2+1,i3)+1./8.*c010(i1+1,i2+1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
+                                        cp( 2, 2)=1./16.*c110(i1,i2,i3)*c110(i1+1,i2+1,i3);
+                                        ForStencil(m1,m2,m3)
+                                        {
+                                            int m  = M123(m1,m2,m3);
+                                            coeffLocal(m,i1,i2,i3) += cLapSq*cp(m1,m2);
+                                        }
+                    // // save for testing : 
+                    // ForStencil(m1,m2,m3)
+                    // {
+                    //   int m  = M123(m1,m2,m3);
+                    //   lapSqCoeffLocal(m,i1,i2,i3) = cp(m1,m2);
+                    // }          
+                                    } // end if mask
+                                } // end for 3d 
                             }
-
-
-
-                        }
-
-
-
-                    } // end curvilinear
-
+                            else
+                            {
+                // --------------- THREE DIMENSIONS Lap^2 ----------------
+                                Index J1,J2,J3;
+                                int extra=1;
+                                getIndex(mg.gridIndexRange(),J1,J2,J3,extra);
+                                RealArray c200(J1,J2,J3), c110(J1,J2,J3), c020(J1,J2,J3), c100(J1,J2,J3), c010(J1,J2,J3);
+                                RealArray c002(J1,J2,J3), c101(J1,J2,J3), c011(J1,J2,J3), c001(J1,J2,J3);
+                // -- evaluate the SCALED coefficients of the Laplacian:
+                //    Delta = c200*Delta+r Delta-r + c110*Delta0r Delta0s + ...
+                // SEE ALSO
+                // research/compatibility/
+                //     lcbcDiff.mpl       : defines Qh 
+                //     writeLcbcFiles.mpl : 
+                                FOR_3D(i1,i2,i3,J1,J2,J3)
+                                {
+                                    Real rx = DD(i1,i2,i3,0,0), ry = DD(i1,i2,i3,0,1), rz = DD(i1,i2,i3,0,2); 
+                                    Real sx = DD(i1,i2,i3,1,0), sy = DD(i1,i2,i3,1,1), sz = DD(i1,i2,i3,1,2);         
+                                    Real tx = DD(i1,i2,i3,2,0), ty = DD(i1,i2,i3,2,1), tz = DD(i1,i2,i3,2,2);         
+                                    c200(i1,i2,i3) = ( SQR(rx) + SQR(ry) + SQR(rz) )/( SQR(dr[0]) );
+                                    c020(i1,i2,i3) = ( SQR(sx) + SQR(sy) + SQR(sz) )/( SQR(dr[1]) );
+                                    c002(i1,i2,i3) = ( SQR(tx) + SQR(ty) + SQR(tz) )/( SQR(dr[2]) );
+                                    c110(i1,i2,i3) = 2.*( rx*sx + ry*sy +rz*sz )/( dr[0]*dr[1] ); 
+                                    c101(i1,i2,i3) = 2.*( rx*tx + ry*ty +rz*tz )/( dr[0]*dr[2] ); 
+                                    c011(i1,i2,i3) = 2.*( sx*tx + sy*ty +sz*tz )/( dr[1]*dr[2] ); 
+                                    Real rxr = (DD(i1+1,i2,i3,0,0)-DD(i1-1,i2,i3,0,0))/(2.*dr[0]), ryr = (DD(i1+1,i2,i3,0,1)-DD(i1-1,i2,i3,0,1))/(2.*dr[0]), rzr = (DD(i1+1,i2,i3,0,2)-DD(i1-1,i2,i3,0,2))/(2.*dr[0]);
+                                    Real sxr = (DD(i1+1,i2,i3,1,0)-DD(i1-1,i2,i3,1,0))/(2.*dr[0]), syr = (DD(i1+1,i2,i3,1,1)-DD(i1-1,i2,i3,1,1))/(2.*dr[0]), szr = (DD(i1+1,i2,i3,1,2)-DD(i1-1,i2,i3,1,2))/(2.*dr[0]);
+                                    Real txr = (DD(i1+1,i2,i3,2,0)-DD(i1-1,i2,i3,2,0))/(2.*dr[0]), tyr = (DD(i1+1,i2,i3,2,1)-DD(i1-1,i2,i3,2,1))/(2.*dr[0]), tzr = (DD(i1+1,i2,i3,2,2)-DD(i1-1,i2,i3,2,2))/(2.*dr[0]);
+                                    Real rxs = (DD(i1,i2+1,i3,0,0)-DD(i1,i2-1,i3,0,0))/(2.*dr[1]), rys = (DD(i1,i2+1,i3,0,1)-DD(i1,i2-1,i3,0,1))/(2.*dr[1]), rzs = (DD(i1,i2+1,i3,0,2)-DD(i1,i2-1,i3,0,2))/(2.*dr[1]);
+                                    Real sxs = (DD(i1,i2+1,i3,1,0)-DD(i1,i2-1,i3,1,0))/(2.*dr[1]), sys = (DD(i1,i2+1,i3,1,1)-DD(i1,i2-1,i3,1,1))/(2.*dr[1]), szs = (DD(i1,i2+1,i3,1,2)-DD(i1,i2-1,i3,1,2))/(2.*dr[1]);
+                                    Real txs = (DD(i1,i2+1,i3,2,0)-DD(i1,i2-1,i3,2,0))/(2.*dr[1]), tys = (DD(i1,i2+1,i3,2,1)-DD(i1,i2-1,i3,2,1))/(2.*dr[1]), tzs = (DD(i1,i2+1,i3,2,2)-DD(i1,i2-1,i3,2,2))/(2.*dr[1]);
+                                    Real rxt = (DD(i1,i2,i3+1,0,0)-DD(i1,i2,i3-1,0,0))/(2.*dr[2]), ryt = (DD(i1,i2,i3+1,0,1)-DD(i1,i2,i3-1,0,1))/(2.*dr[2]), rzt = (DD(i1,i2,i3+1,0,2)-DD(i1,i2,i3-1,0,2))/(2.*dr[2]);
+                                    Real sxt = (DD(i1,i2,i3+1,1,0)-DD(i1,i2,i3-1,1,0))/(2.*dr[2]), syt = (DD(i1,i2,i3+1,1,1)-DD(i1,i2,i3-1,1,1))/(2.*dr[2]), szt = (DD(i1,i2,i3+1,1,2)-DD(i1,i2,i3-1,1,2))/(2.*dr[2]);
+                                    Real txt = (DD(i1,i2,i3+1,2,0)-DD(i1,i2,i3-1,2,0))/(2.*dr[2]), tyt = (DD(i1,i2,i3+1,2,1)-DD(i1,i2,i3-1,2,1))/(2.*dr[2]), tzt = (DD(i1,i2,i3+1,2,2)-DD(i1,i2,i3-1,2,2))/(2.*dr[2]);                
+                                    Real rxx= rx*rxr + sx*rxs + tx*rxt;
+                                    Real sxx= rx*sxr + sx*sxs + tx*sxt;
+                                    Real txx= rx*txr + sx*txs + tx*txt;
+                                    Real ryy= ry*ryr + sy*rys + ty*ryt;
+                                    Real syy= ry*syr + sy*sys + ty*syt;
+                                    Real tyy= ry*tyr + sy*tys + ty*tyt;
+                                    Real rzz= rz*rzr + sz*rzs + tz*rzt;
+                                    Real szz= rz*szr + sz*szs + tz*szt;
+                                    Real tzz= rz*tzr + sz*tzs + tz*tzt;
+                  // Real rxx= rx*rxr + sx*rxs + tx*rxt, ryx= rx*ryr + sx*rys + tx*ryt, rzx= rx*rzr + sx*rzs + tx*rzt;
+                  // Real sxx= rx*sxr + sx*sxs + tx*sxt, syx= rx*syr + sx*sys + tx*syt, szx= rx*szr + sx*szs + tx*szt;
+                  // Real txx= rx*txr + sx*txs + tx*txt, tyx= rx*tyr + sx*tys + tx*tyt, tzx= rx*tzr + sx*tzs + tx*tzt;                
+                  // Real rxy= ry*rxr + sy*rxs + ty*rxt, ryy= ry*ryr + sy*rys + ty*ryt, rzy= ry*rzr + sy*rzs + ty*rzt;
+                  // Real sxy= ry*sxr + sy*sxs + ty*sxt, syy= ry*syr + sy*sys + ty*syt, szy= ry*szr + sy*szs + ty*szt;
+                  // Real txy= ry*txr + sy*txs + ty*txt, tyy= ry*tyr + sy*tys + ty*tyt, tzy= ry*tzr + sy*tzs + ty*tzt;  
+                  // Real rxz= rz*rxr + sz*rxs + tz*rxt, ryz= rz*ryr + sz*rys + tz*ryt, rzz= rz*rzr + sz*rzs + tz*rzt;
+                  // Real sxz= rz*sxr + sz*sxs + tz*sxt, syz= rz*syr + sz*sys + tz*syt, szz= rz*szr + sz*szs + tz*szt;
+                  // Real txz= rz*txr + sz*txs + tz*txt, tyz= rz*tyr + sz*tys + tz*tyt, tzz= rz*tzr + sz*tzs + tz*tzt;  
+                                    c100(i1,i2,i3) = (rxx + ryy + rzz)/(dr[0]); 
+                                    c010(i1,i2,i3) = (sxx + syy + szz)/(dr[1]); 
+                                    c001(i1,i2,i3) = (txx + tyy + tzz)/(dr[2]); 
+                                }
+                                Range R5(-2,2);
+                                RealArray cp(R5,R5,R5);
+                                FOR_3(i1,i2,i3,I1,I2,I3)
+                                {
+                  // coefficients of Lap^2 (from research/compatibility/writeLcbcFiles.mpl --> lcbcEquationsDirichlet3dOrder4.h)
+                                    if( maskLocal(i1,i2,i3)>0 )
+                                    {
+                                        cp(-2,-2,-2)=0;
+                                        cp(-1,-2,-2)=0;
+                                        cp( 0,-2,-2)=1./16.*c011(i1,i2,i3)*c011(i1,i2-1,i3-1);
+                                        cp( 1,-2,-2)=0;
+                                        cp( 2,-2,-2)=0;
+                                        cp(-2,-1,-2)=0;
+                                        cp(-1,-1,-2)=1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3-1)+1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3-1);
+                                        cp( 0,-1,-2)=1./4.*c002(i1,i2,i3)*c011(i1,i2,i3-1)+c011(i1,i2,i3)*(-1./8.*c001(i1,i2-1,i3-1)+1./4.*c002(i1,i2-1,i3-1))-1./8.*c001(i1,i2,i3)*c011(i1,i2,i3-1);
+                                        cp( 1,-1,-2)=-1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3-1)-1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3-1);
+                                        cp( 2,-1,-2)=0;
+                                        cp(-2, 0,-2)=1./16.*c101(i1,i2,i3)*c101(i1-1,i2,i3-1);
+                                        cp(-1, 0,-2)=1./4.*c002(i1,i2,i3)*c101(i1,i2,i3-1)+c101(i1,i2,i3)*(-1./8.*c001(i1-1,i2,i3-1)+1./4.*c002(i1-1,i2,i3-1))-1./8.*c001(i1,i2,i3)*c101(i1,i2,i3-1);
+                                        cp( 0, 0,-2)=c002(i1,i2,i3)*(c002(i1,i2,i3-1)-1./2.*c001(i1,i2,i3-1))+c101(i1,i2,i3)*(-1./16.*c101(i1+1,i2,i3-1)-1./16.*c101(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2+1,i3-1)-1./16.*c011(i1,i2-1,i3-1))+c001(i1,i2,i3)*(1./4.*c001(i1,i2,i3-1)-1./2.*c002(i1,i2,i3-1));
+                                        cp( 1, 0,-2)=-1./4.*c002(i1,i2,i3)*c101(i1,i2,i3-1)+c101(i1,i2,i3)*(1./8.*c001(i1+1,i2,i3-1)-1./4.*c002(i1+1,i2,i3-1))+1./8.*c001(i1,i2,i3)*c101(i1,i2,i3-1);
+                                        cp( 2, 0,-2)=1./16.*c101(i1,i2,i3)*c101(i1+1,i2,i3-1);
+                                        cp(-2, 1,-2)=0;
+                                        cp(-1, 1,-2)=-1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3-1)-1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3-1);
+                                        cp( 0, 1,-2)=-1./4.*c002(i1,i2,i3)*c011(i1,i2,i3-1)+c011(i1,i2,i3)*(1./8.*c001(i1,i2+1,i3-1)-1./4.*c002(i1,i2+1,i3-1))+1./8.*c001(i1,i2,i3)*c011(i1,i2,i3-1);
+                                        cp( 1, 1,-2)=1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3-1)+1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3-1);
+                                        cp( 2, 1,-2)=0;
+                                        cp(-2, 2,-2)=0;
+                                        cp(-1, 2,-2)=0;
+                                        cp( 0, 2,-2)=1./16.*c011(i1,i2,i3)*c011(i1,i2+1,i3-1);
+                                        cp( 1, 2,-2)=0;
+                                        cp( 2, 2,-2)=0;
+                                        cp(-2,-2,-1)=0;
+                                        cp(-1,-2,-1)=1./16.*c110(i1,i2,i3)*c011(i1-1,i2-1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3-1);
+                                        cp( 0,-2,-1)=1./4.*c020(i1,i2,i3)*c011(i1,i2-1,i3)+c011(i1,i2,i3)*(-1./8.*c010(i1,i2-1,i3-1)+1./4.*c020(i1,i2-1,i3-1))-1./8.*c010(i1,i2,i3)*c011(i1,i2-1,i3);
+                                        cp( 1,-2,-1)=-1./16.*c110(i1,i2,i3)*c011(i1+1,i2-1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3-1);
+                                        cp( 2,-2,-1)=0;
+                                        cp(-2,-1,-1)=1./16.*c110(i1,i2,i3)*c101(i1-1,i2-1,i3)+1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3-1);
+                                        cp(-1,-1,-1)=1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(1./4.*c002(i1-1,i2-1,i3)-1./8.*c001(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./8.*c010(i1-1,i2,i3-1)+1./4.*c020(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./4.*c200(i1,i2-1,i3-1)-1./8.*c100(i1,i2-1,i3-1))-1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
+                                        cp( 0,-1,-1)=-1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(c002(i1,i2-1,i3)-1./2.*c001(i1,i2-1,i3)-1./2.*c011(i1,i2,i3))+c002(i1,i2,i3)*(-1./2.*c010(i1,i2,i3-1)+c020(i1,i2,i3-1)-1./2.*c011(i1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c101(i1+1,i2-1,i3)-1./16.*c101(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c110(i1+1,i2,i3-1)-1./16.*c110(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./2.*c002(i1,i2-1,i3-1)-1./2.*c020(i1,i2-1,i3-1)-1./2.*c200(i1,i2-1,i3-1))+c010(i1,i2,i3)*(1./4.*c001(i1,i2-1,i3)-1./2.*c002(i1,i2-1,i3))+c001(i1,i2,i3)*(1./4.*c010(i1,i2,i3-1)-1./2.*c020(i1,i2,i3-1));
+                                        cp( 1,-1,-1)=1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(-1./4.*c002(i1+1,i2-1,i3)+1./8.*c001(i1+1,i2-1,i3))+c101(i1,i2,i3)*(1./8.*c010(i1+1,i2,i3-1)-1./4.*c020(i1+1,i2,i3-1))+c011(i1,i2,i3)*(1./8.*c100(i1,i2-1,i3-1)+1./4.*c200(i1,i2-1,i3-1))+1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
+                                        cp( 2,-1,-1)=1./16.*c110(i1,i2,i3)*c101(i1+1,i2-1,i3)+1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3-1);
+                                        cp(-2, 0,-1)=1./4.*c200(i1,i2,i3)*c101(i1-1,i2,i3)+c101(i1,i2,i3)*(1./4.*c200(i1-1,i2,i3-1)-1./8.*c100(i1-1,i2,i3-1))-1./8.*c100(i1,i2,i3)*c101(i1-1,i2,i3);
+                                        cp(-1, 0,-1)=c200(i1,i2,i3)*(-1./2.*c001(i1-1,i2,i3)-1./2.*c101(i1,i2,i3)+c002(i1-1,i2,i3))-1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(-1./2.*c100(i1,i2,i3-1)+c200(i1,i2,i3-1)-1./2.*c101(i1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c011(i1-1,i2+1,i3)-1./16.*c011(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3-1)-1./2.*c002(i1-1,i2,i3-1)-1./2.*c020(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./16.*c110(i1,i2+1,i3-1)-1./16.*c110(i1,i2-1,i3-1))+c100(i1,i2,i3)*(1./4.*c001(i1-1,i2,i3)-1./2.*c002(i1-1,i2,i3))+c001(i1,i2,i3)*(-1./2.*c200(i1,i2,i3-1)+1./4.*c100(i1,i2,i3-1));
+                                        cp( 0, 0,-1)=c200(i1,i2,i3)*(c001(i1,i2,i3)-2*c002(i1,i2,i3)-1./4.*c101(i1-1,i2,i3)+1./4.*c101(i1+1,i2,i3))+c020(i1,i2,i3)*(c001(i1,i2,i3)-2*c002(i1,i2,i3)-1./4.*c011(i1,i2-1,i3)+1./4.*c011(i1,i2+1,i3))+c002(i1,i2,i3)*(-2*c002(i1,i2,i3-1)-2*c020(i1,i2,i3-1)-2*c200(i1,i2,i3-1)+c001(i1,i2,i3)-2*c002(i1,i2,i3))+c101(i1,i2,i3)*(-1./4.*c200(i1+1,i2,i3-1)+1./4.*c200(i1-1,i2,i3-1)+1./8.*c100(i1+1,i2,i3-1)+1./8.*c100(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./8.*c010(i1,i2-1,i3-1)+1./8.*c010(i1,i2+1,i3-1)-1./4.*c020(i1,i2+1,i3-1)+1./4.*c020(i1,i2-1,i3-1))+c100(i1,i2,i3)*(1./8.*c101(i1+1,i2,i3)+1./8.*c101(i1-1,i2,i3))+c010(i1,i2,i3)*(1./8.*c011(i1,i2+1,i3)+1./8.*c011(i1,i2-1,i3))+c001(i1,i2,i3)*(c200(i1,i2,i3-1)+c020(i1,i2,i3-1)+c002(i1,i2,i3-1));
+                                        cp( 1, 0,-1)=c200(i1,i2,i3)*(1./2.*c101(i1,i2,i3)-1./2.*c001(i1+1,i2,i3)+c002(i1+1,i2,i3))+1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(1./2.*c100(i1,i2,i3-1)+c200(i1,i2,i3-1)+1./2.*c101(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c011(i1+1,i2-1,i3)+1./16.*c011(i1+1,i2+1,i3))+c101(i1,i2,i3)*(1./2.*c200(i1+1,i2,i3-1)+1./2.*c020(i1+1,i2,i3-1)+1./2.*c002(i1+1,i2,i3-1))+c011(i1,i2,i3)*(1./16.*c110(i1,i2+1,i3-1)+1./16.*c110(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./4.*c001(i1+1,i2,i3)+1./2.*c002(i1+1,i2,i3))+c001(i1,i2,i3)*(-1./4.*c100(i1,i2,i3-1)-1./2.*c200(i1,i2,i3-1));
+                                        cp( 2, 0,-1)=-1./4.*c200(i1,i2,i3)*c101(i1+1,i2,i3)+c101(i1,i2,i3)*(-1./4.*c200(i1+1,i2,i3-1)-1./8.*c100(i1+1,i2,i3-1))-1./8.*c100(i1,i2,i3)*c101(i1+1,i2,i3);
+                                        cp(-2, 1,-1)=-1./16.*c110(i1,i2,i3)*c101(i1-1,i2+1,i3)-1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3-1);
+                                        cp(-1, 1,-1)=-1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(-1./4.*c002(i1-1,i2+1,i3)+1./8.*c001(i1-1,i2+1,i3))+c101(i1,i2,i3)*(1./4.*c020(i1-1,i2,i3-1)+1./8.*c010(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./4.*c200(i1,i2+1,i3-1)+1./8.*c100(i1,i2+1,i3-1))+1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
+                                        cp( 0, 1,-1)=1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(1./2.*c011(i1,i2,i3)-1./2.*c001(i1,i2+1,i3)+c002(i1,i2+1,i3))+c002(i1,i2,i3)*(1./2.*c010(i1,i2,i3-1)+c020(i1,i2,i3-1)+1./2.*c011(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c101(i1+1,i2+1,i3)+1./16.*c101(i1-1,i2+1,i3))+c101(i1,i2,i3)*(1./16.*c110(i1+1,i2,i3-1)+1./16.*c110(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./2.*c200(i1,i2+1,i3-1)+1./2.*c002(i1,i2+1,i3-1)+1./2.*c020(i1,i2+1,i3-1))+c010(i1,i2,i3)*(-1./4.*c001(i1,i2+1,i3)+1./2.*c002(i1,i2+1,i3))+c001(i1,i2,i3)*(-1./2.*c020(i1,i2,i3-1)-1./4.*c010(i1,i2,i3-1));
+                                        cp( 1, 1,-1)=-1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(1./4.*c002(i1+1,i2+1,i3)-1./8.*c001(i1+1,i2+1,i3))+c101(i1,i2,i3)*(-1./4.*c020(i1+1,i2,i3-1)-1./8.*c010(i1+1,i2,i3-1))+c011(i1,i2,i3)*(-1./8.*c100(i1,i2+1,i3-1)-1./4.*c200(i1,i2+1,i3-1))-1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
+                                        cp( 2, 1,-1)=-1./16.*c110(i1,i2,i3)*c101(i1+1,i2+1,i3)-1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3-1);
+                                        cp(-2, 2,-1)=0;
+                                        cp(-1, 2,-1)=1./16.*c110(i1,i2,i3)*c011(i1-1,i2+1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3-1);
+                                        cp( 0, 2,-1)=-1./4.*c020(i1,i2,i3)*c011(i1,i2+1,i3)+c011(i1,i2,i3)*(-1./8.*c010(i1,i2+1,i3-1)-1./4.*c020(i1,i2+1,i3-1))-1./8.*c010(i1,i2,i3)*c011(i1,i2+1,i3);
+                                        cp( 1, 2,-1)=-1./16.*c110(i1,i2,i3)*c011(i1+1,i2+1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3-1);
+                                        cp( 2, 2,-1)=0;
+                                        cp(-2,-2, 0)=1./16.*c110(i1,i2,i3)*c110(i1-1,i2-1,i3);
+                                        cp(-1,-2, 0)=1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(1./4.*c020(i1-1,i2-1,i3)-1./8.*c010(i1-1,i2-1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
+                                        cp( 0,-2, 0)=c020(i1,i2,i3)*(-1./2.*c010(i1,i2-1,i3)+c020(i1,i2-1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2-1,i3)-1./16.*c110(i1-1,i2-1,i3))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2-1,i3+1)-1./16.*c011(i1,i2-1,i3-1))+c010(i1,i2,i3)*(1./4.*c010(i1,i2-1,i3)-1./2.*c020(i1,i2-1,i3));
+                                        cp( 1,-2, 0)=-1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(1./8.*c010(i1+1,i2-1,i3)-1./4.*c020(i1+1,i2-1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
+                                        cp( 2,-2, 0)=1./16.*c110(i1,i2,i3)*c110(i1+1,i2-1,i3);
+                                        cp(-2,-1, 0)=1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(-1./8.*c100(i1-1,i2-1,i3)+1./4.*c200(i1-1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
+                                        cp(-1,-1, 0)=c200(i1,i2,i3)*(c020(i1-1,i2,i3)-1./2.*c010(i1-1,i2,i3)-1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(c200(i1,i2-1,i3)-1./2.*c100(i1,i2-1,i3)-1./2.*c110(i1,i2,i3))-1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(-1./2.*c200(i1-1,i2-1,i3)-1./2.*c020(i1-1,i2-1,i3)-1./2.*c002(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c011(i1-1,i2,i3-1)-1./16.*c011(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c101(i1,i2-1,i3+1)-1./16.*c101(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./2.*c020(i1-1,i2,i3)+1./4.*c010(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./2.*c200(i1,i2-1,i3)+1./4.*c100(i1,i2-1,i3));
+                                        cp( 0,-1, 0)=c200(i1,i2,i3)*(c010(i1,i2,i3)-2*c020(i1,i2,i3)-1./4.*c110(i1-1,i2,i3)+1./4.*c110(i1+1,i2,i3))+c020(i1,i2,i3)*(-2*c002(i1,i2-1,i3)-2*c020(i1,i2-1,i3)-2*c200(i1,i2-1,i3)+c010(i1,i2,i3)-2*c020(i1,i2,i3))+c002(i1,i2,i3)*(c010(i1,i2,i3)-2*c020(i1,i2,i3)-1./4.*c011(i1,i2,i3-1)+1./4.*c011(i1,i2,i3+1))+c110(i1,i2,i3)*(1./8.*c100(i1-1,i2-1,i3)-1./4.*c200(i1+1,i2-1,i3)+1./4.*c200(i1-1,i2-1,i3)+1./8.*c100(i1+1,i2-1,i3))+c011(i1,i2,i3)*(1./8.*c001(i1,i2-1,i3-1)+1./8.*c001(i1,i2-1,i3+1)-1./4.*c002(i1,i2-1,i3+1)+1./4.*c002(i1,i2-1,i3-1))+c100(i1,i2,i3)*(1./8.*c110(i1+1,i2,i3)+1./8.*c110(i1-1,i2,i3))+c010(i1,i2,i3)*(c200(i1,i2-1,i3)+c002(i1,i2-1,i3)+c020(i1,i2-1,i3))+c001(i1,i2,i3)*(1./8.*c011(i1,i2,i3+1)+1./8.*c011(i1,i2,i3-1));
+                                        cp( 1,-1, 0)=c200(i1,i2,i3)*(1./2.*c110(i1,i2,i3)-1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3))+c020(i1,i2,i3)*(1./2.*c110(i1,i2,i3)+c200(i1,i2-1,i3)+1./2.*c100(i1,i2-1,i3))+1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(1./2.*c200(i1+1,i2-1,i3)+1./2.*c020(i1+1,i2-1,i3)+1./2.*c002(i1+1,i2-1,i3))+c101(i1,i2,i3)*(1./16.*c011(i1+1,i2,i3-1)+1./16.*c011(i1+1,i2,i3+1))+c011(i1,i2,i3)*(1./16.*c101(i1,i2-1,i3+1)+1./16.*c101(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2-1,i3)-1./2.*c200(i1,i2-1,i3));
+                                        cp( 2,-1, 0)=-1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1+1,i2-1,i3)-1./8.*c100(i1+1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
+                                        cp(-2, 0, 0)=c200(i1,i2,i3)*(c200(i1-1,i2,i3)-1./2.*c100(i1-1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2+1,i3)-1./16.*c110(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c101(i1-1,i2,i3-1)-1./16.*c101(i1-1,i2,i3+1))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)+1./4.*c100(i1-1,i2,i3));
+                                        cp(-1, 0, 0)=c200(i1,i2,i3)*(c100(i1,i2,i3)-2*c200(i1,i2,i3)-2*c002(i1-1,i2,i3)-2*c020(i1-1,i2,i3)-2*c200(i1-1,i2,i3))+c020(i1,i2,i3)*(c100(i1,i2,i3)-2*c200(i1,i2,i3)+1./4.*c110(i1,i2+1,i3)-1./4.*c110(i1,i2-1,i3))+c002(i1,i2,i3)*(c100(i1,i2,i3)-2*c200(i1,i2,i3)+1./4.*c101(i1,i2,i3+1)-1./4.*c101(i1,i2,i3-1))+c110(i1,i2,i3)*(1./8.*c010(i1-1,i2+1,i3)+1./4.*c020(i1-1,i2-1,i3)-1./4.*c020(i1-1,i2+1,i3)+1./8.*c010(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./8.*c001(i1-1,i2,i3-1)+1./8.*c001(i1-1,i2,i3+1)+1./4.*c002(i1-1,i2,i3-1)-1./4.*c002(i1-1,i2,i3+1))+c100(i1,i2,i3)*(c200(i1-1,i2,i3)+c020(i1-1,i2,i3)+c002(i1-1,i2,i3))+c010(i1,i2,i3)*(1./8.*c110(i1,i2+1,i3)+1./8.*c110(i1,i2-1,i3))+c001(i1,i2,i3)*(1./8.*c101(i1,i2,i3+1)+1./8.*c101(i1,i2,i3-1));
+                                        cp( 0, 0, 0)=c200(i1,i2,i3)*(-1./2.*c100(i1+1,i2,i3)+c200(i1-1,i2,i3)+c200(i1+1,i2,i3)+1./2.*c100(i1-1,i2,i3)+4*c200(i1,i2,i3)+4*c002(i1,i2,i3)+4*c020(i1,i2,i3))+c020(i1,i2,i3)*(4*c200(i1,i2,i3)+4*c002(i1,i2,i3)+4*c020(i1,i2,i3)+c020(i1,i2+1,i3)+1./2.*c010(i1,i2-1,i3)-1./2.*c010(i1,i2+1,i3)+c020(i1,i2-1,i3))+c002(i1,i2,i3)*(4*c200(i1,i2,i3)+4*c002(i1,i2,i3)+4*c020(i1,i2,i3)-1./2.*c001(i1,i2,i3+1)+c002(i1,i2,i3-1)+c002(i1,i2,i3+1)+1./2.*c001(i1,i2,i3-1))+c110(i1,i2,i3)*(1./16.*c110(i1+1,i2+1,i3)+1./16.*c110(i1-1,i2+1,i3)+1./16.*c110(i1+1,i2-1,i3)+1./16.*c110(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./16.*c101(i1+1,i2,i3-1)+1./16.*c101(i1+1,i2,i3+1)+1./16.*c101(i1-1,i2,i3-1)+1./16.*c101(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./16.*c011(i1,i2-1,i3+1)+1./16.*c011(i1,i2+1,i3-1)+1./16.*c011(i1,i2+1,i3+1)+1./16.*c011(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)-1./4.*c100(i1-1,i2,i3)-1./4.*c100(i1+1,i2,i3)+1./2.*c200(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c010(i1,i2+1,i3)-1./4.*c010(i1,i2-1,i3)-1./2.*c020(i1,i2-1,i3)+1./2.*c020(i1,i2+1,i3))+c001(i1,i2,i3)*(-1./4.*c001(i1,i2,i3-1)-1./4.*c001(i1,i2,i3+1)+1./2.*c002(i1,i2,i3+1)-1./2.*c002(i1,i2,i3-1));
+                                        cp( 1, 0, 0)=c200(i1,i2,i3)*(-c100(i1,i2,i3)-2*c200(i1,i2,i3)-2*c002(i1+1,i2,i3)-2*c020(i1+1,i2,i3)-2*c200(i1+1,i2,i3))+c020(i1,i2,i3)*(-c100(i1,i2,i3)-2*c200(i1,i2,i3)-1./4.*c110(i1,i2+1,i3)+1./4.*c110(i1,i2-1,i3))+c002(i1,i2,i3)*(-c100(i1,i2,i3)-2*c200(i1,i2,i3)-1./4.*c101(i1,i2,i3+1)+1./4.*c101(i1,i2,i3-1))+c110(i1,i2,i3)*(-1./8.*c010(i1+1,i2+1,i3)-1./8.*c010(i1+1,i2-1,i3)+1./4.*c020(i1+1,i2+1,i3)-1./4.*c020(i1+1,i2-1,i3))+c101(i1,i2,i3)*(-1./8.*c001(i1+1,i2,i3+1)-1./8.*c001(i1+1,i2,i3-1)+1./4.*c002(i1+1,i2,i3+1)-1./4.*c002(i1+1,i2,i3-1))+c100(i1,i2,i3)*(-c020(i1+1,i2,i3)-c002(i1+1,i2,i3)-c200(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./8.*c110(i1,i2+1,i3)-1./8.*c110(i1,i2-1,i3))+c001(i1,i2,i3)*(-1./8.*c101(i1,i2,i3+1)-1./8.*c101(i1,i2,i3-1));
+                                        cp( 2, 0, 0)=c200(i1,i2,i3)*(1./2.*c100(i1+1,i2,i3)+c200(i1+1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2+1,i3)-1./16.*c110(i1+1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c101(i1+1,i2,i3-1)-1./16.*c101(i1+1,i2,i3+1))+c100(i1,i2,i3)*(1./4.*c100(i1+1,i2,i3)+1./2.*c200(i1+1,i2,i3));
+                                        cp(-2, 1, 0)=-1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)+1./8.*c100(i1-1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
+                                        cp(-1, 1, 0)=c200(i1,i2,i3)*(c020(i1-1,i2,i3)+1./2.*c010(i1-1,i2,i3)+1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(-1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)+1./2.*c110(i1,i2,i3))+1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(1./2.*c200(i1-1,i2+1,i3)+1./2.*c020(i1-1,i2+1,i3)+1./2.*c002(i1-1,i2+1,i3))+c101(i1,i2,i3)*(1./16.*c011(i1-1,i2,i3+1)+1./16.*c011(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./16.*c101(i1,i2+1,i3-1)+1./16.*c101(i1,i2+1,i3+1))+c100(i1,i2,i3)*(-1./4.*c010(i1-1,i2,i3)-1./2.*c020(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
+                                        cp( 0, 1, 0)=c200(i1,i2,i3)*(-c010(i1,i2,i3)-2*c020(i1,i2,i3)+1./4.*c110(i1-1,i2,i3)-1./4.*c110(i1+1,i2,i3))+c020(i1,i2,i3)*(-2*c002(i1,i2+1,i3)-2*c020(i1,i2+1,i3)-2*c200(i1,i2+1,i3)-c010(i1,i2,i3)-2*c020(i1,i2,i3))+c002(i1,i2,i3)*(-c010(i1,i2,i3)-2*c020(i1,i2,i3)+1./4.*c011(i1,i2,i3-1)-1./4.*c011(i1,i2,i3+1))+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)-1./8.*c100(i1-1,i2+1,i3)-1./8.*c100(i1+1,i2+1,i3)+1./4.*c200(i1+1,i2+1,i3))+c011(i1,i2,i3)*(-1./8.*c001(i1,i2+1,i3-1)+1./4.*c002(i1,i2+1,i3+1)-1./4.*c002(i1,i2+1,i3-1)-1./8.*c001(i1,i2+1,i3+1))+c100(i1,i2,i3)*(-1./8.*c110(i1+1,i2,i3)-1./8.*c110(i1-1,i2,i3))+c010(i1,i2,i3)*(-c200(i1,i2+1,i3)-c002(i1,i2+1,i3)-c020(i1,i2+1,i3))+c001(i1,i2,i3)*(-1./8.*c011(i1,i2,i3+1)-1./8.*c011(i1,i2,i3-1));
+                                        cp( 1, 1, 0)=c200(i1,i2,i3)*(-1./2.*c110(i1,i2,i3)+1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3))+c020(i1,i2,i3)*(1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)-1./2.*c110(i1,i2,i3))-1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(-1./2.*c020(i1+1,i2+1,i3)-1./2.*c200(i1+1,i2+1,i3)-1./2.*c002(i1+1,i2+1,i3))+c101(i1,i2,i3)*(-1./16.*c011(i1+1,i2,i3-1)-1./16.*c011(i1+1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c101(i1,i2+1,i3-1)-1./16.*c101(i1,i2+1,i3+1))+c100(i1,i2,i3)*(1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
+                                        cp( 2, 1, 0)=1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(1./8.*c100(i1+1,i2+1,i3)+1./4.*c200(i1+1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
+                                        cp(-2, 2, 0)=1./16.*c110(i1,i2,i3)*c110(i1-1,i2+1,i3);
+                                        cp(-1, 2, 0)=-1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(-1./8.*c010(i1-1,i2+1,i3)-1./4.*c020(i1-1,i2+1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
+                                        cp( 0, 2, 0)=c020(i1,i2,i3)*(c020(i1,i2+1,i3)+1./2.*c010(i1,i2+1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2+1,i3)-1./16.*c110(i1-1,i2+1,i3))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2+1,i3-1)-1./16.*c011(i1,i2+1,i3+1))+c010(i1,i2,i3)*(1./4.*c010(i1,i2+1,i3)+1./2.*c020(i1,i2+1,i3));
+                                        cp( 1, 2, 0)=1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(1./8.*c010(i1+1,i2+1,i3)+1./4.*c020(i1+1,i2+1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
+                                        cp( 2, 2, 0)=1./16.*c110(i1,i2,i3)*c110(i1+1,i2+1,i3);
+                                        cp(-2,-2, 1)=0;
+                                        cp(-1,-2, 1)=-1./16.*c110(i1,i2,i3)*c011(i1-1,i2-1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3+1);
+                                        cp( 0,-2, 1)=-1./4.*c020(i1,i2,i3)*c011(i1,i2-1,i3)+c011(i1,i2,i3)*(1./8.*c010(i1,i2-1,i3+1)-1./4.*c020(i1,i2-1,i3+1))+1./8.*c010(i1,i2,i3)*c011(i1,i2-1,i3);
+                                        cp( 1,-2, 1)=1./16.*c110(i1,i2,i3)*c011(i1+1,i2-1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3+1);
+                                        cp( 2,-2, 1)=0;
+                                        cp(-2,-1, 1)=-1./16.*c110(i1,i2,i3)*c101(i1-1,i2-1,i3)-1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3+1);
+                                        cp(-1,-1, 1)=-1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(1./8.*c001(i1-1,i2-1,i3)+1./4.*c002(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./8.*c010(i1-1,i2,i3+1)-1./4.*c020(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./8.*c100(i1,i2-1,i3+1)-1./4.*c200(i1,i2-1,i3+1))+1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
+                                        cp( 0,-1, 1)=1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(c002(i1,i2-1,i3)+1./2.*c001(i1,i2-1,i3)+1./2.*c011(i1,i2,i3))+c002(i1,i2,i3)*(-1./2.*c010(i1,i2,i3+1)+c020(i1,i2,i3+1)+1./2.*c011(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c101(i1+1,i2-1,i3)+1./16.*c101(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./16.*c110(i1+1,i2,i3+1)+1./16.*c110(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./2.*c200(i1,i2-1,i3+1)+1./2.*c002(i1,i2-1,i3+1)+1./2.*c020(i1,i2-1,i3+1))+c010(i1,i2,i3)*(-1./2.*c002(i1,i2-1,i3)-1./4.*c001(i1,i2-1,i3))+c001(i1,i2,i3)*(-1./4.*c010(i1,i2,i3+1)+1./2.*c020(i1,i2,i3+1));
+                                        cp( 1,-1, 1)=-1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(-1./8.*c001(i1+1,i2-1,i3)-1./4.*c002(i1+1,i2-1,i3))+c101(i1,i2,i3)*(-1./8.*c010(i1+1,i2,i3+1)+1./4.*c020(i1+1,i2,i3+1))+c011(i1,i2,i3)*(-1./8.*c100(i1,i2-1,i3+1)-1./4.*c200(i1,i2-1,i3+1))-1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
+                                        cp( 2,-1, 1)=-1./16.*c110(i1,i2,i3)*c101(i1+1,i2-1,i3)-1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3+1);
+                                        cp(-2, 0, 1)=-1./4.*c200(i1,i2,i3)*c101(i1-1,i2,i3)+c101(i1,i2,i3)*(-1./4.*c200(i1-1,i2,i3+1)+1./8.*c100(i1-1,i2,i3+1))+1./8.*c100(i1,i2,i3)*c101(i1-1,i2,i3);
+                                        cp(-1, 0, 1)=c200(i1,i2,i3)*(1./2.*c001(i1-1,i2,i3)+1./2.*c101(i1,i2,i3)+c002(i1-1,i2,i3))+1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(-1./2.*c100(i1,i2,i3+1)+1./2.*c101(i1,i2,i3)+c200(i1,i2,i3+1))+c110(i1,i2,i3)*(1./16.*c011(i1-1,i2+1,i3)+1./16.*c011(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./2.*c200(i1-1,i2,i3+1)+1./2.*c002(i1-1,i2,i3+1)+1./2.*c020(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./16.*c110(i1,i2+1,i3+1)+1./16.*c110(i1,i2-1,i3+1))+c100(i1,i2,i3)*(-1./2.*c002(i1-1,i2,i3)-1./4.*c001(i1-1,i2,i3))+c001(i1,i2,i3)*(-1./4.*c100(i1,i2,i3+1)+1./2.*c200(i1,i2,i3+1));
+                                        cp( 0, 0, 1)=c200(i1,i2,i3)*(-c001(i1,i2,i3)-2*c002(i1,i2,i3)+1./4.*c101(i1-1,i2,i3)-1./4.*c101(i1+1,i2,i3))+c020(i1,i2,i3)*(-c001(i1,i2,i3)-2*c002(i1,i2,i3)+1./4.*c011(i1,i2-1,i3)-1./4.*c011(i1,i2+1,i3))+c002(i1,i2,i3)*(-2*c002(i1,i2,i3+1)-2*c020(i1,i2,i3+1)-2*c200(i1,i2,i3+1)-c001(i1,i2,i3)-2*c002(i1,i2,i3))+c101(i1,i2,i3)*(-1./4.*c200(i1-1,i2,i3+1)+1./4.*c200(i1+1,i2,i3+1)-1./8.*c100(i1-1,i2,i3+1)-1./8.*c100(i1+1,i2,i3+1))+c011(i1,i2,i3)*(1./4.*c020(i1,i2+1,i3+1)-1./8.*c010(i1,i2-1,i3+1)-1./8.*c010(i1,i2+1,i3+1)-1./4.*c020(i1,i2-1,i3+1))+c100(i1,i2,i3)*(-1./8.*c101(i1+1,i2,i3)-1./8.*c101(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./8.*c011(i1,i2+1,i3)-1./8.*c011(i1,i2-1,i3))+c001(i1,i2,i3)*(-c200(i1,i2,i3+1)-c020(i1,i2,i3+1)-c002(i1,i2,i3+1));
+                                        cp( 1, 0, 1)=c200(i1,i2,i3)*(-1./2.*c101(i1,i2,i3)+1./2.*c001(i1+1,i2,i3)+c002(i1+1,i2,i3))-1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(-1./2.*c101(i1,i2,i3)+1./2.*c100(i1,i2,i3+1)+c200(i1,i2,i3+1))+c110(i1,i2,i3)*(-1./16.*c011(i1+1,i2-1,i3)-1./16.*c011(i1+1,i2+1,i3))+c101(i1,i2,i3)*(-1./2.*c200(i1+1,i2,i3+1)-1./2.*c020(i1+1,i2,i3+1)-1./2.*c002(i1+1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c110(i1,i2+1,i3+1)-1./16.*c110(i1,i2-1,i3+1))+c100(i1,i2,i3)*(1./2.*c002(i1+1,i2,i3)+1./4.*c001(i1+1,i2,i3))+c001(i1,i2,i3)*(1./4.*c100(i1,i2,i3+1)+1./2.*c200(i1,i2,i3+1));
+                                        cp( 2, 0, 1)=1./4.*c200(i1,i2,i3)*c101(i1+1,i2,i3)+c101(i1,i2,i3)*(1./4.*c200(i1+1,i2,i3+1)+1./8.*c100(i1+1,i2,i3+1))+1./8.*c100(i1,i2,i3)*c101(i1+1,i2,i3);
+                                        cp(-2, 1, 1)=1./16.*c110(i1,i2,i3)*c101(i1-1,i2+1,i3)+1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3+1);
+                                        cp(-1, 1, 1)=1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(-1./8.*c001(i1-1,i2+1,i3)-1./4.*c002(i1-1,i2+1,i3))+c101(i1,i2,i3)*(-1./8.*c010(i1-1,i2,i3+1)-1./4.*c020(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./8.*c100(i1,i2+1,i3+1)+1./4.*c200(i1,i2+1,i3+1))-1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
+                                        cp( 0, 1, 1)=-1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(-1./2.*c011(i1,i2,i3)+1./2.*c001(i1,i2+1,i3)+c002(i1,i2+1,i3))+c002(i1,i2,i3)*(-1./2.*c011(i1,i2,i3)+c020(i1,i2,i3+1)+1./2.*c010(i1,i2,i3+1))+c110(i1,i2,i3)*(-1./16.*c101(i1+1,i2+1,i3)-1./16.*c101(i1-1,i2+1,i3))+c101(i1,i2,i3)*(-1./16.*c110(i1+1,i2,i3+1)-1./16.*c110(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./2.*c020(i1,i2+1,i3+1)-1./2.*c200(i1,i2+1,i3+1)-1./2.*c002(i1,i2+1,i3+1))+c010(i1,i2,i3)*(1./2.*c002(i1,i2+1,i3)+1./4.*c001(i1,i2+1,i3))+c001(i1,i2,i3)*(1./2.*c020(i1,i2,i3+1)+1./4.*c010(i1,i2,i3+1));
+                                        cp( 1, 1, 1)=1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(1./8.*c001(i1+1,i2+1,i3)+1./4.*c002(i1+1,i2+1,i3))+c101(i1,i2,i3)*(1./4.*c020(i1+1,i2,i3+1)+1./8.*c010(i1+1,i2,i3+1))+c011(i1,i2,i3)*(1./8.*c100(i1,i2+1,i3+1)+1./4.*c200(i1,i2+1,i3+1))+1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
+                                        cp( 2, 1, 1)=1./16.*c110(i1,i2,i3)*c101(i1+1,i2+1,i3)+1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3+1);
+                                        cp(-2, 2, 1)=0;
+                                        cp(-1, 2, 1)=-1./16.*c110(i1,i2,i3)*c011(i1-1,i2+1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3+1);
+                                        cp( 0, 2, 1)=1./4.*c020(i1,i2,i3)*c011(i1,i2+1,i3)+c011(i1,i2,i3)*(1./4.*c020(i1,i2+1,i3+1)+1./8.*c010(i1,i2+1,i3+1))+1./8.*c010(i1,i2,i3)*c011(i1,i2+1,i3);
+                                        cp( 1, 2, 1)=1./16.*c110(i1,i2,i3)*c011(i1+1,i2+1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3+1);
+                                        cp( 2, 2, 1)=0;
+                                        cp(-2,-2, 2)=0;
+                                        cp(-1,-2, 2)=0;
+                                        cp( 0,-2, 2)=1./16.*c011(i1,i2,i3)*c011(i1,i2-1,i3+1);
+                                        cp( 1,-2, 2)=0;
+                                        cp( 2,-2, 2)=0;
+                                        cp(-2,-1, 2)=0;
+                                        cp(-1,-1, 2)=1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3+1)+1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3+1);
+                                        cp( 0,-1, 2)=-1./4.*c002(i1,i2,i3)*c011(i1,i2,i3+1)+c011(i1,i2,i3)*(-1./8.*c001(i1,i2-1,i3+1)-1./4.*c002(i1,i2-1,i3+1))-1./8.*c001(i1,i2,i3)*c011(i1,i2,i3+1);
+                                        cp( 1,-1, 2)=-1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3+1)-1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3+1);
+                                        cp( 2,-1, 2)=0;
+                                        cp(-2, 0, 2)=1./16.*c101(i1,i2,i3)*c101(i1-1,i2,i3+1);
+                                        cp(-1, 0, 2)=-1./4.*c002(i1,i2,i3)*c101(i1,i2,i3+1)+c101(i1,i2,i3)*(-1./8.*c001(i1-1,i2,i3+1)-1./4.*c002(i1-1,i2,i3+1))-1./8.*c001(i1,i2,i3)*c101(i1,i2,i3+1);
+                                        cp( 0, 0, 2)=c002(i1,i2,i3)*(1./2.*c001(i1,i2,i3+1)+c002(i1,i2,i3+1))+c101(i1,i2,i3)*(-1./16.*c101(i1+1,i2,i3+1)-1./16.*c101(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2-1,i3+1)-1./16.*c011(i1,i2+1,i3+1))+c001(i1,i2,i3)*(1./4.*c001(i1,i2,i3+1)+1./2.*c002(i1,i2,i3+1));
+                                        cp( 1, 0, 2)=1./4.*c002(i1,i2,i3)*c101(i1,i2,i3+1)+c101(i1,i2,i3)*(1./8.*c001(i1+1,i2,i3+1)+1./4.*c002(i1+1,i2,i3+1))+1./8.*c001(i1,i2,i3)*c101(i1,i2,i3+1);
+                                        cp( 2, 0, 2)=1./16.*c101(i1,i2,i3)*c101(i1+1,i2,i3+1);
+                                        cp(-2, 1, 2)=0;
+                                        cp(-1, 1, 2)=-1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3+1)-1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3+1);
+                                        cp( 0, 1, 2)=1./4.*c002(i1,i2,i3)*c011(i1,i2,i3+1)+c011(i1,i2,i3)*(1./4.*c002(i1,i2+1,i3+1)+1./8.*c001(i1,i2+1,i3+1))+1./8.*c001(i1,i2,i3)*c011(i1,i2,i3+1);
+                                        cp( 1, 1, 2)=1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3+1)+1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3+1);
+                                        cp( 2, 1, 2)=0;
+                                        cp(-2, 2, 2)=0;
+                                        cp(-1, 2, 2)=0;
+                                        cp( 0, 2, 2)=1./16.*c011(i1,i2,i3)*c011(i1,i2+1,i3+1);
+                                        cp( 1, 2, 2)=0;
+                                        cp( 2, 2, 2)=0;
+                                        ForStencil(m1,m2,m3)
+                                        {
+                                            int m  = M123(m1,m2,m3);
+                                            coeffLocal(m,i1,i2,i3) += cLapSq*cp(m1,m2,m3);
+                                        }
+                    // // save for testing : 
+                    // ForStencil(m1,m2,m3)
+                    // {
+                    //   int m  = M123(m1,m2,m3);
+                    //   lapSqCoeffLocal(m,i1,i2,i3) = cp(m1,m2,m3);
+                    // }          
+                                    } // end if mask
+                                } // end for 3d       
+                            }
+                        } // end curvilinear
 
                 }
 
@@ -1617,7 +1422,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
             {
         // ----- this grid is advanced with EXPLICIT time-stepping ----
         // set the matrix the IDENTITY
-                printF("+++++ IMPLICIT: grid=%d (%s) IS TREATED EXPLICITLY\n",grid,(const char*)mg.getName());        
+                if( debug & 1 )
+                    printF("+++++ IMPLICIT: grid=%d (%s) IS TREATED EXPLICITLY\n",grid,(const char*)mg.getName());        
 
         // set diagonal entry
                 coeffLocal(mDiag,I1,I2,I3) = 1.0;
@@ -2003,14 +1809,11 @@ int CgWave::formImplicitTimeSteppingMatrix()
             }
 
 
-
-      // --- FILL BOUNDARY CONDITIONS ----
+      // ------------------------------
+      // ----- BOUNDARY CONDITIONS ----
+      // ------------------------------
 
             const int extrapOrder = orderOfAccuracy+1;
-
-      // const Real extrapCoeff3[] = {1.,-3.,3.,-1.};
-      // const Real extrapCoeff4[] = {1.,-4.,6.,-4.,1.};
-      // const Real extrapCoeff5[] = {1.,-5.,10.,-10.,5.,-1.};
             const Real *extrapCoeff;
             if( extrapOrder==3 )
                 extrapCoeff = extrapCoeff3;
@@ -2025,10 +1828,21 @@ int CgWave::formImplicitTimeSteppingMatrix()
               }
 
             const int e=0, cc=0; // equation number and component number 
+      // --- FILL BOUNDARY CONDITIONS ----
             ForBoundary(side,axis)
             {
 
                 getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+
+        // // limit extrapolation width if there are not enough grid points *wdh* Dec 4, 2023
+        // const int maxExtrapWidth = mg.gridIndexRange(1,axis)-mg.gridIndexRange(0,axis)+1;
+        // const int extrapWidth = min(orderOfAccuracy+1,maxExtrapWidth);
+        // setExtrapolationWidth(extrapWidth);
+        // if( extrapWidth<orderOfAccuracy+1 )
+        // {
+        //   printF("impCoeff: Limiting extrapolationWidth to %d for (grid,side,axis)=(%d,%d,%d) since the grid is so coarse.\n",extrapWidth,grid,side,axis);
+        // }
+
 
         // Set the index-shift for this side
                 is1=is2=is3=0;
@@ -2041,105 +1855,768 @@ int CgWave::formImplicitTimeSteppingMatrix()
                         mg.boundaryCondition(side,axis)==exactBC )
                 {
           // ------------ FILL DIRICHLET BC ------------
-
-                    printF("+++++ IMPLICIT BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) DIRICHLET/ABSORBING/EXACT\n",mg.boundaryCondition(side,axis),grid,side,axis);
-                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
-                    {
-                        if( maskLocal(i1,i2,i3)!=0 ) // *wdh* avoid changing an "active" point 
+                        if( mg.boundaryCondition(side,axis)==exactBC )
                         {
-                            coeffLocal(    M,i1,i2,i3) = 0.0;  // zero out any existing equations
-                            coeffLocal(mDiag,i1,i2,i3) = 1.0;
+                            if( debug & 1 )
+                                printF("+++++ IMPLICIT BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) EXACT BC\n",mg.boundaryCondition(side,axis),grid,side,axis);
+              // ---- exact BC ----
+              // Set a Dirichlet condition on the boundary and ghost points 
+                            getBoundaryIndex(mg.gridIndexRange(),side,axis,Jb1,Jb2,Jb3,numberOfGhostLines); // extended boundary index
+                            if( side==0 )
+                                Jbv[axis] = Range(Jbv[axis].getBase()-numberOfGhostLines,Jbv[axis].getBound());  // assign ghost on left
+                            else
+                                Jbv[axis] = Range(Jbv[axis].getBase(),Jbv[axis].getBound()+numberOfGhostLines);  // asign ghost on right
+                            const IntegerArray & gid = mg.gridIndexRange();
+                            FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3)
+                            {
+                                if( maskLocal(i1,i2,i3) > 0 ) // *wdh* avoid changing an "active" point such as interpolation
+                                {
+                                    bool isGhost = i1<gid(0,0) || i1>gid(1,0) ||
+                                                                  i2<gid(0,1) || i2>gid(1,1) ||
+                                                                  i3<gid(0,2) || i3>gid(1,2);
+                                    if( isGhost )
+                                    {
+                                        setClassify(e,i1,i2,i3, SparseRepForMGF::ghost1);  // this is a "real" equation with a RHS (e.g. not extrapolation)
+                                    }
+                                    coeffLocal(    M,i1,i2,i3) = 0.0;  // zero out any existing equations
+                                    coeffLocal(mDiag,i1,i2,i3) = 1.0;
+                                }
+                            }    
                         }
-                    }
-          // coeffLocal(    M,Ib1,Ib2,Ib3) = 0.0;  // zero out any existing equations
-          // coeffLocal(mDiag,Ib1,Ib2,Ib3) = 1.0;          
-
-          // --- EXTRAPOLATE GHOST LINES ---
-
-                    for( int ghost=1; ghost<=numberOfGhostLines; ghost++ )
-                    {
-                            getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
-                            coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0;
+                        else
+                        {
+                            if( debug & 1 )
+                                printF("+++++ IMPLICIT BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) DIRICHLET/ABSORBING\n",mg.boundaryCondition(side,axis),grid,side,axis);
+                            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
+                            {
+                                if( maskLocal(i1,i2,i3) > 0 ) // *wdh* avoid changing an "active" point such as interpolation
+                                {
+                                    coeffLocal(    M,i1,i2,i3) = 0.0;  // zero out any existing equations
+                                    coeffLocal(mDiag,i1,i2,i3) = 1.0;
+                                }
+                            }
+                        }
+            // coeffLocal(    M,Ib1,Ib2,Ib3) = 0.0;  // zero out any existing equations
+            // coeffLocal(mDiag,Ib1,Ib2,Ib3) = 1.0;          
+                        const bool useCompatibility = orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions;
+                        if( useCompatibility && mg.boundaryCondition(side,axis)==dirichlet)
+                        {
+                            if( debug & 1 )
+                                printF("+++++ IMPLICIT Dirichlet BC: FILL MATRIX COMPATIBILITY BC (grid,side,axis)=(%d,%d,%d)\n",grid,side,axis);
+              // ----- Set a Dirichlet BC on the extended boundary points ----
+              //
+              //           G--G--B--I--I--I-- ... --I--B--G--G
+              //           D  D                           D  D
+              // D = set Dirichlet BC here
+              //
+                            if( true ) // *wdh* Dec 4, 2023
+                            {
+                                getBoundaryIndex(mg.gridIndexRange(),side,axis,Jb1,Jb2,Jb3,numberOfGhostLines); // extended boundary index
+                                if( false )
+                                {
+                                    printf("IMP:CBC: Set Dirichlet BC on extended boundary (grid,side,axis)=(%d,%d,%d)\n",grid,side,axis); 
+                                    printf("fill matrix Dirichlet: Jb1=[%4d,%4d], Jb2=[%4d,%4d] Jb3=[%4d,%4d]\n",
+                                            Jb1.getBase(),Jb1.getBound(),
+                                            Jb2.getBase(),Jb2.getBound(),
+                                            Jb3.getBase(),Jb3.getBound()
+                                            );
+                                }
+                                const IntegerArray & gid = mg.gridIndexRange();
+                                FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3) 
+                                {
+                                    if( maskLocal(i1,i2,i3) > 0 ) // *wdh* avoid changing an "active" point such as interpolation 
+                                    {       
+                                        bool isGhost = i1<gid(0,0) || i1>gid(1,0) ||
+                                                                      i2<gid(0,1) || i2>gid(1,1) ||
+                                                                      i3<gid(0,2) || i3>gid(1,2);
+                                        if( isGhost )
+                                        {
+                      // printf("IMP:CBC: Set Dirichlet BC on extended boundary (grid,side,axis)=(%d,%d,%d) (i1,i2,i3)=(%d,%d,%d)\n",
+                      //          grid,side,axis,i1,i2,i3);
+                                            setClassify(e,i1,i2,i3, SparseRepForMGF::ghost1);  
+                                            coeffLocal(M,i1,i2,i3) = 0.0;  // zero out any existing equations
+                                            ForStencil(m1,m2,m3)
+                                            {
+                                                int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                                                if( m1==0 && m2==0 && m3==0 )
+                                                    coeffLocal(m,i1,i2,i3) = 1.0;  // Dirichlet BC
+                                                else
+                                                    coeffLocal(m,i1,i2,i3) = 0.;
+                                                int j1=i1+m1, j2=i2+m2, j3=i3+m3;                   
+                                                setEquationNumber(m, e,i1,i2,i3,  cc,j1,j2,j3 );    
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+              // At a Dirichlet-Dirichlet Corner we cannot use a CBCs on both sides since this is a duplicate
+              //         |
+              //      C--+
+              //         |
+              //      D--X--+--+--+--
+              //         |  |  |
+              //         D  C  C
+              // D = use dirichlet BC on extended ghost line(s)
+              // C = use CBC
+              // 
+              // IntegerArray skipCorner(2);
+                            for( int dira=1; dira<numberOfDimensions; dira++ ) // loop over adjacent directions
+                            {
+                                int axisa = (axis+dira) % numberOfDimensions;  // adjacent axis
+                                for( int sidea=0; sidea<=1; sidea++ )          // adjacent side
+                                {
+                                    if( mg.boundaryCondition(sidea,axisa)==dirichlet ||
+                                            mg.boundaryCondition(sidea,axisa)==exactBC )
+                                    {
+                    // skipCorner(sidea)=1;
+                                        Ibv[axisa] = sidea== 0 ? Range(Ibv[axisa].getBase()+1,Ibv[axisa].getBound()  ) 
+                                                                                      : Range(Ibv[axisa].getBase()  ,Ibv[axisa].getBound()-1);
+                    // Now done above: 
+                    // getBoundaryIndex(mg.gridIndexRange(),side,axis,Jb1,Jb2,Jb3);
+                    // Jbv[axisa] = mg.gridIndexRange(sidea,axisa);
+                    // FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3) 
+                    // {
+                    //   // for( int ghost=1; ghost<=numberOfGhostLines; ghost++ )
+                    //   for( int ghost=1; ghost<=numberOfGhostLines; ghost++ )
+                    //   {
+                    //     int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                    //     // printf("IMP:CBC: Set Dirichlet BC at ghost=%d adjacent to a corner: (i1m,i2m,i3m)=(%d,%d,%d)\n",
+                    //     //         ghost,i1m,i2m,i3m);
+                    //     setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);  
+                    //     ForStencil(m1,m2,m3)
+                    //     {
+                    //       int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                    //       if( m1==0 && m2==0 && m3==0 )
+                    //         coeffLocal(m,i1m,i2m,i3m) = 1.0;  // Dirichlet BC
+                    //       else
+                    //         coeffLocal(m,i1m,i2m,i3m) = 0.;
+                    //       int j1=i1m+m1, j2=i2m+m2, j3=i3m+m3;                   
+                    //       setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );    
+                    //     }
+                    //   }
+                    // }
+                                    }
+                                }
+                            }
+                            realSerialArray lapCoeff(M0,Ib1,Ib2,Ib3);
+              // Fourth-order laplacian: 
+                            mgop.assignCoefficients(MappedGridOperators::laplacianOperator ,lapCoeff, Ib1,Ib2,Ib3,0,0);
+                            if( false )
+                            {
+                                printf("Fill matrix Dirichlet CBC1: Ib1=[%d,%d] Ib2=[%d,%d] Ib3=[%d,%d]\n",
+                                          Ib1.getBase(),Ib1.getBound(),
+                                          Ib2.getBase(),Ib2.getBound(),
+                                          Ib3.getBase(),Ib3.getBound()
+                                          );
+                            }
+                            const Real cSq = c*c;
                             FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                             {
-                                int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
-                // --- fill in the coefficients of the extrapolation formula ---
-                                for( int m=0; m<=extrapOrder; m++ )
+                                if( maskLocal(i1,i2,i3) > 0 ) 
                                 {
-                                    coeffLocal(m,i1m,i2m,i3m) = extrapCoeff[m];
-                                    int j1=i1m + m*is1, j2=i2m + m*is2, j3=i3m + m*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
-                                    setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                                    int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
+                  // Specify that this a "real" equation on the first ghost line: 
+                  // (A "real" equation has a possible non-zero right-hand-side)
+                                    setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                                    ForStencil(m1,m2,m3)
+                                    {
+                                        int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                                        coeffLocal(m,i1m,i2m,i3m) = cSq*lapCoeff(m,i1,i2,i3);
+                    // Specify that the above coeff value is the coefficient of component cc at the grid point (j1,j2,j3).
+                                        int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
+                                        setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                                    }
                                 }
                             } // end FOR_3D
-                    } // end for ghost
+              // fill ghost 2 with extrapolation
+                            if( true )
+                            {
+                                for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
+                                {
+                    // *wdh* Nov 22, 2023: 
+                    // getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
+                    // coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0;
+                                        FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                        {
+                                            if( maskLocal(i1,i2,i3) != 0 )
+                                            { 
+                                                int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                        // --- fill in the coefficients of the extrapolation formula ---
+                                                coeffLocal(M0,i1m,i2m,i3m)=0; // zero out all *wdh* Nov 22, 2023: 
+                                                for( int m=0; m<=extrapOrder; m++ )
+                                                {
+                                                    coeffLocal(m,i1m,i2m,i3m) = extrapCoeff[m];
+                                                    int j1=i1m + m*is1, j2=i2m + m*is2, j3=i3m + m*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+                                                    setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                                                }
+                                            }
+                                        } // end FOR_3D
+                                } // end for ghost
+                            }
+              // OV_ABORT("finish me");
+                        }
+                        else if( mg.boundaryCondition(side,axis)!=exactBC )
+                        {
+              // --- EXTRAPOLATE GHOST LINES ---
+                            for( int ghost=1; ghost<=numberOfGhostLines; ghost++ )
+                            {
+                  // *wdh* Nov 22, 2023: 
+                  // getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
+                  // coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0;
+                                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                    {
+                                        if( maskLocal(i1,i2,i3) != 0 )
+                                        { 
+                                            int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                      // --- fill in the coefficients of the extrapolation formula ---
+                                            coeffLocal(M0,i1m,i2m,i3m)=0; // zero out all *wdh* Nov 22, 2023: 
+                                            for( int m=0; m<=extrapOrder; m++ )
+                                            {
+                                                coeffLocal(m,i1m,i2m,i3m) = extrapCoeff[m];
+                                                int j1=i1m + m*is1, j2=i2m + m*is2, j3=i3m + m*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+                                                setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                                            }
+                                        }
+                                    } // end FOR_3D
+                            } // end for ghost
+                        }
 
                 }
                 else if( mg.boundaryCondition(side,axis)==neumann )
                 {
           // ------------ FILL NEUMANN BC ------------
-
-                    printF("+++++ IMPLICIT BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) NEUMANN\n",grid,side,axis);
-
-                    mg.update(MappedGrid::THEvertexBoundaryNormal);
-                    OV_GET_VERTEX_BOUNDARY_NORMAL(mg,side,axis,normal); 
-
-                    realSerialArray xCoeff(M0,Ib1,Ib2,Ib3), yCoeff(M0,Ib1,Ib2,Ib3), zCoeff; 
-                    mgop.assignCoefficients(MappedGridOperators::xDerivative ,xCoeff, Ib1,Ib2,Ib3,0,0);
-                    mgop.assignCoefficients(MappedGridOperators::yDerivative ,yCoeff, Ib1,Ib2,Ib3,0,0);
-                    if( numberOfDimensions==3 )
-                    {
-                        zCoeff.redim(M0,Ib1,Ib2,Ib3);
-                        mgop.assignCoefficients(MappedGridOperators::zDerivative ,zCoeff, Ib1,Ib2,Ib3,0,0);
-                    }
-
-                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
-                    {
-                            
-                        int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
-
-            // Specify that this a "real" equation on the first ghost line: 
-            // (A "real" equation has a possible non-zero right-hand-side)
-                        setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
-
-                        ForStencil(m1,m2,m3)
+                        if( debug & 1 )
+                            printF("+++++ IMPLICIT BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) NEUMANN\n",grid,side,axis);
+                        mg.update(MappedGrid::THEvertexBoundaryNormal);
+                        OV_GET_VERTEX_BOUNDARY_NORMAL(mg,side,axis,normal); 
+            // TEST
+            // getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+                        realSerialArray xCoeff(M0,Ib1,Ib2,Ib3), yCoeff(M0,Ib1,Ib2,Ib3), zCoeff; 
+                        mgop.assignCoefficients(MappedGridOperators::xDerivative ,xCoeff, Ib1,Ib2,Ib3,0,0);
+                        mgop.assignCoefficients(MappedGridOperators::yDerivative ,yCoeff, Ib1,Ib2,Ib3,0,0);
+                        if( numberOfDimensions==3 )
                         {
-                            int m  = M123(m1,m2,m3);        // the single-component coeff-index
-                            
-                            coeffLocal(m,i1m,i2m,i3m) = normal(i1,i2,i3,0)*xCoeff(m,i1,i2,i3) + normal(i1,i2,i3,1)*yCoeff(m,i1,i2,i3);
-                            if( numberOfDimensions==3 )
-                                coeffLocal(m,i1m,i2m,i3m) += normal(i1,i2,i3,2)*zCoeff(m,i1,i2,i3);
-
-              // Specify that the above coeff value is the coefficient of component cc at the grid point (j1,j2,j3).
-                            int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
-                            setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                            zCoeff.redim(M0,Ib1,Ib2,Ib3);
+                            mgop.assignCoefficients(MappedGridOperators::zDerivative ,zCoeff, Ib1,Ib2,Ib3,0,0);
                         }
-
-                    } // end FOR_3D
-
-          // fill ghost 2 with extrapolation
-                    for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
-                    {
-                            getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
-                            coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0;
-                            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                        const bool useCompatibility = orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions;
+            // [Jb1,Jb2,Jb3] : boundary points, but exclude ends with Dirichlet BC's
+                        Jb1=Ib1; Jb2=Ib2; Jb3=Ib3;
+                        if( useCompatibility )
+                        {
+              // exclude end points with Dirichlet BC's
+                            for( int dira=1; dira<numberOfDimensions; dira++ )
                             {
-                                int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
-                // --- fill in the coefficients of the extrapolation formula ---
-                                for( int m=0; m<=extrapOrder; m++ )
+                                int axisa = ( axis + dira ) % numberOfDimensions; // adjacent axis
+                                int ia = mg.gridIndexRange(0,axisa);
+                                int ib = mg.gridIndexRange(1,axisa);
+                                if( mg.boundaryCondition(0,axisa)==dirichlet ) 
+                                    ia++;
+                                if( mg.boundaryCondition(1,axisa)==dirichlet ) 
+                                    ib--;
+                                Jbv[axisa] = Range(ia,ib);
+                            }
+                        }
+                        printf("fill matrix Neumann: Jb1=[%4d,%4d], Jb2=[%4d,%4d] Jb3=[%4d,%4d]\n",
+                                        Jb1.getBase(),Jb1.getBound(),
+                                        Jb2.getBase(),Jb2.getBound(),
+                                        Jb3.getBase(),Jb3.getBound()
+                                        );
+                        FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3) // loop over points on the boundary
+                        {
+                            if( maskLocal(i1,i2,i3)>0 )
+                            {      
+                                int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
+                // Specify that this a "real" equation on the first ghost line: 
+                // (A "real" equation has a possible non-zero right-hand-side)
+                                setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                                coeffLocal(M,i1m,i2m,i3m) = 0.0;  // zero out any existing equations
+                                ForStencil(m1,m2,m3)
                                 {
-                                    coeffLocal(m,i1m,i2m,i3m) = extrapCoeff[m];
-                                    int j1=i1m + m*is1, j2=i2m + m*is2, j3=i3m + m*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+                                    int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                                    coeffLocal(m,i1m,i2m,i3m) = normal(i1,i2,i3,0)*xCoeff(m,i1,i2,i3) + normal(i1,i2,i3,1)*yCoeff(m,i1,i2,i3);
+                                    if( numberOfDimensions==3 )
+                                        coeffLocal(m,i1m,i2m,i3m) += normal(i1,i2,i3,2)*zCoeff(m,i1,i2,i3);
+                  // Specify that the above coeff value is the coefficient of component cc at the grid point (j1,j2,j3).
+                                    int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
                                     setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
                                 }
-                            } // end FOR_3D
-                    } // end for ghost
-
+                            }
+                        } // end FOR_3D
+                        if( useCompatibility )
+                        {
+                            if( numberOfDimensions==3 )
+                            {
+                                printF("+++++ IMPLICIT Neumann BC in 3D --- FINISH ME FOR 3D +++++++\n");
+                                printF("There  is a potential problem in 3D with a zero pivot from the CBC2 for a box domain\n");
+                // OV_ABORT("error");
+                            }
+                            Range R5 = Range(-2,2);
+                            const Real cSq = c*c;
+              // if( false && isRectangular ) // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TEMP %%%%%%%%%%%%%%%%%%%
+                            if( isRectangular ) 
+                            {
+                                if( debug & 1 )
+                                    printF("+++++ IMPLICIT Neumann BC: FILL MATRIX COMPATIBILITY BC CARTESIAN (grid,side,axis)=(%d,%d,%d)\n",grid,side,axis);
+                                RealArray xxCoeff(R5), yyCoeff(R5), zzCoeff(R5);
+                                xxCoeff=0.; yyCoeff=0.; zzCoeff=0.;
+                // D+D-
+                                xxCoeff(-1) = 1./(dx[0]*dx[0]); yyCoeff(-1) = 1./(dx[1]*dx[1]); zzCoeff(-1) = 1./(dx[2]*dx[2]); 
+                                xxCoeff( 0) =-2./(dx[0]*dx[0]); yyCoeff( 0) =-2./(dx[1]*dx[1]); zzCoeff( 0) =-2./(dx[2]*dx[2]); 
+                                xxCoeff( 1) = 1./(dx[0]*dx[0]); yyCoeff( 1) = 1./(dx[1]*dx[1]); zzCoeff( 1) = 1./(dx[2]*dx[2]); 
+                                RealArray xCoeff(R5), yCoeff(R5), zCoeff(R5);
+                                xCoeff=0.; yCoeff=0.; zCoeff=0.;
+                // Dz stencil 
+                                xCoeff(-1) = -1./(2.*dx[0]); yCoeff(-1) = -1./(2.*dx[1]); zCoeff(-1) = -1./(2.*dx[2]); 
+                                xCoeff( 0) =  0.;            yCoeff( 0) =  0.;            zCoeff( 0) =  0.;
+                                xCoeff( 1) =  1./(2.*dx[0]); yCoeff( 1) =  1./(2.*dx[1]); zCoeff( 1) =  1./(2.*dx[2]); 
+                // Identity stencil 
+                                RealArray iCoeff(R5);
+                                iCoeff=0.;
+                                iCoeff(0)=1.; 
+                                RealArray xxxCoeff(R5), yyyCoeff(R5), zzzCoeff(R5);
+                                xxxCoeff=0.; yyyCoeff=0.; zzzCoeff=0.;
+                // D0(D+D-) stencil 
+                                xxxCoeff(-2) = -1./(2.*dx[0]*dx[0]*dx[0]); 
+                                xxxCoeff(-1) = +2./(2.*dx[0]*dx[0]*dx[0]); 
+                                xxxCoeff( 0) =  0.;                        
+                                xxxCoeff( 1) = -2./(2.*dx[0]*dx[0]*dx[0]); 
+                                xxxCoeff( 2) =  1./(2.*dx[0]*dx[0]*dx[0]); 
+                                yyyCoeff(-2) = -1./(2.*dx[1]*dx[1]*dx[1]); 
+                                yyyCoeff(-1) = +2./(2.*dx[1]*dx[1]*dx[1]); 
+                                yyyCoeff( 0) =  0.;                        
+                                yyyCoeff( 1) = -2./(2.*dx[1]*dx[1]*dx[1]); 
+                                yyyCoeff( 2) =  1./(2.*dx[1]*dx[1]*dx[1]); 
+                                zzzCoeff(-2) = -1./(2.*dx[2]*dx[2]*dx[2]); 
+                                zzzCoeff(-1) = +2./(2.*dx[2]*dx[2]*dx[2]); 
+                                zzzCoeff( 0) =  0.;                        
+                                zzzCoeff( 1) = -2./(2.*dx[2]*dx[2]*dx[2]); 
+                                zzzCoeff( 2) =  1./(2.*dx[2]*dx[2]*dx[2]); 
+                // Outward normal is (an1,an2,an3)
+                                const Real an1 = axis==0 ? -1.*(1-2*side) : 0.; 
+                                const Real an2 = axis==1 ? -1.*(1-2*side) : 0.; 
+                                const Real an3 = axis==2 ? -1.*(1-2*side) : 0.; 
+                                printF("Neuman CBC Delta(u.n) : (an1,an2,an3)=(%12.4e,%12.4e,%12.4e), is1=%d, is2=%d, is3=%d\n",an1,an2,an3,is1,is2,is3);
+                                FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3) // loop over points on the boundary
+                                {
+                                    if( maskLocal(i1,i2,i3)>0 )
+                                    {
+                                        int i1m=i1-2*is1, i2m=i2-2*is2, i3m=i3-2*is3; //  2nd ghost point is (i1m,i2m,i3m)
+                    // Specify that this a "real" equation on the first ghost line: 
+                    // (A "real" equation has a possible non-zero right-hand-side)
+                                        setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                                        coeffLocal(M,i1m,i2m,i3m) = 0.0;  // zero out any existing equations
+                                        ForStencil(m1,m2,m3)
+                                        {
+                                            int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                                            if( false ) // try this **TEMP***
+                                            {
+                        // This mimics replacing cross terms where we can:
+                        // If
+                        //     u.x = g
+                        // Then
+                        //     u.xyy = g.yy, u.xzz = g.zz
+                        //  
+                        // This seems to work
+                                                if( axis==0 )
+                                                    coeffLocal(m,i1m,i2m,i3m) = an1*cSq*(  xxxCoeff(m1)*  iCoeff(m2)*  iCoeff(m3) );
+                                                else if( axis==1 )
+                                                    coeffLocal(m,i1m,i2m,i3m) = an2*cSq*(  iCoeff(m1)  *yyyCoeff(m2)*  iCoeff(m3) );
+                                                else 
+                                                    coeffLocal(m,i1m,i2m,i3m) = an3*cSq*(  iCoeff(m1)  *  iCoeff(m2)*zzzCoeff(m3) );              
+                                            }
+                                            else
+                                            {
+                                                if( axis==0 )
+                                                { // left or right side: u_xxx + u_xyy + u_xzz
+                                                    coeffLocal(m,i1m,i2m,i3m) = 
+                                                                                an1*cSq*(  xxxCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
+                                                                                                    +  xCoeff(m1)*  yyCoeff(m2)*   iCoeff(m3) 
+                                                                                              );
+                                                    if( numberOfDimensions==3 )
+                                                    {
+                                                        coeffLocal(m,i1m,i2m,i3m) += an1*cSq*(  xCoeff(m1)*   iCoeff(m2)*   zzCoeff(m3) );
+                                                    }
+                                                }
+                                                else if( axis==1 )
+                                                { // top or bottom: u_xxy + u_yyy + u_yzz
+                                                    coeffLocal(m,i1m,i2m,i3m) = 
+                                                                                  an2*cSq*(  xxCoeff(m1)*  yCoeff(m2)*   iCoeff(m3) 
+                                                                                                    +  iCoeff(m1)*yyyCoeff(m2)*   iCoeff(m3) 
+                                                                                                  ); 
+                                                    if( numberOfDimensions==3 )
+                                                    {
+                                                        coeffLocal(m,i1m,i2m,i3m) += an2*cSq*(  iCoeff(m1)*   yCoeff(m2)*   zzCoeff(m3) );
+                                                    }                                      
+                                                } 
+                                                else
+                                                { // front or back: u_xxz + u_yyz + u_zzz
+                                                    coeffLocal(m,i1m,i2m,i3m) = 
+                                                                                an3*cSq*(  xxCoeff(m1)*   iCoeff(m2)*   zCoeff(m3) 
+                                                                                                    + iCoeff(m1)*  yyCoeff(m2)*   zCoeff(m3) 
+                                                                                                    + iCoeff(m1)*   iCoeff(m2)* zzzCoeff(m3) 
+                                                                                                  );                    
+                                                }               
+                        // if( i2==Jb2.getBase() && i3==Jb3.getBase() && coeffLocal(m,i1m,i2m,i3m) != 0. )
+                        // {
+                        //   printF("(i1m,i2m,i3m)=(%4d,%4d,%4d) m=%d coeff=%10.2e\n",i1m,i2m,i3m,m,coeffLocal(m,i1m,i2m,i3m));
+                        // }
+                                            }
+                      // Specify that the above coeff value is the coefficient of component cc at the grid point (j1,j2,j3).
+                                            int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
+                                            setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                                        }
+                                    }
+                                } // end FOR_3D
+                            }
+                            else
+                            {
+                                printF("FILL MATRIX WITH Neumann CBC2 order=4 curvilinear (grid,side,axis)=(%d,%d,%d)\n",grid,side,axis);
+                                if( isRectangular ) // %%%%%%%%%%%%%%%%%%%%%%%% TEMP %%%%%%%%%%%%%%%%%%%%
+                                { // rectangular grid grid-spacings: 
+                                    mg.update(MappedGrid::THEinverseVertexDerivative );
+                  // unit square grid spacings: 
+                                    for( int dir=0; dir<3; dir++ )
+                                    {
+                                        dr[dir]=mg.gridSpacing(dir);   
+                                    }
+                                }   
+                                OV_GET_SERIAL_ARRAY(Real,mg.inverseVertexDerivative(),rxLocal);
+                // macro to make the rxLocal array look 5-dimensional 
+                                #define DD(i1,i2,i3,m1,m2) rxLocal(i1,i2,i3,(m1)+numberOfDimensions*(m2))     
+                // ----- COMPUTE DERIVATIVES OF METRICS -----
+                                Range Rd2=numberOfDimensions*numberOfDimensions;
+                                RealArray ddx(Ib1,Ib2,Ib3,Rd2), ddy(Ib1,Ib2,Ib3,Rd2);
+                                mgop.derivative( MappedGridOperators::xDerivative,rxLocal,ddx,Ib1,Ib2,Ib3,Rd2);            
+                                mgop.derivative( MappedGridOperators::yDerivative,rxLocal,ddy,Ib1,Ib2,Ib3,Rd2);
+                                RealArray ddxx(Ib1,Ib2,Ib3,Rd2), ddxy(Ib1,Ib2,Ib3,Rd2), ddyy(Ib1,Ib2,Ib3,Rd2);    
+                                mgop.derivative( MappedGridOperators::xxDerivative,rxLocal,ddxx,Ib1,Ib2,Ib3,Rd2);            
+                                mgop.derivative( MappedGridOperators::xyDerivative,rxLocal,ddxy,Ib1,Ib2,Ib3,Rd2);            
+                                mgop.derivative( MappedGridOperators::yyDerivative,rxLocal,ddyy,Ib1,Ib2,Ib3,Rd2);             
+                                #define DDX(i1,i2,i3,m1,m2) ddx(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                #define DDY(i1,i2,i3,m1,m2) ddy(i1,i2,i3,(m1)+numberOfDimensions*(m2)) 
+                                #define DDXX(i1,i2,i3,m1,m2) ddxx(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                #define DDXY(i1,i2,i3,m1,m2) ddxy(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                #define DDYY(i1,i2,i3,m1,m2) ddyy(i1,i2,i3,(m1)+numberOfDimensions*(m2)) 
+                // Define stencils for parametric derivatives 
+                                Range R5 = Range(-2,2);
+                                RealArray rrrCoeff(R5), sssCoeff(R5);
+                                rrrCoeff=0.; sssCoeff=0.;
+                // D0(D+D-) stencil 
+                                rrrCoeff(-2) = -1./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff(-2) = -1./(2.*dr[1]*dr[1]*dr[1]);
+                                rrrCoeff(-1) = +2./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff(-1) = +2./(2.*dr[1]*dr[1]*dr[1]);
+                                rrrCoeff( 0) =  0.;                         sssCoeff( 0) =  0.;    
+                                rrrCoeff( 1) = -2./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff( 1) = -2./(2.*dr[1]*dr[1]*dr[1]);
+                                rrrCoeff( 2) =  1./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff( 2) =  1./(2.*dr[1]*dr[1]*dr[1]);
+                                RealArray rrCoeff(R5), ssCoeff(R5);
+                                rrCoeff=0.; ssCoeff=0.;
+                // D+D-
+                                rrCoeff(-1) = 1./(dr[0]*dr[0]); ssCoeff(-1) = 1./(dr[1]*dr[1]); 
+                                rrCoeff( 0) =-2./(dr[0]*dr[0]); ssCoeff( 0) =-2./(dr[1]*dr[1]); 
+                                rrCoeff( 1) = 1./(dr[0]*dr[0]); ssCoeff( 1) = 1./(dr[1]*dr[1]); 
+                                RealArray rCoeff(R5), sCoeff(R5);
+                                rCoeff=0.; sCoeff=0.;
+                // Dz stencil 
+                                rCoeff(-1) = -1./(2.*dr[0]); sCoeff(-1) = -1./(2.*dr[1]); 
+                                rCoeff( 0) =  0.;            sCoeff( 0) =  0.;
+                                rCoeff( 1) =  1./(2.*dr[0]); sCoeff( 1) =  1./(2.*dr[1]); 
+                // Identity stencil 
+                                RealArray iCoeff(R5);
+                                iCoeff=0.;
+                                iCoeff(0)=1.; 
+                                if( numberOfDimensions==2 )
+                                {      
+                                    FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3) // loop over points on the boundary
+                                    {
+                                        if( maskLocal(i1,i2,i3)>0 )
+                                        {
+                                            Real rx    =    DD(i1,i2,i3,0,0);
+                                            Real ry    =    DD(i1,i2,i3,0,1);
+                                            Real rxx   =   DDX(i1,i2,i3,0,0);
+                                            Real rxy   =   DDY(i1,i2,i3,0,0);
+                                            Real ryy   =   DDY(i1,i2,i3,0,1);  // ry.y
+                                            Real rxxx  =  DDXX(i1,i2,i3,0,0);
+                                            Real rxxy  =  DDXY(i1,i2,i3,0,0);  // rx.xy
+                                            Real rxyy  =  DDYY(i1,i2,i3,0,0);  // rx.yy
+                                            Real ryyy  =  DDYY(i1,i2,i3,0,1);  // ry.yy
+                      // Real rxxxx = DDXXX(i1,i2,i3,0,0);  // rx.xxx
+                      // Real rxxyy = DDXYY(i1,i2,i3,0,1);  // ry.xyy
+                      // Real ryyyy = DDYYY(i1,i2,i3,0,1);  // ry.yyy   
+                                            Real sx    =    DD(i1,i2,i3,1,0);
+                                            Real sy    =    DD(i1,i2,i3,1,1);
+                                            Real sxx   =   DDX(i1,i2,i3,1,0);
+                                            Real sxy   =   DDY(i1,i2,i3,1,0);
+                                            Real syy   =   DDY(i1,i2,i3,1,1);  
+                                            Real sxxx  =  DDXX(i1,i2,i3,1,0);
+                                            Real sxxy  =  DDXY(i1,i2,i3,1,0);
+                                            Real sxyy  =  DDYY(i1,i2,i3,1,0);  // sx.yy
+                                            Real syyy  =  DDYY(i1,i2,i3,1,1);  
+                      // Real sxxxx = DDXXX(i1,i2,i3,1,0);  // sx.xxx
+                      // Real sxxyy = DDXYY(i1,i2,i3,1,1);  // sy.xyy
+                      // Real syyyy = DDYYY(i1,i2,i3,1,1);  // sy.yyy             
+                                            const Real an1 =  normal(i1,i2,i3,0);
+                                            const Real an2 =  normal(i1,i2,i3,1);
+                      // ---- COEFFICIENTS OF 2D n.Grad( LAPLACIAN ) : from laplacianCoefficients.mpl ----
+                                            Real urrr = an1 * (pow(rx, 0.3e1) + ry * ry * rx) + an2 * (ry * rx * rx + pow(ry, 0.3e1));
+                                            Real urrs = an1 * (3 * rx * rx * sx + ry * (sy * rx + ry * sx) + sy * ry * rx) + an2 * (sy * rx * rx + 2 * ry * sx * rx + 3 * ry * ry * sy);
+                                            Real urss = an1 * (3 * rx * sx * sx + ry * sx * sy + sy * (sy * rx + ry * sx)) + an2 * (2 * sy * sx * rx + ry * sx * sx + 3 * ry * sy * sy);
+                                            Real usss = an1 * (pow(sx, 0.3e1) + sx * sy * sy) + an2 * (sy * sx * sx + pow(sy, 0.3e1));
+                                            Real urr = an1 * (3 * rx * rxx + ryy * rx + 2 * ry * rxy) + an2 * (2 * rxy * rx + ry * rxx + 3 * ry * ryy);
+                                            Real urs = an1 * (3 * sxx * rx + syy * rx + 3 * sx * rxx + 2 * sy * rxy + 2 * ry * sxy + ryy * sx) + an2 * (2 * sxy * rx + sy * rxx + 2 * sx * rxy + ry * sxx + 3 * syy * ry + 3 * sy * ryy);
+                                            Real uss = an1 * (3 * sx * sxx + sx * syy + 2 * sxy * sy) + an2 * (2 * sx * sxy + sxx * sy + 3 * sy * syy);
+                                            Real ur = an1 * (rxxx + rxyy) + an2 * (rxxy + ryyy);
+                                            Real us = an1 * (sxxx + sxyy) + an2 * (sxxy + syyy);
+                                            int i1m=i1-2*is1, i2m=i2-2*is2, i3m=i3-2*is3; //  2nd ghost point is (i1m,i2m,i3m)
+                      // Specify that this a "real" equation on the first ghost line: 
+                      // (A "real" equation has a possible non-zero right-hand-side)
+                                            setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                      // printF(" (i1,i2)=(%d,%d) coeff: urrr=%10.2e urrs=%10.2e urss=%10.2e usss=%10.2e urr=%10.2e urs=%10.2e uss=%10.2e ur=%10.2e us=%10.2e\n",
+                      //      i1,i2,urrr,urrs,urss,usss,urr,urs,uss,ur,us);
+                                            coeffLocal(M,i1m,i2m,i3m) = 0.0;  // zero out any existing equations
+                                            ForStencil(m1,m2,m3)
+                                            {
+                                                int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                                                coeffLocal(m,i1m,i2m,i3m) = 
+                                                                                      cSq*(  urrr * rrrCoeff(m1)*   iCoeff(m2)
+                                                                                                + urrs *  rrCoeff(m1)*   sCoeff(m2)
+                                                                                                + urss *   rCoeff(m1)*  ssCoeff(m2)
+                                                                                                + usss *   iCoeff(m1)* sssCoeff(m2)
+                                                                                                + urr  *  rrCoeff(m1)*   iCoeff(m2)
+                                                                                                + urs  *   rCoeff(m1)*   sCoeff(m2)
+                                                                                                + uss  *   iCoeff(m1)*  ssCoeff(m2)
+                                                                                                + ur   *   rCoeff(m1)*   iCoeff(m2)
+                                                                                                + us   *   iCoeff(m1)*   sCoeff(m2)
+                                                                                                );          
+                        // Specify that the above coeff value is the coefficient of component cc at the grid point (j1,j2,j3).
+                                                int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
+                                                setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                                            }
+                                        } // end if mask
+                                    } // end FOR_3D
+                                }
+                                else
+                                {
+                  // --- THREE DIMENSIONS -----
+                  // OV_ABORT("Neumann CBC order=4 curvilinear: finish me for 3D");
+                                    RealArray rxza(I1,I2,I3,Rd2);
+                                    mgop.derivative( MappedGridOperators::zDerivative,rxLocal,rxza,I1,I2,I3,Rd2);            
+                                    #define DDZ(i1,i2,i3,m1,m2) rxza(i1,i2,i3,(m1)+numberOfDimensions*(m2))
+                                    const int extra=1; 
+                                    RealArray ddxz(I1,I2,I3,Rd2), ddyz(I1,I2,I3,Rd2), ddzz(I1,I2,I3,Rd2);         
+                                    mgop.derivative( MappedGridOperators::xzDerivative,rxLocal,ddxz,I1,I2,I3,Rd2);            
+                                    mgop.derivative( MappedGridOperators::yzDerivative,rxLocal,ddyz,I1,I2,I3,Rd2);            
+                                    mgop.derivative( MappedGridOperators::zzDerivative,rxLocal,ddzz,I1,I2,I3,Rd2);             
+                                    #define DDXZ(i1,i2,i3,m1,m2) ddxz(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                    #define DDYZ(i1,i2,i3,m1,m2) ddyz(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                    #define DDZZ(i1,i2,i3,m1,m2) ddzz(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                  // RealArray ddxxx(I1,I2,I3,Rd2), ddxyy(I1,I2,I3,Rd2), ddyyy(I1,I2,I3,Rd2);
+                  // RealArray ddxzz(I1,I2,I3,Rd2), ddzzz(I1,I2,I3,Rd2), ddyzz(I1,I2,I3,Rd2);
+                                    RealArray tttCoeff(R5);
+                                    tttCoeff=0.; 
+                  // D0(D+D-) stencil 
+                                    tttCoeff(-2) = -1./(2.*dr[2]*dr[2]*dr[2]); 
+                                    tttCoeff(-1) = +2./(2.*dr[2]*dr[2]*dr[2]); 
+                                    tttCoeff( 0) =  0.;                        
+                                    tttCoeff( 1) = -2./(2.*dr[2]*dr[2]*dr[2]); 
+                                    tttCoeff( 2) =  1./(2.*dr[2]*dr[2]*dr[2]); 
+                                    RealArray ttCoeff(R5);
+                                    ttCoeff=0.;
+                  // D+D-
+                                    ttCoeff(-1) = 1./(dr[2]*dr[2]);
+                                    ttCoeff( 0) =-2./(dr[2]*dr[2]);
+                                    ttCoeff( 1) = 1./(dr[2]*dr[2]);
+                                    RealArray tCoeff(R5);
+                                    tCoeff=0.; 
+                  // Dz stencil 
+                                    tCoeff(-1) = -1./(2.*dr[2]);
+                                    tCoeff( 0) =  0.;           
+                                    tCoeff( 1) =  1./(2.*dr[2]);  
+                                    FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3) // loop over points on the boundary
+                                    {
+                                        if( maskLocal(i1,i2,i3)>0 )
+                                        {
+                      // declareMetricDerivatives3d(r,0)
+                      // declareMetricDerivatives3d(s,1)
+                      // declareMetricDerivatives3d(t,2)
+                                            const Real an1 = normal(i1,i2,i3,0);
+                                            const Real an2 = normal(i1,i2,i3,1);
+                                            const Real an3 = normal(i1,i2,i3,2);
+                                            Real rx     =     DD(i1,i2,i3,0,0);
+                                            Real ry     =     DD(i1,i2,i3,0,1);
+                                            Real rz     =     DD(i1,i2,i3,0,2);
+                                            Real rxx    =    DDX(i1,i2,i3,0,0);
+                                            Real rxy    =    DDX(i1,i2,i3,0,1);  // .xy 
+                                            Real rxz    =    DDX(i1,i2,i3,0,2);  // .xz
+                                            Real ryy    =    DDY(i1,i2,i3,0,1);  // .yy
+                                            Real ryz    =    DDY(i1,i2,i3,0,2);  // .yz                 
+                                            Real rzz    =    DDZ(i1,i2,i3,0,2);  // .zz
+                                            Real rxxx   =   DDXX(i1,i2,i3,0,0);  // .xxx
+                                            Real rxxy   =   DDXX(i1,i2,i3,0,1);  // .xxy
+                                            Real rxyy   =   DDYY(i1,i2,i3,0,0);  // .xyy
+                                            Real ryyy   =   DDYY(i1,i2,i3,0,1);  // .yyy
+                                            Real rxxz   =   DDXX(i1,i2,i3,0,2);  // .xxz
+                                            Real rxzz   =   DDZZ(i1,i2,i3,0,1);  // .xzz
+                                            Real rzzz   =   DDZZ(i1,i2,i3,0,2);  // .zzz
+                                            Real ryyz   =   DDYY(i1,i2,i3,0,2);  // .yyz
+                                            Real ryzz   =   DDZZ(i1,i2,i3,0,1);  // .yzz
+                      // Real rxxxx  =  DDXXX(i1,i2,i3,0,0);  // .xxxx
+                      // Real rxxyy  =  DDXYY(i1,i2,i3,0,0);  // .xxyy
+                      // Real ryyyy  =  DDYYY(i1,i2,i3,0,1);  // .yyy
+                      // Real rxxzz  =  DDXZZ(i1,i2,i3,0,0);  // .xxzz
+                      // Real rzzzz  =  DDZZZ(i1,i2,i3,0,2);  // .zzzz
+                      // Real ryyzz  =  DDYZZ(i1,i2,i3,0,1);  // .yyzz                        
+                                            Real sx     =     DD(i1,i2,i3,1,0);
+                                            Real sy     =     DD(i1,i2,i3,1,1);
+                                            Real sz     =     DD(i1,i2,i3,1,2);
+                                            Real sxx    =    DDX(i1,i2,i3,1,0);
+                                            Real sxy    =    DDX(i1,i2,i3,1,1);  // .xy 
+                                            Real sxz    =    DDX(i1,i2,i3,1,2);  // .xz
+                                            Real syy    =    DDY(i1,i2,i3,1,1);  // .yy
+                                            Real syz    =    DDY(i1,i2,i3,1,2);  // .yz                 
+                                            Real szz    =    DDZ(i1,i2,i3,1,2);  // .zz
+                                            Real sxxx   =   DDXX(i1,i2,i3,1,0);  // .xxx
+                                            Real sxxy   =   DDXX(i1,i2,i3,1,1);  // .xxy
+                                            Real sxyy   =   DDYY(i1,i2,i3,1,0);  // .xyy
+                                            Real syyy   =   DDYY(i1,i2,i3,1,1);  // .yyy
+                                            Real sxxz   =   DDXX(i1,i2,i3,1,2);  // .xxz
+                                            Real sxzz   =   DDZZ(i1,i2,i3,1,1);  // .xzz
+                                            Real szzz   =   DDZZ(i1,i2,i3,1,2);  // .zzz
+                                            Real syyz   =   DDYY(i1,i2,i3,1,2);  // .yyz
+                                            Real syzz   =   DDZZ(i1,i2,i3,1,1);  // .yzz
+                      // Real sxxxx  =  DDXXX(i1,i2,i3,1,0);  // .xxxx
+                      // Real sxxyy  =  DDXYY(i1,i2,i3,1,0);  // .xxyy
+                      // Real syyyy  =  DDYYY(i1,i2,i3,1,1);  // .yyy
+                      // Real sxxzz  =  DDXZZ(i1,i2,i3,1,0);  // .xxzz
+                      // Real szzzz  =  DDZZZ(i1,i2,i3,1,2);  // .zzzz
+                      // Real syyzz  =  DDYZZ(i1,i2,i3,1,1);  // .yyzz                        
+                                            Real tx     =     DD(i1,i2,i3,2,0);
+                                            Real ty     =     DD(i1,i2,i3,2,1);
+                                            Real tz     =     DD(i1,i2,i3,2,2);
+                                            Real txx    =    DDX(i1,i2,i3,2,0);
+                                            Real txy    =    DDX(i1,i2,i3,2,1);  // .xy 
+                                            Real txz    =    DDX(i1,i2,i3,2,2);  // .xz
+                                            Real tyy    =    DDY(i1,i2,i3,2,1);  // .yy
+                                            Real tyz    =    DDY(i1,i2,i3,2,2);  // .yz                 
+                                            Real tzz    =    DDZ(i1,i2,i3,2,2);  // .zz
+                                            Real txxx   =   DDXX(i1,i2,i3,2,0);  // .xxx
+                                            Real txxy   =   DDXX(i1,i2,i3,2,1);  // .xxy
+                                            Real txyy   =   DDYY(i1,i2,i3,2,0);  // .xyy
+                                            Real tyyy   =   DDYY(i1,i2,i3,2,1);  // .yyy
+                                            Real txxz   =   DDXX(i1,i2,i3,2,2);  // .xxz
+                                            Real txzz   =   DDZZ(i1,i2,i3,2,1);  // .xzz
+                                            Real tzzz   =   DDZZ(i1,i2,i3,2,2);  // .zzz
+                                            Real tyyz   =   DDYY(i1,i2,i3,2,2);  // .yyz
+                                            Real tyzz   =   DDZZ(i1,i2,i3,2,1);  // .yzz
+                      // Real txxxx  =  DDXXX(i1,i2,i3,2,0);  // .xxxx
+                      // Real txxyy  =  DDXYY(i1,i2,i3,2,0);  // .xxyy
+                      // Real tyyyy  =  DDYYY(i1,i2,i3,2,1);  // .yyy
+                      // Real txxzz  =  DDXZZ(i1,i2,i3,2,0);  // .xxzz
+                      // Real tzzzz  =  DDZZZ(i1,i2,i3,2,2);  // .zzzz
+                      // Real tyyzz  =  DDYZZ(i1,i2,i3,2,1);  // .yyzz                
+                      // ---- COEFFICIENTS OF 3D n.Grad( LAPLACIAN ): from laplacianCoefficients.mpl ----
+                                            Real urrr = an1 * (pow(rx, 0.3e1) + ry * ry * rx) + an2 * (ry * rx * rx + pow(ry, 0.3e1)) + an1 * rz * rz * rx + an2 * rz * rz * ry + an3 * (rz * rx * rx + rz * ry * ry + pow(rz, 0.3e1));
+                                            Real urrs = an1 * (3 * rx * rx * sx + ry * (sy * rx + ry * sx) + sy * ry * rx) + an2 * (sy * rx * rx + 2 * ry * sx * rx + 3 * ry * ry * sy) + an1 * (rz * (sz * rx + rz * sx) + sz * rz * rx) + an2 * (rz * (sz * ry + rz * sy) + sz * rz * ry) + an3 * (sz * rx * rx + 2 * rz * sx * rx + sz * ry * ry + 2 * rz * sy * ry + 3 * rz * rz * sz);
+                                            Real urss = an1 * (3 * rx * sx * sx + ry * sx * sy + sy * (sy * rx + ry * sx)) + an2 * (2 * sy * sx * rx + ry * sx * sx + 3 * ry * sy * sy) + an1 * (rz * sz * sx + sz * (sz * rx + rz * sx)) + an2 * (rz * sz * sy + sz * (sz * ry + rz * sy)) + an3 * (2 * sz * sx * rx + 2 * sz * sy * ry + rz * sx * sx + rz * sy * sy + 3 * rz * sz * sz);
+                                            Real usss = an1 * (pow(sx, 0.3e1) + sx * sy * sy) + an2 * (sy * sx * sx + pow(sy, 0.3e1)) + an1 * sz * sz * sx + an2 * sz * sz * sy + an3 * (sz * sx * sx + sz * sy * sy + pow(sz, 0.3e1));
+                                            Real urrt = an1 * (ry * (ty * rx + ry * tx) + ty * ry * rx + 3 * rx * rx * tx) + an2 * (ty * rx * rx + 2 * ry * tx * rx + 3 * ry * ry * ty) + an1 * (rz * (tz * rx + rz * tx) + tz * rz * rx) + an2 * (rz * (tz * ry + rz * ty) + tz * rz * ry) + an3 * (tz * rx * rx + 2 * rz * tx * rx + tz * ry * ry + 2 * rz * ty * ry + 3 * rz * rz * tz);
+                                            Real urtt = an1 * (ry * tx * ty + ty * (ty * rx + ry * tx) + 3 * rx * tx * tx) + an2 * (2 * ty * tx * rx + ry * tx * tx + 3 * ry * ty * ty) + an1 * (rz * tx * tz + tz * (tz * rx + rz * tx)) + an2 * (rz * ty * tz + tz * (tz * ry + rz * ty)) + an3 * (2 * tz * tx * rx + 2 * tz * ty * ry + rz * tx * tx + rz * ty * ty + 3 * rz * tz * tz);
+                                            Real uttt = an1 * (pow(tx, 0.3e1) + tx * ty * ty) + an2 * (ty * tx * tx + pow(ty, 0.3e1)) + an1 * tx * tz * tz + an2 * ty * tz * tz + an3 * (tz * tx * tx + tz * ty * ty + pow(tz, 0.3e1));
+                                            Real usst = an1 * (sy * (ty * sx + sy * tx) + ty * sx * sy + 3 * sx * sx * tx) + an2 * (ty * sx * sx + 2 * sy * tx * sx + 3 * sy * sy * ty) + an1 * (sz * (tz * sx + sz * tx) + tz * sz * sx) + an2 * (sz * (tz * sy + sz * ty) + tz * sz * sy) + an3 * (tz * sx * sx + 2 * sz * tx * sx + tz * sy * sy + 2 * sz * ty * sy + 3 * sz * sz * tz);
+                                            Real ustt = an1 * (sy * tx * ty + ty * (ty * sx + sy * tx) + 3 * sx * tx * tx) + an2 * (2 * ty * tx * sx + sy * tx * tx + 3 * sy * ty * ty) + an1 * (sz * tx * tz + tz * (tz * sx + sz * tx)) + an2 * (sz * ty * tz + tz * (tz * sy + sz * ty)) + an3 * (2 * tz * tx * sx + 2 * tz * ty * sy + sz * tx * tx + sz * ty * ty + 3 * sz * tz * tz);
+                                            Real urr = an1 * (3 * rx * rxx + ryy * rx + 2 * ry * rxy) + an2 * (2 * rxy * rx + ry * rxx + 3 * ry * ryy) + an1 * (rzz * rx + 2 * rz * rxz) + an2 * (rzz * ry + 2 * rz * ryz) + an3 * (2 * rxz * rx + rz * rxx + 2 * ryz * ry + rz * ryy + 3 * rz * rzz);
+                                            Real urs = an1 * (3 * sxx * rx + syy * rx + 3 * sx * rxx + 2 * sy * rxy + 2 * ry * sxy + ryy * sx) + an2 * (2 * sxy * rx + sy * rxx + 2 * sx * rxy + ry * sxx + 3 * syy * ry + 3 * sy * ryy) + an1 * (szz * rx + 2 * sz * rxz + 2 * rz * sxz + rzz * sx) + an2 * (szz * ry + 2 * sz * ryz + 2 * rz * syz + rzz * sy) + an3 * (2 * rx * sxz + sz * rxx + 2 * rxz * sx + 2 * ry * syz + sz * ryy + 2 * ryz * sy + rz * sxx + rz * syy + 3 * rz * szz + 3 * sz * rzz);
+                                            Real uss = an1 * (3 * sx * sxx + sx * syy + 2 * sxy * sy) + an2 * (2 * sx * sxy + sxx * sy + 3 * sy * syy) + an1 * (szz * sx + 2 * sz * sxz) + an2 * (szz * sy + 2 * sz * syz) + an3 * (2 * sxz * sx + sz * sxx + 2 * syz * sy + sz * syy + 3 * sz * szz);
+                                            Real urt = an1 * (3 * txx * rx + tyy * rx + 3 * tx * rxx + 2 * ty * rxy + 2 * ry * txy + ryy * tx) + an2 * (2 * txy * rx + ty * rxx + 2 * tx * rxy + ry * txx + 3 * tyy * ry + 3 * ty * ryy) + an1 * (tzz * rx + 2 * tz * rxz + 2 * rz * txz + rzz * tx) + an2 * (tzz * ry + 2 * tz * ryz + 2 * rz * tyz + rzz * ty) + an3 * (2 * txz * rx + tz * rxx + 2 * tx * rxz + 2 * tyz * ry + tz * ryy + 2 * ty * ryz + rz * txx + rz * tyy + 3 * tzz * rz + 3 * tz * rzz);
+                                            Real utt = an1 * (3 * tx * txx + tx * tyy + 2 * txy * ty) + an2 * (2 * tx * txy + txx * ty + 3 * ty * tyy) + an1 * (tx * tzz + 2 * txz * tz) + an2 * (ty * tzz + 2 * tyz * tz) + an3 * (2 * tx * txz + txx * tz + 2 * ty * tyz + tyy * tz + 3 * tz * tzz);
+                                            Real ust = an1 * (3 * txx * sx + tyy * sx + 3 * tx * sxx + 2 * ty * sxy + 2 * sy * txy + syy * tx) + an2 * (2 * txy * sx + ty * sxx + 2 * tx * sxy + sy * txx + 3 * tyy * sy + 3 * ty * syy) + an1 * (tzz * sx + 2 * tz * sxz + 2 * sz * txz + szz * tx) + an2 * (tzz * sy + 2 * tz * syz + 2 * sz * tyz + szz * ty) + an3 * (2 * txz * sx + tz * sxx + 2 * tx * sxz + 2 * tyz * sy + tz * syy + 2 * ty * syz + sz * txx + sz * tyy + 3 * tzz * sz + 3 * tz * szz);
+                                            Real ur = an1 * (rxxx + rxyy) + an2 * (rxxy + ryyy) + an1 * rxzz + an2 * ryzz + an3 * (rzzz + ryyz + rxxz);
+                                            Real us = an1 * (sxxx + sxyy) + an2 * (sxxy + syyy) + an1 * sxzz + an2 * syzz + an3 * (szzz + syyz + sxxz);
+                                            Real ut = an1 * (txyy + txxx) + an2 * (tyyy + txxy) + an1 * txzz + an2 * tyzz + an3 * (tzzz + tyyz + txxz);
+                                            int i1m=i1-2*is1, i2m=i2-2*is2, i3m=i3-2*is3; //  2nd ghost point is (i1m,i2m,i3m)
+                      // Specify that this a "real" equation on the first ghost line: 
+                      // (A "real" equation has a possible non-zero right-hand-side)
+                                            setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);  
+                      // if( i2==Jb2.getBase() && i3==Jb3.getBase()  )
+                      // {
+                      //   printF(" (i1,i2,i3)=(%3d,%3d,%3d) coeff: urrr=%10.2e urrs=%10.2e urss=%10.2e usss=%10.2e uttt=%10.2e urr=%10.2e urs=%10.2e uss=%10.2e ur=%10.2e us=%10.2e\n",
+                      //       i1,i2,i3,urrr,urrs,urss,usss,uttt,urr,urs,uss,ur,us);
+                      //   printF("   urrr,urrs,urss,usss,urrt,urtt,uttt,usst,ustt=%10.2e %10.2e %10.2e %10.2e %10.2e %10.2e %10.2e %10.2e %10.2e \n",
+                      //   urrr,urrs,urss,usss,urrt,urtt,uttt,usst,ustt);
+                      //   printF("   urr,urs,urt,uss,ust,utt,ur,us,ut=%10.2e %10.2e %10.2e %10.2e %10.2e %10.2e %10.2e %10.2e %10.2e \n",urr,urs,urt,uss,ust,utt,ur,us,ut);
+                      //   printF(" rxx,rxy,rxz,ryy,ryz,rzz=%10.2e %10.2e %10.2e %10.2e %10.2e %10.2e\n",rxx,rxy,rxz,ryy,ryz,rzz);
+                      //   printF(" sxx,sxy,sxz,syy,syz,szz=%10.2e %10.2e %10.2e %10.2e %10.2e %10.2e\n",sxx,sxy,sxz,syy,syz,szz);
+                      //   printF(" txx,txy,txz,tyy,tyz,tzz=%10.2e %10.2e %10.2e %10.2e %10.2e %10.2e\n",txx,txy,txz,tyy,tyz,tzz);
+                      // }
+                                            coeffLocal(M,i1m,i2m,i3m) = 0.0;  // zero out any existing equations
+                                            ForStencil(m1,m2,m3)
+                                            {
+                                                int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                                                coeffLocal(m,i1m,i2m,i3m) = 
+                                                                                      cSq*( 
+                                                                                                    urrr * rrrCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
+                                                                                                + urrs *  rrCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
+                                                                                                + urss *   rCoeff(m1)*  ssCoeff(m2)*   iCoeff(m3) 
+                                                                                                + usss *   iCoeff(m1)* sssCoeff(m2)*   iCoeff(m3) 
+                                                                                                + urrt *  rrCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
+                                                                                                + urtt *   rCoeff(m1)*   iCoeff(m2)*  ttCoeff(m3) 
+                                                                                                + uttt *   iCoeff(m1)*   iCoeff(m2)* tttCoeff(m3) 
+                                                                                                + usst *   iCoeff(m1)*  ssCoeff(m2)*   tCoeff(m3) 
+                                                                                                + ustt *   iCoeff(m1)*   sCoeff(m2)*  ttCoeff(m3) 
+                                                                                                + urr  *  rrCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
+                                                                                                + urs  *   rCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
+                                                                                                + uss  *   iCoeff(m1)*  ssCoeff(m2)*   iCoeff(m3) 
+                                                                                                + urt  *   rCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
+                                                                                                + ust  *   iCoeff(m1)*   sCoeff(m2)*   tCoeff(m3) 
+                                                                                                + utt  *   iCoeff(m1)*   iCoeff(m2)*  ttCoeff(m3)                                             
+                                                                                                + ur   *   rCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
+                                                                                                + us   *   iCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
+                                                                                                + ut   *   iCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
+                                                                                                );                                              
+                        // Specify that the above coeff value is the coefficient of component cc at the grid point (j1,j2,j3).
+                                                int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
+                                                setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                        // if( i2==Jb2.getBase() && i3==Jb3.getBase() && coeffLocal(m,i1m,i2m,i3m) != 0. )
+                        // {
+                        //   printF("(i1m,i2m,i3m)=(%4d,%4d,%4d) m=%d coeff=%10.2e\n",i1m,i2m,i3m,m,coeffLocal(m,i1m,i2m,i3m));
+                        // }
+                                            } // end for stencil
+                                        } // end if mask
+                                    } // end FOR_3D
+                                }
+                            }
+                        }
+                        else
+                        {
+              // fill ghost 2 with extrapolation
+                            for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
+                            {
+                  // *wdh* Nov 22, 2023: 
+                  // getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
+                  // coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0;
+                                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                    {
+                                        if( maskLocal(i1,i2,i3) != 0 )
+                                        { 
+                                            int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                      // --- fill in the coefficients of the extrapolation formula ---
+                                            coeffLocal(M0,i1m,i2m,i3m)=0; // zero out all *wdh* Nov 22, 2023: 
+                                            for( int m=0; m<=extrapOrder; m++ )
+                                            {
+                                                coeffLocal(m,i1m,i2m,i3m) = extrapCoeff[m];
+                                                int j1=i1m + m*is1, j2=i2m + m*is2, j3=i3m + m*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+                                                setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                                            }
+                                        }
+                                    } // end FOR_3D
+                            } // end for ghost
+                        }
 
                 }
                 else if( mg.boundaryCondition(side,axis)==CgWave::absorbing || 
                                   mg.boundaryCondition(side,axis)==CgWave::abcEM2 )
                 {
-                    printF("+++++ IMPLICIT BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) ABSORBING/EM2, c=%e\n",grid,side,axis,c);
+                    if( debug & 1 )
+                        printF("+++++ IMPLICIT BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) ABSORBING/EM2, c=%e\n",grid,side,axis,c);
 
           // OV_ABORT(" IMP BC ABORBING -- FINISH ME"); 
 
@@ -2200,22 +2677,24 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
                     FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                     {
-                            
-                        int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
-
-            // Specify that this a "real" equation on the first ghost line: 
-            // (A "real" equation has a possible non-zero right-hand-side)
-                        setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
-
-                        ForStencil(m1,m2,m3)
+                        if( maskLocal(i1,i2,i3) > 0 ) 
                         {
-                            int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                            int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
 
-                            coeffLocal(m,i1m,i2m,i3m) = abcCoeff(m1,m2,m3);
+              // Specify that this a "real" equation on the first ghost line: 
+              // (A "real" equation has a possible non-zero right-hand-side)
+                            setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
 
-              // Specify that the above coeff value is the coefficient of component c at the grid point (j1,j2,j3).
-                            int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
-                            setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                            ForStencil(m1,m2,m3)
+                            {
+                                int m  = M123(m1,m2,m3);        // the single-component coeff-index
+
+                                coeffLocal(m,i1m,i2m,i3m) = abcCoeff(m1,m2,m3);
+
+                // Specify that the above coeff value is the coefficient of component c at the grid point (j1,j2,j3).
+                                int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
+                                setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                            }
                         }
 
                     } // end FOR_3D
@@ -2223,17 +2702,22 @@ int CgWave::formImplicitTimeSteppingMatrix()
           // fill ghost 2 with extrapolation
                     for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
                     {
-                            getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
-                            coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0;
+              // *wdh* Nov 22, 2023: 
+              // getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
+              // coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0;
                             FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                             {
-                                int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
-                // --- fill in the coefficients of the extrapolation formula ---
-                                for( int m=0; m<=extrapOrder; m++ )
-                                {
-                                    coeffLocal(m,i1m,i2m,i3m) = extrapCoeff[m];
-                                    int j1=i1m + m*is1, j2=i2m + m*is2, j3=i3m + m*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
-                                    setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                                if( maskLocal(i1,i2,i3) != 0 )
+                                { 
+                                    int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                  // --- fill in the coefficients of the extrapolation formula ---
+                                    coeffLocal(M0,i1m,i2m,i3m)=0; // zero out all *wdh* Nov 22, 2023: 
+                                    for( int m=0; m<=extrapOrder; m++ )
+                                    {
+                                        coeffLocal(m,i1m,i2m,i3m) = extrapCoeff[m];
+                                        int j1=i1m + m*is1, j2=i2m + m*is2, j3=i3m + m*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+                                        setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                                    }
                                 }
                             } // end FOR_3D
                     } // end for ghost
@@ -2245,15 +2729,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
                     OV_ABORT("error");
 
                 }
-            }
+            } // end for boundary
 
-          // // Evaluate the (single component) Laplace operator for points on the boundary
-          // realSerialArray xxCoeff(M0,Ib1,Ib2,Ib3), yyCoeff(M0,Ib1,Ib2,Ib3), xCoeff(M0,Ib1,Ib2,Ib3), yCoeff(M0,Ib1,Ib2,Ib3), idCoeff(M0,Ib1,Ib2,Ib3);
-          // mgop.assignCoefficients(MappedGridOperators::xxDerivative,xxCoeff,Ib1,Ib2,Ib3,0,0); //
-          // mgop.assignCoefficients(MappedGridOperators::yyDerivative,yyCoeff,Ib1,Ib2,Ib3,0,0); //
-          // mgop.assignCoefficients(MappedGridOperators::xDerivative ,xCoeff, Ib1,Ib2,Ib3,0,0);
-          // mgop.assignCoefficients(MappedGridOperators::yDerivative ,yCoeff, Ib1,Ib2,Ib3,0,0);
-          // mgop.assignCoefficients(MappedGridOperators::identityOperator,idCoeff,Ib1,Ib2,Ib3,0,0);
 
             if( (addUpwinding && debug>3)  )
             {
@@ -2263,22 +2740,327 @@ int CgWave::formImplicitTimeSteppingMatrix()
             }
 
 
-        }
 
 
-        if( false )
+      // --- FILL CORNERS AND EDGES ----
+            const bool useCompatibility = orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions;
+            if( useCompatibility && numberOfDimensions==2 )
+            {
+        // --- corner points in two dimensions ---
+                for( int side2=0; side2<=1; side2++ )
+                for( int side1=0; side1<=1; side1++ )
+                {
+
+                    const int bc1 = mg.boundaryCondition(side1,0);
+                    const int bc2 = mg.boundaryCondition(side2,1);
+                    if( bc1>0 && bc2>0 && bc1!=exactBC && bc2!=exactBC )
+                    {
+                        if( bc1!=dirichlet && bc1!=exactBC && bc1!=neumann )
+                        {
+                            printF("Un-supported corner bc1 = %d\n",bc1);
+                            OV_ABORT("error");
+                        }
+                        if( bc2!=dirichlet && bc2!=exactBC && bc2!=neumann )
+                        {
+                            printF("Un-supported corner bc2 = %d\n",bc2);
+                            OV_ABORT("error");
+                        }
+
+            // symSign = 1 : even symmetry
+            //          -1 : odd symmetry
+                        Real symSign = +1.; 
+                        if( bc1==dirichlet || bc1==exactBC )
+                            symSign = -symSign;
+                        if( bc2==dirichlet || bc2==exactBC )
+                            symSign = -symSign;
+
+                        const int is1 = 1-2*side1;
+                        const int is2 = 1-2*side2;
+        
+            // corner point:
+                        const int i1 = mg.gridIndexRange(side1,0);
+                        const int i2 = mg.gridIndexRange(side2,1);
+                        const int i3 = mg.gridIndexRange(    0,2);
+                        if( maskLocal(i1,i2,i3) > 0 )   
+                        {
+                            for( int m2=1; m2<=numberOfGhostLines; m2++ )
+                            for( int m1=1; m1<=numberOfGhostLines; m1++ )
+                            {              
+
+                                int j1 = i1-is1*m1, j2=i2-is2*m2, j3=i3; // ghost 
+                                int k1 = i1+is1*m1, k2=i2+is2*m2, k3=i3; // interior point 
+
+                // printF("IMPLICIT-MATRIX: Set symmetry condition at corner point (j1,j2,j3)=(%4d,%4d,%4d)\n",j1,j2,j3);
+
+                // Specify that this a "real" equation on the first ghost line: 
+                // (A "real" equation has a possible non-zero right-hand-side)
+                                setClassify(e,j1,j2,j3, SparseRepForMGF::ghost1);  
+
+                                coeffLocal(M,j1,j2,j3) = 0.0;  // zero out any existing equations
+
+                // The even or odd symmetry equation is 
+                //  u(j1,j2,j3,0) - symSign*u(k1,k2,k3,0) = RHS
+                                int m=0; 
+                                coeffLocal(m,j1,j2,j3) = 1.;
+                                setEquationNumber(m, e,j1,j2,j3,  cc,j1,j2,j3 ); 
+
+                                m=1; 
+                                coeffLocal(m,j1,j2,j3) = -symSign;
+                                setEquationNumber(m, e,j1,j2,j3,  cc,k1,k2,k3 ); 
+
+                            }              
+
+                        }       
+
+
+                    }
+
+                }
+            }
+            else if( useCompatibility && numberOfDimensions==3 )  
+            {
+                int side1,side2,side3;
+                int n1a,n1b, n2a,n2b, n3a,n3b;
+                for( int edgeDirection=0; edgeDirection<=2; edgeDirection++ ) // direction parallel to the edge
+                {
+          // There are a total of 4 edges along a given edge direction
+                    for( int sidea=0; sidea<=1; sidea++ )
+                    for( int sideb=0; sideb<=1; sideb++ )
+                    {
+                        if( edgeDirection==0 )
+                        {
+                            side1=0;     side2=sidea; side3=sideb;
+                        }
+                        else if( edgeDirection==1 )
+                        {
+                            side1=sideb; side2=0;     side3=sidea;
+                        }
+                        else
+                        {
+                            side1=sidea; side2=sideb; side3=0;
+                        }
+                        int is1=1-2*(side1);
+                        int is2=1-2*(side2);
+                        int is3=1-2*(side3);
+                        int bc1,bc2; 
+
+                        if( edgeDirection==2 )
+                        {
+                            is3=0;
+                            n1a=mg.gridIndexRange(side1,0);
+                            n1b=mg.gridIndexRange(side1,0);
+                            n2a=mg.gridIndexRange(side2,1);
+                            n2b=mg.gridIndexRange(side2,1);
+                            n3a=mg.gridIndexRange(    0,2);
+                            n3b=mg.gridIndexRange(    1,2);
+                            bc1=mg.boundaryCondition(side1,0);
+                            bc2=mg.boundaryCondition(side2,1);
+                        }
+                        else if( edgeDirection==1 )
+                        {
+                            is2=0;
+                            n1a=mg.gridIndexRange(side1,0);
+                            n1b=mg.gridIndexRange(side1,0);
+                            n2a=mg.gridIndexRange(    0,1);
+                            n2b=mg.gridIndexRange(    1,1);
+                            n3a=mg.gridIndexRange(side3,2);
+                            n3b=mg.gridIndexRange(side3,2);
+                            bc1=mg.boundaryCondition(side1,0);
+                            bc2=mg.boundaryCondition(side3,2);
+                        }
+                        else 
+                        {
+                            is1=0; 
+                            n1a=mg.gridIndexRange(    0,0);
+                            n1b=mg.gridIndexRange(    1,0);
+                            n2a=mg.gridIndexRange(side2,1);
+                            n2b=mg.gridIndexRange(side2,1);
+                            n3a=mg.gridIndexRange(side3,2);
+                            n3b=mg.gridIndexRange(side3,2);
+                            bc1=mg.boundaryCondition(side2,1);
+                            bc2=mg.boundaryCondition(side3,2);
+                        }
+                  
+                        if( bc1>0 && bc2>0 && bc1!=exactBC && bc2!=exactBC )
+                        {
+              // -- this is an edge between two physical boundaries --
+                            if( bc1!=dirichlet && bc1!=exactBC && bc1!=neumann )
+                            {
+                                printF("Implicit: Un-supported edge bc1 = %d\n",bc1);
+                                OV_ABORT("error");
+                            }
+                            if( bc2!=dirichlet && bc2!=exactBC && bc2!=neumann )
+                            {
+                                printF("Implicit: Un-supported edge bc2 = %d\n",bc2);
+                                OV_ABORT("error");
+                            }
+
+                            Real symSign = +1.; 
+                            if( bc1==dirichlet || bc1==exactBC )
+                                symSign = -symSign;
+                            if( bc2==dirichlet || bc2==exactBC )
+                                symSign = -symSign;
+
+              // --- loop over points on the edge ---
+                            for( int i3=n3a; i3<=n3b; i3++ )
+                            for( int i2=n2a; i2<=n2b; i2++ )
+                            for( int i1=n1a; i1<=n1b; i1++ )            
+                            { 
+                                if( maskLocal(i1,i2,i3)>0 )
+                                {
+                                    for( int m2=1; m2<=numberOfGhostLines; m2++ )
+                                    for( int m1=1; m1<=numberOfGhostLines; m1++ )
+                                    { 
+                                        int j1,j2,j3, k1,k2,k3;
+                                        if( edgeDirection==0 )
+                                        {
+                      // edge lies along i1=const
+                                            j1 = i1; j2=i2-is2*m1; j3=i3-is3*m2; // ghost 
+                                            k1 = i1; k2=i2+is2*m1; k3=i3+is3*m2; // interior point  
+                                        }            
+                                        else if( edgeDirection==1 )
+                                        {
+                      // edge lies along i2=const
+                                            j1 = i1-is1*m1; j2=i2; j3=i3-is3*m2; // ghost 
+                                            k1 = i1+is1*m1; k2=i2; k3=i3+is3*m2; // interior point 
+                                        } 
+                                        else
+                                        {
+                      // edge lies along i3=constant
+                                            j1 = i1-is1*m1; j2=i2-is2*m2; j3=i3; // ghost 
+                                            k1 = i1+is1*m1; k2=i2+is2*m2; k3=i3; // interior point 
+                                        } 
+
+                    // printF("IMPLICIT-MATRIX: Set symmetry condition at EDGE point (j1,j2,j3)=(%d,%d,%d)\n",j1,j2,j3);
+
+                    // Specify that this a "real" equation on the first ghost line: 
+                    // (A "real" equation has a possible non-zero right-hand-side)
+                                        setClassify(e,j1,j2,j3, SparseRepForMGF::ghost1);  
+
+                                        coeffLocal(M,j1,j2,j3) = 0.0;  // zero out any existing equations
+
+                    // The even or odd symmetry equation is 
+                    //  u(j1,j2,j3,0) - symSign*u(k1,k2,k3,0) = RHS
+                                        int m=0; 
+                                        coeffLocal(m,j1,j2,j3) = 1.;
+                                        setEquationNumber(m, e,j1,j2,j3,  cc,j1,j2,j3 ); 
+
+                                        m=1; 
+                                        coeffLocal(m,j1,j2,j3) = -symSign;
+                                        setEquationNumber(m, e,j1,j2,j3,  cc,k1,k2,k3 );                     
+                                    }
+                                }
+                            } // end for 3d
+                        } // end if bc1>0 and bc2>0 
+                    }
+                } // end for edgeDirection
+
+        // --- Vertices in 3D dimensions ---
+                for( int side3=0; side3<=1; side3++ )
+                for( int side2=0; side2<=1; side2++ )
+                for( int side1=0; side1<=1; side1++ )
+                {
+                    const int bc1 = mg.boundaryCondition(side1,0);
+                    const int bc2 = mg.boundaryCondition(side2,1);
+                    const int bc3 = mg.boundaryCondition(side3,2);
+                    if( bc1>0 && bc2>0 && bc3>0 && bc1!=exactBC && bc2!=exactBC && bc3!=exactBC )
+                    {
+                        if( bc1!=dirichlet && bc1!=exactBC && bc1!=neumann )
+                        {
+                            printF("Implicit: Un-supported vertex bc1 = %d\n",bc1);
+                            OV_ABORT("error");
+                        }
+                        if( bc2!=dirichlet && bc2!=exactBC && bc2!=neumann )
+                        {
+                            printF("Implicit: Un-supported vertex bc2 = %d\n",bc2);
+                            OV_ABORT("error");
+                        }
+                        if( bc3!=dirichlet && bc3!=exactBC && bc3!=neumann )
+                        {
+                            printF("Implicit: Un-supported vertex bc3 = %d\n",bc3);
+                            OV_ABORT("error");
+                        }
+
+             // symSign = 1 : even symmetry
+            //          -1 : odd symmetry
+                        Real symSign = +1.; 
+                        if( bc1==dirichlet || bc1==exactBC )
+                            symSign = -symSign;
+                        if( bc2==dirichlet || bc2==exactBC )
+                            symSign = -symSign;
+                        if( bc3==dirichlet || bc3==exactBC )
+                            symSign = -symSign;            
+
+                        const int is1 = 1-2*side1;
+                        const int is2 = 1-2*side2;
+                        const int is3 = 1-2*side3;
+        
+            // Vertex coordinates: 
+                        const int i1 = mg.gridIndexRange(side1,0);
+                        const int i2 = mg.gridIndexRange(side2,1);
+                        const int i3 = mg.gridIndexRange(side3,2);
+                        if( maskLocal(i1,i2,i3) > 0 )   
+                        {
+                            for( int m3=1; m3<=numberOfGhostLines; m3++ )
+                            for( int m2=1; m2<=numberOfGhostLines; m2++ )
+                            for( int m1=1; m1<=numberOfGhostLines; m1++ )
+                            {              
+
+                                int j1=i1-is1*m1, j2=i2-is2*m2, j3=i3-is3*m3; // ghost 
+                                int k1=i1+is1*m1, k2=i2+is2*m2, k3=i3+is3*m3; // interior point 
+
+                // printF("IMPLICIT-MATRIX: Set symmetry condition at a 3D VERTEX (j1,j2,j3)=(%4d,%4d,%4d)\n",j1,j2,j3);
+
+                // Specify that this a "real" equation on the first ghost line: 
+                // (A "real" equation has a possible non-zero right-hand-side)
+                                setClassify(e,j1,j2,j3, SparseRepForMGF::ghost1);  
+
+                                coeffLocal(M,j1,j2,j3) = 0.0;  // zero out any existing equations
+
+                // The even or odd symmetry equation is 
+                //  u(j1,j2,j3,0) - symSign*u(k1,k2,k3,0) = RHS
+                                int m=0; 
+                                coeffLocal(m,j1,j2,j3) = 1.;
+                                setEquationNumber(m, e,j1,j2,j3,  cc,j1,j2,j3 ); 
+
+                                m=1; 
+                                coeffLocal(m,j1,j2,j3) = -symSign;
+                                setEquationNumber(m, e,j1,j2,j3,  cc,k1,k2,k3 ); 
+
+                            }  // end if for m1,m2,m3            
+
+                        }   // end if maskLocal > 0     
+
+
+                    } // end if bc1>0 and bc2>0 and bc3>0 
+                } // end if for side1, sid2, side 3
+
+            } // end if useCompat and nd=3 
+
+        } // end for grid
+
+
+    // OV_ABORT("stop here for now"); // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        if( debug & 16 )
         {
             int grid=0;
-            displayCoeff(impCoeff[grid],sPrintF("BEFORE FINISH BC: implicit time-stepping matrix on grid=%d",grid));
+            displayCoeff(impCoeff[grid],sPrintF("BEFORE FINISH BC: implicit time-stepping matrix on grid=%d",grid),debugFile);
         } 
+
+    // do we need to limit the extrapolation order here?
+    // BoundaryConditionParameters extrapParams;
+    // extrapParams.orderOfExtrapolation=3;      // ** TEST
+
+    // impCoeff.finishBoundaryConditions(extrapParams); 
 
         impCoeff.finishBoundaryConditions(); 
 
-        if( false )
+        if( debug & 8 )
         {
             int grid=0;
-            displayCoeff(impCoeff[grid],sPrintF("AFTER FINISH BC: implicit time-stepping matrix on grid=%d",grid));
-            OV_ABORT("stop here for now");
+            displayCoeff(impCoeff[grid],sPrintF("AFTER FINISH BC: implicit time-stepping matrix on grid=%d",grid),debugFile);
+      // OV_ABORT("stop here for now");
         }    
 
         impSolver.setCoefficientArray( impCoeff );   // supply coefficients to Oges

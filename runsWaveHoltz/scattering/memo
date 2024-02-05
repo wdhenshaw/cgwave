@@ -1,0 +1,194 @@
+
+
+***************************************************
+****** Sun July 16, 2023
+
+FIX SHOW FILE....
+
+PLOTS FOR DOC:
+
+SHAPES IMP : use adjusted omega
+cgwh scat.cmd -g=shapesBiggere4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -show=shapesG4kx4.show -debug=0 -go=halt
+
+
+cgwh scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx3.show -go=halt
+
+SG 
+cgwh scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -show=scatCylG4SuperGridkx3.show -go=halt
+
+
+
+SHAPES + SG 
+cgwh scat.cmd -g=shapesBiggere4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+SHAPES IMP : use adjusted omega
+cgwh scat.cmd -g=shapesBiggere4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[1.15e-02,7.94e-03]
+solveHelmholtz: rel-max-diff [Re,Im]=[6.61e-04,7.02e-04],  norm [Re,Im]=[1.85e+00,1.84e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+SHAPES EXP: 
+cgwh scat.cmd -g=shapesBiggere4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[1.07e-03,2.14e-03]
+solveHelmholtz: rel-max-diff [Re,Im]=[7.26e-03,7.49e-03],  norm [Re,Im]=[1.85e+00,1.84e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+CHOOSE -freq automatically from kx,ky,kz
+
+ADJUST SUPER-GRID PARAMETERS FOR ORDER OF ACCURACY
+
+Finer grid, NP=8
+cgwh scat.cmd -g=cice8.order4.ng3 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=50: L2h-residual= 5.23e-10 
+
+solveHelmholtz: max-residual [Re,Im]=[6.67e-04,6.50e-04]
+
+
+ORDER=4 ? .. FINISH ME : DIRECT SOLVER: 
+cgwh scat.cmd -g=cice4.order4.ng3 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+This looks OK: 
+cgwh scat.cmd -g=cice4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+solveHelmholtz: rel-max-diff [Re,Im]=[2.80e-02,2.70e-02],  norm [Re,Im]=[1.00e+00,1.02e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+cgwh scat.cmd -g=cice4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -go=halt
+
+
+cgwh scat.cmd -g=cice4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -go=halt
+
+
+***************************************************
+****** Sat July 15, 2023
+
+SCATTERING: FIX direct Helmholtz solver
+
+>>> IMPORTANT : Incident WAVE NUMBER MUST MATCH OMEGA AND C !!!
+
+>>>> CHECK SUPERGRID ACCURACY -- MAYBE EXPOnENTS ARE WRONG FOR ORDER=2
+
+>>>> FIX CHOICE OF OMEGA FOR SCATTERING TO MATCH kx, ky, kz and c
+
+STARTS TO WORK
+
+EM2 NOSG
+cgwh scat.cmd -g=cicBige4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=12.5663706 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[7.52e-04,9.89e-04]
+solveHelmholtz: rel-max-diff [Re,Im]=[1.17e-03,9.07e-04],  norm [Re,Im]=[1.07e+00,1.08e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+IMP + SUPER GRID 
+cgwh scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=10 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+
+EXP + SUPER GRID  SOMETHING IS WRONG ?? IS SUPER GRID CORRECT? :
+cgwh scat.cmd -g=cice4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=12.5663706 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -go=halt
+
+
+cgwh scat.cmd -g=cicBige4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=12.5663706 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -go=halt
+
+
+EXP + ABC EM2 : Bigger square
+cgwh scat.cmd -g=cicBige4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=12.5663706 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -go=halt
+
+
+EXP + ABC EM2 : looks ok 
+cgwh scat.cmd -g=cice4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=12.5663706 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[7.52e-04,9.89e-04]
+solveHelmholtz: rel-max-diff [Re,Im]=[1.23e-03,8.24e-04],  norm [Re,Im]=[1.07e+00,1.08e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+cgwh scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=10 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+
+IMP 
+cgwh scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=10 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+
+IMP 
+cgwh scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=10 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+
+solveHelmholtz: max-residual [Re,Im]=[1.52e-02,1.98e-02]
+solveHelmholtz: rel-max-diff [Re,Im]=[6.27e-03,5.56e-03],  norm [Re,Im]=[1.21e+00,1.20e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+EXP: 
+cgwh scat.cmd -g=cice2.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=2 -freq=10 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[1.79e-03,1.83e-03]
+solveHelmholtz: rel-max-diff [Re,Im]=[6.22e-03,6.51e-03],  norm [Re,Im]=[1.21e+00,1.19e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+***************************************************
+****** Fri July 14, 2023
+
+
+START ON scattering examples.
+
+START: NO-SUPER-GRID
+IMP 
+cgwh scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=10 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+                          Complex Solution 
+
+ grid=/home/henshw/grids/cice2.order2.hdf
+ Convergence rate CR=0.563, CR-perPeriod=0.750, Time to solve = 1.37e+00(s) : CgWave= 1.33e+00(s) 97.14%, advance= 1.31e+00(s) 95.54%
+ max-residual=1.46e-10 (WaveHoltz its), numberOfIterations = 38 (Krylov) (maximumNumberOfIterations=50)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=0
+ solveForScatteredField=1
+ Scattered field computed with plane-wave: amp=1, [kx,ky,kz]=[2,0,0]*2*pi, phi=0
+ Time stepping = implicit, cfl=1000.00, dt=6.871e-02, minStepsPerPeriod=10, numberOfStepsPerSolve=20, totalTimeStepsStaken=800, aveItsPerImplicitSolve=  0.0
+  takeImplicitFirstStep=0
+ implicitUpwind=1 (1= add upwind diss. to implicit matrix)
+ grid-CFL= 1.94e+00 for grid=0 (square)
+ grid-CFL= 2.26e+00 for grid=1 (Annulus)
+ c=1, useSuperGrid=0, damp=0
+ filterTimeDerivative=1, useFilterWeights=1, viFactor=1
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+
+
+EXP: 
+cgwh scat.cmd -g=cice2.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=10 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+
+valgrind $cgwh -noplot scat.cmd -g=cice2.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=2 -freq=10 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=k
+
+
+------------------------ CgWaveHoltz SUMMARY ------------------------------------
+                          Complex Solution 
+
+ grid=/home/henshw/grids/cice2.order2.hdf
+ Convergence rate CR=0.697, CR-perPeriod=0.835, Time to solve = 1.80e+00(s) : CgWave= 1.75e+00(s) 97.15%, advance= 1.72e+00(s) 95.30%
+ max-residual=4.37e-09 (WaveHoltz its), numberOfIterations = 52 (Krylov) (maximumNumberOfIterations=50)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=0
+ Time stepping = explicit, cfl=  0.95, dt=1.427e-02, minStepsPerPeriod=10, numberOfStepsPerSolve=88, totalTimeStepsStaken=4752, aveItsPerImplicitSolve=  0.0
+  takeImplicitFirstStep=0
+ implicitUpwind=1 (1= add upwind diss. to implicit matrix)
+ c=1, useSuperGrid=0, damp=0
+ filterTimeDerivative=1, useFilterWeights=1, viFactor=1
+    implicit solver : none
+ =====
+ deflateWaveHoltz=0, numToDeflate=1, eigenVectorFile=[eigenVectors.hdf]
+ freq= 0, omega=  10.000, (adjusted=  10.009) T= 0.62832, Tbar= 1.25664, numPeriods=  2, Tbar(0)/T=  2.00
+
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-0.8839, betaUpwind=-0.8839
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-0.8839, betaUpwind=-0.8839
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-0.8839, betaUpwind=-0.8839
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 8.07e-02, 8.02e-01], max|rhs|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 2.45e-01, 9.13e-01], max|rhs|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 4.76e-02, 7.25e-01], max|rhs|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 4.76e-02, 7.25e-01], max|rhs|= 0.00e+00
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-0.8839, betaUpwind=-0.8839
+solveHelmholtz: max-residual [Re,Im]=[2.56e-01,4.53e-01]
+

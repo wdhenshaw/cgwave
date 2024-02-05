@@ -1,0 +1,32 @@
+
+************************************************
+**** Changes pushed on Thurs July 13, 2023
+
+1) Engquist Majda absorbing boundary conditions added ( -bc=a in selected cmd files )
+
+2) SuperGrid absorbing layers added ( -useSuperGrid=1, and -bc=a in selected cmd files )
+
+3) WaveHoltz for complex solutions implemented. 
+   The direct Helmholtz solver in solveHelmholtzDirect.bC will also compute the complex Helmholtz solution.
+
+4) Option for linear damping added to wave equation (for testing complex WaveHoltz solution)
+
+5) New regression test directories:
+       checkWave/      : checks for wave solver 
+       checkEigen/     : checks for EigenWave
+       checkWaveHoltz/ : checks for WaveHoltz
+   Type 'make check-quiet' from main directory to run all tests
+
+6) Fourth-order implicit time-stepping added (needs more checking)
+
+7) Fixed order=2 implicit scheme and monolithic implicit upwind dissipation
+
+8) All upwind dissipation coefficients are now computed in a single place:
+     CgWave::getUpwindDissipationCoefficient(..)   ( function found in CgWave.C )
+
+9) Added option to plot scattered field (needs checking)
+    See implementation in plot.bC
+    See runs/known/known.cmd : -plotScatteredField=1
+
+10) "exact" boundary conditions with explicit or implicit time-stepping should work now.
+

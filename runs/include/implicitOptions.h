@@ -40,6 +40,7 @@ implicit solver parameters
     #
     $maxiti
   relative tolerance
+    # printf("implicitOptions: rtoli=$rtoli, atoli=$atoli\n"); 
     $rtoli
   absolute tolerance
     $atoli
@@ -68,9 +69,11 @@ implicit solver parameters
       choose best direct solver
       # choose best iterative solver
       relative tolerance
-        1.e-10
+        $rtoli
+        # 1.e-10
       absolute tolerance
-        1.e-10
+        $atoli
+        # 1.e-10
       number of incomplete LU levels
        3
       # debug

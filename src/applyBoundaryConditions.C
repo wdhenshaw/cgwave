@@ -52,11 +52,15 @@ void abcWave(const int&nd,
 /// \param u (input/output) : apply BCs to this grid function
 /// \param un (input/output) : solution at the previous time
 /// \param t (input) : current time
-/// \param applyExplicitBoundaryConditions (input) : if true, apply explicit boundary conditions, even if
+/// \param applyExplicitBoundaryConditions (input) : if true, apply explicit boundary conditions to all grids, even if
 ///    a grid is advanced implicitly. This can be used to set the BC's for initial conditions, for example.
+/// \param fillImplicitBoundaryConditions (input) : if true, fill the right-hand-side for implicit time-stepping
+///  into u.
 // ======================================================================================================
 int CgWave::
-applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunction & un, real t, bool applyExplicitBoundaryConditions /* = false */ )
+applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunction & un, real t,
+                                                  bool applyExplicitBoundaryConditions /* = false */,
+                                                  bool fillImplicitBoundaryConditions  /* = false */ )
 {
     const int myid = max(0,Communication_Manager::My_Process_Number);
     const int np   = max(1,Communication_Manager::numberOfProcessors());
@@ -107,11 +111,15 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
 
     Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
 
-  // printF("Call interpolate...\n");
-    real cpu0 = getCPU();
 
-  // *** Note: interpolate also does a periodic update **** 
-    u.interpolate();
+    real cpu0 = getCPU();
+    if( !fillImplicitBoundaryConditions )
+    {
+    // printF("applyBC: Call interpolate...\n");
+    // *** Note: interpolate also does a periodic update **** 
+
+        u.interpolate();
+    }
 
     real cpu1 = getCPU();
     timing(timeForInterpolate)+= cpu1-cpu0;
@@ -141,15 +149,24 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
 
     int numGhost = orderOfAccuracy/2;
     if( useUpwindDissipation ) numGhost++;
-    const int assignBCForImplicit=0;   // used in call to bcOptWave
 
+    const int assignBCForImplicit = fillImplicitBoundaryConditions;   // used in call to bcOptWave
+    if( fillImplicitBoundaryConditions && t<=3.*dt )
+    {
+        printF("applyBoundaryConditions: fill RHS for implicit time-stepping, t=%9.2e\n",t);
+    }
+
+  // assignCornerGhostPoints = true if bcOptWave -> cornerWave will assign corner ghost points
+    const int assignCornerGhostPoints = bcApproach==useCompatibilityBoundaryConditions ||
+                                                                            bcApproach==useLocalCompatibilityBoundaryConditions;
 
     bool useOpt= true; // twilightZone && true;
 
     bool isAllImplicit = true;  // all grids are implicit
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
-    // +++ NOTE: BCs for implicit are done in takeImplicitTimeStep +++
+    // BCs for implicit time-stepping are now filled in here *wdh* Dec 13, 2023.
+    // OLD: +++ NOTE: BCs for implicit are done in takeImplicitTimeStep +++
         isAllImplicit = isAllImplicit && gridIsImplicit(grid);
     }
     if( applyExplicitBoundaryConditions )  
@@ -171,9 +188,9 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                 {
           // -- assign boundary and ghost values to be exact ---
                     if( t<=2*dt )
-                        printF(" Set knownSolution at exact boundary (side,axis,grid)=(%d,%d,%d)\n",side,axis,grid);
+                        printF("applyBC: Set knownSolution at exact boundary (side,axis,grid)=(%d,%d,%d), numGhost=%d\n",side,axis,grid,numGhost);
 
-                    getBoundaryIndex(gid,side,axis,I1,I2,I3);
+                    getBoundaryIndex(gid,side,axis,I1,I2,I3,numGhost);
                     if( side==0 )
                         Iv[axis] = Range(gid(0,axis)-numGhost,gid(0,axis));
                     else 
@@ -183,20 +200,12 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                 }
             }
         }
-                      
+
     }
-
-    
-  // if( TRUE )
-  // {
-  //   timing(timeForBoundaryConditions) += getCPU()-cpu0;
-  //   return 0;  // ************** TemP ***************************
-  // }
-
-
 
     if( debug & 4 && t<=2*dt )
         printF("CgWave: applyBC: useOpt=%d\n",(int)useOpt);
+
     if( useOpt )
     {
     // ----- Optimized Boundary Conditions ------
@@ -212,12 +221,18 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
       // +++ NOTE: BCs for implicit are done in takeImplicitTimeStep +++
 
             
-            if( !gridIsImplicit(grid) || applyExplicitBoundaryConditions )
+            if( !gridIsImplicit(grid) || applyExplicitBoundaryConditions || fillImplicitBoundaryConditions )
             {
         // --------- EXPLICIT GRID ------------
 
                 if( bcApproach==useLocalCompatibilityBoundaryConditions )
                 {
+                    if( fillImplicitBoundaryConditions )
+                    {
+                        printF("applyBoundaryConditions:ERROR: bcApproach==useLocalCompatibilityBoundaryConditions not implemented for implicit time-stepping\n");
+                        OV_ABORT("error");
+                    }
+
           // -- Apply local compatibility boundary conditions ---
                     ug.applyBoundaryCondition(0,BCTypes::dirichlet,dirichlet,0.,t);   // *** FIX ME **** THIS SHOULD BE u[grid] **********
           // u.applyBoundaryCondition(0,BCTypes::dirichlet,dirichlet,0.,t);   // *** FIX ME **** THIS SHOULD BE u[grid] **********
@@ -289,7 +304,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                         if( applyKnownSolutionAtBoundaries )
                             addForcingBC=1; 
                         int gridType = isRectangular ? 0 : 1;
-                        int gridIsImplicit = 0; 
+            // int gridIsImplicit = 0; 
                         int numberOfComponents = 1;          // for now CgWave only has a single component 
                         int uc = 0;                          // first component
                         int ipar[] = {
@@ -298,7 +313,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                             grid                ,            // ipar( 2)
                             gridType            ,            // ipar( 3)
                             orderOfAccuracy     ,            // ipar( 4)
-                            gridIsImplicit      ,            // ipar( 5)
+                            gridIsImplicit(grid),            // ipar( 5)  // added Nov 22, 2023
                             twilightZone        ,            // ipar( 6)
                             np                  ,            // ipar( 7)
                             debug               ,            // ipar( 8)
@@ -311,7 +326,8 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                             numGhost,                        // ipar(15)
                             assignBCForImplicit,             // ipar(16)
                             bcApproach,                      // ipar(17)
-                            numberOfFrequencies              // ipar(18)
+                            numberOfFrequencies,             // ipar(18)
+                            assignCornerGhostPoints          // ipar(19)
                                                   };
                         Real cEM2 = c;
                         if( solveHelmholtz ) 
@@ -412,37 +428,43 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
 
 
 
-          // Non-reflecting and Absorbing boundary conditions
-          // ***NOTE*** symmetry corners and edges are assigned in this next routine *fix me*
-          // OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
+                    if( !fillImplicitBoundaryConditions )
+                    {
+            // Non-reflecting and Absorbing boundary conditions
+            // ***NOTE*** symmetry corners and edges are assigned in this next routine *fix me*
+            // OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
 
-                    Real *uptr = uLocal.getDataPointer();
-                    Real *uOldptr = unLocal.getDataPointer();
+                        Real *uptr = uLocal.getDataPointer();
+                        Real *uOldptr = unLocal.getDataPointer();
 
-                    RealArray ff(2,2);
-                    Real *fptr = ff.getDataPointer();
+                        RealArray ff(2,2);
+                        Real *fptr = ff.getDataPointer();
 
-                    abcWave( mg.numberOfDimensions(), 
-                                            uLocal.getBase(0),uLocal.getBound(0),
-                                            uLocal.getBase(1),uLocal.getBound(1),
-                                            uLocal.getBase(2),uLocal.getBound(2),
-                                            ff.getBase(0),ff.getBound(0),
-                                            ff.getBase(1),ff.getBound(1),
-                                            ff.getBase(2),ff.getBound(2),
-                                            indexRangeLocal(0,0),
-                                            *uOldptr, *uptr, *fptr, *pmask, *prsxy, *pxy,
-                                            bcLocal(0,0), bcLocal(0,0), ipar[0], rpar[0], ierr );
-
+                        abcWave( mg.numberOfDimensions(), 
+                                                uLocal.getBase(0),uLocal.getBound(0),
+                                                uLocal.getBase(1),uLocal.getBound(1),
+                                                uLocal.getBase(2),uLocal.getBound(2),
+                                                ff.getBase(0),ff.getBound(0),
+                                                ff.getBase(1),ff.getBound(1),
+                                                ff.getBase(2),ff.getBound(2),
+                                                indexRangeLocal(0,0),
+                                                *uOldptr, *uptr, *fptr, *pmask, *prsxy, *pxy,
+                                                bcLocal(0,0), bcLocal(0,0), ipar[0], rpar[0], ierr );
+                    }
                 }
 
         // ...swap periodic edges ....
-                ug.periodicUpdate();
-                ug.updateGhostBoundaries();
+                if( !fillImplicitBoundaryConditions)
+                {
+                    ug.periodicUpdate();
+                    ug.updateGhostBoundaries();
+                }
 
             }
             else
             {
-        // -------- IMPLICIT GRID ------
+        // -------- IMPLICIT GRID (but we are not filling the RHS for the implicit solve) ------
+
                 if( useUpwindDissipation && !implicitUpwind )
                 {
           // IPCU -- upwinding added in an explicit step 
@@ -467,70 +489,57 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
 
     // For upwind dissipation we should assign another line of points next to interpolation points
     // to support the wider upwind stencil
-            if( useUpwindDissipation )
-            {
-                if( assignInterpNeighbours==interpolateInterpNeighbours ||
-                        assignInterpNeighbours==defaultAssignInterpNeighbours  )
+        if( !fillImplicitBoundaryConditions)
+        {
+                if( useUpwindDissipation )
                 {
-          // --- Interpolate interp neighbours *new* June 10, 2022
-          // printF("Call assignInterpolationNeighbours...\n");
-                    if( !dbase.has_key("interpNeighbours") )
+                    if( assignInterpNeighbours==interpolateInterpNeighbours ||
+                            assignInterpNeighbours==defaultAssignInterpNeighbours  )
                     {
-                        AssignInterpNeighbours & interpNeighbours = dbase.put<AssignInterpNeighbours>("interpNeighbours");
-                        interpNeighbours.setAssignmentType( AssignInterpNeighbours::interpolateInterpolationNeighbours );
-            // Interpolation width: This could potentially be 1 less than the normal interp width: 
-                        const int interpolationWidth = orderOfAccuracy+1;  
-                        interpNeighbours.setInterpolationWidth( interpolationWidth );
-                    }   
-                    AssignInterpNeighbours & interpNeighbours = dbase.get<AssignInterpNeighbours>("interpNeighbours");
-                    const int numberOfComponents=1;  // ** FIX ME **
-                    Range C = numberOfComponents;
-          // We could pass the TZ function for checking errors 
-                    OGFunction* pExact = NULL; // twilightZone ? dbase.get<OGFunction* >("tz") : NULL;
-                    if( debug & 8 )
-                        printf("++++ CgWave::applyBC: interpolate Interpolation Neighbours at t=%9.3e\n",t);
-                    interpNeighbours.assignInterpolationNeighbours( u, C, pExact, t  );
-          // printF("Done call assignInterpolationNeighbours.\n");
-                }
-                else
-                {
-                    assert( assignInterpNeighbours==extrapolateInterpNeighbours );
-                    if( !isAllImplicit )
-                    {
-                        printF("Call extrapolateInterpolationNeighbours...\n");
-                        u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t,bcParams);
-                        printF("Done call extrapolateInterpolationNeighbours.\n");
+            // --- Interpolate interp neighbours *new* June 10, 2022
+            // printF("Call assignInterpolationNeighbours...\n");
+                        if( !dbase.has_key("interpNeighbours") )
+                        {
+                            AssignInterpNeighbours & interpNeighbours = dbase.put<AssignInterpNeighbours>("interpNeighbours");
+                            interpNeighbours.setAssignmentType( AssignInterpNeighbours::interpolateInterpolationNeighbours );
+              // Interpolation width: This could potentially be 1 less than the normal interp width: 
+                            const int interpolationWidth = orderOfAccuracy+1;  
+                            interpNeighbours.setInterpolationWidth( interpolationWidth );
+                        }   
+                        AssignInterpNeighbours & interpNeighbours = dbase.get<AssignInterpNeighbours>("interpNeighbours");
+                        const int numberOfComponents=1;  // ** FIX ME **
+                        Range C = numberOfComponents;
+            // We could pass the TZ function for checking errors 
+                        OGFunction* pExact = NULL; // twilightZone ? dbase.get<OGFunction* >("tz") : NULL;
+                        if( debug & 8 )
+                            printf("++++ CgWave::applyBC: interpolate Interpolation Neighbours at t=%9.3e\n",t);
+                        interpNeighbours.assignInterpolationNeighbours( u, C, pExact, t  );
+            // printF("Done call assignInterpolationNeighbours.\n");
                     }
                     else
                     {
-                        if( isImplicit && !isAllImplicit )
+                        assert( assignInterpNeighbours==extrapolateInterpNeighbours );
+                        if( !isAllImplicit )
                         {
-                            printF("applyBoundaryConditions: t=%9.3e: FIX ME: extrapolateInterpolationNeighbours for PARTIALY IMPLICIT time-stepping\n"); 
-                            OV_ABORT("error");
+                            printF("Call extrapolateInterpolationNeighbours...\n");
+                            u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t,bcParams);
+                            printF("Done call extrapolateInterpolationNeighbours.\n");
                         }
-                    }      
+                        else
+                        {
+                            if( isImplicit && !isAllImplicit )
+                            {
+                                printF("applyBoundaryConditions: t=%9.3e: FIX ME: extrapolateInterpolationNeighbours for PARTIALY IMPLICIT time-stepping\n"); 
+                                OV_ABORT("error");
+                            }
+                        }      
+                    }
                 }
-            }
-
-
-
-    // ** TESTING ***
-        if( false )
-        {
-            printF("applyBC: TESTING: SET UNUSED GHOST TO ZERO\n");
-    
-            for( int ghost=2; ghost<=2; ghost++ )
-            {
-                bcParams.ghostLineToAssign=ghost;
-                u.applyBoundaryCondition(0,BCTypes::extrapolate,dirichlet,0.,t,bcParams);
-            }
-            bcParams.ghostLineToAssign=1; // reset 
         }
-
-
 
         timing(timeForBoundaryConditions) += getCPU()-cpu0;
 
+    // ====================== RETURN ===========
         return 0; 
 
     } // end for useOpt
@@ -706,17 +715,26 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
         printF("...BC's, now finishBoundaryConditions...\n");
 
 
-  // *** check -- does finishBoundaryConditions update parallel ghost ??
-
-    if( bcApproach != useLocalCompatibilityBoundaryConditions )  // *wdh* March 27, 2023 LCBC should do corners I think
+  // if( bcApproach != useLocalCompatibilityBoundaryConditions )  // *wdh* March 27, 2023 LCBC should do corners I think
+    if( !assignCornerGhostPoints ) // *wdh* Nov 29, 2023 bcOptWave -> cornerWave will assign corner ghost in some cases
     {
+        if( t<2*dt )
+            printF("applyBC: call finishBoundaryConditions to assign points at corners\n");
+
         BoundaryConditionParameters extrapParams;
         extrapParams.orderOfExtrapolation=orderOfAccuracy+1;
+    // this function sets corner ghost, does a periodic update and parallel ghost update: 
         u.finishBoundaryConditions(extrapParams);
     }
-  // // check this: 
-  // for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-  //   u[grid].updateGhostBoundaries();
+    else
+    {
+    // I think this is needed:
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            u[grid].periodicUpdate();
+            u[grid].updateGhostBoundaries();
+        }
+    }
 
     timing(timeForBoundaryConditions) += getCPU()-cpu0;
 

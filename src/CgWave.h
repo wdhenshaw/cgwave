@@ -116,7 +116,8 @@ int adjustSolutionForSuperGrid( realCompositeGridFunction & q, Real superGridLay
 int advance( int it );
 
 int applyBoundaryConditions( realCompositeGridFunction & u,  realCompositeGridFunction & un,  real t, 
-                             bool applyExplicitBoundaryConditions = false );
+                             bool applyExplicitBoundaryConditions = false,
+                             bool fillImplicitBoundaryConditions = false );
 
 // Apply BC's to an eigenfunction
 int applyEigenFunctionBoundaryConditions( realCompositeGridFunction & u );
@@ -152,6 +153,7 @@ realCompositeGridFunction& getCurrentSolution();
 // Compute the residual in the eigenvalue equation:  || L v + lambda^2 v ||/lambda^2 
 Real getEigenPairResidual( Real lambda, realCompositeGridFunction & v, realCompositeGridFunction & res, int component /* =0 */ );
 
+Real getEnergyNorm( int cur, Real t );
 
 real getErrors( realCompositeGridFunction & u, real t );
 

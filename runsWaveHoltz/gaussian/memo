@@ -1,4 +1,177 @@
 
+***************************************************
+****** Thurs July 20, 2023
+
+ADD ANIMATE OPTION
+
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.55 -y0=0.55 -nf=1 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -damp=0 -adjustHelmholtzForUpwinding=0  -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -go=halt
+
+G4 -- central source freq10 NO UPWIND deflate 64
+cgwh -noplot gaussian.cmd -g=multiObjectsGride4.order2 -ts=implicit -cfl=1000 -x0=1.3 -y0=-.7 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=8 -freq=10 -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -eigenVectorFile=/home/henshw/runs/eig/multiObjectsGride4EigsEv512.show -deflateWaveHoltz=1 -numToDeflate=64 -matlab=multiObjectsFreq10Np8G4Order2Deflate64 -show=multiObjectsFreq10Np8G4Order2Deflate64.show -go=dfks > multiObjectsFreq10Np8G4Order2Deflate64.out
+
+cp multiObjectsFreq10Np8G4Order2Deflate64*.m $waho/codes
+
+
+
+TURN OFF upwind : central source OK
+cgwh gaussian.cmd -g=multiObjectsGride2.order2 -ts=implicit -cfl=1000 -x0=1.3 -y0=-.7 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-9 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=8 -freq=8 -adjustHelmholtzForUpwinding=0 -bc=d  -minStepsPerPeriod=20 -eigenVectorFile=/home/henshw/runs/eig/multiObjectsGride2EigsEv512.show -deflateWaveHoltz=1 -numToDeflate=32 -matlab=multiObjectsFreq8Np8G2Order2ImpDeflate32 -go=halt
+
+
+
+
+***************************************************
+****** Wed July 19, 2023
+
+
+G4 -- central source freq10
+cgwh -noplot gaussian.cmd -g=multiObjectsGride4.order2 -ts=implicit -cfl=1000 -x0=1.3 -y0=-.7 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-9 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=8 -freq=10 -adjustHelmholtzForUpwinding=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -eigenVectorFile=/home/henshw/runs/eig/multiObjectsGride4EigsEv512.show -deflateWaveHoltz=1 -numToDeflate=16 -matlab=multiObjectsFreq10Np8G4Order2Deflate16 -show=multiObjectsFreq10Np8G4Order2Deflate16.show -go=dfks > multiObjectsFreq10Np8G4Order2Deflate16.out
+
+
+G4 -- central source freq10
+cgwh gaussian.cmd -g=multiObjectsGride4.order2 -ts=implicit -cfl=1000 -x0=1.3 -y0=-.7 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-9 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=8 -freq=10 -adjustHelmholtzForUpwinding=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -eigenVectorFile=/home/henshw/runs/eig/multiObjectsGride4EigsEv512.show -deflateWaveHoltz=1 -numToDeflate=16 -matlab=multiObjectsFreq10Np8G4Order2Deflate16 -go=halt
+
+solveHelmholtz: max-res=7.730e+00 (all frequencies)
+solveHelmholtz: rel-max-diff=1.28e-03, |v|_max= 8.94e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+GMRES + deflation
+ Convergence rate CR=0.607, CR-perPeriod=0.940, Time to solve = 3.28e+02(s) : CgWave= 3.27e+02(s) 99.63%, advance= 3.26e+02(s) 99.55%
+GMRES: 
+Convergence rate CR=0.880, CR-perPeriod=0.984, Time to solve = 9.85e+01(s) : CgWave= 2.00e+02(s) 202.98%, advance= 2.00e+02(s) 202.78%
+
+
+cgwh gaussian.cmd -g=multiObjectsGride2.order2 -ts=implicit -cfl=1000 -x0=-2.0 -y0=-2.75 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-9 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=8 -freq=8 -adjustHelmholtzForUpwinding=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -eigenVectorFile=/home/henshw/runs/eig/multiObjectsGride2EigsEv512.show -deflateWaveHoltz=1 -numToDeflate=16 -matlab=multiObjectsFreq8Np8G2Order2ImpDeflate16 -go=halt
+
+freq=8 deflate 16  Size=10
+cgwh -noplot gaussian.cmd -g=multiObjectsGride2.order2 -ts=implicit -cfl=1000 -x0=-2.0 -y0=-2.75 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-9 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=8 -freq=8 -adjustHelmholtzForUpwinding=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -eigenVectorFile=/home/henshw/runs/eig/multiObjectsGride2EigsEv512.show -deflateWaveHoltz=1 -numToDeflate=16 -matlab=multiObjectsFreq8Np8G2Order2ImpDeflate16 -go=dfks
+
+
+grid=multiObjectsGride2.order2.hdf
+ Convergence rate CR=0.568, CR-perPeriod=0.932, Time to solve = 6.72e+01(s) : CgWave= 6.69e+01(s) 99.56%, advance= 6.68e+01(s) 99.44%
+ max-residual=4.87e-09 (WaveHoltz its), numberOfIterations = 34 (Krylov) (maximumNumberOfIterations=50)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=1
+ solveForScatteredField=0
+ Time stepping = implicit, cfl=1000.00, dt=4.010e-02, minStepsPerPeriod=20, numberOfStepsPerSolve=160, totalTimeStepsStaken=13760, aveItsPerImplicitSolve=  0.0
+  takeImplicitFirstStep=0
+ implicitUpwind=0 (1= add upwind diss. to implicit matrix)
+ grid-CFL= 2.27e+00 for grid=0 (innerBackGround)
+ grid-CFL= 1.04e+01 for grid=1 (iBeam1)
+ grid-CFL= 1.04e+01 for grid=2 (iBeam2)
+ grid-CFL= 1.04e+01 for grid=3 (iBeam3)
+ grid-CFL= 1.04e+01 for grid=4 (splitRing1)
+ grid-CFL= 1.04e+01 for grid=5 (splitRing2)
+ grid-CFL= 1.04e+01 for grid=6 (splitRing3)
+ grid-CFL= 5.43e+00 for grid=7 (triangle1)
+ grid-CFL= 5.43e+00 for grid=8 (triangle2)
+ grid-CFL= 5.43e+00 for grid=9 (triangle3)
+ grid-CFL= 5.43e+00 for grid=10 (triangle4)
+ grid-CFL= 5.43e+00 for grid=11 (triangle5)
+ grid-CFL= 5.43e+00 for grid=12 (triangle6)
+ c=1, useSuperGrid=0, damp=0
+ filterTimeDerivative=0, useFilterWeights=1, viFactor=4.68342e-310
+    implicit solver : yale, solver=[direct sparse solver, no pivoting + ]
+ =====
+ deflateWaveHoltz=1, numToDeflate=16, eigenVectorFile=[/home/henshw/runs/eig/multiObjectsGride2EigsEv512.show]
+ Estimated asymptotic convergence rate= 0.892.
+ freq= 0, omega=   8.000, (adjusted=   7.834) T= 0.78540, Tbar= 6.28319, numPeriods=  8, Tbar(0)/T=  8.00
+Direct solve Helmholtz: cpu= 4.92e-01(s), iterations=0 (sum all freq)
+   solver : yale, solver=[direct sparse solver, no pivoting + ]
+
+CgWaveHoltz::residual: grid=0 : maxRes= 2.46e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 3.31e-01
+CgWaveHoltz::residual: grid=2 : maxRes= 3.78e-01
+CgWaveHoltz::residual: grid=3 : maxRes= 3.98e-01
+CgWaveHoltz::residual: grid=4 : maxRes= 2.55e-01
+CgWaveHoltz::residual: grid=5 : maxRes= 1.61e-01
+CgWaveHoltz::residual: grid=6 : maxRes= 2.24e-01
+CgWaveHoltz::residual: grid=7 : maxRes= 1.71e-01
+CgWaveHoltz::residual: grid=8 : maxRes= 4.01e-01
+CgWaveHoltz::residual: grid=9 : maxRes= 5.09e-01
+CgWaveHoltz::residual: grid=10 : maxRes= 4.42e-01
+CgWaveHoltz::residual: grid=11 : maxRes= 3.83e-01
+CgWaveHoltz::residual: grid=12 : maxRes= 4.38e-01
+CgWaveHoltz::residual: freq= 0, omega=   8.000, max-res=2.458e+00.
+solveHelmholtz: max-res=2.458e+00 (all frequencies)
+solveHelmholtz: rel-max-diff=4.65e-02, |v|_max= 9.94e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+FREQ=6 deflate 8
+cgwh -noplot gaussian.cmd -g=multiObjectsGride2.order2 -ts=implicit -cfl=1000 -x0=-2.0 -y0=-2.75 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-9 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=8 -freq=6 -adjustHelmholtzForUpwinding=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -eigenVectorFile=/home/henshw/runs/eig/multiObjectsGride2EigsEv512.show -deflateWaveHoltz=1 -numToDeflate=8 -matlab=multiObjectsFreq6Np8G2Order2ImpDeflate8 -go=dfk
+
+
+NO DEFLATION: slow convergence 
+cgwh -noplot gaussian.cmd -g=multiObjectsGride2.order2 -ts=implicit -cfl=1000 -x0=-2.0 -y0=-2.75 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-9 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=8 -freq=5 -adjustHelmholtzForUpwinding=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -eigenVectorFile=/home/henshw/runs/eig/multiObjectsGride2EigsEv512.show -deflateWaveHoltz=0 -numToDeflate=4 -matlab=multiObjectsFreq5Np8G2Order2Imp -go=dfk
+
+
+
+EASIER: CHECK RESIDUALS -- soemthing funny -plot is wrong **FIXED**
+
+cgwh gaussian.cmd -g=multiObjectsGride2.order2 -ts=implicit -cfl=1000 -x0=-2.0 -y0=-2.75 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-9 -upwind=1 -imode=1 -maxIterations=50 -numPeriods=8 -freq=2 -adjustHelmholtzForUpwinding=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -eigenVectorFile=/home/henshw/runs/eig/multiObjectsGride2EigsEv512.show -deflateWaveHoltz=0 -numToDeflate=4 -go=halt
+
+Convergence rate CR=0.426, CR-perPeriod=0.899, Time to solve = 7.20e+01(s) : CgWave= 7.18e+01(s) 99.69%, advance= 7.16e+01(s) 99.40%
+
+residual: grid=0 : maxRes= 1.56e-05
+residual: grid=1 : maxRes= 6.15e-08
+residual: grid=2 : maxRes= 5.89e-07
+residual: grid=3 : maxRes= 1.27e-06
+residual: grid=4 : maxRes= 1.68e-08
+residual: grid=5 : maxRes= 1.41e-07
+residual: grid=6 : maxRes= 1.12e-07
+residual: grid=7 : maxRes= 5.38e-09
+residual: grid=8 : maxRes= 5.97e-08
+residual: grid=9 : maxRes= 4.52e-08
+residual: grid=10 : maxRes= 1.27e-09
+residual: grid=11 : maxRes= 4.18e-08
+residual: grid=12 : maxRes= 4.15e-08
+residual: grid=0 : maxRes= 1.17e+02
+residual: grid=1 : maxRes= 3.92e+00
+residual: grid=2 : maxRes= 3.81e+01
+residual: grid=3 : maxRes= 3.97e+01
+residual: grid=4 : maxRes= 1.01e+01
+residual: grid=5 : maxRes= 4.36e+01
+residual: grid=6 : maxRes= 3.26e+01
+residual: grid=7 : maxRes= 1.02e-01
+residual: grid=8 : maxRes= 2.75e+01
+residual: grid=9 : maxRes= 1.85e+01
+residual: grid=10 : maxRes= 1.13e-01
+residual: grid=11 : maxRes= 1.62e+01
+residual: grid=12 : maxRes= 2.42e+01
+CgWaveHoltz::residual: freq= 0, omega=   2.000, max-res=1.558e-05 (using omega), max-res=1.170e+02 (using omega from discrete symbol)
+solveHelmholtz: max-res=1.558e-05 (all frequencies)
+solveHelmholtz: rel-max-diff=1.81e-09, |v|_max= 1.06e+02 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+CHECK amp : + or minus ?
+freq
+cgwh gaussian.cmd -g=multiObjectsGride2.order2 -ts=implicit -cfl=1000 -x0=-2.0 -y0=-2.75 -nf=1 -amp=-200 -beta=7 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-9 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=8 -freq=10 -adjustHelmholtzForUpwinding=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=20 -go=halt
+
+
+CGWAVE : MAKE A MOVIE: 
+cgWave gaussian.cmd -g=multiObjectsGride2.order2 -beta=10 -x0=-2.2 -y0=-2.2 -omega=10 -amp=-200 -ts=explicit -cfl=.95 -upwind=1 -tf=100 -tp=.05 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -go=halt
+
+
+*************************************************
+**** Tues July 18, 2023
+
+deflate=4
+cgwh -noplot gaussian.cmd -g=sice4.order4.ng3 -x0=-0.25 0.3 -0.2 0.25 -y0=-0.2 0.25 -0.3 0.15 -nf=4 -freq=3 9 18 22 -amp=150 150 150 150 -beta=150 150 150 150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=20 -numPeriods=8 -cfl=10000 -eigenVectorFile=diskG4O4Ev64.show -deflateWaveHoltz=1 -numToDeflate=4  -matlab=diskFourFreqNp8G4Order4ImpDeflate4 -go=dfk > diskFourFreqNp8G4Order4ImpDeflate4.out
+
+DISK FOUR FREQ IMP 
+cgwh -noplot gaussian.cmd -g=sice4.order4.ng3 -x0=-0.25 0.3 -0.2 0.25 -y0=-0.2 0.25 -0.3 0.15 -nf=4 -freq=3 9 18 22 -amp=150 150 150 150 -beta=150 150 150 150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=40 -numPeriods=8 -cfl=10000 -eigenVectorFile=diskG4O4Ev64.show -deflateWaveHoltz=0 -numToDeflate=4  -matlab=diskFourFreqNp8G4Order4Imp -go=dfk > diskFourFreqNp8G4Order4Imp.out
+
+DISK FOUR FREQ Exp
+cgwh -noplot gaussian.cmd -g=sice4.order4.ng3 -x0=-0.25 0.3 -0.2 0.25 -y0=-0.2 0.25 -0.3 0.15 -nf=4 -freq=3 9 18 22 -amp=150 150 150 150 -beta=150 150 150 150 -adjustOmega=1 -ts=explicit -cfl=.95 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=40 -numPeriods=8 -eigenVectorFile=diskG4O4Ev64.show -deflateWaveHoltz=0 -numToDeflate=4  -matlab=diskFourFreqNp8G4Order4Exp -go=dfk > diskFourFreqNp8G4Order4Exp.out
+
+
+IMPLICIT NF=1, NP=4 *BROKEN* ... FIXED
+cgwh -noplot gaussian.cmd -g=sice4.order4.ng3 -x0=.25  -y0=.25 -nf=1 -freq=8.1 -amp=150 -beta=150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=4 -cfl=10000 -matlab=diskOneFreqNp4G4Order4Imp -go=dfk > diskOneFreqNp4G4Order4Imp.out
+
+
+IMPLICIT NF=1, NP=1 *BROKEN* ... FIXED
+cgwh -noplot gaussian.cmd -g=sice4.order4.ng3 -x0=.25  -y0=.25 -nf=1 -freq=8.1 -amp=150 -beta=150 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=100 -numPeriods=1 -cfl=10000 -matlab=diskOneFreqNp1G4Order4Imp -go=dfk > diskOneFreqNp1G4Order4Imp.out
+
+
 *************************************************
 **** Wed July 12, 2023
 

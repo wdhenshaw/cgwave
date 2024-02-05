@@ -183,7 +183,7 @@ buildSuperGrid( )
   // assert( cgp!=NULL );
   // CompositeGrid & cg = *cgp;
   const int numberOfComponentGrids = cg.numberOfComponentGrids();
-  const int numberOfDimensions = cg.numberOfDimensions();
+  const int numberOfDimensions     = cg.numberOfDimensions();
 
   // --- Build the Super-grid layer functions ----
 
@@ -213,9 +213,32 @@ buildSuperGrid( )
 
 //  sigmaz = @(z)  ( (1-epsL)* q*( 1 - (1 -z/l).^p ).^(q-1) ).* ( (p/l)*(1 -z/l).^(p-1) );  % d(sigma)/dz    
 
-  epsL=1e-4;
-  pSG=4;
-  qSG=4;
+  // ****************************************************
+  // ******* ASSIGN SUPERGRID LAYER PARAMETERS **********
+  // ****************************************************
+
+  const int & orderOfAccuracy  = dbase.get<int>("orderOfAccuracy");
+  if( orderOfAccuracy==2 )
+  {
+    // July 16, 2023 -- what should this be ??
+    epsL=1e-3;
+    pSG=2;
+    qSG=2;
+  }
+  else if( orderOfAccuracy==4 )
+  {
+    epsL=1e-4;
+    pSG=4;
+    qSG=4;
+  }
+  else
+  { // what should this be ? 
+    epsL=1e-4;
+    pSG=orderOfAccuracy;
+    qSG=orderOfAccuracy;    
+  }
+
+
   // superGridWidth=.2;
   const real & superGridWidth = dbase.get<Real>("superGridWidth");
 
@@ -487,7 +510,7 @@ buildSuperGrid( )
       GL_GraphicsInterface & gi = (GL_GraphicsInterface&)(*Overture::getGraphicsInterface());
 
       PlotStuffParameters psp;
-      aString title=sPrintF("Super-grid functions: width=%g p=%g q=%g",superGridWidth,pSG,qSG);
+      aString title=sPrintF("SuperGrid functions: width=%g p=%g q=%g, epsL=%g",superGridWidth,pSG,qSG,epsL);
       // int numFields = 1;
       // int numPoints = dimension(1,0)-dimension(0,0)+1;
       // RealArray fields(numPoints,numFields);

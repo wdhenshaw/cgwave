@@ -1,11 +1,1211 @@
 set fame = ~/Dropbox/AMP/fame
 
+*******************************************
+***** Fri Jan 5, 2024
+
+#### SPIE FOR SCATTERING
+
+SCATTERING FROM A CYLINDER
+
+IMPLICIT: ORDER=4
+conv.p tests.conv -option=cylScat -cg=cicFixed -order=4 -kx=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=.9 -ts=implicit -rectangular=explicit -ng=4
+cp cylScatstdoneSidedcicFixedSPIEUWCOrder4maxNorm.m $wimp/matlab/
+SPIE
+                grid  & N &  $ u $ & r 
+ cicFixed2 &     1 & 6.16e-06 &       
+ cicFixed4 &     2 & 6.27e-07 &  9.82 
+ cicFixed8 &     4 & 4.62e-08 & 13.57 
+cicFixed16 &     8 & 3.08e-09 & 15.00 
+Convergence rates: c0=3.67 
+
+
+IME
+conv.p tests.conv -option=cylScat -cg=cicFixed -order=4 -kx=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=100 -dtMax=2e-2 -ts=implicit -ng=4
+cp cylScatstdoneSidedcicFixedImplicitUWCOrder4maxNorm.m $wimp/matlab/
+                grid  & N &  $ u $ & r 
+ cicFixed2 &     1 & 5.53e-06 &       
+ cicFixed4 &     2 & 5.40e-07 & 10.24 
+ cicFixed8 &     4 & 3.81e-08 & 14.17 
+cicFixed16 &     8 & 2.51e-09 & 15.18 
+Convergence rates: c0=3.71 
+
+
+
+IMPLICIT: ORDER=2
+SPIE: 
+conv.p tests.conv -option=cylScat -cg=cicFixed -order=2 -kx=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=.9 -ts=implicit -rectangular=explicit -ng=4
+cp cylScatstdoneSidedcicFixedSPIEUWCOrder2maxNorm.m $wimp/matlab/
+                grid  & N &  $ u $ & r 
+ cicFixed2 &     1 & 9.17e-04 &       
+ cicFixed4 &     2 & 2.32e-04 &  3.95 
+ cicFixed8 &     4 & 5.93e-05 &  3.91 
+cicFixed16 &     8 & 1.51e-05 &  3.93 
+Convergence rates: c0=1.97 
+
+
+IME
+conv.p tests.conv -option=cylScat -cg=cicFixed -order=2 -kx=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=100 -dtMax=2e-2 -ts=implicit -ng=4
+cp cylScatstdoneSidedcicFixedImplicitUWCOrder2maxNorm.m $wimp/matlab
+
+                grid  & N &  $ u $ & r 
+ cicFixed2 &     1 & 7.51e-04 &       
+ cicFixed4 &     2 & 1.95e-04 &  3.85 
+ cicFixed8 &     4 & 4.94e-05 &  3.95 
+cicFixed16 &     8 & 1.25e-05 &  3.95 
+Convergence rates: c0=1.97 
+
+
+
+
+##### SPIE FOR SPHERE FINISH ME
+
++++++++ SPHERE-FIXED ORDER 4
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=4 -tf=.4 -tp=.4 -upwind=1 -bc=d -bcApproach=cbc -cfl=.9 -amp=1 -mPhi=2 -mTheta=1 -mr=1 -ts=implicit -solveri=cgs -takeImplicitFirstStep=1 -rectangular=explicit -ng=3
+cp sphereEigstdcbcsphereFixedSPIEUWCcbcOrder4maxNorm.m $wimp/matlab/
+
+SPIE
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 3.99e-05 &       
+  sphereFixed4 &     2 & 3.30e-06 & 12.09 
+  sphereFixed8 &     4 & 2.09e-07 & 15.79 
+Convergence rates: c0=3.79 
+
+
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=4 -tf=.4 -tp=.4 -upwind=1 -bc=d -bcApproach=cbc -cfl=100 -dtMax=2e-2 -amp=1 -mPhi=2 -mTheta=1 -mr=1 -ts=implicit -solveri=cgs -takeImplicitFirstStep=1 -ng=3
+cp sphereEigstdcbcsphereFixedImplicitUWCcbcOrder4maxNorm.m $wimp/matlab/
+IME 
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 7.31e-05 &       
+  sphereFixed4 &     2 & 4.57e-06 & 16.00 
+  sphereFixed8 &     4 & 2.71e-07 & 16.86 
+Convergence rates: c0=4.04
+
+
+
+++++++++SPHERE-FIXED ORDER 2
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=.9 -amp=1 -mPhi=2 -mTheta=1 -mr=1 -ts=implicit -solveri=cgs -takeImplicitFirstStep=1 -rectangular=explicit -ng=3
+
+cp sphereEigstdoneSidedsphereFixedSPIEUWCOrder2maxNorm.m $wimp/matlab/
+SPIE: (2,1,1)
+
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 5.23e-03 &       
+  sphereFixed4 &     2 & 1.16e-03 &  4.51 
+  sphereFixed8 &     4 & 2.74e-04 &  4.23 
+Convergence rates: c0=2.13 
+
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=100 -dtMax=2e-2 -amp=1 -mPhi=2 -mTheta=1 -mr=1 -ts=implicit -solveri=cgs -takeImplicitFirstStep=1 -ng=3
+IME : (2,1,1)
+cp sphereEigstdoneSidedsphereFixedImplicitUWCOrder2maxNorm.m $wimp/matlab/
+
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 7.84e-03 &       
+  sphereFixed4 &     2 & 1.77e-03 &  4.43 
+  sphereFixed8 &     4 & 4.17e-04 &  4.24 
+Convergence rates: c0=2.12 
+
+
+
+#############################################
+##### SPIE FOR CYLINDER
+
+conv.p tests.conv -option=diskEig -cg=pipezFixed -order=4 -tf=.6 -tp=.6 -upwind=1 -bc=d -bcApproach=cbc -cfl=10 -dtMax=.02 -nTheta=1 -mr=1 -mz=1 -rad=.5 -ts=implicit -solveri=cgs -takeImplicitFirstStep=1 -rectangular=explicit -ng=3
+
+SPIE
+                grid  & N &  $ u $ & r 
+ pipezFixed2 &     1 & 5.70e-03 &       
+ pipezFixed4 &     2 & 2.00e-04 & 28.50 
+ pipezFixed8 &     4 & 1.00e-05 & 20.00 
+Convergence rates: c0=4.58
+
+IME
+               grid  & N &  $ u $ & r 
+ pipezFixed2 &     1 & 7.11e-03 &       
+ pipezFixed4 &     2 & 2.80e-04 & 25.39 
+ pipezFixed8 &     4 & 1.57e-05 & 17.83 
+Convergence rates: c0=4.41 
+
+conv.p tests.conv -option=diskEig -cg=pipezFixed -order=2 -tf=.6 -tp=.6 -upwind=1 -bc=d -cfl=10 -dtMax=.02 -nTheta=1 -mr=1 -mz=1 -rad=.5 -ts=implicit -solveri=cgs -takeImplicitFirstStep=1 -rectangular=explicit -ng=3
+
+                grid  & N &  $ u $ & r 
+ pipezFixed2 &     1 & 6.32e-02 &       
+ pipezFixed4 &     2 & 1.40e-02 &  4.51 
+ pipezFixed8 &     4 & 3.11e-03 &  4.50 
+Convergence rates: c0=2.17 
+
+cp diskEigstdoneSidedpipezFixedSPIEUWCOrder2maxNorm.m $wimp/matlab/
+
+
+
+###### REAME DISK EIG PARAMETERS
+
+SPIE DISK RESULTS
+
+conv.p tests.conv -option=diskEig -cg=sicFixed -order=4 -tf=.7 -tp=.7 -upwind=1 -bc=d -bcApproach=cbc -cfl=.9 -nTheta=2 -mr=1 -ts=implicit -takeImplicitFirstStep=1 -rectangular=explicit -ng=4
+
+cp diskEigstdcbcsicFixedSPIEUWCcbcOrder4maxNorm.m $wimp/matlab/
+
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 6.25e-04 &       
+ sicFixed4 &     2 & 2.57e-05 & 24.32 
+ sicFixed8 &     4 & 1.56e-06 & 16.47 
+sicFixed16 &     8 & 9.66e-08 & 16.15 
+Convergence rates: c0=4.20 
+
+conv.p tests.conv -option=diskEig -cg=sicFixed -order=2 -tf=.7 -tp=.7 -upwind=1 -bc=d -cfl=.9 -mr=1 -nTheta=2  -ts=implicit -takeImplicitFirstStep=1 -rectangular=explicit -ng=4
+
+conv.p tests.conv -option=diskEig -cg=sicFixed -order=2 -tf=.7 -tp=.7 -upwind=1 -bc=d -cfl=.9 -nTheta=2 -mr=1  -ts=implicit -takeImplicitFirstStep=1 -rectangular=explicit -ng=4
+
+
+set wimp = ~/Dropbox/AMP/wimp
+cg66:~/runs/cgWave/conv> cp diskEigstdoneSidedsicFixedSPIEUWCOrder2maxNorm.m $wimp/matlab/
+
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 1.64e-02 &       
+ sicFixed4 &     2 & 2.95e-03 &  5.56 
+ sicFixed8 &     4 & 6.48e-04 &  4.55 
+sicFixed16 &     8 & 1.55e-04 &  4.18 
+Convergence rates: c0=2.24 
+
+*******************************************
+***** Thurs Jan 4, 2024
+
+
+++++++++++ DISK: BC=D SPIE +++++++++++++++
+
+-takeImplicitFirstStep=1 **DOES NOT WORK FOR SPIE*** --. **FIXED***
+conv.p tests.conv -option=diskEig -cg=sicFixed -order=2 -tf=.7 -tp=.7 -upwind=1 -bc=d -cfl=.9 -nTheta=2 -mr=1  -ts=implicit -takeImplicitFirstStep=1 -rectangular=explicit -ng=4
+
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 1.64e-02 &       
+ sicFixed4 &     2 & 2.95e-03 &  5.56 
+ sicFixed8 &     4 & 6.48e-04 &  4.55 
+sicFixed16 &     8 & 1.55e-04 &  4.18 
+Convergence rates: c0=2.24 
+
+
+SPIE: OK 
+conv.p tests.conv -option=diskEig -cg=sicFixed -order=4 -tf=.7 -tp=.7 -upwind=1 -bc=d -bcApproach=cbc -cfl=.9 -nTheta=2 -mr=1 -ts=implicit -takeImplicitFirstStep=1 -rectangular=explicit -ng=4
+
+-takeImplicitFirstStep=1
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 6.25e-04 &       
+ sicFixed4 &     2 & 2.57e-05 & 24.32 
+ sicFixed8 &     4 & 1.56e-06 & 16.47 
+sicFixed16 &     8 & 9.66e-08 & 16.15 
+Convergence rates: c0=4.20 
+
+
+-takeImplicitFirstStep=0
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 6.11e-04 &       
+ sicFixed4 &     2 & 2.55e-05 & 23.96 
+ sicFixed8 &     4 & 1.56e-06 & 16.35 
+sicFixed16 &     8 & 9.63e-08 & 16.20 
+Convergence rates: c0=4.19
+
+
+SPIE: OK 
+conv.p tests.conv -option=diskEig -cg=sicFixed -order=2 -tf=.7 -tp=.7 -upwind=1 -bc=d -cfl=.9 -nTheta=2 -mr=1 -ts=implicit -takeImplicitFirstStep=0 -rectangular=explicit -ng=4
+
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 1.62e-02 &       
+ sicFixed4 &     2 & 2.92e-03 &  5.55 
+ sicFixed8 &     4 & 6.45e-04 &  4.53 
+sicFixed16 &     8 & 1.54e-04 &  4.19 
+Convergence rates: c0=2.23 
+
+
+
+++++++++++ DISK: BC=N +++++++++++++++=
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.7 -tp=.7 -upwind=1 -bc=n -bcApproach=cbc -cfl=10 -dtMax=.02 -nTheta=2 -mr=1  -ts=implicit -takeImplicitFirstStep=1 -ng=4
+
+tf=.7
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 2.28e-04 &       
+      sic4 &     2 & 1.36e-05 & 16.76 
+      sic8 &     4 & 8.72e-07 & 15.60 
+     sic16 &     8 & 5.84e-08 & 14.93 
+Convergence rates: c0=3.98 
+
+
+conv.p tests.conv -option=diskEig -cg=sicFixed -order=2 -tf=.7 -tp=.7 -upwind=1 -bc=n -cfl=10 -dtMax=.02 -nTheta=2 -mr=1  -ts=implicit -takeImplicitFirstStep=1 -ng=4
+cp diskEigstdoneSidedsicFixedImplicitUWCNeumannOrder2maxNorm.m $wimp/matlab
+
+
+tf=.7
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 1.30e-02 &       
+ sicFixed4 &     2 & 3.12e-03 &  4.17 
+ sicFixed8 &     4 & 7.62e-04 &  4.09 
+sicFixed16 &     8 & 1.88e-04 &  4.05 
+Convergence rates: c0=2.04 
+
+
+tf=.8
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 1.65e-02 &       
+ sicFixed4 &     2 & 3.45e-03 &  4.78 
+ sicFixed8 &     4 & 7.74e-04 &  4.46 
+sicFixed16 &     8 & 1.82e-04 &  4.25 
+Convergence rates: c0=2.17 
+
+tf=1
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 2.40e-03 &       
+ sicFixed4 &     2 & 6.85e-04 &  3.50 
+ sicFixed8 &     4 & 2.82e-04 &  2.43 
+sicFixed16 &     8 & 8.63e-05 &  3.27 
+Convergence rates: c0=1.57 
+
+
+
+++++++++++ DISK: BC=D +++++++++++++++=
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.7 -tp=.7 -upwind=1 -bc=d -bcApproach=cbc -cfl=10 -dtMax=.02 -nTheta=2 -mr=1  -ts=implicit -takeImplicitFirstStep=1 -ng=4
+
+cp diskEigstdcbcsicImplicitUWCcbcOrder4maxNorm.m $wimp/matlab/
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 8.63e-04 &       
+      sic4 &     2 & 3.67e-05 & 23.51 
+      sic8 &     4 & 1.67e-06 & 21.98 
+     sic16 &     8 & 8.36e-08 & 19.98 
+Convergence rates: c0=4.45 
+
+
+conv.p tests.conv -option=diskEig -cg=sicFixed -order=2 -tf=.7 -tp=.7 -upwind=1 -bc=d -cfl=10 -dtMax=.02 -nTheta=2 -mr=1  -ts=implicit -takeImplicitFirstStep=1 -ng=4
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 2.54e-02 &       
+ sicFixed4 &     2 & 4.47e-03 &  5.68 
+ sicFixed8 &     4 & 8.63e-04 &  5.18 
+sicFixed16 &     8 & 1.83e-04 &  4.72 
+Convergence rates: c0=2.37
+
+cp diskEigstdoneSidedsicFixedImplicitUWCOrder2maxNorm.m $wimp/matlab/
+
+*******************************************
+***** Sat/Sun Dec 23/24, 2023
+
+BUG FOUND sphereFixed16 SPACE FOR SPARSE MATRIX IS TOO BIG for single precision int !!
+
+REDO SOME RUNS FOR MATLAB FILES FOR WIMP PAPER
+
+
++++++++++PIPE++++
+
+conv.p tests.conv -option=diskEig -cg=pipezFixed -order=4 -tf=.6 -tp=.6 -upwind=1 -bc=d -bcApproach=cbc -cfl=10 -dtMax=.02 -nTheta=1 -mr=1 -mz=1 -rad=.5 -ts=implicit -solveri=cgs -takeImplicitFirstStep=1 -ng=3
+
+               grid  & N &  $ u $ & r 
+ pipezFixed2 &     1 & 7.11e-03 &       
+ pipezFixed4 &     2 & 2.80e-04 & 25.39 
+ pipezFixed8 &     4 & 1.57e-05 & 17.83 
+Convergence rates: c0=4.41 
+
+conv.p tests.conv -option=diskEig -cg=pipezFixed -order=2 -tf=.6 -tp=.6 -upwind=1 -bc=d -cfl=10 -dtMax=.02 -nTheta=1 -mr=1 -mz=1 -rad=.5 -ts=implicit -solveri=cgs -takeImplicitFirstStep=1 -ng=3
+
+conv.p tests.conv -option=diskEig -cg=pipezFixed -order=2 -tf=.6 -tp=.6 -upwind=1 -bc=d -cfl=10 -dtMax=.02 -nTheta=1 -mr=1 -mz=1 -rad=.5 -ts=implicit -solveri=cgs -takeImplicitFirstStep=1 -ng=3
+
+                grid  & N &  $ u $ & r 
+ pipezFixed2 &     1 & 8.03e-02 &       
+ pipezFixed4 &     2 & 1.88e-02 &  4.27 
+ pipezFixed8 &     4 & 4.31e-03 &  4.36 
+Convergence rates: c0=2.11 
+
+pipez 
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 9.09e-02 &       
+    pipez4 &     2 & 2.41e-02 &  3.77 
+    pipez8 &     4 & 5.63e-03 &  4.28 
+Convergence rates: c0=2.01 
+
+
+SPHERE-FIXED ORDER 2
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=100 -dtMax=2e-2 -amp=1 -mPhi=1 -mr=0 -mr=1 -ts=implicit -solveri=cgs  -takeImplicitFirstStep=1 -ng=3
+
+new
+               grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 3.62e-03 &       
+  sphereFixed4 &     2 & 8.61e-04 &  4.20 
+  sphereFixed8 &     4 & 2.08e-04 &  4.14 
+Convergence rates: c0=2.06 
+
+OLD
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 3.46e-03 &       
+  sphereFixed4 &     2 & 8.39e-04 &  4.12 
+  sphereFixed8 &     4 & 2.06e-04 &  4.07 
+ sphereFixed16 &     8 & 5.11e-05 &  4.03 
+Convergence rates: c0=2.03 
+
+
+SPHERE EIGS
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=4 -tf=.4 -tp=.4 -upwind=1 -bc=d -bcApproach=cbc -cfl=100 -dtMax=2e-2 -amp=1 -mPhi=1 -mr=0 -mr=1 -ts=implicit -solveri=cgs  -takeImplicitFirstStep=1 -ng=3
+
+>> run [/home/henshw/Dropbox/research/cgwave/bin/cgWave -noplot /home/henshw/Dropbox/research/cgwave/runs/known/known.cmd -g=sphereFixede16.order4.ng3 -cfl=100 -tf=.4 -tp=.4 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=cbc -meApproach=std -known=sphereEig -go=go -solveri=cgs -rtoli=1e-10 -atoli=1e-10 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=1 -beta2=0.5 -beta4=0 -dtMax=0.0025 >! ./sphereEigstdcbcsphereFixedOrder4maxNorm.sphereFixed16.Case4.out]
+
+-ng=4 : ERROR:
+>> run [/home/henshw/Dropbox/research/cgwave/bin/cgWave -noplot /home/henshw/Dropbox/research/cgwave/runs/known/known.cmd -g=sphereFixede16.order4.ng3 -cfl=100 -tf=.4 -tp=.4 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=cbc -meApproach=std -known=sphereEig -go=go -solveri=cgs -rtoli=1e-10 -atoli=1e-10 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=1 -beta2=0.5 -beta4=0 -dtMax=0.0025 >! ./sphereEigstdcbcsphereFixedOrder4maxNorm.sphereFixed16.Case4.out]
+Abort (core dumped)
+...returnValue=34304, cpu=507 (s)
+
+
+OLD 
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 2.14e-05 &       
+  sphereFixed4 &     2 & 1.27e-06 & 16.85 
+  sphereFixed8 &     4 & 7.96e-08 & 15.95 
+Convergence rates: c0=4.04 
+
+
+DISK: BC=D
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=1 -tp=1 -upwind=1 -bc=d -bcApproach=cbc -cfl=10 -dtMax=.02 -nTheta=2 -mr=1  -ts=implicit -takeImplicitFirstStep=1 -ng=4
+
+
+-tf=.75 -tp=.75 -nTheta=1 -mr=1
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 3.79e-04 &       
+      sic4 &     2 & 1.93e-05 & 19.64 
+      sic8 &     4 & 1.05e-06 & 18.38 
+     sic16 &     8 & 6.04e-08 & 17.38 
+Convergence rates: c0=4.20
+
+DISK: BC=D
+conv.p tests.conv -option=diskEig -cg=sicFixed -order=2 -tf=1 -tp=1 -upwind=1 -bc=d -cfl=10 -dtMax=.02 -nTheta=2 -mr=1 -ts=implicit -resStart=1 -takeImplicitFirstStep=1 -ng=4
+
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 4.25e-02 &       
+ sicFixed4 &     2 & 9.31e-03 &  4.56 
+ sicFixed8 &     4 & 2.13e-03 &  4.37 
+sicFixed16 &     8 & 5.03e-04 &  4.23 
+Convergence rates: c0=2.13 
+
+
+-tf=.75 -tp=.75 -nTheta=1 -mr=1
+                grid  & N &  $ u $ & r 
+ sicFixed2 &     1 & 2.01e-02 &       
+ sicFixed4 &     2 & 4.38e-03 &  4.59 
+ sicFixed8 &     4 & 1.00e-03 &  4.38 
+sicFixed16 &     8 & 2.39e-04 &  4.18 
+Convergence rates: c0=2.13
+
+
+
+
+
+SCATTERING FROM A CYLINDER
+
+IMPLICIT: ORDER=4
+conv.p tests.conv -option=cylScat -cg=cicFixed -order=4 -kx=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=100 -dtMax=2e-2 -ts=implicit -ng=4
+                grid  & N &  $ u $ & r 
+ cicFixed2 &     1 & 5.53e-06 &       
+ cicFixed4 &     2 & 5.40e-07 & 10.24 
+ cicFixed8 &     4 & 3.81e-08 & 14.17 
+cicFixed16 &     8 & 2.51e-09 & 15.18 
+Convergence rates: c0=3.71 
+
+IMPLICIT: ORDER=2
+conv.p tests.conv -option=cylScat -cg=cicFixed -order=2 -kx=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=100 -dtMax=2e-2 -ts=implicit -ng=4
+
+                grid  & N &  $ u $ & r 
+ cicFixed2 &     1 & 7.51e-04 &       
+ cicFixed4 &     2 & 1.95e-04 &  3.85 
+ cicFixed8 &     4 & 4.94e-05 &  3.95 
+cicFixed16 &     8 & 1.25e-05 &  3.95 
+Convergence rates: c0=1.97 
+
+*******************************************
+***** Fri Dec 22, 2023
+
+TEST NEW HIERARCHICAL LAPSQ
+
+SPHERE-FIXED ORDER 2
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=2 -tf=.4 -tp=.4 -upwind=1 -bc=d -cfl=100 -dtMax=2e-2 -amp=1 -mPhi=1 -mr=0 -mr=1 -ts=implicit -solveri=cgs -resStart=1 -ng=4
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 3.46e-03 &       
+  sphereFixed4 &     2 & 8.39e-04 &  4.12 
+  sphereFixed8 &     4 & 2.06e-04 &  4.07 
+ sphereFixed16 &     8 & 5.11e-05 &  4.03 
+Convergence rates: c0=2.03 
+
+
+PIPE: IMPLICIT BC=D ORDER=4
+conv.p tests.conv -option=diskEig -cg=pipez -order=4 -tf=.6 -tp=.6 -upwind=1 -bc=d -bcApproach=cbc -cfl=100 -dtMax=2e-2 -nTheta=1 -mr=1 -mz=1 -rad=.5 -ts=implicit -solveri=cgs -resStart=1 -ng=4
+
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 4.98e-03 &       
+    pipez4 &     2 & 3.54e-04 & 14.07 
+    pipez8 &     4 & 2.39e-05 & 14.81 
+   pipez16 &     8 & 1.39e-06 & 17.19 
+Convergence rates: c0=3.93 
+
+
+
+OLD: 
+tf=.6
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 4.82e-03 &       
+    pipez4 &     2 & 3.57e-04 & 13.50 
+    pipez8 &     4 & 2.45e-05 & 14.57 
+Convergence rates: c0=3.81 
+
+SPHERE EIGS
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=4 -tf=.4 -tp=.4 -upwind=1 -bc=d -bcApproach=cbc -cfl=100 -dtMax=2e-2 -amp=1 -mPhi=1 -mr=0 -mr=1 -ts=implicit -solveri=cgs -resStart=1 -ng=3
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 2.14e-05 &       
+  sphereFixed4 &     2 & 1.27e-06 & 16.85 
+  sphereFixed8 &     4 & 7.96e-08 & 15.95 
+Convergence rates: c0=4.04 
+
+
+ORTHO SPHERE
+conv.p tests.conv -option=tz -tz=trig -cg=orthoSphere -order=4 -fx=1 -tf=.4 -tp=.4 -upwind=1 -cfl=10 -dtMax=2e-2 -bcApproach=cbc -meApproach=std -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -ts=implicit -ng=3
+
+                grid  & N &  $ u $ & r 
+  orthoSphere2 &     1 & 3.47e-04 &       
+  orthoSphere4 &     2 & 2.18e-05 & 15.92 
+  orthoSphere8 &     4 & 1.32e-06 & 16.52 
+Convergence rates: c0=4.02 
+
+
+-- wiggleySquare IMPLICIT:
+conv.p tests.conv -option=tz -tz=trig -cg=wiggley -order=4 -kx=1 -ky=1 -kz=1 -tf=.4 -tp=.4 -upwind=1 -cfl=1 -dtMax=1e-2 -ts=implicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -takeImplicitFirstStep=1 -ng=5
+conv.p tests.conv -option=tz -tz=trig -cg=wiggley -order=4 -kx=1 -ky=1 -kz=1 -tf=.4 -tp=.4 -upwind=1 -cfl=1 -dtMax=2e-2 -ts=implicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -takeImplicitFirstStep=1 -ng=5
+
+
+NEW dtMax=1e-2
+                grid  & N &  $ u $ & r 
+  wiggley2 &     1 & 5.36e-05 &       
+  wiggley4 &     2 & 2.56e-06 & 20.94 
+  wiggley8 &     4 & 1.38e-07 & 18.55 
+ wiggley16 &     8 & 8.45e-09 & 16.33 
+ wiggley32 &    16 & 5.31e-10 & 15.91 
+Convergence rates: c0=4.15 
+
+
+
+NEW dtMax=2e-2
+                grid  & N &  $ u $ & r 
+  wiggley2 &     1 & 7.59e-05 &       
+  wiggley4 &     2 & 4.43e-06 & 17.13 
+  wiggley8 &     4 & 2.66e-07 & 16.65 
+ wiggley16 &     8 & 1.99e-08 & 13.37 
+ wiggley32 &    16 & 4.08e-05 &  0.00 
+Convergence rates: c0=0.96 
+
+
+OLD: 
+               grid  & N &  $ u $ & r 
+  wiggley2 &     1 & 2.40e-04 &       
+  wiggley4 &     2 & 6.91e-05 &  3.47 
+  wiggley8 &     4 & 1.83e-05 &  3.78 
+ wiggley16 &     8 & 4.64e-06 &  3.94 
+ wiggley32 &    16 & 1.93e-06 &  2.40 
+Convergence rates: c0=1.78
+
+
+****************************************************
+****** Wed Dec 20, 2023
+
+
+RUN more tests IMPLICIT ORDER=4
+
+CHANGE SCHEME to Trapezoid : beta2=0, beta4=0
+
+-- wiggleySquare EXPLICIT:
+wiggley16 unstable at cfl=.9 !! cfl=.8 OK 
+conv.p tests.conv -option=tz -tz=trig -cg=wiggley -order=4 -kx=1 -ky=1 -kz=1 -tf=.4 -tp=.4 -upwind=1 -cfl=.5 -ts=explicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -ng=5
+
+cfl=.5 (AFTER FIX)
+
+convRate: numberOfComponents=1 (from header)
+                grid  & N &  $ u $ & r 
+  wiggley2 &     1 & 2.81e-05 &       
+  wiggley4 &     2 & 1.50e-06 & 18.73 
+  wiggley8 &     4 & 9.04e-08 & 16.59 
+ wiggley16 &     8 & 5.63e-09 & 16.06 
+ wiggley32 &    16 & 3.54e-10 & 15.90 
+Convergence rates: c0=4.06 
+
+
+BEFORE: 
+                grid  & N &  $ u $ & r 
+  wiggley2 &     1 & 3.88e-05 &       
+  wiggley4 &     2 & 2.66e-06 & 14.59 
+  wiggley8 &     4 & 1.74e-07 & 15.29 
+ wiggley16 &     8 & 8.97e-08 &  1.94 
+ wiggley32 &    16 & 2.63e+01 &  0.00 
+Convergence rates: c0=-3.39 
+
+
+ORDER=2 EXPLICIT
+conv.p tests.conv -option=tz -tz=trig -cg=wiggley -order=2 -kx=1 -ky=1 -kz=1 -tf=.6 -tp=.6 -upwind=1 -cfl=.9 -ts=explicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -ng=5
+
+                grid  & N &  $ u $ & r 
+  wiggley2 &     1 & 6.45e-03 &       
+  wiggley4 &     2 & 1.55e-03 &  4.16 
+  wiggley8 &     4 & 3.77e-04 &  4.11 
+ wiggley16 &     8 & 9.30e-05 &  4.05 
+ wiggley32 &    16 & 2.31e-05 &  4.03 
+
+
+IMPLICIT ORDER=2 TURN OFF CBC
+conv.p tests.conv -option=tz -tz=trig -cg=wiggley -order=2 -kx=1 -ky=1 -kz=1 -tf=.6 -tp=.6 -upwind=1 -cfl=1 -dtMax=2e-2 -ts=implicit -beta2=0 -beta4=0 -implicitUpwind=0 -takeImplicitFirstStep=1 -ng=5
+
+
+-- wiggleySquare IMPLICIT:
+conv.p tests.conv -option=tz -tz=trig -cg=wiggley -order=4 -kx=1 -ky=1 -kz=1 -tf=.6 -tp=.6 -upwind=1 -cfl=1 -dtMax=2e-2 -ts=implicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -takeImplicitFirstStep=1 -ng=5
+
+                grid  & N &  $ u $ & r 
+  wiggley2 &     1 & 2.40e-04 &       
+  wiggley4 &     2 & 6.91e-05 &  3.47 
+  wiggley8 &     4 & 1.83e-05 &  3.78 
+ wiggley16 &     8 & 4.64e-06 &  3.94 
+ wiggley32 &    16 & 1.93e-06 &  2.40 
+Convergence rates: c0=1.78
+
+
+--- rotated square + TRIG 
+
+conv.p tests.conv -option=tz -tz=trig -cg=rotatedSquare -order=4 -kx=1 -ky=1 -kz=1 -tf=.6 -tp=.6 -upwind=1 -cfl=1 -dtMax=2e-2 -ts=implicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -takeImplicitFirstStep=1 -ng=5
+
+                grid  & N &  $ u $ & r 
+      rotatedSquare8 &     1 & 8.13e-02 &       
+     rotatedSquare16 &     2 & 3.19e-03 & 25.49 
+     rotatedSquare32 &     4 & 1.23e-04 & 25.93 
+     rotatedSquare64 &     8 & 7.94e-06 & 15.49 
+    rotatedSquare128 &    16 & 5.73e-07 & 13.86 
+
+--- SQUARE
+
+increase dtMax, tf=.6
+conv.p tests.conv -option=squareEig -cg=square -order=4 -kx=1 -ky=1 -kz=1 -tf=.6 -tp=.6 -upwind=1 -cfl=10 -dtMax=4e-2 -ts=implicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -takeImplicitFirstStep=1 -ng=5
+conv.p tests.conv -option=squareEig -cg=square -order=4 -kx=1 -ky=1 -kz=1 -tf=.6 -tp=.6 -upwind=1 -cfl=10 -dtMax=2e-2 -ts=implicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -takeImplicitFirstStep=1 -ng=5
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 5.93e-02 &       
+  square16 &     2 & 2.99e-03 & 19.83 
+  square32 &     4 & 1.48e-04 & 20.20 
+  square64 &     8 & 7.92e-06 & 18.69 
+ square128 &    16 & 4.52e-07 & 17.52 
+ square256 &    32 & 2.69e-08 & 16.80 
+Convergence rates: c0=4.22 
+
+
+conv.p tests.conv -option=squareEig -cg=square -order=4 -kx=1 -ky=1 -kz=1 -tf=.4 -tp=.4 -upwind=1 -cfl=1 -dtMax=2e-2 -ts=implicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -takeImplicitFirstStep=1 -ng=5
+
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 5.61e-02 &       
+  square16 &     2 & 1.87e-03 & 30.00 
+  square32 &     4 & 5.23e-05 & 35.76 
+  square64 &     8 & 1.14e-06 & 45.88 
+ square128 &    16 & 4.89e-09 &233.13 
+Convergence rates: c0=5.76 
+
+--- NON SQUARE
+conv.p tests.conv -option=squareEig -cg=nonSquare -order=4 -kx=1 -ky=1 -kz=1 -tf=.6 -tp=.6 -upwind=1 -cfl=1 -dtMax=2e-2 -ts=implicit -beta2=0 -beta4=0 -implicitUpwind=0 -bcApproach=cbc -takeImplicitFirstStep=1 -ng=5
+
+>>>>>>>> tf=.6
+
+>>>>>>>>> tf=.4
+beta2=0 beta4=0
+convRate: numberOfComponents=1 (from header)
+                grid  & N &  $ u $ & r 
+  nonSquare8 &     1 & 5.61e-02 &       
+ nonSquare16 &     2 & 1.87e-03 & 30.00 
+ nonSquare32 &     4 & 5.23e-05 & 35.76 
+ nonSquare64 &     8 & 1.14e-06 & 45.88 
+nonSquare128 &    16 & 4.89e-09 &233.13 
+Convergence rates: c0=5.76 
+
+
+
+beta2=.5 beta4=0 -takeImplicitFirstStep=1 
+                grid  & N &  $ u $ & r 
+  nonSquare8 &     1 & 5.60e-02 &       
+ nonSquare16 &     2 & 1.91e-03 & 29.32 
+ nonSquare32 &     4 & 5.48e-05 & 34.85 
+ nonSquare64 &     8 & 1.30e-06 & 42.15 
+nonSquare128 &    16 & 1.44e-08 & 90.28 
+Convergence rates: c0=5.43 
+
+-takeImplicitFirstStep=1 
+   square8 &     1 & 6.41e-01 &       
+  square16 &     2 & 1.06e-01 &  6.05 
+  square32 &     4 & 7.50e-03 & 14.13 
+  square64 &     8 & 5.16e-04 & 14.53 
+ square128 &    16 & 3.36e-05 & 15.36 
+Convergence rates: c0=3.61 
+
+
+conv.p tests.conv -option=squareEig -cg=nonSquare -order=4 -kx=1 -ky=1 -kz=1 -tf=.4 -tp=.4 -upwind=1 -cfl=1 -dtMax=2e-2 -ts=implicit -implicitUpwind=0 -bcApproach=cbc -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -ng=3
+
+
+****************************************************
+****** Sun Dec 17, 2023
+
+conv.p tests.conv -option=tz -tz=trig -cg=orthoSphere -order=4 -kx=2 -ky=2 -kz=2 -tf=.4 -tp=.4 -upwind=1 -cfl=10 -dtMax=2e-2 -bcApproach=cbc -meApproach=std -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -ts=implicit -ng=3
+
+NEW WAY: stencil from delta
+                grid  & N &  $ u $ & r 
+  orthoSphere2 &     1 & 3.03e-03 &       
+  orthoSphere4 &     2 & 2.97e-04 & 10.20 
+  orthoSphere8 &     4 & 2.30e-05 & 12.91 
+
+
+ Results:  4.00e-01 1 0 3.03e-03 8.002e-01
+ Results:  4.00e-01 1 0 2.97e-04 8.050e-01 
+
+OLD WAY:
+                grid  & N &  $ u $ & r 
+  orthoSphere2  &     1 & 3.10e-03 &       
+  orthoSphere4  &     2 & 2.78e-04 & 11.15 
+  orthoSphere8  &     4 & 2.31e-05 & 12.03 
+  orthoSphere16 &     8 & 3.53e-06 & 6.5 
+
+****************************************************
+****** Sun Dec 17, 2023
+
+
+ORTHO_SPHERE TRIG TZ **NOT GOOD ENOUGH**
+
+IMPLICIT
+conv.p tests.conv -option=tz -tz=trig -cg=orthoSphere -order=4 -kx=2 -ky=2 -kz=2 -tf=.4 -tp=.4 -upwind=1 -cfl=10 -dtMax=2e-2 -bcApproach=cbc -meApproach=std -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -ts=implicit -ng=4
+
+                grid  & N &  $ u $ & r 
+  orthoSphere2  &     1 & 3.10e-03 &       
+  orthoSphere4  &     2 & 2.78e-04 & 11.15 
+  orthoSphere8  &     4 & 2.31e-05 & 12.03 
+  orthoSphere16 &     8 & 3.53e-06 & 6.5 
+
+Results:  4.00e-01 1 0 3.53e-06 8.087e-01   
+Convergence rates: c0=3.53 
+
+
+EXPLICIT
+conv.p tests.conv -option=tz -tz=trig -cg=orthoSphere -order=4 -kx=2 -ky=2 -kz=2 -tf=.4 -tp=.4 -upwind=1 -cfl=.95 -bcApproach=cbc -meApproach=std -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -ts=explicit -ng=4
+
+
+
+
+conv.p tests.conv -option=tz -tz=trig -cg=orthoSphere -order=2 -kx=2 -ky=2 -kz=2 -tf=.65 -tp=.65 -upwind=1 -cfl=1 -meApproach=std -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -ts=implicit -ng=3 
+
+
+
+NON-BOX 
+conv.p tests.conv -option=squareEig -cg=nonBox -order=4 -kx=1 -ky=1 -kz=1 -tf=.4 -tp=.4 -upwind=1 -cfl=10 -dtMax=2e-2 -ts=implicit -implicitUpwind=0 -bcApproach=cbc -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -ng=3
+
+                grid  & N &  $ u $ & r 
+   nonBox1 &     1 & 6.71e-04 &       
+   nonBox2 &     2 & 4.56e-05 & 14.71 
+   nonBox4 &     4 & 2.96e-06 & 15.41 
+   nonBox8 &     8 & 1.88e-07 & 15.74 
+Convergence rates: c0=3.93 
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++= START ORTHO=SPHERE ----
+
+
+ORTHO-SPHERE BC=E
+
+>>> EXPLICITLY SET dt to halve each time
+
+cgWave -noplot known.cmd -g=orthoSpheree8.order4.ng3 -dtMax=2.5e-3 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=e -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0  -useKnownFirstStep=1 -debug=1 -go=go
+
+cgWave -noplot known.cmd -g=orthoSpheree4.order4.ng3 -dtMax=5e-3 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=e -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0  -useKnownFirstStep=1 -debug=1 -go=go
+
+cgWave -noplot known.cmd -g=orthoSpheree2.order4.ng3 -dtMax=1e-2 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=e -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0  -useKnownFirstStep=1 -debug=1 -go=go
+
+G8 upwind=0 CFL 10 times too small!! 2.5e-4 
+cgWave:FD44 t=5.000e-02 ( 200 steps) dt=2.500e-04 maxErr= 3.78e-09, ||u||= 8.95e-01, cpu= 6.62e+02(s)
+cgWave:FD44 t=1.000e-01 ( 400 steps) dt=2.500e-04 maxErr= 1.46e-08, ||u||= 8.27e-01, cpu= 1.28e+03(s)
+cgWave:FD44 t=1.500e-01 ( 600 steps) dt=2.500e-04 maxErr= 3.11e-08, ||u||= 7.17e-01, cpu= 1.89e+03(s)
+cgWave:FD44 t=2.000e-01 ( 800 steps) dt=2.500e-04 maxErr= 5.03e-08, ||u||= 5.71e-01, cpu= 2.51e+03(s)
+cgWave:FD44 t=2.500e-01 (1000 steps) dt=2.500e-04 maxErr= 6.86e-08, ||u||= 3.97e-01, cpu= 3.12e+03(s)
+cgWave:FD44 t=3.000e-01 (1200 steps) dt=2.500e-04 maxErr= 8.23e-08, ||u||= 2.03e-01, cpu= 3.74e+03(s)
+cgWave:FD44 t=3.500e-01 (1400 steps) dt=2.500e-04 maxErr= 8.57e-08, ||u||= 1.74e-03, cpu= 4.36e+03(s)
+cgWave:FD44 t=4.000e-01 (1600 steps) dt=2.500e-04 maxErr= 7.76e-08, ||u||= 2.06e-01, cpu= 4.97e+03(s)
+cgWave:FD44 t=4.500e-01 (1800 steps) dt=2.500e-04 maxErr= 5.86e-08, ||u||= 4.00e-01, cpu= 5.59e+03(s)
+cgWave:FD44 t=5.000e-01 (2000 steps) dt=2.500e-04 maxErr= 3.03e-08, ||u||= 5.74e-01, cpu= 6.20e+03(s)
+cgWave:FD44 t=5.500e-01 (2200 steps) dt=2.500e-04 maxErr= 1.38e-08, ||u||= 7.19e-01, cpu= 6.82e+03(s)
+cgWave:FD44 t=6.000e-01 (2400 steps) dt=2.500e-04 maxErr= 4.56e-08, ||u||= 8.28e-01, cpu= 7.43e+03(s)
+
+G8
+cgWave:FD44 t=5.000e-02 ( 20 steps) dt=2.500e-03 maxErr= 4.77e-08, ||u||= 8.95e-01, cpu= 1.32e+02(s)
+cgWave:FD44 t=1.000e-01 ( 40 steps) dt=2.500e-03 maxErr= 1.40e-07, ||u||= 8.27e-01, cpu= 1.99e+02(s)
+cgWave:FD44 t=1.500e-01 ( 60 steps) dt=2.500e-03 maxErr= 2.75e-07, ||u||= 7.17e-01, cpu= 2.65e+02(s)
+cgWave:FD44 t=2.000e-01 ( 80 steps) dt=2.500e-03 maxErr= 4.28e-07, ||u||= 5.71e-01, cpu= 3.31e+02(s)
+cgWave:FD44 t=2.500e-01 (100 steps) dt=2.500e-03 maxErr= 5.65e-07, ||u||= 3.97e-01, cpu= 3.98e+02(s)
+cgWave:FD44 t=3.000e-01 (120 steps) dt=2.500e-03 maxErr= 6.41e-07, ||u||= 2.03e-01, cpu= 4.64e+02(s)
+cgWave:FD44 t=3.500e-01 (140 steps) dt=2.500e-03 maxErr= 6.16e-07, ||u||= 1.74e-03, cpu= 5.30e+02(s)
+cgWave:FD44 t=4.000e-01 (160 steps) dt=2.500e-03 maxErr= 5.07e-07, ||u||= 2.06e-01, cpu= 5.96e+02(s)
+cgWave:FD44 t=4.500e-01 (180 steps) dt=2.500e-03 maxErr= 3.74e-07, ||u||= 4.00e-01, cpu= 6.63e+02(s)
+cgWave:FD44 t=5.000e-01 (200 steps) dt=2.500e-03 maxErr= 3.08e-07, ||u||= 5.74e-01, cpu= 7.29e+02(s)
+cgWave:FD44 t=5.500e-01 (220 steps) dt=2.500e-03 maxErr= 4.46e-07, ||u||= 7.19e-01, cpu= 7.95e+02(s)
+cgWave:FD44 t=6.000e-01 (240 steps) dt=2.500e-03 maxErr= 6.74e-07, ||u||= 8.28e-01, cpu= 8.61e+02(s)
+
+
+
+G4
+cgWave:FD44 t=5.000e-02 ( 10 steps) dt=5.000e-03 maxErr= 1.58e-07, ||u||= 8.94e-01, cpu= 1.39e+01(s)
+cgWave:FD44 t=1.000e-01 ( 20 steps) dt=5.000e-03 maxErr= 5.15e-07, ||u||= 8.26e-01, cpu= 1.88e+01(s)
+cgWave:FD44 t=1.500e-01 ( 30 steps) dt=5.000e-03 maxErr= 1.07e-06, ||u||= 7.16e-01, cpu= 2.37e+01(s)
+cgWave:FD44 t=2.000e-01 ( 40 steps) dt=5.000e-03 maxErr= 1.66e-06, ||u||= 5.71e-01, cpu= 2.86e+01(s)
+cgWave:FD44 t=2.500e-01 ( 50 steps) dt=5.000e-03 maxErr= 2.19e-06, ||u||= 3.97e-01, cpu= 3.36e+01(s)
+cgWave:FD44 t=3.000e-01 ( 60 steps) dt=5.000e-03 maxErr= 2.47e-06, ||u||= 2.03e-01, cpu= 3.85e+01(s)
+cgWave:FD44 t=3.500e-01 ( 70 steps) dt=5.000e-03 maxErr= 2.31e-06, ||u||= 1.74e-03, cpu= 4.34e+01(s)
+cgWave:FD44 t=4.000e-01 ( 80 steps) dt=5.000e-03 maxErr= 1.81e-06, ||u||= 2.06e-01, cpu= 4.83e+01(s)
+cgWave:FD44 t=4.500e-01 ( 90 steps) dt=5.000e-03 maxErr= 1.21e-06, ||u||= 4.00e-01, cpu= 5.33e+01(s)
+cgWave:FD44 t=5.000e-01 (100 steps) dt=5.000e-03 maxErr= 9.46e-07, ||u||= 5.74e-01, cpu= 5.82e+01(s)
+cgWave:FD44 t=5.500e-01 (110 steps) dt=5.000e-03 maxErr= 1.89e-06, ||u||= 7.19e-01, cpu= 6.31e+01(s)
+cgWave:FD44 t=6.000e-01 (120 steps) dt=5.000e-03 maxErr= 2.77e-06, ||u||= 8.27e-01, cpu= 6.80e+01(s)
+
+G2
+cgWave:FD44 t=1.000e-01 (10 steps) dt=1.000e-02 maxErr= 2.26e-06, ||u||= 8.24e-01, cpu= 1.79e+00(s)
+cgWave:FD44 t=1.500e-01 (15 steps) dt=1.000e-02 maxErr= 4.95e-06, ||u||= 7.15e-01, cpu= 2.15e+00(s)
+cgWave:FD44 t=2.000e-01 (20 steps) dt=1.000e-02 maxErr= 8.24e-06, ||u||= 5.69e-01, cpu= 2.51e+00(s)
+cgWave:FD44 t=2.500e-01 (25 steps) dt=1.000e-02 maxErr= 1.15e-05, ||u||= 3.96e-01, cpu= 2.87e+00(s)
+cgWave:FD44 t=3.000e-01 (30 steps) dt=1.000e-02 maxErr= 1.39e-05, ||u||= 2.02e-01, cpu= 3.23e+00(s)
+cgWave:FD44 t=3.500e-01 (35 steps) dt=1.000e-02 maxErr= 1.50e-05, ||u||= 1.73e-03, cpu= 3.59e+00(s)
+cgWave:FD44 t=4.000e-01 (40 steps) dt=1.000e-02 maxErr= 1.40e-05, ||u||= 2.05e-01, cpu= 3.94e+00(s)
+cgWave:FD44 t=4.500e-01 (45 steps) dt=1.000e-02 maxErr= 1.11e-05, ||u||= 3.99e-01, cpu= 4.30e+00(s)
+cgWave:FD44 t=5.000e-01 (50 steps) dt=1.000e-02 maxErr= 6.33e-06, ||u||= 5.72e-01, cpu= 4.66e+00(s)
+cgWave:FD44 t=5.500e-01 (55 steps) dt=1.000e-02 maxErr= 8.90e-06, ||u||= 7.17e-01, cpu= 5.02e+00(s)
+cgWave:FD44 t=6.000e-01 (60 steps) dt=1.000e-02 maxErr= 1.20e-05, ||u||= 8.25e-01, cpu= 5.38e+00(s)
+
+
+
+
+PLOT
+cgWave known.cmd -g=orthoSpheree4.order4.ng3 -cfl=1 -tf=.6 -tp=.01 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=e -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0  -useKnownFirstStep=1 -debug=1 -go=halt
+
+cgWave:FD44 t=1.000e-02 (  2 steps) dt=5.000e-03 maxErr= 4.55e-09, ||u||= 9.16e-01, cpu= 1.41e+01(s)
+cgWave:FD44 t=5.000e-02 ( 10 steps) dt=5.000e-03 maxErr= 1.58e-07, ||u||= 8.94e-01, cpu= 1.36e+02(s)
+cgWave:FD44 t=1.000e-01 ( 20 steps) dt=5.000e-03 maxErr= 5.15e-07, ||u||= 8.26e-01, cpu= 2.00e+02(s)
+
+
+cgWave -noplot known.cmd -g=orthoSpheree4.order4.ng3 -cfl=.5 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=e -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0  -useKnownFirstStep=1 -debug=1 -go=go
+
+
+cgWave -noplot known.cmd -g=orthoSpheree4.order4.ng3 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=e -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0  -useKnownFirstStep=1 -debug=1 -go=go
+cgWave -noplot known.cmd -g=orthoSpheree2.order4.ng3 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=e -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0  -useKnownFirstStep=1 -debug=1 -go=go
+
+cgWave known.cmd -g=orthoSpheree1.order4.ng3 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=e -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0  -useKnownFirstStep=1 -go=halt
+
+G4 cfl=.5
+cgWave:FD44 t=5.000e-02 ( 13 steps) dt=3.846e-03 maxErr= 9.11e-08, ||u||= 8.94e-01, cpu= 1.60e+01(s)
+cgWave:FD44 t=1.000e-01 ( 26 steps) dt=3.846e-03 maxErr= 3.10e-07, ||u||= 8.26e-01, cpu= 2.28e+01(s)
+cgWave:FD44 t=1.500e-01 ( 39 steps) dt=3.846e-03 maxErr= 6.39e-07, ||u||= 7.16e-01, cpu= 2.97e+01(s)
+cgWave:FD44 t=2.000e-01 ( 52 steps) dt=3.846e-03 maxErr= 9.91e-07, ||u||= 5.71e-01, cpu= 3.65e+01(s)
+cgWave:FD44 t=2.500e-01 ( 65 steps) dt=3.846e-03 maxErr= 1.30e-06, ||u||= 3.97e-01, cpu= 4.34e+01(s)
+cgWave:FD44 t=3.000e-01 ( 78 steps) dt=3.846e-03 maxErr= 1.46e-06, ||u||= 2.03e-01, cpu= 5.03e+01(s)
+cgWave:FD44 t=3.500e-01 ( 91 steps) dt=3.846e-03 maxErr= 1.33e-06, ||u||= 1.74e-03, cpu= 5.71e+01(s)
+cgWave:FD44 t=4.000e-01 (104 steps) dt=3.846e-03 maxErr= 1.01e-06, ||u||= 2.06e-01, cpu= 6.40e+01(s)
+cgWave:FD44 t=4.500e-01 (117 steps) dt=3.846e-03 maxErr= 6.33e-07, ||u||= 4.00e-01, cpu= 7.08e+01(s)
+cgWave:FD44 t=5.000e-01 (130 steps) dt=3.846e-03 maxErr= 5.95e-07, ||u||= 5.74e-01, cpu= 7.77e+01(s)
+cgWave:FD44 t=5.500e-01 (143 steps) dt=3.846e-03 maxErr= 1.16e-06, ||u||= 7.19e-01, cpu= 8.46e+01(s)
+cgWave:FD44 t=6.000e-01 (156 steps) dt=3.846e-03 maxErr= 1.67e-06, ||u||= 8.27e-01, cpu= 9.14e+01(s)
+
+G4 cfl=1
+cgWave:FD44 t=1.000e-01 (14 steps) dt=7.143e-03 maxErr= 1.02e-06, ||u||= 8.26e-01, cpu= 1.71e+01(s)
+cgWave:FD44 t=1.500e-01 (21 steps) dt=7.143e-03 maxErr= 2.15e-06, ||u||= 7.16e-01, cpu= 2.12e+01(s)
+cgWave:FD44 t=2.000e-01 (28 steps) dt=7.143e-03 maxErr= 3.36e-06, ||u||= 5.71e-01, cpu= 2.53e+01(s)
+cgWave:FD44 t=2.500e-01 (35 steps) dt=7.143e-03 maxErr= 4.43e-06, ||u||= 3.97e-01, cpu= 2.93e+01(s)
+cgWave:FD44 t=3.000e-01 (42 steps) dt=7.143e-03 maxErr= 5.04e-06, ||u||= 2.03e-01, cpu= 3.34e+01(s)
+cgWave:FD44 t=3.500e-01 (49 steps) dt=7.143e-03 maxErr= 4.77e-06, ||u||= 1.74e-03, cpu= 3.75e+01(s)
+cgWave:FD44 t=4.000e-01 (56 steps) dt=7.143e-03 maxErr= 3.85e-06, ||u||= 2.06e-01, cpu= 4.15e+01(s)
+cgWave:FD44 t=4.500e-01 (63 steps) dt=7.143e-03 maxErr= 2.71e-06, ||u||= 4.00e-01, cpu= 4.56e+01(s)
+cgWave:FD44 t=5.000e-01 (70 steps) dt=7.143e-03 maxErr= 2.19e-06, ||u||= 5.74e-01, cpu= 4.97e+01(s)
+cgWave:FD44 t=5.500e-01 (77 steps) dt=7.143e-03 maxErr= 3.76e-06, ||u||= 7.19e-01, cpu= 5.37e+01(s)
+cgWave:FD44 t=6.000e-01 (84 steps) dt=7.143e-03 maxErr= 5.57e-06, ||u||= 8.27e-01, cpu= 5.78e+01(s)
+
+G2
+cgWave:FD44 t=1.500e-01 (12 steps) dt=1.250e-02 maxErr= 6.19e-06, ||u||= 7.15e-01, cpu= 1.99e+00(s)
+cgWave:FD44 t=2.000e-01 (16 steps) dt=1.250e-02 maxErr= 9.68e-06, ||u||= 5.69e-01, cpu= 2.29e+00(s)
+cgWave:FD44 t=2.500e-01 (20 steps) dt=1.250e-02 maxErr= 1.26e-05, ||u||= 3.96e-01, cpu= 2.58e+00(s)
+cgWave:FD44 t=3.000e-01 (24 steps) dt=1.250e-02 maxErr= 1.40e-05, ||u||= 2.02e-01, cpu= 2.88e+00(s)
+cgWave:FD44 t=3.500e-01 (28 steps) dt=1.250e-02 maxErr= 1.34e-05, ||u||= 1.73e-03, cpu= 3.18e+00(s)
+cgWave:FD44 t=4.000e-01 (32 steps) dt=1.250e-02 maxErr= 1.29e-05, ||u||= 2.05e-01, cpu= 3.47e+00(s)
+cgWave:FD44 t=4.500e-01 (36 steps) dt=1.250e-02 maxErr= 1.09e-05, ||u||= 3.99e-01, cpu= 3.77e+00(s)
+cgWave:FD44 t=5.000e-01 (40 steps) dt=1.250e-02 maxErr= 7.19e-06, ||u||= 5.72e-01, cpu= 4.07e+00(s)
+cgWave:FD44 t=5.500e-01 (44 steps) dt=1.250e-02 maxErr= 1.30e-05, ||u||= 7.17e-01, cpu= 4.37e+00(s)
+cgWave:FD44 t=6.000e-01 (48 steps) dt=1.250e-02 maxErr= 1.80e-05, ||u||= 8.25e-01, cpu= 4.66e+00(s)
+
+G1
+cgWave:FD44 t=1.000e-01 ( 4 steps) dt=2.500e-02 maxErr= 2.82e-05, ||u||= 8.16e-01, cpu= 1.92e+01(s)
+cgWave:FD44 t=1.500e-01 ( 6 steps) dt=2.500e-02 maxErr= 6.60e-05, ||u||= 7.07e-01, cpu= 1.99e+01(s)
+cgWave:FD44 t=2.000e-01 ( 8 steps) dt=2.500e-02 maxErr= 1.12e-04, ||u||= 5.64e-01, cpu= 2.05e+01(s)
+cgWave:FD44 t=2.500e-01 (10 steps) dt=2.500e-02 maxErr= 1.61e-04, ||u||= 3.92e-01, cpu= 2.12e+01(s)
+cgWave:FD44 t=3.000e-01 (12 steps) dt=2.500e-02 maxErr= 1.99e-04, ||u||= 2.00e-01, cpu= 2.18e+01(s)
+cgWave:FD44 t=3.500e-01 (14 steps) dt=2.500e-02 maxErr= 2.15e-04, ||u||= 1.72e-03, cpu= 2.25e+01(s)
+cgWave:FD44 t=4.000e-01 (16 steps) dt=2.500e-02 maxErr= 2.00e-04, ||u||= 2.03e-01, cpu= 2.31e+01(s)
+cgWave:FD44 t=4.500e-01 (18 steps) dt=2.500e-02 maxErr= 1.53e-04, ||u||= 3.95e-01, cpu= 2.38e+01(s)
+cgWave:FD44 t=5.000e-01 (20 steps) dt=2.500e-02 maxErr= 8.31e-05, ||u||= 5.66e-01, cpu= 2.46e+01(s)
+
++++++++++++++++++++++++++++++++++++++++++++++++++++= END ORTHO=SPHERE ----
+
+
+
+
+SPEHERE -- errors largest on curvilinear grids, errors look smooth
+
+
+
+
+G8 NO UPWIND errors about the same 
+cgWave -noplot known.cmd -g=sphereFixede8.order4.ng3 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0  -useKnownFirstStep=1 -go=go
+
+-useKnownFirstStep=1
+cgWave:FD44 t=5.000e-02 ( 11 steps) dt=4.545e-03 maxErr= 6.59e-08, ||u||= 9.01e-01, cpu= 8.00e+02(s)
+
+-useKnownFirstStep=0
+cgWave:FD44 t=5.000e-02 ( 11 steps) dt=4.545e-03 maxErr= 6.59e-08, ||u||= 9.01e-01, cpu= 8.08e+02(s)
+cgWave:FD44 t=1.000e-01 ( 22 steps) dt=4.545e-03 maxErr= 2.49e-07, ||u||= 8.33e-01, cpu= 1.00e+03(s)
+cgWave:FD44 t=1.500e-01 ( 33 steps) dt=4.545e-03 maxErr= 4.94e-07, ||u||= 7.22e-01, cpu= 1.19e+03(s)
+cgWave:FD44 t=2.000e-01 ( 44 steps) dt=4.545e-03 maxErr= 6.77e-07, ||u||= 5.75e-01, cpu= 1.51e+03(s)
+
+upwind: 
+cgWave:FD44u t=5.000e-02 ( 11 steps) dt=4.545e-03 maxErr= 6.61e-08, ||u||= 9.01e-01, cpu= 8.31e+02(s)
+
+
+G8 
+cgWave known.cmd -g=sphereFixede8.order4.ng3 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0 -go=halt 
+
+cgWave:FD44u t=0.000e+00 (  0 steps) dt=4.545e-03 maxErr= 1.84e-09, ||u||= 9.24e-01, cpu= 1.00e-06(s)
+cgWave:FD44u t=5.000e-02 ( 11 steps) dt=4.545e-03 maxErr= 6.61e-08, ||u||= 9.01e-01, cpu= 8.31e+02(s)
+
+
+G4 
+cgWave known.cmd -g=sphereFixede4.order4.ng3 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0 -go=halt 
+
+
+cgWave:FD44u t=0.000e+00 ( 0 steps) dt=8.333e-03 maxErr= 5.85e-08, ||u||= 9.24e-01, cpu= 0.00e+00(s)
+cgWave:FD44u t=5.000e-02 ( 6 steps) dt=8.333e-03 maxErr= 2.10e-07, ||u||= 9.01e-01, cpu= 1.52e+02(s)
+cgWave:FD44u t=1.000e-01 (12 steps) dt=8.333e-03 maxErr= 7.91e-07, ||u||= 8.32e-01, cpu= 4.02e+02(s)
+cgWave:FD44u t=1.500e-01 (18 steps) dt=8.333e-03 maxErr= 1.59e-06, ||u||= 7.22e-01, cpu= 4.29e+02(s)
+cgWave:FD44u t=2.000e-01 (24 steps) dt=8.333e-03 maxErr= 2.13e-06, ||u||= 5.75e-01, cpu= 4.51e+02(s)
+
+
+
+G4 BC=d useKnownFirstStep
+cgWave known.cmd -g=sphereFixede4.order4.ng3 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0 -useKnownFirstStep=1 -go=halt 
+
+cgWave:FD44u t=0.000e+00 ( 0 steps) dt=8.333e-03 maxErr= 5.85e-08, ||u||= 9.24e-01, cpu= 1.00e-06(s)
+cgWave:FD44u t=5.000e-02 ( 6 steps) dt=8.333e-03 maxErr= 2.10e-07, ||u||= 9.01e-01, cpu= 1.70e+02(s)
+
+
+G4 BC=e useKnownFirstStep
+cgWave known.cmd -g=sphereFixede4.order4.ng3 -debug=1 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=implicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=e -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0 -useKnownFirstStep=1 -go=halt 
+
+cgWave:FD44u t=5.000e-02 ( 6 steps) dt=8.333e-03 maxErr= 2.10e-07, ||u||= 9.01e-01, cpu= 1.83e+02(s)
+
+
+++++++++++++++++ EXPLIICT +++++++++++++++
+cgWave known.cmd -g=sphereFixede8.order4.ng3 -debug=1 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=explicit -orderInTime=-1 -upwind=0 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0 -useKnownFirstStep=1 -go=halt 
+
+G8 no upwind -- almost the same error
+cgWave:FD44 t=5.000e-02 ( 11 steps) dt=4.545e-03 maxErr= 2.98e-09, ||u||= 9.01e-01, cpu= 4.33e+01(s)
+cgWave:FD44 t=1.000e-01 ( 22 steps) dt=4.545e-03 maxErr= 5.47e-09, ||u||= 8.33e-01, cpu= 8.61e+01(s)
+cgWave:FD44 t=1.500e-01 ( 33 steps) dt=4.545e-03 maxErr= 8.90e-09, ||u||= 7.22e-01, cpu= 1.29e+02(s)
+
+cgWave known.cmd -g=sphereFixede8.order4.ng3 -debug=1 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=explicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0 -useKnownFirstStep=1 -go=halt 
+
+cgWave known.cmd -g=sphereFixede4.order4.ng3 -debug=1 -cfl=1 -tf=.6 -tp=.05 -kx=1 -ky=0 -kz=0 -fx=2 -fy=2 -fz=2 -ft=2 -nTheta=1 -mr=0 -mz=1 -rad=1 -ts=explicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=cbc -meApproach=std -known=sphereEig -solveri=cgs -rtoli=1e-15 -atoli=1e-15 -maxiti=2000 -mPhi=1 -mr=1 -takeImplicitFirstStep=0 -useKnownFirstStep=1 -go=halt 
+
+G8
+cgWave:FD44u t=5.000e-02 ( 11 steps) dt=4.545e-03 maxErr= 3.00e-09, ||u||= 9.01e-01, cpu= 4.11e+01(s)
+cgWave:FD44u t=1.000e-01 ( 22 steps) dt=4.545e-03 maxErr= 5.44e-09, ||u||= 8.33e-01, cpu= 8.37e+01(s)
+cgWave:FD44u t=1.500e-01 ( 33 steps) dt=4.545e-03 maxErr= 8.82e-09, ||u||= 7.22e-01, cpu= 1.26e+02(s)
+cgWave:FD44u t=2.000e-01 ( 44 steps) dt=4.545e-03 maxErr= 1.27e-08, ||u||= 5.75e-01, cpu= 1.69e+02(s)
+cgWave:FD44u t=2.500e-01 ( 55 steps) dt=4.545e-03 maxErr= 1.70e-08, ||u||= 4.00e-01, cpu= 2.11e+02(s)
+cgWave:FD44u t=3.000e-01 ( 66 steps) dt=4.545e-03 maxErr= 2.27e-08, ||u||= 2.04e-01, cpu= 2.54e+02(s)
+cgWave:FD44u t=3.500e-01 ( 77 steps) dt=4.545e-03 maxErr= 2.91e-08, ||u||= 1.75e-03, cpu= 2.97e+02(s)
+cgWave:FD44u t=4.000e-01 ( 88 steps) dt=4.545e-03 maxErr= 3.49e-08, ||u||= 2.08e-01, cpu= 3.40e+02(s)
+
+G4
+cgWave:FD44u t=5.000e-02 ( 6 steps) dt=8.333e-03 maxErr= 6.96e-08, ||u||= 9.01e-01, cpu= 5.31e+00(s)
+cgWave:FD44u t=1.000e-01 (12 steps) dt=8.333e-03 maxErr= 1.10e-07, ||u||= 8.32e-01, cpu= 5.54e+01(s)
+cgWave:FD44u t=1.500e-01 (18 steps) dt=8.333e-03 maxErr= 1.65e-07, ||u||= 7.22e-01, cpu= 5.91e+01(s)
+cgWave:FD44u t=2.000e-01 (24 steps) dt=8.333e-03 maxErr= 2.12e-07, ||u||= 5.75e-01, cpu= 6.28e+01(s)
+cgWave:FD44u t=2.500e-01 (30 steps) dt=8.333e-03 maxErr= 2.82e-07, ||u||= 4.00e-01, cpu= 6.65e+01(s)
+cgWave:FD44u t=3.000e-01 (36 steps) dt=8.333e-03 maxErr= 3.84e-07, ||u||= 2.04e-01, cpu= 7.01e+01(s)
+cgWave:FD44u t=3.500e-01 (42 steps) dt=8.333e-03 maxErr= 4.87e-07, ||u||= 1.75e-03, cpu= 7.38e+01(s)
+cgWave:FD44u t=4.000e-01 (48 steps) dt=8.333e-03 maxErr= 5.81e-07, ||u||= 2.08e-01, cpu= 8.38e+01(s)
+
+
+****************************************************
+****** Sat Dec 16, 2023
+
+
+SPHERE FIXED IMP ORDER=4 CBC
+
+
+
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=4 -tf=1.2 -tp=1.2 -upwind=1 -bc=d -bcApproach=cbc -cfl=1 -amp=1 -mPhi=1 -mr=0 -mr=1 -ts=implicit -solveri=cgs -resStart=1 -ng=3
+
+G4 
+cgWave:FD44u t=1.200e+00 (123 steps) dt=9.756e-03 maxErr= 3.34e-06, ||u||= 5.81e-01, cpu= 3.86e+02(s)
+G8
+cgWave:FD44u t=1.200e+00 (246 steps) dt=4.878e-03 maxErr= 1.64e-06, ||u||= 5.81e-01, cpu= 4.00e+03(s)
+
+
+conv.p tests.conv -option=sphereEig -cg=sphereFixed -order=4 -tf=.6 -tp=.6 -upwind=1 -bc=d -bcApproach=cbc -cfl=1 -amp=1 -mPhi=1 -mr=0 -mr=1 -ts=implicit -solveri=cgs -resStart=1 -ng=3
+
+t=.6
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 2.55e-05 &       
+  sphereFixed4 &     2 & 3.62e-06 &  7.04 
+  sphereFixed8 &     4 & 9.27e-07 &  3.91 
+Convergence rates: c0=2.39 
+
+
+tf=.1
+                grid  & N &  $ u $ & r 
+  sphereFixed2 &     1 & 1.14e-05 &       
+  sphereFixed4 &     2 & 9.35e-07 & 12.19 
+Convergence rates: c0=3.61 
+
+
+
+convRate: numberOfComponents=1 (from header)
+                grid  & N &  $ u $ & r 
+   sphere2 &     1 & 2.20e-05 &       
+   sphere4 &     2 & 1.90e-06 & 11.58 
+Convergence rates: c0=3.53 
+
+
+
+TEST IMPLICIT FIRST STEP
+
+conv.p tests.conv -option=squareEig -cg=square -order=4 -kx=1 -ky=1 -kz=1 -tf=1.2 -tp=1.2 -upwind=1 -cfl=2 -ts=implicit -implicitUpwind=0 -bc=d -bcApproach=cbc -takeImplicitFirstStep=1 -ng=5
+
+cfl=2 TAKE IMPLICIT FIRST STEP: 
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 6.41e-01 &       
+  square16 &     2 & 1.06e-01 &  6.05 
+  square32 &     4 & 7.50e-03 & 14.13 
+  square64 &     8 & 5.16e-04 & 14.53 
+ square128 &    16 & 3.36e-05 & 15.36 
+Convergence rates: c0=3.61 
+
+cfl=1 TAKE IMPLICIT FIRST STEP: 
+convRate: numberOfComponents=1 (from header)
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 1.27e-01 &       
+  square16 &     2 & 1.03e-02 & 12.33 
+  square32 &     4 & 7.24e-04 & 14.23 
+  square64 &     8 & 4.75e-05 & 15.24 
+ square128 &    16 & 2.99e-06 & 15.89 
+Convergence rates: c0=3.85 
+
+
+OLD:
+conv.p tests.conv -option=squareEig -cg=square -order=4 -kx=1 -ky=1 -kz=1 -tf=1.2 -tp=1.2 -upwind=1 -cfl=1 -ts=implicit -implicitUpwind=0 -bc=d -bcApproach=cbc  -ng=5 
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 1.17e-01 &       
+  square16 &     2 & 9.96e-03 & 11.75 
+  square32 &     4 & 7.11e-04 & 14.01 
+  square64 &     8 & 4.71e-05 & 15.10 
+ square128 &    16 & 2.98e-06 & 15.81 
+Convergence rates: c0=3.82 
+
+****************************************************
+****** Fri Dec 15, 2023
+
+SPHERE EIGS
+
+SPHERE IMP ORDER=4 CBC
+conv.p tests.conv -option=sphereEig -cg=sphere -order=4 -tf=.5 -tp=.5 -upwind=1 -bc=d -bcApproach=cbc -cfl=1 -amp=1 -mPhi=1 -mr=0 -mr=1 -ts=implicit -solveri=cgs -resStart=1 -ng=3
+
+convRate: numberOfComponents=1 (from header)
+                grid  & N &  $ u $ & r 
+   sphere2 &     1 & 2.20e-05 &       
+   sphere4 &     2 & 1.90e-06 & 11.58 
+Convergence rates: c0=3.53 
+
+
+
+SPHERE IMP ORDER=2
+conv.p tests.conv -option=sphereEig -cg=sphere -order=2 -tf=.5 -tp=.5 -upwind=1 -bc=d -cfl=1 -amp=1 -mPhi=1 -mr=0 -mr=1 -ts=implicit -solveri=cgs -resStart=1 -ng=3
+
+                grid  & N &  $ u $ & r 
+   sphere2 &     1 & 4.05e-03 &       
+   sphere4 &     2 & 9.04e-04 &  4.48 
+   sphere8 &     4 & 2.22e-04 &  4.07 
+Convergence rates: c0=2.09 
+
+
+****************************************************
+****** Thurs Dec 14, 2023
+
+NEW CONVERGENCE TEST FOR ORDER=4 IMPLICIT
+
+PIPE EIGs
+
+PIPE: IMPLICIT BC=D ORDER=4
+conv.p tests.conv -option=diskEig -cg=pipez -order=4 -tf=.6 -tp=.6 -upwind=1 -bc=d -bcApproach=cbc -cfl=1 -nTheta=1 -mr=1  -mz=1 -rad=.5 -ts=implicit -solveri=cgs -resStart=1 -ng=3
+
+tf=.6
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 4.82e-03 &       
+    pipez4 &     2 & 3.57e-04 & 13.50 
+    pipez8 &     4 & 2.45e-05 & 14.57 
+Convergence rates: c0=3.81 
+
+
+tf=.2
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 2.62e-03 &       
+    pipez4 &     2 & 1.08e-04 & 24.26 
+    pipez8 &     4 & 4.77e-06 & 22.64 
+Convergence rates: c0=4.55 
+
+PIPE: IMPLICIT ORDER=2
+conv.p tests.conv -option=diskEig -cg=pipez -order=2 -tf=.6 -tp=.6 -upwind=1 -bc=d -cfl=1 -nTheta=1 -mr=1  -mz=1 -rad=.5 -ts=implicit -solveri=cgs -resStart=1 -ng=3
+
+                grid  & N &  $ u $ & r 
+    pipez2 &     1 & 9.03e-02 &       
+    pipez4 &     2 & 2.38e-02 &  3.79 
+    pipez8 &     4 & 5.55e-03 &  4.29 
+Convergence rates: c0=2.01 
+
+****************************************************
+****** Sun Dec 10, 2023
+
+START TEST FOURTH ORDER CBC IMPLICIT
+
+BOX: BC=D 
+conv.p tests.conv -option=squareEig -cg=box -order=4 -kx=1 -ky=1 -kz=1 -tf=1.2 -tp=1.2 -upwind=0 -cfl=1.5 -ts=implicit -implicitUpwind=0 -bcApproach=cbc -ng=3
+
+cfl=1.5
+
+
+conv.p tests.conv -option=squareEig -cg=box -order=4 -kx=1 -ky=1 -kz=1 -tf=1.2 -tp=1.2 -upwind=0 -cfl=1.0 -ts=implicit -implicitUpwind=0 -bcApproach=cbc -ng=3
+
+
+
+cfl=1
+                grid  & N &  $ u $ & r 
+      box1 &     1 & 3.12e-02 &       
+      box2 &     2 & 2.82e-03 & 11.06 
+      box4 &     4 & 1.85e-04 & 15.24 
+Convergence rates: c0=3.70 
+
+
+DISK: BC=N
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bc=n -bcApproach=cbc -cfl=1.5 -nTheta=2 -mr=3  -ts=implicit -resStart=2 -ng=5
+
+                grid  & N &  $ u $ & r 
+      sic4 &     2 & 1.79e-03 &       
+      sic8 &     4 & 1.21e-04 & 14.79 
+     sic16 &     8 & 8.12e-06 & 14.90 
+     sic32 &    16 & 5.24e-07 & 15.50 
+Convergence rates: c0=3.91 
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 1.83e-02 &       
+      sic4 &     2 & 1.79e-03 & 10.22 
+      sic8 &     4 & 1.21e-04 & 14.79 
+     sic16 &     8 & 8.12e-06 & 14.90 
+Convergence rates: c0=3.73 
+
+
+DISK: BC=D
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bc=d -bcApproach=cbc -cfl=1.5 -nTheta=2 -mr=3  -ts=implicit -resStart=2 -ng=5
+
+                grid  & N &  $ u $ & r 
+      sic4 &     2 & 5.17e-04 &       
+      sic8 &     4 & 4.60e-05 & 11.24 
+     sic16 &     8 & 3.39e-06 & 13.57 
+     sic32 &    16 & 2.28e-07 & 14.87 
+Convergence rates: c0=3.72 
+
+cfl=1.5 upwind=1
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 2.09e-03 &       
+      sic4 &     2 & 5.17e-04 &  4.04 
+      sic8 &     4 & 4.60e-05 & 11.24 
+     sic16 &     8 & 3.39e-06 & 13.57 
+     sic32 &    16 & 2.28e-07 & 14.87 
+Convergence rates: c0=3.36 
+
+
+cfl=.95: upwind=0
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 2.47e-03 &       
+      sic4 &     2 & 2.11e-04 & 11.71 
+      sic8 &     4 & 1.44e-05 & 14.65 
+     sic16 &     8 & 9.45e-07 & 15.24 
+Convergence rates: c0=3.79 
+
+
+BC=N 
+conv.p tests.conv -option=squareEig -cg=square -order=4 -kx=1 -ky=1 -kz=1 -tf=1.2 -tp=1.2 -upwind=1 -cfl=1.5 -ng=5 -ts=implicit -implicitUpwind=0 -bc=n -bcApproach=cbc
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 3.14e-01 &       
+  square16 &     2 & 3.52e-02 &  8.92 
+  square32 &     4 & 2.66e-03 & 13.23 
+  square64 &     8 & 1.80e-04 & 14.78 
+ square128 &    16 & 1.17e-05 & 15.38 
+Convergence rates: c0=3.70 
+
+conv.p tests.conv -option=squareEig -cg=square -order=4 -kx=1 -ky=1 -kz=1 -tf=1.2 -tp=1.2 -upwind=1 -cfl=1 -ng=5 -ts=implicit -implicitUpwind=0 -bc=n -bcApproach=cbc
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 1.26e-01 &       
+  square16 &     2 & 1.02e-02 & 12.35 
+  square32 &     4 & 7.18e-04 & 14.21 
+  square64 &     8 & 4.73e-05 & 15.18 
+ square128 &    16 & 2.99e-06 & 15.82 
+Convergence rates: c0=3.85 
+
+
+BC=D 
+conv.p tests.conv -option=squareEig -cg=square -order=4 -kx=1 -ky=1 -kz=1 -tf=1.2 -tp=1.2 -upwind=0 -cfl=1.5 -ng=5 -ts=implicit -implicitUpwind=0 -bcApproach=cbc
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 3.18e-01 &       
+  square16 &     2 & 3.50e-02 &  9.09 
+  square32 &     4 & 2.66e-03 & 13.16 
+  square64 &     8 & 1.80e-04 & 14.78 
+ square128 &    16 & 1.17e-05 & 15.38 
+Convergence rates: c0=3.71 
+conv.p tests.conv -option=squareEig -cg=square -order=4 -kx=1 -ky=1 -kz=1 -tf=1.2 -tp=1.2 -upwind=0 -cfl=1 -ng=5 -ts=implicit -implicitUpwind=0 -bcApproach=cbc
+
+                grid  & N &  $ u $ & r 
+   square8 &     1 & 1.31e-01 &       
+  square16 &     2 & 1.03e-02 & 12.72 
+  square32 &     4 & 7.23e-04 & 14.25 
+  square64 &     8 & 4.75e-05 & 15.22 
+ square128 &    16 & 2.99e-06 & 15.89 
+Convergence rates: c0=3.86 
+
+
+
+
+************************************************************************
+********* Thurs Aug 24, 2023
+
+TEST sphere for Allison
+
+
+conv.p tests.conv -option=tz -tz=trig -cg=sphere -order=2 -kx=2 -ky=2 -kz=2 -tf=.65 -tp=.65 -upwind=1 -cfl=3 -ng=3 -ts=implicit -implicitUpwind=0
+
+
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=0 -bc=e -bcApproach=cbc -cfl=.9 -meApproach=ha -nTheta=2 -mr=3 -ng=4
+
+                grid  & N &  $ u $ & r 
+      sic2 &     1 & 2.04e-03 &       
+      sic4 &     2 & 1.08e-04 & 18.89 
+      sic8 &     4 & 4.46e-06 & 24.22 
+     sic16 &     8 & 1.53e-07 & 29.15 
+Convergence rates: c0=4.57 
 
 ************************************************************************
 ********* Sun Feb 12, 2023
 
 TEST NO UPWIND
-conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=0 -bc=e -bcApproach=cbc -cfl=.9 -meApproach=ha -nBessel=2 -mTheta=3 -ng=6
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=0 -bc=e -bcApproach=cbc -cfl=.9 -meApproach=ha -nTheta=2 -mr=3 -ng=6
 
 
 upwind: 
@@ -136,7 +1336,7 @@ Convergence rates: c0=5.13
 
 
 CHANGE EIGENMODE: 
-conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bc=e -bcApproach=cbc -cfl=.9 -meApproach=ha -nBessel=2 -mTheta=3 -ng=6
+conv.p tests.conv -option=diskEig -cg=sic -order=4 -tf=.65 -tp=.65 -upwind=1 -bc=e -bcApproach=cbc -cfl=.9 -meApproach=ha -nTheta=2 -mr=3 -ng=6
 
                 grid  & N &  $ u $ & r 
       sic2 &     1 & 7.93e-03 &       
@@ -506,10 +1706,10 @@ START DOCUMENTING RESULTS
 FD88 -- BRANCH CUT TROUBLE 
 
 FD88 : nan's --> backup interp ... remove -> trouble at branch cut
-cgWave /home/henshw/Dropbox/research/cgwave/runs/tz/tz.cmd -g=cicFixede2.order8.ng5 -cfl=.9 -tf=.8 -tp=.01 -kx=1 -ky=0 -kz=0 -fx=5 -fy=5 -fz=5 -ft=5 -nBessel=1 -mTheta=1 -ts=explicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=lcbc -meApproach=ha -known=unknown -go=halt -tz=trig -degreeInSpace=2 -degreeInTime=2 -fx=5 -fy=5 -fz=5 -ft=5
+cgWave /home/henshw/Dropbox/research/cgwave/runs/tz/tz.cmd -g=cicFixede2.order8.ng5 -cfl=.9 -tf=.8 -tp=.01 -kx=1 -ky=0 -kz=0 -fx=5 -fy=5 -fz=5 -ft=5 -nTheta=1 -mr=1 -ts=explicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=lcbc -meApproach=ha -known=unknown -go=halt -tz=trig -degreeInSpace=2 -degreeInTime=2 -fx=5 -fy=5 -fz=5 -ft=5
 
 CFL=.5
-cgWave /home/henshw/Dropbox/research/cgwave/runs/tz/tz.cmd -g=cicFixede4.order8.ng5 -cfl=.5 -tf=.8 -tp=.01 -kx=1 -ky=0 -kz=0 -fx=5 -fy=5 -fz=5 -ft=5 -nBessel=1 -mTheta=1 -ts=explicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=lcbc -meApproach=ha -known=unknown -go=halt -tz=trig -degreeInSpace=2 -degreeInTime=2 -fx=5 -fy=5 -fz=5 -ft=5
+cgWave /home/henshw/Dropbox/research/cgwave/runs/tz/tz.cmd -g=cicFixede4.order8.ng5 -cfl=.5 -tf=.8 -tp=.01 -kx=1 -ky=0 -kz=0 -fx=5 -fy=5 -fz=5 -ft=5 -nTheta=1 -mr=1 -ts=explicit -orderInTime=-1 -upwind=1 -implicitUpwind=0 -rectangular=implicit -bc=d -bcApproach=lcbc -meApproach=ha -known=unknown -go=halt -tz=trig -degreeInSpace=2 -degreeInTime=2 -fx=5 -fy=5 -fz=5 -ft=5
 
 ++++++ FD88
 conv.p tests.conv -option=tz -tz=trig -cg=cicFixed -order=8 -fx=5 -tf=.8 -tp=.8 -upwind=1 -bc=d -bcApproach=lcbc -cfl=.9 -meApproach=ha -ng=4

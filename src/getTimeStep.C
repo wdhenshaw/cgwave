@@ -25,13 +25,16 @@ getTimeStep()
   const int & orderOfAccuracy               = dbase.get<int>("orderOfAccuracy");
   IntegerArray & gridIsImplicit             = dbase.get<IntegerArray>("gridIsImplicit");
   const int & preComputeUpwindUt            = dbase.get<int>("preComputeUpwindUt");
-  const int & chooseImplicitTimeStepFromCFL = dbase.get<int>("chooseImplicitTimeStepFromCFL");
+  // const int & chooseImplicitTimeStepFromCFL = dbase.get<int>("chooseImplicitTimeStepFromCFL");
+  const int & chooseTimeStepFromExplicitGrids= dbase.get<int>("chooseTimeStepFromExplicitGrids"); 
 
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
   const int useUpwindDissipation = ad4>0.;  // ** FIX ME**
 
   printF("CgWave::getTimeStep: c=%g, cfl=%g, timeSteppingMethod=%d\n",c,cfl,(int)timeSteppingMethod);
+
+  const bool allGridsAreImplicit = min(gridIsImplicit);
 
   Real stabilityBound=1.; 
   if( orderOfAccuracyInTime==2 )
@@ -85,6 +88,15 @@ getTimeStep()
   }
   RealArray & gridCFL = dbase.get<RealArray>("gridCFL");
 
+  // gridSize(grid) = "dx" used in computing dt *new* Jan 4, 2024
+  if( !dbase.has_key("gridSize") )
+  {
+    RealArray & gridSize = dbase.put<RealArray>("gridSize");
+    gridSize.redim(cg.numberOfComponentGrids());
+    gridSize=-1.;
+  }
+  RealArray & gridSize = dbase.get<RealArray>("gridSize");
+
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
   {
     MappedGrid & mg = cg[grid];
@@ -98,11 +110,19 @@ getTimeStep()
       
 
       if( mg.numberOfDimensions()==2 )
-        dtGrid = cfl*1./( c*sqrt( 1./(dx[0]*dx[0]) + 1./(dx[1]*dx[1]) ) );  
-      else
-        dtGrid = cfl*1./( c*sqrt( 1./(dx[0]*dx[0]) + 1./(dx[1]*dx[1]) + 1./(dx[2]*dx[2]) ) );
+      {
+        gridSize(grid) = 1./( sqrt( 1./(dx[0]*dx[0]) + 1./(dx[1]*dx[1]) ) );
 
-      printF("getTimeStep: grid=%d : dx=%9.2e, dy=%9.2e, dt=%9.3e\n",grid,dx[0],dx[1],dtGrid);
+        dtGrid = cfl*1./( c*sqrt( 1./(dx[0]*dx[0]) + 1./(dx[1]*dx[1]) ) );  
+      }
+      else
+      {
+        gridSize(grid) = 1./( sqrt( 1./(dx[0]*dx[0]) + 1./(dx[1]*dx[1]) + 1./(dx[2]*dx[2]) ) );
+
+        dtGrid = cfl*1./( c*sqrt( 1./(dx[0]*dx[0]) + 1./(dx[1]*dx[1]) + 1./(dx[2]*dx[2]) ) );
+      }
+
+      printF("getTimeStep: grid=%d : dx=%9.2e, dy=%9.2e, gridSize=%9.2e, dt=%9.3e\n",grid,dx[0],dx[1],gridSize(grid),dtGrid);
 
       dxMinMax(grid,0)= numberOfDimensions == 2? min(dx[0],dx[1]) : min(dx[0],dx[1],dx[2]);
       dxMinMax(grid,1)= numberOfDimensions == 2? min(dx[0],dx[1]) : max(dx[0],dx[1],dx[2]);
@@ -219,11 +239,13 @@ getTimeStep()
         dxMinMax(grid,0)= dxMin;
         dxMinMax(grid,1)= dxMax;
 
+        gridSize(grid) = dxMin;        
+
         dtGrid = (cfl/c) * dxMin;
 
         gridCFL(grid)= 1./(dtGrid/cfl); // "c/dx"
 
-        printF("getTimeStep: grid=%d, dxMin=%9.2e, dxMax=%9.2e, dt=%9.3e\n",grid,dxMin,dxMax,dtGrid);        
+        printF("getTimeStep: grid=%d, dxMin=%9.2e, dxMax=%9.2e, gridSize=%9.2e, dt=%9.3e\n",grid,dxMin,dxMax,gridSize(grid),dtGrid);        
       }
         
     } // end curvilinear grid
@@ -242,36 +264,111 @@ getTimeStep()
     
   } // end for grid 
 
-  // Now enforce time-step to be at most dtMax 
-  if( dtMax>0 )
+  if( true )
   {
-    dtExplicit = min(dtExplicit,dtMax);
-    dt         = min(dt,        dtMax);
-  }
-  
-  dtExplicit = ParallelUtility::getMinValue(dtExplicit);  // get min value over all processors 
-  dt         = ParallelUtility::getMinValue(dt);          // get min value over all processors 
+    // ********** NEW WAY : Jan 4, 2024 **************
 
+    // Given gridSize(grid) compute the time-step dt
 
-  if( timeSteppingMethod==implicitTimeStepping )
-  {
-    printF("cgWave::getTimeStep: cfl=%g, explicit dt=%9.2e, implicit dt=%9.2e, ratio=%6.2f\n",
-         cfl,dtExplicit,dt,dt/dtExplicit);
-    if( chooseImplicitTimeStepFromCFL )
+    Real dtExplicitGrids = dtMax>0 ? dtMax : REAL_MAX;  
+    Real dtImplicitGrids = dtMax>0 ? dtMax : REAL_MAX;
+
+    // ----- order-in-time=2 + order-in-space > 2 may have a smaller stability bound ----
+    const Real scaledCFL = orderOfAccuracyInTime==2 ? cfl*stabilityBound : cfl;
+
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
-      // --- choose the implicit dt based on the CFL parameter (which can be large) ----
-      dt=dtExplicit;
-      printF("cgWave:chooseTimeStep: chooseImplicitTimeStepFromCFL : setting dt=%9.2e, cfl=%g\n",dt,cfl);
+      // c*dt/dx = cfl : 
+      Real dtGrid = (scaledCFL/c) * gridSize(grid);
+      if( gridIsImplicit(grid) )
+        dtImplicitGrids = min( dtImplicitGrids, dtGrid );
+      else
+        dtExplicitGrids = min( dtExplicitGrids, dtGrid );
     }
-  }
+    dtExplicitGrids = ParallelUtility::getMinValue(dtExplicitGrids);  // get min value over all processors 
+    dtImplicitGrids = ParallelUtility::getMinValue(dtImplicitGrids);  // get min value over all processors 
 
-  // Save the grid CFL number (used for upwind dissipation coefficient in advWave.bf90 )
-  // gridCFL = cfl*( dt/gridCFL );   //  **check me : should be adjust this if dtMax is chosen ?? ++++++++++++++++++++=
-  for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    if( timeSteppingMethod==explicitTimeStepping )
+    {
+      dt = dtExplicitGrids;
+    }
+    else 
+    { // -- implicit time-stepping ---
+
+      dt = dtExplicitGrids; // by default choose dt from any explicit grids (or dtMax if set)
+
+      if( chooseTimeStepFromExplicitGrids ) 
+      {
+        // --- choose the implicit dt based on the CFL parameter (which can be large) ----
+        if( allGridsAreImplicit )
+        {
+          dt=dtImplicitGrids;
+          printF("\n >>>>chooseTimeStep: implicit-time-stepping: all grids implicit: choose c*dt/dxMin = cfl, or dt=dtMax: setting dt=%9.2e, dtMax=%9.2e, cfl=%g\n\n",dt,dtMax,cfl);         
+        }
+        else
+        {
+          const Real dtRatio = dtExplicitGrids/min(dtExplicitGrids,dtImplicitGrids);
+          printF("\n >>>>chooseTimeStep: implicit-time-stepping: choose c*dt/dxMin from explicit grids only, or dtMax: setting dt=%9.2e, dtMax=%9.2e cfl=%g, "
+                 " dtRatio=dtExplicit/dtAllGrids=%5.2f\n\n",dt,dtMax,cfl,dtRatio);
+        }
+      }
+
+    }
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ ) 
+    {
+      gridCFL(grid)= c/gridSize(grid);
+      printF("getTimeStep: grid=%d: gridSize=%10.2e, gridCFL*dt=c*dt/gridSize=%10.2e\n",grid,gridSize(grid),gridCFL(grid)*dt);
+    }
+      
+
+  }
+  else
   {
-    printF("getTimeStep: grid=%d: gridCFL = c/dx =%10.2e, gridCFL*dt=%10.2e\n",grid,gridCFL(grid),gridCFL(grid)*dt);
-  }
+    // ******** OLD WAY 
 
+    // Now enforce time-step to be at most dtMax 
+    if( dtMax>0 )
+    {
+      dtExplicit = min(dtExplicit,dtMax);
+      dt         = min(dt,        dtMax);
+    }
+    
+    dtExplicit = ParallelUtility::getMinValue(dtExplicit);  // get min value over all processors 
+    dt         = ParallelUtility::getMinValue(dt);          // get min value over all processors 
+
+
+    if( timeSteppingMethod==implicitTimeStepping )
+    {
+      printF("cgWave::getTimeStep: cfl=%g, explicit dt=%9.2e, implicit dt=%9.2e, ratio=%6.2f\n",
+           cfl,dtExplicit,dt,dt/dtExplicit);
+
+      if( chooseTimeStepFromExplicitGrids ) // && !allGridsAreImplicit )
+      {
+        // --- choose the implicit dt based on the CFL parameter (which can be large) ----
+        if( allGridsAreImplicit )
+        {
+           dt=dtExplicit;
+          printF("\n >>>>cgWave:chooseTimeStep: choose dt from CFL and explicit time-step: setting dt=%9.2e, cfl=%g\n\n",dt,cfl);         
+        }
+        else
+        {
+          const Real dtRatio = dt/dtExplicit;
+          dt=dtExplicit;
+
+          printF("\n >>>>cgWave:chooseTimeStep: choose dt from CFL and explicit grids only: setting dt=%9.2e, cfl=%g, dtExplicit/dtAllGrids=%5.2f\n\n",
+            dt,cfl,dtRatio);
+        }
+      }
+    }
+
+    // Save the grid CFL number (used for upwind dissipation coefficient in advWave.bf90 )
+    // gridCFL = cfl*( dt/gridCFL );   //  **check me : should be adjust this if dtMax is chosen ?? ++++++++++++++++++++=
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    {
+      printF("getTimeStep: grid=%d: gridCFL = c/dx =%10.2e, gridCFL*dt=%10.2e\n",grid,gridCFL(grid),gridCFL(grid)*dt);
+    }
+
+  }
 
   return 0;
 }

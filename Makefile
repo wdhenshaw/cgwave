@@ -154,7 +154,8 @@ all = cgWave cgwh info
 # all = cgWave
 all: $(all);
 
-info:; @echo "INFO: type 'make check' or 'make check-quiet' to run regression tests"
+info:; @echo "INFO: type 'make check' or 'make check-quiet' to run all regression tests\nINFO: this includes checkEigen, checkWave, checkWaveHoltz"    
+
 # ----- RUN REGRESSION TESTS ---
 check:
 	$(MAKE) -C checkEigen
@@ -165,7 +166,6 @@ check-quiet:
 	@$(MAKE) -s -C checkEigen check-quiet
 	@$(MAKE) -s -C checkWave check-quiet
 	@$(MAKE) -s -C checkWaveHoltz check-quiet
-
 
 
 Oges = $(Overture)/Oges
@@ -182,7 +182,8 @@ OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/u
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
        obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
        obj/takeFirstStep.o obj/deflation.o obj/eigenModes.o \
-       obj/rjbesl.o obj/rybesl.o obj/buildSuperGrid.o obj/residual.o
+       obj/rjbesl.o obj/rybesl.o obj/buildSuperGrid.o obj/residual.o \
+       obj/coefficientsByDelta.o  obj/getEnergyNorm.o   
        
 # LCBC files: 
 OBJC += obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_data.o \
@@ -199,9 +200,8 @@ FNOBJO = obj/advWave.o\
          obj/advWave2dOrder4r.o obj/advWave3dOrder4r.o obj/advWave2dOrder4c.o obj/advWave3dOrder4c.o \
          obj/advWave2dOrder6r.o obj/advWave3dOrder6r.o obj/advWave2dOrder6c.o obj/advWave3dOrder6c.o \
          obj/advWave2dOrder8r.o obj/advWave3dOrder8r.o obj/advWave2dOrder8c.o obj/advWave3dOrder8c.o \
-         obj/bcOptWave.o \
-         obj/bcOptWave2dOrder2.o obj/bcOptWave2dOrder4.o \
-         obj/bcOptWave3dOrder2.o \
+         obj/bcOptWave.o obj/bcOptWave2dOrder2.o obj/bcOptWave2dOrder4.o obj/bcOptWave3dOrder2.o obj/bcOptWave3dOrder4.o \
+         obj/cornersWave.o obj/cornersWave2dOrder2.o obj/cornersWave2dOrder4.o obj/cornersWave3dOrder2.o obj/cornersWave3dOrder4.o \
          obj/getWaveDerivatives.o obj/hierDeriv.o \
          obj/abcWave.o
 
@@ -242,7 +242,9 @@ checkCheckFiles: $(checkCheckFiles); $(CXX) $(CCFLAGS) -o checkWave/checkCheckFi
 
 # --- CgWave solver ---
 # ogmgFiles = ${OvertureCheckout}/ogmg/smooth.o
-cgWaveFiles = obj/cgWaveMain.o $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_PETSC)
+# for debugging link to a debug version of formMatrix.o
+## OGES_PETSC += ${OvertureCheckout}/oges/formMatrix.o
+cgWaveFiles = obj/cgWaveMain.o $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_PETSC) 
 cgWave: $(cgWaveFiles) ; $(CXX) $(CCFLAGS) -o bin/cgWave $(cgWaveFiles) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
 
 
@@ -289,6 +291,18 @@ testPlotFiles = obj/testPlot.o  $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_
 # testPlot: $(testPlotFiles); $(CXX) $(CCFLAGS) -o bin/testPlot $(testPlotFiles) $(LIBS)
 testPlot: $(testPlotFiles) ; $(CXX) $(CCFLAGS) -o bin/testPlot $(testPlotFiles) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
 obj/testPlot.o : src/testPlot.C; $(CXX) $(CCFLAGS) -o $*.o -c $<    
+
+
+# ----- test to check coefficients in implicit schemes  -----
+testCoeffFiles = obj/testCoeff.o obj/coefficientsByDelta.o
+testCoeff: $(testCoeffFiles); $(CXX) $(CCFLAGS) -o bin/testCoeff $(testCoeffFiles) $(LIBS)
+
+src/testCoeff.C: src/testCoeff.bC boundaryConditionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include testCoeff.bC
+src/coefficientsByDelta.C: src/coefficientsByDelta.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include coefficientsByDelta.bC
+
+obj/testCoeff.o : src/testCoeff.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+obj/coefficientsByDelta.o : src/coefficientsByDelta.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+
 
 # ----- test LCBC class : local compatibility boundary conditions -----
 testLCBCFiles = obj/testLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_corner.o obj/LCBC_vertex.o obj/numericalDeriv.o obj/utility.o obj/LCBC_TzFnPointers.o obj/LCBC_annulusMap.o
@@ -459,6 +473,19 @@ src/bcOptWave3dOrder4.f90 : src/bcOptWave.f90
 src/bcOptWave3dOrder6.f90 : src/bcOptWave.f90
 src/bcOptWave3dOrder8.f90 : src/bcOptWave.f90  
 
+# corners
+src/cornersWave.f90: src/cornersWave.bf90 src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include cornersWave.bf90    
+
+src/cornersWave2dOrder2.f90 : src/cornersWave.f90
+src/cornersWave2dOrder4.f90 : src/cornersWave.f90
+src/cornersWave2dOrder6.f90 : src/cornersWave.f90
+src/cornersWave2dOrder8.f90 : src/cornersWave.f90
+src/cornersWave3dOrder2.f90 : src/cornersWave.f90
+src/cornersWave3dOrder4.f90 : src/cornersWave.f90
+src/cornersWave3dOrder6.f90 : src/cornersWave.f90
+src/cornersWave3dOrder8.f90 : src/cornersWave.f90 
+
+
 # -- optimized derivatives evaluation
 src/getWaveDerivatives.f90: src/getWaveDerivatives.bf90; @cd src; $(BPP) -clean -quiet -I$(Overture)/include getWaveDerivatives.bf90
 
@@ -496,7 +523,9 @@ obj/saveShow.o : src/saveShow.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getErrors.o : src/getErrors.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/takeFirstStep.o : src/takeFirstStep.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
+
 obj/residual.o : src/residual.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+obj/getEnergyNorm.o : src/getEnergyNorm.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 
 obj/rjbesl.o : src/rjbesl.f; $(FC) $(FFLAGSO) -o $@ -c $<  
 obj/rybesl.o : src/rybesl.f; $(FC) $(FFLAGSO) -o $@ -c $<  

@@ -3667,11 +3667,15 @@ real uzzzzzz
          ts2=dt - .5*dt*dt*damp
          ts3= .5*cdtSq*cImp( 0,0)
          ts4=-dt*cdtSq*cImp(-1,0)
-         if( orderInTime.eq.4 )then
-           write(*,'("advWave: finish me : IMP orderInTime=4")') 
-           stop 4445
-         end if
          tsf=.5*dtSq    
+         if( orderInTime.eq.4 )then
+           ts4 = ts4 + dt*cdtSq/6.
+           ts5 =  cdtSq**2 * cImp(0,1)
+           ts6 = -cdtSq**2 * cImp(1,1)
+           ! FORCING NEEDS ADJUSTMENT TOO 
+           ! write(*,'("advWave: finish me : IMP orderInTime=4")') 
+           ! stop 4445
+         end if
        end if
        cf = tsf
      end if

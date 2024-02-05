@@ -1,0 +1,15 @@
+\begin{table}[H]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+\begin{center}
+\begin{tabular}{|l|c|c|c|} \hline 
+grid  & N &  $ u $ & r \\ \hline 
+  wiggley2 &     1 & \num{6.3}{-3} &        \\ \hline
+  wiggley4 &     2 & \num{1.5}{-3} &  4.19  \\ \hline
+  wiggley8 &     4 & \num{3.7}{-4} &  4.10  \\ \hline
+ wiggley16 &     8 & \num{9.1}{-5} &  4.05  \\ \hline
+ wiggley32 &    16 & \num{2.3}{-5} &  4.02  \\ \hline
+    rate             &       &  $2.03$       &       \\ \hline
+\end{tabular}
+\caption{CgWave, tz, max norm, order=$2$, ts=implicit, orderInTime=-1, dtMax0=$2e-2$, $t=.6$, cfl=$1$, upwind=1, bc=d, bcApproach=oneSided, meApproach=std, -known=unknown, kx=1, ky=1, kz=1, nBessel=1, mTheta=1, mz=1, rad=1, tz=trig, solveri=yale, rtoli=1e-10, atoli=1e-10, maxiti=2000, , beta2=0, beta4=0,rectangular=implicit, implicitUpwind=0degreeInSpace=2, -degreeInTime=2, -fx=2 -fy=2 -fz=2 -ft=2, mPhi=1, mr=1, takeImplicitFirstStep=1, Wed Dec 20 14:37:04 2023}\label{table:tzOrder2max}
+\end{center}
+\end{table}
