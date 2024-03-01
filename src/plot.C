@@ -138,7 +138,9 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
     }
 
     if( plotScatteredField )
+        { // interpolate scattered field 
         v.interpolate();
+    }
 
     const int & useSuperGrid            = dbase.get<int>("useSuperGrid");
     const int & adjustPlotsForSuperGrid = dbase.get<int>("adjustPlotsForSuperGrid");    // set solution to zero in any superGridLayers

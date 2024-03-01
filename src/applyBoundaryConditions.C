@@ -1,6 +1,6 @@
 // This file automatically generated from applyBoundaryConditions.bC with bpp.
 #include "CgWave.h"
-#include "CompositeGridOperators.h";    
+#include "CompositeGridOperators.h"    
 #include "PlotStuff.h"
 #include "display.h"
 #include "ParallelUtility.h"

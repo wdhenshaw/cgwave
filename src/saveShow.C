@@ -116,6 +116,7 @@ saveSequencesToShowFile()
   int & numberOfSequences  = dbase.get<int>("numberOfSequences");
   RealArray & timeSequence = dbase.get<RealArray>("timeSequence");
   RealArray & sequence     = dbase.get<RealArray>("sequence");
+  int & saveMaxErrors      = dbase.get<int>("saveMaxErrors"); 
 
   Range I(0,sequenceCount-1);
   Range N=sequence.dimension(1);
@@ -165,7 +166,13 @@ saveSequencesToShowFile()
   const int & computeEnergy  = dbase.get<int>("computeEnergy"); 
   if( computeEnergy )
   {
-    name[numberOfComponents] = "energy";
+    name[computeEnergy] = "energy";
+  }
+
+
+  if( saveMaxErrors )
+  {
+    name[saveMaxErrors] = "maxErr";
   }
 
   // display(sequence(I,N),"saveSequencesToShowFile: sequence(I,N)");

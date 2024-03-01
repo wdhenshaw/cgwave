@@ -1,10 +1,20 @@
 ###### small hole grid/ cylindrical inclusion, made with cylindrical scattering problem in mind #####
 #
+# ogen -noplot cylInclusion.cmd -factor=0 -order=2
+# ogen -noplot cylInclusion.cmd -factor=0 -order=4
+#
+# Initial version from Alli Carson -- 
 #
 #some things you can pick
 $factor = 0; # factor of refinement, 0,1,2...
 $order = 2; # 2 or 4
 $raidusi = .005; # radius of inclusion, <.1 suggested, you may have to change other variables to make overlap decent
+$numGhost=2;
+# 
+# get command line arguments
+GetOptions( "order=i"=>\$order,"factor=f"=> \$factor,"ng=f"=> \$numGhost );
+# 
+if( $order eq 4 ){$numGhost=3;}
 #
 #
 $backgroundlines = 300*2**$factor;
@@ -46,13 +56,16 @@ generate an overlapping grid
   backgroundGrid
   stretched-Annulus
   done
-  compute overlap
   change parameters
     interpolation type
       explicit for all grids
     order of accuracy
     $orderString order
+    ghost points
+      all
+      $numGhost $numGhost $numGhost $numGhost    
     exit
+  compute overlap
   exit
 save a grid
 cylInclusione$factor.order$order.hdf

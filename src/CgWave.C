@@ -63,7 +63,9 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<Real>("dtUsed")=-1.; // dt actually used
   dbase.put<Real>("dtMax")=-1.;  // save maximum allowable dt (before corrections to reach a given time)
 
-  dbase.put<int>("upwind")=0;  // use upwind dissipation
+  dbase.put<int>("upwind")=0;                // use upwind dissipation
+  dbase.put<int>("numUpwindCorrections")=1;  // number of upwind corrections
+
   dbase.put<Real>("ad4")=0.;   // coeff of the artificial dissipation. (*old)
   dbase.put<int>("dissipationFrequency")=1; // apply dissipation every this many steps (1= every step)
   // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
@@ -76,6 +78,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   dbase.put<int>("computeErrors") = 1;                  // by default, compute errors for TZ or a known solution
   dbase.put<int>("computeEnergy") = 0;                  // 1= compute energy
+  dbase.put<int>("saveMaxErrors") = 0;                  // save max errors over time as a sequence in the show file
   dbase.put<int>("applyKnownSolutionAtBoundaries") = 0; // by default, do NOT apply known solution at boundaries
   dbase.put<int>("bcCount") = 0;                        // count the number of times applyBC is called
 
@@ -346,22 +349,26 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   // { 
   //   totalTime=0,
   //   timeForInitialize,
+  //   timeForInitializeBCs,
   //   timeForInitialConditions,
   //   timeForAdvance,
   //   timeForAdvanceRectangularGrids,
   //   timeForAdvanceCurvilinearGrids,
-  //   timeForAdvOpt,
+  //   timeForImplicitSolve,
   //   timeForDissipation,
   //   timeForBoundaryConditions,
   //   timeForInterpolate,
   //   timeForUpdateGhostBoundaries,
   //   timeForForcing,
+  //   timeForUserDefinedKnownSolution,
+  //   timeForTimeIntegral,
   //   timeForGetError,
   //   timeForPlotting,
   //   timeForOutputResults,
   //   timeForWaiting,
   //   maximumNumberOfTimings      // number of entries in this list
   // };
+
 
   timing.redim(maximumNumberOfTimings);
   timing=0.;
@@ -376,10 +383,11 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   timingName[timeForAdvance]                     ="advance";
   timingName[timeForAdvanceRectangularGrids]     ="  advance rectangular grids";
   timingName[timeForAdvanceCurvilinearGrids]     ="  advance curvilinear grids";
-  timingName[timeForForcing]                     ="  add forcing";
   timingName[timeForImplicitSolve]               ="    implicit solve";
+  timingName[timeForForcing]                     ="  add forcing";
   timingName[timeForDissipation]                 ="  add dissipation";
   timingName[timeForBoundaryConditions]          ="  boundary conditions";
+  timingName[timeForUserDefinedKnownSolution]    ="    user known solution";
   timingName[timeForUpdateGhostBoundaries]       ="  update ghost (parallel)";
   timingName[timeForInterpolate]                 ="  interpolation";
   timingName[timeForTimeIntegral]                ="  time integral";
@@ -511,6 +519,8 @@ int CgWave::initialize()
   const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
   bool twilightZone = addForcing && forcingOption==twilightZoneForcing;
   int & computeErrors = dbase.get<int>("computeErrors");
+  int & computeEnergy = dbase.get<int>("computeEnergy");
+  int & saveMaxErrors = dbase.get<int>("saveMaxErrors");   
   // computeErrors = twilightZone || knownSolutionOption=="userDefinedKnownSolution";
   
   const real & omega     = dbase.get<real>("omega");
@@ -561,6 +571,35 @@ int CgWave::initialize()
     int orderOfExtrapolationForInterpolationNeighbours=orderOfAccuracy+1; 
     GenericMappedGridOperators::setDefaultMaximumWidthForExtrapolateInterpolationNeighbours(orderOfExtrapolationForInterpolationNeighbours+1);
   }
+
+
+  // else if( dialog.getToggleValue(answer,"compute energy",computeEnergy) )
+  // {
+  //   printF("Setting computeEnergy=%d.\n",computeEnergy);
+  //   // numberOfSequences = 2;
+  // }
+
+  // else if( dialog.getToggleValue(answer,"save max errors",saveMaxErrors) )
+  // {
+  //   printF("Setting saveMaxErrors=%d.\n",saveMaxErrors);
+  //   // numberOfSequences = 2;
+  // }
+
+
+  // --- sequence info ---
+  int & numberOfSequences  = dbase.get<int>("numberOfSequences");
+
+  numberOfSequences=1;
+  if( computeEnergy )
+  {
+    computeEnergy=numberOfSequences;
+    numberOfSequences++;
+  }
+  if( saveMaxErrors )
+  {
+    saveMaxErrors=numberOfSequences;
+    numberOfSequences++;
+  }    
 
   // ------------ Helmholtz -------------
   const int & solveHelmholtz = dbase.get<int>("solveHelmholtz");
@@ -1414,6 +1453,7 @@ int CgWave::interactiveUpdate()
   RealArray & periodArray              = dbase.get<RealArray>("periodArray");  
 
   int & upwind                         = dbase.get<int>("upwind");
+  int & numUpwindCorrections           = dbase.get<int>("numUpwindCorrections");
   int & implicitUpwind                 = dbase.get<int>("implicitUpwind");
   real & ad4                           = dbase.get<real>("ad4"); // coeff of the artificial dissipation. (*old*)
   int & dissipationFrequency           = dbase.get<int>("dissipationFrequency");
@@ -1428,6 +1468,7 @@ int CgWave::interactiveUpdate()
        
   int & computeErrors                  = dbase.get<int>("computeErrors");                         // by default, compute errors for TZ or a known solution
   int & computeEnergy                  = dbase.get<int>("computeEnergy");                         // by default, compute errors for TZ or a known solution
+  int & saveMaxErrors                  = dbase.get<int>("saveMaxErrors");   
   // int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
   int & useKnownSolutionForFirstStep   = dbase.get<int>("useKnownSolutionForFirstStep"); 
   int & debug                          = dbase.get<int>("debug");
@@ -1542,8 +1583,9 @@ int CgWave::interactiveUpdate()
                           "solve for scattered field",
                           "plot scattered field",
                           "compute energy",
+                          "save max errors",
                             ""};
-  int tbState[15];
+  int tbState[16];
   tbState[ 0] = saveShowFile;
   tbState[ 1] = upwind;
   tbState[ 2] = addForcing;
@@ -1559,6 +1601,7 @@ int CgWave::interactiveUpdate()
   tbState[11] = solveForScatteredField;
   tbState[12] = plotScatteredField;
   tbState[13] = computeEnergy;
+  tbState[14] = saveMaxErrors;
 
   int numColumns=2;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -1621,6 +1664,8 @@ int CgWave::interactiveUpdate()
   textCommands[nt] = "implicit weights";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g, %g, %g, %g, %g (beta2,beta4,...)",bImp(0),bImp(1),bImp(2),bImp(3),bImp(4));  nt++; 
 
+  textCommands[nt] = "numUpwindCorrections";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",numUpwindCorrections);  nt++; 
 
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -1749,6 +1794,10 @@ int CgWave::interactiveUpdate()
     {
       printF("Setting dissipationFrequency=%i (dissipation is applied every this many steps)\n",dissipationFrequency);
     }
+    else if( dialog.getTextValue(answer,"numUpwindCorrections","%i",numUpwindCorrections) )
+    {
+      printF("Setting numUpwindCorrections=%i (number of upwind dissipation iterations)\n",numUpwindCorrections);
+    }    
 
     else if( answer=="Boundary Condition Options..."  )
     {
@@ -1822,8 +1871,15 @@ int CgWave::interactiveUpdate()
     else if( dialog.getToggleValue(answer,"compute energy",computeEnergy) )
     {
       printF("Setting computeEnergy=%d.\n",computeEnergy);
-      numberOfSequences = 2;
+      // numberOfSequences = 2;
     }
+
+    else if( dialog.getToggleValue(answer,"save max errors",saveMaxErrors) )
+    {
+      printF("Setting saveMaxErrors=%d.\n",saveMaxErrors);
+      // numberOfSequences = 2;
+    }
+
     // else if( dialog.getToggleValue(answer,"set known on boundaries",applyKnownSolutionAtBoundaries) )
     // {
     //   printF("Setting applyKnownSolutionAtBoundaries=%d (1=apply known solution on boundaries).\n",applyKnownSolutionAtBoundaries);
@@ -2720,9 +2776,10 @@ outputResults( int current, real t )
   FILE *& checkFile = dbase.get<FILE*>("checkFile");
   assert( checkFile != NULL );
 
-  const real & maxError     = dbase.get<real>("maxError");      // save max-error here 
-  const real & solutionNorm = dbase.get<real>("solutionNorm");  // save solution norm here 
-  const int & computeErrors = dbase.get<int>("computeErrors");
+  const real & maxError          = dbase.get<real>("maxError");      // save max-error here 
+  const real & solutionNorm      = dbase.get<real>("solutionNorm");  // save solution norm here 
+  const int & computeErrors      = dbase.get<int>("computeErrors");
+  const int & saveMaxErrors      = dbase.get<int>("saveMaxErrors");   
   
   const int & numberOfComponents= 1;
 
@@ -2746,7 +2803,14 @@ outputResults( int current, real t )
   RealArray solutionNormVector(numberOfSequences);
   solutionNormVector(0)=solutionNorm;
   if( computeEnergy )
-    solutionNormVector(1)=energyNorm;
+    solutionNormVector(computeEnergy)=energyNorm;
+  if( saveMaxErrors )
+  {
+
+    // printf("\n &&&&&&&&&& saveMaxErrors=%d at t=%g numberOfSequences=%d maxError=%10.2e\n\n",saveMaxErrors,t,numberOfSequences,maxError);
+    solutionNormVector(saveMaxErrors)=maxError;
+  }
+
   saveSequenceInfo( t, solutionNormVector );
 
   return 0;

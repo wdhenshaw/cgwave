@@ -1,5 +1,66 @@
 set fame = ~/Dropbox/AMP/fame
 
+
+
+*******************************************
+***** Wed Feb 21, 2024
+
+SCATTERING FROM A SMALL HOLE
+
+LONGER TIME BIGGER k
+SPIE4
+conv.p tests.conv -option=cylScat -cg=holeGridRad0p01Fixed -rad=.01 -bcScat=5 -order=4 -kx=10 -tf=5 -tp=1 -upwind=1 -nuc=2 -bc=d -cfl=.9 -ts=implicit -rectangular=explicit -bcApproach=cbc -takeImplicitFirstStep=1 -resStart=2 -ng=4
+
+                grid  & N &  $ u $ & r 
+holeGridRad0p01Fixed4 &     2 & 2.92e-03 &       
+holeGridRad0p01Fixed8 &     4 & 1.47e-04 & 19.86 
+holeGridRad0p01Fixed16 &     8 & 1.11e-05 & 13.24 
+Convergence rates: c0=4.02 
+
+
+EME4
+conv.p tests.conv -option=cylScat -cg=holeGridRad0p01Fixed -rad=.01 -bcScat=5 -order=4 -kx=10 -tf=5 -tp=1 -upwind=1 -nuc=2 -bc=d -cfl=.9 -ts=explicit -bcApproach=cbc -resStart=2 -ng=4
+
+                grid  & N &  $ u $ & r 
+holeGridRad0p01Fixed4 &     2 & 1.41e-03 &       
+holeGridRad0p01Fixed8 &     4 & 4.45e-05 & 31.69 
+holeGridRad0p01Fixed16 &     8 & 2.42e-06 & 18.39 
+Convergence rates: c0=4.59 
+
+
+
+
+
+SPIE4
+conv.p tests.conv -option=cylScat -cg=holeGridRad0p01Fixed -rad=.01 -bcScat=5 -order=4 -kx=2 -tf=1 -tp=1 -upwind=1 -nuc=2 -bc=d -cfl=.9 -ts=implicit -rectangular=explicit -bcApproach=cbc -takeImplicitFirstStep=1 -resStart=2 -ng=4
+
+                grid  & N &  $ u $ & r 
+holeGridRad0p01Fixed4 &     2 & 9.30e-04 &       
+holeGridRad0p01Fixed8 &     4 & 7.60e-05 & 12.24 
+holeGridRad0p01Fixed16 &     8 & 5.61e-06 & 13.55 
+Convergence rates: c0=3.69 
+
+EME4
+conv.p tests.conv -option=cylScat -cg=holeGridRad0p01Fixed -rad=.01 -bcScat=5 -order=4 -kx=2 -tf=1 -tp=1 -upwind=1 -nuc=2 -bc=d -cfl=.9 -ts=explicit -bcApproach=cbc -resStart=2 -ng=4
+
+                grid  & N &  $ u $ & r 
+holeGridRad0p01Fixed4 &     2 & 1.02e-05 &       
+holeGridRad0p01Fixed8 &     4 & 1.18e-06 &  8.64 
+holeGridRad0p01Fixed16 &     8 & 9.90e-08 & 11.92 
+Convergence rates: c0=3.34 
+
+
+SPIE2
+conv.p tests.conv -option=cylScat -cg=holeGridRad0p01Fixed -rad=.01 -bcScat=5 -order=2 -kx=2 -tf=1 -tp=1 -upwind=1 -nuc=2 -bc=d -cfl=.9 -ts=implicit -rectangular=explicit -bcApproach=cbc -takeImplicitFirstStep=1 -resStart=2 -ng=4
+
+                grid  & N &  $ u $ & r 
+holeGridRad0p01Fixed2 &     1 & 5.65e-03 &       
+holeGridRad0p01Fixed4 &     2 & 2.08e-03 &  2.72 
+holeGridRad0p01Fixed8 &     4 & 6.77e-04 &  3.07 
+holeGridRad0p01Fixed16 &     8 & 1.89e-04 &  3.58 
+Convergence rates: c0=1.63 
+
+
 *******************************************
 ***** Fri Jan 5, 2024
 

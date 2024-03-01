@@ -2,7 +2,7 @@
 #include "ParallelUtility.h"
 #include "gridFunctionNorms.h"
 #include "Integrate.h"
-#include "CompositeGridOperators.h";    
+#include "CompositeGridOperators.h"    
 
 // lapack routines
 #ifdef OV_USE_DOUBLE
@@ -26,15 +26,15 @@ extern "C"
   // PA = LU factor
   void GETRF( int & m, int & n, real & a, const int & lda, int & ipvt, int & info );
   // Solve given LU
-  void GETRS( char *trans, int & n, int & nhrs, real & a, const int & lda, int & ipvt, real & b, const int & ldb, int & info );
+  void GETRS( const char *trans, int & n, int & nhrs, real & a, const int & lda, int & ipvt, real & b, const int & ldb, int & info );
 
   // compute inverse:
   void GETRI( int & n, real & a, const int & lda, const int & ipvt, real & work, const int & iwork, int & info );
 
-  void GECON( char *norm, int & n, real & a, const int & lda, real & anorm, real & rcond, real & work, int & iwork, int & info );
-  real LANGE( char *norm, int & m, int & n, real & a, const int & lda, real & work );
+  void GECON( const char *norm, int & n, real & a, const int & lda, real & anorm, real & rcond, real & work, int & iwork, int & info );
+  real LANGE( const char *norm, int & m, int & n, real & a, const int & lda, real & work );
 
-   void GEEV( char *jobvl, char* jobvr, int & n, real & a, const int & lda,
+   void GEEV( const char *jobvl, const char* jobvr, int & n, real & a, const int & lda,
               real & wr, real & wi, real &vl, int & ldvl, real & vr, int & ldvr, real & work, int & lwork, int & info );
 
 }

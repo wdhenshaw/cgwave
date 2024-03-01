@@ -55,20 +55,22 @@ OPTFLAG = -O3
 
 CCFLAGS = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG)
 
-CCFLAGS += $(SLEPC_INCLUDE)
-CCFLAGS += $(PETSC_INCLUDE)
-
-# for rtg1 which has an older compiler (Processor.h)
-CCFLAGS += -std=c++11
-
-CFLAGS = $(OV_CC_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include
-
 # Some C++ files we compile optimized by default
 ifeq ($(COMPILE),dbg)
   CCFLAGSO = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG) -g -w
 else
   CCFLAGSO = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG) $(OPTFLAG)
 endif
+
+CCFLAGS += $(SLEPC_INCLUDE)
+CCFLAGS += $(PETSC_INCLUDE)
+CCFLAGSO += $(SLEPC_INCLUDE)
+CCFLAGSO += $(PETSC_INCLUDE)
+
+# for rtg1 which has an older compiler (Processor.h)
+CCFLAGS += -std=c++11
+
+CFLAGS = $(OV_CC_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include
 
 # Fortran flags, not optimzed unless COMPILE set to opt
 FFLAGS  = $(OV_FORTRAN_FLAGS) $(OV_AUTO_DOUBLE_FLAGS) 
@@ -509,23 +511,23 @@ obj/cgWaveMain.o : src/cgWaveMain.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $
 obj/CgWave.o : src/CgWave.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/advance.o : src/advance.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/plot.o : src/plot.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/applyBoundaryConditions.o : src/applyBoundaryConditions.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/implicit.o : src/implicit.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/userDefinedKnownSolution.o : src/userDefinedKnownSolution.C src/CgWave.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/outputHeader.o : src/outputHeader.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/printStatistics.o : src/printStatistics.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/userDefinedForcing.o : src/userDefinedForcing.C src/CgWave.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/updateTimeIntegral.o : src/updateTimeIntegral.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/getTimeStep.o : src/getTimeStep.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/getHelmholtzForcing.o : src/getHelmholtzForcing.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getInitialConditions.o : src/getInitialConditions.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/saveShow.o : src/saveShow.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/getErrors.o : src/getErrors.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
-obj/takeFirstStep.o : src/takeFirstStep.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
-
-obj/residual.o : src/residual.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
-obj/getEnergyNorm.o : src/getEnergyNorm.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+# compile these files optimized:
+obj/implicit.o : src/implicit.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/applyBoundaryConditions.o : src/applyBoundaryConditions.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/userDefinedKnownSolution.o : src/userDefinedKnownSolution.C src/CgWave.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/residual.o : src/residual.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<  
+obj/getEnergyNorm.o : src/getEnergyNorm.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<  
+obj/userDefinedForcing.o : src/userDefinedForcing.C src/CgWave.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/updateTimeIntegral.o : src/updateTimeIntegral.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/getTimeStep.o : src/getTimeStep.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/getHelmholtzForcing.o : src/getHelmholtzForcing.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/getErrors.o : src/getErrors.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
+obj/takeFirstStep.o : src/takeFirstStep.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 
 obj/rjbesl.o : src/rjbesl.f; $(FC) $(FFLAGSO) -o $@ -c $<  
 obj/rybesl.o : src/rybesl.f; $(FC) $(FFLAGSO) -o $@ -c $<  

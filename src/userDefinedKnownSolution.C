@@ -19,7 +19,7 @@ typedef ::real LocalReal;
 
 // --------------------------------------------------------------------
 // Macro to evaluate the spherical Bessel function near the origin
-// Input: n,x
+// Input: nn,x
 // Output : R 
 // -------------------------------------------------------------------
 
@@ -49,6 +49,8 @@ getUserDefinedKnownSolution(real t,  int grid,
                                                         realArray & ua, const Index & I1a, const Index &I2a, const Index &I3a, 
                                                         int numberOfTimeDerivatives /* = 0 */ )
 {
+    Real cpu0 = getCPU();
+
     const real & c= dbase.get<real>("c");
     const real & dt= dbase.get<real>("dt");
 
@@ -864,7 +866,7 @@ getUserDefinedKnownSolution(real t,  int grid,
                     }
                     else
                     {
-                        printF("sphericalBesselFunctions ERROR: mPhi > 4 is not defined\mPhi");
+                        printF("sphericalBesselFunctions ERROR: mPhi > 4 is not defined\n");
                         OV_ABORT("ERROR");
                     }
             }
@@ -1124,7 +1126,23 @@ getUserDefinedKnownSolution(real t,  int grid,
             OV_ABORT("ERROR");
         }
 
-    // --- Evaluate the solution at the requested point  ---
+        Real *pu   = uLocal.getDataPointer(); // pointer to contiguous array data
+        Real *pcyl = cylLocal.getDataPointer(); // pointer to contiguous array data
+        const int nd1a = uLocal.getBase(0), nd1b=uLocal.getBound(0);
+        const int nd2a = uLocal.getBase(1), nd2b=uLocal.getBound(1);
+        const int nd3a = uLocal.getBase(2), nd3b=uLocal.getBound(2);
+        const int nd4a = uLocal.getBase(3), nd4b=uLocal.getBound(3);
+
+        const int nd1 = nd1b-nd1a+1;
+        const int nd2 = nd2b-nd2a+1;
+        const int nd3 = nd3b-nd3a+1;
+
+    // Macro to access elements of u directly 
+    // Data is stored in row major order (i1 varies most rapidly)
+        #define U(i1,i2,i3) pu[ ((i1)-nd1a) + nd1*( (i2)-nd2a + nd2*( (i3)-nd3a ) ) ]
+        #define CYL(i1,i2,i3,i4) pcyl[ ((i1)-nd1a) + nd1*( (i2)-nd2a + nd2*( (i3)-nd3a + nd3*( (i4)-nd4a )) ) ]
+
+    // --- Evaluate the solution at the requested points  ---
         Real xd,yd; 
         FOR_3D(i1,i2,i3,I1,I2,I3)
         {
@@ -1139,7 +1157,9 @@ getUserDefinedKnownSolution(real t,  int grid,
         // yd = XC(iv,1);
             }
 
-            Real uReal = cylLocal(i1,i2,i3,0)*cost - cylLocal(i1,i2,i3,1)*sint;
+      // Real uReal = cylLocal(i1,i2,i3,0)*cost - cylLocal(i1,i2,i3,1)*sint;
+            Real uReal = CYL(i1,i2,i3,0)*cost - CYL(i1,i2,i3,1)*sint;
+
       // Real uReal = cylLocal(i1,i2,i3,0)*cos( -c*k*t ) - cylLocal(i1,i2,i3,1)*sin( -c*k*t );
       // uImag = cylLocal(i1,i2,i3,1)*cos( -c*k*t ) + cylLocal(i1,i2,i3,0)*sin( -c*k*t );
 
@@ -1154,7 +1174,8 @@ getUserDefinedKnownSolution(real t,  int grid,
                 uReal += (c*k)*sin( k*(xd-c*t) ); // time derivative of incident field
             }
 
-            uLocal(i1,i2,i3,0) = amp*uReal;
+      // uLocal(i1,i2,i3,0) = amp*uReal;
+            U(i1,i2,i3) = amp*uReal;
             
         }
 
@@ -1356,6 +1377,9 @@ getUserDefinedKnownSolution(real t,  int grid,
                       (const char*)userKnownSolution);
         OV_ABORT("ERROR");
     }
+    
+
+    timing(timeForUserDefinedKnownSolution) += getCPU()-cpu0;
     
     return 0;
 }

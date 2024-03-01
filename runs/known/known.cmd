@@ -13,14 +13,14 @@
 $known="planeWave";
 $amp=1; $kx=1.0; $ky=0; $kz=0; $omega=3.; 
 $beta=20; $x0=.5; $y0=.0; $z0=.0; $k0=0.; # for Gaussian plane wave 
-$ra=0.5; $bcScat=5;  # radius of cylinder for cylScat, and BC for cylinder
+$bcScat=5;  #  BC for cylinder
 # $ad4=0;   # old
-$upwind=0; 
+$upwind=0; $nuc=1; 
 $debug=3; $debugOges=0; $go="halt"; $bc="d"; $dissFreq=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $useKnownFirstStep=0; $checkKnown=0; 
 $chooseTimeStepFromExplicitGrids=1; # 1=choose dt from explicit grids and cfl unless all grids are implicit
-$computeErrors=1; $plotScatteredField=0; $computeEnergy=0;
+$computeErrors=1; $plotScatteredField=0; $computeEnergy=0; $saveMaxErrors=1; 
 $setKnownOnBoundaries=-1; #-1 : use default
 $tf=5.; $tp=.05; $cfl=.9; 
 $ts="explicit"; $dtMax=1e10; $implicitUpwind=0;  $takeImplicitFirstStep=0; 
@@ -34,7 +34,7 @@ $nTheta=1; $mTheta=1; $mr=1; $mz=1.;  $rad=1;
 $mPhi=1; $mr=1; 
 $show=""; $flushFrequency=100; 
 $solveri="yale"; $maxiti=2000; $rtoli=1.0e-10; $atoli=1.0e-10; # parameters for implicit time-stepping solver
-GetOptions( "cfl=f"=>\$cfl,"amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"debug=i"=>\$debug,\
+GetOptions( "cfl=f"=>\$cfl,"amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"debug=i"=>\$debug,"nuc=i"=>\$nuc,\
             "tf=f"=>\$tf,"tp=f"=>\$tp,"bc=s"=>\$bc,"dissFreq=i"=>\$dissFreq,"omega=f"=>\$omega,"beta2=f"=>\$beta2,"beta4=f"=>\$beta4,\
             "known=s"=>\$known,"orderInTime=i"=>\$orderInTime,"ts=s"=>\$ts,"dtMax=f"=>\$dtMax,"upwind=i"=>\$upwind,\
             "x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"k0=f"=>\$k0,"beta=f"=>\$beta,"computeErrors=i"=>\$computeErrors,"rad=f"=>\$rad,\
@@ -44,7 +44,7 @@ GetOptions( "cfl=f"=>\$cfl,"amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz
             "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"plotScatteredField=i"=>\$plotScatteredField,\
             "assignInterpNeighbours=s"=>\$assignInterpNeighbours,"checkKnown=s"=>\$checkKnown,"implicitUpwind=i"=>\$implicitUpwind,\
             "debugOges=i"=>\$debugOges,"chooseTimeStepFromExplicitGrids=i"=>\$chooseTimeStepFromExplicitGrids,\
-            "computeEnergy=i"=>\$computeEnergy,"ra=f"=>\$ra,"bcScat=i"=>\$bcScat,"go=s"=>\$go );
+            "computeEnergy=i"=>\$computeEnergy,"ra=f"=>\$ra,"bcScat=i"=>\$bcScat,,"saveMaxErrors=i"=>\$saveMaxErrors,"go=s"=>\$go );
 # 
 #
 if( $bc eq "d" ){ $bc="dirichlet"; }
@@ -53,7 +53,7 @@ if( $bc eq "e" ){ $bc="exact"; }
 # if( $bc eq "e" ){ $bc="evenSymmetry"; }
 if( $bc eq "r" ){ $bc="radiation"; }
 # by default we do NOT set known on boundaries for these solutions:
-if( $setKnownOnBoundaries eq "-1" && ($known eq "diskEig" || $known eq "squareEig" || $known eq "annulusEig" || $known eq "sphereEig") ){ $setKnownOnBoundaries=0; }
+if( $setKnownOnBoundaries eq "-1" && ($known eq "diskEig" || $known eq "squareEig" || $known eq "annulusEig" || $known eq "sphereEig" || $known eq "cylScat" ) ){ $setKnownOnBoundaries=0; }
 if( $setKnownOnBoundaries eq "-1" ){ $setKnownOnBoundaries=1; }
 # if( $known eq "annulusEig" ){ $setKnownOnBoundaries=0; }
 # if( $known eq "sphereEig" ){ $setKnownOnBoundaries=0; }
@@ -66,12 +66,15 @@ tFinal $tf
 tPlot $tp
 cfl $cfl 
 dtMax $dtMax
+numUpwindCorrections $nuc
 debug $debug
 omega $omega
 set known on boundaries $setKnownOnBoundaries
 use known for first step $useKnownFirstStep
 compute errors $computeErrors
 compute energy $computeEnergy
+save max errors $saveMaxErrors
+# pause
 plot scattered field $plotScatteredField
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
@@ -132,7 +135,7 @@ user defined known solution...
   # cylindrical scattering
   #
   if( $bc eq "dirichlet" ){ $bcOption=0; }else{ $bcOption=1; }  # 1=Neumann, 0=Dirichlet
-  if( $known eq "cylScat" ){ $cmd="scattering from a cylinder\n $ra $kx $amp $bcOption"; }
+  if( $known eq "cylScat" ){ $cmd="scattering from a cylinder\n $rad $kx $amp $bcOption"; }
   # OLD WAY:   
   $maxTerms=200;  
   if( $known eq "cylScatOld" ){ $cmd="cylindrical scattering\n $ra $kx $amp $maxTerms $bcOption"; }  

@@ -139,7 +139,6 @@ getErrors( realCompositeGridFunction & u, real t )
   timing(timeForGetError)+= getCPU()-cpu0;
 
   return maxError;
-  
 
 
 }

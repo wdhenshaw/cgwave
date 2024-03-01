@@ -19,6 +19,8 @@ outputHeader()
   const Real & damp                         = dbase.get<Real>("damp");
       
   const int & upwind                        = dbase.get<int>("upwind");
+  const int & numUpwindCorrections          = dbase.get<int>("numUpwindCorrections");
+
   // const real & ad4                          = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
   const int & dissipationFrequency          = dbase.get<int>("dissipationFrequency");
   const int & preComputeUpwindUt             = dbase.get<int>("preComputeUpwindUt");
@@ -170,7 +172,7 @@ outputHeader()
 
 
 
-    fPrintF(file," upwind dissipation is %s, dissipationFrequency=%i\n",(upwind ? "on" : "off"),dissipationFrequency);
+    fPrintF(file," upwind dissipation is %s, numUpwindCorrections=%d, dissipationFrequency=%i\n",(upwind ? "on" : "off"),numUpwindCorrections,dissipationFrequency);
     fPrintF(file," upwind dissipation: preComputeUpwindUt=%i \n"
                  "                     true=precompute Ut in upwind dissipation,\n"
                  "                     false=compute Ut inline in Gauss-Seidel fashion)\n",preComputeUpwindUt);

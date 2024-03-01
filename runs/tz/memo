@@ -4,6 +4,24 @@ set testLCBC = /home/henshw/Dropbox/research/cgwave/bin/testLCBC
 alias testHighDerivatives $wave/bin/testHighDerivatives
 set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDerivatives
 
+
+****************************************************
+****** Wed Feb 21, 2024
+
+START TEST NEW UPWIND CORRECTIONS
+
+cgWave -noplot tz.cmd -g=square32.order2.hdf -orderInTime=4 -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=.1 -ts=implicit -bc=n -bcApproach=cbc -debug=1 -upwind=1 -go=go 
+
+cgWave:FD42u t=1.000e-01 ( 6 steps) dt=1.667e-02 maxErr= 1.73e-14, ||u||= 2.92e+00, cpu= 8.20e-03(s)
+advance: ADD UPWIND DISSIPATION: step=6, upwindCorrectionStep=1,t=1.167e-01 using [prev,cur,next]=[2,0,1]
+advance: ADD UPWIND DISSIPATION: step=7, upwindCorrectionStep=1,t=1.333e-01 using [prev,cur,next]=[0,1,2]
+advance: ADD UPWIND DISSIPATION: step=8, upwindCorrectionStep=1,t=1.500e-01 using [prev,cur,next]=[1,2,0]
+advance: ADD UPWIND DISSIPATION: step=9, upwindCorrectionStep=1,t=1.667e-01 using [prev,cur,next]=[2,0,1]
+advance: ADD UPWIND DISSIPATION: step=10, upwindCorrectionStep=1,t=1.833e-01 using [prev,cur,next]=[0,1,2]
+advance: ADD UPWIND DISSIPATION: step=11, upwindCorrectionStep=1,t=2.000e-01 using [prev,cur,next]=[1,2,0]
+cgWave:FD42u t=2.000e-01 (12 steps) dt=1.667e-02 maxErr= 5.64e-14, ||u||= 3.08e+00, cpu= 1.48e-02(s)
+
+
 ****************************************************
 ****** Mon Jan 15, 2024
 

@@ -730,6 +730,84 @@ extern "C"
   }
 #endMacro
 
+// =======================================================================================
+// ================ADD UPWIND DISSIPATION=================================================
+//  
+//     ----- UPWIND PREDICTOR CORRECTOR (UPC) ----
+// UPC scheme: 
+// Predict: 
+//   (P)  u^{(0)} = 2 u^n - u^{n-1} + dt^2{ c^2 Delta_h( u^n) + ... }      (normal update) 
+//        applyBC( u^{(0)}, t+dt )
+// Correct
+//     for k=1,...
+//        u^{(k)} <-  u^{(k-1)} + dt^2 * Q ( u^{(k-1)} - u^{n-1} )/(2*dt)  ( add upwinding )
+//        applyBC( u^{(k)}, t+dt )  
+//     end
+//     u^{n+1} = u^{(k)} 
+//
+// =======================================================================================
+#beginMacro addUpwindDissipation(step)
+
+  for( int upwindCorrectionStep=1; upwindCorrectionStep<=numUpwindCorrections; upwindCorrectionStep++ )
+  {
+
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    {
+      MappedGrid & mg = cg[grid];
+      const int useUpwindDissipation = upwind;  
+
+      // useUpwindDissipation : true if grid is implicit AND upwind dissipation in ON AND implicitUpwind=1
+      int useImplicitUpwindDissipation=false;
+      if( gridIsImplicit(grid) && upwind && implicitUpwind )
+        useImplicitUpwindDissipation=true;
+
+      if( useUpwindDissipation &&
+             !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added with option=0 below
+             ( (step % dissipationFrequency)==0 ) ||
+             ( (step % dissipationFrequency)==1 ) )
+      {
+        // ---- upwind dissipation ------
+
+
+        OV_GET_SERIAL_ARRAY(real,u[prev][grid],umLocal);
+        OV_GET_SERIAL_ARRAY(real,u[cur ][grid],uLocal);
+        OV_GET_SERIAL_ARRAY(real,u[next][grid],unLocal);
+
+        // const int prev2= (cur-2+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+        // OV_GET_SERIAL_ARRAY(real,u[prev2][grid],umLocal);  // u(t-2*dt)
+        // OV_GET_SERIAL_ARRAY(real,u[prev ][grid],uLocal);   // u(t-dt)
+        // OV_GET_SERIAL_ARRAY(real,u[cur  ][grid],unLocal);  // u(t)
+
+        OV_GET_SERIAL_ARRAY_CONDITIONAL(real,vOld[grid],vOldLocal,solveHelmholtz);
+
+        if( debug & 4 )
+        {
+          printF("advance: ADD UPWIND DISSIPATION: step=%d, upwindCorrectionStep=%d,t=%9.3e using [prev,cur,next]=[%d,%d,%d]\n",
+            step,upwindCorrectionStep,t,prev,cur,next);
+        }
+        
+        int option = 1;    // 0=advance, 1=add dissipation
+        callOptimizedAdvance();
+
+      }
+
+
+      
+    }  // end for grid 
+
+    bool applyExplicitBoundaryConditions=true;
+    applyBoundaryConditions( u[next],u[cur],t, applyExplicitBoundaryConditions );     
+
+  } // end for upwindCorrectionStep
+#endMacro
+
+// ===================================================
+//  Advance the solution  
+// ***OLD VERSION**
+#Include "advanceOld.h"
+
+
+
 // ================================================================================================
 /// \brief Advance the solution 
 /// This is the main advance routine for cgWave.
@@ -761,6 +839,7 @@ advance( int it )
   Real & dampSave                   = dbase.get<Real>("dampSave"); 
 
   const int & upwind                = dbase.get<int>("upwind");
+  const int & numUpwindCorrections  = dbase.get<int>("numUpwindCorrections");
   const int & implicitUpwind        = dbase.get<int>("implicitUpwind");
 
   const int & dissipationFrequency  = dbase.get<int>("dissipationFrequency");
@@ -1094,12 +1173,6 @@ advance( int it )
 
         MappedGrid & mg = cg[grid];
         
-        // realArray & upg = up[grid];  // previous 
-        // realArray & ucg = uc[grid];  // current 
-        // realArray & ung = un[grid];  // next 
-        // realArray & vg = v[grid];
-            
-  
         if( debug & 16 )
         {
           ::display(u[prev][grid],sPrintF("BEFORE: u=prev grid=%d t-dt=%9.3e",grid,t-dt),debugFile,"%11.3e ");
@@ -1107,77 +1180,12 @@ advance( int it )
         }
   
        const int useUpwindDissipation = upwind;  
-       // const int useUpwindDissipation = ad4>0.;  // ** OLD **
-  
-       // useUpwindDissipation : true if grid is implicit AND upwind dissipation in ON AND implicitUpwind=1
+
        int useImplicitUpwindDissipation=false;
        if( gridIsImplicit(grid) && upwind && implicitUpwind )
          useImplicitUpwindDissipation=true;
   
-  
-        //     ----- UPWIND PREDICTOR CORRECTOR (UPC) ----
-        // UPC scheme: 
-        // Predict: 
-        //   (P)  u^p = 2 u^n - u^{n-1} + dt^2{ c^2 Delta_h( u^n) + ... }      (normal update) 
-        //        applyBC( u^p, t+dt )
-        // Correct
-        //   (C)  u^{n+1} = u^p + dt^2 * [ cupx*(D+xD-x)^q + cupy*(D+yD-y)^q ] ( u^p - u^{n-1} )/(2*dt)  ( add upwinding )
-        //        applyBC( u^{n+1}, t+dt )
-        // 
-        // NOTE: To avoid an extra application of the BC's after (C) we instead delay stage (C) to the BEGINNING of the next step,
-        // and actualy do step (C) FIRST on the current solution u^n:
-        //   (C)  u^{n}  <-  u^{n} +  dt^2 * [ cupx*(D+xD-x)^q + cupy*(D+yD-y)^q ] ( u^n - u^{n-2} )/(2*dt)  ( add upwinding to u^n )
-        //         Skip BC routine since doesn't appear to be necessary.
-        //   (P)  u^{n+1} = 2 u^n - u^{n-1} + dt^2{ Stuff }                                            (normal update for u^{n+1}) 
-        //         applyBC( u^{n+1}, t+dt )
-        // 
-        // Note: We need step>0 below since we need 3 levels of the solution to apply the upwind dissipation.
-        // Note: Add upwinding at least 2 steps in a row 
-        // bool startUpwinding = (takeForwardInitialStep && step>1) || (!takeForwardInitialStep && step>0); 
-        bool startUpwinding = step>1;
-        if( startUpwinding && useUpwindDissipation &&
-               !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added with option=0 below
-               ( (step % dissipationFrequency)==0 ) ||
-               ( (step % dissipationFrequency)==1 ) )
-        {
-          // ---- upwind dissipation ------
-  
-          const int prev2= (cur-2+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
-  
-          OV_GET_SERIAL_ARRAY(real,u[prev2][grid],umLocal);  // u(t-2*dt)
-          OV_GET_SERIAL_ARRAY(real,u[prev ][grid],uLocal);   // u(t-dt)
-          OV_GET_SERIAL_ARRAY(real,u[cur  ][grid],unLocal);  // u(t)
 
-          OV_GET_SERIAL_ARRAY_CONDITIONAL(real,vOld[grid],vOldLocal,solveHelmholtz);
-  
-          if( debug & 4 )
-          {
-            printF("advance: ADD DISSIPATION: step=%d, t=%9.3e using [prev2,prev,cur]=[%d,%d,%d]\n",step,t,prev2,prev,cur);
-          }
-          int option = 1;    // 0=advance, 1=add dissipation
-          callOptimizedAdvance();
-  
-          // --- THIS NEXT SECTION IS NOT CORRECT SINCE applyBC does **ALL** grids  **FIX ME**
-          if( FALSE ) // ** TURN THIS OFF June 13, 2023  **CHECK ME**
-          {
-            if( TRUE )  // turned on for cic order 8 -- byt may just need to avoid extrapolating last ghost point ++++++++++++++++++++++ FIX
-            {
-              // testing: apply BC's after dissipation is added
-
-              applyBoundaryConditions( u[cur],u[prev],t);  // 
-            }   
-            else
-            {
-              u[cur].periodicUpdate(); // *wdh* Aug 14, 2021 -- this may be needed 
-            } 
-          }
-          else
-          {
-            u[cur][grid].periodicUpdate();  // this may be needed?
-          }   
-        }
-
-  
         // -- optimized advance ---
         OV_GET_SERIAL_ARRAY(real,u[prev][grid],umLocal);
         OV_GET_SERIAL_ARRAY(real,u[cur ][grid],uLocal);
@@ -1238,6 +1246,12 @@ advance( int it )
         else
           printF(" advance: do NOT Apply explicitBCs after implicit solve ############################################################ TEMP \n");
       }
+
+      // --------------------------------
+      // ---- ADD upwind dissipation ----
+      // --------------------------------
+      addUpwindDissipation(step);  
+
   
       if( debug & 16 )
       {

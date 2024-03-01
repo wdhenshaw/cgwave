@@ -1,5 +1,5 @@
 #include "CgWave.h"
-#include "CompositeGridOperators.h";    
+#include "CompositeGridOperators.h"   
 #include "ParallelUtility.h"
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )

@@ -115,6 +115,9 @@ int adjustSolutionForSuperGrid( realCompositeGridFunction & q, Real superGridLay
 // advance the solution 
 int advance( int it );
 
+// advance the solution -- old version --
+int advanceOld( int it );
+
 int applyBoundaryConditions( realCompositeGridFunction & u,  realCompositeGridFunction & un,  real t, 
                              bool applyExplicitBoundaryConditions = false,
                              bool fillImplicitBoundaryConditions = false );
@@ -281,6 +284,7 @@ int userDefinedForcing( realArray & f, int iparam[], real rparam[] );
     timeForInterpolate,
     timeForUpdateGhostBoundaries,
     timeForForcing,
+    timeForUserDefinedKnownSolution,
     timeForTimeIntegral,
     timeForGetError,
     timeForPlotting,
