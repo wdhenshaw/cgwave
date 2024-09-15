@@ -602,6 +602,10 @@ takeFirstStepHelmholtz( int cur, real t )
     printF("+++++++++++++ takeFirstStepHelmholtz: do NOT use periodic first step ++++++++++++\n");
   }
 
+  if( ( computeEigenmodes || numberOfFrequencies>1 ) && timeSteppingMethod == implicitTimeStepping )
+  {
+    usePeriodicFirstStep=true; // *wdh* Sept 15, 2024 -- keep this for implicit time-stepping -- otherwise we need an implicit first step!!
+  }
 
 
   // const int & solveHelmholtz = dbase.get<int>("solveHelmholtz");

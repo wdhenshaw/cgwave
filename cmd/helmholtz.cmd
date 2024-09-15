@@ -3,7 +3,7 @@
 # 
 #        cgWave gridName -cmd=helmholtz.cmd -kx= -ky= -kz = -bc=[d|n|e|r] -bcApproach=[cbc|lcbc|oneSided]
 #
-$ad4=0; $debug=3;
+$ad4=0; $debug=0;
 $tf=-1.; # adjusted below if not set
 $tp=.1; $bc="d"; $go="halt"; 
 $omega=2;  $kx=1.0; $ky=1; $kz=1; $solveHelmholtz=0; $computeTimeIntegral=0;

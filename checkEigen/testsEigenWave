@@ -20,7 +20,7 @@ eigenWave.check
 # Here is a list of commands to run for tests
 #
 # Square, implicit time-stepping, order=2
-square64.check ../runsWaveHoltz/eig/eig.cmd -g=square64.order2 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=100000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=grids/square64EigsEv20.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=10 -numEigs=12 -eigenSolver=default -go=k
+square64.check ../runsWaveHoltz/eig/eig.cmd -g=square64.order2 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=100000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=grids/square64O2EigsEv64.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=10 -numEigs=12 -eigenSolver=default -go=k
 #
 # Square, implicit, order=4
 square32.order4.check ../runsWaveHoltz/eig/eig.cmd -g=square32.order4 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -eigenVectorFile=grids/square32O4EigsEv64.show -computeEigs=1 -eigenSolver=default -minStepsPerPeriod=10 -freq=8 -numEigs=8 -numPeriods=1 -go=k

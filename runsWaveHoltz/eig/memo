@@ -1,5 +1,112 @@
 
 
+
+**************************************
+****** Sun Sept 15, 2024
+
+CAN WE USE THESE FOR DEFLATION ??
+
+SOEMTHING HAS BROKEN: ... takeFirstStep 
+cgwh -noplot eig.cmd -g=sice4.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG4O2Freq10 -eigenVectorFile=/home/henshw/runs/eig/sice4O2EigsEv256.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -freq=10 -numEigs=42 -go=k
+
+TAKE FIRST STEP PERIODIC:
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=2, grid=sice4
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=10000.00, dt=6.283e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=1690, aveItsPerImplicitSolve=  0.0
+ implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+ implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+ tol= 1.00e-12, number of wave-solves (mat-vecs) = 169, cpu= 1.37e+00(s)
+ num eigs requested=42, number eigs converged =43, numArnoldiVectors=85
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+
+  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res
+ .............................................................................
+  0  7.00859681e+00  [ 9]=7.00859681e+00   2  4.06e-15  2.78e-14  3.22e-13
+  1  7.00859681e+00  [ 9]=7.00859681e+00   2  4.56e-15  5.50e-14  3.70e-13
+  2  7.57965357e+00  [10]=7.57965357e+00   2  6.21e-15  4.84e-14  2.74e-13
+  3  7.57973253e+00  [11]=7.57973253e+00   2  2.34e-15  6.20e-14  3.12e-13
+  4  8.40359267e+00  [12]=8.40359267e+00   1  2.54e-15  1.61e-12  2.69e-13
+
+
+
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=2, grid=sice4
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=10000.00, dt=6.283e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=11830, aveItsPerImplicitSolve=  0.0
+ implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+ implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+ tol= 1.00e-12, number of wave-solves (mat-vecs) = 1183, cpu= 9.49e+00(s)
+ num eigs requested=42, number eigs converged =42, numArnoldiVectors=85
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+
+  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res
+ .............................................................................
+  0  1.12647928e+02  [284]=3.39976098e+01   2  2.31e+00  1.00e+00  1.19e-14
+  1  1.12689779e+02  [284]=3.39976098e+01   2  2.31e+00  1.00e+00  4.88e-13
+  2  1.12689779e+02  [284]=3.39976098e+01   2  2.31e+00  1.00e+00  6.85e-13
+  3  1.12721205e+02  [284]=3.39976098e+01   2  2.32e+00  1.00e+00  1.17e-14
+  4  1.12722933e+02  [284]=3.39976098e+01   2  2.32e+00  9.99e-01  1.37e-14
+
+
+
+
+
+cgwh -noplot eig.cmd -g=square32.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigenSolver=default -matlab=junk -minStepsPerPeriod=10 -freq=5 -numEigs=64 -numPeriods=1 -show=square32O2Ev64.show -go=ks 
+
+
+cgwh -noplot eig.cmd -g=square64.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100  -numPeriods=1 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigenSolver=default -matlab=junk -minStepsPerPeriod=10 -freq=12 -numEigs=16 -numPeriods=1 -show=square32O2Ev16.show -go=og 
+
+
+cgwh -noplot eig.cmd -g=square128.order4 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -eigenVectorFile=/home/henshw/runs/eig/square128O4EigsEv512.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigenSolver=default -matlab=square128ImpEig -minStepsPerPeriod=10 -freq=35 -numEigs=12 -numPeriods=8 -go=k
+
+OK -- *bug* fixed
+cgwh -noplot eig.cmd -g=square64.order4.ng3 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -eigenVectorFile=/home/henshw/runs/eig/square64O4EigsEv256.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -eigenSolver=default -matlab=square64ImpEig -minStepsPerPeriod=10 -freq=20 -numEigs=64 -numPeriods=16 -go=og
+
+
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  2.0000e+01, orderOfAccuracy=4, grid=square64
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=1000.00, dt=3.142e-02, minStepsPerPeriod=10, Np=16, numberOfStepsPerSolve=160, 
+  totalTimeStepsStaken=46560, aveItsPerImplicitSolve=  0.0
+ implict solver=yale, solver=[direct sparse solver, no pivoting + ]
+ implicit solver: rtol= 1.00e-06, atol= 1.00e-05
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 291, cpu= 3.03e+01(s)
+ num eigs requested=64, number eigs converged =70, numArnoldiVectors=129
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+
+  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res
+ .............................................................................
+  0  4.44288288e+00  [ 0]=4.44288288e+00   1  4.44e-14  9.19e-14  7.05e-12
+  1  7.02481349e+00  [ 1]=7.02481349e+00   2  1.52e-14  5.71e-14  1.18e-12
+  2  7.02481349e+00  [ 1]=7.02481349e+00   2  1.13e-14  4.68e-14  2.18e-12
+  3  9.93457821e+00  [ 4]=9.93457821e+00   2  7.33e-15  2.52e-13  2.92e-12
+  4  9.93457821e+00  [ 4]=9.93457821e+00   2  5.72e-15  1.27e-13  2.16e-12
+  5  1.13271638e+01  [ 6]=1.13271638e+01   2  2.67e-15  1.98e-13  1.82e-12
+  6  1.13271638e+01  [ 6]=1.13271638e+01   2  2.35e-15  1.91e-13  2.40e-12
+  7  1.40495878e+01  [11]=1.40495878e+01   2  2.28e-15  1.95e-13  1.34e-12
+  8  1.40495878e+01  [11]=1.40495878e+01   2  7.59e-16  5.76e-14  3.98e-13
+  9  1.60189001e+01  [15]=1.60189001e+01   2  4.88e-15  5.58e-14  2.35e-13
+ 10  1.60189001e+01  [15]=1.60189001e+01   2  1.33e-15  7.65e-14  2.18e-13
+
+
+
+
+
 **************************************
 ****** Mon Sept 2, 2024
 

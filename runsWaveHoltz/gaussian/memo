@@ -2,6 +2,22 @@
 ***************************************************
 ****** Wed Sept 11, 2024
 
+ADD CHECK FOR AGMRES
+cgwh -noplot gaussian.cmd -g=square32.order4.ng3 -x0=0.5 -y0=0.45 -nf=1 -amp=20 -beta=10 -adjustOmega=1 -ts=implicit  -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -cfl=10000 -eigenVectorFile=/home/henshw/runs/eig/square32O4Ev64.show -matlab=junk -deflateWaveHoltz=1 -numToDeflate=8 -freq=5 -go=da
+
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=9.397e-12.
+solveHelmholtz: max-res=9.397e-12 (Augmented-GMRES, numIts=8, CR= 0.04 deflate=14)
+solveHelmholtz: rel-max-diff=1.42e-13, |v|_max= 4.15e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+cgwh -noplot gaussian.cmd -g=square32.order2 -x0=0.5 -y0=0.45 -nf=1 -amp=20 -beta=10 -adjustOmega=1 -ts=implicit  -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -cfl=10000 -eigenVectorFile=/home/henshw/runs/eig/square32O2Ev64.show -matlab=junk -deflateWaveHoltz=1 -numToDeflate=2 -freq=5 -go=da
+
+
+
+***************************************************
+****** Wed Sept 11, 2024
+
 CHANGED AugementedGmres -- don't count iterations if we don't used a mat-vect
 
 KNIFE EDGE -- OK
