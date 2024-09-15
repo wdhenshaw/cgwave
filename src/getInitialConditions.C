@@ -26,7 +26,8 @@ getInitialConditions( int current, real t, bool getTimeDerivative /* = false */ 
 
   // const int myid=Communication_Manager::My_Process_Number;
 
-  real & dt = dbase.get<real>("dt");
+  real & dt         = dbase.get<real>("dt");
+  const int & debug = dbase.get<int>("debug");
 
   
   // enum InitialConditionOptionEnum
@@ -50,10 +51,12 @@ getInitialConditions( int current, real t, bool getTimeDerivative /* = false */ 
   realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
   real & c         = dbase.get<real>("c");
 
-  printF("++++++++++++ getInitialConditions current=%d, t=%9.3e, dt=%9.3e ++++++++++++++ \n",current,t,dt);
-  printF("++++++ getTimeDerivative=%d, initialConditionOption=%d ++++++\n",
-        (int)getTimeDerivative, (int)initialConditionOption);
-
+  if( debug & 4 )
+  {
+    printF("++++++++++++ getInitialConditions current=%d, t=%9.3e, dt=%9.3e ++++++++++++++ \n",current,t,dt);
+    printF("++++++ getTimeDerivative=%d, initialConditionOption=%d ++++++\n",
+          (int)getTimeDerivative, (int)initialConditionOption);
+  }
   // Remove these: *wdh* Oct 31, 2021
   // real & beta = dbase.get<real>("beta");
   // real & x0   = dbase.get<real>("x0");
@@ -244,7 +247,7 @@ getInitialConditions( int current, real t, bool getTimeDerivative /* = false */ 
   }
 
 
-  printF("CgWave: done initial conditions\n");
+  // printF("CgWave: done initial conditions\n");
   timing(timeForInitialConditions) += getCPU()- cpu0;
 }
 

@@ -219,11 +219,11 @@ int CgWaveHoltz::outputEigenTable()
     printF(" ------------------------- EigenWave SUMMARY ---------------------------------\n");
     printF(" omega=%12.4e, orderOfAccuracy=%d, grid=%s\n",omega,orderOfAccuracy,(const char*)gridNameNoPrefix);
     aString eigenSolverName = (eigenSolver==CgWave::defaultEigenSolver     ? "KrylovSchur" :
-                                                                eigenSolver==CgWave::KrylovSchurEigenSolver ? "KrylovSchur" :
-                                                                eigenSolver==CgWave::ArnoldiEigenSolver     ? "Arnoldi" : 
-                                                                eigenSolver==CgWave::ArpackEigenSolver      ? "Arpack" : 
-                                                                eigenSolver==CgWave::fixedPointEigenSolver  ? "fixedPoint" : 
-                                                                "unknown" );
+                                                          eigenSolver==CgWave::KrylovSchurEigenSolver ? "KrylovSchur" :
+                                                          eigenSolver==CgWave::ArnoldiEigenSolver     ? "Arnoldi" : 
+                                                          eigenSolver==CgWave::ArpackEigenSolver      ? "Arpack" : 
+                                                          eigenSolver==CgWave::fixedPointEigenSolver  ? "fixedPoint" : 
+                                                          "unknown" );
     aString eigenSolverNameLong = eigenSolverName; 
     if( eigenSolver !=CgWave::fixedPointEigenSolver )
     {
@@ -285,6 +285,11 @@ int CgWaveHoltz::outputEigenTable()
   // eigenValuesSorted = eigenValues;
   // sortArray( eigenValuesSorted, iperm );
 
+
+    bool saveErrors=false;
+    RealArray lambda(numEigenVectors), lambdaTrue(numEigenVectors), relErrEigenvalue(numEigenVectors), relErrEigenvector(numEigenVectors);
+    
+
     RealArray eigenPairResidual(numEigenVectors);
     for( int ie=0; ie<numEigenVectors; ie++ ) 
     {
@@ -292,13 +297,10 @@ int CgWaveHoltz::outputEigenTable()
 
         Real lamRQ = eigenValues(ie);
         eigenPairResidual(ie) = cgWave.getEigenPairResidual( lamRQ, eigenVector, res, ie );
+        lambda(ie) = lamRQ;  // may be over-written below 
 
     // printF(" i=%d: lamRQ = %16.10e,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 = %9.2e\n",ie,lamRQ,eigenPairResidual(ie));
     }
-
-    bool saveErrors=false;
-    RealArray lambda(numEigenVectors), lambdaTrue(numEigenVectors), relErrEigenvalue(numEigenVectors), relErrEigenvector(numEigenVectors);
-    
 
     if( cgWave.dbase.has_key("uev") )
     {
@@ -342,8 +344,8 @@ int CgWaveHoltz::outputEigenTable()
         }
 
         printF("\n");
-        printf("  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res\n");
-        printf(" .............................................................................\n");
+        printF("  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res\n");
+        printF(" .............................................................................\n");
         for( int ie=0; ie<numEigenVectors; ie++ )
         {
       // int ie = iperm(je);    // sorted order
@@ -397,9 +399,9 @@ int CgWaveHoltz::outputEigenTable()
                     "\\begin{table}[hbt]\n"
                     "\\begin{center}\\tableFontSize\n"
                     "\\begin{tabular}{|c|r|r|c|c|c|c|c|} \\hline\n"
-                    " \\multicolumn{8}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $N_p=%d$, %s } \\\\ \\hline \n"
+                    " \\multicolumn{8}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
                     "   $j$  & \\multicolumn{1}{c|}{$\\lambda_j$} &  \\multicolumn{1}{c|}{$\\lambda_{\\rm true}$}  & eig &  mult &  eig-err & evect-err & eig-res  \\\\ \\hline\n",
-                    (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, numPeriods, (const char*)eigenSolverName );
+                    (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
         for( int ie=0; ie<numEigenVectors; ie++ )
         {
             fPrintF(output," %3d   & %10.6f & %10.6f &  %4d & %4d  & %9.2e & %9.2e & %9.2e \\\\ \n",
@@ -410,10 +412,10 @@ int CgWaveHoltz::outputEigenTable()
                     " \\hline \n"
                     "\\end{tabular}\n"
                     "\\end{center}\n"
-                    "\\caption{grid=%s, method=%s, ts=%s, order=%d, $N_p=%d$.}\n"
+                    "\\caption{grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
                     "\\label{tab:%sOrder%d}\n"
                     "\\end{table}\n", (const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, 
-                    orderOfAccuracy, numPeriods, (const char*)gridNameNoPrefix,orderOfAccuracy );
+                    orderOfAccuracy, omega, numPeriods, (const char*)gridNameNoPrefix,orderOfAccuracy );
 
         fPrintF(output,"}%% end of LongTable for %s\n",(const char*)gridNameNoPrefix);
 
@@ -440,10 +442,10 @@ int CgWaveHoltz::outputEigenTable()
                   "\\begin{table}[hbt]\n"
                     "\\begin{center}\\tableFontSize\n"
                     "\\begin{tabular}{|c|c|c|c|c|c|c|c|} \\hline\n"
-                    " \\multicolumn{8}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $N_p=%d$, %s } \\\\ \\hline \n"
+                    " \\multicolumn{8}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
                     "   num   &  wave       & time-steps  & wave-solves &  time-steps &   max      &  max      &  max       \\\\ \n"
                     "   eigs  &  solves     & per period  &  per eig    &  per-eig    &   eig-err  & evect-err & eig-res    \\\\ \n \\hline\n",
-                      (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, numPeriods, (const char*)eigenSolverName );
+                      (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
         fPrintF(output,"    %d    &       %d     &      %d     &    %3.1f    &     %d     & %9.2e & % 9.2e & %9.2e \\\\\n",
                   numEigenVectors,
                   numberOfMatrixVectorMultiplications,
@@ -458,11 +460,82 @@ int CgWaveHoltz::outputEigenTable()
                     " \\hline \n"
                     "\\end{tabular}\n"
                     "\\end{center}\n"
-                    "\\caption{EigenWave: grid=%s, method=%s, ts=%s, order=%d, $N_p=%d$.}\n"
+                    "\\vspace*{-1\\baselineskip}\n"
+                    "\\caption{EigenWave: grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
                     "\\label{tab:%sOrder%dSummary}\n"
                     "\\end{table}\n",(const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, orderOfAccuracy, 
-                    numPeriods,(const char*)gridNameNoPrefix,orderOfAccuracy );    
+                    omega, numPeriods,(const char*)gridNameNoPrefix,orderOfAccuracy );    
         fPrintF(output,"}%% end of summary table for %s\n",(const char*)gridNameNoPrefix);
+
+    }
+    else
+    {
+    // ------------ just save residuals in the table ---------
+
+        fPrintF(output,"\\newcommand{\\eigenWaveLongTable}{%% start of LongTable for %s\n",(const char*)gridNameNoPrefix);
+        fPrintF(output,
+                    "\\begin{table}[hbt]\n"
+                    "\\begin{center}\\tableFontSize\n"
+                    "\\begin{tabular}{|c|r|c|} \\hline\n"
+                    " \\multicolumn{3}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
+                    "   $j$  & \\multicolumn{1}{c|}{$\\lambda_j$} &  eig-res  \\\\ \\hline\n",
+                    (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
+        for( int ie=0; ie<numEigenVectors; ie++ )
+        {
+      // fPrintF(output," %3d   & %10.6f & %10.6f &  %4d & %4d  & %9.2e & %9.2e & %9.2e \\\\ \n",
+      //           ie,lambda(ie),lambdaTrue(ie),eigIndex(ie),eigMultiplicity(eigIndex(ie)), relErrEigenvalue(ie), relErrEigenvector(ie),eigenPairResidual(ie));
+            fPrintF(output," %4d & %10.6f  & %9.2e \\\\ \n",
+                                ie,lambda(ie),eigenPairResidual(ie));      
+        }
+
+        fPrintF(output,
+                    " \\hline \n"
+                    "\\end{tabular}\n"
+                    "\\end{center}\n"
+                    "\\caption{grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
+                    "\\label{tab:%sOrder%d}\n"
+                    "\\end{table}\n", (const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, 
+                    orderOfAccuracy, omega, numPeriods, (const char*)gridNameNoPrefix,orderOfAccuracy );
+
+        fPrintF(output,"}%% end of LongTable for %s\n",(const char*)gridNameNoPrefix);
+
+    // -----------------------------------------------
+    // ---------------- summary table ----------------
+    // -----------------------------------------------
+
+        fPrintF(output,"\n");
+
+        const Real waveSolvesPerEig = 1.*numberOfMatrixVectorMultiplications/numEigenVectors;
+        fPrintF(output,"\\newcommand{\\eigenWaveSummaryTable}{%% start of summary table for %s\n",(const char*)gridNameNoPrefix);
+        fPrintF(output,
+                  "\\begin{table}[hbt]\n"
+                    "\\begin{center}\\tableFontSize\n"
+                    "\\begin{tabular}{|c|c|c|c|c|c|} \\hline\n"
+                    " \\multicolumn{6}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
+                    "   num   &  wave       & time-steps  & wave-solves &  time-steps  &  max       \\\\ \n"
+                    "   eigs  &  solves     & per period  &  per eig    &  per-eig     & eig-res    \\\\ \n \\hline\n",
+                      (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
+        fPrintF(output,"    %d   &   %d    &      %d     &    %3.1f    &     %d     &  %9.2e \\\\\n",
+                  numEigenVectors,
+                  numberOfMatrixVectorMultiplications,
+                  minStepsPerPeriod,
+                  waveSolvesPerEig,
+                  (int)round(numberOfStepsTaken/numEigenVectors),
+                  maxEigResid
+                  );
+
+        fPrintF(output,
+                    " \\hline \n"
+                    "\\end{tabular}\n"
+                    "\\end{center}\n"
+                    "\\vspace*{-1\\baselineskip}\n"
+                    "\\caption{EigenWave: grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
+                    "\\label{tab:%sOrder%dSummary}\n"
+                    "\\end{table}\n",(const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, orderOfAccuracy, 
+                    omega, numPeriods,(const char*)gridNameNoPrefix,orderOfAccuracy );    
+        fPrintF(output,"}%% end of summary table for %s\n",(const char*)gridNameNoPrefix);
+
+
 
     }
     fclose(output);

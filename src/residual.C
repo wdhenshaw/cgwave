@@ -126,7 +126,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
 
     if( omegaCgWave!=omega )
     {
-        printF("\n @@@@@@@ CgWaveHoltz::residual WARNING: omega=%g is NOT EQUAL TO frequencyArray(0)=%g @@@@@@@\n\n",omegaCgWave,omega);
+        printF("\n @@@@@@@ CgWaveHoltz::residual WARNING: omega (cgWave) =%g is NOT EQUAL TO frequencyArray(0)=%g @@@@@@@\n\n",omegaCgWave,omega);
     }
 
   // Symbol of D+t D-t : 
@@ -232,7 +232,11 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
             OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
             OV_GET_SERIAL_ARRAY(real,res[grid],resLocal);
 
+            v[grid].updateGhostBoundaries(); // ** TEST ** Jul 23, 2204
+
                 bool useOriginalMetrics = useSuperGrid && superGrid(grid) && !isRectangular;
+                if( !useOriginalMetrics )
+                    mg.update(MappedGrid::THEinverseVertexDerivative);
         // OV_GET_SERIAL_ARRAY_CONDITIONAL(Real,mg.inverseVertexDerivative(),rsxyLocal2,!useOriginalMetrics);
                 OV_GET_SERIAL_ARRAY_CONDITIONAL(Real,mg.inverseVertexDerivative(),rsxyLocalNew,!useOriginalMetrics);
         // if( useSuperGrid && superGrid(grid) )
@@ -294,7 +298,11 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                   if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
                                   {
                                       getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
-                                      resLocal(Ib1,Ib2,Ib3,all)=0.;
+                                      bool okb=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
+                                      if( okb )
+                                      {
+                                          resLocal(Ib1,Ib2,Ib3,all)=0.;
+                                      }
                                   }
                             }              
 
@@ -524,11 +532,15 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
             }
 
             getIndex(mg.dimension(),I1,I2,I3);
-            where( maskLocal(I1,I2,I3) <=0  )   
+            ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,I1,I2,I3);
+            if( ok )
             {
-                for( int ic=0; ic<numberOfComponents; ic++ )
-                    resLocal(I1,I2,I3,ic)=0.;
-            } 
+                where( maskLocal(I1,I2,I3) <=0  )   
+                {
+                    for( int ic=0; ic<numberOfComponents; ic++ )
+                        resLocal(I1,I2,I3,ic)=0.;
+                } 
+            }
             if( true )
             {
         // ::display(resLocal,"resLocal","%7.0e ");
@@ -540,7 +552,10 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                 printF("CgWaveHoltz::residual: grid=%d : maxRes=%9.2e\n",grid,maxRes);
             }      
       // ::display(res[grid],"residual","%8.2e ");
-        }
+
+            res[grid].updateGhostBoundaries();
+
+        } // end for grid
 
         if( useSuperGrid && adjustErrorsForSuperGrid )
         {

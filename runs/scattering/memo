@@ -1,5 +1,16 @@
 
 ****************************************************
+****** Thurs March 7, 2024
+
+MOVIE FOR ALLi
+
+MOVIES 
+
+FD44 : SPIE k0=20 
+cgWave -noplot scat.cmd -g=tipGridThine64.order4.ng3.hdf -kx=1 -ky=0 -tp=.0025 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bc5=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG64O5SPIEk20.show -flushFrequency=50 -go=go > tipGridG64O5SPIEk20.out 
+
+
+****************************************************
 ****** Tues Jan 15, 2024
 
 ###########  Knife edge grid ############

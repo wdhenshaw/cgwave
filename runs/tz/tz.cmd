@@ -14,7 +14,7 @@ $chooseTimeStepFromExplicitGrids=1; # 1=choose dt from explicit grids and cfl un
 $rectangular="implicit"; # for ts=implicit, set rectangular=explicit to treat rectangular grids explicitly
 $beta2=.5; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping 
 $dtMax=1e10; $damp=0; 
-$bc="d"; $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; 
+$bc="d"; $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; $orderOfExtrapolation=-1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $meApproach="std"; # or "ha"
 $useKnownFirstStep=0; $takeImplicitFirstStep=0; 
@@ -31,7 +31,7 @@ GetOptions( "tz=s"=>\$tz,"degreeInSpace=i"=>\$degreeInSpace, "degreeInTime=i"=>\
             "fx=f"=>\$fx,"fy=f"=>\$fy,"fz=f"=>\$fz,"ft=f"=>\$ft,"rectangular=s"=>\$rectangular,"nuc=i"=>\$nuc,\
             "beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,\
             "useKnownFirstStep=i"=>\$useKnownFirstStep,"meApproach=s"=>\$meApproach,"implicitUpwind=i"=>\$implicitUpwind,\
-            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,\
+            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"orderOfExtrapolation=i"=>\$orderOfExtrapolation,\
             "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"debugmg=i"=>\$debugmg,"debugOges=i"=>\$debugOges,\
             "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"damp=f"=>\$damp,"chooseTimeStepFromExplicitGrids=i"=>\$chooseTimeStepFromExplicitGrids,\
             "go=s"=>\$go );
@@ -88,6 +88,7 @@ if( $bc4 ne "" ){ $cmd .="\n bcNumber4=$bc4"; }
 if( $bc5 ne "" ){ $cmd .="\n bcNumber5=$bc5"; }
 if( $bc6 ne "" ){ $cmd .="\n bcNumber6=$bc6"; }
 $cmd
+order of extrapolation $orderOfExtrapolation
 #
 turn on forcing 1
 twilightZoneForcing

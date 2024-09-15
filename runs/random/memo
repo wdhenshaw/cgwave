@@ -1,4 +1,20 @@
 
+****************************************************
+****** Fri June 28, 2024
+
+
+CHECK darkRoom
+
+looks ok:
+cgWave -noplot random.cmd -g=darkCornerRoomGride4.order2.hdf -tf=10000 -tp=100 -ts=implicit -cfl=1000 -bc=d -bcApproach=cbc -assignInterpNeighbours=interp -computeEnergy=1 -go=go
+
+
+looks ok:
+cgWave -noplot random.cmd -g=darkCornerRoomGride4.order2.hdf -tf=10000 -tp=100 -ts=implicit -cfl=100 -bc=d -bcApproach=cbc -assignInterpNeighbours=interp -computeEnergy=1 -go=go
+
+looks ok
+cgWave -noplot random.cmd -g=darkCornerRoomGride4.order2.hdf -tf=10000 -tp=100 -ts=implicit -cfl=100 -bc=d -computeEnergy=1 -go=go
+
 
 ****************************************************
 ****** Fri Jan 5, 2024

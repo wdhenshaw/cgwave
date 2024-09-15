@@ -105,21 +105,22 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
 
     
     Index I1,I2,I3;
-    getIndex( mg.dimension(),I1,I2,I3 );          // all points including ghost points.
+    getIndex( mg.dimension(),I1,I2,I3 );          // all points including ghost points. ****WHY??? 
   // getIndex( mg.gridIndexRange(),I1,I2,I3 );  // boundary plus interior points.
   // restrict bounds to local processor, include parallel ghost pts:
-    bool ok = ParallelUtility::getLocalArrayBounds(f,fLocal,I1,I2,I3,1);   
+    const int includeParallelGhost=1; 
+    bool ok = ParallelUtility::getLocalArrayBounds(f,fLocal,I1,I2,I3,includeParallelGhost);   
     if( !ok ) return 0;  // no points on this processor (NOTE: no communication should be done after this point)
 
 
     if( option=="gaussianSources" )
     {
-        fLocal=0.;
     
         const IntegerArray & numberOfGaussianSources = db.get<IntegerArray>("numberOfGaussianSources");
         const RealArray & gaussianParameters = db.get<RealArray>("gaussianParameters");
 
     // Add the Gaussian source terms to fLocal
+        fLocal=0.;
         for( int freq=0; freq<numberOfFrequencies; freq++ )
         {
             for( int m=0; m<numberOfGaussianSources(freq); m++ )
@@ -201,6 +202,8 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
     //   printF("userDefinedForcing: eval boxHelmholtz FORCING: Error - omega=%g is not equal to frequencyArray(0)=%g\n",omega,frequencyArray);
     //   OV_ABORT("error");
     // }
+        fLocal=0.;
+
         for( int freq=0; freq<numberOfFrequencies; freq++ )
         {
       // const Real omega = frequencyArray(freq); 
@@ -265,6 +268,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
         if( true || t<= 2.*dt )
             printF("userDefinedForcing: eval polyPeriodic omega=%g, a0=%g, a1=%g, b1=%g, c1=%g at t=%9.3e\n",omega,a0,a1,b1,c1,t);       
         
+        fLocal=0.;
         if( mg.numberOfDimensions()==2 )
         {
             const Real amp = fSign*( -SQR(omega) ); 
@@ -285,6 +289,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
                 fLocal(i1,i2,i3) = ( a0 + a1*x + b1*y + c1*z )*amp;
             }
         }
+
     }  
 
     else
@@ -293,7 +298,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
         OV_ABORT("error");
     }
 
-    return 0;
+        return 0;
 }
 
 

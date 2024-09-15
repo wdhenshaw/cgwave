@@ -105,11 +105,15 @@ if( $forcing eq "sine" ){ \
 $cmd
 #
 exit
+$cmd="#"; 
+if( $go eq "go" ){ $cmd = "solve\nmovie mode\nexit"; }
+if( $go eq "og" ){ $cmd = "open graphics\nsolve"; }
+$cmd
+
 solve
 contour
 exit
-if( $go eq "go" ){ $cmd = "exit"; }else{ $cmd="#"; }
-$cmd
+
 
 
 

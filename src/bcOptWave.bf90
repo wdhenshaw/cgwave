@@ -454,7 +454,8 @@ end do
   end do
 
   ! orderOfExtrapolationForCorners=5
-  orderOfExtrapolationForCorners= orderOfAccuracy+1
+  ! orderOfExtrapolationForCorners= orderOfAccuracy+1 ! *wdh* July 21, 2024
+  orderOfExtrapolationForCorners= orderOfExtrapolation;
 
   iparc(0)=uc
   iparc(1)=uc
@@ -3497,7 +3498,7 @@ subroutine NAME( ARGLIST() )
   integer extra1a,extra1b,extra2a,extra2b,extra3a,extra3b,extram
   integer maxExtrapWidth,extrapWidth
 
-  integer cornerBC(0:2,0:2,0:2), iparc(0:10), orderOfExtrapolationForCorners
+  integer cornerBC(0:2,0:2,0:2), iparc(0:10), orderOfExtrapolationForCorners, orderOfExtrapolation
   real rparc(0:10)
 
   real ca,cEM2,rhs
@@ -3723,6 +3724,7 @@ subroutine NAME( ARGLIST() )
   bcApproach                      = ipar(17)
   numberOfFrequencies             = ipar(18)
   assignCornerGhostPoints         = ipar(19)
+  orderOfExtrapolation            = ipar(20)
  
   t         = rpar( 0)
   dt        = rpar( 1)
@@ -4006,8 +4008,9 @@ subroutine NAME( ARGLIST() )
       !           n1a       n1b
 
       maxExtrapWidth = gridIndexRange(1,axis)-gridIndexRange(0,axis)+1
-      extrapWidth = min(orderOfAccuracy+1,maxExtrapWidth)
-      if( extrapWidth .lt. orderOfAccuracy+1)then
+      ! extrapWidth = min(orderOfAccuracy+1,maxExtrapWidth) ! *wdh* July 21, 2024
+      extrapWidth = min(orderOfExtrapolation,maxExtrapWidth)
+      if( extrapWidth .lt. orderOfExtrapolation )then
         write(*,'("bcOptWave:WARNING: reducing extrapolation width to ",i2," since there are not enough grid points")') extrapWidth
       end if
 
@@ -4272,9 +4275,9 @@ subroutine NAME( ARGLIST() )
 ! ****************************************************************
 
 buildFile(bcOptWave2dOrder2,2,2)
-! buildFile(bcOptWave3dOrder2,3,2)
-! buildFile(bcOptWave2dOrder4,2,4)
-! buildFile(bcOptWave3dOrder4,3,4)
+buildFile(bcOptWave3dOrder2,3,2)
+buildFile(bcOptWave2dOrder4,2,4)
+buildFile(bcOptWave3dOrder4,3,4)
 
 
 ! buildFile(bcOptWave2dOrder4,2,6)

@@ -5,9 +5,11 @@
 #   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2Eigs.show -name=darkCornerRoom3dG1O2Eigs -sol=148 150
 #   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2Eigs.show -name=darkCornerRoom3dG1O2Eigs -sol=74 78
 #   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2EigsEv32.show 
+# G2: 
+#   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG2O2Freq3p5.show -name=darkCornerRoom3dG2O2Eigs -clines=0 -field=abs -sol=2 5 7 11 15 
 #
 $show="pipeG2O2ImpEig.show"; $name="plot"; $field="phi"; $cf=2; 
-$emin=0; $emax=-1; $numFreq=1; $clines=0; 
+$emin=0; $emax=-1; $numFreq=1; $clines=1; 
 $cs=0; 
 $numToSave=1; # save this many components
 @sol= ();  # this must be null for GetOptions to work, defaults are given below
@@ -17,6 +19,9 @@ GetOptions( "show=s"=>\$show, "name=s"=>\$name,"cs=f"=>\$cs,"clines=i"=>\$clines
 #
 $show
 #
+if( $field eq "abs" ){ $cmd="derived types\n absoluteValue\n phi  (off)\n done\n exit\n plot:absphi"; }else{ $cmd="#" }
+$cmd
+#
 DISPLAY AXES:0 0
 contour
   delete contour plane 1
@@ -24,6 +29,7 @@ contour
   add contour plane  0.00000e+00  1.00000e+00  0.00000e+00  .5  .01  0 
   # contour plane near middle
   add contour plane  0.00000e+00  1.00000e+00  0.00000e+00 0 2.5 0.
+  contour lines $clines
   plot the grid
     plot block boundaries 0
     toggle grid 3 0

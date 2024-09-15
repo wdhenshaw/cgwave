@@ -55,6 +55,8 @@ if( $bc eq "r" ){ $bc="radiation"; }
 # by default we do NOT set known on boundaries for these solutions:
 if( $setKnownOnBoundaries eq "-1" && ($known eq "diskEig" || $known eq "squareEig" || $known eq "annulusEig" || $known eq "sphereEig" || $known eq "cylScat" ) ){ $setKnownOnBoundaries=0; }
 if( $setKnownOnBoundaries eq "-1" ){ $setKnownOnBoundaries=1; }
+#
+if( $solveri eq "best" ){ $solveri = "choose best iterative solver"; }
 # if( $known eq "annulusEig" ){ $setKnownOnBoundaries=0; }
 # if( $known eq "sphereEig" ){ $setKnownOnBoundaries=0; }
 # time-stepping: (explicit or implicit)

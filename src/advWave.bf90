@@ -2961,7 +2961,7 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
 
       if( takeImplicitFirstStep.eq.1 )then
         if( orderInTime.eq.2 .or. orderInTime.eq.4 )then
-          write(*,'(" advWave: TAKE IMPLICIT FIRST STEP ")')
+          ! write(*,'(" advWave: TAKE IMPLICIT FIRST STEP ")')
         else
           write(*,'(" advWave: TAKE IMPLICIT FIRST STEP : FINISH ME, orderInTime =",i2)') orderInTime
           stop 468
@@ -3069,10 +3069,10 @@ integer nd, n1a,n1b,n2a,n2b,n3a,n3b,nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,nd4a,nd4b
 
   ! ==== Build separate f90 files for different cases ====
 
-  ! buildFile(advWave2dOrder2r,2,2,rectangular)
-  ! buildFile(advWave3dOrder2r,3,2,rectangular)
-  ! buildFile(advWave2dOrder2c,2,2,curvilinear)
-  ! buildFile(advWave3dOrder2c,3,2,curvilinear)
+  buildFile(advWave2dOrder2r,2,2,rectangular)
+  buildFile(advWave3dOrder2r,3,2,rectangular)
+  buildFile(advWave2dOrder2c,2,2,curvilinear)
+  buildFile(advWave3dOrder2c,3,2,curvilinear)
 
   buildFile(advWave2dOrder4r,2,4,rectangular)
   buildFile(advWave3dOrder4r,3,4,rectangular)

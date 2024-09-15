@@ -314,9 +314,6 @@
 ! --- construct the different files ----
 ! ****************************************************************
 
-! buildFile(bcOptWave3dOrder2,3,2)
-! buildFile(bcOptWave2dOrder4,2,4)
-! buildFile(bcOptWave3dOrder4,3,4)
 
 
 ! buildFile(bcOptWave2dOrder4,2,6)

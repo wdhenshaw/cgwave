@@ -4,10 +4,12 @@
 #     cgwh gaussian.cmd -g=<grid-name> -x0=<f> -y0=<f> -omega=<f> -solver=[none|fixedPoint|krylov] -tol=<f> -tp=<f> ...
 #                         -kx=<f> -ky=<f> -kz=<f> -forcing=[gaussian|sine] -adjustOmega=[0|1] -maxIterations=<>
 #                          -upwind=[0|1] -imode=[0|1] -bcApproach=[cbc|lcbc|oneSided] -go=[go|og|halt]
+#                         -krylovType=[gmres|bicgstab] -gmresRestartLength=<i> -icshow=<s>
 #
 #   -solver=[fixedPoint|krylov] : fixed-point or Krylov 
 #   -imode=1 : do not wait in cgWave
 #   -maxIterations=<>
+#   -icshow : show file for the initial condition
 #
 $go="go"; $forcing="gaussian"; $debug=0; $debugOges=0;
 $omega=30.1; 
@@ -25,36 +27,45 @@ $upwind=0; $implicitUpwind=0;
 $tp=.5; $imode=1; 
 $filterTimeDerivative=0; 
 $solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIterations=100; $adjustOmega=0; 
+$krylovType="gmres"; # [gmres|bicgstab]
+$gmresRestartLength=500; # for WaveHoltz
 $matlab="cgWaveHoltz"; $show="gaussian.show"; 
-$cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1; 
+$icshow=""; # show file for initial condition
+$cfl=.9; $bc="d"; 
+$ts="explicit"; $dtMax=1; $takeImplicitFirstStep=1;
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $orderInTime=-1;  # -1 = use default
 $deflateWaveHoltz=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; 
+$eigTol=1.e-4; # eigenvalue tol for multiplicity 
 $adjustHelmholtzForUpwinding=1; # remove upwinding from Helmholtz solution
-$useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsForSuperGrid=1;
-$solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
-$solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
-$bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; 
+$useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsForSuperGrid=1; $useVariableTolerance=0; 
+$solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50;  $iluh=5; # parameters for direct Helmholtz solver
+$solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; $restarti=20; $ilui=3;# parameters for implicit time-stepping solver
+$bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; $orderOfExtrapolation=-1; 
 #
 GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,"debugOges=i"=>\$debugOges,\
             "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,\
             "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,\
-            "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f{1,}"=>\@amp,"show=s"=>\$show,"debug=i"=>\$debug,\
+            "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f{1,}"=>\@amp,"show=s"=>\$show,"debug=i"=>\$debug,"icshow=s"=>\$icshow,\
             "bcApproach=s"=>\$bcApproach,"upwind=i"=>\$upwind,"beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"implicitUpwind=i"=>\$implicitUpwind,\
             "numberOfFrequencies=i"=>\$numberOfFrequencies,"nf=i"=>\$numberOfFrequencies,"freq=f{1,}"=>\@freq,"superGridWidth=f"=>\$superGridWidth,\
             "solverh=s"=>\$solverh,"rtolh=f"=>\$rtolh,"atolh=f"=>\$atolh,"maxith=i"=>\$maxith,"restart=i"=>\$restart,"iluh=i"=>\$iluh,\
             "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"adjustHelmholtzForUpwinding=i"=>\$adjustHelmholtzForUpwinding,\
             "deflateWaveHoltz=i"=>\$deflateWaveHoltz,"numToDeflate=i"=>\$numToDeflate,"damp=f"=>\$damp,"useSuperGrid=i"=>\$useSuperGrid,\
             "eigenVectorFile=s"=>\$eigenVectorFile,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"filterTimeDerivative=i"=>\$filterTimeDerivative,\
-            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,\
-            "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid );
+            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"orderOfExtrapolation=i"=>\$orderOfExtrapolation,\
+            "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid,"eigTol=f"=>\$eigTol,\
+            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"krylovType=s"=>\$krylovType, "gmresRestartLength=i"=>\$gmresRestartLength,\
+            "restarti=i"=>\$restarti,"ilui=i"=>\$ilui,"useVariableTolerance=i"=>\$useVariableTolerance );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
 if( $bc eq "e" ){ $bc="evenSymmetry"; }
 if( $bc eq "r" ){ $bc="radiation"; }
 if( $bc eq "a" ){ $bc="absorbing"; }
+#
+if( $solveri eq "best" ){ $solveri="choose best iterative solver"; }
 #
 if( $amp[0] eq "" ){ @amp=(1,1,1,1,1,1,1,1,1); }
 if( $beta[0] eq "" ){ @beta=(50,50,50,50,50,50,50,50); }
@@ -69,6 +80,9 @@ $omega = $freq[0];
 ## Gaussian params $beta $x0 $y0 0 (beta,x0,y0,z0)
 omega $omega
 maximum number of iterations $maxIterations 
+use variable tolerance $useVariableTolerance
+krylov type $krylovType
+gmres restart length $gmresRestartLength
 tol $tol 
 filter time derivative $filterTimeDerivative
 number of periods $numPeriods
@@ -78,8 +92,10 @@ frequencies $freq[0] $freq[1] $freq[2] $freq[3] $freq[4] $freq[5] $freq[6] $freq
 matlab filename: $matlab 
 # choose parameters for the direct Helmholtz solver
 direct solver parameters
-  if( $solverh ne "yale" ){ $cmd="choose best iterative solver\n $solverh"; }else{ $cmd="choose best direct solver"; }
-  $cmd
+  if( $solverh eq "best" ){ $solverh="choose best iterative solver"; }
+  $solverh
+  # fillin ratio
+  #   50
   number of incomplete LU levels
     $iluh
   number of GMRES vectors
@@ -105,6 +121,7 @@ exit
 $ts
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
+take implicit first step $takeImplicitFirstStep
 dtMax $dtMax
 implicit weights $beta2 $beta4 $beta6 $beta8
 cfl $cfl
@@ -135,8 +152,8 @@ if( $bc3 ne "" ){ $cmd .="\n bcNumber3=$bc3"; }
 if( $bc4 ne "" ){ $cmd .="\n bcNumber4=$bc4"; }
 if( $bc5 ne "" ){ $cmd .="\n bcNumber5=$bc5"; }
 if( $bc6 ne "" ){ $cmd .="\n bcNumber6=$bc6"; }
-printf('cmd=$cmd\n");')
 $cmd
+order of extrapolation $orderOfExtrapolation
 # pause
 # -- put his here for now:
 omega $freq[0]
@@ -148,49 +165,16 @@ adjust Helmholtz for upwinding $adjustHelmholtzForUpwinding
 deflate WaveHoltz $deflateWaveHoltz
 number to deflate $numToDeflate
 eigenVectorFile $eigenVectorFile
+eig multiplicity tol $eigTol
+# printf("eigTol=$eigTol\n");
+# pause
 min steps per period $minStepsPerPeriod
 # pause
 #
 #
 if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }
 $cmd
-# implicit solver parameters
-#   # NOTE: bcgs = bi-CG stab
-#   if( $solveri ne "yale" ){ $cmd="choose best iterative solver\n $solveri"; }else{ $cmd="choose best direct solver"; }
-#   $cmd
-#   number of incomplete LU levels
-#     3
-#   number of GMRES vectors
-#     20
-#   maximum number of iterations
-#     #
-#     $maxiti
-#   relative tolerance
-#     $rtoli
-#   absolute tolerance
-#     $atoli
-#  # 
-#   multigrid parameters
-#     choose good parameters: 1
-#     residual tolerance $rtoli
-#     absolute tolerance $atoli
-#     # debug
-#     #   1
-#     # show smoothing rates
-#     # Coarse level solver:  
-#     Oges parameters
-#       choose best direct solver
-#       # choose best iterative solver
-#       relative tolerance
-#         1.e-10
-#       absolute tolerance
-#         1.e-10
-#       number of incomplete LU levels
-#       3
-#     exit     
-#   exit
-#   #pause
-# exit
+#
 # artificial dissipation $ad4
 # 
 helmholtzForcing
@@ -225,15 +209,27 @@ exit
 show file $show
 contour
 exit
+$initialCondition = "zero initial condition";
+if( $icshow ne "" ){ $cmd = "initial condition show file $icshow"; $initialCondition="show file initial condition"; }else{ $cmd="#"; }
+$cmd
+#
 if( $solver eq "fixedPoint" ){ $cmd="compute with fixed-point"; }elsif( $solver eq "krylov" ){ $cmd="compute with petsc"; }else{ $cmd="#" }; 
 if( $go eq "go" && $cmd ne "#" ){ $cmd .= "\n exit"; }
-if( $go eq "dk"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\n exit"; }
-if( $go eq "df"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with fixed-point\n exit"; }
-if( $go eq "dks"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\n save to show\n exit"; }
-if( $go eq "fk" ){ $cmd="zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\n exit"; }
-if( $go eq "dfk" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\n exit"; }
-if( $go eq "dfks" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\n save to show\n exit"; }
-if( $go eq "ks"  ){ $cmd="zero initial condition\n compute with krylov\n save to show\n exit"; }
+if( $go eq "og" ){ $cmd = "open graphics"; }
+if( $go eq "dk"  ){ $cmd="solve Helmholtz directly\n $initialCondition\n compute with krylov\n exit"; }
+if( $go eq "df"  ){ $cmd="solve Helmholtz directly\n $initialCondition\n compute with fixed-point\n exit"; }
+if( $go eq "fk" ){ $cmd="$initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n exit"; }
+if( $go eq "dfk" ){ $cmd="solve Helmholtz directly\n $initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n exit"; }
+if( $go eq "dfks" ){ $cmd="solve Helmholtz directly\n $initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n save to show\n exit"; }
+if( $go eq "fks" ){ $cmd="$initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n save to show\n exit"; }
+if( $go eq "ks"  ){ $cmd="$initialCondition\n compute with krylov\n save to show\n exit"; }
+if( $go eq "as"  ){ $cmd="$initialCondition\n use augmented gmres 1\n compute with krylov\n save to show\n exit"; }
+if( $go eq "dks"  ){ $cmd="solve Helmholtz directly\n $initialCondition\n compute with krylov\n save to show\n exit"; }
+if( $go eq "k"  ){ $cmd="$initialCondition\n compute with krylov\n exit"; }
+if( $go eq "d"  ){ $cmd="$initialCondition\n solve Helmholtz directly\n exit"; }
+# also solve with AuGmres
+if( $go eq "dfka" ){ $cmd="solve Helmholtz directly\n $initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n $initialCondition\n use augmented gmres 1\n $initialCondition\n compute with krylov\nexit"; }
+if( $go eq "da" ){ $cmd="solve Helmholtz directly\n $initialCondition\n use augmented gmres 1\n compute with krylov\nexit"; }
 $cmd
 
 

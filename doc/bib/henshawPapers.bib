@@ -26,6 +26,9 @@
 %	A numerical investigation of the interaction between the large and small scale of the two-dimensional {Navier-Stokes} equations.
 %	CAM Report 98-23, Dep. of Math. University of California, Los Angeles.
 
+
+
+
 @TechReport{browning-al-98,
   author = 	 "G. L. Browning and W. D. Henshaw and H.-O. Kreiss",
   title = 	 "A numerical investigation of the interaction between the large and small scale of the two-dimensional {Navier-Stokes} equations",
@@ -68,15 +71,6 @@ abstract = "A high-order finite-difference method solution of the linearized, po
 }
 
 
- % Make this the final article
-@article{AminiAfshar2017,
-   author={Mostafa Amini Afshar and Harry B. Bingham and William D. Henshaw},
-   title = "A stable, high-order finite difference method for estimating the wave resistance of ships",
-   journal=JCP,
-   volume = 312,                     
-   pages = "272--306",                     
-   year = "2016"}
-
 
 @article{Fedoseyev2016,
 author = {A. Fedoseyev and E. J. Kansa and S. Tsynkov and S. Petropavlovskiy and M. Osintcev and U. Shumlak and W. D. Henshaw},
@@ -86,19 +80,181 @@ volume = {1773},
 number = {1},
 pages = {020001},
 year = {2016}
-}                 
+}  
 
+
+% PLACE HOLDER FOR THE overHoltz paper
+@misc{overHoltz2024,
+      title={An Optimal {O(N)} {Helmholtz} Solver for Complex Geometry using {WaveHoltz} and Overset Grids}, 
+      author={Daniel Appel\"o and Jeffrey W. Banks and William D. Henshaw and Donald W. Schwendeman},
+      year={2024},
+      eprint={??},
+      archivePrefix={arXiv},
+      primaryClass={math.NA},
+}
+
+% wimp arxiv 
+@misc{carson2024highorderaccurateimplicitexplicittimestepping,
+      title={High-order Accurate Implicit-Explicit Time-Stepping Schemes for Wave Equations on Overset Grids}, 
+      author={Allison M. Carson and Jeffrey W. Banks and William D. Henshaw and Donald W. Schwendeman},
+      year={2024},
+      eprint={2404.14592},
+      archivePrefix={arXiv},
+      primaryClass={math.NA},
+}
+
+              
+
+
+@article{ZhouAminiAfsharBinghamHShaoenshaw2024,
+title = {Solving for hydroelastic ship response using {Timoshenko} beam modes at forward speed},
+journal = {Ocean Engineering},
+volume = {300},
+pages = {117267},
+year = {2024},
+issn = {0029-8018},
+doi = {https://doi.org/10.1016/j.oceaneng.2024.117267},
+author = {Baoshun Zhou and Mostafa Amini-Afshar and Harry B. Bingham and Yanlin Shao and William D. Henshaw},
+keywords = {Hydroelastic calculations, Ships, Finite difference method, Forward speed, Timoshenko beam, Shear effects},
+abstract = {In this study, we employ a hydroelastic analysis to investigate the motion response of large ship hulls, treating them as either Euler–Bernoulli or Timoshenko beams to consider the influence of shear effects. To enhance clarity, we provide a detailed derivation of the equation of motion within the framework of Timoshenko beams. This work solves forward-speed radiation and diffraction problems for flexible bodies, utilizing linearized potential flow theory including generalized modes. Two common base-flow models, the Neumann-Kelvin and double-body base flows, are included in the solver. The solution is numerically implemented in the high-order finite difference and open-source seakeeping solver Oceanwave3D-seakeeping. The numerical implementation involves the discretization of the geometry using overlapping, boundary-fitted grids, which has been validated by three examples involving a barge and two Wigley hulls. The influence of the Doppler shift due to forward speed on the hydroelastic motion response is also discussed. Through the integration of hydroelastic analysis using potential flow theory and advanced numerical techniques, this work contributes to a deeper understanding of the complex interaction between large ship hulls and waves, offering valuable insights for the maritime industry.}
+}
+
+
+
+@inproceedings{aces2023,
+     title={Efficient Upwind Schemes for Linear and Nonlinear Dispersive {Maxwell}'s Equations on Overset Grids}, 
+      author={Jordan B. Angel and Jeffrey W. Banks and Allison Carson and William D. Henshaw and Qing Xia},
+     booktitle="Proceedings of the 2023 International Applied Computational Electromagnetics Society Symposium (ACES)",
+     note = "(2 pages)",
+     year = 2023
+   }
+
+
+% ism paper
+@article{ism2023,
+   author={Jeffrey W. Banks and William D. Henshaw and Arthur Newell and Donald W. Schwendeman},
+   title = "Fractional-Step Finite Difference Schemes for Incompressible Elasticity on Overset Grids",
+   journal = "J. Comput. Phys.",
+   volume = "488",
+   year = 2023}
+
+@article{ism2022,
+   author={Jeffrey W. Banks and William D. Henshaw and Arthur Newell and Donald W. Schwendeman},
+   title = "Fractional-Step Finite Difference Schemes for Incompressible Elasticity on Overset Grids",
+   journal = JCP,
+   volume = "488",
+   year = 2023}
+
+%% LCBC PAPER in the ArXiv
+      % doi = {10.48550/ARXIV.2111.02915},
+
+@article{lcbc2022,
+   title={Local Compatibility Boundary Conditions for High-Order Accurate Finite-Difference Approximations of {PDE}s}, 
+   author={Nour G. {Al Hassanieh} and Jeffrey W. Banks and William D. Henshaw and Donald W. Schwendeman},
+   journal = SISC,
+   volume = 44,
+   pages = "A3645--A3672",
+   year = "2022"}
+
+@TechReport{lcbc2022arXiv,
+      title={Local Compatibility Boundary Conditions for High-Order Accurate Finite-Difference Approximations of {PDE}s}, 
+      author={Nour G. {Al Hassanieh} and Jeffrey W. Banks and William D. Henshaw and Donald W. Schwendeman},
+      year={2022},
+      publisher = {arXiv},
+      type="preprint",
+      number="arXiv:2111.02915v2"
+}
+% Same as above, keep for backward compatibility
+@TechReport{lcbc2021arXiv,
+      title={Local Compatibility Boundary Conditions for High-Order Accurate Finite-Difference Approximations of {PDE}s}, 
+      author={Nour G. {Al Hassanieh} and Jeffrey W. Banks and William D. Henshaw and Donald W. Schwendeman},
+      year={2022},
+      publisher = {arXiv},
+      type="preprint",
+      number="arXiv:2111.02915v2"
+}
+
+%% MBE paper JCP
+@article{maxwellMLA2022,
+     title={High-order accurate schemes for {M}axwell's equations with nonlinear active media and material interfaces}, 
+      author={Qing Xia and Jeffrey W. Banks and William D. Henshaw and Alexander V. Kildishev and Gregor Kovačič and Ludmila J. Prokopeva and Donald W. Schwendeman},
+      year={2022},
+      volume = {456},
+      journal=JCP,
+      pages = {111051},
+      issn = {0021-9991},
+      doi = {https://doi.org/10.1016/j.jcp.2022.111051},      
+     }
+
+
+
+@inproceedings{acesMLA2021,
+     title={High-order Accurate Schemes for Maxwell-Bloch Equations with Material Interfaces}, 
+      author={Qing Xia and Jeffrey W. Banks and William D. Henshaw and Alexander V. Kildishev and Gregor Kovačič and Ludmila J. Prokopeva and Donald W. Schwendeman},
+     booktitle="Proceedings of the 2021 International Applied Computational Electromagnetics Society Symposium (ACES)",
+     note = "(2 pages)",
+     year = 2021
+   }
+
+@inproceedings{acesBA2021,
+   author={O. Yesilyurt and S. Peana and J.L. Stewart  and L. J. Prokopeva and W.D. Henshaw and A. V. Kildishev}, 
+   title = "Bianisotopic Homogenization for Optically Thick Metasurfaces",
+   booktitle="Proceedings of the 2021 International Applied Computational Electromagnetics Society Symposium (ACES)",
+   note = "(2 pages)",
+   year = 2021
+   }
+
+%% MBE PAPER in the ArXiv
+@misc{maxwellMLA2021arXiv,
+      title={High-order accurate schemes for {M}axwell's equations with nonlinear active media and material interfaces}, 
+      author={Qing Xia and Jeffrey W. Banks and William D. Henshaw and Alexander V. Kildishev and Gregor Kovačič and Ludmila J. Prokopeva and Donald W. Schwendeman},
+      year={2021},
+      eprint={2108.09519},
+      archivePrefix={arXiv},
+      primaryClass={math.NA}
+}
                   
-@article{fins2019,
-   author={Fanlong Meng and Jeffrey W. Banks and William D. Henshaw and Donald W. Schwendeman},
-   title = "Fourth-Order Accurate Fractional-Step IMEX Schemes for the Incompressible Navier-Stokes
-Equations on Moving Overlapping Grids",
-   note = "submitted",                    
-   journal=CMANE,
-   volume = {344},
-   pages = "51--85\citeCount{7}",
-   year = 2019}
+@incollection{ProkopevaHenshawSchwendemanKildishev2020,
+  author = "Ludmila J. Prokopeva and William D. Henshaw and Donald W. Schwendeman and Alexander V. Kildishev",
+  title = "Time domain modeling with the generalized dispersive material model",
+  booktitle = "Nanoantennas and Plasmonics, Modelling, Design and Fabrication",
+  editor    = "Douglas H. Werner and Sawyer D. Campbell and Lei Kang",                    
+  series = "The ACES Series on Computational Numerical Modelling in Electrical Engineering",
+  publisher = "The Institution of Engineering and Technology",
+  pages = "125--152",
+  year = 2020} 
 
+
+% r2p paper: 
+@article{multigridWithNonstandardCoarsening2023,
+   author={Chang Liu and William D. Henshaw},
+   title = {Multigrid with Nonstandard Coarse-level Operators and Coarsening Factors},
+   journal="Journal of Scientific Computing",
+   volume = "94",
+   number = "58",
+   doi = "10.1007/s10915-023-02103-x",
+   pages = "1--27",
+   year = "2023" }
+
+
+
+% ArXiv Version of r2p                   
+@TechReport{multigridWithNonstandardCoarseningArXiv,
+   author={Kamala Liu and William D. Henshaw},
+   title = {Multigrid with Nonstandard Coarsening},
+   type="preprint",
+   number="arXiv:2008.03885",
+   note= "submitted for publication",                    
+   year = 2020}
+
+
+@article{fins2020,
+   author={Fanlong Meng and Jeffrey W. Banks and William D. Henshaw and Donald W. Schwendeman},
+   title = "Fourth-Order Accurate Fractional-Step {IMEX} Schemes for the Incompressible {Navier-Stokes} Equations on Moving Overlapping Grids",
+   journal = {Computer Methods in Applied Mechanics and Engineering},
+   volume = {366},
+   pages = 113040,
+   year = 2020}
 
 % adegdm: -- basic scheme 
 @article{adegdm2019,
@@ -106,7 +262,7 @@ Equations on Moving Overlapping Grids",
    title = "A High-order Accurate Scheme for {M}axwell's Equations with a Generalized Dispersion Model",
    journal=JCP,
    volume = 378,                     
-   pages = "411--444",                     
+   pages = "411--444",
    year = "2019" }
 
 % adegdm: -- basic scheme 
@@ -119,11 +275,31 @@ Equations on Moving Overlapping Grids",
    note= "submitted for publication",                    
    year = 2018}
 
+% bamx -- final version
+@TechReport{bamx2020,
+   author={Derek Olson and D. Ilbert},
+   title = "A Finite-Difference Time-Domain Solver for the Dispersive Bianistropic Maxwell's Equations",
+  institution = "arXiv",
+  type="Preprint",
+   note= "Submitted for publication",                    
+   year = 2020}
+
+
+
 % adegdmi:  -- interfaces final version: 
-@TechReport{adegdmi2020,
+@article{adegdmi2020,
+   author={Jeffrey W. Banks and Benjamin Buckner and  William D. Henshaw and Michael J. Jenkinson and Alexander V. Kildishev and Gregor {Kova\v ci\v c} and Ludmila J. Prokopeva and Donald W. Schwendeman},
+   title = "A High-order Accurate Scheme for {M}axwell's Equations with a Generalized Dispersive Material ({GDM}) Model and Material Interfaces",
+   journal=JCP,
+   volume = 412,                     
+   pages = "109424",
+   year = "2020" }
+   
+@TechReport{adegdmi2020ArXiv,
    author={Benjamin Buckner and Jeffrey W. Banks and William D. Henshaw and Michael J. Jenkinson and and Alexander V. Kildishev and Gregor {Kova\v ci\v c} and Ludmila J. Prokopeva and Donald W. Schwendeman},
    title = "A High-order Accurate Scheme for Maxwell's Equations with a Generalized Dispersive Material (GDM) Model and Material Interfaces",
-   type="Preprint",
+  institution = "arXiv",
+  type="Preprint",
    note= "Submitted for publication",                    
    year = 2020}
 
@@ -170,10 +346,18 @@ Equations on Moving Overlapping Grids",
    year = 2019}
 
 
+@inproceedings{aces2020,
+   author={J. W. Banks and B.B. Buckner and W. D. Henshaw and A. V. Kildishev and G. {Kova\v ci\v c} and L. J. Prokopeva and D. W. Schwendeman}, 
+   title = "A High-order Accurate Scheme for the Dispersive {M}axwell's Equations and Material Interfaces on Overset Grids",
+   booktitle="Proceedings of the 2020 International Applied Computational Electromagnetics Society Symposium (ACES)",
+   note = "(2 pages)",
+   year = 2020
+   }
+
 @inproceedings{aces2019,
    author={J. W. Banks and W. D. Henshaw and A. V. Kildishev and G. {Kova\v ci\v c} and L. J. Prokopeva and D. W. Schwendeman}, 
    title = "Solving {M}axwell's Equations with a Generalized Dispersive Material Model on Overset Grids",
-   booktitle="Proceedings of the 2018 International Applied Computational Electromagnetics Society Symposium (ACES)",
+   booktitle="Proceedings of the 2019 International Applied Computational Electromagnetics Society Symposium (ACES)",
    note = "(2 pages)",
    year = 2019
    }
@@ -216,7 +400,7 @@ Equations on Moving Overlapping Grids",
    year = 2017}
 
 
-% rbinsmp (Part I)  -- JCP: 
+% rbinsmp (Part I)  -- JCP:
 @article{rbinsmp2017,
    author={Jeffrey W. Banks and William D. Henshaw and Donald W. Schwendeman and Qi Tang},
    title = "A stable partitioned {FSI} algorithm for rigid bodies and incompressible flow.
@@ -257,6 +441,18 @@ Equations on Moving Overlapping Grids",
    number="arXiv:??",
    note= "submitted for publication",                    
    year = 2016}
+
+@article{ssmx2023,
+   author={Jordan B. Angel and Jeffrey W. Banks and Allison Carson and William D. Henshaw},
+   title = "Efficient Upwind Finite-Difference Schemes for Wave Equations on Overset Grids",
+   journal=JCP,
+   volume = {45},
+   number = {5},
+   pages = {A2703-A2724},
+   year = {2023},
+   doi = {10.1137/22M1516178},   
+   }
+
 
 @TechReport{ssmx2018,
    author={Jordan Angel and Jeffrey W. Banks and William D. Henshaw},
@@ -714,6 +910,76 @@ Equations on Moving Overlapping Grids",
 
 
 %% ----- Talks ---                   
+
+@misc{aces2020Henshaw,
+   author = "W. D. Henshaw",
+   title = "A High-Order Accurate Scheme for Dispersive Maxwell Equations with Material Interfaces",
+   note = {Talk, 2020 International Applied Computational Electromagnetics Society (ACES) Symposium (virtual) 2020.},
+   year = "2020"}
+
+
+@misc{aces2019Henshaw,
+   author = "W. D. Henshaw",
+   title = "Solving Maxwell's Equations with a Generalized Dispersive Material Model on Overset Grids",
+   note = {Talk, 2019 International Applied Computational Electromagnetics Society (ACES) Symposium, Miami FL, USA April 2019.},
+   year = "2019"}
+                  
+@misc{cse2019Henshaw,
+   author = "W. D. Henshaw",
+   title = "High-order upwind schemes for the dispersive Maxwell equations",
+   note = {Talk, SIAM conference on Computational Science and Engineering, Spokane, Washington, Feb, 2019.},
+   year = "2019"}
+                  
+@misc{icosahom2018Henshaw,
+   author = "W. D. Henshaw",
+   title = "High-order Upwind schemes for Wave Equations on Overlapping Grids",
+   note = {Talk,  International Conference on Spectral and High Order Methods (ICOSAHOM), London, United Kingdom, July, 2018.},
+   year = "2018"}
+                  
+@misc{overset2018Henshaw,
+   author = "W. D. Henshaw",
+   title = "Solving Fluid-Structure Interaction Problems using Overture",
+   note = {Talk ,14th Symposium on Overset Composite Grids and Solution Technology,  University of Maryland, College Park, Maryland, October 1--4, 2018.},
+   year = "2018"}
+                  
+@misc{SDSU2018Henshaw,
+   author = "W. D. Henshaw",
+   title = "Over-coming fluid-structure instabilities for incompressible flows and light bodies",
+   note = {Talk, (invited) San Diego State University,  San Diego, California, April 13, 2018.},
+   year = "2018"}
+                  
+@misc{aces2018Henshaw,
+   author = "W. D. Henshaw",
+   title = "A High-Order Accurate FDTD Scheme for Maxwell's Equations on Overset Grids",
+   note = {Talk, (invited) Applied Computational Electromagnetics Society (ACES) Conference,  Denver Colorado, March 29, 2018.},
+   year = "2018"}
+                  
+@misc{CSU2017Henshaw,
+   author = "W. D. Henshaw",
+   title = "Over-coming fluid-structure instabilities for incompressible flows and light bodies",
+   note = {Talk, (invited)  U. of Colorado, Boulder, invited, Applied Mathematics Colloqium, Sept, 2017.},
+   year = "2017"}
+   
+   
+@misc{PSU2017Henshaw,
+   author = "W. D. Henshaw",
+   title = " Overture and the Cgmx Electromagnetics Solver",
+   note = {Talk,  (invited)  Penn State University, August 2017.},
+   year = "2017"}
+   
+@misc{mit2016Henshaw,
+   author = "W. D. Henshaw",
+   title = "Over-coming fluid-structure instabilities for incompressible flows and light bodies",
+   note = {Talk, (invited) Massachusetts Institute of Technology, Cambridge Massachusetts, September 21, 2016.},
+   year = "2016"}
+
+@misc{overset2016Henshaw,
+   author = "W. D. Henshaw",
+   title = "Recent Developments in PDE Solvers using Overture",
+   note = {Talk, 13th Symposium on Overset Composite Grids and Solution Technology, October 17--20, 2016.},
+   year = "2016"}
+
+
 @misc{njit2015Henshaw,
    author = "W. D. Henshaw",
    title = "Over-coming the fluid-structure added-mass instability for incompressible flows",
@@ -1022,6 +1288,14 @@ Equations on Moving Overlapping Grids",
    type = "Research Report",
    number = "UCRL-MA-134300",
    year = 1999)
+
+@techreport{OgenDocumentation,
+   author = "William D. Henshaw",
+   title = "Ogen: An Overlapping Grid Generator for {O}verture",
+   Institution = "Rensselear Polytechnic Institute",
+   type = "www.OvertureFramework.org"
+   }
+
 
 @techreport(OgenLANL,
    author = "William D. Henshaw",
@@ -1684,8 +1958,6 @@ journal = SISC,
 volume = {28},
 number = {5},
 pages = {1730--1765\citeCount{55}},
-keywords = {Maxwell's equations; overlapping grids; high-order accurate; symmetric finite difference},
-doi = {10.1137/050644379},
 }
 
 @techreport{max2005b,

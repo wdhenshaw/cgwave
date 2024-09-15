@@ -6,6 +6,43 @@ set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDeriv
 
 
 ****************************************************
+****** Sun July 21, 2024
+
+DARK CORNER ROOM
+
+cgWave -noplot tz.cmd -g=darkCornerRoomGride8.order4.ml2.hdf -tz=trig -tf=.2 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -go=go
+
+Ogmg::cycle:level=0, it=8, WU= 8.59, defect=2.06e-11, defect/defectOld= 0.027,  ECR0=   0.655 ***
+ ==== implicit: ave-iterations per solve =   9.0 (number of implicit solves=1)
+
+
+cgWave -noplot tz.cmd -g=square64.order4.hdf -tz=trig -tf=.2 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -go=go
+
+
+****************************************************
+****** Sat July 20, 2024
+
+CHECK MG options:
+
+cgWave -noplot tz.cmd -g=square64.order4.hdf -tz=trig -tf=.2 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -go=go
+
+========================Ogmg Summary=========================
+
+                       Grid = /home/henshw/grids/square64.order4.hdf 
+ Equation: I + c0*Delta.
+ Boundary conditions explicitly specified = 1.
+ Equations are are not singular.
+ Convergence criteria: l2Norm(residual) < residualTolerance*l2Nnorm(f) + absoluteTolerance (residualTolerance=1.00e-12, absoluteTolerance=1.00e-12).
+ maximum number of iterations = 15.
+ order of accuracy = 4.
+ order of coarse level operators = 4.
+ number of levels = 4 (3 extra levels, max-extra-levels=3).
+
+
+cgWave -noplot tz.cmd -g=square64.order2.hdf -tz=trig -tf=.2 -tp=.1 -cfl=100 -ts=implicit -implicitUpwind=0 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -solveri=multigrid -atoli=1e-12 -rtoli=1e-12 -go=go
+
+
+****************************************************
 ****** Wed Feb 21, 2024
 
 START TEST NEW UPWIND CORRECTIONS

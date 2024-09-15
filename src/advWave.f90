@@ -260,10 +260,6 @@
 
   ! ==== Build separate f90 files for different cases ====
 
-  ! buildFile(advWave2dOrder2r,2,2,rectangular)
-  ! buildFile(advWave3dOrder2r,3,2,rectangular)
-  ! buildFile(advWave2dOrder2c,2,2,curvilinear)
-  ! buildFile(advWave3dOrder2c,3,2,curvilinear)
 
 
   ! !   ORDER=6 : BC's not implemented yet -- needed for upwinding, SuperGrid

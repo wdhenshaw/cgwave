@@ -130,6 +130,9 @@ int assignLCBC( realMappedGridFunction & u, Real t, Real dt, int grid );
 //  Evaluate the WaveHoltz beta function (single frequency)
 static Real betaWaveHoltz( Real lambda, Real omega, Real T );
 
+// Evaluate the discrete WaveHoltz beta function (single frequency)
+static Real betaDiscreteWaveHoltz( Real lambda, Real omega, Real T, Real dt );
+
 int buildRunTimeDialog();
 
 int buildSuperGrid( );
@@ -169,7 +172,7 @@ int getErrorInEigenPair( const Real lambda, realCompositeGridFunction & eigVecto
                          int & eigIndex, int & multipleEigIndex, bool saveErrors = false );
 
 // Get weights for WaveHoltz filters
-int getFilterWeights( int Nt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma, RealArray & filterWeights );
+int getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma, RealArray & filterWeights );
 
 // Fill RHS for direct Helmholtz solver
 int getHelmholtzForcing( realCompositeGridFunction & f  );
@@ -198,6 +201,9 @@ int getUserDefinedKnownSolution(real t,  int grid, realArray & ua, const Index &
 				int numberOfTimeDerivatives = 0 );
 
 int getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu );
+
+// Check if two composite grids match
+static bool compositeGridsMatch( CompositeGrid & cg, CompositeGrid & cgsf );
 
 // inflate WaveHoltz solution
 int inflateSolution();
@@ -262,7 +268,7 @@ int takeImplicitStep( Real t );
 int updateEigenmodes();
 
 // update time-integral for Helmholtz projection
-int updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGridFunction& u );
+int updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCompositeGridFunction& u );
 
 int updateUserDefinedKnownSolution();
 

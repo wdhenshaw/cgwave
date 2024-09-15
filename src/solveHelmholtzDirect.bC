@@ -6,6 +6,7 @@
 // #include "MappedGridOperators.h"
 #include "Oges.h"
 #include "ParallelUtility.h"
+#include "ParallelGridUtility.h"
 #include "CompositeGridOperators.h"
 #include "SparseRep.h"
 
@@ -78,7 +79,10 @@ for( int m=CE(0,e1); m<=CE(0,e2+1)-1; m++ ) \
 // ==========================================================================
 #beginMacro fillGhostExtrapolation(eq,ic,M0,ghost)    
 {
+  assert( ok );
+
   getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
+  bool okg =ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ig1,Ig2,Ig3);
 
   coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0; // zero all coeff to start
 
@@ -283,6 +287,13 @@ for( int m=CE(0,e1); m<=CE(0,e2+1)-1; m++ ) \
     // if( iluLevels>=0 )
     //   solver.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
 
+  }
+
+  if( orderOfExtrapolation>0 )
+  {
+    printF("\n $$$$$$$$$$ solveHelmholtzDirect: set orderOfExtrapolation=%d $$$$$$$$\n",orderOfExtrapolation);
+    
+    solver.set(OgesParameters::THEorderOfExtrapolation,orderOfExtrapolation);
   }
 
   if( upwind )
@@ -576,18 +587,20 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 {
   int debug=1; 
 
-  const real & omega     = dbase.get<real>("omega");
+  const real & omega                   = dbase.get<real>("omega");
 
-  CgWave & cgWave        = *dbase.get<CgWave*>("cgWave");
-  const real & c         = cgWave.dbase.get<real>("c");
+  CgWave & cgWave                      = *dbase.get<CgWave*>("cgWave");
+  const real & c                       = cgWave.dbase.get<real>("c");
 
   const int & orderOfAccuracy          = cgWave.dbase.get<int>("orderOfAccuracy");
+  const int & orderOfExtrapolation     = cgWave.dbase.get<int>("orderOfExtrapolation");
   const int & filterTimeDerivative     = cgWave.dbase.get<int>("filterTimeDerivative");
   const int & useSuperGrid             = cgWave.dbase.get<int>("useSuperGrid");
   const IntegerArray & superGrid       = cgWave.dbase.get<IntegerArray>("superGrid");
   const int & adjustPlotsForSuperGrid  = cgWave.dbase.get<int>("adjustPlotsForSuperGrid");
   const int & adjustErrorsForSuperGrid = cgWave.dbase.get<int>("adjustErrorsForSuperGrid");
   const int & solveForScatteredField   = cgWave.dbase.get<int>("solveForScatteredField");
+  FILE *& pDebugFile                   = cgWave.dbase.get<FILE*>("pDebugFile");
   
   const Real & damp                    = cgWave.dbase.get<Real>("damp");
   const Real & dampSave                = cgWave.dbase.get<Real>("dampSave");
@@ -643,6 +656,15 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
   // ------ Fill in the forcing and boundary conditions -----
   // --------------------------------------------------------
   cgWave.getHelmholtzForcing( f );
+
+  if( 1==0 )
+  {
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid ++ )
+    {
+      OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
+      ::display(fLocal,sPrintF("solveHelmholtzDirect: fLocal grid=%d",grid),pDebugFile,"%9.2e ");
+    }
+  }
 
 
 
@@ -744,7 +766,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
   if( !solveComplex )
   {
-    //  --- solve the Real Helmholtz problem ----
+    //  ------------------------------------------------
+    //  ------- solve the Real Helmholtz problem -------
+    //  ------------------------------------------------
 
     for( int freq=0; freq<numberOfFrequencies; freq++ )
     {
@@ -775,21 +799,29 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
       //  Boundary conditions will be filled in by getHelmholtzForcing, but these are not correct for numberOfFrequencies>1 
       Index Ib1,Ib2,Ib3; 
       Index Ig1,Ig2,Ig3; 
+      IntegerArray bcLocal(2,3);
       for( int grid=0; grid<numberOfComponentGrids; grid++ )
       {
         MappedGrid & mg = cg[grid];
+        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+        ParallelGridUtility::getLocalBoundaryConditions( mg, bcLocal );
+
         for( int axis=0; axis<cg.numberOfDimensions(); axis++ )
         {
           for( int side=0; side<=1; side++ )
           {
-            if( mg.boundaryCondition(side,axis)==CgWave::dirichlet )
+            if( bcLocal(side,axis)==CgWave::dirichlet )
             {
-               getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
-               OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
-               OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
+              getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+              bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
+              if( ok ) 
+              {
+                OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
+                OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
 
-               if( knownSolutionOption==boxHelmholtz )
-               {
+                if( knownSolutionOption==boxHelmholtz )
+                {
                   // const Real kx = kxBoxHelmholtz + twoPi*freq;
                   // const Real ky = kyBoxHelmholtz + twoPi*freq;
                   // const Real kz = kzBoxHelmholtz + twoPi*freq;
@@ -801,16 +833,16 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     fLocal(Ib1,Ib2,Ib3,freq)= sin( kx*xLocal(Ib1,Ib2,Ib3,0) )*sin( ky*xLocal(Ib1,Ib2,Ib3,1) );
                   else
                     fLocal(Ib1,Ib2,Ib3,freq)= sin( kx*xLocal(Ib1,Ib2,Ib3,0) )*sin( ky*xLocal(Ib1,Ib2,Ib3,1) )*sin( kz*xLocal(Ib1,Ib2,Ib3,2) );
-               }
-
+                }
+              }
             }
-            else if( mg.boundaryCondition(side,axis)==CgWave::neumann )
+            else if( bcLocal(side,axis)==CgWave::neumann )
             {
                getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3);
                OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
                // fLocal(Ig1,Ig2,Ig3)=0.;              // Neumann BC -- fill ghost values
             }
-            else if( mg.boundaryCondition(side,axis)>0 )
+            else if( bcLocal(side,axis)>0 )
             {
               printF("CgWave::solveHelmholtzDirect:ERROR: unknown boundaryCondition=%d for (side,axis,grid)=(%d,%d,%d)\n", mg.boundaryCondition(side,axis),side,axis,grid);
               OV_ABORT("ERROR");
@@ -838,7 +870,10 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
           OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
           OV_GET_SERIAL_ARRAY(Real,fTemp[grid],fTempLocal);
           getIndex(cg[grid].dimension(),I1,I2,I3);
-          fTempLocal(I1,I2,I3)=fLocal(I1,I2,I3,freq);
+          bool ok=ParallelUtility::getLocalArrayBounds(f[grid],fLocal,I1,I2,I3);
+
+          if( ok )
+            fTempLocal(I1,I2,I3)=fLocal(I1,I2,I3,freq);
         }
 
         solver.solve( uTemp,fTemp ); 
@@ -848,10 +883,17 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
           OV_GET_SERIAL_ARRAY(Real,u[grid],uLocal);
           OV_GET_SERIAL_ARRAY(Real,uTemp[grid],uTempLocal);
           getIndex(cg[grid].dimension(),I1,I2,I3);
-          uLocal(I1,I2,I3,freq)=uTempLocal(I1,I2,I3);
+          bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3);
+          if( ok )
+            uLocal(I1,I2,I3,freq)=uTempLocal(I1,I2,I3);
         }
       }  
 
+      if( 1==0 )
+      {
+        f.display("f","%10.5f ");
+        u.display("u","%10.5f ");
+      }
 
       real time= ParallelUtility::getMaxValue(getCPU()-time0);
       helmholtzSolverIterations += solver.getNumberOfIterations();
@@ -1278,238 +1320,241 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
         getGridSpacingsMacro();      
 
 
-
         const int e=0, ic=0; // equation number and component number 
 
         const int mDiag0 = M123CE(0,0,0,ic1,eq1);   // M123(0,0,0);              // index of diagonal entry, equation 0 
         const int mDiag1 = M123CE(0,0,0,ic2,eq2);    // index of diagonal entry, equation 1 
 
 
-
+        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
         ForBoundary(side,axis)
         {
 
           Index Ib1,Ib2,Ib3;
           getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
-
-          // Set the index-shift for this side
-          is1=is2=is3=0;
-          isv[axis]=1-2*side;   // +1 on left and -1 on right  
-
-          const int axisp1 = (axis+1) % numberOfDimensions;    
-
-          if( mg.boundaryCondition(side,axis)==CgWave::dirichlet         ||
-              // mg.boundaryCondition(side,axis)==CgWave::absorbing ||  // ** DO THIS FOR NOW : absorbing terminated with Dirichlet
-              mg.boundaryCondition(side,axis)==CgWave::exactBC )
+          bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
+          if( ok )
           {
-            // ------------ FILL DIRICHLET BC ------------
 
-            printF("+++++ solveHelmholtzDirect BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) DIRICHLET/ABSORBING/EXACT\n",mg.boundaryCondition(side,axis),grid,side,axis);
-            coeffLocal(     M,Ib1,Ib2,Ib3) = 0.0;  // zero out any existing equations
-            coeffLocal(mDiag0,Ib1,Ib2,Ib3) = 1.0;            
-            coeffLocal(mDiag1,Ib1,Ib2,Ib3) = 1.0;
+            // Set the index-shift for this side
+            is1=is2=is3=0;
+            isv[axis]=1-2*side;   // +1 on left and -1 on right  
 
-            // --- EXTRAPOLATE GHOST LINES ---
+            const int axisp1 = (axis+1) % numberOfDimensions;    
 
-            for( int ghost=1; ghost<=numberOfGhostLines; ghost++ )
+            if( mg.boundaryCondition(side,axis)==CgWave::dirichlet         ||
+                // mg.boundaryCondition(side,axis)==CgWave::absorbing ||  // ** DO THIS FOR NOW : absorbing terminated with Dirichlet
+                mg.boundaryCondition(side,axis)==CgWave::exactBC )
             {
-              fillGhostExtrapolation(eq1,ic1,M0,ghost);
-              fillGhostExtrapolation(eq2,ic2,M1,ghost);
-            } // end for ghost
+              // ------------ FILL DIRICHLET BC ------------
 
-          }
-          else if( mg.boundaryCondition(side,axis)==CgWave::neumann )
-          {
-            // ------------ FILL NEUMANN BC ------------
+              printF("+++++ solveHelmholtzDirect BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) DIRICHLET/ABSORBING/EXACT\n",mg.boundaryCondition(side,axis),grid,side,axis);
+              coeffLocal(     M,Ib1,Ib2,Ib3) = 0.0;  // zero out any existing equations
+              coeffLocal(mDiag0,Ib1,Ib2,Ib3) = 1.0;            
+              coeffLocal(mDiag1,Ib1,Ib2,Ib3) = 1.0;
 
-            printF("+++++ solveHelmholtzDirect BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) NEUMANN\n",grid,side,axis);
-            OV_ABORT("FINISH ME");
+              // --- EXTRAPOLATE GHOST LINES ---
 
-            mg.update(MappedGrid::THEvertexBoundaryNormal);
-            OV_GET_VERTEX_BOUNDARY_NORMAL(mg,side,axis,normal); 
-
-            realSerialArray xCoeff(M0,Ib1,Ib2,Ib3), yCoeff(M0,Ib1,Ib2,Ib3), zCoeff; 
-            mgop.assignCoefficients(MappedGridOperators::xDerivative ,xCoeff, Ib1,Ib2,Ib3,0,0);
-            mgop.assignCoefficients(MappedGridOperators::yDerivative ,yCoeff, Ib1,Ib2,Ib3,0,0);
-            if( numberOfDimensions==3 )
-            {
-              zCoeff.redim(M0,Ib1,Ib2,Ib3);
-              mgop.assignCoefficients(MappedGridOperators::zDerivative ,zCoeff, Ib1,Ib2,Ib3,0,0);
-            }
-
-            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
-            {
-                
-              int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
-
-              // Specify that this a "real" equation on the first ghost line: 
-              // (A "real" equation has a possible non-zero right-hand-side)
-              setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
-
-              ForStencil(m1,m2,m3)
+              for( int ghost=1; ghost<=numberOfGhostLines; ghost++ )
               {
-                int m  = M123(m1,m2,m3);        // the single-component coeff-index
-                
-                coeffLocal(m,i1m,i2m,i3m) = normal(i1,i2,i3,0)*xCoeff(m,i1,i2,i3) + normal(i1,i2,i3,1)*yCoeff(m,i1,i2,i3);
-                if( numberOfDimensions==3 )
-                  coeffLocal(m,i1m,i2m,i3m) += normal(i1,i2,i3,2)*zCoeff(m,i1,i2,i3);
+                fillGhostExtrapolation(eq1,ic1,M0,ghost);
+                fillGhostExtrapolation(eq2,ic2,M1,ghost);
+              } // end for ghost
 
-                // Specify that the above coeff value is the coefficient of component ic at the grid point (j1,j2,j3).
-                int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
-                setEquationNumber(m, e,i1m,i2m,i3m,  ic,j1,j2,j3 );      // macro to set equationNumber
+            }
+            else if( mg.boundaryCondition(side,axis)==CgWave::neumann )
+            {
+              // ------------ FILL NEUMANN BC ------------
+
+              printF("+++++ solveHelmholtzDirect BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) NEUMANN\n",grid,side,axis);
+              OV_ABORT("FINISH ME");
+
+              mg.update(MappedGrid::THEvertexBoundaryNormal);
+              OV_GET_VERTEX_BOUNDARY_NORMAL(mg,side,axis,normal); 
+
+              realSerialArray xCoeff(M0,Ib1,Ib2,Ib3), yCoeff(M0,Ib1,Ib2,Ib3), zCoeff; 
+              mgop.assignCoefficients(MappedGridOperators::xDerivative ,xCoeff, Ib1,Ib2,Ib3,0,0);
+              mgop.assignCoefficients(MappedGridOperators::yDerivative ,yCoeff, Ib1,Ib2,Ib3,0,0);
+              if( numberOfDimensions==3 )
+              {
+                zCoeff.redim(M0,Ib1,Ib2,Ib3);
+                mgop.assignCoefficients(MappedGridOperators::zDerivative ,zCoeff, Ib1,Ib2,Ib3,0,0);
               }
 
-            } // end FOR_3D
-
-            // fill ghost 2 with extrapolation
-            for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
-            {
-              fillGhostExtrapolation(eq1,ic1,M0,ghost);
-              fillGhostExtrapolation(eq2,ic2,M1,ghost);              
-            } // end for ghost
-
-
-          }
-          else if( mg.boundaryCondition(side,axis)==CgWave::absorbing || 
-                   mg.boundaryCondition(side,axis)==CgWave::abcEM2 )
-          {
-            printF("+++++ solveHelmholtzDirect: BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) ABSORBING/EM2, c=%e\n",grid,side,axis,c);
-
-            // EM2 
-            //     c D+xD-x + .5*c D+yD-y - is*I*sgn*omega* D0x = 0 
-            // 
-            // Engquist-Majda order2 scheme
-            //  D+t (-D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : left 
-            //  D+t ( D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : right                
-            //
-            //   - D0x + c D+xD-x + .5*c D+yD-y  : left 
-            //     D0x + c D+xD-x + .5*c D+yD-y  : right
-
-             // *** FINISH ME ***
-            Real ca = c; // c * 0.;
-            // if( par.adjustOmega )
-            //   ca = c*tan(par.frequencyArray(1)*dt/2)/(par.frequencyArraySaved(1)*dt/2); % adjust c for dt errors 
-            // end
-
-
-            // res = -is*(unx-ucx)/dt + (.5*c)*( unxx + ucxx) + (.25*c)*( unyy + ucyy );
-
-            Range Rw(-halfWidth1,halfWidth1);
-            RealArray abcCoeffr(Rw,Rw,Rw), abcCoeffi(Rw,Rw,Rw);
-            abcCoeffr=0.; abcCoeffi=0.;
-
-            // om = frequencyArray(freq); 
-
-            // A(ie,ie)=  c/dx^2   + par.isign*1i*om/(2*dx);
-            // A(ie,ib)= -2*c/dx^2 -c/dy^2;
-            // A(ie,je)=  c/dx^2   - par.isign*1i*om/(2*dx);
-
-            // if( dir==1 )
-            //   A(ie,eqn(ix,iy-1)) = .5*c/dy^2; 
-            //   A(ie,eqn(ix,iy+1)) = .5*c/dy^2; 
-            // else
-            //   A(ie,eqn(ix-1,iy)) = .5*c/dy^2; 
-            //   A(ie,eqn(ix+1,iy)) = .5*c/dy^2;                  
-            // end            
-
-
-            // EM2: BC: 
-            //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
-            // => 
-            //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
-            //  
-            // u = ur + i*ui : 
-            //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
-            //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
-            //             
-            if( isRectangular )
-            {
-              const Real dxa2 = dx[axis]*dx[axis];
-              const Real dya2 = dx[axisp1]*dx[axisp1];
-              abcCoeffr(-is1,-is2,0) = (    ca/dxa2           ); //   + 1./(2.*dx[axis]*dt);    // ghost
-              abcCoeffr(   0,   0,0) = (-2.*ca/dxa2 - ca/dya2 );                           // boundary 
-              abcCoeffr(+is1,+is2,0) = (    ca/dxa2           ); //   - 1./(2.*dx[axis]*dt);    // first line in
-
-              // ** CHECK sign ***
-              abcCoeffi(-is1,-is2,0) =  + omegaSign*omega/(2.*dx[axis]);    // ghost
-              abcCoeffi(+is1,+is2,0) =  - omegaSign*omega/(2.*dx[axis]);    // first line in
-
-              if( axis==0 )
+              FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
               {
-                abcCoeffr(0,-1,0) = ( .5*ca/(dx[1]*dx[1]) ); 
-                abcCoeffr(0,+1,0) = ( .5*ca/(dx[1]*dx[1]) ); 
+                  
+                int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
+
+                // Specify that this a "real" equation on the first ghost line: 
+                // (A "real" equation has a possible non-zero right-hand-side)
+                setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+
+                ForStencil(m1,m2,m3)
+                {
+                  int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                  
+                  coeffLocal(m,i1m,i2m,i3m) = normal(i1,i2,i3,0)*xCoeff(m,i1,i2,i3) + normal(i1,i2,i3,1)*yCoeff(m,i1,i2,i3);
+                  if( numberOfDimensions==3 )
+                    coeffLocal(m,i1m,i2m,i3m) += normal(i1,i2,i3,2)*zCoeff(m,i1,i2,i3);
+
+                  // Specify that the above coeff value is the coefficient of component ic at the grid point (j1,j2,j3).
+                  int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
+                  setEquationNumber(m, e,i1m,i2m,i3m,  ic,j1,j2,j3 );      // macro to set equationNumber
+                }
+
+              } // end FOR_3D
+
+              // fill ghost 2 with extrapolation
+              for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
+              {
+                fillGhostExtrapolation(eq1,ic1,M0,ghost);
+                fillGhostExtrapolation(eq2,ic2,M1,ghost);              
+              } // end for ghost
+
+
+            }
+            else if( mg.boundaryCondition(side,axis)==CgWave::absorbing || 
+                     mg.boundaryCondition(side,axis)==CgWave::abcEM2 )
+            {
+              printF("+++++ solveHelmholtzDirect: BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) ABSORBING/EM2, c=%e\n",grid,side,axis,c);
+
+              // EM2 
+              //     c D+xD-x + .5*c D+yD-y - is*I*sgn*omega* D0x = 0 
+              // 
+              // Engquist-Majda order2 scheme
+              //  D+t (-D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : left 
+              //  D+t ( D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : right                
+              //
+              //   - D0x + c D+xD-x + .5*c D+yD-y  : left 
+              //     D0x + c D+xD-x + .5*c D+yD-y  : right
+
+               // *** FINISH ME ***
+              Real ca = c; // c * 0.;
+              // if( par.adjustOmega )
+              //   ca = c*tan(par.frequencyArray(1)*dt/2)/(par.frequencyArraySaved(1)*dt/2); % adjust c for dt errors 
+              // end
+
+
+              // res = -is*(unx-ucx)/dt + (.5*c)*( unxx + ucxx) + (.25*c)*( unyy + ucyy );
+
+              Range Rw(-halfWidth1,halfWidth1);
+              RealArray abcCoeffr(Rw,Rw,Rw), abcCoeffi(Rw,Rw,Rw);
+              abcCoeffr=0.; abcCoeffi=0.;
+
+              // om = frequencyArray(freq); 
+
+              // A(ie,ie)=  c/dx^2   + par.isign*1i*om/(2*dx);
+              // A(ie,ib)= -2*c/dx^2 -c/dy^2;
+              // A(ie,je)=  c/dx^2   - par.isign*1i*om/(2*dx);
+
+              // if( dir==1 )
+              //   A(ie,eqn(ix,iy-1)) = .5*c/dy^2; 
+              //   A(ie,eqn(ix,iy+1)) = .5*c/dy^2; 
+              // else
+              //   A(ie,eqn(ix-1,iy)) = .5*c/dy^2; 
+              //   A(ie,eqn(ix+1,iy)) = .5*c/dy^2;                  
+              // end            
+
+
+              // EM2: BC: 
+              //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
+              // => 
+              //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
+              //  
+              // u = ur + i*ui : 
+              //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
+              //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
+              //             
+              if( isRectangular )
+              {
+                const Real dxa2 = dx[axis]*dx[axis];
+                const Real dya2 = dx[axisp1]*dx[axisp1];
+                abcCoeffr(-is1,-is2,0) = (    ca/dxa2           ); //   + 1./(2.*dx[axis]*dt);    // ghost
+                abcCoeffr(   0,   0,0) = (-2.*ca/dxa2 - ca/dya2 );                           // boundary 
+                abcCoeffr(+is1,+is2,0) = (    ca/dxa2           ); //   - 1./(2.*dx[axis]*dt);    // first line in
+
+                // ** CHECK sign ***
+                abcCoeffi(-is1,-is2,0) =  + omegaSign*omega/(2.*dx[axis]);    // ghost
+                abcCoeffi(+is1,+is2,0) =  - omegaSign*omega/(2.*dx[axis]);    // first line in
+
+                if( axis==0 )
+                {
+                  abcCoeffr(0,-1,0) = ( .5*ca/(dx[1]*dx[1]) ); 
+                  abcCoeffr(0,+1,0) = ( .5*ca/(dx[1]*dx[1]) ); 
+                }
+                else
+                {
+                  abcCoeffr(-1,0,0) = ( .5*ca/(dx[0]*dx[0]) ); 
+                  abcCoeffr(+1,0,0) = ( .5*ca/(dx[0]*dx[0]) );                   
+                }     
               }
               else
               {
-                abcCoeffr(-1,0,0) = ( .5*ca/(dx[0]*dx[0]) ); 
-                abcCoeffr(+1,0,0) = ( .5*ca/(dx[0]*dx[0]) );                   
-              }     
-            }
-            else
-            {
-               OV_ABORT("solveHelmholtzDirect:: IMP BC ABORBING -- FINISH ME: curvilinear"); 
-            }
-
-            if( false )
-            {
-              ::display(abcCoeffr,"abcCoeffr");
-              ::display(abcCoeffi,"abcCoeffi");
-            }
-            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
-            {
-                
-              int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
-
-              // Specify that this a "real" equation on the first ghost line: 
-              // (A "real" equation has a possible non-zero right-hand-side)
-              setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
-              setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
-
-              ForStencil(m1,m2,m3)
-              {
-                // -- Equation 1 : Real part 
-                //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
-              
-                int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
-                coeffLocal(mr,i1m,i2m,i3m) = abcCoeffr(m1,m2,m3);
-                int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
-                setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
-
-                int mi  = M123CE(m1,m2,m3,ic2,eq1);                        // equation 1, component 2
-                coeffLocal(mi,i1m,i2m,i3m) = -abcCoeffi(m1,m2,m3);         // *CHECK SIGN 
-                setEquationNumber(mi, eq1,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
-
-                // -- Equation 2 : imaginary part: 
-                //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0   
-                mi  = M123CE(m1,m2,m3,ic2,eq2);                            // equation 2, component 2
-                coeffLocal(mi,i1m,i2m,i3m) =  abcCoeffr(m1,m2,m3);
-                setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
-
-                mr  = M123CE(m1,m2,m3,ic1,eq2);                            // equation 2, component 1
-                coeffLocal(mr,i1m,i2m,i3m) = +abcCoeffi(m1,m2,m3);
-                setEquationNumber(mr, eq2,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
-
+                 OV_ABORT("solveHelmholtzDirect:: IMP BC ABORBING -- FINISH ME: curvilinear"); 
               }
 
+              if( false )
+              {
+                ::display(abcCoeffr,"abcCoeffr");
+                ::display(abcCoeffi,"abcCoeffi");
+              }
+              FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+              {
+                  
+                int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
+
+                // Specify that this a "real" equation on the first ghost line: 
+                // (A "real" equation has a possible non-zero right-hand-side)
+                setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+
+                ForStencil(m1,m2,m3)
+                {
+                  // -- Equation 1 : Real part 
+                  //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
+                
+                  int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
+                  coeffLocal(mr,i1m,i2m,i3m) = abcCoeffr(m1,m2,m3);
+                  int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
+                  setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
+
+                  int mi  = M123CE(m1,m2,m3,ic2,eq1);                        // equation 1, component 2
+                  coeffLocal(mi,i1m,i2m,i3m) = -abcCoeffi(m1,m2,m3);         // *CHECK SIGN 
+                  setEquationNumber(mi, eq1,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
+
+                  // -- Equation 2 : imaginary part: 
+                  //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0   
+                  mi  = M123CE(m1,m2,m3,ic2,eq2);                            // equation 2, component 2
+                  coeffLocal(mi,i1m,i2m,i3m) =  abcCoeffr(m1,m2,m3);
+                  setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
+
+                  mr  = M123CE(m1,m2,m3,ic1,eq2);                            // equation 2, component 1
+                  coeffLocal(mr,i1m,i2m,i3m) = +abcCoeffi(m1,m2,m3);
+                  setEquationNumber(mr, eq2,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
+
+                }
 
 
-            } // end FOR_3D
 
-            // fill ghost 2 with extrapolation
-            for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
+              } // end FOR_3D
+
+              // fill ghost 2 with extrapolation
+              for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
+              {
+                fillGhostExtrapolation(eq1,ic1,M0,ghost);
+                fillGhostExtrapolation(eq2,ic2,M1,ghost);
+              } // end for ghost
+
+            }
+            else if(  mg.boundaryCondition(side,axis)> 0 )
             {
-              fillGhostExtrapolation(eq1,ic1,M0,ghost);
-              fillGhostExtrapolation(eq2,ic2,M1,ghost);
-            } // end for ghost
+              printF("solveHelmholtzDirect::ERROR: unknown boundaryCondition=%d \n",mg.boundaryCondition(side,axis));
+              OV_ABORT("error");
 
-          }
-          else if(  mg.boundaryCondition(side,axis)> 0 )
-          {
-            printF("solveHelmholtzDirect::ERROR: unknown boundaryCondition=%d \n",mg.boundaryCondition(side,axis));
-            OV_ABORT("error");
-
-          }
-        }
+            }
+          } // end if ok
+        }   // end if for boundary
       }  // end for grid
 
     }
@@ -1557,22 +1602,25 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
       OV_GET_SERIAL_ARRAY(Real,fc[grid],fcLocal);
 
       getIndex(mg.dimension(),I1,I2,I3);
-
-      // -- make sure the RHS is zero at active points (unused points which are extrpolated for upwinding)
-      FOR_3D(i1,i2,i3,I1,I2,I3)
+      bool ok=ParallelUtility::getLocalArrayBounds(f[grid],fLocal,I1,I2,I3);
+      if( ok )
       {
-        // if( isnan(fcLocal(i1,i2,i3,0)) )
-        // {
-        //   printF("solveHelmholtzDirect: ERROR: fc(%d,%d,%d,0) isnan\n",i1,i2,i3);
-        //   OV_ABORT("error");
-        // }
-        if( maskLocal(i1,i2,i3) > 0 )
-          fcLocal(i1,i2,i3,0)=fLocal(i1,i2,i3);
-        else
-          fcLocal(i1,i2,i3,0)=0.;
+        // -- make sure the RHS is zero at active points (unused points which are extrpolated for upwinding)
+        FOR_3D(i1,i2,i3,I1,I2,I3)
+        {
+          // if( isnan(fcLocal(i1,i2,i3,0)) )
+          // {
+          //   printF("solveHelmholtzDirect: ERROR: fc(%d,%d,%d,0) isnan\n",i1,i2,i3);
+          //   OV_ABORT("error");
+          // }
+          if( maskLocal(i1,i2,i3) > 0 )
+            fcLocal(i1,i2,i3,0)=fLocal(i1,i2,i3);
+          else
+            fcLocal(i1,i2,i3,0)=0.;
+        }
+        // fcLocal(I1,I2,I3,0) = fLocal(I1,I2,I3);
+        fcLocal(I1,I2,I3,1) = 0.;
       }
-      // fcLocal(I1,I2,I3,0) = fLocal(I1,I2,I3);
-      fcLocal(I1,I2,I3,1) = 0.;
 
       // --- ASSIGN SPECIAL boundary conditions --- 
       //  Boundary conditions will be filled in by getHelmholtzForcing, but these are not all correct for the complex case
@@ -1583,8 +1631,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
         {
           getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
           // OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
+          bool ok=ParallelUtility::getLocalArrayBounds(f[grid],fLocal,Ib1,Ib2,Ib3);
 
-          if( solveForScatteredField && knownSolutionOption==planeWave )
+          if( ok && solveForScatteredField && knownSolutionOption==planeWave )
           {
             OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
 
@@ -1657,6 +1706,10 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
     // OV_ABORT("Solve the complex Helmholtz : FINISH ME");
 
+    // for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    // {
+    //   u[grid].updateGhostBoundaries();
+    // }
 
     bool checkResidual=true;
     if( checkResidual )
@@ -1802,35 +1855,41 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
             if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
             {
               getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
-              if( solveForScatteredField==0 )
+
+              bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,Ib1,Ib2,Ib3);
+              if( ok )
               {
-               resLocal(Ib1,Ib2,Ib3,all)=0.;
-              }
-              else
-              {
-                // --- scattering from a Dirichlet BC ----
-                OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
-                if( mg.numberOfDimensions()==2 )
-                { 
-                  resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
-                  resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
+
+                if( solveForScatteredField==0 )
+                {
+                 resLocal(Ib1,Ib2,Ib3,all)=0.;
                 }
                 else
                 {
-                  resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
-                  resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
-                }
-                where( maskLocal(Ib1,Ib2,Ib3)<=0 )
-                {
-                  resLocal(Ib1,Ib2,Ib3,0)=0.;
-                  resLocal(Ib1,Ib2,Ib3,1)=0.;
-                }
+                  // --- scattering from a Dirichlet BC ----
+                  OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
+                  if( mg.numberOfDimensions()==2 )
+                  { 
+                    resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
+                    resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
+                  }
+                  else
+                  {
+                    resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
+                    resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
+                  }
+                  where( maskLocal(Ib1,Ib2,Ib3)<=0 )
+                  {
+                    resLocal(Ib1,Ib2,Ib3,0)=0.;
+                    resLocal(Ib1,Ib2,Ib3,1)=0.;
+                  }
 
-                Range R2=2;
-                Real maxResBC1 = max(abs(resLocal(Ib1,Ib2,Ib3,0)));
-                Real maxResBC2 = max(abs(resLocal(Ib1,Ib2,Ib3,1)));
+                  Range R2=2;
+                  Real maxResBC1 = max(abs(resLocal(Ib1,Ib2,Ib3,0)));
+                  Real maxResBC2 = max(abs(resLocal(Ib1,Ib2,Ib3,1)));
 
-                printF(" Scattering Dirichlet BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e]\n",side,axis,grid,maxResBC1,maxResBC2);
+                  printF(" Scattering Dirichlet BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e]\n",side,axis,grid,maxResBC1,maxResBC2);
+                }
               }
 
              }
@@ -1840,65 +1899,74 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                 getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
                 getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,1);
 
-                // EM2: BC: 
-                //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
-                // => 
-                //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
-                //  
-                // u = ur + i*ui : 
-                //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
-                //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
-                // 
-                Range R2 = numberOfComponents;
-                RealArray ux(Ib1,Ib2,Ib3,R2), uy(Ib1,Ib2,Ib3,R2), uxx(Ib1,Ib2,Ib3,R2), uyy(Ib1,Ib2,Ib3,R2);
-                mgop.derivative(MappedGridOperators::xDerivative,uLocal,ux,Ib1,Ib2,Ib3,R2);
-                mgop.derivative(MappedGridOperators::yDerivative,uLocal,uy,Ib1,Ib2,Ib3,R2);
-
-                mgop.derivative(MappedGridOperators::xxDerivative,uLocal,uxx,Ib1,Ib2,Ib3,R2);
-                mgop.derivative(MappedGridOperators::yyDerivative,uLocal,uyy,Ib1,Ib2,Ib3,R2);
-
-                if( axis==0 )
+                bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,Ib1,Ib2,Ib3);
+                ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,Ig1,Ig2,Ig3);
+                if( ok )
                 {
-                  resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*ux(Ib1,Ib2,Ib3,1)) - c*( uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
-                  resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*ux(Ib1,Ib2,Ib3,0)) - c*( uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
+                  // EM2: BC: 
+                  //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
+                  // => 
+                  //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
+                  //  
+                  // u = ur + i*ui : 
+                  //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
+                  //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
+                  // 
+                  Range R2 = numberOfComponents;
+                  RealArray ux(Ib1,Ib2,Ib3,R2), uy(Ib1,Ib2,Ib3,R2), uxx(Ib1,Ib2,Ib3,R2), uyy(Ib1,Ib2,Ib3,R2);
+                  mgop.derivative(MappedGridOperators::xDerivative,uLocal,ux,Ib1,Ib2,Ib3,R2);
+                  mgop.derivative(MappedGridOperators::yDerivative,uLocal,uy,Ib1,Ib2,Ib3,R2);
+
+                  mgop.derivative(MappedGridOperators::xxDerivative,uLocal,uxx,Ib1,Ib2,Ib3,R2);
+                  mgop.derivative(MappedGridOperators::yyDerivative,uLocal,uyy,Ib1,Ib2,Ib3,R2);
+
+                  if( axis==0 )
+                  {
+                    resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*ux(Ib1,Ib2,Ib3,1)) - c*( uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
+                    resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*ux(Ib1,Ib2,Ib3,0)) - c*( uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
+                  }
+                  else
+                  {
+                    resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uy(Ib1,Ib2,Ib3,1) ) - c*( uyy(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) );
+                    resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uy(Ib1,Ib2,Ib3,0) ) - c*( uyy(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) );
+                  }
+
+                  where( maskLocal(Ib1,Ib2,Ib3)<=0 )
+                  {
+                    resLocal(Ig1,Ig2,Ig3,0)=0.;
+                    resLocal(Ig1,Ig2,Ig3,1)=0.;
+                  }
+                  Real maxResBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
+                  Real maxResBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));
+                  Real maxRHS = max(abs(fLocal(Ig1,Ig2,Ig3,R2)));
+
+                  printF(" Absorbing BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e], max|rhs|=%9.2e\n",side,axis,grid,maxResBC1,maxResBC2,maxRHS);
+
+                  // ::display(resLocal(Ig1,Ig2,Ig3,0),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
+                  // ::display(resLocal(Ig1,Ig2,Ig3,1),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
                 }
-                else
-                {
-                  resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uy(Ib1,Ib2,Ib3,1) ) - c*( uyy(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) );
-                  resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uy(Ib1,Ib2,Ib3,0) ) - c*( uyy(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) );
-                }
-
-                where( maskLocal(Ib1,Ib2,Ib3)<=0 )
-                {
-                  resLocal(Ig1,Ig2,Ig3,0)=0.;
-                  resLocal(Ig1,Ig2,Ig3,1)=0.;
-                }
-                Real maxResBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
-                Real maxResBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));
-                Real maxRHS = max(abs(fLocal(Ig1,Ig2,Ig3,R2)));
-
-                printF(" Absorbing BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e], max|rhs|=%9.2e\n",side,axis,grid,maxResBC1,maxResBC2,maxRHS);
-
-                // ::display(resLocal(Ig1,Ig2,Ig3,0),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
-                // ::display(resLocal(Ig1,Ig2,Ig3,1),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
-
              }
           } // end for boundary
 
           // -- zero residual at unused points ---
           getIndex(mg.dimension(),I1,I2,I3);
-          where( maskLocal(I1,I2,I3) <=0  )   
+          ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3);
+          if( ok )
           {
-            resLocal(I1,I2,I3,0)=0.;
-            resLocal(I1,I2,I3,1)=0.;
-          }        
-
-        }
+            where( maskLocal(I1,I2,I3) <=0  )   
+            {
+              resLocal(I1,I2,I3,0)=0.;
+              resLocal(I1,I2,I3,1)=0.;
+            }        
+          }
+        } // end if ok 
 
         if( true )
         {
           // ::display(resLocal,"resLocal","%7.0e ");
           Real maxRes = max(abs(resLocal));
+          maxRes = ParallelUtility::getMaxValue( maxRes );
+
           if( false && maxRes > .01 )
           {
             ::display(resLocal,"resLocal","%7.0e ");

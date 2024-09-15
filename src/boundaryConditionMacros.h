@@ -78,7 +78,8 @@
     assignBCForImplicit,             // ipar(16)
     bcApproach,                      // ipar(17)
     numberOfFrequencies,             // ipar(18)
-    assignCornerGhostPoints          // ipar(19)
+    assignCornerGhostPoints,         // ipar(19)
+    orderOfExtrapolation             // ipar(20)
                };
 
   Real cEM2 = c;
@@ -93,10 +94,13 @@
     }
     else
     {
-      if( frequencyArraySave(0)==0 )
-        printF("WARNING: bcOpt: frequencyArraySave(0)=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",frequencyArraySave(0));
-      if( dt<=0 )
-        printF("WARNING: bcOpt: dt<= 0 ! dt=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",dt);
+      if( debug>3 )
+      {
+        if( frequencyArraySave(0)==0 )
+          printF("WARNING:bcMacros frequencyArraySave(0)=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",frequencyArraySave(0));
+        if( dt<=0 )
+          printF("WARNING:bcMacros dt<= 0 ! dt=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",dt);
+      }
     }
   }           
   real rpar[] = {

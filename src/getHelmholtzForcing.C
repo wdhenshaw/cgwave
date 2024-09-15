@@ -3,6 +3,7 @@
 #include "ParallelUtility.h"
 #include "ParallelGridUtility.h"
 #include "OGFunction.h"
+#include "display.h"
 
 // -------- function prototypes for Fortran routines --------
 #define bcOptWave EXTERN_C_NAME(bcoptwave)
@@ -34,24 +35,23 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
     const int myid = max(0,Communication_Manager::My_Process_Number);
     const int np   = max(1,Communication_Manager::numberOfProcessors());
 
-    const int & debug = dbase.get<int>("debug");
-
-    const int & orderOfAccuracy = dbase.get<int>("orderOfAccuracy");
-    const Real & c              = dbase.get<real>("c");
-    const real & dt             = dbase.get<real>("dt");
-    const int & upwind                = dbase.get<int>("upwind");
-  // const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
-  // bool useUpwindDissipation   = ad4  > 0.;
-    bool useUpwindDissipation   = upwind!=0;
-    const int & solveHelmholtz  = dbase.get<int>("solveHelmholtz");
-    const IntegerArray & gridIsImplicit    = dbase.get<IntegerArray>("gridIsImplicit");
+    const int & debug                     = dbase.get<int>("debug");
+    FILE *& pDebugFile                    = dbase.get<FILE*>("pDebugFile");
+    const int & orderOfAccuracy           = dbase.get<int>("orderOfAccuracy");
+    const int & orderOfExtrapolation      = dbase.get<int>("orderOfExtrapolation");
+    const Real & c                        = dbase.get<real>("c");
+    const real & dt                       = dbase.get<real>("dt");
+    const int & upwind                    = dbase.get<int>("upwind");
+    bool useUpwindDissipation             = upwind!=0;
+    const int & solveHelmholtz            = dbase.get<int>("solveHelmholtz");
+    const IntegerArray & gridIsImplicit   = dbase.get<IntegerArray>("gridIsImplicit");
 
     const int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
     const RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");
     const RealArray & frequencyArraySave  = dbase.get<RealArray>("frequencyArraySave");  
 
-    const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption"); 
-    const int & solveForScatteredField  = dbase.get<int>("solveForScatteredField");
+    const aString & knownSolutionOption   = dbase.get<aString>("knownSolutionOption"); 
+    const int & solveForScatteredField    = dbase.get<int>("solveForScatteredField");
 
     const int & applyKnownSolutionAtBoundaries = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
 
@@ -83,6 +83,10 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
         {
             ipar[0]=grid;
             userDefinedForcing( f[grid], ipar,rpar );
+
+      // f[grid].updateGhostBoundaries(); // needed ??
+
+
         }
         
     }
@@ -90,6 +94,12 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
     {
         f=0.;
     }
+
+  // for( int grid=0; grid<cg.numberOfComponentGrids(); grid ++ )
+  // {
+  //   OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
+  //   ::display(fLocal,sPrintF("getHelmholtzForcing: fLocal before BCs grid=%d",grid),pDebugFile,"%9.2e ");
+  // }
 
   // -------- Fill in boundary conditions for the direct Helmholtz solver ---------
 
@@ -178,7 +188,8 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
                 assignBCForImplicit,             // ipar(16)
                 bcApproach,                      // ipar(17)
                 numberOfFrequencies,             // ipar(18)
-                assignCornerGhostPoints          // ipar(19)
+                assignCornerGhostPoints,         // ipar(19)
+                orderOfExtrapolation             // ipar(20)
                                       };
             Real cEM2 = c;
             if( solveHelmholtz ) 
@@ -192,10 +203,13 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
                 }
                 else
                 {
-                    if( frequencyArraySave(0)==0 )
-                        printF("WARNING: bcOpt: frequencyArraySave(0)=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",frequencyArraySave(0));
-                    if( dt<=0 )
-                        printF("WARNING: bcOpt: dt<= 0 ! dt=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",dt);
+                    if( debug>3 )
+                    {
+                        if( frequencyArraySave(0)==0 )
+                            printF("WARNING:bcMacros frequencyArraySave(0)=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",frequencyArraySave(0));
+                        if( dt<=0 )
+                            printF("WARNING:bcMacros dt<= 0 ! dt=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",dt);
+                    }
                 }
             }           
             real rpar[] = {
@@ -280,8 +294,15 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
     // u[grid].updateGhostBoundaries();
 
         
-
+    // f[grid].updateGhostBoundaries();  // *** TEST ****
     } // end for grid 
+
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid ++ )
+    {
+        OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
+        ::display(fLocal,sPrintF("getHelmholtzForcing: fLocal after BCs grid=%d",grid),pDebugFile,"%9.2e ");
+    }
+
 
 
     return 0;

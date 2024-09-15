@@ -1,5 +1,12 @@
 
 
+***************************************************
+****** Mon July 22, 2024
+
+START CHECK PARALLEL --
+
+mpirun -np 2 $cgWave -noplot gaussian.cmd -g=square64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-200 -ts=explicit -cfl=.95 -upwind=1 -tf=5 -tp=0.1 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -go=og
+
 
 ***************************************************
 ****** Thurs July 19, 2023

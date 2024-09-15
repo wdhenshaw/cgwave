@@ -246,8 +246,9 @@ checkCheckFiles: $(checkCheckFiles); $(CXX) $(CCFLAGS) -o checkWave/checkCheckFi
 # ogmgFiles = ${OvertureCheckout}/ogmg/smooth.o
 # for debugging link to a debug version of formMatrix.o
 ## OGES_PETSC += ${OvertureCheckout}/oges/formMatrix.o
+# OGMG_FILES = ${OvertureCheckout}/ogmg/OgmgParameters.o
 cgWaveFiles = obj/cgWaveMain.o $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_PETSC) 
-cgWave: $(cgWaveFiles) ; $(CXX) $(CCFLAGS) -o bin/cgWave $(cgWaveFiles) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
+cgWave: $(cgWaveFiles) ; $(CXX) $(CCFLAGS) -o bin/cgWave $(cgWaveFiles) $(OGMG_FILES) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
 
 
 # ----- test of coeff matricies with wide stencils -----
@@ -277,6 +278,22 @@ testHighDerivatives: $(testHighDerivativesFiles); $(CXX) $(CCFLAGS) -o bin/testH
 
 obj/testHighDerivatives.o : src/testHighDerivatives.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 
+
+# ----- test augmented GMRES routine  -----
+testAugmentedGmresFiles = obj/testAugmentedGmres.o obj/AugmentedGmres.o 
+testAugmentedGmres: $(testAugmentedGmresFiles); $(CXX) $(CCFLAGS) -o bin/testAugmentedGmres $(testAugmentedGmresFiles) $(LIBS)
+
+src/AugmentedGmres.C : src/AugmentedGmres.h
+src/testAugmentedGmres.C : src/AugmentedGmres.h
+
+obj/testAugmentedGmres.o : src/testAugmentedGmres.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+obj/AugmentedGmres.o     : src/AugmentedGmres.C;     $(CXX) $(CCFLAGS) -o $*.o -c $<  
+
+# bpp files: 
+src/testAugmentedGmres.C: src/testAugmentedGmres.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include testAugmentedGmres.bC
+src/AugmentedGmres.C: src/AugmentedGmres.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include AugmentedGmres.bC
+
+
 # ----- simple test before adding LCBC  -----
 simpleTestFiles = obj/simpleTest.o
 simpleTest: $(simpleTestFiles); $(CXX) $(CCFLAGS) -o bin/simpleTest $(simpleTestFiles) $(LIBS)
@@ -288,7 +305,7 @@ testReorderFiles = obj/testReorder.o
 testReorder: $(testReorderFiles); $(CXX) $(CCFLAGS) -o bin/testReorder $(testReorderFiles) $(LIBS)
 obj/testReorder.o : src/testReorder.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 
-# ----- test reordering routine
+# ----- test plot routine
 testPlotFiles = obj/testPlot.o  $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_PETSC)
 # testPlot: $(testPlotFiles); $(CXX) $(CCFLAGS) -o bin/testPlot $(testPlotFiles) $(LIBS)
 testPlot: $(testPlotFiles) ; $(CXX) $(CCFLAGS) -o bin/testPlot $(testPlotFiles) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
@@ -362,7 +379,8 @@ test2:;  -@echo "CCFLAGS=$(CCFLAGS)"
 test3:; -@echo "SLEPC_INCLUDE = $(SLEPC_INCLUDE)"
 
 # cgwh = obj/cgwh.o obj/CgWaveHoltz.o $(petscSolver) $(OBJC) $(OBJO)
-cgwh = obj/cgwh.o obj/CgWaveHoltz.o obj/solveHelmholtz.o obj/solveHelmholtzDirect.o obj/solveEigen.o $(petscSolver) $(OGES_PETSC) $(OBJC) $(OBJO) $(FNOBJO)
+cgwhFiles = obj/cgwh.o obj/CgWaveHoltz.o obj/solveHelmholtz.o obj/solveHelmholtzDirect.o obj/solveEigen.o obj/solveAugmentedGmres.o obj/AugmentedGmres.o
+cgwh = $(cgwhFiles) $(petscSolver) $(OGES_PETSC) $(OBJC) $(OBJO) $(FNOBJO)
 cgwh: $(cgwh) 
 	$(CXX) $(CCFLAGS) -o bin/cgwh $(cgwh) $(PETSC_LIBS) $(SLEPC_LIBS) $(LIBS)
 
@@ -380,6 +398,7 @@ src/solveHelmholtzDirect.C: src/solveHelmholtzDirect.bC src/knownSolutionMacros.
 src/solveHelmholtz.C: src/solveHelmholtz.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveHelmholtz.bC
 src/solveEigen.C: src/solveEigen.bC src/knownSolutionMacros.h; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveEigen.bC
 src/solveSLEPc.C: src/solveSLEPc.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveSLEPc.bC
+src/solveAugmentedGmres.C: src/solveAugmentedGmres.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveAugmentedGmres.bC
 
 src/tcmWideStencil.C: src/tcmWideStencil.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include tcmWideStencil.bC
 
@@ -505,6 +524,7 @@ obj/solvePETScNull.o : src/solvePETScNull.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS)
 obj/solveHelmholtz.o : src/solveHelmholtz.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 obj/solveHelmholtzDirect.o : src/solveHelmholtzDirect.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 obj/solveEigen.o : src/solveEigen.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+obj/solveAugmentedGmres.o : src/solveAugmentedGmres.C src/AugmentedGmres.h CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 
 # --- cgWave ---
 obj/cgWaveMain.o : src/cgWaveMain.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<

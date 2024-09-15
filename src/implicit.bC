@@ -29,7 +29,6 @@ void bcOptWave( const int&nd,
 #Include "boundaryConditionMacros.h"
 
 
-
 #define ForBoundary(side,axis)   for( int axis=0; axis<cg.numberOfDimensions(); axis++ ) \
                                  for( int side=0; side<=1; side++ )
 
@@ -114,7 +113,8 @@ int CgWave::takeImplicitStep( Real t )
       // ---- initial guess for iterative solver ----
       //  *to do* For periodic solutions use periodic guess
 
-      if( solveHelmholtz && numberOfFrequencies==1 && !computeEigenmodes )
+      // -- this is not really correct for Krylov 
+      if(  solveHelmholtz && numberOfFrequencies==1 && !computeEigenmodes )
       {
         // Assume: 
         //    uc = v(x,t)    = u(x)*cos(omega*t)
@@ -151,8 +151,10 @@ int CgWave::takeImplicitStep( Real t )
       }
       else
       {
-        // unLocal = ucLocal;           // initial guess *** FIX ME ***
-        unLocal = 2.*ucLocal - upLocal; // initial guess *** FIX ME ***
+        // ========== Initial Guess for iterative solvers : linear extrapolation in time  ========
+
+        // unLocal = ucLocal;           
+        unLocal = 2.*ucLocal - upLocal; 
       }
 
 
@@ -185,80 +187,6 @@ int CgWave::takeImplicitStep( Real t )
     bool fillImplicitBoundaryConditions  = true;
     applyBoundaryConditions( rhs, rhs, t, applyExplicitBoundaryConditions, fillImplicitBoundaryConditions );
   }
-  // else
-  // {
-  //   // ** old way 
-
-  //   const int assignBCForImplicit = 1;  // used in call to bcOptWave
-  //   const IntegerArray & gridIsImplicit = dbase.get<IntegerArray>("gridIsImplicit");
-    
-  //   // assignCornerGhostPoints = true if bcOptWave -> cornerWave will assign corner ghost points
-  //   const int assignCornerGhostPoints = bcApproach==useCompatibilityBoundaryConditions ||
-  //                                       bcApproach==useLocalCompatibilityBoundaryConditions;  
-
-    
-  //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-  //   {
-  //     MappedGrid & mg = cg[grid];
-  //     const IntegerArray & gid = mg.gridIndexRange();
-      
-  //     OV_GET_SERIAL_ARRAY(Real,rhs[grid],rhsLocal);
-  //     OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-
-
-  //     ForBoundary(side,axis) 
-  //     {
-  //       if( mg.boundaryCondition(side,axis)==exactBC )
-  //       {
-  //         // -- assign boundary and ghost values to be exact ---
-
-  //         if( t<=2*dt )
-  //           printF("takeImplicitStep: Set knownSolution at exact boundary (side,axis,grid)=(%d,%d,%d), numGhost=%d\n",side,axis,grid,numGhost);
-
-  //         getBoundaryIndex(gid,side,axis,I1,I2,I3,numGhost);
-  //         if( side==0 )
-  //           Iv[axis] = Range(gid(0,axis)-numGhost,gid(0,axis));
-  //         else 
-  //           Iv[axis] = Range(gid(1,axis),gid(1,axis)+numGhost);
-
-  // /* ----                    
-  //         if( t<=2*dt )
-  //           printF("takeImplicitStep: Set knownSolution at exact boundary (side,axis,grid)=(%d,%d,%d)\n",side,axis,grid);
-
-  //         getBoundaryIndex(gid,side,axis,I1,I2,I3);
-  //         // int extra=0;  // = numGhost 
-  //         // if( side==0 )
-  //         //   Iv[axis] = Range(gid(0,axis)-extra,gid(0,axis));
-  //         // else 
-  //         //   Iv[axis] = Range(gid(1,axis),gid(1,axis)+extra);
-  // ---- */
-
-  //         getUserDefinedKnownSolution( t, grid, rhs[grid], I1,I2,I3 );
-
-  //         // should we set values at ghost to zero??
-
-  //       }
-  //     }
-
-  //     // get parameters for calling fortran
-  //     OV_GET_SERIAL_ARRAY(Real,uc[grid],ucLocal); // *CHECK ME*
-  //     getBcOptParameters(rhs,rhsLocal,ucLocal);
-
-  //     int ierr=0;
-  //     // if( true )
-  //     //   ::display(bcLocal,"implicit: bcLocal","%3i ");
-
-  //     bcOptWave(mg.numberOfDimensions(),
-  //               rhsLocal.getBase(0),rhsLocal.getBound(0),rhsLocal.getBase(1),rhsLocal.getBound(1),
-  //               rhsLocal.getBase(2),rhsLocal.getBound(2),
-  //               indexRangeLocal(0,0), dimLocal(0,0), mg.isPeriodic(0),
-  //               *rhsLocal.getDataPointer(), *pun, *pmask, *prsxy, *pxy, *puTemp1, *puTemp2,
-  //               bcLocal(0,0), frequencyArray(0),
-  //               pdb, ipar[0],rpar[0], ierr );
-
-
-  //   } // end for grid 
-  // } // end old way
 
 
   if( debug & 16 )
@@ -294,9 +222,9 @@ int CgWave::takeImplicitStep( Real t )
     totalImplicitIterations += numIterations;
     totalImplicitSolves++;
 
-    if( debug & 2 || (t <= 10.*dt) )
-      printF("CgWave::takeImplicitStep: implicit solve: max-res= %8.2e (iterations=%i) ***\n",
-                 impSolver.getMaximumResidual(),numIterations);
+    if( 1==0 || (debug & 2 && (t <= 10.*dt) ) )
+      printF("CgWave::takeImplicitStep: implicit solve: t=%9.2e max-res= %8.2e (iterations=%i) ***\n",
+                 t,impSolver.getMaximumResidual(),numIterations);
   }
   else
   {
@@ -432,15 +360,16 @@ numberOfComponentsForCoefficients*(i1-equationNumberBase1+\
 equationNumberLength1*(i2-equationNumberBase2+\
 equationNumberLength2*(i3-equationNumberBase3))) + equationOffset)
 
+
 // =======================================================================
 // =======================================================================
 #define setEquationNumber(m, ni,i1,i2,i3,  nj,j1,j2,j3 )\
-equationNumber(m,i1,i2,i3)=indexToEquation( nj,j1,j2,j3)
+equationNumberLocal(m,i1,i2,i3)=indexToEquation( nj,j1,j2,j3)
 
 // =======================================================================
 // =======================================================================
 #define setClassify(n,i1,i2,i3, type) \
-classify(i1,i2,i3,n)=type
+classifyLocal(i1,i2,i3,n)=type
 
 // ==========================================================================
 // Macro: setup the variables needed to fill a sparse matrix on a mappedGrid
@@ -457,7 +386,11 @@ classify(i1,i2,i3,n)=type
   
   const int equationOffset=sparse.equationOffset;
   intArray & equationNumber = sparse.equationNumber;
+
   intArray & classify = sparse.classify;
+
+  OV_GET_SERIAL_ARRAY(int,equationNumber,equationNumberLocal);
+  OV_GET_SERIAL_ARRAY(int,classify,classifyLocal);
   
   const int equationNumberBase1  =equationNumber.getBase(1);
   const int equationNumberLength1=equationNumber.getLength(1);
@@ -486,24 +419,26 @@ classify(i1,i2,i3,n)=type
   // *wdh* Nov 22, 2023: 
   // getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
   // coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0;
-
-  FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+  bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
+  if( ok )
   {
-    if( maskLocal(i1,i2,i3) != 0 )
-    { 
-      int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+    {
+      if( maskLocal(i1,i2,i3) != 0 )
+      { 
+        int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
 
-      // --- fill in the coefficients of the extrapolation formula ---
-      coeffLocal(M0,i1m,i2m,i3m)=0; // zero out all *wdh* Nov 22, 2023: 
-      for( int m=0; m<=extrapOrder; m++ )
-      {
-        coeffLocal(m,i1m,i2m,i3m) = extrapCoeff[m];
-        int j1=i1m + m*is1, j2=i2m + m*is2, j3=i3m + m*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
-        setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+        // --- fill in the coefficients of the extrapolation formula ---
+        coeffLocal(M0,i1m,i2m,i3m)=0; // zero out all *wdh* Nov 22, 2023: 
+        for( int m=0; m<=extrapOrder; m++ )
+        {
+          coeffLocal(m,i1m,i2m,i3m) = extrapCoeff[m];
+          int j1=i1m + m*is1, j2=i2m + m*is2, j3=i3m + m*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+          setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+        }
       }
-    }
-  } // end FOR_3D
-
+    } // end FOR_3D
+  }
 #endMacro
 
 
@@ -881,23 +816,27 @@ classify(i1,i2,i3,n)=type
     else
       Jbv[axis] = Range(Jbv[axis].getBase(),Jbv[axis].getBound()+numberOfGhostLines);  // asign ghost on right
 
-    const IntegerArray & gid = mg.gridIndexRange();
-    FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3)
+    bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Jb1,Jb2,Jb3);
+    if( ok )
     {
-      if( maskLocal(i1,i2,i3) > 0 ) // *wdh* avoid changing an "active" point such as interpolation
+      const IntegerArray & gid = mg.gridIndexRange();
+      FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3)
       {
-        bool isGhost = i1<gid(0,0) || i1>gid(1,0) ||
-                       i2<gid(0,1) || i2>gid(1,1) ||
-                       i3<gid(0,2) || i3>gid(1,2);
-        if( isGhost )
+        if( maskLocal(i1,i2,i3) > 0 ) // *wdh* avoid changing an "active" point such as interpolation
         {
-          setClassify(e,i1,i2,i3, SparseRepForMGF::ghost1);  // this is a "real" equation with a RHS (e.g. not extrapolation)
-        }
+          bool isGhost = i1<gid(0,0) || i1>gid(1,0) ||
+                         i2<gid(0,1) || i2>gid(1,1) ||
+                         i3<gid(0,2) || i3>gid(1,2);
+          if( isGhost )
+          {
+            setClassify(e,i1,i2,i3, SparseRepForMGF::ghost1);  // this is a "real" equation with a RHS (e.g. not extrapolation)
+          }
 
-        coeffLocal(    M,i1,i2,i3) = 0.0;  // zero out any existing equations
-        coeffLocal(mDiag,i1,i2,i3) = 1.0;
-      }
-    }    
+          coeffLocal(    M,i1,i2,i3) = 0.0;  // zero out any existing equations
+          coeffLocal(mDiag,i1,i2,i3) = 1.0;
+        }
+      }  
+    } // end if ok   
 
   }
   else
@@ -905,12 +844,16 @@ classify(i1,i2,i3,n)=type
     if( debug & 1 )
       printF("+++++ IMPLICIT BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) DIRICHLET/ABSORBING\n",mg.boundaryCondition(side,axis),grid,side,axis);
 
-    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
-    {
-      if( maskLocal(i1,i2,i3) > 0 ) // *wdh* avoid changing an "active" point such as interpolation
+    bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
+    if( ok )
       {
-        coeffLocal(    M,i1,i2,i3) = 0.0;  // zero out any existing equations
-        coeffLocal(mDiag,i1,i2,i3) = 1.0;
+      FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
+      {
+        if( maskLocal(i1,i2,i3) > 0 ) // *wdh* avoid changing an "active" point such as interpolation
+        {
+          coeffLocal(    M,i1,i2,i3) = 0.0;  // zero out any existing equations
+          coeffLocal(mDiag,i1,i2,i3) = 1.0;
+        }
       }
     }
   }
@@ -943,35 +886,39 @@ classify(i1,i2,i3,n)=type
             Jb3.getBase(),Jb3.getBound()
             );
       }
-      const IntegerArray & gid = mg.gridIndexRange();
-      FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3) 
+      bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Jb1,Jb2,Jb3);
+      if( ok )
       {
-        if( maskLocal(i1,i2,i3) > 0 ) // *wdh* avoid changing an "active" point such as interpolation 
-        {       
-          bool isGhost = i1<gid(0,0) || i1>gid(1,0) ||
-                         i2<gid(0,1) || i2>gid(1,1) ||
-                         i3<gid(0,2) || i3>gid(1,2);
-          if( isGhost )
-          {
-            // printf("IMP:CBC: Set Dirichlet BC on extended boundary (grid,side,axis)=(%d,%d,%d) (i1,i2,i3)=(%d,%d,%d)\n",
-            //          grid,side,axis,i1,i2,i3);
-
-            setClassify(e,i1,i2,i3, SparseRepForMGF::ghost1);  
-
-            coeffLocal(M,i1,i2,i3) = 0.0;  // zero out any existing equations
-            ForStencil(m1,m2,m3)
+        const IntegerArray & gid = mg.gridIndexRange();
+        FOR_3D(i1,i2,i3,Jb1,Jb2,Jb3) 
+        {
+          if( maskLocal(i1,i2,i3) > 0 ) // *wdh* avoid changing an "active" point such as interpolation 
+          {       
+            bool isGhost = i1<gid(0,0) || i1>gid(1,0) ||
+                           i2<gid(0,1) || i2>gid(1,1) ||
+                           i3<gid(0,2) || i3>gid(1,2);
+            if( isGhost )
             {
-              int m  = M123(m1,m2,m3);        // the single-component coeff-index
-              if( m1==0 && m2==0 && m3==0 )
-                coeffLocal(m,i1,i2,i3) = 1.0;  // Dirichlet BC
-              else
-                coeffLocal(m,i1,i2,i3) = 0.;
-              int j1=i1+m1, j2=i2+m2, j3=i3+m3;                   
-              setEquationNumber(m, e,i1,i2,i3,  cc,j1,j2,j3 );    
+              // printf("IMP:CBC: Set Dirichlet BC on extended boundary (grid,side,axis)=(%d,%d,%d) (i1,i2,i3)=(%d,%d,%d)\n",
+              //          grid,side,axis,i1,i2,i3);
+
+              setClassify(e,i1,i2,i3, SparseRepForMGF::ghost1);  
+
+              coeffLocal(M,i1,i2,i3) = 0.0;  // zero out any existing equations
+              ForStencil(m1,m2,m3)
+              {
+                int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                if( m1==0 && m2==0 && m3==0 )
+                  coeffLocal(m,i1,i2,i3) = 1.0;  // Dirichlet BC
+                else
+                  coeffLocal(m,i1,i2,i3) = 0.;
+                int j1=i1+m1, j2=i2+m2, j3=i3+m3;                   
+                setEquationNumber(m, e,i1,i2,i3,  cc,j1,j2,j3 );    
+              }
             }
           }
         }
-      }
+      } // end if ok
     }
     
     // At a Dirichlet-Dirichlet Corner we cannot use a CBCs on both sides since this is a duplicate
@@ -1028,52 +975,56 @@ classify(i1,i2,i3,n)=type
       }
     }
 
+    bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
 
-    realSerialArray lapCoeff(M0,Ib1,Ib2,Ib3);
-    // Fourth-order laplacian: 
-    mgop.assignCoefficients(MappedGridOperators::laplacianOperator ,lapCoeff, Ib1,Ib2,Ib3,0,0);
-
-    if( false )
+    if( ok )
     {
-      printf("Fill matrix Dirichlet CBC1: Ib1=[%d,%d] Ib2=[%d,%d] Ib3=[%d,%d]\n",
-           Ib1.getBase(),Ib1.getBound(),
-           Ib2.getBase(),Ib2.getBound(),
-           Ib3.getBase(),Ib3.getBound()
-           );
-    }
+      realSerialArray lapCoeff(M0,Ib1,Ib2,Ib3);
+      // Fourth-order laplacian: 
+      mgop.assignCoefficients(MappedGridOperators::laplacianOperator ,lapCoeff, Ib1,Ib2,Ib3,0,0);
 
-    const Real cSq = c*c;
-    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
-    {
-      if( maskLocal(i1,i2,i3) > 0 ) 
+      if( false )
       {
-        int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
-
-        // Specify that this a "real" equation on the first ghost line: 
-        // (A "real" equation has a possible non-zero right-hand-side)
-        setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
-
-        ForStencil(m1,m2,m3)
-        {
-          int m  = M123(m1,m2,m3);        // the single-component coeff-index
-          coeffLocal(m,i1m,i2m,i3m) = cSq*lapCoeff(m,i1,i2,i3);
-
-          // Specify that the above coeff value is the coefficient of component cc at the grid point (j1,j2,j3).
-          int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
-          setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
-        }
+        printf("Fill matrix Dirichlet CBC1: Ib1=[%d,%d] Ib2=[%d,%d] Ib3=[%d,%d]\n",
+             Ib1.getBase(),Ib1.getBound(),
+             Ib2.getBase(),Ib2.getBound(),
+             Ib3.getBase(),Ib3.getBound()
+             );
       }
-    } // end FOR_3D
 
-    // fill ghost 2 with extrapolation
-    if( true )
-    {
-
-      for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
+      const Real cSq = c*c;
+      FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
       {
-        fillGhostExtrapolation(ghost); 
-      } // end for ghost
-    }
+        if( maskLocal(i1,i2,i3) > 0 ) 
+        {
+          int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
+
+          // Specify that this a "real" equation on the first ghost line: 
+          // (A "real" equation has a possible non-zero right-hand-side)
+          setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+
+          ForStencil(m1,m2,m3)
+          {
+            int m  = M123(m1,m2,m3);        // the single-component coeff-index
+            coeffLocal(m,i1m,i2m,i3m) = cSq*lapCoeff(m,i1,i2,i3);
+
+            // Specify that the above coeff value is the coefficient of component cc at the grid point (j1,j2,j3).
+            int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
+            setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+          }
+        }
+      } // end FOR_3D
+
+      // fill ghost 2 with extrapolation
+      if( true )
+      {
+
+        for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
+        {
+          fillGhostExtrapolation(ghost); 
+        } // end for ghost
+      }
+    } // end if ok
 
     // OV_ABORT("finish me");
   }
@@ -1815,96 +1766,101 @@ classify(i1,i2,i3,n)=type
       Index J1,J2,J3;
       int extra=1;
       getIndex(mg.gridIndexRange(),J1,J2,J3,extra);
-      RealArray c200(J1,J2,J3), c110(J1,J2,J3), c020(J1,J2,J3), c100(J1,J2,J3), c010(J1,J2,J3);
 
-      // -- evaluate the SCALED coefficients of the Laplacian:
-      //    Delta = c200*Delta+r Delta-r + c110*Delta0r Delta0s + ...
-      // SEE ALSO
-      // research/compatibility/
-      //     lcbcDiff.mpl       : defines Qh 
-      //     writeLcbcFiles.mpl : 
-      FOR_3D(i1,i2,i3,J1,J2,J3)
+      bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,J1,J2,J3);
+      if( ok )
       {
-        Real rx = DD(i1,i2,i3,0,0); 
-        Real ry = DD(i1,i2,i3,0,1); 
-        Real sx = DD(i1,i2,i3,1,0); 
-        Real sy = DD(i1,i2,i3,1,1);         
 
-        c200(i1,i2,i3) = ( SQR(rx) + SQR(ry) )/( SQR(dr[0]) );
-        c020(i1,i2,i3) = ( SQR(sx) + SQR(sy) )/( SQR(dr[1]) );
+        RealArray c200(J1,J2,J3), c110(J1,J2,J3), c020(J1,J2,J3), c100(J1,J2,J3), c010(J1,J2,J3);
 
-        c110(i1,i2,i3) = 2.*( rx*sx + ry*sy )/( dr[0]*dr[1] ); // **CHECK FACTOR OF 1/4 
-
-        Real rxr = (DD(i1+1,i2,i3,0,0)-DD(i1-1,i2,i3,0,0))/(2.*dr[0]);
-        Real ryr = (DD(i1+1,i2,i3,0,1)-DD(i1-1,i2,i3,0,1))/(2.*dr[0]);
-        Real sxr = (DD(i1+1,i2,i3,1,0)-DD(i1-1,i2,i3,1,0))/(2.*dr[0]);
-        Real syr = (DD(i1+1,i2,i3,1,1)-DD(i1-1,i2,i3,1,1))/(2.*dr[0]);
-
-        Real rxs = (DD(i1,i2+1,i3,0,0)-DD(i1,i2-1,i3,0,0))/(2.*dr[1]);
-        Real rys = (DD(i1,i2+1,i3,0,1)-DD(i1,i2-1,i3,0,1))/(2.*dr[1]);
-        Real sxs = (DD(i1,i2+1,i3,1,0)-DD(i1,i2-1,i3,1,0))/(2.*dr[1]);
-        Real sys = (DD(i1,i2+1,i3,1,1)-DD(i1,i2-1,i3,1,1))/(2.*dr[1]);
-
-        Real rxx= rx*rxr + sx*rxs;
-        Real ryy= ry*ryr + sy*rys;
-        Real sxx= rx*sxr + sx*sxs;
-        Real syy= ry*syr + sy*sys;
-
-        c100(i1,i2,i3) = (rxx + ryy)/(dr[0]); // rxx + ryy  // **CHECK FACTOR OF 1/2
-        c010(i1,i2,i3) = (sxx + syy)/(dr[1]); // sxx + syy
-
-      }
-
-      Range R5(-2,2);
-      RealArray cp(R5,R5);
-
-      FOR_3(i1,i2,i3,I1,I2,I3)
-      {
-        // coefficients of Lap^2 (from research/compatibility/writeLcbcFiles.mpl --> lcbcEquationsDirichlet2dOrder4.h)
-        if( maskLocal(i1,i2,i3)>0 )
+        // -- evaluate the SCALED coefficients of the Laplacian:
+        //    Delta = c200*Delta+r Delta-r + c110*Delta0r Delta0s + ...
+        // SEE ALSO
+        // research/compatibility/
+        //     lcbcDiff.mpl       : defines Qh 
+        //     writeLcbcFiles.mpl : 
+        FOR_3D(i1,i2,i3,J1,J2,J3)
         {
-          cp(-2,-2) =1./16.*c110(i1,i2,i3)*c110(i1-1,i2-1,i3);
-          cp(-1,-2) =1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(1./4.*c020(i1-1,i2-1,i3)-1./8.*c010(i1-1,i2-1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
-          cp( 0,-2) =c020(i1,i2,i3)*(c020(i1,i2-1,i3)-1./2.*c010(i1,i2-1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2-1,i3)-1./16.*c110(i1+1,i2-1,i3))+c010(i1,i2,i3)*(-1./2.*c020(i1,i2-1,i3)+1./4.*c010(i1,i2-1,i3));
-          cp( 1,-2) =-1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(-1./4.*c020(i1+1,i2-1,i3)+1./8.*c010(i1+1,i2-1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
-          cp( 2,-2) =1./16.*c110(i1,i2,i3)*c110(i1+1,i2-1,i3);
-          cp(-2,-1) =1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(1./4.*c200(i1-1,i2-1,i3)-1./8.*c100(i1-1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
-          cp(-1,-1) =c200(i1,i2,i3)*(-1./2.*c010(i1-1,i2,i3)+c020(i1-1,i2,i3)-1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(-1./2.*c100(i1,i2-1,i3)+c200(i1,i2-1,i3)-1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(-1./2.*c020(i1-1,i2-1,i3)-1./2.*c200(i1-1,i2-1,i3))+c100(i1,i2,i3)*(1./4.*c010(i1-1,i2,i3)-1./2.*c020(i1-1,i2,i3))+c010(i1,i2,i3)*(1./4.*c100(i1,i2-1,i3)-1./2.*c200(i1,i2-1,i3));
-          cp( 0,-1) =c200(i1,i2,i3)*(-1./4.*c110(i1-1,i2,i3)+1./4.*c110(i1+1,i2,i3)+c010(i1,i2,i3)-2*c020(i1,i2,i3))+c020(i1,i2,i3)*(-2*c020(i1,i2-1,i3)-2*c200(i1,i2-1,i3)+c010(i1,i2,i3)-2*c020(i1,i2,i3))+c110(i1,i2,i3)*(1./4.*c200(i1-1,i2-1,i3)-1./4.*c200(i1+1,i2-1,i3)+1./8.*c100(i1-1,i2-1,i3)+1./8.*c100(i1+1,i2-1,i3))+c100(i1,i2,i3)*(1./8.*c110(i1-1,i2,i3)+1./8.*c110(i1+1,i2,i3))+c010(i1,i2,i3)*(c020(i1,i2-1,i3)+c200(i1,i2-1,i3));
-          cp( 1,-1) =c200(i1,i2,i3)*(-1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3)+1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(1./2.*c100(i1,i2-1,i3)+c200(i1,i2-1,i3)+1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(1./2.*c020(i1+1,i2-1,i3)+1./2.*c200(i1+1,i2-1,i3))+c100(i1,i2,i3)*(-1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2-1,i3)-1./2.*c200(i1,i2-1,i3));
-          cp( 2,-1)=-1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1+1,i2-1,i3)-1./8.*c100(i1+1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
-          cp(-2, 0)=c200(i1,i2,i3)*(c200(i1-1,i2,i3)-1./2.*c100(i1-1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2-1,i3)-1./16.*c110(i1-1,i2+1,i3))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)+1./4.*c100(i1-1,i2,i3));
-          cp(-1, 0)=c200(i1,i2,i3)*(-2*c020(i1-1,i2,i3)-2*c200(i1-1,i2,i3)+c100(i1,i2,i3)-2*c200(i1,i2,i3))+c020(i1,i2,i3)*(-1./4.*c110(i1,i2-1,i3)+1./4.*c110(i1,i2+1,i3)+c100(i1,i2,i3)-2*c200(i1,i2,i3))+c110(i1,i2,i3)*(1./4.*c020(i1-1,i2-1,i3)-1./4.*c020(i1-1,i2+1,i3)+1./8.*c010(i1-1,i2-1,i3)+1./8.*c010(i1-1,i2+1,i3))+c100(i1,i2,i3)*(c020(i1-1,i2,i3)+c200(i1-1,i2,i3))+c010(i1,i2,i3)*(1./8.*c110(i1,i2-1,i3)+1./8.*c110(i1,i2+1,i3));
-          cp( 0, 0)=c200(i1,i2,i3)*(c200(i1-1,i2,i3)+c200(i1+1,i2,i3)+1./2.*c100(i1-1,i2,i3)-1./2.*c100(i1+1,i2,i3)+4*c020(i1,i2,i3)+4*c200(i1,i2,i3))+c020(i1,i2,i3)*(c020(i1,i2-1,i3)+c020(i1,i2+1,i3)+1./2.*c010(i1,i2-1,i3)-1./2.*c010(i1,i2+1,i3)+4*c020(i1,i2,i3)+4*c200(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c110(i1-1,i2-1,i3)+1./16.*c110(i1-1,i2+1,i3)+1./16.*c110(i1+1,i2-1,i3)+1./16.*c110(i1+1,i2+1,i3))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)+1./2.*c200(i1+1,i2,i3)-1./4.*c100(i1-1,i2,i3)-1./4.*c100(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./2.*c020(i1,i2-1,i3)+1./2.*c020(i1,i2+1,i3)-1./4.*c010(i1,i2-1,i3)-1./4.*c010(i1,i2+1,i3));
-          cp( 1, 0)=c200(i1,i2,i3)*(-2*c020(i1+1,i2,i3)-2*c200(i1+1,i2,i3)-c100(i1,i2,i3)-2*c200(i1,i2,i3))+c020(i1,i2,i3)*(1./4.*c110(i1,i2-1,i3)-1./4.*c110(i1,i2+1,i3)-c100(i1,i2,i3)-2*c200(i1,i2,i3))+c110(i1,i2,i3)*(-1./4.*c020(i1+1,i2-1,i3)+1./4.*c020(i1+1,i2+1,i3)-1./8.*c010(i1+1,i2-1,i3)-1./8.*c010(i1+1,i2+1,i3))+c100(i1,i2,i3)*(-c020(i1+1,i2,i3)-c200(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./8.*c110(i1,i2-1,i3)-1./8.*c110(i1,i2+1,i3));
-          cp( 2, 0)=c200(i1,i2,i3)*(c200(i1+1,i2,i3)+1./2.*c100(i1+1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2-1,i3)-1./16.*c110(i1+1,i2+1,i3))+c100(i1,i2,i3)*(1./2.*c200(i1+1,i2,i3)+1./4.*c100(i1+1,i2,i3));
-          cp(-2, 1)=-1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)+1./8.*c100(i1-1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
-          cp(-1, 1)=c200(i1,i2,i3)*(1./2.*c010(i1-1,i2,i3)+c020(i1-1,i2,i3)+1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(-1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)+1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(1./2.*c020(i1-1,i2+1,i3)+1./2.*c200(i1-1,i2+1,i3))+c100(i1,i2,i3)*(-1./4.*c010(i1-1,i2,i3)-1./2.*c020(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
-          cp( 0, 1)=c200(i1,i2,i3)*(1./4.*c110(i1-1,i2,i3)-1./4.*c110(i1+1,i2,i3)-c010(i1,i2,i3)-2*c020(i1,i2,i3))+c020(i1,i2,i3)*(-2*c020(i1,i2+1,i3)-2*c200(i1,i2+1,i3)-c010(i1,i2,i3)-2*c020(i1,i2,i3))+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)+1./4.*c200(i1+1,i2+1,i3)-1./8.*c100(i1-1,i2+1,i3)-1./8.*c100(i1+1,i2+1,i3))+c100(i1,i2,i3)*(-1./8.*c110(i1-1,i2,i3)-1./8.*c110(i1+1,i2,i3))+c010(i1,i2,i3)*(-c020(i1,i2+1,i3)-c200(i1,i2+1,i3));
-          cp( 1, 1)=c200(i1,i2,i3)*(1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3)-1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)-1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(-1./2.*c020(i1+1,i2+1,i3)-1./2.*c200(i1+1,i2+1,i3))+c100(i1,i2,i3)*(1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
-          cp( 2, 1)=1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(1./4.*c200(i1+1,i2+1,i3)+1./8.*c100(i1+1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
-          cp(-2, 2)=1./16.*c110(i1,i2,i3)*c110(i1-1,i2+1,i3);
-          cp(-1, 2)=-1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(-1./4.*c020(i1-1,i2+1,i3)-1./8.*c010(i1-1,i2+1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
-          cp( 0, 2)=c020(i1,i2,i3)*(c020(i1,i2+1,i3)+1./2.*c010(i1,i2+1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2+1,i3)-1./16.*c110(i1+1,i2+1,i3))+c010(i1,i2,i3)*(1./2.*c020(i1,i2+1,i3)+1./4.*c010(i1,i2+1,i3));
-          cp( 1, 2)=1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(1./4.*c020(i1+1,i2+1,i3)+1./8.*c010(i1+1,i2+1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
-          cp( 2, 2)=1./16.*c110(i1,i2,i3)*c110(i1+1,i2+1,i3);
+          Real rx = DD(i1,i2,i3,0,0); 
+          Real ry = DD(i1,i2,i3,0,1); 
+          Real sx = DD(i1,i2,i3,1,0); 
+          Real sy = DD(i1,i2,i3,1,1);         
 
-          ForStencil(m1,m2,m3)
+          c200(i1,i2,i3) = ( SQR(rx) + SQR(ry) )/( SQR(dr[0]) );
+          c020(i1,i2,i3) = ( SQR(sx) + SQR(sy) )/( SQR(dr[1]) );
+
+          c110(i1,i2,i3) = 2.*( rx*sx + ry*sy )/( dr[0]*dr[1] ); // **CHECK FACTOR OF 1/4 
+
+          Real rxr = (DD(i1+1,i2,i3,0,0)-DD(i1-1,i2,i3,0,0))/(2.*dr[0]);
+          Real ryr = (DD(i1+1,i2,i3,0,1)-DD(i1-1,i2,i3,0,1))/(2.*dr[0]);
+          Real sxr = (DD(i1+1,i2,i3,1,0)-DD(i1-1,i2,i3,1,0))/(2.*dr[0]);
+          Real syr = (DD(i1+1,i2,i3,1,1)-DD(i1-1,i2,i3,1,1))/(2.*dr[0]);
+
+          Real rxs = (DD(i1,i2+1,i3,0,0)-DD(i1,i2-1,i3,0,0))/(2.*dr[1]);
+          Real rys = (DD(i1,i2+1,i3,0,1)-DD(i1,i2-1,i3,0,1))/(2.*dr[1]);
+          Real sxs = (DD(i1,i2+1,i3,1,0)-DD(i1,i2-1,i3,1,0))/(2.*dr[1]);
+          Real sys = (DD(i1,i2+1,i3,1,1)-DD(i1,i2-1,i3,1,1))/(2.*dr[1]);
+
+          Real rxx= rx*rxr + sx*rxs;
+          Real ryy= ry*ryr + sy*rys;
+          Real sxx= rx*sxr + sx*sxs;
+          Real syy= ry*syr + sy*sys;
+
+          c100(i1,i2,i3) = (rxx + ryy)/(dr[0]); // rxx + ryy  // **CHECK FACTOR OF 1/2
+          c010(i1,i2,i3) = (sxx + syy)/(dr[1]); // sxx + syy
+
+        }
+
+        Range R5(-2,2);
+        RealArray cp(R5,R5);
+
+        FOR_3(i1,i2,i3,I1,I2,I3)
+        {
+          // coefficients of Lap^2 (from research/compatibility/writeLcbcFiles.mpl --> lcbcEquationsDirichlet2dOrder4.h)
+          if( maskLocal(i1,i2,i3)>0 )
           {
-            int m  = M123(m1,m2,m3);
-            coeffLocal(m,i1,i2,i3) += cLapSq*cp(m1,m2);
-          }
+            cp(-2,-2) =1./16.*c110(i1,i2,i3)*c110(i1-1,i2-1,i3);
+            cp(-1,-2) =1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(1./4.*c020(i1-1,i2-1,i3)-1./8.*c010(i1-1,i2-1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
+            cp( 0,-2) =c020(i1,i2,i3)*(c020(i1,i2-1,i3)-1./2.*c010(i1,i2-1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2-1,i3)-1./16.*c110(i1+1,i2-1,i3))+c010(i1,i2,i3)*(-1./2.*c020(i1,i2-1,i3)+1./4.*c010(i1,i2-1,i3));
+            cp( 1,-2) =-1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(-1./4.*c020(i1+1,i2-1,i3)+1./8.*c010(i1+1,i2-1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
+            cp( 2,-2) =1./16.*c110(i1,i2,i3)*c110(i1+1,i2-1,i3);
+            cp(-2,-1) =1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(1./4.*c200(i1-1,i2-1,i3)-1./8.*c100(i1-1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
+            cp(-1,-1) =c200(i1,i2,i3)*(-1./2.*c010(i1-1,i2,i3)+c020(i1-1,i2,i3)-1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(-1./2.*c100(i1,i2-1,i3)+c200(i1,i2-1,i3)-1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(-1./2.*c020(i1-1,i2-1,i3)-1./2.*c200(i1-1,i2-1,i3))+c100(i1,i2,i3)*(1./4.*c010(i1-1,i2,i3)-1./2.*c020(i1-1,i2,i3))+c010(i1,i2,i3)*(1./4.*c100(i1,i2-1,i3)-1./2.*c200(i1,i2-1,i3));
+            cp( 0,-1) =c200(i1,i2,i3)*(-1./4.*c110(i1-1,i2,i3)+1./4.*c110(i1+1,i2,i3)+c010(i1,i2,i3)-2*c020(i1,i2,i3))+c020(i1,i2,i3)*(-2*c020(i1,i2-1,i3)-2*c200(i1,i2-1,i3)+c010(i1,i2,i3)-2*c020(i1,i2,i3))+c110(i1,i2,i3)*(1./4.*c200(i1-1,i2-1,i3)-1./4.*c200(i1+1,i2-1,i3)+1./8.*c100(i1-1,i2-1,i3)+1./8.*c100(i1+1,i2-1,i3))+c100(i1,i2,i3)*(1./8.*c110(i1-1,i2,i3)+1./8.*c110(i1+1,i2,i3))+c010(i1,i2,i3)*(c020(i1,i2-1,i3)+c200(i1,i2-1,i3));
+            cp( 1,-1) =c200(i1,i2,i3)*(-1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3)+1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(1./2.*c100(i1,i2-1,i3)+c200(i1,i2-1,i3)+1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(1./2.*c020(i1+1,i2-1,i3)+1./2.*c200(i1+1,i2-1,i3))+c100(i1,i2,i3)*(-1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2-1,i3)-1./2.*c200(i1,i2-1,i3));
+            cp( 2,-1)=-1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1+1,i2-1,i3)-1./8.*c100(i1+1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
+            cp(-2, 0)=c200(i1,i2,i3)*(c200(i1-1,i2,i3)-1./2.*c100(i1-1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2-1,i3)-1./16.*c110(i1-1,i2+1,i3))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)+1./4.*c100(i1-1,i2,i3));
+            cp(-1, 0)=c200(i1,i2,i3)*(-2*c020(i1-1,i2,i3)-2*c200(i1-1,i2,i3)+c100(i1,i2,i3)-2*c200(i1,i2,i3))+c020(i1,i2,i3)*(-1./4.*c110(i1,i2-1,i3)+1./4.*c110(i1,i2+1,i3)+c100(i1,i2,i3)-2*c200(i1,i2,i3))+c110(i1,i2,i3)*(1./4.*c020(i1-1,i2-1,i3)-1./4.*c020(i1-1,i2+1,i3)+1./8.*c010(i1-1,i2-1,i3)+1./8.*c010(i1-1,i2+1,i3))+c100(i1,i2,i3)*(c020(i1-1,i2,i3)+c200(i1-1,i2,i3))+c010(i1,i2,i3)*(1./8.*c110(i1,i2-1,i3)+1./8.*c110(i1,i2+1,i3));
+            cp( 0, 0)=c200(i1,i2,i3)*(c200(i1-1,i2,i3)+c200(i1+1,i2,i3)+1./2.*c100(i1-1,i2,i3)-1./2.*c100(i1+1,i2,i3)+4*c020(i1,i2,i3)+4*c200(i1,i2,i3))+c020(i1,i2,i3)*(c020(i1,i2-1,i3)+c020(i1,i2+1,i3)+1./2.*c010(i1,i2-1,i3)-1./2.*c010(i1,i2+1,i3)+4*c020(i1,i2,i3)+4*c200(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c110(i1-1,i2-1,i3)+1./16.*c110(i1-1,i2+1,i3)+1./16.*c110(i1+1,i2-1,i3)+1./16.*c110(i1+1,i2+1,i3))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)+1./2.*c200(i1+1,i2,i3)-1./4.*c100(i1-1,i2,i3)-1./4.*c100(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./2.*c020(i1,i2-1,i3)+1./2.*c020(i1,i2+1,i3)-1./4.*c010(i1,i2-1,i3)-1./4.*c010(i1,i2+1,i3));
+            cp( 1, 0)=c200(i1,i2,i3)*(-2*c020(i1+1,i2,i3)-2*c200(i1+1,i2,i3)-c100(i1,i2,i3)-2*c200(i1,i2,i3))+c020(i1,i2,i3)*(1./4.*c110(i1,i2-1,i3)-1./4.*c110(i1,i2+1,i3)-c100(i1,i2,i3)-2*c200(i1,i2,i3))+c110(i1,i2,i3)*(-1./4.*c020(i1+1,i2-1,i3)+1./4.*c020(i1+1,i2+1,i3)-1./8.*c010(i1+1,i2-1,i3)-1./8.*c010(i1+1,i2+1,i3))+c100(i1,i2,i3)*(-c020(i1+1,i2,i3)-c200(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./8.*c110(i1,i2-1,i3)-1./8.*c110(i1,i2+1,i3));
+            cp( 2, 0)=c200(i1,i2,i3)*(c200(i1+1,i2,i3)+1./2.*c100(i1+1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2-1,i3)-1./16.*c110(i1+1,i2+1,i3))+c100(i1,i2,i3)*(1./2.*c200(i1+1,i2,i3)+1./4.*c100(i1+1,i2,i3));
+            cp(-2, 1)=-1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)+1./8.*c100(i1-1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
+            cp(-1, 1)=c200(i1,i2,i3)*(1./2.*c010(i1-1,i2,i3)+c020(i1-1,i2,i3)+1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(-1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)+1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(1./2.*c020(i1-1,i2+1,i3)+1./2.*c200(i1-1,i2+1,i3))+c100(i1,i2,i3)*(-1./4.*c010(i1-1,i2,i3)-1./2.*c020(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
+            cp( 0, 1)=c200(i1,i2,i3)*(1./4.*c110(i1-1,i2,i3)-1./4.*c110(i1+1,i2,i3)-c010(i1,i2,i3)-2*c020(i1,i2,i3))+c020(i1,i2,i3)*(-2*c020(i1,i2+1,i3)-2*c200(i1,i2+1,i3)-c010(i1,i2,i3)-2*c020(i1,i2,i3))+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)+1./4.*c200(i1+1,i2+1,i3)-1./8.*c100(i1-1,i2+1,i3)-1./8.*c100(i1+1,i2+1,i3))+c100(i1,i2,i3)*(-1./8.*c110(i1-1,i2,i3)-1./8.*c110(i1+1,i2,i3))+c010(i1,i2,i3)*(-c020(i1,i2+1,i3)-c200(i1,i2+1,i3));
+            cp( 1, 1)=c200(i1,i2,i3)*(1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3)-1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)-1./2.*c110(i1,i2,i3))+c110(i1,i2,i3)*(-1./2.*c020(i1+1,i2+1,i3)-1./2.*c200(i1+1,i2+1,i3))+c100(i1,i2,i3)*(1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
+            cp( 2, 1)=1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(1./4.*c200(i1+1,i2+1,i3)+1./8.*c100(i1+1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
+            cp(-2, 2)=1./16.*c110(i1,i2,i3)*c110(i1-1,i2+1,i3);
+            cp(-1, 2)=-1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(-1./4.*c020(i1-1,i2+1,i3)-1./8.*c010(i1-1,i2+1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
+            cp( 0, 2)=c020(i1,i2,i3)*(c020(i1,i2+1,i3)+1./2.*c010(i1,i2+1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2+1,i3)-1./16.*c110(i1+1,i2+1,i3))+c010(i1,i2,i3)*(1./2.*c020(i1,i2+1,i3)+1./4.*c010(i1,i2+1,i3));
+            cp( 1, 2)=1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(1./4.*c020(i1+1,i2+1,i3)+1./8.*c010(i1+1,i2+1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
+            cp( 2, 2)=1./16.*c110(i1,i2,i3)*c110(i1+1,i2+1,i3);
 
-          // // save for testing : 
-          // ForStencil(m1,m2,m3)
-          // {
-          //   int m  = M123(m1,m2,m3);
-          //   lapSqCoeffLocal(m,i1,i2,i3) = cp(m1,m2);
-          // }          
+            ForStencil(m1,m2,m3)
+            {
+              int m  = M123(m1,m2,m3);
+              coeffLocal(m,i1,i2,i3) += cLapSq*cp(m1,m2);
+            }
 
-        } // end if mask
-      } // end for 3d 
+            // // save for testing : 
+            // ForStencil(m1,m2,m3)
+            // {
+            //   int m  = M123(m1,m2,m3);
+            //   lapSqCoeffLocal(m,i1,i2,i3) = cp(m1,m2);
+            // }          
 
+          } // end if mask
+        } // end for 3d 
+      } // end if ok
     }
     else
     {
@@ -1914,246 +1870,252 @@ classify(i1,i2,i3,n)=type
       Index J1,J2,J3;
       int extra=1;
       getIndex(mg.gridIndexRange(),J1,J2,J3,extra);
-      RealArray c200(J1,J2,J3), c110(J1,J2,J3), c020(J1,J2,J3), c100(J1,J2,J3), c010(J1,J2,J3);
-      RealArray c002(J1,J2,J3), c101(J1,J2,J3), c011(J1,J2,J3), c001(J1,J2,J3);
-
-      // -- evaluate the SCALED coefficients of the Laplacian:
-      //    Delta = c200*Delta+r Delta-r + c110*Delta0r Delta0s + ...
-      // SEE ALSO
-      // research/compatibility/
-      //     lcbcDiff.mpl       : defines Qh 
-      //     writeLcbcFiles.mpl : 
-      FOR_3D(i1,i2,i3,J1,J2,J3)
+      bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,J1,J2,J3);
+      if( ok )
       {
-        Real rx = DD(i1,i2,i3,0,0), ry = DD(i1,i2,i3,0,1), rz = DD(i1,i2,i3,0,2); 
-        Real sx = DD(i1,i2,i3,1,0), sy = DD(i1,i2,i3,1,1), sz = DD(i1,i2,i3,1,2);         
-        Real tx = DD(i1,i2,i3,2,0), ty = DD(i1,i2,i3,2,1), tz = DD(i1,i2,i3,2,2);         
 
-        c200(i1,i2,i3) = ( SQR(rx) + SQR(ry) + SQR(rz) )/( SQR(dr[0]) );
-        c020(i1,i2,i3) = ( SQR(sx) + SQR(sy) + SQR(sz) )/( SQR(dr[1]) );
-        c002(i1,i2,i3) = ( SQR(tx) + SQR(ty) + SQR(tz) )/( SQR(dr[2]) );
+        RealArray c200(J1,J2,J3), c110(J1,J2,J3), c020(J1,J2,J3), c100(J1,J2,J3), c010(J1,J2,J3);
+        RealArray c002(J1,J2,J3), c101(J1,J2,J3), c011(J1,J2,J3), c001(J1,J2,J3);
 
-        c110(i1,i2,i3) = 2.*( rx*sx + ry*sy +rz*sz )/( dr[0]*dr[1] ); 
-        c101(i1,i2,i3) = 2.*( rx*tx + ry*ty +rz*tz )/( dr[0]*dr[2] ); 
-        c011(i1,i2,i3) = 2.*( sx*tx + sy*ty +sz*tz )/( dr[1]*dr[2] ); 
-
-        Real rxr = DDR2(0,0), ryr = DDR2(0,1), rzr = DDR2(0,2);
-        Real sxr = DDR2(1,0), syr = DDR2(1,1), szr = DDR2(1,2);
-        Real txr = DDR2(2,0), tyr = DDR2(2,1), tzr = DDR2(2,2);
-
-        Real rxs = DDS2(0,0), rys = DDS2(0,1), rzs = DDS2(0,2);
-        Real sxs = DDS2(1,0), sys = DDS2(1,1), szs = DDS2(1,2);
-        Real txs = DDS2(2,0), tys = DDS2(2,1), tzs = DDS2(2,2);
-
-        Real rxt = DDT2(0,0), ryt = DDT2(0,1), rzt = DDT2(0,2);
-        Real sxt = DDT2(1,0), syt = DDT2(1,1), szt = DDT2(1,2);
-        Real txt = DDT2(2,0), tyt = DDT2(2,1), tzt = DDT2(2,2);                
-
-
-        Real rxx= rx*rxr + sx*rxs + tx*rxt;
-        Real sxx= rx*sxr + sx*sxs + tx*sxt;
-        Real txx= rx*txr + sx*txs + tx*txt;
-
-        Real ryy= ry*ryr + sy*rys + ty*ryt;
-        Real syy= ry*syr + sy*sys + ty*syt;
-        Real tyy= ry*tyr + sy*tys + ty*tyt;
-
-        Real rzz= rz*rzr + sz*rzs + tz*rzt;
-        Real szz= rz*szr + sz*szs + tz*szt;
-        Real tzz= rz*tzr + sz*tzs + tz*tzt;
-
-        // Real rxx= rx*rxr + sx*rxs + tx*rxt, ryx= rx*ryr + sx*rys + tx*ryt, rzx= rx*rzr + sx*rzs + tx*rzt;
-        // Real sxx= rx*sxr + sx*sxs + tx*sxt, syx= rx*syr + sx*sys + tx*syt, szx= rx*szr + sx*szs + tx*szt;
-        // Real txx= rx*txr + sx*txs + tx*txt, tyx= rx*tyr + sx*tys + tx*tyt, tzx= rx*tzr + sx*tzs + tx*tzt;                
-
-        // Real rxy= ry*rxr + sy*rxs + ty*rxt, ryy= ry*ryr + sy*rys + ty*ryt, rzy= ry*rzr + sy*rzs + ty*rzt;
-        // Real sxy= ry*sxr + sy*sxs + ty*sxt, syy= ry*syr + sy*sys + ty*syt, szy= ry*szr + sy*szs + ty*szt;
-        // Real txy= ry*txr + sy*txs + ty*txt, tyy= ry*tyr + sy*tys + ty*tyt, tzy= ry*tzr + sy*tzs + ty*tzt;  
-
-        // Real rxz= rz*rxr + sz*rxs + tz*rxt, ryz= rz*ryr + sz*rys + tz*ryt, rzz= rz*rzr + sz*rzs + tz*rzt;
-        // Real sxz= rz*sxr + sz*sxs + tz*sxt, syz= rz*syr + sz*sys + tz*syt, szz= rz*szr + sz*szs + tz*szt;
-        // Real txz= rz*txr + sz*txs + tz*txt, tyz= rz*tyr + sz*tys + tz*tyt, tzz= rz*tzr + sz*tzs + tz*tzt;  
-
-        c100(i1,i2,i3) = (rxx + ryy + rzz)/(dr[0]); 
-        c010(i1,i2,i3) = (sxx + syy + szz)/(dr[1]); 
-        c001(i1,i2,i3) = (txx + tyy + tzz)/(dr[2]); 
-
-      }
-
-      Range R5(-2,2);
-      RealArray cp(R5,R5,R5);
-
-      FOR_3(i1,i2,i3,I1,I2,I3)
-      {
-        // coefficients of Lap^2 (from research/compatibility/writeLcbcFiles.mpl --> lcbcEquationsDirichlet3dOrder4.h)
-        if( maskLocal(i1,i2,i3)>0 )
+        // -- evaluate the SCALED coefficients of the Laplacian:
+        //    Delta = c200*Delta+r Delta-r + c110*Delta0r Delta0s + ...
+        // SEE ALSO
+        // research/compatibility/
+        //     lcbcDiff.mpl       : defines Qh 
+        //     writeLcbcFiles.mpl : 
+        FOR_3D(i1,i2,i3,J1,J2,J3)
         {
-          cp(-2,-2,-2)=0;
-          cp(-1,-2,-2)=0;
-          cp( 0,-2,-2)=1./16.*c011(i1,i2,i3)*c011(i1,i2-1,i3-1);
-          cp( 1,-2,-2)=0;
-          cp( 2,-2,-2)=0;
+          Real rx = DD(i1,i2,i3,0,0), ry = DD(i1,i2,i3,0,1), rz = DD(i1,i2,i3,0,2); 
+          Real sx = DD(i1,i2,i3,1,0), sy = DD(i1,i2,i3,1,1), sz = DD(i1,i2,i3,1,2);         
+          Real tx = DD(i1,i2,i3,2,0), ty = DD(i1,i2,i3,2,1), tz = DD(i1,i2,i3,2,2);         
 
-          cp(-2,-1,-2)=0;
-          cp(-1,-1,-2)=1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3-1)+1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3-1);
-          cp( 0,-1,-2)=1./4.*c002(i1,i2,i3)*c011(i1,i2,i3-1)+c011(i1,i2,i3)*(-1./8.*c001(i1,i2-1,i3-1)+1./4.*c002(i1,i2-1,i3-1))-1./8.*c001(i1,i2,i3)*c011(i1,i2,i3-1);
-          cp( 1,-1,-2)=-1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3-1)-1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3-1);
-          cp( 2,-1,-2)=0;
+          c200(i1,i2,i3) = ( SQR(rx) + SQR(ry) + SQR(rz) )/( SQR(dr[0]) );
+          c020(i1,i2,i3) = ( SQR(sx) + SQR(sy) + SQR(sz) )/( SQR(dr[1]) );
+          c002(i1,i2,i3) = ( SQR(tx) + SQR(ty) + SQR(tz) )/( SQR(dr[2]) );
 
-          cp(-2, 0,-2)=1./16.*c101(i1,i2,i3)*c101(i1-1,i2,i3-1);
-          cp(-1, 0,-2)=1./4.*c002(i1,i2,i3)*c101(i1,i2,i3-1)+c101(i1,i2,i3)*(-1./8.*c001(i1-1,i2,i3-1)+1./4.*c002(i1-1,i2,i3-1))-1./8.*c001(i1,i2,i3)*c101(i1,i2,i3-1);
-          cp( 0, 0,-2)=c002(i1,i2,i3)*(c002(i1,i2,i3-1)-1./2.*c001(i1,i2,i3-1))+c101(i1,i2,i3)*(-1./16.*c101(i1+1,i2,i3-1)-1./16.*c101(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2+1,i3-1)-1./16.*c011(i1,i2-1,i3-1))+c001(i1,i2,i3)*(1./4.*c001(i1,i2,i3-1)-1./2.*c002(i1,i2,i3-1));
-          cp( 1, 0,-2)=-1./4.*c002(i1,i2,i3)*c101(i1,i2,i3-1)+c101(i1,i2,i3)*(1./8.*c001(i1+1,i2,i3-1)-1./4.*c002(i1+1,i2,i3-1))+1./8.*c001(i1,i2,i3)*c101(i1,i2,i3-1);
-          cp( 2, 0,-2)=1./16.*c101(i1,i2,i3)*c101(i1+1,i2,i3-1);
+          c110(i1,i2,i3) = 2.*( rx*sx + ry*sy +rz*sz )/( dr[0]*dr[1] ); 
+          c101(i1,i2,i3) = 2.*( rx*tx + ry*ty +rz*tz )/( dr[0]*dr[2] ); 
+          c011(i1,i2,i3) = 2.*( sx*tx + sy*ty +sz*tz )/( dr[1]*dr[2] ); 
 
-          cp(-2, 1,-2)=0;
-          cp(-1, 1,-2)=-1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3-1)-1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3-1);
-          cp( 0, 1,-2)=-1./4.*c002(i1,i2,i3)*c011(i1,i2,i3-1)+c011(i1,i2,i3)*(1./8.*c001(i1,i2+1,i3-1)-1./4.*c002(i1,i2+1,i3-1))+1./8.*c001(i1,i2,i3)*c011(i1,i2,i3-1);
-          cp( 1, 1,-2)=1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3-1)+1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3-1);
-          cp( 2, 1,-2)=0;
+          Real rxr = DDR2(0,0), ryr = DDR2(0,1), rzr = DDR2(0,2);
+          Real sxr = DDR2(1,0), syr = DDR2(1,1), szr = DDR2(1,2);
+          Real txr = DDR2(2,0), tyr = DDR2(2,1), tzr = DDR2(2,2);
 
-          cp(-2, 2,-2)=0;
-          cp(-1, 2,-2)=0;
-          cp( 0, 2,-2)=1./16.*c011(i1,i2,i3)*c011(i1,i2+1,i3-1);
-          cp( 1, 2,-2)=0;
-          cp( 2, 2,-2)=0;
+          Real rxs = DDS2(0,0), rys = DDS2(0,1), rzs = DDS2(0,2);
+          Real sxs = DDS2(1,0), sys = DDS2(1,1), szs = DDS2(1,2);
+          Real txs = DDS2(2,0), tys = DDS2(2,1), tzs = DDS2(2,2);
 
-          cp(-2,-2,-1)=0;
-          cp(-1,-2,-1)=1./16.*c110(i1,i2,i3)*c011(i1-1,i2-1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3-1);
-          cp( 0,-2,-1)=1./4.*c020(i1,i2,i3)*c011(i1,i2-1,i3)+c011(i1,i2,i3)*(-1./8.*c010(i1,i2-1,i3-1)+1./4.*c020(i1,i2-1,i3-1))-1./8.*c010(i1,i2,i3)*c011(i1,i2-1,i3);
-          cp( 1,-2,-1)=-1./16.*c110(i1,i2,i3)*c011(i1+1,i2-1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3-1);
-          cp( 2,-2,-1)=0;
+          Real rxt = DDT2(0,0), ryt = DDT2(0,1), rzt = DDT2(0,2);
+          Real sxt = DDT2(1,0), syt = DDT2(1,1), szt = DDT2(1,2);
+          Real txt = DDT2(2,0), tyt = DDT2(2,1), tzt = DDT2(2,2);                
 
-          cp(-2,-1,-1)=1./16.*c110(i1,i2,i3)*c101(i1-1,i2-1,i3)+1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3-1);
-          cp(-1,-1,-1)=1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(1./4.*c002(i1-1,i2-1,i3)-1./8.*c001(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./8.*c010(i1-1,i2,i3-1)+1./4.*c020(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./4.*c200(i1,i2-1,i3-1)-1./8.*c100(i1,i2-1,i3-1))-1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
-          cp( 0,-1,-1)=-1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(c002(i1,i2-1,i3)-1./2.*c001(i1,i2-1,i3)-1./2.*c011(i1,i2,i3))+c002(i1,i2,i3)*(-1./2.*c010(i1,i2,i3-1)+c020(i1,i2,i3-1)-1./2.*c011(i1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c101(i1+1,i2-1,i3)-1./16.*c101(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c110(i1+1,i2,i3-1)-1./16.*c110(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./2.*c002(i1,i2-1,i3-1)-1./2.*c020(i1,i2-1,i3-1)-1./2.*c200(i1,i2-1,i3-1))+c010(i1,i2,i3)*(1./4.*c001(i1,i2-1,i3)-1./2.*c002(i1,i2-1,i3))+c001(i1,i2,i3)*(1./4.*c010(i1,i2,i3-1)-1./2.*c020(i1,i2,i3-1));
-          cp( 1,-1,-1)=1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(-1./4.*c002(i1+1,i2-1,i3)+1./8.*c001(i1+1,i2-1,i3))+c101(i1,i2,i3)*(1./8.*c010(i1+1,i2,i3-1)-1./4.*c020(i1+1,i2,i3-1))+c011(i1,i2,i3)*(1./8.*c100(i1,i2-1,i3-1)+1./4.*c200(i1,i2-1,i3-1))+1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
-          cp( 2,-1,-1)=1./16.*c110(i1,i2,i3)*c101(i1+1,i2-1,i3)+1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3-1);
-          
-          cp(-2, 0,-1)=1./4.*c200(i1,i2,i3)*c101(i1-1,i2,i3)+c101(i1,i2,i3)*(1./4.*c200(i1-1,i2,i3-1)-1./8.*c100(i1-1,i2,i3-1))-1./8.*c100(i1,i2,i3)*c101(i1-1,i2,i3);
-          cp(-1, 0,-1)=c200(i1,i2,i3)*(-1./2.*c001(i1-1,i2,i3)-1./2.*c101(i1,i2,i3)+c002(i1-1,i2,i3))-1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(-1./2.*c100(i1,i2,i3-1)+c200(i1,i2,i3-1)-1./2.*c101(i1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c011(i1-1,i2+1,i3)-1./16.*c011(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3-1)-1./2.*c002(i1-1,i2,i3-1)-1./2.*c020(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./16.*c110(i1,i2+1,i3-1)-1./16.*c110(i1,i2-1,i3-1))+c100(i1,i2,i3)*(1./4.*c001(i1-1,i2,i3)-1./2.*c002(i1-1,i2,i3))+c001(i1,i2,i3)*(-1./2.*c200(i1,i2,i3-1)+1./4.*c100(i1,i2,i3-1));
-          cp( 0, 0,-1)=c200(i1,i2,i3)*(c001(i1,i2,i3)-2*c002(i1,i2,i3)-1./4.*c101(i1-1,i2,i3)+1./4.*c101(i1+1,i2,i3))+c020(i1,i2,i3)*(c001(i1,i2,i3)-2*c002(i1,i2,i3)-1./4.*c011(i1,i2-1,i3)+1./4.*c011(i1,i2+1,i3))+c002(i1,i2,i3)*(-2*c002(i1,i2,i3-1)-2*c020(i1,i2,i3-1)-2*c200(i1,i2,i3-1)+c001(i1,i2,i3)-2*c002(i1,i2,i3))+c101(i1,i2,i3)*(-1./4.*c200(i1+1,i2,i3-1)+1./4.*c200(i1-1,i2,i3-1)+1./8.*c100(i1+1,i2,i3-1)+1./8.*c100(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./8.*c010(i1,i2-1,i3-1)+1./8.*c010(i1,i2+1,i3-1)-1./4.*c020(i1,i2+1,i3-1)+1./4.*c020(i1,i2-1,i3-1))+c100(i1,i2,i3)*(1./8.*c101(i1+1,i2,i3)+1./8.*c101(i1-1,i2,i3))+c010(i1,i2,i3)*(1./8.*c011(i1,i2+1,i3)+1./8.*c011(i1,i2-1,i3))+c001(i1,i2,i3)*(c200(i1,i2,i3-1)+c020(i1,i2,i3-1)+c002(i1,i2,i3-1));
-          cp( 1, 0,-1)=c200(i1,i2,i3)*(1./2.*c101(i1,i2,i3)-1./2.*c001(i1+1,i2,i3)+c002(i1+1,i2,i3))+1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(1./2.*c100(i1,i2,i3-1)+c200(i1,i2,i3-1)+1./2.*c101(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c011(i1+1,i2-1,i3)+1./16.*c011(i1+1,i2+1,i3))+c101(i1,i2,i3)*(1./2.*c200(i1+1,i2,i3-1)+1./2.*c020(i1+1,i2,i3-1)+1./2.*c002(i1+1,i2,i3-1))+c011(i1,i2,i3)*(1./16.*c110(i1,i2+1,i3-1)+1./16.*c110(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./4.*c001(i1+1,i2,i3)+1./2.*c002(i1+1,i2,i3))+c001(i1,i2,i3)*(-1./4.*c100(i1,i2,i3-1)-1./2.*c200(i1,i2,i3-1));
-          cp( 2, 0,-1)=-1./4.*c200(i1,i2,i3)*c101(i1+1,i2,i3)+c101(i1,i2,i3)*(-1./4.*c200(i1+1,i2,i3-1)-1./8.*c100(i1+1,i2,i3-1))-1./8.*c100(i1,i2,i3)*c101(i1+1,i2,i3);
-          
-          cp(-2, 1,-1)=-1./16.*c110(i1,i2,i3)*c101(i1-1,i2+1,i3)-1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3-1);
-          cp(-1, 1,-1)=-1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(-1./4.*c002(i1-1,i2+1,i3)+1./8.*c001(i1-1,i2+1,i3))+c101(i1,i2,i3)*(1./4.*c020(i1-1,i2,i3-1)+1./8.*c010(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./4.*c200(i1,i2+1,i3-1)+1./8.*c100(i1,i2+1,i3-1))+1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
-          cp( 0, 1,-1)=1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(1./2.*c011(i1,i2,i3)-1./2.*c001(i1,i2+1,i3)+c002(i1,i2+1,i3))+c002(i1,i2,i3)*(1./2.*c010(i1,i2,i3-1)+c020(i1,i2,i3-1)+1./2.*c011(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c101(i1+1,i2+1,i3)+1./16.*c101(i1-1,i2+1,i3))+c101(i1,i2,i3)*(1./16.*c110(i1+1,i2,i3-1)+1./16.*c110(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./2.*c200(i1,i2+1,i3-1)+1./2.*c002(i1,i2+1,i3-1)+1./2.*c020(i1,i2+1,i3-1))+c010(i1,i2,i3)*(-1./4.*c001(i1,i2+1,i3)+1./2.*c002(i1,i2+1,i3))+c001(i1,i2,i3)*(-1./2.*c020(i1,i2,i3-1)-1./4.*c010(i1,i2,i3-1));
-          cp( 1, 1,-1)=-1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(1./4.*c002(i1+1,i2+1,i3)-1./8.*c001(i1+1,i2+1,i3))+c101(i1,i2,i3)*(-1./4.*c020(i1+1,i2,i3-1)-1./8.*c010(i1+1,i2,i3-1))+c011(i1,i2,i3)*(-1./8.*c100(i1,i2+1,i3-1)-1./4.*c200(i1,i2+1,i3-1))-1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
-          cp( 2, 1,-1)=-1./16.*c110(i1,i2,i3)*c101(i1+1,i2+1,i3)-1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3-1);
-          
-          cp(-2, 2,-1)=0;
-          cp(-1, 2,-1)=1./16.*c110(i1,i2,i3)*c011(i1-1,i2+1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3-1);
-          cp( 0, 2,-1)=-1./4.*c020(i1,i2,i3)*c011(i1,i2+1,i3)+c011(i1,i2,i3)*(-1./8.*c010(i1,i2+1,i3-1)-1./4.*c020(i1,i2+1,i3-1))-1./8.*c010(i1,i2,i3)*c011(i1,i2+1,i3);
-          cp( 1, 2,-1)=-1./16.*c110(i1,i2,i3)*c011(i1+1,i2+1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3-1);
-          cp( 2, 2,-1)=0;
-         
-          cp(-2,-2, 0)=1./16.*c110(i1,i2,i3)*c110(i1-1,i2-1,i3);
-          cp(-1,-2, 0)=1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(1./4.*c020(i1-1,i2-1,i3)-1./8.*c010(i1-1,i2-1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
-          cp( 0,-2, 0)=c020(i1,i2,i3)*(-1./2.*c010(i1,i2-1,i3)+c020(i1,i2-1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2-1,i3)-1./16.*c110(i1-1,i2-1,i3))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2-1,i3+1)-1./16.*c011(i1,i2-1,i3-1))+c010(i1,i2,i3)*(1./4.*c010(i1,i2-1,i3)-1./2.*c020(i1,i2-1,i3));
-          cp( 1,-2, 0)=-1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(1./8.*c010(i1+1,i2-1,i3)-1./4.*c020(i1+1,i2-1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
-          cp( 2,-2, 0)=1./16.*c110(i1,i2,i3)*c110(i1+1,i2-1,i3);
-          
-          cp(-2,-1, 0)=1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(-1./8.*c100(i1-1,i2-1,i3)+1./4.*c200(i1-1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
-          cp(-1,-1, 0)=c200(i1,i2,i3)*(c020(i1-1,i2,i3)-1./2.*c010(i1-1,i2,i3)-1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(c200(i1,i2-1,i3)-1./2.*c100(i1,i2-1,i3)-1./2.*c110(i1,i2,i3))-1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(-1./2.*c200(i1-1,i2-1,i3)-1./2.*c020(i1-1,i2-1,i3)-1./2.*c002(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c011(i1-1,i2,i3-1)-1./16.*c011(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c101(i1,i2-1,i3+1)-1./16.*c101(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./2.*c020(i1-1,i2,i3)+1./4.*c010(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./2.*c200(i1,i2-1,i3)+1./4.*c100(i1,i2-1,i3));
-          cp( 0,-1, 0)=c200(i1,i2,i3)*(c010(i1,i2,i3)-2*c020(i1,i2,i3)-1./4.*c110(i1-1,i2,i3)+1./4.*c110(i1+1,i2,i3))+c020(i1,i2,i3)*(-2*c002(i1,i2-1,i3)-2*c020(i1,i2-1,i3)-2*c200(i1,i2-1,i3)+c010(i1,i2,i3)-2*c020(i1,i2,i3))+c002(i1,i2,i3)*(c010(i1,i2,i3)-2*c020(i1,i2,i3)-1./4.*c011(i1,i2,i3-1)+1./4.*c011(i1,i2,i3+1))+c110(i1,i2,i3)*(1./8.*c100(i1-1,i2-1,i3)-1./4.*c200(i1+1,i2-1,i3)+1./4.*c200(i1-1,i2-1,i3)+1./8.*c100(i1+1,i2-1,i3))+c011(i1,i2,i3)*(1./8.*c001(i1,i2-1,i3-1)+1./8.*c001(i1,i2-1,i3+1)-1./4.*c002(i1,i2-1,i3+1)+1./4.*c002(i1,i2-1,i3-1))+c100(i1,i2,i3)*(1./8.*c110(i1+1,i2,i3)+1./8.*c110(i1-1,i2,i3))+c010(i1,i2,i3)*(c200(i1,i2-1,i3)+c002(i1,i2-1,i3)+c020(i1,i2-1,i3))+c001(i1,i2,i3)*(1./8.*c011(i1,i2,i3+1)+1./8.*c011(i1,i2,i3-1));
-          cp( 1,-1, 0)=c200(i1,i2,i3)*(1./2.*c110(i1,i2,i3)-1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3))+c020(i1,i2,i3)*(1./2.*c110(i1,i2,i3)+c200(i1,i2-1,i3)+1./2.*c100(i1,i2-1,i3))+1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(1./2.*c200(i1+1,i2-1,i3)+1./2.*c020(i1+1,i2-1,i3)+1./2.*c002(i1+1,i2-1,i3))+c101(i1,i2,i3)*(1./16.*c011(i1+1,i2,i3-1)+1./16.*c011(i1+1,i2,i3+1))+c011(i1,i2,i3)*(1./16.*c101(i1,i2-1,i3+1)+1./16.*c101(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2-1,i3)-1./2.*c200(i1,i2-1,i3));
-          cp( 2,-1, 0)=-1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1+1,i2-1,i3)-1./8.*c100(i1+1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
-         
-          cp(-2, 0, 0)=c200(i1,i2,i3)*(c200(i1-1,i2,i3)-1./2.*c100(i1-1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2+1,i3)-1./16.*c110(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c101(i1-1,i2,i3-1)-1./16.*c101(i1-1,i2,i3+1))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)+1./4.*c100(i1-1,i2,i3));
-          cp(-1, 0, 0)=c200(i1,i2,i3)*(c100(i1,i2,i3)-2*c200(i1,i2,i3)-2*c002(i1-1,i2,i3)-2*c020(i1-1,i2,i3)-2*c200(i1-1,i2,i3))+c020(i1,i2,i3)*(c100(i1,i2,i3)-2*c200(i1,i2,i3)+1./4.*c110(i1,i2+1,i3)-1./4.*c110(i1,i2-1,i3))+c002(i1,i2,i3)*(c100(i1,i2,i3)-2*c200(i1,i2,i3)+1./4.*c101(i1,i2,i3+1)-1./4.*c101(i1,i2,i3-1))+c110(i1,i2,i3)*(1./8.*c010(i1-1,i2+1,i3)+1./4.*c020(i1-1,i2-1,i3)-1./4.*c020(i1-1,i2+1,i3)+1./8.*c010(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./8.*c001(i1-1,i2,i3-1)+1./8.*c001(i1-1,i2,i3+1)+1./4.*c002(i1-1,i2,i3-1)-1./4.*c002(i1-1,i2,i3+1))+c100(i1,i2,i3)*(c200(i1-1,i2,i3)+c020(i1-1,i2,i3)+c002(i1-1,i2,i3))+c010(i1,i2,i3)*(1./8.*c110(i1,i2+1,i3)+1./8.*c110(i1,i2-1,i3))+c001(i1,i2,i3)*(1./8.*c101(i1,i2,i3+1)+1./8.*c101(i1,i2,i3-1));
-          cp( 0, 0, 0)=c200(i1,i2,i3)*(-1./2.*c100(i1+1,i2,i3)+c200(i1-1,i2,i3)+c200(i1+1,i2,i3)+1./2.*c100(i1-1,i2,i3)+4*c200(i1,i2,i3)+4*c002(i1,i2,i3)+4*c020(i1,i2,i3))+c020(i1,i2,i3)*(4*c200(i1,i2,i3)+4*c002(i1,i2,i3)+4*c020(i1,i2,i3)+c020(i1,i2+1,i3)+1./2.*c010(i1,i2-1,i3)-1./2.*c010(i1,i2+1,i3)+c020(i1,i2-1,i3))+c002(i1,i2,i3)*(4*c200(i1,i2,i3)+4*c002(i1,i2,i3)+4*c020(i1,i2,i3)-1./2.*c001(i1,i2,i3+1)+c002(i1,i2,i3-1)+c002(i1,i2,i3+1)+1./2.*c001(i1,i2,i3-1))+c110(i1,i2,i3)*(1./16.*c110(i1+1,i2+1,i3)+1./16.*c110(i1-1,i2+1,i3)+1./16.*c110(i1+1,i2-1,i3)+1./16.*c110(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./16.*c101(i1+1,i2,i3-1)+1./16.*c101(i1+1,i2,i3+1)+1./16.*c101(i1-1,i2,i3-1)+1./16.*c101(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./16.*c011(i1,i2-1,i3+1)+1./16.*c011(i1,i2+1,i3-1)+1./16.*c011(i1,i2+1,i3+1)+1./16.*c011(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)-1./4.*c100(i1-1,i2,i3)-1./4.*c100(i1+1,i2,i3)+1./2.*c200(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c010(i1,i2+1,i3)-1./4.*c010(i1,i2-1,i3)-1./2.*c020(i1,i2-1,i3)+1./2.*c020(i1,i2+1,i3))+c001(i1,i2,i3)*(-1./4.*c001(i1,i2,i3-1)-1./4.*c001(i1,i2,i3+1)+1./2.*c002(i1,i2,i3+1)-1./2.*c002(i1,i2,i3-1));
-          cp( 1, 0, 0)=c200(i1,i2,i3)*(-c100(i1,i2,i3)-2*c200(i1,i2,i3)-2*c002(i1+1,i2,i3)-2*c020(i1+1,i2,i3)-2*c200(i1+1,i2,i3))+c020(i1,i2,i3)*(-c100(i1,i2,i3)-2*c200(i1,i2,i3)-1./4.*c110(i1,i2+1,i3)+1./4.*c110(i1,i2-1,i3))+c002(i1,i2,i3)*(-c100(i1,i2,i3)-2*c200(i1,i2,i3)-1./4.*c101(i1,i2,i3+1)+1./4.*c101(i1,i2,i3-1))+c110(i1,i2,i3)*(-1./8.*c010(i1+1,i2+1,i3)-1./8.*c010(i1+1,i2-1,i3)+1./4.*c020(i1+1,i2+1,i3)-1./4.*c020(i1+1,i2-1,i3))+c101(i1,i2,i3)*(-1./8.*c001(i1+1,i2,i3+1)-1./8.*c001(i1+1,i2,i3-1)+1./4.*c002(i1+1,i2,i3+1)-1./4.*c002(i1+1,i2,i3-1))+c100(i1,i2,i3)*(-c020(i1+1,i2,i3)-c002(i1+1,i2,i3)-c200(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./8.*c110(i1,i2+1,i3)-1./8.*c110(i1,i2-1,i3))+c001(i1,i2,i3)*(-1./8.*c101(i1,i2,i3+1)-1./8.*c101(i1,i2,i3-1));
-          cp( 2, 0, 0)=c200(i1,i2,i3)*(1./2.*c100(i1+1,i2,i3)+c200(i1+1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2+1,i3)-1./16.*c110(i1+1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c101(i1+1,i2,i3-1)-1./16.*c101(i1+1,i2,i3+1))+c100(i1,i2,i3)*(1./4.*c100(i1+1,i2,i3)+1./2.*c200(i1+1,i2,i3));
-         
-          cp(-2, 1, 0)=-1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)+1./8.*c100(i1-1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
-          cp(-1, 1, 0)=c200(i1,i2,i3)*(c020(i1-1,i2,i3)+1./2.*c010(i1-1,i2,i3)+1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(-1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)+1./2.*c110(i1,i2,i3))+1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(1./2.*c200(i1-1,i2+1,i3)+1./2.*c020(i1-1,i2+1,i3)+1./2.*c002(i1-1,i2+1,i3))+c101(i1,i2,i3)*(1./16.*c011(i1-1,i2,i3+1)+1./16.*c011(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./16.*c101(i1,i2+1,i3-1)+1./16.*c101(i1,i2+1,i3+1))+c100(i1,i2,i3)*(-1./4.*c010(i1-1,i2,i3)-1./2.*c020(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
-          cp( 0, 1, 0)=c200(i1,i2,i3)*(-c010(i1,i2,i3)-2*c020(i1,i2,i3)+1./4.*c110(i1-1,i2,i3)-1./4.*c110(i1+1,i2,i3))+c020(i1,i2,i3)*(-2*c002(i1,i2+1,i3)-2*c020(i1,i2+1,i3)-2*c200(i1,i2+1,i3)-c010(i1,i2,i3)-2*c020(i1,i2,i3))+c002(i1,i2,i3)*(-c010(i1,i2,i3)-2*c020(i1,i2,i3)+1./4.*c011(i1,i2,i3-1)-1./4.*c011(i1,i2,i3+1))+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)-1./8.*c100(i1-1,i2+1,i3)-1./8.*c100(i1+1,i2+1,i3)+1./4.*c200(i1+1,i2+1,i3))+c011(i1,i2,i3)*(-1./8.*c001(i1,i2+1,i3-1)+1./4.*c002(i1,i2+1,i3+1)-1./4.*c002(i1,i2+1,i3-1)-1./8.*c001(i1,i2+1,i3+1))+c100(i1,i2,i3)*(-1./8.*c110(i1+1,i2,i3)-1./8.*c110(i1-1,i2,i3))+c010(i1,i2,i3)*(-c200(i1,i2+1,i3)-c002(i1,i2+1,i3)-c020(i1,i2+1,i3))+c001(i1,i2,i3)*(-1./8.*c011(i1,i2,i3+1)-1./8.*c011(i1,i2,i3-1));
-          cp( 1, 1, 0)=c200(i1,i2,i3)*(-1./2.*c110(i1,i2,i3)+1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3))+c020(i1,i2,i3)*(1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)-1./2.*c110(i1,i2,i3))-1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(-1./2.*c020(i1+1,i2+1,i3)-1./2.*c200(i1+1,i2+1,i3)-1./2.*c002(i1+1,i2+1,i3))+c101(i1,i2,i3)*(-1./16.*c011(i1+1,i2,i3-1)-1./16.*c011(i1+1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c101(i1,i2+1,i3-1)-1./16.*c101(i1,i2+1,i3+1))+c100(i1,i2,i3)*(1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
-          cp( 2, 1, 0)=1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(1./8.*c100(i1+1,i2+1,i3)+1./4.*c200(i1+1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
-         
-          cp(-2, 2, 0)=1./16.*c110(i1,i2,i3)*c110(i1-1,i2+1,i3);
-          cp(-1, 2, 0)=-1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(-1./8.*c010(i1-1,i2+1,i3)-1./4.*c020(i1-1,i2+1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
-          cp( 0, 2, 0)=c020(i1,i2,i3)*(c020(i1,i2+1,i3)+1./2.*c010(i1,i2+1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2+1,i3)-1./16.*c110(i1-1,i2+1,i3))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2+1,i3-1)-1./16.*c011(i1,i2+1,i3+1))+c010(i1,i2,i3)*(1./4.*c010(i1,i2+1,i3)+1./2.*c020(i1,i2+1,i3));
-          cp( 1, 2, 0)=1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(1./8.*c010(i1+1,i2+1,i3)+1./4.*c020(i1+1,i2+1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
-          cp( 2, 2, 0)=1./16.*c110(i1,i2,i3)*c110(i1+1,i2+1,i3);
-         
-          cp(-2,-2, 1)=0;
-          cp(-1,-2, 1)=-1./16.*c110(i1,i2,i3)*c011(i1-1,i2-1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3+1);
-          cp( 0,-2, 1)=-1./4.*c020(i1,i2,i3)*c011(i1,i2-1,i3)+c011(i1,i2,i3)*(1./8.*c010(i1,i2-1,i3+1)-1./4.*c020(i1,i2-1,i3+1))+1./8.*c010(i1,i2,i3)*c011(i1,i2-1,i3);
-          cp( 1,-2, 1)=1./16.*c110(i1,i2,i3)*c011(i1+1,i2-1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3+1);
-          cp( 2,-2, 1)=0;
-         
-          cp(-2,-1, 1)=-1./16.*c110(i1,i2,i3)*c101(i1-1,i2-1,i3)-1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3+1);
-          cp(-1,-1, 1)=-1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(1./8.*c001(i1-1,i2-1,i3)+1./4.*c002(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./8.*c010(i1-1,i2,i3+1)-1./4.*c020(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./8.*c100(i1,i2-1,i3+1)-1./4.*c200(i1,i2-1,i3+1))+1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
-          cp( 0,-1, 1)=1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(c002(i1,i2-1,i3)+1./2.*c001(i1,i2-1,i3)+1./2.*c011(i1,i2,i3))+c002(i1,i2,i3)*(-1./2.*c010(i1,i2,i3+1)+c020(i1,i2,i3+1)+1./2.*c011(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c101(i1+1,i2-1,i3)+1./16.*c101(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./16.*c110(i1+1,i2,i3+1)+1./16.*c110(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./2.*c200(i1,i2-1,i3+1)+1./2.*c002(i1,i2-1,i3+1)+1./2.*c020(i1,i2-1,i3+1))+c010(i1,i2,i3)*(-1./2.*c002(i1,i2-1,i3)-1./4.*c001(i1,i2-1,i3))+c001(i1,i2,i3)*(-1./4.*c010(i1,i2,i3+1)+1./2.*c020(i1,i2,i3+1));
-          cp( 1,-1, 1)=-1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(-1./8.*c001(i1+1,i2-1,i3)-1./4.*c002(i1+1,i2-1,i3))+c101(i1,i2,i3)*(-1./8.*c010(i1+1,i2,i3+1)+1./4.*c020(i1+1,i2,i3+1))+c011(i1,i2,i3)*(-1./8.*c100(i1,i2-1,i3+1)-1./4.*c200(i1,i2-1,i3+1))-1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
-          cp( 2,-1, 1)=-1./16.*c110(i1,i2,i3)*c101(i1+1,i2-1,i3)-1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3+1);
-         
-          cp(-2, 0, 1)=-1./4.*c200(i1,i2,i3)*c101(i1-1,i2,i3)+c101(i1,i2,i3)*(-1./4.*c200(i1-1,i2,i3+1)+1./8.*c100(i1-1,i2,i3+1))+1./8.*c100(i1,i2,i3)*c101(i1-1,i2,i3);
-          cp(-1, 0, 1)=c200(i1,i2,i3)*(1./2.*c001(i1-1,i2,i3)+1./2.*c101(i1,i2,i3)+c002(i1-1,i2,i3))+1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(-1./2.*c100(i1,i2,i3+1)+1./2.*c101(i1,i2,i3)+c200(i1,i2,i3+1))+c110(i1,i2,i3)*(1./16.*c011(i1-1,i2+1,i3)+1./16.*c011(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./2.*c200(i1-1,i2,i3+1)+1./2.*c002(i1-1,i2,i3+1)+1./2.*c020(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./16.*c110(i1,i2+1,i3+1)+1./16.*c110(i1,i2-1,i3+1))+c100(i1,i2,i3)*(-1./2.*c002(i1-1,i2,i3)-1./4.*c001(i1-1,i2,i3))+c001(i1,i2,i3)*(-1./4.*c100(i1,i2,i3+1)+1./2.*c200(i1,i2,i3+1));
-          cp( 0, 0, 1)=c200(i1,i2,i3)*(-c001(i1,i2,i3)-2*c002(i1,i2,i3)+1./4.*c101(i1-1,i2,i3)-1./4.*c101(i1+1,i2,i3))+c020(i1,i2,i3)*(-c001(i1,i2,i3)-2*c002(i1,i2,i3)+1./4.*c011(i1,i2-1,i3)-1./4.*c011(i1,i2+1,i3))+c002(i1,i2,i3)*(-2*c002(i1,i2,i3+1)-2*c020(i1,i2,i3+1)-2*c200(i1,i2,i3+1)-c001(i1,i2,i3)-2*c002(i1,i2,i3))+c101(i1,i2,i3)*(-1./4.*c200(i1-1,i2,i3+1)+1./4.*c200(i1+1,i2,i3+1)-1./8.*c100(i1-1,i2,i3+1)-1./8.*c100(i1+1,i2,i3+1))+c011(i1,i2,i3)*(1./4.*c020(i1,i2+1,i3+1)-1./8.*c010(i1,i2-1,i3+1)-1./8.*c010(i1,i2+1,i3+1)-1./4.*c020(i1,i2-1,i3+1))+c100(i1,i2,i3)*(-1./8.*c101(i1+1,i2,i3)-1./8.*c101(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./8.*c011(i1,i2+1,i3)-1./8.*c011(i1,i2-1,i3))+c001(i1,i2,i3)*(-c200(i1,i2,i3+1)-c020(i1,i2,i3+1)-c002(i1,i2,i3+1));
-          cp( 1, 0, 1)=c200(i1,i2,i3)*(-1./2.*c101(i1,i2,i3)+1./2.*c001(i1+1,i2,i3)+c002(i1+1,i2,i3))-1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(-1./2.*c101(i1,i2,i3)+1./2.*c100(i1,i2,i3+1)+c200(i1,i2,i3+1))+c110(i1,i2,i3)*(-1./16.*c011(i1+1,i2-1,i3)-1./16.*c011(i1+1,i2+1,i3))+c101(i1,i2,i3)*(-1./2.*c200(i1+1,i2,i3+1)-1./2.*c020(i1+1,i2,i3+1)-1./2.*c002(i1+1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c110(i1,i2+1,i3+1)-1./16.*c110(i1,i2-1,i3+1))+c100(i1,i2,i3)*(1./2.*c002(i1+1,i2,i3)+1./4.*c001(i1+1,i2,i3))+c001(i1,i2,i3)*(1./4.*c100(i1,i2,i3+1)+1./2.*c200(i1,i2,i3+1));
-          cp( 2, 0, 1)=1./4.*c200(i1,i2,i3)*c101(i1+1,i2,i3)+c101(i1,i2,i3)*(1./4.*c200(i1+1,i2,i3+1)+1./8.*c100(i1+1,i2,i3+1))+1./8.*c100(i1,i2,i3)*c101(i1+1,i2,i3);
-        
-          cp(-2, 1, 1)=1./16.*c110(i1,i2,i3)*c101(i1-1,i2+1,i3)+1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3+1);
-          cp(-1, 1, 1)=1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(-1./8.*c001(i1-1,i2+1,i3)-1./4.*c002(i1-1,i2+1,i3))+c101(i1,i2,i3)*(-1./8.*c010(i1-1,i2,i3+1)-1./4.*c020(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./8.*c100(i1,i2+1,i3+1)+1./4.*c200(i1,i2+1,i3+1))-1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
-          cp( 0, 1, 1)=-1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(-1./2.*c011(i1,i2,i3)+1./2.*c001(i1,i2+1,i3)+c002(i1,i2+1,i3))+c002(i1,i2,i3)*(-1./2.*c011(i1,i2,i3)+c020(i1,i2,i3+1)+1./2.*c010(i1,i2,i3+1))+c110(i1,i2,i3)*(-1./16.*c101(i1+1,i2+1,i3)-1./16.*c101(i1-1,i2+1,i3))+c101(i1,i2,i3)*(-1./16.*c110(i1+1,i2,i3+1)-1./16.*c110(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./2.*c020(i1,i2+1,i3+1)-1./2.*c200(i1,i2+1,i3+1)-1./2.*c002(i1,i2+1,i3+1))+c010(i1,i2,i3)*(1./2.*c002(i1,i2+1,i3)+1./4.*c001(i1,i2+1,i3))+c001(i1,i2,i3)*(1./2.*c020(i1,i2,i3+1)+1./4.*c010(i1,i2,i3+1));
-          cp( 1, 1, 1)=1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(1./8.*c001(i1+1,i2+1,i3)+1./4.*c002(i1+1,i2+1,i3))+c101(i1,i2,i3)*(1./4.*c020(i1+1,i2,i3+1)+1./8.*c010(i1+1,i2,i3+1))+c011(i1,i2,i3)*(1./8.*c100(i1,i2+1,i3+1)+1./4.*c200(i1,i2+1,i3+1))+1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
-          cp( 2, 1, 1)=1./16.*c110(i1,i2,i3)*c101(i1+1,i2+1,i3)+1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3+1);
-         
-          cp(-2, 2, 1)=0;
-          cp(-1, 2, 1)=-1./16.*c110(i1,i2,i3)*c011(i1-1,i2+1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3+1);
-          cp( 0, 2, 1)=1./4.*c020(i1,i2,i3)*c011(i1,i2+1,i3)+c011(i1,i2,i3)*(1./4.*c020(i1,i2+1,i3+1)+1./8.*c010(i1,i2+1,i3+1))+1./8.*c010(i1,i2,i3)*c011(i1,i2+1,i3);
-          cp( 1, 2, 1)=1./16.*c110(i1,i2,i3)*c011(i1+1,i2+1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3+1);
-          cp( 2, 2, 1)=0;
-         
-          cp(-2,-2, 2)=0;
-          cp(-1,-2, 2)=0;
-          cp( 0,-2, 2)=1./16.*c011(i1,i2,i3)*c011(i1,i2-1,i3+1);
-          cp( 1,-2, 2)=0;
-          cp( 2,-2, 2)=0;
-         
-          cp(-2,-1, 2)=0;
-          cp(-1,-1, 2)=1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3+1)+1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3+1);
-          cp( 0,-1, 2)=-1./4.*c002(i1,i2,i3)*c011(i1,i2,i3+1)+c011(i1,i2,i3)*(-1./8.*c001(i1,i2-1,i3+1)-1./4.*c002(i1,i2-1,i3+1))-1./8.*c001(i1,i2,i3)*c011(i1,i2,i3+1);
-          cp( 1,-1, 2)=-1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3+1)-1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3+1);
-          cp( 2,-1, 2)=0;
-         
-          cp(-2, 0, 2)=1./16.*c101(i1,i2,i3)*c101(i1-1,i2,i3+1);
-          cp(-1, 0, 2)=-1./4.*c002(i1,i2,i3)*c101(i1,i2,i3+1)+c101(i1,i2,i3)*(-1./8.*c001(i1-1,i2,i3+1)-1./4.*c002(i1-1,i2,i3+1))-1./8.*c001(i1,i2,i3)*c101(i1,i2,i3+1);
-          cp( 0, 0, 2)=c002(i1,i2,i3)*(1./2.*c001(i1,i2,i3+1)+c002(i1,i2,i3+1))+c101(i1,i2,i3)*(-1./16.*c101(i1+1,i2,i3+1)-1./16.*c101(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2-1,i3+1)-1./16.*c011(i1,i2+1,i3+1))+c001(i1,i2,i3)*(1./4.*c001(i1,i2,i3+1)+1./2.*c002(i1,i2,i3+1));
-          cp( 1, 0, 2)=1./4.*c002(i1,i2,i3)*c101(i1,i2,i3+1)+c101(i1,i2,i3)*(1./8.*c001(i1+1,i2,i3+1)+1./4.*c002(i1+1,i2,i3+1))+1./8.*c001(i1,i2,i3)*c101(i1,i2,i3+1);
-          cp( 2, 0, 2)=1./16.*c101(i1,i2,i3)*c101(i1+1,i2,i3+1);
-        
-          cp(-2, 1, 2)=0;
-          cp(-1, 1, 2)=-1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3+1)-1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3+1);
-          cp( 0, 1, 2)=1./4.*c002(i1,i2,i3)*c011(i1,i2,i3+1)+c011(i1,i2,i3)*(1./4.*c002(i1,i2+1,i3+1)+1./8.*c001(i1,i2+1,i3+1))+1./8.*c001(i1,i2,i3)*c011(i1,i2,i3+1);
-          cp( 1, 1, 2)=1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3+1)+1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3+1);
-          cp( 2, 1, 2)=0;
-         
-          cp(-2, 2, 2)=0;
-          cp(-1, 2, 2)=0;
-          cp( 0, 2, 2)=1./16.*c011(i1,i2,i3)*c011(i1,i2+1,i3+1);
-          cp( 1, 2, 2)=0;
-          cp( 2, 2, 2)=0;
 
-          ForStencil(m1,m2,m3)
+          Real rxx= rx*rxr + sx*rxs + tx*rxt;
+          Real sxx= rx*sxr + sx*sxs + tx*sxt;
+          Real txx= rx*txr + sx*txs + tx*txt;
+
+          Real ryy= ry*ryr + sy*rys + ty*ryt;
+          Real syy= ry*syr + sy*sys + ty*syt;
+          Real tyy= ry*tyr + sy*tys + ty*tyt;
+
+          Real rzz= rz*rzr + sz*rzs + tz*rzt;
+          Real szz= rz*szr + sz*szs + tz*szt;
+          Real tzz= rz*tzr + sz*tzs + tz*tzt;
+
+          // Real rxx= rx*rxr + sx*rxs + tx*rxt, ryx= rx*ryr + sx*rys + tx*ryt, rzx= rx*rzr + sx*rzs + tx*rzt;
+          // Real sxx= rx*sxr + sx*sxs + tx*sxt, syx= rx*syr + sx*sys + tx*syt, szx= rx*szr + sx*szs + tx*szt;
+          // Real txx= rx*txr + sx*txs + tx*txt, tyx= rx*tyr + sx*tys + tx*tyt, tzx= rx*tzr + sx*tzs + tx*tzt;                
+
+          // Real rxy= ry*rxr + sy*rxs + ty*rxt, ryy= ry*ryr + sy*rys + ty*ryt, rzy= ry*rzr + sy*rzs + ty*rzt;
+          // Real sxy= ry*sxr + sy*sxs + ty*sxt, syy= ry*syr + sy*sys + ty*syt, szy= ry*szr + sy*szs + ty*szt;
+          // Real txy= ry*txr + sy*txs + ty*txt, tyy= ry*tyr + sy*tys + ty*tyt, tzy= ry*tzr + sy*tzs + ty*tzt;  
+
+          // Real rxz= rz*rxr + sz*rxs + tz*rxt, ryz= rz*ryr + sz*rys + tz*ryt, rzz= rz*rzr + sz*rzs + tz*rzt;
+          // Real sxz= rz*sxr + sz*sxs + tz*sxt, syz= rz*syr + sz*sys + tz*syt, szz= rz*szr + sz*szs + tz*szt;
+          // Real txz= rz*txr + sz*txs + tz*txt, tyz= rz*tyr + sz*tys + tz*tyt, tzz= rz*tzr + sz*tzs + tz*tzt;  
+
+          c100(i1,i2,i3) = (rxx + ryy + rzz)/(dr[0]); 
+          c010(i1,i2,i3) = (sxx + syy + szz)/(dr[1]); 
+          c001(i1,i2,i3) = (txx + tyy + tzz)/(dr[2]); 
+
+        }
+
+        Range R5(-2,2);
+        RealArray cp(R5,R5,R5);
+
+        FOR_3(i1,i2,i3,I1,I2,I3)
+        {
+          // coefficients of Lap^2 (from research/compatibility/writeLcbcFiles.mpl --> lcbcEquationsDirichlet3dOrder4.h)
+          if( maskLocal(i1,i2,i3)>0 )
           {
-            int m  = M123(m1,m2,m3);
-            coeffLocal(m,i1,i2,i3) += cLapSq*cp(m1,m2,m3);
-          }
+            cp(-2,-2,-2)=0;
+            cp(-1,-2,-2)=0;
+            cp( 0,-2,-2)=1./16.*c011(i1,i2,i3)*c011(i1,i2-1,i3-1);
+            cp( 1,-2,-2)=0;
+            cp( 2,-2,-2)=0;
 
-          // // save for testing : 
-          // ForStencil(m1,m2,m3)
-          // {
-          //   int m  = M123(m1,m2,m3);
-          //   lapSqCoeffLocal(m,i1,i2,i3) = cp(m1,m2,m3);
-          // }          
+            cp(-2,-1,-2)=0;
+            cp(-1,-1,-2)=1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3-1)+1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3-1);
+            cp( 0,-1,-2)=1./4.*c002(i1,i2,i3)*c011(i1,i2,i3-1)+c011(i1,i2,i3)*(-1./8.*c001(i1,i2-1,i3-1)+1./4.*c002(i1,i2-1,i3-1))-1./8.*c001(i1,i2,i3)*c011(i1,i2,i3-1);
+            cp( 1,-1,-2)=-1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3-1)-1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3-1);
+            cp( 2,-1,-2)=0;
 
-        } // end if mask
-      } // end for 3d       
-    }
+            cp(-2, 0,-2)=1./16.*c101(i1,i2,i3)*c101(i1-1,i2,i3-1);
+            cp(-1, 0,-2)=1./4.*c002(i1,i2,i3)*c101(i1,i2,i3-1)+c101(i1,i2,i3)*(-1./8.*c001(i1-1,i2,i3-1)+1./4.*c002(i1-1,i2,i3-1))-1./8.*c001(i1,i2,i3)*c101(i1,i2,i3-1);
+            cp( 0, 0,-2)=c002(i1,i2,i3)*(c002(i1,i2,i3-1)-1./2.*c001(i1,i2,i3-1))+c101(i1,i2,i3)*(-1./16.*c101(i1+1,i2,i3-1)-1./16.*c101(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2+1,i3-1)-1./16.*c011(i1,i2-1,i3-1))+c001(i1,i2,i3)*(1./4.*c001(i1,i2,i3-1)-1./2.*c002(i1,i2,i3-1));
+            cp( 1, 0,-2)=-1./4.*c002(i1,i2,i3)*c101(i1,i2,i3-1)+c101(i1,i2,i3)*(1./8.*c001(i1+1,i2,i3-1)-1./4.*c002(i1+1,i2,i3-1))+1./8.*c001(i1,i2,i3)*c101(i1,i2,i3-1);
+            cp( 2, 0,-2)=1./16.*c101(i1,i2,i3)*c101(i1+1,i2,i3-1);
+
+            cp(-2, 1,-2)=0;
+            cp(-1, 1,-2)=-1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3-1)-1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3-1);
+            cp( 0, 1,-2)=-1./4.*c002(i1,i2,i3)*c011(i1,i2,i3-1)+c011(i1,i2,i3)*(1./8.*c001(i1,i2+1,i3-1)-1./4.*c002(i1,i2+1,i3-1))+1./8.*c001(i1,i2,i3)*c011(i1,i2,i3-1);
+            cp( 1, 1,-2)=1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3-1)+1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3-1);
+            cp( 2, 1,-2)=0;
+
+            cp(-2, 2,-2)=0;
+            cp(-1, 2,-2)=0;
+            cp( 0, 2,-2)=1./16.*c011(i1,i2,i3)*c011(i1,i2+1,i3-1);
+            cp( 1, 2,-2)=0;
+            cp( 2, 2,-2)=0;
+
+            cp(-2,-2,-1)=0;
+            cp(-1,-2,-1)=1./16.*c110(i1,i2,i3)*c011(i1-1,i2-1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3-1);
+            cp( 0,-2,-1)=1./4.*c020(i1,i2,i3)*c011(i1,i2-1,i3)+c011(i1,i2,i3)*(-1./8.*c010(i1,i2-1,i3-1)+1./4.*c020(i1,i2-1,i3-1))-1./8.*c010(i1,i2,i3)*c011(i1,i2-1,i3);
+            cp( 1,-2,-1)=-1./16.*c110(i1,i2,i3)*c011(i1+1,i2-1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3-1);
+            cp( 2,-2,-1)=0;
+
+            cp(-2,-1,-1)=1./16.*c110(i1,i2,i3)*c101(i1-1,i2-1,i3)+1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3-1);
+            cp(-1,-1,-1)=1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(1./4.*c002(i1-1,i2-1,i3)-1./8.*c001(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./8.*c010(i1-1,i2,i3-1)+1./4.*c020(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./4.*c200(i1,i2-1,i3-1)-1./8.*c100(i1,i2-1,i3-1))-1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
+            cp( 0,-1,-1)=-1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(c002(i1,i2-1,i3)-1./2.*c001(i1,i2-1,i3)-1./2.*c011(i1,i2,i3))+c002(i1,i2,i3)*(-1./2.*c010(i1,i2,i3-1)+c020(i1,i2,i3-1)-1./2.*c011(i1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c101(i1+1,i2-1,i3)-1./16.*c101(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c110(i1+1,i2,i3-1)-1./16.*c110(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./2.*c002(i1,i2-1,i3-1)-1./2.*c020(i1,i2-1,i3-1)-1./2.*c200(i1,i2-1,i3-1))+c010(i1,i2,i3)*(1./4.*c001(i1,i2-1,i3)-1./2.*c002(i1,i2-1,i3))+c001(i1,i2,i3)*(1./4.*c010(i1,i2,i3-1)-1./2.*c020(i1,i2,i3-1));
+            cp( 1,-1,-1)=1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(-1./4.*c002(i1+1,i2-1,i3)+1./8.*c001(i1+1,i2-1,i3))+c101(i1,i2,i3)*(1./8.*c010(i1+1,i2,i3-1)-1./4.*c020(i1+1,i2,i3-1))+c011(i1,i2,i3)*(1./8.*c100(i1,i2-1,i3-1)+1./4.*c200(i1,i2-1,i3-1))+1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
+            cp( 2,-1,-1)=1./16.*c110(i1,i2,i3)*c101(i1+1,i2-1,i3)+1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3-1);
+            
+            cp(-2, 0,-1)=1./4.*c200(i1,i2,i3)*c101(i1-1,i2,i3)+c101(i1,i2,i3)*(1./4.*c200(i1-1,i2,i3-1)-1./8.*c100(i1-1,i2,i3-1))-1./8.*c100(i1,i2,i3)*c101(i1-1,i2,i3);
+            cp(-1, 0,-1)=c200(i1,i2,i3)*(-1./2.*c001(i1-1,i2,i3)-1./2.*c101(i1,i2,i3)+c002(i1-1,i2,i3))-1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(-1./2.*c100(i1,i2,i3-1)+c200(i1,i2,i3-1)-1./2.*c101(i1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c011(i1-1,i2+1,i3)-1./16.*c011(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3-1)-1./2.*c002(i1-1,i2,i3-1)-1./2.*c020(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./16.*c110(i1,i2+1,i3-1)-1./16.*c110(i1,i2-1,i3-1))+c100(i1,i2,i3)*(1./4.*c001(i1-1,i2,i3)-1./2.*c002(i1-1,i2,i3))+c001(i1,i2,i3)*(-1./2.*c200(i1,i2,i3-1)+1./4.*c100(i1,i2,i3-1));
+            cp( 0, 0,-1)=c200(i1,i2,i3)*(c001(i1,i2,i3)-2*c002(i1,i2,i3)-1./4.*c101(i1-1,i2,i3)+1./4.*c101(i1+1,i2,i3))+c020(i1,i2,i3)*(c001(i1,i2,i3)-2*c002(i1,i2,i3)-1./4.*c011(i1,i2-1,i3)+1./4.*c011(i1,i2+1,i3))+c002(i1,i2,i3)*(-2*c002(i1,i2,i3-1)-2*c020(i1,i2,i3-1)-2*c200(i1,i2,i3-1)+c001(i1,i2,i3)-2*c002(i1,i2,i3))+c101(i1,i2,i3)*(-1./4.*c200(i1+1,i2,i3-1)+1./4.*c200(i1-1,i2,i3-1)+1./8.*c100(i1+1,i2,i3-1)+1./8.*c100(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./8.*c010(i1,i2-1,i3-1)+1./8.*c010(i1,i2+1,i3-1)-1./4.*c020(i1,i2+1,i3-1)+1./4.*c020(i1,i2-1,i3-1))+c100(i1,i2,i3)*(1./8.*c101(i1+1,i2,i3)+1./8.*c101(i1-1,i2,i3))+c010(i1,i2,i3)*(1./8.*c011(i1,i2+1,i3)+1./8.*c011(i1,i2-1,i3))+c001(i1,i2,i3)*(c200(i1,i2,i3-1)+c020(i1,i2,i3-1)+c002(i1,i2,i3-1));
+            cp( 1, 0,-1)=c200(i1,i2,i3)*(1./2.*c101(i1,i2,i3)-1./2.*c001(i1+1,i2,i3)+c002(i1+1,i2,i3))+1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(1./2.*c100(i1,i2,i3-1)+c200(i1,i2,i3-1)+1./2.*c101(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c011(i1+1,i2-1,i3)+1./16.*c011(i1+1,i2+1,i3))+c101(i1,i2,i3)*(1./2.*c200(i1+1,i2,i3-1)+1./2.*c020(i1+1,i2,i3-1)+1./2.*c002(i1+1,i2,i3-1))+c011(i1,i2,i3)*(1./16.*c110(i1,i2+1,i3-1)+1./16.*c110(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./4.*c001(i1+1,i2,i3)+1./2.*c002(i1+1,i2,i3))+c001(i1,i2,i3)*(-1./4.*c100(i1,i2,i3-1)-1./2.*c200(i1,i2,i3-1));
+            cp( 2, 0,-1)=-1./4.*c200(i1,i2,i3)*c101(i1+1,i2,i3)+c101(i1,i2,i3)*(-1./4.*c200(i1+1,i2,i3-1)-1./8.*c100(i1+1,i2,i3-1))-1./8.*c100(i1,i2,i3)*c101(i1+1,i2,i3);
+            
+            cp(-2, 1,-1)=-1./16.*c110(i1,i2,i3)*c101(i1-1,i2+1,i3)-1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3-1);
+            cp(-1, 1,-1)=-1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(-1./4.*c002(i1-1,i2+1,i3)+1./8.*c001(i1-1,i2+1,i3))+c101(i1,i2,i3)*(1./4.*c020(i1-1,i2,i3-1)+1./8.*c010(i1-1,i2,i3-1))+c011(i1,i2,i3)*(-1./4.*c200(i1,i2+1,i3-1)+1./8.*c100(i1,i2+1,i3-1))+1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
+            cp( 0, 1,-1)=1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(1./2.*c011(i1,i2,i3)-1./2.*c001(i1,i2+1,i3)+c002(i1,i2+1,i3))+c002(i1,i2,i3)*(1./2.*c010(i1,i2,i3-1)+c020(i1,i2,i3-1)+1./2.*c011(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c101(i1+1,i2+1,i3)+1./16.*c101(i1-1,i2+1,i3))+c101(i1,i2,i3)*(1./16.*c110(i1+1,i2,i3-1)+1./16.*c110(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./2.*c200(i1,i2+1,i3-1)+1./2.*c002(i1,i2+1,i3-1)+1./2.*c020(i1,i2+1,i3-1))+c010(i1,i2,i3)*(-1./4.*c001(i1,i2+1,i3)+1./2.*c002(i1,i2+1,i3))+c001(i1,i2,i3)*(-1./2.*c020(i1,i2,i3-1)-1./4.*c010(i1,i2,i3-1));
+            cp( 1, 1,-1)=-1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3-1)+c110(i1,i2,i3)*(1./4.*c002(i1+1,i2+1,i3)-1./8.*c001(i1+1,i2+1,i3))+c101(i1,i2,i3)*(-1./4.*c020(i1+1,i2,i3-1)-1./8.*c010(i1+1,i2,i3-1))+c011(i1,i2,i3)*(-1./8.*c100(i1,i2+1,i3-1)-1./4.*c200(i1,i2+1,i3-1))-1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3-1);
+            cp( 2, 1,-1)=-1./16.*c110(i1,i2,i3)*c101(i1+1,i2+1,i3)-1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3-1);
+            
+            cp(-2, 2,-1)=0;
+            cp(-1, 2,-1)=1./16.*c110(i1,i2,i3)*c011(i1-1,i2+1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3-1);
+            cp( 0, 2,-1)=-1./4.*c020(i1,i2,i3)*c011(i1,i2+1,i3)+c011(i1,i2,i3)*(-1./8.*c010(i1,i2+1,i3-1)-1./4.*c020(i1,i2+1,i3-1))-1./8.*c010(i1,i2,i3)*c011(i1,i2+1,i3);
+            cp( 1, 2,-1)=-1./16.*c110(i1,i2,i3)*c011(i1+1,i2+1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3-1);
+            cp( 2, 2,-1)=0;
+           
+            cp(-2,-2, 0)=1./16.*c110(i1,i2,i3)*c110(i1-1,i2-1,i3);
+            cp(-1,-2, 0)=1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(1./4.*c020(i1-1,i2-1,i3)-1./8.*c010(i1-1,i2-1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
+            cp( 0,-2, 0)=c020(i1,i2,i3)*(-1./2.*c010(i1,i2-1,i3)+c020(i1,i2-1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2-1,i3)-1./16.*c110(i1-1,i2-1,i3))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2-1,i3+1)-1./16.*c011(i1,i2-1,i3-1))+c010(i1,i2,i3)*(1./4.*c010(i1,i2-1,i3)-1./2.*c020(i1,i2-1,i3));
+            cp( 1,-2, 0)=-1./4.*c020(i1,i2,i3)*c110(i1,i2-1,i3)+c110(i1,i2,i3)*(1./8.*c010(i1+1,i2-1,i3)-1./4.*c020(i1+1,i2-1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2-1,i3);
+            cp( 2,-2, 0)=1./16.*c110(i1,i2,i3)*c110(i1+1,i2-1,i3);
+            
+            cp(-2,-1, 0)=1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(-1./8.*c100(i1-1,i2-1,i3)+1./4.*c200(i1-1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
+            cp(-1,-1, 0)=c200(i1,i2,i3)*(c020(i1-1,i2,i3)-1./2.*c010(i1-1,i2,i3)-1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(c200(i1,i2-1,i3)-1./2.*c100(i1,i2-1,i3)-1./2.*c110(i1,i2,i3))-1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(-1./2.*c200(i1-1,i2-1,i3)-1./2.*c020(i1-1,i2-1,i3)-1./2.*c002(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c011(i1-1,i2,i3-1)-1./16.*c011(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c101(i1,i2-1,i3+1)-1./16.*c101(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./2.*c020(i1-1,i2,i3)+1./4.*c010(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./2.*c200(i1,i2-1,i3)+1./4.*c100(i1,i2-1,i3));
+            cp( 0,-1, 0)=c200(i1,i2,i3)*(c010(i1,i2,i3)-2*c020(i1,i2,i3)-1./4.*c110(i1-1,i2,i3)+1./4.*c110(i1+1,i2,i3))+c020(i1,i2,i3)*(-2*c002(i1,i2-1,i3)-2*c020(i1,i2-1,i3)-2*c200(i1,i2-1,i3)+c010(i1,i2,i3)-2*c020(i1,i2,i3))+c002(i1,i2,i3)*(c010(i1,i2,i3)-2*c020(i1,i2,i3)-1./4.*c011(i1,i2,i3-1)+1./4.*c011(i1,i2,i3+1))+c110(i1,i2,i3)*(1./8.*c100(i1-1,i2-1,i3)-1./4.*c200(i1+1,i2-1,i3)+1./4.*c200(i1-1,i2-1,i3)+1./8.*c100(i1+1,i2-1,i3))+c011(i1,i2,i3)*(1./8.*c001(i1,i2-1,i3-1)+1./8.*c001(i1,i2-1,i3+1)-1./4.*c002(i1,i2-1,i3+1)+1./4.*c002(i1,i2-1,i3-1))+c100(i1,i2,i3)*(1./8.*c110(i1+1,i2,i3)+1./8.*c110(i1-1,i2,i3))+c010(i1,i2,i3)*(c200(i1,i2-1,i3)+c002(i1,i2-1,i3)+c020(i1,i2-1,i3))+c001(i1,i2,i3)*(1./8.*c011(i1,i2,i3+1)+1./8.*c011(i1,i2,i3-1));
+            cp( 1,-1, 0)=c200(i1,i2,i3)*(1./2.*c110(i1,i2,i3)-1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3))+c020(i1,i2,i3)*(1./2.*c110(i1,i2,i3)+c200(i1,i2-1,i3)+1./2.*c100(i1,i2-1,i3))+1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(1./2.*c200(i1+1,i2-1,i3)+1./2.*c020(i1+1,i2-1,i3)+1./2.*c002(i1+1,i2-1,i3))+c101(i1,i2,i3)*(1./16.*c011(i1+1,i2,i3-1)+1./16.*c011(i1+1,i2,i3+1))+c011(i1,i2,i3)*(1./16.*c101(i1,i2-1,i3+1)+1./16.*c101(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2-1,i3)-1./2.*c200(i1,i2-1,i3));
+            cp( 2,-1, 0)=-1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1+1,i2-1,i3)-1./8.*c100(i1+1,i2-1,i3))-1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
+           
+            cp(-2, 0, 0)=c200(i1,i2,i3)*(c200(i1-1,i2,i3)-1./2.*c100(i1-1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1-1,i2+1,i3)-1./16.*c110(i1-1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c101(i1-1,i2,i3-1)-1./16.*c101(i1-1,i2,i3+1))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)+1./4.*c100(i1-1,i2,i3));
+            cp(-1, 0, 0)=c200(i1,i2,i3)*(c100(i1,i2,i3)-2*c200(i1,i2,i3)-2*c002(i1-1,i2,i3)-2*c020(i1-1,i2,i3)-2*c200(i1-1,i2,i3))+c020(i1,i2,i3)*(c100(i1,i2,i3)-2*c200(i1,i2,i3)+1./4.*c110(i1,i2+1,i3)-1./4.*c110(i1,i2-1,i3))+c002(i1,i2,i3)*(c100(i1,i2,i3)-2*c200(i1,i2,i3)+1./4.*c101(i1,i2,i3+1)-1./4.*c101(i1,i2,i3-1))+c110(i1,i2,i3)*(1./8.*c010(i1-1,i2+1,i3)+1./4.*c020(i1-1,i2-1,i3)-1./4.*c020(i1-1,i2+1,i3)+1./8.*c010(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./8.*c001(i1-1,i2,i3-1)+1./8.*c001(i1-1,i2,i3+1)+1./4.*c002(i1-1,i2,i3-1)-1./4.*c002(i1-1,i2,i3+1))+c100(i1,i2,i3)*(c200(i1-1,i2,i3)+c020(i1-1,i2,i3)+c002(i1-1,i2,i3))+c010(i1,i2,i3)*(1./8.*c110(i1,i2+1,i3)+1./8.*c110(i1,i2-1,i3))+c001(i1,i2,i3)*(1./8.*c101(i1,i2,i3+1)+1./8.*c101(i1,i2,i3-1));
+            cp( 0, 0, 0)=c200(i1,i2,i3)*(-1./2.*c100(i1+1,i2,i3)+c200(i1-1,i2,i3)+c200(i1+1,i2,i3)+1./2.*c100(i1-1,i2,i3)+4*c200(i1,i2,i3)+4*c002(i1,i2,i3)+4*c020(i1,i2,i3))+c020(i1,i2,i3)*(4*c200(i1,i2,i3)+4*c002(i1,i2,i3)+4*c020(i1,i2,i3)+c020(i1,i2+1,i3)+1./2.*c010(i1,i2-1,i3)-1./2.*c010(i1,i2+1,i3)+c020(i1,i2-1,i3))+c002(i1,i2,i3)*(4*c200(i1,i2,i3)+4*c002(i1,i2,i3)+4*c020(i1,i2,i3)-1./2.*c001(i1,i2,i3+1)+c002(i1,i2,i3-1)+c002(i1,i2,i3+1)+1./2.*c001(i1,i2,i3-1))+c110(i1,i2,i3)*(1./16.*c110(i1+1,i2+1,i3)+1./16.*c110(i1-1,i2+1,i3)+1./16.*c110(i1+1,i2-1,i3)+1./16.*c110(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./16.*c101(i1+1,i2,i3-1)+1./16.*c101(i1+1,i2,i3+1)+1./16.*c101(i1-1,i2,i3-1)+1./16.*c101(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./16.*c011(i1,i2-1,i3+1)+1./16.*c011(i1,i2+1,i3-1)+1./16.*c011(i1,i2+1,i3+1)+1./16.*c011(i1,i2-1,i3-1))+c100(i1,i2,i3)*(-1./2.*c200(i1-1,i2,i3)-1./4.*c100(i1-1,i2,i3)-1./4.*c100(i1+1,i2,i3)+1./2.*c200(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c010(i1,i2+1,i3)-1./4.*c010(i1,i2-1,i3)-1./2.*c020(i1,i2-1,i3)+1./2.*c020(i1,i2+1,i3))+c001(i1,i2,i3)*(-1./4.*c001(i1,i2,i3-1)-1./4.*c001(i1,i2,i3+1)+1./2.*c002(i1,i2,i3+1)-1./2.*c002(i1,i2,i3-1));
+            cp( 1, 0, 0)=c200(i1,i2,i3)*(-c100(i1,i2,i3)-2*c200(i1,i2,i3)-2*c002(i1+1,i2,i3)-2*c020(i1+1,i2,i3)-2*c200(i1+1,i2,i3))+c020(i1,i2,i3)*(-c100(i1,i2,i3)-2*c200(i1,i2,i3)-1./4.*c110(i1,i2+1,i3)+1./4.*c110(i1,i2-1,i3))+c002(i1,i2,i3)*(-c100(i1,i2,i3)-2*c200(i1,i2,i3)-1./4.*c101(i1,i2,i3+1)+1./4.*c101(i1,i2,i3-1))+c110(i1,i2,i3)*(-1./8.*c010(i1+1,i2+1,i3)-1./8.*c010(i1+1,i2-1,i3)+1./4.*c020(i1+1,i2+1,i3)-1./4.*c020(i1+1,i2-1,i3))+c101(i1,i2,i3)*(-1./8.*c001(i1+1,i2,i3+1)-1./8.*c001(i1+1,i2,i3-1)+1./4.*c002(i1+1,i2,i3+1)-1./4.*c002(i1+1,i2,i3-1))+c100(i1,i2,i3)*(-c020(i1+1,i2,i3)-c002(i1+1,i2,i3)-c200(i1+1,i2,i3))+c010(i1,i2,i3)*(-1./8.*c110(i1,i2+1,i3)-1./8.*c110(i1,i2-1,i3))+c001(i1,i2,i3)*(-1./8.*c101(i1,i2,i3+1)-1./8.*c101(i1,i2,i3-1));
+            cp( 2, 0, 0)=c200(i1,i2,i3)*(1./2.*c100(i1+1,i2,i3)+c200(i1+1,i2,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2+1,i3)-1./16.*c110(i1+1,i2-1,i3))+c101(i1,i2,i3)*(-1./16.*c101(i1+1,i2,i3-1)-1./16.*c101(i1+1,i2,i3+1))+c100(i1,i2,i3)*(1./4.*c100(i1+1,i2,i3)+1./2.*c200(i1+1,i2,i3));
+           
+            cp(-2, 1, 0)=-1./4.*c200(i1,i2,i3)*c110(i1-1,i2,i3)+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)+1./8.*c100(i1-1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1-1,i2,i3);
+            cp(-1, 1, 0)=c200(i1,i2,i3)*(c020(i1-1,i2,i3)+1./2.*c010(i1-1,i2,i3)+1./2.*c110(i1,i2,i3))+c020(i1,i2,i3)*(-1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)+1./2.*c110(i1,i2,i3))+1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(1./2.*c200(i1-1,i2+1,i3)+1./2.*c020(i1-1,i2+1,i3)+1./2.*c002(i1-1,i2+1,i3))+c101(i1,i2,i3)*(1./16.*c011(i1-1,i2,i3+1)+1./16.*c011(i1-1,i2,i3-1))+c011(i1,i2,i3)*(1./16.*c101(i1,i2+1,i3-1)+1./16.*c101(i1,i2+1,i3+1))+c100(i1,i2,i3)*(-1./4.*c010(i1-1,i2,i3)-1./2.*c020(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
+            cp( 0, 1, 0)=c200(i1,i2,i3)*(-c010(i1,i2,i3)-2*c020(i1,i2,i3)+1./4.*c110(i1-1,i2,i3)-1./4.*c110(i1+1,i2,i3))+c020(i1,i2,i3)*(-2*c002(i1,i2+1,i3)-2*c020(i1,i2+1,i3)-2*c200(i1,i2+1,i3)-c010(i1,i2,i3)-2*c020(i1,i2,i3))+c002(i1,i2,i3)*(-c010(i1,i2,i3)-2*c020(i1,i2,i3)+1./4.*c011(i1,i2,i3-1)-1./4.*c011(i1,i2,i3+1))+c110(i1,i2,i3)*(-1./4.*c200(i1-1,i2+1,i3)-1./8.*c100(i1-1,i2+1,i3)-1./8.*c100(i1+1,i2+1,i3)+1./4.*c200(i1+1,i2+1,i3))+c011(i1,i2,i3)*(-1./8.*c001(i1,i2+1,i3-1)+1./4.*c002(i1,i2+1,i3+1)-1./4.*c002(i1,i2+1,i3-1)-1./8.*c001(i1,i2+1,i3+1))+c100(i1,i2,i3)*(-1./8.*c110(i1+1,i2,i3)-1./8.*c110(i1-1,i2,i3))+c010(i1,i2,i3)*(-c200(i1,i2+1,i3)-c002(i1,i2+1,i3)-c020(i1,i2+1,i3))+c001(i1,i2,i3)*(-1./8.*c011(i1,i2,i3+1)-1./8.*c011(i1,i2,i3-1));
+            cp( 1, 1, 0)=c200(i1,i2,i3)*(-1./2.*c110(i1,i2,i3)+1./2.*c010(i1+1,i2,i3)+c020(i1+1,i2,i3))+c020(i1,i2,i3)*(1./2.*c100(i1,i2+1,i3)+c200(i1,i2+1,i3)-1./2.*c110(i1,i2,i3))-1./2.*c002(i1,i2,i3)*c110(i1,i2,i3)+c110(i1,i2,i3)*(-1./2.*c020(i1+1,i2+1,i3)-1./2.*c200(i1+1,i2+1,i3)-1./2.*c002(i1+1,i2+1,i3))+c101(i1,i2,i3)*(-1./16.*c011(i1+1,i2,i3-1)-1./16.*c011(i1+1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c101(i1,i2+1,i3-1)-1./16.*c101(i1,i2+1,i3+1))+c100(i1,i2,i3)*(1./4.*c010(i1+1,i2,i3)+1./2.*c020(i1+1,i2,i3))+c010(i1,i2,i3)*(1./4.*c100(i1,i2+1,i3)+1./2.*c200(i1,i2+1,i3));
+            cp( 2, 1, 0)=1./4.*c200(i1,i2,i3)*c110(i1+1,i2,i3)+c110(i1,i2,i3)*(1./8.*c100(i1+1,i2+1,i3)+1./4.*c200(i1+1,i2+1,i3))+1./8.*c100(i1,i2,i3)*c110(i1+1,i2,i3);
+           
+            cp(-2, 2, 0)=1./16.*c110(i1,i2,i3)*c110(i1-1,i2+1,i3);
+            cp(-1, 2, 0)=-1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(-1./8.*c010(i1-1,i2+1,i3)-1./4.*c020(i1-1,i2+1,i3))-1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
+            cp( 0, 2, 0)=c020(i1,i2,i3)*(c020(i1,i2+1,i3)+1./2.*c010(i1,i2+1,i3))+c110(i1,i2,i3)*(-1./16.*c110(i1+1,i2+1,i3)-1./16.*c110(i1-1,i2+1,i3))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2+1,i3-1)-1./16.*c011(i1,i2+1,i3+1))+c010(i1,i2,i3)*(1./4.*c010(i1,i2+1,i3)+1./2.*c020(i1,i2+1,i3));
+            cp( 1, 2, 0)=1./4.*c020(i1,i2,i3)*c110(i1,i2+1,i3)+c110(i1,i2,i3)*(1./8.*c010(i1+1,i2+1,i3)+1./4.*c020(i1+1,i2+1,i3))+1./8.*c010(i1,i2,i3)*c110(i1,i2+1,i3);
+            cp( 2, 2, 0)=1./16.*c110(i1,i2,i3)*c110(i1+1,i2+1,i3);
+           
+            cp(-2,-2, 1)=0;
+            cp(-1,-2, 1)=-1./16.*c110(i1,i2,i3)*c011(i1-1,i2-1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3+1);
+            cp( 0,-2, 1)=-1./4.*c020(i1,i2,i3)*c011(i1,i2-1,i3)+c011(i1,i2,i3)*(1./8.*c010(i1,i2-1,i3+1)-1./4.*c020(i1,i2-1,i3+1))+1./8.*c010(i1,i2,i3)*c011(i1,i2-1,i3);
+            cp( 1,-2, 1)=1./16.*c110(i1,i2,i3)*c011(i1+1,i2-1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2-1,i3+1);
+            cp( 2,-2, 1)=0;
+           
+            cp(-2,-1, 1)=-1./16.*c110(i1,i2,i3)*c101(i1-1,i2-1,i3)-1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3+1);
+            cp(-1,-1, 1)=-1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(1./8.*c001(i1-1,i2-1,i3)+1./4.*c002(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./8.*c010(i1-1,i2,i3+1)-1./4.*c020(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./8.*c100(i1,i2-1,i3+1)-1./4.*c200(i1,i2-1,i3+1))+1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
+            cp( 0,-1, 1)=1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(c002(i1,i2-1,i3)+1./2.*c001(i1,i2-1,i3)+1./2.*c011(i1,i2,i3))+c002(i1,i2,i3)*(-1./2.*c010(i1,i2,i3+1)+c020(i1,i2,i3+1)+1./2.*c011(i1,i2,i3))+c110(i1,i2,i3)*(1./16.*c101(i1+1,i2-1,i3)+1./16.*c101(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./16.*c110(i1+1,i2,i3+1)+1./16.*c110(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./2.*c200(i1,i2-1,i3+1)+1./2.*c002(i1,i2-1,i3+1)+1./2.*c020(i1,i2-1,i3+1))+c010(i1,i2,i3)*(-1./2.*c002(i1,i2-1,i3)-1./4.*c001(i1,i2-1,i3))+c001(i1,i2,i3)*(-1./4.*c010(i1,i2,i3+1)+1./2.*c020(i1,i2,i3+1));
+            cp( 1,-1, 1)=-1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2-1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(-1./8.*c001(i1+1,i2-1,i3)-1./4.*c002(i1+1,i2-1,i3))+c101(i1,i2,i3)*(-1./8.*c010(i1+1,i2,i3+1)+1./4.*c020(i1+1,i2,i3+1))+c011(i1,i2,i3)*(-1./8.*c100(i1,i2-1,i3+1)-1./4.*c200(i1,i2-1,i3+1))-1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2-1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
+            cp( 2,-1, 1)=-1./16.*c110(i1,i2,i3)*c101(i1+1,i2-1,i3)-1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3+1);
+           
+            cp(-2, 0, 1)=-1./4.*c200(i1,i2,i3)*c101(i1-1,i2,i3)+c101(i1,i2,i3)*(-1./4.*c200(i1-1,i2,i3+1)+1./8.*c100(i1-1,i2,i3+1))+1./8.*c100(i1,i2,i3)*c101(i1-1,i2,i3);
+            cp(-1, 0, 1)=c200(i1,i2,i3)*(1./2.*c001(i1-1,i2,i3)+1./2.*c101(i1,i2,i3)+c002(i1-1,i2,i3))+1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(-1./2.*c100(i1,i2,i3+1)+1./2.*c101(i1,i2,i3)+c200(i1,i2,i3+1))+c110(i1,i2,i3)*(1./16.*c011(i1-1,i2+1,i3)+1./16.*c011(i1-1,i2-1,i3))+c101(i1,i2,i3)*(1./2.*c200(i1-1,i2,i3+1)+1./2.*c002(i1-1,i2,i3+1)+1./2.*c020(i1-1,i2,i3+1))+c011(i1,i2,i3)*(1./16.*c110(i1,i2+1,i3+1)+1./16.*c110(i1,i2-1,i3+1))+c100(i1,i2,i3)*(-1./2.*c002(i1-1,i2,i3)-1./4.*c001(i1-1,i2,i3))+c001(i1,i2,i3)*(-1./4.*c100(i1,i2,i3+1)+1./2.*c200(i1,i2,i3+1));
+            cp( 0, 0, 1)=c200(i1,i2,i3)*(-c001(i1,i2,i3)-2*c002(i1,i2,i3)+1./4.*c101(i1-1,i2,i3)-1./4.*c101(i1+1,i2,i3))+c020(i1,i2,i3)*(-c001(i1,i2,i3)-2*c002(i1,i2,i3)+1./4.*c011(i1,i2-1,i3)-1./4.*c011(i1,i2+1,i3))+c002(i1,i2,i3)*(-2*c002(i1,i2,i3+1)-2*c020(i1,i2,i3+1)-2*c200(i1,i2,i3+1)-c001(i1,i2,i3)-2*c002(i1,i2,i3))+c101(i1,i2,i3)*(-1./4.*c200(i1-1,i2,i3+1)+1./4.*c200(i1+1,i2,i3+1)-1./8.*c100(i1-1,i2,i3+1)-1./8.*c100(i1+1,i2,i3+1))+c011(i1,i2,i3)*(1./4.*c020(i1,i2+1,i3+1)-1./8.*c010(i1,i2-1,i3+1)-1./8.*c010(i1,i2+1,i3+1)-1./4.*c020(i1,i2-1,i3+1))+c100(i1,i2,i3)*(-1./8.*c101(i1+1,i2,i3)-1./8.*c101(i1-1,i2,i3))+c010(i1,i2,i3)*(-1./8.*c011(i1,i2+1,i3)-1./8.*c011(i1,i2-1,i3))+c001(i1,i2,i3)*(-c200(i1,i2,i3+1)-c020(i1,i2,i3+1)-c002(i1,i2,i3+1));
+            cp( 1, 0, 1)=c200(i1,i2,i3)*(-1./2.*c101(i1,i2,i3)+1./2.*c001(i1+1,i2,i3)+c002(i1+1,i2,i3))-1./2.*c020(i1,i2,i3)*c101(i1,i2,i3)+c002(i1,i2,i3)*(-1./2.*c101(i1,i2,i3)+1./2.*c100(i1,i2,i3+1)+c200(i1,i2,i3+1))+c110(i1,i2,i3)*(-1./16.*c011(i1+1,i2-1,i3)-1./16.*c011(i1+1,i2+1,i3))+c101(i1,i2,i3)*(-1./2.*c200(i1+1,i2,i3+1)-1./2.*c020(i1+1,i2,i3+1)-1./2.*c002(i1+1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c110(i1,i2+1,i3+1)-1./16.*c110(i1,i2-1,i3+1))+c100(i1,i2,i3)*(1./2.*c002(i1+1,i2,i3)+1./4.*c001(i1+1,i2,i3))+c001(i1,i2,i3)*(1./4.*c100(i1,i2,i3+1)+1./2.*c200(i1,i2,i3+1));
+            cp( 2, 0, 1)=1./4.*c200(i1,i2,i3)*c101(i1+1,i2,i3)+c101(i1,i2,i3)*(1./4.*c200(i1+1,i2,i3+1)+1./8.*c100(i1+1,i2,i3+1))+1./8.*c100(i1,i2,i3)*c101(i1+1,i2,i3);
+          
+            cp(-2, 1, 1)=1./16.*c110(i1,i2,i3)*c101(i1-1,i2+1,i3)+1./16.*c101(i1,i2,i3)*c110(i1-1,i2,i3+1);
+            cp(-1, 1, 1)=1./4.*c200(i1,i2,i3)*c011(i1-1,i2,i3)-1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)-1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(-1./8.*c001(i1-1,i2+1,i3)-1./4.*c002(i1-1,i2+1,i3))+c101(i1,i2,i3)*(-1./8.*c010(i1-1,i2,i3+1)-1./4.*c020(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./8.*c100(i1,i2+1,i3+1)+1./4.*c200(i1,i2+1,i3+1))-1./8.*c100(i1,i2,i3)*c011(i1-1,i2,i3)-1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)-1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
+            cp( 0, 1, 1)=-1./2.*c200(i1,i2,i3)*c011(i1,i2,i3)+c020(i1,i2,i3)*(-1./2.*c011(i1,i2,i3)+1./2.*c001(i1,i2+1,i3)+c002(i1,i2+1,i3))+c002(i1,i2,i3)*(-1./2.*c011(i1,i2,i3)+c020(i1,i2,i3+1)+1./2.*c010(i1,i2,i3+1))+c110(i1,i2,i3)*(-1./16.*c101(i1+1,i2+1,i3)-1./16.*c101(i1-1,i2+1,i3))+c101(i1,i2,i3)*(-1./16.*c110(i1+1,i2,i3+1)-1./16.*c110(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./2.*c020(i1,i2+1,i3+1)-1./2.*c200(i1,i2+1,i3+1)-1./2.*c002(i1,i2+1,i3+1))+c010(i1,i2,i3)*(1./2.*c002(i1,i2+1,i3)+1./4.*c001(i1,i2+1,i3))+c001(i1,i2,i3)*(1./2.*c020(i1,i2,i3+1)+1./4.*c010(i1,i2,i3+1));
+            cp( 1, 1, 1)=1./4.*c200(i1,i2,i3)*c011(i1+1,i2,i3)+1./4.*c020(i1,i2,i3)*c101(i1,i2+1,i3)+1./4.*c002(i1,i2,i3)*c110(i1,i2,i3+1)+c110(i1,i2,i3)*(1./8.*c001(i1+1,i2+1,i3)+1./4.*c002(i1+1,i2+1,i3))+c101(i1,i2,i3)*(1./4.*c020(i1+1,i2,i3+1)+1./8.*c010(i1+1,i2,i3+1))+c011(i1,i2,i3)*(1./8.*c100(i1,i2+1,i3+1)+1./4.*c200(i1,i2+1,i3+1))+1./8.*c100(i1,i2,i3)*c011(i1+1,i2,i3)+1./8.*c010(i1,i2,i3)*c101(i1,i2+1,i3)+1./8.*c001(i1,i2,i3)*c110(i1,i2,i3+1);
+            cp( 2, 1, 1)=1./16.*c110(i1,i2,i3)*c101(i1+1,i2+1,i3)+1./16.*c101(i1,i2,i3)*c110(i1+1,i2,i3+1);
+           
+            cp(-2, 2, 1)=0;
+            cp(-1, 2, 1)=-1./16.*c110(i1,i2,i3)*c011(i1-1,i2+1,i3)-1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3+1);
+            cp( 0, 2, 1)=1./4.*c020(i1,i2,i3)*c011(i1,i2+1,i3)+c011(i1,i2,i3)*(1./4.*c020(i1,i2+1,i3+1)+1./8.*c010(i1,i2+1,i3+1))+1./8.*c010(i1,i2,i3)*c011(i1,i2+1,i3);
+            cp( 1, 2, 1)=1./16.*c110(i1,i2,i3)*c011(i1+1,i2+1,i3)+1./16.*c011(i1,i2,i3)*c110(i1,i2+1,i3+1);
+            cp( 2, 2, 1)=0;
+           
+            cp(-2,-2, 2)=0;
+            cp(-1,-2, 2)=0;
+            cp( 0,-2, 2)=1./16.*c011(i1,i2,i3)*c011(i1,i2-1,i3+1);
+            cp( 1,-2, 2)=0;
+            cp( 2,-2, 2)=0;
+           
+            cp(-2,-1, 2)=0;
+            cp(-1,-1, 2)=1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3+1)+1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3+1);
+            cp( 0,-1, 2)=-1./4.*c002(i1,i2,i3)*c011(i1,i2,i3+1)+c011(i1,i2,i3)*(-1./8.*c001(i1,i2-1,i3+1)-1./4.*c002(i1,i2-1,i3+1))-1./8.*c001(i1,i2,i3)*c011(i1,i2,i3+1);
+            cp( 1,-1, 2)=-1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3+1)-1./16.*c011(i1,i2,i3)*c101(i1,i2-1,i3+1);
+            cp( 2,-1, 2)=0;
+           
+            cp(-2, 0, 2)=1./16.*c101(i1,i2,i3)*c101(i1-1,i2,i3+1);
+            cp(-1, 0, 2)=-1./4.*c002(i1,i2,i3)*c101(i1,i2,i3+1)+c101(i1,i2,i3)*(-1./8.*c001(i1-1,i2,i3+1)-1./4.*c002(i1-1,i2,i3+1))-1./8.*c001(i1,i2,i3)*c101(i1,i2,i3+1);
+            cp( 0, 0, 2)=c002(i1,i2,i3)*(1./2.*c001(i1,i2,i3+1)+c002(i1,i2,i3+1))+c101(i1,i2,i3)*(-1./16.*c101(i1+1,i2,i3+1)-1./16.*c101(i1-1,i2,i3+1))+c011(i1,i2,i3)*(-1./16.*c011(i1,i2-1,i3+1)-1./16.*c011(i1,i2+1,i3+1))+c001(i1,i2,i3)*(1./4.*c001(i1,i2,i3+1)+1./2.*c002(i1,i2,i3+1));
+            cp( 1, 0, 2)=1./4.*c002(i1,i2,i3)*c101(i1,i2,i3+1)+c101(i1,i2,i3)*(1./8.*c001(i1+1,i2,i3+1)+1./4.*c002(i1+1,i2,i3+1))+1./8.*c001(i1,i2,i3)*c101(i1,i2,i3+1);
+            cp( 2, 0, 2)=1./16.*c101(i1,i2,i3)*c101(i1+1,i2,i3+1);
+          
+            cp(-2, 1, 2)=0;
+            cp(-1, 1, 2)=-1./16.*c101(i1,i2,i3)*c011(i1-1,i2,i3+1)-1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3+1);
+            cp( 0, 1, 2)=1./4.*c002(i1,i2,i3)*c011(i1,i2,i3+1)+c011(i1,i2,i3)*(1./4.*c002(i1,i2+1,i3+1)+1./8.*c001(i1,i2+1,i3+1))+1./8.*c001(i1,i2,i3)*c011(i1,i2,i3+1);
+            cp( 1, 1, 2)=1./16.*c101(i1,i2,i3)*c011(i1+1,i2,i3+1)+1./16.*c011(i1,i2,i3)*c101(i1,i2+1,i3+1);
+            cp( 2, 1, 2)=0;
+           
+            cp(-2, 2, 2)=0;
+            cp(-1, 2, 2)=0;
+            cp( 0, 2, 2)=1./16.*c011(i1,i2,i3)*c011(i1,i2+1,i3+1);
+            cp( 1, 2, 2)=0;
+            cp( 2, 2, 2)=0;
+
+            ForStencil(m1,m2,m3)
+            {
+              int m  = M123(m1,m2,m3);
+              coeffLocal(m,i1,i2,i3) += cLapSq*cp(m1,m2,m3);
+            }
+
+            // // save for testing : 
+            // ForStencil(m1,m2,m3)
+            // {
+            //   int m  = M123(m1,m2,m3);
+            //   lapSqCoeffLocal(m,i1,i2,i3) = cp(m1,m2,m3);
+            // }          
+
+          } // end if mask
+        } // end for 3d 
+      } // end if ok 
+
+    } // end 3d 
 
 
   } // end curvilinear
@@ -2771,6 +2733,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
   const int & orderOfAccuracy          = dbase.get<int>("orderOfAccuracy");
   const int & orderOfAccuracyInTime    = dbase.get<int>("orderOfAccuracyInTime");
+  const int & orderOfExtrapolation     = dbase.get<int>("orderOfExtrapolation");
   const IntegerArray & gridIsImplicit  = dbase.get<IntegerArray>("gridIsImplicit");
 
   const int & upwind                   = dbase.get<int>("upwind");
@@ -2853,7 +2816,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
   if( dbase.has_key("implicitSolverParameters") )
   {  
-    printf("CgWave::formImplicitTimeSteppingMatrix: Changing the implicit solver parameters. \n");
+    printf("CgWave::formImplicitTimeSteppingMatrix: Changing the implicit solver parameters... \n");
     OgesParameters & par = dbase.get<OgesParameters>("implicitSolverParameters");
     impSolver.setOgesParameters(par);
   }
@@ -2890,6 +2853,12 @@ int CgWave::formImplicitTimeSteppingMatrix()
     // if( iluLevels>=0 )
     //   impSolver.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
   }
+  if( orderOfExtrapolation>0 )
+  {
+    printF("\n $$$$$$$$$$ CgWave::formImplicitTimeSteppingMatrix:INFO: set orderOfExtrapolation=%d $$$$$$$$\n",orderOfExtrapolation);
+    
+    impSolver.set(OgesParameters::THEorderOfExtrapolation,orderOfExtrapolation);
+  }      
 
   int solverType;
   impSolver.get(OgesParameters::THEsolverType,solverType);
@@ -2926,7 +2895,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
   // bool usePredefined = useMultigrid && !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
   bool usePredefined = !addUpwinding && orderOfAccuracyInTime==2; // ** FIX ME for no-MG
 
-  usePredefined = usePredefined && bcApproach != useCompatibilityBoundaryConditions;
+  usePredefined = usePredefined && ( useMultigrid || bcApproach != useCompatibilityBoundaryConditions);
 
   // We cannot use predefined if there are Cartesian grids with superGrid
   bool isAllRectangular=true;
@@ -3219,72 +3188,77 @@ int CgWave::formImplicitTimeSteppingMatrix()
  
 
         getIndex(mg.gridIndexRange(),I1,I2,I3);
-        RealArray lapCoeff(M0,I1,I2,I3);   
-
-        if( !isRectangular || !superGrid(grid) )
+        bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,I1,I2,I3);  
+        if( ok )
         {
-          mgop.assignCoefficients(MappedGridOperators::laplacianOperator,lapCoeff,I1,I2,I3,0,0); // 
-        }
-        else
-        {
-          // ------ rectangular and SuperGrid ----------
-          printF("&&&&&& formImplicitTimeSteppingMatrix: Adjust Cartesian grid=%d for superGrid, addUpwinding=%d &&&&&&&\n",grid,(int)addUpwinding);
 
-          IntegerArray & useAbsorbingLayer = dbase.get<IntegerArray>("useAbsorbingLayer");
+          RealArray lapCoeff(M0,I1,I2,I3);   
 
-          // --- Coefficients for xx and x derivatives ---
-          RealArray ddCoeff(M0,I1,I2,I3), dCoeff(M0,I1,I2,I3);
-          mgop.assignCoefficients( MappedGridOperators::xxDerivative,ddCoeff,I1,I2,I3,0,0);
-          mgop.assignCoefficients( MappedGridOperators::xDerivative,  dCoeff,I1,I2,I3,0,0);
-
-          if( useAbsorbingLayer(0,grid) )
+          if( !isRectangular || !superGrid(grid) )
           {
-            // -- scale coefficients using superGrid functions --
-            RealArray *& etaxSuperGrid = dbase.get<RealArray*>("etaxSuperGrid" );
-            RealArray & etax = etaxSuperGrid[grid];
-            for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
+            mgop.assignCoefficients(MappedGridOperators::laplacianOperator,lapCoeff,I1,I2,I3,0,0); // 
+          }
+          else
+          {
+            // ------ rectangular and SuperGrid ----------
+            printF("&&&&&& formImplicitTimeSteppingMatrix: Adjust Cartesian grid=%d for superGrid, addUpwinding=%d &&&&&&&\n",grid,(int)addUpwinding);
+
+            IntegerArray & useAbsorbingLayer = dbase.get<IntegerArray>("useAbsorbingLayer");
+
+            // --- Coefficients for xx and x derivatives ---
+            RealArray ddCoeff(M0,I1,I2,I3), dCoeff(M0,I1,I2,I3);
+            mgop.assignCoefficients( MappedGridOperators::xxDerivative,ddCoeff,I1,I2,I3,0,0);
+            mgop.assignCoefficients( MappedGridOperators::xDerivative,  dCoeff,I1,I2,I3,0,0);
+
+            if( useAbsorbingLayer(0,grid) )
             {
-              for( int m=M0.getBase(); m<=M0.getBound(); m++ )
-              // for( int m=0; m<stencilSize; m++ )
+              // -- scale coefficients using superGrid functions --
+              RealArray *& etaxSuperGrid = dbase.get<RealArray*>("etaxSuperGrid" );
+              RealArray & etax = etaxSuperGrid[grid];
+              for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
               {
-                ddCoeff(m,i1,I2,I3) *= etax(i1,0);  // scale by "(r.x)^2"
-                dCoeff(m,i1,I2,I3)  *= etax(i1,1);  // scale by "r.xx"
+                for( int m=M0.getBase(); m<=M0.getBound(); m++ )
+                // for( int m=0; m<stencilSize; m++ )
+                {
+                  ddCoeff(m,i1,I2,I3) *= etax(i1,0);  // scale by "(r.x)^2"
+                  dCoeff(m,i1,I2,I3)  *= etax(i1,1);  // scale by "r.xx"
+                }
               }
             }
-          }
 
-          lapCoeff(M0,I1,I2,I3) = ddCoeff(M0,I1,I2,I3)+ dCoeff(M0,I1,I2,I3);    // transformed .xx derivative
+            lapCoeff(M0,I1,I2,I3) = ddCoeff(M0,I1,I2,I3)+ dCoeff(M0,I1,I2,I3);    // transformed .xx derivative
 
-          // --- Coefficients for yy and y derivatives ---
-          mgop.assignCoefficients( MappedGridOperators::yyDerivative,ddCoeff,I1,I2,I3,0,0);
-          mgop.assignCoefficients( MappedGridOperators::yDerivative,  dCoeff,I1,I2,I3,0,0);
+            // --- Coefficients for yy and y derivatives ---
+            mgop.assignCoefficients( MappedGridOperators::yyDerivative,ddCoeff,I1,I2,I3,0,0);
+            mgop.assignCoefficients( MappedGridOperators::yDerivative,  dCoeff,I1,I2,I3,0,0);
 
-          if( useAbsorbingLayer(1,grid) )
-          {
-            // -- scale coefficients using superGrid functions --  
-            RealArray *& etaySuperGrid = dbase.get<RealArray*>("etaySuperGrid" );
-            RealArray & etay = etaySuperGrid[grid];
-            for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )
+            if( useAbsorbingLayer(1,grid) )
             {
-              for( int m=M0.getBase(); m<=M0.getBound(); m++ )
-              // for( int m=0; m<stencilSize; m++ )
+              // -- scale coefficients using superGrid functions --  
+              RealArray *& etaySuperGrid = dbase.get<RealArray*>("etaySuperGrid" );
+              RealArray & etay = etaySuperGrid[grid];
+              for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )
               {
-                ddCoeff(m,I1,i2,I3) *= etay(i2,0);
-                dCoeff(m,I1,i2,I3)  *= etay(i2,1);
+                for( int m=M0.getBase(); m<=M0.getBound(); m++ )
+                // for( int m=0; m<stencilSize; m++ )
+                {
+                  ddCoeff(m,I1,i2,I3) *= etay(i2,0);
+                  dCoeff(m,I1,i2,I3)  *= etay(i2,1);
+                }
               }
             }
-          }
 
-          lapCoeff(M0,I1,I2,I3) += ddCoeff(M0,I1,I2,I3)+ dCoeff(M0,I1,I2,I3);    // transformed .yy derivative
+            lapCoeff(M0,I1,I2,I3) += ddCoeff(M0,I1,I2,I3)+ dCoeff(M0,I1,I2,I3);    // transformed .yy derivative
+
+          }
+          
+          Real ccLap = - cImp(-1,0)*SQR(c*dt);         // note minus
+          coeffLocal(M0,I1,I2,I3)  = ccLap*lapCoeff;
+
+          // set diagonal entry
+          coeffLocal(mDiag,I1,I2,I3) += 1.0 + damp*.5*dt;
 
         }
-        
-        Real ccLap = - cImp(-1,0)*SQR(c*dt);         // note minus
-        coeffLocal(M0,I1,I2,I3)  = ccLap*lapCoeff;
-
-        // set diagonal entry
-        coeffLocal(mDiag,I1,I2,I3) += 1.0 + damp*.5*dt;
-
 
         if( orderOfAccuracy==4 )
         {

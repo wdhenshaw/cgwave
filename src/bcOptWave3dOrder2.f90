@@ -79,7 +79,7 @@
    integer j1a,j1b,j2a,j2b,ja,j3b
    integer extra1a,extra1b,extra2a,extra2b,extra3a,extra3b,extram
    integer maxExtrapWidth,extrapWidth
-   integer cornerBC(0:2,0:2,0:2), iparc(0:10), orderOfExtrapolationForCorners
+   integer cornerBC(0:2,0:2,0:2), iparc(0:10), orderOfExtrapolationForCorners, orderOfExtrapolation
    real rparc(0:10)
    real ca,cEM2,rhs
    ! boundary conditions parameters and interfaceType values
@@ -1137,6 +1137,7 @@ real uzzzz
    bcApproach                      = ipar(17)
    numberOfFrequencies             = ipar(18)
    assignCornerGhostPoints         = ipar(19)
+   orderOfExtrapolation            = ipar(20)
    t         = rpar( 0)
    dt        = rpar( 1)
    dx(0)     = rpar( 2)
@@ -1410,6 +1411,7 @@ real uzzzz
        ! end if
        ! write(*,'("FINISH ME")')
        ! stop 6789
+       an3=0.
         extra1a=numGhost
         extra1b=numGhost
         extra2a=numGhost
@@ -2928,8 +2930,9 @@ real uzzzz
        !         E--+--+--+--+
        !           n1a       n1b
        maxExtrapWidth = gridIndexRange(1,axis)-gridIndexRange(0,axis)+1
-       extrapWidth = min(orderOfAccuracy+1,maxExtrapWidth)
-       if( extrapWidth .lt. orderOfAccuracy+1)then
+       ! extrapWidth = min(orderOfAccuracy+1,maxExtrapWidth) ! *wdh* July 21, 2024
+       extrapWidth = min(orderOfExtrapolation,maxExtrapWidth)
+       if( extrapWidth .lt. orderOfExtrapolation )then
          write(*,'("bcOptWave:WARNING: reducing extrapolation width to ",i2," since there are not enough grid points")') extrapWidth
        end if
        if( extrapWidth==2 )then
@@ -4261,6 +4264,7 @@ real uzzzz
                              t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
                              ur0 = (gg - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
                            u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                           ! write(*,'("neumann CBC j1,j2=",2i4," u=",1pe12.4," gg=",1pe10.2)') j1,j2,u(j1,j2,j3,uc),gg
                            ! ----- Assign extra ghost ----
                            if( numGhost.gt.1 )then
                              ghost =2
@@ -4372,6 +4376,7 @@ real uzzzz
                              t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
                              ur0 = ( gg - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
                            u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                           ! write(*,'("neumann CBC j1,j2=",2i4," u=",1pe12.4," gg=",1pe10.2)') j1,j2,u(j1,j2,j3,uc),gg
                            ! ----- Assign extra ghost ----
                            if( numGhost.gt.1 )then
                              ghost =2
@@ -4701,6 +4706,7 @@ real uzzzz
                              t2=a1*( an1*rsxy(i1,i2,i3,axisp1,0)+an2*rsxy(i1,i2,i3,axisp1,1) ) 
                              ur0 = (gg - ( t2*urv(axisp1) + a0*u(i1,i2,i3,uc) ) )/t1
                            u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                           ! write(*,'("neumann CBC j1,j2=",2i4," u=",1pe12.4," gg=",1pe10.2)') j1,j2,u(j1,j2,j3,uc),gg
                            ! ----- Assign extra ghost ----
                            if( numGhost.gt.1 )then
                              ghost =2
@@ -4820,6 +4826,7 @@ real uzzzz
                              t3=a1*( an1*rsxy(i1,i2,i3,axisp2,0)+an2*rsxy(i1,i2,i3,axisp2,1)+an3*rsxy(i1,i2,i3,axisp2,2) )
                              ur0 = ( gg - ( t2*urv(axisp1) + t3*urv(axisp2) + a0*u(i1,i2,i3,uc) ) )/t1
                            u(j1,j2,j3,uc) =  u(j1+2*is1,j2+2*is2,j3+2*is3,uc) -2.*is*dr(axis)*ur0
+                           ! write(*,'("neumann CBC j1,j2=",2i4," u=",1pe12.4," gg=",1pe10.2)') j1,j2,u(j1,j2,j3,uc),gg
                            ! ----- Assign extra ghost ----
                            if( numGhost.gt.1 )then
                              ghost =2
@@ -5746,7 +5753,8 @@ real uzzzz
            end do
            end do
            ! orderOfExtrapolationForCorners=5
-           orderOfExtrapolationForCorners= orderOfAccuracy+1
+           ! orderOfExtrapolationForCorners= orderOfAccuracy+1 ! *wdh* July 21, 2024
+           orderOfExtrapolationForCorners= orderOfExtrapolation;
            iparc(0)=uc
            iparc(1)=uc
            iparc(2)=0                              ! useWhereMask;

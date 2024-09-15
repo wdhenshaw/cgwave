@@ -4217,7 +4217,7 @@ real uzzzzzz
          ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----
          if( takeImplicitFirstStep.eq.1 )then
            if( orderInTime.eq.2 .or. orderInTime.eq.4 )then
-             write(*,'(" advWave: TAKE IMPLICIT FIRST STEP ")')
+             ! write(*,'(" advWave: TAKE IMPLICIT FIRST STEP ")')
            else
              write(*,'(" advWave: TAKE IMPLICIT FIRST STEP : FINISH ME, orderInTime =",i2)') orderInTime
              stop 468

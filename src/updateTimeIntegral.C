@@ -66,6 +66,30 @@ Real mySinc( Real x )
   return y;
 }
 
+
+// -------------------------------------------------------
+/// \brief Evaluate the discrete sinc function
+/// \notes See the waveHoltz paper for a derivation 
+// -------------------------------------------------------
+Real sincd( Real x, Real T, Real dt )
+{
+  const Real epsilon=sqrt(REAL_EPSILON); //  what should this be ?
+
+  Real z = x*T;
+  Real xdtb2= x*dt*.5;
+
+  Real y;
+  if( fabs(z)>epsilon )
+  {
+     y=sin(z)/(T*tan(xdtb2)/(.5*dt));
+  }
+  else
+  {
+    y = 1. - z*z/6 - SQR(xdtb2)/3.;  //  first three terms in Taylor series
+  }
+  return y;
+}
+
 // -------------------------------------------------------------------
 /// \brief Evaluate the WaveHoltz beta function (single frequency)
 // -------------------------------------------------------------------
@@ -81,6 +105,21 @@ CgWave::betaWaveHoltz( Real lambda, Real omega, Real T )
   return beta;
 }
 
+// -------------------------------------------------------------------------
+/// \brief Evaluate the discret WaveHoltz beta function (single frequency)
+/// \notes See the waveHoltz paper for a derivation 
+// -------------------------------------------------------------------------
+Real 
+CgWave::betaDiscreteWaveHoltz( Real lambda, Real omega, Real T, Real dt )
+{
+  const Real alphad = tan(omega*dt*.5)/tan(omega*dt);  // adjusted alpha 
+  // printF("betaDiscreteWaveHoltz : lambda=%14.8e omega=%14.8e dt=%14.8e alphad=%14.8e\n",lambda,omega,dt,alphad);
+  Real beta   = sincd(omega-lambda,T,dt)  + sincd(omega+lambda,T,dt)- alphad*sincd(lambda,T,dt);  
+
+  return beta;
+}
+
+
 // -----------------------------------------------------------------------------------
 /// \brief Return the value of the non-zero eigenvalue of the
 ///     the multi-frequency WaveHoltz iteration matrix (sometimes called mu)
@@ -95,7 +134,7 @@ CgWave::betaWaveHoltz( Real lambda, Real omega, Real T )
 int CgWave::
 getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu )
 {
-  printF(">>Entering getWaveHoltzIterationEigenvalue.\n");
+  // printF(">>Entering getWaveHoltzIterationEigenvalue.\n");
 
   int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
   const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");
@@ -160,24 +199,32 @@ getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu )
     else
     {
       // adjust for explicit time-stepping:
-      // D+tD-t W^n = - lam^2 W^n 
+      // D+tD-t W^n = - lam^2 W^n
+
       lam = asin(lam*dt*.5)*2./dt; 
+      // printF("getWaveHoltzIterationEigenvalue: EXPLICIT time-stepping dt=%18.12e\n",dt);
     }
 
 
      // --- Form mu (see formulae in waho.pdf)
      //   mu(lambda) = SUM_I beta(i)*w(i) 
-     Real muTemp=0.; 
+     Real muTemp=0.;
+     Real betac; 
      for( int i=0; i<numberOfFrequencies; i++ )
      {
-       Real beta = betaWaveHoltz( lam, frequencyArray(i), periodArray(i) );
+       betac = betaWaveHoltz( lam, frequencyArray(i), periodArray(i) ); // use continuous beta
+       Real beta = betaDiscreteWaveHoltz( lam, frequencyArray(i), periodArray(i), dt );
        muTemp += w(i)*beta;
      }
      mu(ilam)=muTemp;
 
      // printF(">>>> ilam=%d: lam=%12.4e mu=%12.4e\n",ilam,lam,mu(ilam));
+     if( false )
+       printF("getWaveHoltzIterationEigenvalue: ilam=%3d omega=%14.7e, 2*pi/T=%14.7e lambda=%14.7e lam(adjusted)=%14.7e mu=%14.7e betac=%14.7e (dt=%12.5e)\n",
+            ilam,frequencyArray(0),2.*Pi/periodArray(0),lambda(ilam),lam,mu(ilam),betac,dt);
 
   }
+
 
   return 0;
 }
@@ -205,6 +252,7 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
   A.redim(numberOfFrequencies,numberOfFrequencies);
   A=0.;
 
+  // const Real alpha=.5;
   for( int j=0; j<numberOfFrequencies; j++ )
   {
     for( int i=0; i<numberOfFrequencies; i++ )
@@ -226,7 +274,8 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
 
         // beta(lambda; omega,T) = (2/T) int0^T (cos(omega*t)-.25)*cos(lambda*t) dt 
         const Real lambda=frequencyArray(j), omega=frequencyArray(i), T=periodArray(i);
-        A(i,j) = sum( sigma(Range(Nt+1),i)*( (cos(omega*tv)-.25)*cos(lambda*tv) ) )* (2./T); // qudarture approximation
+        const Real alphad = tan(omega*dt*.5)/tan(omega*dt);  // adjusted alpha 
+        A(i,j) = sum( sigma(Range(Nt+1),i)*( (cos(omega*tv)-.5*alphad)*cos(lambda*tv) ) )* (2./T); // qudarture approximation
 
         Real beta = betaWaveHoltz( frequencyArray(j), frequencyArray(i), periodArray(i) );
         if( 1==1 || debug & 2 )
@@ -263,13 +312,13 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
 /// the result in "v" (from the dbase).
 ///
 /// \param step (input) : current step 
-/// \param stepOption : firstStep, middleStep, lastStep. When stepOption==firstStep, the integration weights will be comnputed and the
+/// \param stepOption : firstStep, middleStep, lastStep. When stepOption==firstStep, the integration weights will be computed and the
 ///     time integral will be initialized.
 /// \param t (input) : current time
 /// \param u (input) : current solution
 // ================================================================================================
 int CgWave::
-updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGridFunction& u )
+updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCompositeGridFunction& u )
 {
   Real cpu0 = getCPU();
   
@@ -277,7 +326,7 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
 
   const int & debug                 = dbase.get<int>("debug");
   const real & tFinal               = dbase.get<real>("tFinal");
-  const real & dt                   = dbase.get<real>("dt");
+  // const real & dt                   = dbase.get<real>("dt");
   const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
   const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");  
   const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz");
@@ -292,10 +341,12 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
   RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
   RealArray & periodArray           = dbase.get<RealArray>("periodArray");  
   const int & deflateWaveHoltz      = dbase.get<int>("deflateWaveHoltz");
+  const int & useAugmentedGmres     = dbase.get<int>("useAugmentedGmres"); 
 
   const int & filterTimeDerivative = dbase.get<int>("filterTimeDerivative");
   const int & useFilterWeights      = dbase.get<int>("useFilterWeights"); 
 
+  const int includeParallelGhost=1;
 
   Index I1,I2,I3;
 
@@ -325,7 +376,7 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
   //   periodArray(0)    = twoPi/omega; 
   // }
 
-  if( false )
+  if( false)
   {
    printF("updateTimeIntegral: stepOption=%d omega=%16.12e, t=%12.4e, dt=%16.12e, t/dt=%.3g\n",stepOption,omega,t,dt,t/dt);
    printF("updateTimeIntegral: numberOfFrequencies=%d\n",numberOfFrequencies);
@@ -373,13 +424,19 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
   if( stepOption==firstStep )
   {
     assert( t==0. && step==0 );
+    if( false )
+      printF("updateTimeIntegral: stepOption=%d omega=%16.12e, t=%12.4e, dt=%16.12e, t/dt=%.3g useFilterWeights=%d\n",stepOption,omega,t,dt,t/dt,useFilterWeights);
 
     // --- Evaluate the integration weights for each of the frequencies ---
     if( useFilterWeights )
-      getFilterWeights( Nt, numberOfFrequencies, periodArray, orderOfAccuracy, sigma, filterWeights );
+      getFilterWeights( Nt, dt, numberOfFrequencies, periodArray, orderOfAccuracy, sigma, filterWeights );
     else 
       getIntegrationWeights( Nt, numberOfFrequencies, periodArray, orderOfAccuracy, sigma );
 
+    if( deflateWaveHoltz && useAugmentedGmres==1 )
+    { // initialize deflation for Augmented Gmres
+      initializeDeflation();
+    }
   }
 
 
@@ -411,7 +468,8 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
       OV_GET_SERIAL_ARRAY(real,u[grid],uLocal);
       OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
       getIndex(cg[grid].dimension(),I1,I2,I3);
-      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
+
+      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
       if( ok )
       {
         for( int freq=0; freq<numCompWaveHoltz; freq++ )
@@ -424,7 +482,9 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
           else
           {
             const Real omegaFreq = frequencyArray(freq); 
-            vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+            const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha 
+            vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+            // vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
           }
         }
       }
@@ -446,7 +506,7 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
       OV_GET_SERIAL_ARRAY(real,u[grid],uLocal);   // solution at new time 
       OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
       getIndex(cg[grid].dimension(),I1,I2,I3);
-      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
+      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
       if( ok )
       {
         for( int freq=0; freq<numCompWaveHoltz; freq++ )
@@ -457,8 +517,10 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
           }
           else
           {
-            const Real omegaFreq = frequencyArray(freq); 
-            vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);
+            const Real omegaFreq = frequencyArray(freq);
+            const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha  
+            vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) )*uLocal(I1,I2,I3);
+            // vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);
           }
         }
         if( stepOption==lastStep && useFilterWeights==0 )
@@ -524,7 +586,7 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
           getIndex(cg[grid].dimension(),I1,I2,I3);
 
           OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-          bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
+          bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
           if( ok )
           {
             FOR_3D(i1,i2,i3,I1,I2,I3)
@@ -592,7 +654,7 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
 
       }
 
-      if( deflateWaveHoltz )
+      if( deflateWaveHoltz && useAugmentedGmres==0 )
       { // Deflate the solution by projecting out selected eigenvectors
         deflateSolution();
       }
@@ -617,9 +679,9 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, real t, realCompositeGr
 /// \param filterWeights(0:Nt,0:numFreq-1) (output) : filter weights
 ///
 // =================================================================================
-int CgWave::getFilterWeights( int Nt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma, RealArray & filterWeights  )
+int CgWave::getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma, RealArray & filterWeights  )
 {
-  printF("\n ##### getFilterWeights #####\n\n");
+  // printF("\n ##### getFilterWeights #####\n\n");
 
   const int & useFilterWeights = dbase.get<int>("useFilterWeights"); 
 
@@ -649,14 +711,27 @@ int CgWave::getFilterWeights( int Nt, int numFreq, const RealArray & Tv, int ord
     filterWeights.redim(Nt+1,numCompWaveHoltz); 
     filterWeights=0.;
 
-    const Real alpha = 0.5;
+    // Real alpha = 0.5;
+
+    // if( numFreq==1 )
+    // {
+    //   // Adjust alpha to make discrete beta function have a max value of 1: (see overHoltz paper)
+    //   // *wdh* JUly 20, 2024
+    //   alpha = tan(frequencyArray(0)*dt*.5)/tan(frequencyArray(0)*dt);  
+    //   // printF("\n *** Adjust filter constant for dt: alpha=%6.3f (usual=.5) ***\n\n",alpha);
+    //   // OV_ABORT("STOP here for now");
+    // }
     for( int freq=0; freq<numFreq; freq++ )
     {
       const Real omega = frequencyArray(freq);
+      const Real alphad = tan(omega*dt*.5)/tan(omega*dt);  // adjusted alpha *wdh* Sept 10, 2023
+      if( false )
+        printF("getFilterWeights: omega=%14.8e, dt=%14.8e, alphad=%14.8e\n",omega,dt,alphad);
+
       for( int n=0; n<=Nt; n++ )
       {
         Real t = n*dt;
-        filterWeights(n,freq) = sigma(n,freq)*( cos(omega*t) - .5*alpha )*(2./Tv(freq));
+        filterWeights(n,freq) = sigma(n,freq)*( cos(omega*t) - .5*alphad )*(2./Tv(freq));
       }
     }
 
@@ -709,10 +784,11 @@ int CgWave::getFilterWeights( int Nt, int numFreq, const RealArray & Tv, int ord
         // filterWeights(n,nct) = sigma(n,0)*( omegaTilde*omega sin(omega*t) )*(2./T);
       }
       // add boundary terms from IBP's
+      const Real alphad = tan(omega*dt*.5)/tan(omega*dt);  // adjusted alpha *wdh* Sept 10, 2023 **CHECK ME***
       t=0; 
-      filterWeights( 0,nct) += -(omegaTilde/omega)* (cos(omega*t) - .5*alpha )*(2./T);
+      filterWeights( 0,nct) += -(omegaTilde/omega)* (cos(omega*t) - .5*alphad )*(2./T);
       t = Nt*dt; 
-      filterWeights(Nt,nct) +=  (omegaTilde/omega)* (cos(omega*t) - .5*alpha )*(2./T);   
+      filterWeights(Nt,nct) +=  (omegaTilde/omega)* (cos(omega*t) - .5*alphad )*(2./T);   
 
     }
 

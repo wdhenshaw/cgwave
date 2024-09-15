@@ -1,3 +1,130 @@
+set testag = $HOME/Dropbox/research/cgwave/bin/testAugmentedGmres 
+
+
+*******************************************
+***** Tues/Wed Sept 10/11, 2024
+
+CHANGES TO AugmentedGmres:
+
++++ NEW: NOTE: *new* form of residual -- ratio's agree
+
+$testag -Nx=10 -numToDeflate=2 -maxit=7 -initialGuess=0 -useFunction=1
+AUG-GMRES: Compute A*W(:,0) (Augmented vectors)
+AUG-GMRES: Compute A*W(:,1) (Augmented vectors)
+AUG-GMRES: it=  2, || r ||_2h = 2.28e+00, ratio=4.57e-01, (matrixIsAFunction=1)
+AUG-GMRES: it=  3, || r ||_2h = 1.07e+00, ratio=4.71e-01, (matrixIsAFunction=1)
+AUG-GMRES: it=  4, || r ||_2h = 3.08e-01, ratio=2.86e-01, (matrixIsAFunction=1)
+AUG-GMRES: it=  5, || r ||_2h = 1.07e-01, ratio=3.46e-01, (matrixIsAFunction=1)
+AUG-GMRES: it=  6, || r ||_2h = 2.48e-02, ratio=2.32e-01, (matrixIsAFunction=1)
+INFO: in AuGmres: H(k+1,k)= 1.67e-29 *happy break down*. Solution must have converged.
+AUG-GMRES: it=  7, || r ||_2h = 1.39e-33, ratio=5.59e-32, (matrixIsAFunction=1)
+AGmres: jp=9, iteration=8
+resv (*NEW WAY*)
+    (        0) (        1) (        2) (        3) (        4) (        5) (        6) (        7) (        8) 
+(0)  4.9929e+00  4.9929e+00  4.9929e+00  2.2802e+00  1.0743e+00  3.0772e-01  1.0659e-01  2.4775e-02  1.3859e-33 
+Done: solution x
+    (    0) (    1) (    2) (    3) (    4) (    5) (    6) (    7) (    8) 
+(0)   0.641   0.825   0.961   1.011   0.961   0.826   0.641   0.450   0.286 
+number of GMRES iterations=9
+resVect
+    (      0) (      1) (      2) (      3) (      4) (      5) (      6) (      7) (      8) 
+(0)  4.99e+00  4.99e+00  4.99e+00  2.28e+00  1.07e+00  3.08e-01  1.07e-01  2.48e-02  1.39e-33 
+xTrue
+    (    0) (    1) (    2) (    3) (    4) (    5) (    6) (    7) (    8) 
+(0)   0.641   0.825   0.961   1.011   0.961   0.826   0.641   0.450   0.286 
+maxErr= 7.77e-16
+
+
+
+$testag -Nx=10 -numToDeflate=2 -maxit=5 -initialGuess=0 -useFunction=1
+$testag -Nx=10 -numToDeflate=2 -maxit=5 -initialGuess=0 -useFunction=0 
+
+AugmentedGmres::solve: m=9, numToDeflate=2, matrixIsAFunction=0, maxit=5, tol= 1.00e-10
+AUG-GMRES: Compute A*W(:,0) (Augmented vectors)
+AUG-GMRES: Compute A*W(:,1) (Augmented vectors)
+AUG-GMRES: n=  3, || r_n ||_2h = 4.99e+00, ratio=4.99e+00, (matrixIsAFunction=0)
+AUG-GMRES: n=  4, || r_n ||_2h = 2.28e+00, ratio=4.57e-01, (matrixIsAFunction=0)
+AUG-GMRES: n=  5, || r_n ||_2h = 1.07e+00, ratio=4.71e-01, (matrixIsAFunction=0)
+AUG-GMRES: n=  6, || r_n ||_2h = 3.08e-01, ratio=2.86e-01, (matrixIsAFunction=0)
+AUG-GMRES: n=  7, || r_n ||_2h = 1.07e-01, ratio=3.46e-01, (matrixIsAFunction=0)
+Done: solution x
+    (    0) (    1) (    2) (    3) (    4) (    5) (    6) (    7) (    8) 
+(0)   0.641   0.825   0.960   1.010   0.963   0.830   0.642   0.447   0.283 
+number of GMRES iterations=6
+resVect
+    (      0) (      1) (      2) (      3) (      4) (      5) 
+(0)  1.00e+00  1.00e+00  4.99e+00  2.28e+00  1.07e+00  3.08e-01 
+xTrue
+    (    0) (    1) (    2) (    3) (    4) (    5) (    6) (    7) (    8) 
+(0)   0.641   0.825   0.961   1.011   0.961   0.826   0.641   0.450   0.286 
+maxErr= 4.35e-03
+
+
+
+++++++++++  OLD:
+
+$testag -Nx=10 -numToDeflate=2 -maxit=5 -initialGuess=0 -useFunction=1
+$testag -Nx=10 -numToDeflate=2 -maxit=5 -initialGuess=0 -useFunction=0 
+
+AugmentedGmres::solve: m=9, numToDeflate=2, matrixIsAFunction=1, maxit=5, tol= 1.00e-10
+AUG-GMRES: n=  2, || r_n ||/|| b || = 1.36e-01, ratio=4.57e-01 (matrixIsAFunction=1)
+AUG-GMRES: n=  3, || r_n ||/|| b || = 6.41e-02, ratio=4.71e-01 (matrixIsAFunction=1)
+AUG-GMRES: n=  4, || r_n ||/|| b || = 1.84e-02, ratio=2.86e-01 (matrixIsAFunction=1)
+AUG-GMRES: n=  5, || r_n ||/|| b || = 6.36e-03, ratio=3.46e-01 (matrixIsAFunction=1)
+
+
+AugmentedGmres::solve: m=9, numToDeflate=2, maxit=5, tol= 1.00e-10
+AUG-GMRES: n=  2, || r_n ||/|| b || = 1.36e-01, ratio=4.57e-01 (matrixIsAFunction=0)
+AUG-GMRES: n=  3, || r_n ||/|| b || = 6.41e-02, ratio=4.71e-01 (matrixIsAFunction=0)
+AUG-GMRES: n=  4, || r_n ||/|| b || = 1.84e-02, ratio=2.86e-01 (matrixIsAFunction=0)
+AUG-GMRES: n=  5, || r_n ||/|| b || = 6.36e-03, ratio=3.46e-01 (matrixIsAFunction=0)
+
+
+
+
+
+*******************************************
+***** Tues Aug 20, 2024
+
+
+DOES deflate zero work ??
+$testag -Nx=10  -initialGuess=0 -useFunction=1 -numToDeflate=0 -maxit=5
+
+$testag -Nx=10 -numToDeflate=2 -maxit=5 -initialGuess=0 -useFunction=1
+
+
+*******************************************
+***** Mon Aug 19, 2024
+
+TEST AUGMENTED GMRES
+
+COMPARE TO MATLAB
+
+USE matrix free: **WORKS**
+
+$testag -Nx=10 -numToDeflate=2 -maxit=5 -initialGuess=0 -useFunction=1
+$testag -Nx=10 -numToDeflate=2 -maxit=5 -initialGuess=0 -useFunction=0 
+
+AugmentedGmres::solve: m=9, numToDeflate=2, matrixIsAFunction=1, maxit=5, tol= 1.00e-10
+AUG-GMRES: n=  2, || r_n ||/|| b || = 1.36e-01, ratio=4.57e-01 (matrixIsAFunction=1)
+AUG-GMRES: n=  3, || r_n ||/|| b || = 6.41e-02, ratio=4.71e-01 (matrixIsAFunction=1)
+AUG-GMRES: n=  4, || r_n ||/|| b || = 1.84e-02, ratio=2.86e-01 (matrixIsAFunction=1)
+AUG-GMRES: n=  5, || r_n ||/|| b || = 6.36e-03, ratio=3.46e-01 (matrixIsAFunction=1)
+
+
+AugmentedGmres::solve: m=9, numToDeflate=2, maxit=5, tol= 1.00e-10
+AUG-GMRES: n=  2, || r_n ||/|| b || = 1.36e-01, ratio=4.57e-01 (matrixIsAFunction=0)
+AUG-GMRES: n=  3, || r_n ||/|| b || = 6.41e-02, ratio=4.71e-01 (matrixIsAFunction=0)
+AUG-GMRES: n=  4, || r_n ||/|| b || = 1.84e-02, ratio=2.86e-01 (matrixIsAFunction=0)
+AUG-GMRES: n=  5, || r_n ||/|| b || = 6.36e-03, ratio=3.46e-01 (matrixIsAFunction=0)
+
+
+set testag = $HOME/Dropbox/research/cgwave/bin/testAugmentedGmres
+
+$testag -Nx=10 -numToDeflate=2 -maxit=5 -initialGuess=0 -includeBCs=1
+
+
+$testag -Nx=10 -numToDeflate=2 -maxit=3
 
 
 *******************************************

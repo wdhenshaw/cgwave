@@ -11,6 +11,7 @@
 // #include "DialogData.h"
 // #include "Ogshow.h"
 #include "LCBC.h"
+#include "ParallelUtility.h"
 
 #define COEF_COMPUTE_HIGHER_DIM (0)
 #define DEBUG_SET_EXACT (0)

@@ -3,7 +3,7 @@
 #
 if( $gridName eq "" ){ $gridName="myGrid"; }
 if( $numberOfVolumeSmooths eq "" ){ $numberOfVolumeSmooths=20; }  #
-if( $nr0 eq "" ){ $nr0=8; }  #
+if( $nr0 eq "" ){ $nr0=max(8,2**($ml+1)); }  #
 if( $direction eq "" ){ $direction="backward"; }
 if( $bc eq "" ){ $bc="1 2 3 4"; }
 if( $share eq "" ){ $share="0 0 0 0"; }

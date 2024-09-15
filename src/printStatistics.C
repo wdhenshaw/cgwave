@@ -346,7 +346,7 @@ printStatistics(FILE *file /* = stdout */)
       cg[grid].displayComputedGeometry();
   }
 
-  printF("\n >>>> See the file mx.log for further timings, memory usage and other statistics <<<< \n\n");
+  printF("\n >>>> See the file cgWave.out for further timings, memory usage and other statistics <<<< \n\n");
   
   
   // reset times

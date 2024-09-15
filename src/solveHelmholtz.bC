@@ -11,6 +11,9 @@
 #include "display.h"
 #include "gridFunctionNorms.h"
 #include "Ogshow.h"  
+#include "ShowFileReader.h"
+#include "InterpolatePointsOnAGrid.h"
+
 
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
@@ -193,6 +196,9 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
   const RealArray & frequencyArrayAdjusted = cgWave.dbase.get<RealArray>("frequencyArrayAdjusted");
   const IntegerArray & numPeriodsArray     = cgWave.dbase.get<IntegerArray>("numPeriodsArray");
   const RealArray & periodArray            = cgWave.dbase.get<RealArray>("periodArray"); 
+
+  int & useAugmentedGmres                  = cgWave.dbase.get<int>("useAugmentedGmres"); 
+  int & augmentedVectorsAreEigenvectors    = cgWave.dbase.get<int>("augmentedVectorsAreEigenvectors");  // 1 = augmented vectors are true discrete eigenvectors
   int & deflateWaveHoltz                   = cgWave.dbase.get<int>("deflateWaveHoltz"); 
   int & numToDeflate                       = cgWave.dbase.get<int>("numToDeflate");
   aString & eigenVectorFile                = cgWave.dbase.get<aString>("eigenVectorFile");  
@@ -221,6 +227,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
   aString nameOfShowFile = "cgWaveHoltz.show";
   bool showFileIsOpen=false;
+
+  aString initialConditionShowFile = "initialConditionShowFile";
 
   bool plotOption=true;  // by default we plot interactively
   GL_GraphicsInterface & ps = (GL_GraphicsInterface&)(*Overture::getGraphicsInterface("cgwh",plotOption,argc,argv));
@@ -261,6 +269,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                         "compute with krylov",
                         "solve Helmholtz directly",
                         "zero initial condition",
+                        "show file initial condition",
                         "random initial condition",
                         "eigenvector initial condition",
                         "change parameters",
@@ -278,7 +287,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                         "erase",
                         "exit",
                         ""};
-  int numRows=9;
+  int numRows=10;
   dialog.setPushButtons( pbLabels, pbLabels, numRows ); 
 
   // aString tbCommands[] = {"save show file",
@@ -310,8 +319,12 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
   textCommands[nt] = "show file";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%s",(const char*)nameOfShowFile);  nt++; 
 
- textCommands[nt] = "number to deflate";  textLabels[nt]=textCommands[nt];
+  textCommands[nt] = "number to deflate";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",numToDeflate);  nt++;   
+
+  textCommands[nt] = "initial condition show file";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%s",(const char*)initialConditionShowFile);  nt++; 
+
 
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -324,6 +337,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                           "adjust plots for superGrid",
                           "adjust errors for superGrid",
                           "plot total field",
+                          "use augmented gmres",
+                          "augmented eigenvectors",
                             ""};
   int tbState[10];
   tbState[0] = cgWaveDebugMode;
@@ -331,6 +346,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
   tbState[2] = adjustPlotsForSuperGrid;
   tbState[3] = adjustErrorsForSuperGrid;
   tbState[4] = plotTotalField;
+  tbState[5] = useAugmentedGmres;
+  tbState[6] = augmentedVectorsAreEigenvectors;
 
   int numColumns=1;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -348,6 +365,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
   bool replot=false;
   bool reComputeErrors=false; 
   bool saveCheckFile=false; // set to true when errors should be saved to the check file.
+  int showFileSolution=-1;  // solutions from different iterations can go in the show file 
 
   // int checkFileCounter=0; // keeps track of how many times the checkFile is saved with results
 
@@ -407,7 +425,112 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
     {
       printF("Setting numToDeflate=%i\n",numToDeflate);
       cgWave.reinitializeDeflation();
-    }       
+    }  
+    else if( answer == "show file initial condition" ) // put before "show file"
+    {   
+      realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+      CompositeGrid & cg = *v.getCompositeGrid();
+
+      // aString initialConditionShowFile;
+      // gi.inputString(initialConditionShowFile,"Enter the name of the show file for the initial condition)");
+
+      printF("---- Read show file=[%s] for the initial condition -----\n",(const char*)initialConditionShowFile);
+      ShowFileReader showFileReader;
+      showFileReader.open(initialConditionShowFile);
+
+      int numFrames = showFileReader.getNumberOfFrames();
+      const int numberOfSolutions = showFileReader.getNumberOfSolutions();
+      printF("There are %d solutions and %d frames\n",numberOfSolutions,numFrames);     
+
+      realCompositeGridFunction q;
+      int solutionNumber  = 1; // use the first solution
+      CompositeGrid cgsf;
+      showFileReader.getASolution(solutionNumber,cgsf,q); 
+
+      // new way: 
+      bool gridsMatch = CgWave::compositeGridsMatch( cg, cgsf );
+
+      // old way: moved to a function
+      // bool gridsMatch=true;
+      // if( cg.numberOfComponentGrids() != cgsf.numberOfComponentGrids() )
+      // {
+      //   gridsMatch=false;
+      //   printF("INFO: The number of component grids (=%d) in the show file does not match the number in the current grid (=%d)\n",
+      //     cgsf.numberOfComponentGrids(),cg.numberOfComponentGrids());
+
+      //   // OV_ABORT("ERROR");
+      // }
+      // else
+      // {
+      //   // --- check if grids have the same number of points: 
+      //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      //   {
+      //     OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
+      //     OV_GET_SERIAL_ARRAY(int,cgsf[grid].mask(),sfMaskLocal);  // use mask   
+      //     if( maskLocal.elementCount() != sfMaskLocal.elementCount() )    
+      //     {
+      //       printF("grid=%d: elementCount=%d : showfile elementCount=%d DO NOT MATCH\n",grid,maskLocal.elementCount(),sfMaskLocal.elementCount() );
+      //       gridsMatch=false;
+      //       break;
+      //     }
+      //     else
+      //     {
+      //       printF("grid=%d: elementCount=%d : showfile elementCount=%d MATCH\n",grid,maskLocal.elementCount(),sfMaskLocal.elementCount() );
+      //     }
+      //   }
+
+      // }
+      if( gridsMatch )
+        printF("CgWaveHoltz:read IC from show file: Show file grid seems to match with current grid\n");
+      else
+        printF("CgWaveHoltz:read IC from show file: Show file grid DOES NOT match with current grid... will interpolate...\n");
+
+      if( numberOfFrequencies>1 )
+      {
+        printF("ERROR: read IC from a show file: finish me for numberOfFrequencies>1\n");
+        OV_ABORT("ERROR");
+      }
+
+      if( gridsMatch )
+      {
+        Index I1,I2,I3;
+        int icomp=0; // use this component
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+          MappedGrid & mg = cg[grid];
+          getIndex(mg.dimension(),I1,I2,I3);
+          OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+          OV_GET_SERIAL_ARRAY(real,q[grid],qLocal);        
+          bool ok=ParallelUtility::getLocalArrayBounds(q[grid],qLocal,I1,I2,I3);
+          if( ok )
+            vLocal(I1,I2,I3) = qLocal(I1,I2,I3,icomp);
+        } 
+      }
+      else 
+      { 
+        // This way which should handle all cases and parallel 
+
+        Range C=numberOfFrequencies;
+
+        InterpolatePointsOnAGrid interp;
+
+        CompositeGrid & cgsf = *q.getCompositeGrid();
+        // cgsf.update(MappedGrid::THEmask | MappedGrid::THEvertex | MappedGrid::THEinverseVertexDerivative );
+        cgsf.update(MappedGrid::THEmask );
+        // cg.update(MappedGrid::THEmask | MappedGrid::THEvertex | MappedGrid::THEinverseVertexDerivative );        
+
+        interp.setAssignAllPoints(true);  // assign all points -- extrap if necessary
+        int width = orderOfAccuracy+1;
+        interp.setInterpolationWidth( width ); // set interp width 
+        interp.interpolateAllPoints( q,v, C, C );  // interpolate v from q
+      }
+
+
+      replot=true;
+
+      cgWave.resetTimings(); // reset CPU timings to zero 
+
+    }         
     else if( dialog.getTextValue(answer,"show file","%s",nameOfShowFile) )
     {
       printF("Setting nameOfShowFile=%s\n",(const char*)nameOfShowFile);
@@ -417,11 +540,24 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
         show.close();
         showFileIsOpen=false;
       }
-    }   
+    } 
+    else if( dialog.getTextValue(answer,"initial condition show file","%s",initialConditionShowFile) )
+    {
+      printF("Setting initialConditionShowFile=[%s]\n",(const char*)initialConditionShowFile);
+    }         
     else if( dialog.getToggleValue(answer,"deflate",deflateWaveHoltz) )
     {
       printF("Setting deflateWaveHoltz=%d\n",deflateWaveHoltz);
     }
+    else if( dialog.getToggleValue(answer,"use augmented gmres",useAugmentedGmres) )
+    {
+      printF("Setting useAugmentedGmres=%d\n",useAugmentedGmres);
+    }  
+    else if( dialog.getToggleValue(answer,"augmented eigenvectors",augmentedVectorsAreEigenvectors) )
+    {
+      printF("Setting augmentedVectorsAreEigenvectors=%d ( 1 = augmented vectors are true discrete eigenvectors.)\n",augmentedVectorsAreEigenvectors);
+    }         
+    
     else if( dialog.getToggleValue(answer,"adjust plots for superGrid",adjustPlotsForSuperGrid) )
     {
       printF("Setting adjustPlotsForSuperGrid=%d (zero out solution in SG layers when plotting)\n",adjustPlotsForSuperGrid);
@@ -468,7 +604,12 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       if( useFixedPoint )
         cgWaveHoltz.solve();
       else
-        cgWaveHoltz.solvePETSc(argc,argv);
+      {
+        if( useAugmentedGmres )
+          cgWaveHoltz.solveAugmentedGmres(argc,argv);
+        else 
+          cgWaveHoltz.solvePETSc(argc,argv);
+      }
 
       // {
       //   if( computeEigenmodes )
@@ -478,7 +619,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       // }
 
 
-      if( deflateWaveHoltz )
+      if( deflateWaveHoltz && useAugmentedGmres==0 )
         cgWave.inflateSolution(); // un-deflate the solution
 
       const Real cpu = getCPU()-cpu0;
@@ -575,7 +716,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       printF(" Convergence rate CR=%5.3f, CR-perPeriod=%5.3f, Time to solve =%9.2e(s) : CgWave=%9.2e(s) %5.2f%%, advance=%9.2e(s) %5.2f%%\n",
              convergenceRate,convergenceRatePerPeriod,cpu,cpuWave,(cpuWave/cpu)*100.,cpuAdvance,(cpuAdvance/cpu)*100.);
       printF(" max-residual=%8.2e (WaveHoltz its), numberOfIterations = %d (%s) (maximumNumberOfIterations=%d)\n",
-               maxResidual,numberOfIterations,(useFixedPoint? "FP" : "Krylov"),maximumNumberOfIterations);
+               maxResidual,numberOfIterations,(useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : "GMRES")  ),maximumNumberOfIterations);
       printF(" numberOfFrequencies= %d, adjustOmega=%d, adjustHelmholtzForUpwinding=%d\n",
             numberOfFrequencies,adjustOmega,adjustHelmholtzForUpwinding);
       printF(" solveForScatteredField=%d\n",solveForScatteredField);
@@ -652,7 +793,14 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       }
 
       if( filterTimeDerivative==0 )
-        printF("solveHelmholtz: max-res=%9.3e (all frequencies)\n",maxRes);
+      {
+        aString label = deflateWaveHoltz ? sPrintF("deflate=%d",numToDeflate) : "";
+        if( numberOfFrequencies==1 )
+          printF("solveHelmholtz: max-res=%9.3e (%s, numIts=%d, CR=%5.2f %s)\n",
+            maxRes,(useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : "GMRES")),numberOfIterations,convergenceRate,(const char*)label);
+        else
+          printF("solveHelmholtz: max-res=%9.3e (all freq)\n",maxRes);
+      }
       else
       {
         printF("solveHelmholtz: max-residual [Re,Im]=[%8.2e,%8.2e]\n",maxResArray(0),maxResArray(1));
@@ -663,6 +811,9 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       computeHelmholtzErrorsMacro();
       printF("\n");
 
+
+      // if( 1==1 )  
+      //   cgWave.printStatistics();  // @@@@@@@@@@@@@@@ TEST @@@@@@@@@@@@@@@@@@@
 
       // ---------------------------------------
       // --------- SAVE CHECK FILE -------------
@@ -735,8 +886,6 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
       printF("Wrote results to the check file [cgWaveHoltz.check]\n");
 
-
-
       // save results to a matlab file
       const aString & matlabFileName = cgWaveHoltz.dbase.get<aString>("matlabFileName");  
       aString localName; 
@@ -747,8 +896,9 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       }
       else
       {
-        cgWaveHoltz.dbase.get<aString>("solverName")="Krylov";
-        localName = matlabFileName + "Krylov"; 
+        aString krylovType = useAugmentedGmres ? "AGmres" : "Krylov"; 
+        cgWaveHoltz.dbase.get<aString>("solverName")=krylovType;
+        localName = matlabFileName + krylovType;
       }
       cgWaveHoltz.outputMatlabFile( localName );
 
@@ -767,7 +917,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       realCompositeGridFunction & q = filterTimeDerivative ? uh : cgWave.dbase.get<realCompositeGridFunction>("v");
       realCompositeGridFunction & f = cgWave.dbase.get<realCompositeGridFunction>("f");
 
-      // v.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
+      // q.updateToMatchGrid(cg,all,all,all,numberOfFrequencies); // *WDH* Aug 20. 2024 WHY IS THIS NOW NEEDED ********************************
+
       // f.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
 
       // **NOTE** Make a copy of f since the direct solver will change it 
@@ -818,6 +969,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
       cgWave.resetTimings(); // reset CPU timings to zero 
     }
+
     else if( answer == "random initial condition" )
     {
       realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
@@ -902,7 +1054,9 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
         show.open(nameOfShowFile);
       }
       
-      show.saveGeneralComment("Solutions from CgWaveHoltz"); // save a general comment in the show file
+      showFileSolution++; 
+      if( showFileSolution==0 )
+        show.saveGeneralComment("Solutions from CgWaveHoltz"); // save a general comment in the show file
       // show.saveGeneralComment(" file written on April 1");      // save another general comment
 
       show.startFrame();                       // start a new frame
@@ -1141,6 +1295,11 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
     {
       realCompositeGridFunction & res = cgWaveHoltz.dbase.get<realCompositeGridFunction>("residual");
 
+       if( false )
+       {
+         res.display("res","%9.2e ");
+
+       }
       // interpolate residual to make plots nicer: 
       if( FALSE )
       { 

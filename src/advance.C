@@ -13,7 +13,6 @@
 #include "ProcessorInfo.h"
 
 
-
 #define FOR_3(i1,i2,i3,I1,I2,I3) for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
@@ -613,9 +612,14 @@ advanceOld( int it )
                 OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
                 OV_GET_SERIAL_ARRAY(real,u1[grid],u1Local);
                 getIndex(cg[grid].dimension(),I1,I2,I3);
-                u1Local(I1,I2,I3) = vLocal(I1,I2,I3,0);
-                for( int freq=1; freq<numberOfFrequencies; freq++ )
-                    u1Local(I1,I2,I3) += vLocal(I1,I2,I3,freq);
+                const int includeParallelGhost=1;
+                bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
+                if( ok ) 
+                {
+                    u1Local(I1,I2,I3) = vLocal(I1,I2,I3,0);
+                    for( int freq=1; freq<numberOfFrequencies; freq++ )
+                        u1Local(I1,I2,I3) += vLocal(I1,I2,I3,freq);
+                }
             }      
             bool applyExplicitBoundaryConditions=true;
             applyBoundaryConditions( u1, u1, t, applyExplicitBoundaryConditions );  // *wdh* Mar 6, 2020 -- try this 
@@ -632,9 +636,13 @@ advanceOld( int it )
                     OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
                     OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
                     getIndex(cg[grid].dimension(),I1,I2,I3);
-          // in waveHoltz.m we scale this to zero as we converge
-                    for( int freq=1; freq<numberOfFrequencies; freq++ )
-                        fLocal(I1,I2,I3,freq) = eigenVectorForcingFactor*vLocal(I1,I2,I3,freq);     
+                    bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
+                    if( ok )
+                    {
+            // in waveHoltz.m we scale this to zero as we converge
+                        for( int freq=1; freq<numberOfFrequencies; freq++ )
+                            fLocal(I1,I2,I3,freq) = eigenVectorForcingFactor*vLocal(I1,I2,I3,freq);   
+                    }  
                 }  
             }
         }
@@ -668,7 +676,7 @@ advanceOld( int it )
     {
     // When solving the Helmholtz problem with CgWaveHoltz we need to evaluate an integral 
     //      v  = (1/(2*T)* Int_0^T [  ( cos(omega*t)-.25)*u(x,t) dt ] 
-        updateTimeIntegral( 0, firstStep, t, u[cur] );
+        updateTimeIntegral( 0, firstStep, t, dt, u[cur] );
     }
 
 
@@ -927,7 +935,7 @@ advanceOld( int it )
                 // to the Helmholtz scheme to remove the effect of the upwinding
                                 preComputeUpwindUt=1; 
                             }
-                            RealArray uDot;
+                            RealArray uDot; 
                             if( ( option==1 && preComputeUpwindUt ) || 
                                     ( orderOfAccuracy==4 && (!isRectangular || superGrid(grid) ) ) )
                             {
@@ -935,9 +943,10 @@ advanceOld( int it )
                                 if( orderOfAccuracy==4 && orderOfAccuracyInTime==4 )
                                 {
                   // For orderInTime==4 we also need umLap
-                                    Index D1,D2,D3;
-                                    getIndex(mg.dimension(),D1,D2,D3);
-                                    uDot.redim(D1,D2,D3,2);
+                  // Index D1,D2,D3;
+                  // getIndex(mg.dimension(),D1,D2,D3);  // ** BROKEN IN PARALLEL  FIX ME ***********************************
+                  // uDot.redim(D1,D2,D3,2);
+                                    uDot.redim(uLocal.dimension(0),uLocal.dimension(1),uLocal.dimension(2),2); 
                                 }
                                 else
                                     uDot.redim(uLocal);
@@ -1172,7 +1181,7 @@ advanceOld( int it )
               // to the Helmholtz scheme to remove the effect of the upwinding
                             preComputeUpwindUt=1; 
                         }
-                        RealArray uDot;
+                        RealArray uDot; 
                         if( ( option==1 && preComputeUpwindUt ) || 
                                 ( orderOfAccuracy==4 && (!isRectangular || superGrid(grid) ) ) )
                         {
@@ -1180,9 +1189,10 @@ advanceOld( int it )
                             if( orderOfAccuracy==4 && orderOfAccuracyInTime==4 )
                             {
                 // For orderInTime==4 we also need umLap
-                                Index D1,D2,D3;
-                                getIndex(mg.dimension(),D1,D2,D3);
-                                uDot.redim(D1,D2,D3,2);
+                // Index D1,D2,D3;
+                // getIndex(mg.dimension(),D1,D2,D3);  // ** BROKEN IN PARALLEL  FIX ME ***********************************
+                // uDot.redim(D1,D2,D3,2);
+                                uDot.redim(uLocal.dimension(0),uLocal.dimension(1),uLocal.dimension(2),2); 
                             }
                             else
                                 uDot.redim(uLocal);
@@ -1371,7 +1381,7 @@ advanceOld( int it )
       // StepOptionEnum stepOption = i== (numberOfTimeSteps-1) ? lastStep : middleStep;
             StepOptionEnum stepOption = (t >tFinal-.5*dt) ? lastStep : middleStep;
       // printF(" computeTimeIntegral : t=%9.3e, stepOption=%d\n",t,stepOption);
-            updateTimeIntegral( step+1, stepOption, t, u[next] );
+            updateTimeIntegral( step+1, stepOption, t, dt, u[next] );
         }
         
     } // end for i .. number of steps
@@ -1990,9 +2000,14 @@ advance( int it )
                 OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
                 OV_GET_SERIAL_ARRAY(real,u1[grid],u1Local);
                 getIndex(cg[grid].dimension(),I1,I2,I3);
-                u1Local(I1,I2,I3) = vLocal(I1,I2,I3,0);
-                for( int freq=1; freq<numberOfFrequencies; freq++ )
-                    u1Local(I1,I2,I3) += vLocal(I1,I2,I3,freq);
+                const int includeParallelGhost=1;
+                bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
+                if( ok ) 
+                {
+                    u1Local(I1,I2,I3) = vLocal(I1,I2,I3,0);
+                    for( int freq=1; freq<numberOfFrequencies; freq++ )
+                        u1Local(I1,I2,I3) += vLocal(I1,I2,I3,freq);
+                }
             }      
             bool applyExplicitBoundaryConditions=true;
             applyBoundaryConditions( u1, u1, t, applyExplicitBoundaryConditions );  // *wdh* Mar 6, 2020 -- try this 
@@ -2009,9 +2024,13 @@ advance( int it )
                     OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
                     OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
                     getIndex(cg[grid].dimension(),I1,I2,I3);
-          // in waveHoltz.m we scale this to zero as we converge
-                    for( int freq=1; freq<numberOfFrequencies; freq++ )
-                        fLocal(I1,I2,I3,freq) = eigenVectorForcingFactor*vLocal(I1,I2,I3,freq);     
+                    bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
+                    if( ok )
+                    {
+            // in waveHoltz.m we scale this to zero as we converge
+                        for( int freq=1; freq<numberOfFrequencies; freq++ )
+                            fLocal(I1,I2,I3,freq) = eigenVectorForcingFactor*vLocal(I1,I2,I3,freq);   
+                    }  
                 }  
             }
         }
@@ -2045,7 +2064,7 @@ advance( int it )
     {
     // When solving the Helmholtz problem with CgWaveHoltz we need to evaluate an integral 
     //      v  = (1/(2*T)* Int_0^T [  ( cos(omega*t)-.25)*u(x,t) dt ] 
-        updateTimeIntegral( 0, firstStep, t, u[cur] );
+        updateTimeIntegral( 0, firstStep, t, dt, u[cur] );
     }
 
 
@@ -2269,7 +2288,7 @@ advance( int it )
               // to the Helmholtz scheme to remove the effect of the upwinding
                             preComputeUpwindUt=1; 
                         }
-                        RealArray uDot;
+                        RealArray uDot; 
                         if( ( option==1 && preComputeUpwindUt ) || 
                                 ( orderOfAccuracy==4 && (!isRectangular || superGrid(grid) ) ) )
                         {
@@ -2277,9 +2296,10 @@ advance( int it )
                             if( orderOfAccuracy==4 && orderOfAccuracyInTime==4 )
                             {
                 // For orderInTime==4 we also need umLap
-                                Index D1,D2,D3;
-                                getIndex(mg.dimension(),D1,D2,D3);
-                                uDot.redim(D1,D2,D3,2);
+                // Index D1,D2,D3;
+                // getIndex(mg.dimension(),D1,D2,D3);  // ** BROKEN IN PARALLEL  FIX ME ***********************************
+                // uDot.redim(D1,D2,D3,2);
+                                uDot.redim(uLocal.dimension(0),uLocal.dimension(1),uLocal.dimension(2),2); 
                             }
                             else
                                 uDot.redim(uLocal);
@@ -2401,7 +2421,6 @@ advance( int it )
                     {
                         timing(timeForDissipation) += cpu1-cpuOpt;
                     }
-                
               
                 if( timeSteppingMethod == explicitTimeStepping && debug & 16 )
                 {
@@ -2557,7 +2576,7 @@ advance( int it )
                     // to the Helmholtz scheme to remove the effect of the upwinding
                                         preComputeUpwindUt=1; 
                                     }
-                                    RealArray uDot;
+                                    RealArray uDot; 
                                     if( ( option==1 && preComputeUpwindUt ) || 
                                             ( orderOfAccuracy==4 && (!isRectangular || superGrid(grid) ) ) )
                                     {
@@ -2565,9 +2584,10 @@ advance( int it )
                                         if( orderOfAccuracy==4 && orderOfAccuracyInTime==4 )
                                         {
                       // For orderInTime==4 we also need umLap
-                                            Index D1,D2,D3;
-                                            getIndex(mg.dimension(),D1,D2,D3);
-                                            uDot.redim(D1,D2,D3,2);
+                      // Index D1,D2,D3;
+                      // getIndex(mg.dimension(),D1,D2,D3);  // ** BROKEN IN PARALLEL  FIX ME ***********************************
+                      // uDot.redim(D1,D2,D3,2);
+                                            uDot.redim(uLocal.dimension(0),uLocal.dimension(1),uLocal.dimension(2),2); 
                                         }
                                         else
                                             uDot.redim(uLocal);
@@ -2717,7 +2737,7 @@ advance( int it )
       // StepOptionEnum stepOption = i== (numberOfTimeSteps-1) ? lastStep : middleStep;
             StepOptionEnum stepOption = (t >tFinal-.5*dt) ? lastStep : middleStep;
       // printF(" computeTimeIntegral : t=%9.3e, stepOption=%d\n",t,stepOption);
-            updateTimeIntegral( step+1, stepOption, t, u[next] );
+            updateTimeIntegral( step+1, stepOption, t, dt, u[next] );
         }
         
     } // end for i .. number of steps
@@ -2745,11 +2765,14 @@ advance( int it )
 
         frequencyArray = frequencyArraySave;  // reset to original values 
         periodArray    = periodArraySave;     // reset to original values
-        printF("RESET periodArray\n");   
-        for( int freq=0; freq<numberOfFrequencies; freq++ )
+        if( debug>2 )
         {
-            printF("freq=%d: periodArray=%12.4e\n",freq,periodArray(freq));
-        }   
+            printF("RESET periodArray\n");   
+            for( int freq=0; freq<numberOfFrequencies; freq++ )
+            {
+                printF("freq=%d: periodArray=%12.4e\n",freq,periodArray(freq));
+            } 
+        }  
     // OV_ABORT("stop here for now");  
     }
     if( solveHelmholtz )

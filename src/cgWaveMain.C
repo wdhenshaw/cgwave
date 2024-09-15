@@ -187,7 +187,7 @@ main(int argc, char *argv[])
   
 
   // ---- Build the CgWave solver and set parameters ----
-  CgWave cgWave(cg,ps);
+  CgWave & cgWave = *new CgWave(cg,ps);
   cgWave.setNameOfGridFile(nameOfOGFile);
   cgWave.setup();
 
@@ -402,7 +402,7 @@ main(int argc, char *argv[])
   
   ps.popGUI();  // pop dialog
 
-
+  delete & cgWave; // delete here so we shut-down PETSc properly
   
   Overture::finish();          
   return 0;

@@ -6,6 +6,9 @@
 if( $ts eq "" ){ $ts="implicit"; }
 if( $implicitUpwind eq "" ){ $implicitUpwind=0; }
 if( $solveri eq "" ){ $solveri="yale"; }
+if( $ilui eq "" ){ $ilui="3"; }# ilu levels for implicit solver 
+if( $restarti eq "" ){ $restarti="20"; }# number of GMRES restart vectors for implicit solver 
+if( $orderCoarse eq "" ){ $orderCoarse=2; } # order of coarse grid solves for MG
 # weights in implicit time-stepping:
 if( $beta2 eq "" ){ $beta2=0.5; }
 if( $beta4 eq "" ){ $beta4=0; }
@@ -33,9 +36,9 @@ implicit solver parameters
   if( $solveri ne "yale" ){ $cmd="choose best iterative solver\n $solveri"; }else{ $cmd="choose best direct solver"; }
   $cmd
   number of incomplete LU levels
-    3
+    $ilui
   number of GMRES vectors
-    20
+    $restarti
   maximum number of iterations
     #
     $maxiti
@@ -51,16 +54,19 @@ implicit solver parameters
     choose good parameters: 1
     residual tolerance $rtoli
     absolute tolerance $atoli
+    # 
+    order of coarse level solves: $orderCoarse
     maximum number of iterations
       $mgMaxIts
     debug
       $debugmg
+    # show smoothing rates
     if( $debugmg > 1 ){ $cmdmg="show smoothing rates"; }else{ $cmdmg="#"; }
     $cmdmg
     # printf("debugmg=$debugmg, cmdmg = $cmdmg\n");
     # pause
-     # maximum number of extra levels
-     #  1
+    # maximum number of extra levels
+    #    6
     #
     # do not average coarse grid equations
     # pause 

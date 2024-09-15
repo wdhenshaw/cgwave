@@ -158,7 +158,7 @@ main(int argc, char *argv[])
 
 
   // ---- Build the WaveHoltz solver and set parameters ----
-    CgWaveHoltz cgWaveHoltz(cg,ps);
+    CgWaveHoltz & cgWaveHoltz = *new CgWaveHoltz(cg,ps);
     cgWaveHoltz.setNameOfGridFile(nameOfOGFile);
 
 
@@ -189,6 +189,7 @@ main(int argc, char *argv[])
     if( numberOfStepsTaken>0 )
         cgWave.printStatistics();
 
+    delete & cgWaveHoltz; // delete here so we shut-down PETSc properly
     
     Overture::finish();          
     return 0;

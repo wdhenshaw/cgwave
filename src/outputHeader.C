@@ -30,6 +30,7 @@ outputHeader()
       
   const int & orderOfAccuracy               = dbase.get<int>("orderOfAccuracy");
   const int & orderOfAccuracyInTime         = dbase.get<int>("orderOfAccuracyInTime");
+  const int & orderOfExtrapolation          = dbase.get<int>("orderOfExtrapolation");
   const real & dt                           = dbase.get<real>("dt");
   const ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
       
@@ -130,7 +131,7 @@ outputHeader()
       if( dbase.has_key("implicitSolverParameters") )
       {
         OgesParameters & par = dbase.get<OgesParameters>("implicitSolverParameters");
-        fPrintF(file,"   implict solver=%s\n",(const char*)par.getSolverName());
+        fPrintF(file,"   implicit solver=%s\n",(const char*)par.getSolverName());
       
         Real atol, rtol;
         par.get(OgesParameters::THEabsoluteTolerance,atol);
@@ -195,12 +196,12 @@ outputHeader()
     fPrintF(file,"\n useKnownSolutionForFirstStep=%d, applyKnownSolutionAtBoundaries=%d\n",useKnownSolutionForFirstStep,
             applyKnownSolutionAtBoundaries);
 
-    fPrintF(file," BC approach = %s. [useDefault|useOneSided|useCompatibility|useLocalCompatibility]\n",
+    fPrintF(file," BC approach = %s. [useDefault|useOneSided|useCompatibility|useLocalCompatibility], orderOfExtrapolation=%d.\n",
                   ( bcApproach==defaultBoundaryConditionApproach        ? "useDefaultApproachForBCs"                :
                     bcApproach==useOneSidedBoundaryConditions           ? "useOneSidedBCs"                          :
                     bcApproach==useCompatibilityBoundaryConditions      ? "useCompatibilityBCs"                     :
                     bcApproach==useLocalCompatibilityBoundaryConditions ? "useLocalCompatibilityBoundaryConditions" : 
-                                                                          "unknown" ));
+                                                                          "unknown" ),orderOfExtrapolation);
     fPrintF(file," initial condition = %s.\n",
            (initialConditionOption==zeroInitialCondition           ? "zero initial condition"           :
             initialConditionOption==twilightZoneInitialCondition   ? "twilightZone initial condition"   :

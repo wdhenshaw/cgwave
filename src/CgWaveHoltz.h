@@ -70,6 +70,9 @@ int setup();
 // WaveHoltz iteration:
 int solve();
 
+// Solve Helmholtz with WaveHoltz and GMRES augmented with eigenvectors 
+int solveAugmentedGmres(int argc,char **args);
+
 // Solve for eigenvalues and eigenwvectors using WaveHoltz
 int solveEigen(int argc,char **argv);
 
@@ -79,7 +82,7 @@ int solveHelmholtz(int argc,char **argv);
 // Solve Helmholtz using a direct or iterative solver.
 int solveHelmholtzDirect( realCompositeGridFunction & u, realCompositeGridFunction & f );
 
-// Solve the FPI equations uisng PETSc 
+// Solve the FPI equations using PETSc 
 int solvePETSc(int argc,char **args);
 
 // Solve for eigenmodes using SLEPc

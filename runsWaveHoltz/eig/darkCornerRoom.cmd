@@ -8,7 +8,16 @@
 # 
 #     ogen -noplot darkCornerRoom -interp=e -order=4 -factor=2
 #     ogen -noplot darkCornerRoom -interp=e -order=4 -factor=4
-# 
+# Multigrid:
+#     ogen -noplot darkCornerRoom -interp=e -order=2 -factor=4 -ml=2
+#     ogen -noplot darkCornerRoom -interp=e -order=2 -factor=8 -ml=2
+#     ogen -noplot darkCornerRoom -interp=e -order=2 -factor=16 -ml=3
+#     ogen -noplot darkCornerRoom -interp=e -order=2 -factor=32 -ml=4
+#
+#     ogen -noplot darkCornerRoom -interp=e -order=4 -factor=4 -ml=2
+#     ogen -noplot darkCornerRoom -interp=e -order=4 -factor=8 -ml=2
+#     ogen -noplot darkCornerRoom -interp=e -order=4 -factor=16 -ml=3
+#     ogen -noplot darkCornerRoom -interp=e -order=4 -factor=32 -ml=4
 #  ==============================================================
 #   Geometry for un-illumination problem (from Daniel Appelo)
 #

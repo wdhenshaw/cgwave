@@ -2287,8 +2287,11 @@ real uzzzzzz
     integer updateSolution,updateDissipation,computeUt
     integer ec 
     real ep 
-    real fv(0:1) , ev(0:1), evt(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1)
+    real fv(0:1) , ev(0:1), evt(0:1), evtt(0:1), evxx(0:1), evyy(0:1), evzz(0:1), evttt(0:1), evxxt(0:1), evyyt(0:1)
     real evxxxx(0:1), evxxyy(0:1), evyyyy(0:1), evxxzz(0:1), evyyzz(0:1), evzzzz(0:1), evtttt(0:1)
+    real evxxttt(0:1), evyyttt(0:1), evxxxxt(0:1), evxxyyt(0:1), evyyyyt(0:1)
+    real evzzt(0:1), evzzttt(0:1), evzzzzt(0:1), evxxzzt(0:1), evyyzzt(0:1)
+    real evxxxxttt(0:1), evxxyyttt(0:1), evyyyyttt(0:1)
     real evtttttt(0:1)
     real evxxxxxx(0:1)
     real evyyyyyy(0:1)
@@ -3644,24 +3647,8 @@ real uzzzzzz
          tsf=dtSq
        else
          ! first-step implicit:
+         ! SEE NOTES IN CGWAVE DOCUMENTATIION
          !
-         ! *NOTE* 
-         !    We need to adjust the coefficients so that we can use the SAME IMPLICI SOLVER as the later steps
-         !   u(t+dt) = u(0) + dt*ut(0) + .5*dt^2* u.tt
-         !   u(0) = known
-         !   ut(0) = known
-         !
-         ! FINISH ME: 
-         !   u.tt = Lu - damp*u.t 
-         !   Lu = cImp(1,0)*Lu(t+dt) + cImp(0)*Lu(t) + cImp(1)*Lu(t-dt)
-         !   
-         !   u(t+dt) = u(0) + dt*ut(0) + .5*dt^2* [ cImp(1,0)*Lu(t+dt) + cImp(0)*Lu(t) + cImp(1)*Lu(t-dt) ] + .5*dt^2( u(t+dt) - u(t-dt))/(2*dt) 
-         !
-         !  [ I - dt^2* cImp(1,0)*L + damp*.5*dt] u(t+dt) =  u(0) + dt*ut(0) 
-         !   Assumes um = ut(t=0) 
-         ! AND 
-         !   cImp(1,0) = cImp(-1,0)
-         !   RHS = u + dt*ut + (dt^2/2)*L * ( cImp(0,0)*u - 2.*dt*cImp(1,0)*ut ) + .5*dt^2 * f
          ! CHECK ME FOR DAMPING     
          ts1=1. + .5*damp*dt
          ts2=dt - .5*dt*dt*damp
@@ -3669,12 +3656,15 @@ real uzzzzzz
          ts4=-dt*cdtSq*cImp(-1,0)
          tsf=.5*dtSq    
          if( orderInTime.eq.4 )then
+           ! FIX ME FOR DAMPING 
            ts4 = ts4 + dt*cdtSq/6.
-           ts5 =  cdtSq**2 * cImp(0,1)
-           ts6 = -cdtSq**2 * cImp(1,1)
+           ts5 = -.5*cdtSq**2 * cImp( 0,1) 
+           ts6 =  dt*cdtSq**2 * cImp(-1,1)
            ! FORCING NEEDS ADJUSTMENT TOO 
-           ! write(*,'("advWave: finish me : IMP orderInTime=4")') 
+           if( addForcing.ne.0 )then
+             write(*,'(/,"**** advWave: TAKE IMPLICIT FIRST STEP : finish me for orderInTime=4 and ADD FORCING*****")') 
            ! stop 4445
+           end if
          end if
        end if
        cf = tsf
@@ -4144,8 +4134,8 @@ real uzzzzzz
        else
          ! --- IMPLICIT: Fill in RHS to implicit time-stepping -----
          if( takeImplicitFirstStep.eq.1 )then
-           if( orderInTime.eq.2 )then
-             write(*,'(" advWave: TAKE IMPLICIT FIRST STEP ")')
+           if( orderInTime.eq.2 .or. orderInTime.eq.4 )then
+             ! write(*,'(" advWave: TAKE IMPLICIT FIRST STEP ")')
            else
              write(*,'(" advWave: TAKE IMPLICIT FIRST STEP : FINISH ME, orderInTime =",i2)') orderInTime
              stop 468

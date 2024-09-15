@@ -82,6 +82,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
     const real & dt                  = dbase.get<real>("dt");
     const int & upwind               = dbase.get<int>("upwind");
     const int & implicitUpwind       = dbase.get<int>("implicitUpwind");
+    const int & orderOfExtrapolation = dbase.get<int>("orderOfExtrapolation");
 
     bool useUpwindDissipation        = upwind!=0;
 
@@ -106,7 +107,8 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
 
 
     BoundaryConditionParameters bcParams;
-    bcParams.orderOfExtrapolation=orderOfAccuracy+1;
+  // bcParams.orderOfExtrapolation=orderOfAccuracy+1; *wdh* July 21, 2024
+    bcParams.orderOfExtrapolation=orderOfExtrapolation;
 
 
     Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
@@ -151,7 +153,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
     if( useUpwindDissipation ) numGhost++;
 
     const int assignBCForImplicit = fillImplicitBoundaryConditions;   // used in call to bcOptWave
-    if( fillImplicitBoundaryConditions && t<=3.*dt )
+    if( fillImplicitBoundaryConditions && t<=3.*dt && debug>3 )
     {
         printF("applyBoundaryConditions: fill RHS for implicit time-stepping, t=%9.2e\n",t);
     }
@@ -327,7 +329,8 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                             assignBCForImplicit,             // ipar(16)
                             bcApproach,                      // ipar(17)
                             numberOfFrequencies,             // ipar(18)
-                            assignCornerGhostPoints          // ipar(19)
+                            assignCornerGhostPoints,         // ipar(19)
+                            orderOfExtrapolation             // ipar(20)
                                                   };
                         Real cEM2 = c;
                         if( solveHelmholtz ) 
@@ -341,10 +344,13 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                             }
                             else
                             {
-                                if( frequencyArraySave(0)==0 )
-                                    printF("WARNING: bcOpt: frequencyArraySave(0)=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",frequencyArraySave(0));
-                                if( dt<=0 )
-                                    printF("WARNING: bcOpt: dt<= 0 ! dt=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",dt);
+                                if( debug>3 )
+                                {
+                                    if( frequencyArraySave(0)==0 )
+                                        printF("WARNING:bcMacros frequencyArraySave(0)=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",frequencyArraySave(0));
+                                    if( dt<=0 )
+                                        printF("WARNING:bcMacros dt<= 0 ! dt=%12.4e. NOT ADJUSTING c for EM2 absorbing BC\n",dt);
+                                }
                             }
                         }           
                         real rpar[] = {
@@ -722,7 +728,8 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
             printF("applyBC: call finishBoundaryConditions to assign points at corners\n");
 
         BoundaryConditionParameters extrapParams;
-        extrapParams.orderOfExtrapolation=orderOfAccuracy+1;
+    // extrapParams.orderOfExtrapolation=orderOfAccuracy+1; // *wdh* July 21, 2024
+        extrapParams.orderOfExtrapolation=orderOfExtrapolation;
     // this function sets corner ghost, does a periodic update and parallel ghost update: 
         u.finishBoundaryConditions(extrapParams);
     }
@@ -757,6 +764,7 @@ applyEigenFunctionBoundaryConditions( realCompositeGridFunction & u )
     const Real t=0; 
 
     const int & orderOfAccuracy      = dbase.get<int>("orderOfAccuracy");
+    const int & orderOfExtrapolation = dbase.get<int>("orderOfExtrapolation");
   // const Real & c                   = dbase.get<real>("c");
   // const real & dt                  = dbase.get<real>("dt");
     const int & upwind               = dbase.get<int>("upwind");
@@ -869,7 +877,8 @@ applyEigenFunctionBoundaryConditions( realCompositeGridFunction & u )
 
   // WARNING -- do NOT do this for LCBC !! **********************
     BoundaryConditionParameters extrapParams;
-    extrapParams.orderOfExtrapolation=orderOfAccuracy+1;
+  // extrapParams.orderOfExtrapolation=orderOfAccuracy+1;  // *wdh* Jul 21, 2024
+    extrapParams.orderOfExtrapolation=orderOfExtrapolation; 
     u.finishBoundaryConditions(extrapParams);
 
     timing(timeForBoundaryConditions) += getCPU()-cpu0;

@@ -104,7 +104,15 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 {
   PetscErrorCode ierr = 0;
 
-  printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=%d\n",iteration);
+  if( true )
+  {
+    if( iteration==-2 )
+      printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: EVALUATE THE RHS\n");
+    else if( iteration==-3 )
+      printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: CHECK RESIDUAL\n");
+    else
+      printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=%d\n",iteration);
+  }
 
   if( testCase==0 ) // **TESTING ***
   {
@@ -178,7 +186,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
   {
     // ---- Helmholtz solver ----
 
-    printF(" **************** MatVec for PETSc iteration=%i *************\n\n",iteration);
+    printF(" **************** MatVec for PETSc iteration=%i (-2=rhs, -3=residual) *************\n\n",iteration);
     if( iteration==computeRightHandSide )
     {
       printF(" >>>> Call cgWave to COMPUTE the Right-hand-side to Ax=b : b = Pi * v(0) \n");    
@@ -189,7 +197,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     
     const int & monitorResiduals      = cgWaveHoltz.dbase.get<int>("monitorResiduals");      // montior the residuals at every step
     const Real & numberOfActivePoints = cgWaveHoltz.dbase.get<Real>("numberOfActivePoints");
-   
+    const int & useVariableTolerance  = cgWaveHoltz.dbase.get<int>("useVariableTolerance"); // Vary implicit solver tolerance based on current WaveHoltz residual
 
     // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
@@ -446,10 +454,16 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
       // resVector(it) = norm( v^{n+1} - v^n )
       RealArray & resVector = cgWave.dbase.get<RealArray>("resVector");  
 
-      if( iteration<0 || iteration>=resVector.getLength(0) )
+      if( iteration<0 )
       {
-        printF("solvePETSC: ERROR: INVALID iteration=%d. resVector.getLength(0)=%d\n",iteration,resVector.getLength(0));
+        printF("solvePETSC: ERROR: INVALID iteration=%d.\n",iteration);
         OV_ABORT("ERROR");
+      }
+      const int & maximumNumberOfIterations = cgWaveHoltz.dbase.get<int>("maximumNumberOfIterations");
+      if( iteration>=resVector.getLength(0) ) 
+      {
+        printF("solvePETSC: Increasing the size of the vector that holds residuals, iteration=%d, maximumNumberOfIterations=%d\n",iteration,maximumNumberOfIterations);
+        resVector.resize(resVector.getLength(0)*2); 
       }
 
       // resVector(iteration)= cgWaveHoltz.residual();   // this is not correct since solution is not the right one
@@ -459,16 +473,39 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
       KSPGetResidualNorm(ksp,&kspResidual); 
       kspResidual /= sqrt(numberOfActivePoints);  // make an approximate L2h norm
 
-      const int & maximumNumberOfIterations = cgWaveHoltz.dbase.get<int>("maximumNumberOfIterations");
-      if( iteration <= maximumNumberOfIterations )
+      resVector(iteration)= kspResidual;
+      printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
+      
+      // if( iteration <= maximumNumberOfIterations )
+      // {
+      //   resVector(iteration)= kspResidual;
+      //   printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
+      // }
+      // else
+      // {
+      //    printF("\n ##### KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e (NOT SAVED since iteration=%d > maximumNumberOfIterations=%d)\n\n",
+      //     kspResidual,iteration,maximumNumberOfIterations);
+      // }
+
+      if( useVariableTolerance ) // ** THIS DOESNT SEEM TO WORK -- KRYLOV NEEDS ACCURATE Matrix-vector multiplies ***
       {
-        resVector(iteration)= kspResidual;
-        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
-      }
-      else
-      {
-         printF("\n ##### KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e (NOT SAVED since iteration=%d > maximumNumberOfIterations=%d)\n\n",
-          kspResidual,iteration,maximumNumberOfIterations);
+        const CgWave::TimeSteppingMethodEnum & timeSteppingMethod = cgWave.dbase.get<CgWave::TimeSteppingMethodEnum>("timeSteppingMethod");
+        if( timeSteppingMethod == CgWave::implicitTimeStepping )
+        {
+          Oges & impSolver = cgWave.dbase.get<Oges>("impSolver");
+          if( impSolver.isSolverIterative() )
+          {
+            Real rtol= max(1e-12,min(1.e-3,kspResidual/10));
+            // rtol=1e-10;
+
+            Real atol=rtol;
+
+            printF("CgWaveHoltz:waveHoltzMatrixVectorMultiply: set implicit solver tolerance: rtol=%9.2e, atol=%9.2e (based on residual=%9.3e)\n",atol,rtol,kspResidual);
+        
+            impSolver.set(OgesParameters::THErelativeTolerance,rtol);        
+            impSolver.set(OgesParameters::THEabsoluteTolerance,atol);   
+          } 
+        }    
       }
 
       // // There is no residual for iteration=0 since the Krylov solver is just computing the first A*x
@@ -485,7 +522,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
 
 // ============================================================================
-/// \brief Solve for the Helholtz solution using PETSc
+/// \brief Solve for the Helmholtz solution using PETSc
 // ============================================================================
 int CgWaveHoltz::
 solvePETSc(int argc,char **args)
@@ -499,6 +536,11 @@ solvePETSc(int argc,char **args)
   const int & numPeriods                = dbase.get<int>("numPeriods");
   const int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t   
   const int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
+  const int & useVariableTolerance      = dbase.get<int>("useVariableTolerance"); // Vary implicit solver tolerance based on current WaveHoltz residual
+
+  const aString & krylovType            = dbase.get<aString>("krylovType");  // gmres, bicgstab
+  const int & gmresRestartLength        = dbase.get<int>("gmresRestartLength"); // restart length for WaveHoltz + GMRES  
+
   Real & numberOfActivePoints           = dbase.get<Real>("numberOfActivePoints");
 
 
@@ -689,8 +731,6 @@ solvePETSc(int argc,char **args)
     }
     else 
     {
-       // **** FIX ME ****
-
       // --- Set initial guess to be current v ---
 
       PetscScalar *xl;
@@ -965,7 +1005,7 @@ solvePETSc(int argc,char **args)
     psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true); 
 
 
-    OV_ABORT("petscSolver: computeEigenmodes - STOP HERE FOR NOW");
+    OV_ABORT("petscSolver: computeEigenmodes - STOP HERE FOR NOW"); // @@@@@@@@@@@@@@@@@@@@@@@@ EIGENMODES - STOP HERE FOR NOW @@@@@@@@@
 
     computeEigenmodesWithSLEPc=0; // reset 
     adjustHelmholtzForUpwinding = adjustHelmholtzForUpwindingSave; // reset
@@ -981,6 +1021,47 @@ solvePETSc(int argc,char **args)
      Create linear solver context
   */
   ierr = KSPCreate(PETSC_COMM_WORLD,&ksp);CHKERRQ(ierr);
+
+  KSPType krylovSpaceMethod = KSPGMRES; // default Krylov;
+  if( krylovType=="gmres") 
+  {
+     krylovSpaceMethod = KSPGMRES;
+  }
+  else if( krylovType=="bicgstab" || krylovType=="bcgs" )
+  {
+    krylovSpaceMethod = KSPBCGS;
+    printF("CghWaveHoltz::PETScSolver: setting Krtylov solver to bi-conjugate-gradient stabilized\n");
+  }
+  else
+  {
+    printf("CgWaveHoltz::solvePETSc:WARNING: unknown krylovType=[%s].\n"
+           "  Valid options: gmres, bicgstab\n"
+           "  Continuing with gmres...\n");
+  }
+
+  // See Oges/PETScEquationSolver.C line 390
+      // krylovSpaceMethod=KSPRICHARDSON;
+      // krylovSpaceMethod=KSPCHEBYSHEV;
+      // krylovSpaceMethod=KSPCG;
+      // krylovSpaceMethod=KSPGMRES;
+      // krylovSpaceMethod=KSPBCGS;
+      // krylovSpaceMethod=KSPTCQMR;
+      // krylovSpaceMethod=KSPTFQMR;
+      // krylovSpaceMethod=KSPCR;
+      // krylovSpaceMethod=KSPLSQR;
+      // krylovSpaceMethod=KSPPREONLY;
+      // krylovSpaceMethod=KSPQCG;
+      // krylovSpaceMethod=KSPBICG;
+      // krylovSpaceMethod=KSPCGS;
+
+  // Set the Kylov solver such as gmres, etc.
+  ierr = KSPSetType(ksp, krylovSpaceMethod); CHKERRQ(ierr);
+
+  if( gmresRestartLength>0 )
+  {
+    printF("CghWaveHoltz::PETScSolver: setting gmres restart length to %i\n",gmresRestartLength);
+    KSPGMRESSetRestart(ksp, gmresRestartLength); CHKERRQ(ierr);
+  }
 
   /* 
      Set operators. Here the matrix that defines the linear system

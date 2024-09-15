@@ -704,6 +704,7 @@ getUserDefinedKnownSolution(real t,  int grid,
 
     else if( userKnownSolution=="sphereEigenfunction" )
     {
+        
     // --- Eigen function for the wave equation in a SOLID SPHERE ---
 
     // --- we could avoid building the vertex array on Cartesian grids ---

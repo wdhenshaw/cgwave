@@ -89,6 +89,8 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("orderOfAccuracy")=2;
   dbase.put<int>("orderOfAccuracyInTime")=-1; // -1 means make order in time equal to order in space
 
+  dbase.put<int>("orderOfExtrapolation")=-1; // for boundary conditions, -1= default = orderOfAccuracy+1
+
   dbase.put<int>("secondOrderGrid")=1;
   dbase.put<int>("debug")=0;
 
@@ -96,15 +98,20 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("filterTimeDerivative") = 0;           //  filter time-derivative for WaveHoltz
   dbase.put<int>("numCompWaveHoltz")     = 0;           //  number of components in WaveHoltz
 
+  
 
+  dbase.put<int>("deflateWaveHoltz") = 0;               //  set to 1 to turn on deflation for WaveHoltz
+  dbase.put<int>("numToDeflate")     = 1;               //  number of eigenvectors to deflate
+  dbase.put<bool>("deflationInitialized") = false;      //  set too true if deflation has been initialized
+  dbase.put<aString>("eigenVectorFile")= "none";        //  name of file holding eigs and eigenvectors for deflation
+  dbase.put<Real>("eigenVectorForcingFactor")=0.;       // scale eigenvector forcing by this amount
+  dbase.put<int>("numEigsToCompute")=1;                 // number of eigenpairs to compute 
+  dbase.put<int>("numArnoldiVectors")=-1;               // total number of Arnolidi vectors to keep (-1 = use default)
+  dbase.put<int>("useAugmentedGmres")=0;                // 1 = use augmented GMRES for deflation
+  dbase.put<int>("augmentedVectorsAreEigenvectors")=1;  // 1 = augmented vectors are true discrete eigenvectors
 
-  dbase.put<int>("deflateWaveHoltz") = 0;           //  set to 1 to turn on deflation for WaveHoltz
-  dbase.put<int>("numToDeflate")     = 1;           //  number of eigenvectors to deflate
-  dbase.put<bool>("deflationInitialized") = false;  //  set too true if deflation has been initialized
-  dbase.put<aString>("eigenVectorFile")= "none";    //  name of file holding eigs and eigenvectors for deflation
-  dbase.put<Real>("eigenVectorForcingFactor")=0.;   // scale eigenvector forcing by this amount
-  dbase.put<int>("numEigsToCompute")=1;             // number of eigenpairs to compute 
-  dbase.put<int>("numArnoldiVectors")=-1;           // total number of Arnolidi vectors to keep (-1 = use default)
+  dbase.put<int>("eigenvectorsAreTrueEigenvectors")=true;  // eigenvectors for deflation may be the true ones or approximate
+  dbase.put<RealArray>("betaDeflate");                     // beta values for deflated eigenvectors 
 
   dbase.put<int>("iterationStartRR") = 5;
   dbase.put<int>("useAccurateInnerProduct")=true; // use accurate inner product for computing the Rayleigh quotient
@@ -535,6 +542,11 @@ int CgWave::initialize()
   if( orderOfAccuracyInTime==-1 )
     orderOfAccuracyInTime = orderOfAccuracy;
 
+  int & orderOfExtrapolation = dbase.get<int>("orderOfExtrapolation");
+  if( orderOfExtrapolation==-1 )
+    orderOfExtrapolation = orderOfAccuracy+1;
+
+
   const int & upwind                  = dbase.get<int>("upwind");
   // const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
 
@@ -821,6 +833,50 @@ int CgWave::resetTimings()
     timing(i) = 0.;
 }
 
+
+// ======================================================================================
+/// \brief Determine if two composite grids match. This function is used to determine if
+///   a show file (used for initial conditions or eigenvectors) has the same composite grid.
+/// \return value: true if the grids (appear) to match, false otherwise.
+// ======================================================================================
+bool CgWave::compositeGridsMatch( CompositeGrid & cg, CompositeGrid & cgsf )
+{
+
+  bool gridsMatch=true;
+  if( cg.numberOfComponentGrids() != cgsf.numberOfComponentGrids() )
+  {
+    gridsMatch=false;
+    printF("INFO: The number of component grids (=%d) in the show file does not match the number in the current grid (=%d)\n",
+      cgsf.numberOfComponentGrids(),cg.numberOfComponentGrids());
+    
+    // OV_ABORT("ERROR");
+  }
+  else
+  {
+    // --- check if grids have the same number of points: 
+    cg.update(MappedGrid::THEmask ); 
+    cgsf.update(MappedGrid::THEmask ); 
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    {
+      OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
+      OV_GET_SERIAL_ARRAY(int,cgsf[grid].mask(),sfMaskLocal);  // use mask   
+      if( maskLocal.elementCount() != sfMaskLocal.elementCount() )    
+      {
+        printF("grid=%d: elementCount=%d : showfile elementCount=%d DO NOT MATCH\n",grid,maskLocal.elementCount(),sfMaskLocal.elementCount() );
+        gridsMatch=false;
+        break;
+      }
+      else
+      {
+        printF("grid=%d: elementCount=%d : showfile elementCount=%d MATCH\n",grid,maskLocal.elementCount(),sfMaskLocal.elementCount() );
+      }
+    }
+
+  }
+
+  return gridsMatch;
+
+}
 // ===================================================================================================================
 /// \brief Build options dialog for boundary condition options.
 /// \param dialog (input) : graphics dialog to use.
@@ -832,6 +888,8 @@ buildBoundaryConditionOptionsDialog(DialogData & dialog )
 
   BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
   int & applyKnownSolutionAtBoundaries        = dbase.get<int>("applyKnownSolutionAtBoundaries"); // by default, do NOT apply known solution at boundaries
+
+  const int & orderOfExtrapolation            = dbase.get<int>("orderOfExtrapolation"); // for BCs, -1= default = orderOfAccuracy+1  
 
   const int & useSuperGrid                    = dbase.get<int>("useSuperGrid");
   const Real & superGridWidth                 = dbase.get<real>("superGridWidth");
@@ -878,7 +936,10 @@ buildBoundaryConditionOptionsDialog(DialogData & dialog )
   sPrintF(textStrings[nt], "bcName ([dirichlet|evenSymmetry]");  nt++; 
 
   textCommands[nt] = "superGrid width";  textLabels[nt]=textCommands[nt];
-  sPrintF(textStrings[nt], "superGrid width %g",superGridWidth);  nt++;   
+  sPrintF(textStrings[nt], "superGrid width %g",superGridWidth);  nt++; 
+
+  textCommands[nt] = "orderOfExtrapolation";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "order of extrapolation %g",superGridWidth);  nt++;     
 
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -901,8 +962,9 @@ int CgWave::
 getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerArray & bcOrig )
 {
 
-  int & useSuperGrid    = dbase.get<int>("useSuperGrid");
-  Real & superGridWidth = dbase.get<real>("superGridWidth");
+  int & orderOfExtrapolation = dbase.get<int>("orderOfExtrapolation"); // for BCs, -1= default = orderOfAccuracy+1  
+  int & useSuperGrid         = dbase.get<int>("useSuperGrid");
+  Real & superGridWidth      = dbase.get<real>("superGridWidth");
 
 
   BoundaryConditionApproachEnum & bcApproach  = dbase.get<BoundaryConditionApproachEnum>("bcApproach");
@@ -948,6 +1010,7 @@ getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerA
 
     printF("Interpolation neighbours will be %s for upwind schemes with wider stencils.\n",(const char*)assignType );
   }
+ 
   else if( dialog.getToggleValue(answer,"set known on boundaries",applyKnownSolutionAtBoundaries) )
   {
     printF("Setting applyKnownSolutionAtBoundaries=%d (1=apply known solution on boundaries).\n",applyKnownSolutionAtBoundaries);
@@ -959,7 +1022,11 @@ getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerA
   else if( dialog.getTextValue(answer,"superGrid width","%e",superGridWidth) )
   {
     printF("Setting superGridWidth=%g (layer width in parameter space)\n",superGridWidth);
-  }  
+  } 
+  else if( dialog.getTextValue(answer,"order of extrapolation","%i",orderOfExtrapolation) )
+  {
+    printF("Setting orderOfExtrapolation=%i (for boundary conditions, -1=use default=orderOfAccuracy+1)\n",orderOfExtrapolation);
+  }    
   else if( len=answer.matches("bc=") )
   {
     aString bcn = answer(len,answer.length()-1);

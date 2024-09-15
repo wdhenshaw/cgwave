@@ -11,7 +11,7 @@
 
 
 //=================================================================================================
-/// \brief Take the first step using Taylor series in time
+/// \brief Take the first step using Taylor series in time, or other approach
 //=================================================================================================
 int CgWave::
 takeFirstStep( int cur, real t )
@@ -43,7 +43,7 @@ takeFirstStep( int cur, real t )
     FILE *& debugFile  = dbase.get<FILE*>("debugFile");
     FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
 
-    if( true || debug & 4 )
+    if( debug & 4 )
         printF("\n *******  CgWave::takeFirstStep t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
 
   
@@ -97,8 +97,9 @@ takeFirstStep( int cur, real t )
         {
       // --- implicit first step:
       //   Save the time derivative in up, this is used in advWave
+            if( debug>2 )
+                printF("\n **** takeFirstStep: IMPLICIT FIRST STEP : save time-derivative at t=0 for grid=%d *****\n\n",grid);
 
-            printF("\n **** takeFirstStep: IMPLICIT FIRST STEP : save time-derivative at t=0 for grid=%d *****\n\n",grid);
             continue;
         }
 
@@ -526,7 +527,9 @@ takeFirstStepHelmholtz( int cur, real t )
   //       ( omega^2 I + c^2 Delta) w = f  
     Real fSign = forcingOption==helmholtzForcing ? -1.0 : 1.0;
 
-    bool usePeriodicFirstStep= true;
+  // bool usePeriodicFirstStep= true;
+
+    bool usePeriodicFirstStep = false; // *wdh* CHANGED : Sept 10, 2024 -- now this matches the theory in the overHoltz paper
 
   // *wdh* March 25, 2023 -- we cannot assume omega-periodic solution if we are computing eigen-modes
   // But there seems to be trouble using this !?
@@ -657,7 +660,12 @@ takeFirstStepHelmholtz( int cur, real t )
             if( ok )
             {
             
-        // Taylor series first step **CHECK ME**
+        // ----- Taylor series first step -------
+
+        // *NOTE* This same first step occurs if we impose 
+        //    D+tD-t U^0 = Lph U^0 + force
+        //    Dzt U^0 = 0 
+
                 RealArray lap(I1,I2,I3);
                 operators[grid].derivative(MappedGridOperators::laplacianOperator,ucLocal,lap,I1,I2,I3);
       
@@ -669,8 +677,9 @@ takeFirstStepHelmholtz( int cur, real t )
         //        = (c^2*Delta)^2 u + c^2*Delta(f) + ftt 
 
         // ** TEMP *** April 28, 2023
-        // ** unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
-                unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3);
+                printF("~~~~~~~~~~~~~~ Take first step assuming D0t U  = 0 : omega=%14.6e\n",omega);
+                unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
+        // unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3);
                 if( orderOfAccuracy==4 )
                 {
           // this may be good enough for 4th-order -- local error is dt^4

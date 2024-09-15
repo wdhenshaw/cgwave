@@ -37,7 +37,7 @@ $takeImplicitFirstStep=0;
 $eigenSolver="default";  # [default|KrylovSchur|Arnoldi]
 $minStepsPerPeriod=10; # do this for eigs
 $eigTol=1.e-5;  # tolerance for detecting multiple eigs 
-$bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; 
+$bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; $orderOfExtrapolation=-1;
 #
 $solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
@@ -56,7 +56,7 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "assignRitzFrequency=i"=>\$assignRitzFrequency,"numEigs=i"=>\$numEigs,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,\
             "eigenSolver=s"=>\$eigenSolver,"setInitialVectors=i"=>\$setInitialVectors,"eigTol=f"=>\$eigTol,\
             "useAccurateInnerProduct=i"=>\$useAccurateInnerProduct,"takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,\
-            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6 );
+            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"orderOfExtrapolation=i"=>\$orderOfExtrapolation );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -132,6 +132,7 @@ if( $bc5 ne "" ){ $cmd .="\n bcNumber5=$bc5"; }
 if( $bc6 ne "" ){ $cmd .="\n bcNumber6=$bc6"; }
 printf('cmd=$cmd\n");')
 $cmd
+order of extrapolation $orderOfExtrapolation
 #
 # if( $ad4>0. ){ $upwind=1; }# for backward compatibility
 upwind dissipation $upwind
@@ -162,43 +163,8 @@ eig multiplicity tol $eigTol
 compute errors 0
 # pause
 #
-implicit solver parameters
-  # NOTE: bcgs = bi-CG stab
-  if( $solveri ne "yale" ){ $cmd="choose best iterative solver\n $solveri"; }else{ $cmd="choose best direct solver"; }
-  $cmd
-  number of incomplete LU levels
-    3
-  number of GMRES vectors
-    20
-  maximum number of iterations
-    #
-    $maxiti
-  relative tolerance
-    $rtoli
-  absolute tolerance
-    $atoli
- # 
-  multigrid parameters
-    choose good parameters: 1
-    residual tolerance $rtoli
-    absolute tolerance $atoli
-    # debug
-    #   1
-    # show smoothing rates
-    # Coarse level solver:  
-    Oges parameters
-      choose best direct solver
-      # choose best iterative solver
-      relative tolerance
-        1.e-10
-      absolute tolerance
-        1.e-10
-      number of incomplete LU levels
-      3
-    exit     
-  exit
-  #pause
-exit
+if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }
+$cmd
 # artificial dissipation $ad4
 # 
 helmholtzForcing
@@ -242,6 +208,7 @@ if( $go eq "fk" ){ $cmd="zero initial condition\ncompute with fixed-point\n zero
 if( $go eq "dfk" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
 if( $go eq "ks"  ){ $cmd="compute\n save to show\n exit"; }
 if( $go eq "k"  ){ $cmd="compute\n exit"; }
+if( $go eq "og"  ){ $cmd="open graphics"; }
 $cmd
 
 

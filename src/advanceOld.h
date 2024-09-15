@@ -314,7 +314,7 @@ advanceOld( int it )
   {
     // When solving the Helmholtz problem with CgWaveHoltz we need to evaluate an integral 
     //      v  = (1/(2*T)* Int_0^T [  ( cos(omega*t)-.25)*u(x,t) dt ] 
-    updateTimeIntegral( 0, firstStep, t, u[cur] );
+    updateTimeIntegral( 0, firstStep, t, dt, u[cur] );
   }
 
 
@@ -533,7 +533,7 @@ advanceOld( int it )
       // StepOptionEnum stepOption = i== (numberOfTimeSteps-1) ? lastStep : middleStep;
       StepOptionEnum stepOption = (t >tFinal-.5*dt) ? lastStep : middleStep;
       // printF(" computeTimeIntegral : t=%9.3e, stepOption=%d\n",t,stepOption);
-      updateTimeIntegral( step+1, stepOption, t, u[next] );
+      updateTimeIntegral( step+1, stepOption, t, dt, u[next] );
     }
     
   } // end for i .. number of steps

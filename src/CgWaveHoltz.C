@@ -51,7 +51,11 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
 
   dbase.put<int>("maximumNumberOfIterations")=500;
   dbase.put<int>("numberOfIterations")=0; // actual number of iterations taken
+  dbase.put<int>("useVariableTolerance")=0; // Vary implicit solver tolerance based on current WaveHoltz residual
   dbase.put<int>("numberOfMatrixVectorMultiplications")=0;
+
+  dbase.put<aString>("krylovType") = "gmres";  // gmres, bicgstab
+  dbase.put<int>("gmresRestartLength")=-1; // restart length for WaveHoltz + GMRES
 
   dbase.put<int>("orderOfAccuracy")=0; 
 
@@ -184,11 +188,14 @@ int CgWaveHoltz::interactiveUpdate()
   int & numPeriods                = dbase.get<int>("numPeriods");
   real & tol                      = dbase.get<real>("tol");
   int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
+  int & useVariableTolerance      = dbase.get<int>("useVariableTolerance"); // Vary implicit solver tolerance based on current WaveHoltz residual
+
+  aString & krylovType            = dbase.get<aString>("krylovType");     // gmres, bicgstab
+  int & gmresRestartLength        = dbase.get<int>("gmresRestartLength"); // restart length for WaveHoltz + GMRES  
 
   int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
   RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");
   RealArray & periodArray         = dbase.get<RealArray>("periodArray");
-
 
   int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
 
@@ -228,6 +235,7 @@ int CgWaveHoltz::interactiveUpdate()
                           "monitor residuals",
                           "adjust omega",
                           "filter time derivative",
+                          "use variable tolerance",
                            ""};
   int tbState[10];
   tbState[0] = saveMatlabFile;
@@ -269,6 +277,12 @@ int CgWaveHoltz::interactiveUpdate()
 
   textCommands[nt] = "maximum number of iterations";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",numPeriods);  nt++; 
+
+  textCommands[nt] = "krylov type";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%s",(const char*)krylovType);  nt++; 
+
+  textCommands[nt] = "gmres restart length";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%i",gmresRestartLength);  nt++; 
 
   textCommands[nt] = "matlab filename:";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%s",(const char*)matlabFileName);  nt++; 
@@ -402,6 +416,16 @@ int CgWaveHoltz::interactiveUpdate()
       printF("Setting maximumNumberOfIterations=%i\n",maximumNumberOfIterations);
     }
 
+    else if( dialog.getTextValue(answer,"gmres restart length","%e",gmresRestartLength) )
+    {
+      printF("Setting gmresRestartLength=%i (-1 means use default)\n",gmresRestartLength);
+    }  
+
+    else if( dialog.getTextValue(answer,"krylov type","%e",krylovType) )
+    {
+      printF("Setting krylovType=%s (for WaveHoltz+Krylov)\n",(const char*)krylovType);
+    }  
+
     else if( dialog.getTextValue(answer,"matlab filename:","%s",matlabFileName) )
     {
       printF("Setting matlabFileName=[%s]\n",(const char*)matlabFileName);
@@ -423,7 +447,10 @@ int CgWaveHoltz::interactiveUpdate()
     {
       printF("Setting filterTimeDerivative=%d: 1=filter time-derivative of the initial condition.\n",filterTimeDerivative);
     }    
-
+    else if( dialog.getToggleValue(answer,"use variable tolerance",useVariableTolerance) )
+    {
+      printF("Setting useVariableTolerance=%d: 1=adjust implicit solver tolerance based on current WaveHoltz residual.\n",useVariableTolerance);
+    }   
     else
     {
       printF("CgWaveHoltz:ERROR: unknown answer=[%s]\n",(const char*)answer);
@@ -438,6 +465,7 @@ int CgWaveHoltz::interactiveUpdate()
 
   return 0;
 }
+
 
 
 // ================================================================================================
@@ -485,6 +513,10 @@ int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
   RealArray & resVector                                     = cgWave.dbase.get<RealArray>("resVector");
 
 
+  // printF("outputMatlab: numberOfIterations=%d\n",numberOfIterations);
+  // ::display(resVector,"resVector");
+  
+
   // aString fileName="cgWaveHoltz.m"; // allow this to be specified
   // aString & matlabFileName           = dbase.get<aString>("matlabFileName");    // name of matlab file holding residuals etc.
 
@@ -514,6 +546,21 @@ int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
 
   fPrintF(matlabFile,"solverName='%s';\n",(const char*)solverName);
   fPrintF(matlabFile,"gridName=\'%s\';\n",(const char*)nameOfGridFile);
+  const real & numberOfGridPoints    = cgWave.dbase.get<real>("numberOfGridPoints");
+  fPrintF(matlabFile,"numberOfGridPoints=%12.6e;\n",numberOfGridPoints);
+  fPrintF(matlabFile,"timeSteppingMethod='%s';\n",(timeSteppingMethod==CgWave::explicitTimeStepping ? "explicit" : "implicit") );
+
+  const int & numberOfMatrixVectorMultiplications = dbase.get<int>("numberOfMatrixVectorMultiplications");
+  fPrintF(matlabFile,"numberOfMatrixVectorMultiplications=%d;\n",numberOfMatrixVectorMultiplications);
+
+  const Real cpuSolveEigenWave = computeEigenmodes ? dbase.get<Real>("cpuSolveEigenWave") : 0.;
+  fPrintF(matlabFile,"cpuSolveEigenWave=%9.2e;\n",cpuSolveEigenWave);
+ 
+  const int & totalImplicitIterations       = cgWave.dbase.get<int>("totalImplicitIterations"); 
+  const int & totalImplicitSolves           = cgWave.dbase.get<int>("totalImplicitSolves"); 
+  const Real aveNumberOfImplicitIterations  = totalImplicitIterations/Real(max(1,totalImplicitSolves));  
+  fPrintF(matlabFile,"aveNumberOfImplicitIterations=%5.1f;\n",aveNumberOfImplicitIterations);
+
   fPrintF(matlabFile,"omega=%20.14e;\n",omega);
 
   int numPerLine=5;
@@ -574,6 +621,11 @@ int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
 
     const int & numEigenVectors = dbase.get<int>("numEigenVectors");
     fPrintF(matlabFile,"numEigenVectors=%d; %% number of computed eigenpairs\n",numEigenVectors);
+
+    const int & numEigsToCompute                    = cgWave.dbase.get<int>("numEigsToCompute");
+    const int & numArnoldiVectors                   = cgWave.dbase.get<int>("numArnoldiVectors"); 
+    fPrintF(matlabFile,"numEigsRequested=%d;  %% number of requested eigenpairs\n",numEigsToCompute);
+    fPrintF(matlabFile,"numArnoldiVectors=%d; %% number of Arnolidi vecrors\n",numArnoldiVectors);
 
     const RealArray & eigenValues = dbase.get<RealArray>("eigenValues");
     fPrintF(matlabFile,"%% computed eigenvalues:\n");
@@ -673,7 +725,7 @@ int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
   fPrintF(matlabFile,"adjustOmega=%d; %% (1= adjust omega to account for discrete symbol of D+t D-t).\n",adjustOmega);
   fPrintF(matlabFile,"orderOfAccuracy=%d;\n",orderOfAccuracy);
   fPrintF(matlabFile,"tol=%12.4e;\n",tol);
-  fPrintF(matlabFile,"timeSteppingMethod='%s';\n",(timeSteppingMethod==CgWave::explicitTimeStepping ? "explicit" : "implicit") );
+
 
   // printF("saveMatlab: dt=%9.3e\n",dt);
   fPrintF(matlabFile,"dt=%20.14e;\n",dt);
@@ -811,6 +863,7 @@ int CgWaveHoltz::setup()
 
 // ================================================================================================
 /// \brief Solve the equations over one or more periods 
+///
 // ================================================================================================
 int CgWaveHoltz::
 solve()
@@ -941,7 +994,10 @@ solve()
     vOld=v;  // save current solution 
 
     // -- advance for one period (or multiple periods ) ---
-    printF("#################### CgWaveHoltz: CALL cgWave : it=%d #########################\n",it);
+    // if( it==0 )
+    //   printF("#################### CgWaveHoltz: CALL cgWave : it=%d  #########################\n",it);
+    // else
+    //  printF("#################### CgWaveHoltz: CALL cgWave : it=%d, L2h-norm(v-vOld)=%9.2e #########################\n",it,resVector(it-1));
     
     cgWave.advance( it );
     
@@ -955,7 +1011,9 @@ solve()
     // real errMax = maxNorm(vOld);
     real errNorm = l2Norm(vOld);    // use L2h norm to match Krylov norm
     printF("it=%d:  l2Norm( v-vOld )=%8.2e (tol=%g)\n",it,errNorm,tol);
-    resVector(it)= errNorm; // norm( v-vOld )     
+    resVector(it)= errNorm; // norm( v-vOld )    
+
+    printF("#################### CgWaveHoltz Fixed-Point Iteration: it=%d, L2h-norm(v-vOld)=%9.2e #########################\n",it,resVector(it));
 
     numberOfIterations=it+1;
     if( errNorm<tol )
@@ -987,19 +1045,20 @@ solve()
 int CgWaveHoltz::outputHeader()
 {
   const aString & nameOfGridFile  = dbase.get<aString>("nameOfGridFile");
-  real & omega                    = dbase.get<real>("omega");
-  real & Tperiod                  = dbase.get<real>("Tperiod");
-  int & numPeriods                = dbase.get<int>("numPeriods");
-  real & tol                      = dbase.get<real>("tol");
-  int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
+  const real & omega                    = dbase.get<real>("omega");
+  const real & Tperiod                  = dbase.get<real>("Tperiod");
+  const int & numPeriods                = dbase.get<int>("numPeriods");
+  const real & tol                      = dbase.get<real>("tol");
+  const int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
+  const int & useVariableTolerance      = dbase.get<int>("useVariableTolerance"); // Vary implicit solver tolerance based on current WaveHoltz residual
 
-  int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  const int & adjustOmega               = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
 
-  int & monitorResiduals          = dbase.get<int>("monitorResiduals");      // montior the residuals at every step
-  int & saveMatlabFile            = dbase.get<int>("saveMatabFile");         // save matlab file with residuals etc.
-  aString & matlabFileName        = dbase.get<aString>("matlabFileName");    // name of matlab file holding residuals etc.
+  const int & monitorResiduals          = dbase.get<int>("monitorResiduals");      // montior the residuals at every step
+  const int & saveMatlabFile            = dbase.get<int>("saveMatabFile");         // save matlab file with residuals etc.
+  const aString & matlabFileName        = dbase.get<aString>("matlabFileName");    // name of matlab file holding residuals etc.
 
-  real & omegaSOR  = dbase.get<real>("omegaSOR");
+  const real & omegaSOR  = dbase.get<real>("omegaSOR");
 
   FILE *& logFile = dbase.get<FILE*>("logFile");
 
@@ -1015,6 +1074,7 @@ int CgWaveHoltz::outputHeader()
     fPrintF(file," omega=%14.6e, Tperiod=%14.6e \n",omega,Tperiod);
     fPrintF(file," adjustOmega=%d (1= adjust omega to account for discrete symbol of D+t D-t)\n",adjustOmega);
     fPrintF(file," saveMatlabFile=%d \n",saveMatlabFile);
+    fPrintF(file," maximumNumberOfIterations=%d, useVariableTolerance=%d\n",maximumNumberOfIterations,useVariableTolerance);
 
 
     fPrintF(file,"*********************************************************************************\n\n");

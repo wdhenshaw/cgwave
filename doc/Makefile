@@ -13,6 +13,3 @@ cgwhDoc:
 	bibtex cgwhDoc
 
 
-
-
-

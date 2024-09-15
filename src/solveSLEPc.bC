@@ -125,9 +125,9 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 {
   PetscErrorCode ierr = 0;
 
-  printF("\n ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=%d\n",iteration);
-
-  printF(" **************** MatVec for SLEPc iteration=%i *************\n\n",iteration);
+  printF("\n ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=%d +++\n",iteration);
+  if( debug>2 )
+    printF(" **************** MatVec for SLEPc iteration=%i *************\n",iteration);
 
   assert( pCgWaveHoltz!=NULL );
   CgWaveHoltz & cgWaveHoltz = *pCgWaveHoltz;
@@ -556,7 +556,7 @@ solveSLEPc(int argc,char **args)
   }
   else if( eigenSolver==CgWave::ArnoldiEigenSolver )
   {
-    // Arnolid: with explicit restart and deflation.
+    // Arnoldi: with explicit restart and deflation.
     PetscCall(EPSSetType(eps,EPSARNOLDI));
   }
   else if( eigenSolver==CgWave::ArpackEigenSolver )

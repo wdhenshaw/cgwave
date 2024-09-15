@@ -1,6 +1,9 @@
 #
 # 
 #   plotStuff plotSolution.cmd -show=diskG4O2Eigs.show -name=diskG4O2Eigs -sol=1 2 
+# RPI: 
+#   plotStuff plotSolution.cmd -show=rpiG4O2Freq15.show -name=rpiG4O2 -field=abs -sol=10 11
+#   plotStuff plotSolution.cmd -show=rpiG16O2Freq40.show -name=rpiG16O2 -field=abs -sol=10 11
 #
 $show="gaussianSquare.show"; $solution="-1"; $name="plot"; $field="phi"; $emin=0; $emax=-1; $numFreq=1; $clines=0; 
 # $tSave=1; $stride=1; $start=0; 
@@ -15,6 +18,9 @@ GetOptions( "show=s"=>\$show, "name=s"=>\$name, "solution=i"=>\$solution,"tSave=
 #
 if( $sol[0] eq "" ){ @sol=($solution); }
 $show
+#
+if( $field eq "abs" ){ $cmd="derived types\n absoluteValue\n phi  (off)\n done\n exit\n plot:absphi"; }else{ $cmd="#" }
+$cmd
 #
 #  *new way* Eigenvectors stored as "time-steps" May 1, 2023
 solution: $solution

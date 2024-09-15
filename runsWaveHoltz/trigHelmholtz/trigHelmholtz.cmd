@@ -42,6 +42,8 @@ if( $bc eq "n" ){ $bc="neumann"; }
 if( $bc eq "e" ){ $bc="evenSymmetry"; }
 if( $bc eq "r" ){ $bc="radiation"; }
 if( $freq[0] eq "" ){ @freq=(1,2,3,4,5,6,7,8,9,10); }
+#
+if( $solveri eq "best" ){ $solveri="choose best iterative solver"; }
 # 
 $omega = $freq[0]; 
 # pause
@@ -59,8 +61,8 @@ matlab filename: $matlab
 #
 # choose parameters for the direct Helmholtz solver
 direct solver parameters
-  if( $solverh ne "yale" ){ $cmd="choose best iterative solver\n $solverh"; }else{ $cmd="choose best direct solver"; }
-  $cmd
+  if( $solverh eq "best" ){ $solverh="choose best iterative solver"; }
+  $solverh
   number of incomplete LU levels
     $iluh
   number of GMRES vectors

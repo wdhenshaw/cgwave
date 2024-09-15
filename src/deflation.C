@@ -7,7 +7,6 @@
 //#include "CompositeGridOperators.h";    
 #include "PlotStuff.h"
 #include "display.h"
-//#include "ParallelOverlappingGridInterpolator.h"
 #include "ParallelUtility.h"
 //#include "LoadBalancer.h"
 #include "gridFunctionNorms.h"
@@ -96,6 +95,8 @@ GridStatistics();
 
 
 #endif
+#include "InterpolatePointsOnAGrid.h"
+
 
 
 #define FOR_3(i1,i2,i3,I1,I2,I3) for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  
@@ -123,6 +124,8 @@ int CgWave::initializeDeflation()
 
     deflationInitialized=true;
 
+    
+    const int & orderOfAccuracy             = dbase.get<int>("orderOfAccuracy");
     const int & solveHelmholtz              = dbase.get<int>("solveHelmholtz");
     const int & computeTimeIntegral         = dbase.get<int>("computeTimeIntegral");
     const int & adjustOmega                 = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
@@ -131,6 +134,8 @@ int CgWave::initializeDeflation()
     int & numToDeflate                      = dbase.get<int>("numToDeflate");
     const aString & eigenVectorFile         = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
     const int & computeEigenmodes           = dbase.get<int>("computeEigenmodes");
+    const int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
+    const RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
 
     printF("\n ==== INITIALIZE DEFLATION =====\n");
     printF("  deflateWaveHoltz=%d, numToDeflate=%d, computeEigenmodes=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,numToDeflate,computeEigenmodes,(const char*)eigenVectorFile);
@@ -181,6 +186,7 @@ int CgWave::initializeDeflation()
     const int numberOfSolutions = showFileReader.getNumberOfSolutions();
     printF("There are %d solutions and %d frames\n",numberOfSolutions,numFrames);
             
+
   // int solutionNumber=1;
   // showFileReader.getASolution(solutionNumber,cgev,uev);        // read in a grid and solution
 
@@ -188,24 +194,69 @@ int CgWave::initializeDeflation()
     HDF_DataBase & db = *(showFileReader.getFrame(solutionNumber));
     db.get(eig,"eig"); 
 
-  // *new* May 6, 2023 -- EV show file may contain multiplicity --- FINISH ME 
-    IntegerArray multiplicity, multIndex;
-    int rt = db.get(multiplicity,"multiplicity");
-    if( rt!=0 )
-        printF("Array multiplicity Not found in EV file: returnCode==%d\n",rt);
+
+  // -- genEigs now can orthogonalize the eigenvectors -- 
+  //  *new* Sept 5, 2024 :
+
+    bool eigenVectorsAreOrthogonal=false;
+
+    IntegerArray eigStartIndex;
+    int rt = db.get(eigMultiplicity,"eigMultiplicity");
+    if( rt==0 )
+    {
+        eigenVectorsAreOrthogonal=true;
+        printF("initDeflation: Eigenvectors in the show file have been orthogonalized and have L2-norm 1.\n");
+        db.get(eigStartIndex,"eigStartIndex"); // currently not used : index of first of a multiple eigenvalue
+
+    }
     else
-        ::display(multiplicity,"multiplicity","%2i");
-    rt = db.get(multiplicity,"multIndex");
-    if( rt!=0 )
-        printF("Array multIndex Not found in EV file: returnCode==%d\n",rt);  
+    {
+        printF("initDeflation: Eigenvectors in the show file have NOT been orthogonalized : this must be an old file. Regenerate with genEigs and orthogonalize to avoid doing this here.\n");
+    }
+
+    if( !dbase.has_key("integrate") )
+    {
+        Integrate & integrate = dbase.put<Integrate>("integrate");
+    // Integrate integrate(cg); // ************** TEST *****************
+
+        printF("\n ###### CgWave::initDeflation: reading Integrate object from the show file with precomputed integration weights...\n");
+
+        integrate.updateToMatchGrid(cg);  // This is correct -- see Overture/otherStuff/testIntegrate.C
+        rt = integrate.get(db,"integrate");
+
+        if( true )
+        {
+            Real volume;
+            volume = integrate.volume();
+            printf("initializeDeflation: computed volume of the domain = %9.2e\n\n",volume);
+        }
+
+    // if( rt==0 )
+    //   printF("\n ###### CgWave::initDeflation: Integrate object WAS found in the show file.\n\n");
+    // else
+    //   printF("\n ###### CgWave::initDeflation: Integrate object was NOT found in the show file.\n\n");
+    }
+  // // ---- start OLD: 
+  // IntegerArray multiplicity, multIndex;
+  // int rt = db.get(multiplicity,"multiplicity");
+  // if( rt!=0 )
+  //   printF("Array multiplicity Not found in EV file: returnCode==%d\n",rt);
+  // else
+  //   ::display(multiplicity,"multiplicity","%2i");
+  // rt = db.get(multiplicity,"multIndex");
+  // if( rt!=0 )
+  //   printF("Array multIndex Not found in EV file: returnCode==%d\n",rt);
+  // // end OLD ------  
 
   // int solutionNumber=1;
+    bool gridsMatch=true; // set to false if the grid in the eigenvector file does not match cg 
     if( numberOfSolutions>1 )
     {
     // *new way* May 9, 2023
     // Eigenvectors are stored as time-steps (in different frames)
 
         realCompositeGridFunction q;
+        InterpolatePointsOnAGrid interp; // for interpolating from a grid with a different resolution
         for( int ie=0; ie<numberOfSolutions; ie++ )
         {
       // --- read in each EV and save in uev ---
@@ -214,20 +265,44 @@ int CgWave::initializeDeflation()
             if( ie==0 )
             {
                 Range all;
-                uev.updateToMatchGrid(cgev,all,all,all,numberOfSolutions);
+        // uev.updateToMatchGrid(cgev,all,all,all,numberOfSolutions);
+                uev.updateToMatchGrid(cg,all,all,all,numberOfSolutions);
+
+                gridsMatch = CgWave::compositeGridsMatch( cg, cgev );
+                if( gridsMatch )
+                    printF("CgWaveHoltz::initializeDeflation: read eigenvectors from a file: Grid in eigenvector file grid seems to match with current grid\n");
+                else
+                    printF("CgWaveHoltz::initializeDeflation: read eigenvectors from a file: Grid in eigenvector file grid DOES NOT match with current grid... will interpolate...\n");        
             } 
 
             Index I1,I2,I3;
-            for( int grid=0; grid<cgev.numberOfComponentGrids(); grid++ )
+            if( gridsMatch )
             {
-                MappedGrid & mg = cgev[grid];
-                getIndex(mg.dimension(),I1,I2,I3);
-                OV_GET_SERIAL_ARRAY(real,uev[grid],uevLocal);
-                OV_GET_SERIAL_ARRAY(real,q[grid],qLocal);        
-                bool ok=ParallelUtility::getLocalArrayBounds(q[grid],qLocal,I1,I2,I3);
-                if( ok )
-                    uevLocal(I1,I2,I3,ie) = qLocal(I1,I2,I3);
-            }      
+        // --- just copy grid function from EV file ---
+                for( int grid=0; grid<cgev.numberOfComponentGrids(); grid++ )
+                {
+                    MappedGrid & mg = cgev[grid];
+                    getIndex(mg.dimension(),I1,I2,I3);
+                    OV_GET_SERIAL_ARRAY(real,uev[grid],uevLocal);
+                    OV_GET_SERIAL_ARRAY(real,q[grid],qLocal);        
+                    bool ok=ParallelUtility::getLocalArrayBounds(q[grid],qLocal,I1,I2,I3);
+                    if( ok )
+                        uevLocal(I1,I2,I3,ie) = qLocal(I1,I2,I3);
+                } 
+            }
+            else
+            {
+        // --- Interpolate solution from the EV file : this could be a coarser grid version used for deflation with augmented GMRES
+                printF("CgWaveHoltz::initializeDeflation: interpolate the eigenvector ie=%d to the current grid ...\n",ie);
+                CompositeGrid & cgev = *q.getCompositeGrid();
+                cgev.update(MappedGrid::THEmask );
+
+                interp.setAssignAllPoints(true);  // assign all points -- extrap if necessary
+                int width = orderOfAccuracy+1;
+                interp.setInterpolationWidth( width ); // set interp width 
+                Range C(0,0);
+                interp.interpolateAllPoints( q,uev, C, Range(ie,ie) );  // interpolate v from q
+            }     
         }
     }
     else
@@ -239,31 +314,39 @@ int CgWave::initializeDeflation()
     numberOfEigenvectors = uev.getComponentBound(0) - uev.getComponentBase(0) + 1;
     printF(">> There are %d eigenvectors\n",numberOfEigenvectors);
 
-
-  // OV_ABORT("stop here for now");
-
-
-    cgev.update(MappedGrid::THEmask ); // *wdh* March 28, 2023
-
-    int numPoints=0;
-    GridStatistics::getNumberOfPoints(cg, numPoints );
-
-    int numPointsEV=0;
-    GridStatistics::getNumberOfPoints(cgev, numPointsEV );
-    if( numPoints !=numPointsEV )
+    if( numToDeflate > numberOfEigenvectors )
     {
-        printF("CgWave::initializeDeflation::ERROR: numPoints(cg)=%d is NOT equal to numPointsEV=%d from eigenvector show file\n",numPoints,numPointsEV);
-        OV_ABORT("error");
+        printF("CgWave::initializeDeflation::ERROR: Requesting %d eigenvectors to deflate but only %d eigenvectors are in the show file.\n",numToDeflate,numberOfEigenvectors);
+        OV_ABORT("ERROR");
     }
 
-  // Range all;
-  // uev.updateToMatchGrid(cg,all,all,all,numberOfEigenvectors); 
+  // eigenvectorsAreTrueEigenvectors : used by AugmentedGmres 
+    int & eigenvectorsAreTrueEigenvectors = dbase.get<int>("eigenvectorsAreTrueEigenvectors");
+    if( gridsMatch )
+        eigenvectorsAreTrueEigenvectors=true;
+    else
+        eigenvectorsAreTrueEigenvectors=false;
 
-    eigenVectorIsNormalized.redim(numberOfEigenvectors); eigenVectorIsNormalized=0;
-    eigMultiplicity.redim(numberOfEigenvectors);         eigMultiplicity=1;
-  // eigenVectorMaxNorm.redim(numberOfEigenvectors);      eigenVectorMaxNorm=-1.;  // -1 means max-norm 
+    
+    cgev.update(MappedGrid::THEmask ); // *wdh* March 28, 2023
+
+    if( false )
+    {
+    // turn this off now that we can interpolate 
+        int numPoints=0;
+        GridStatistics::getNumberOfPoints(cg, numPoints );
+
+        int numPointsEV=0;
+        GridStatistics::getNumberOfPoints(cgev, numPointsEV );
+        if( numPoints !=numPointsEV )
+        {
+            printF("CgWave::initializeDeflation::ERROR: numPoints(cg)=%d is NOT equal to numPointsEV=%d from eigenvector show file\n",numPoints,numPointsEV);
+            OV_ABORT("error");
+        }
+    }
 
 
+  // --------- Eigenvalues for WaveHoltz are the square root of the input eigenvalues -----
     for( int i=0; i<numberOfEigenvectors; i++ )
     {
         if( fabs(eig(1,i)) < REAL_EPSILON*100*fabs(eig(0,i)) )
@@ -271,7 +354,8 @@ int CgWave::initializeDeflation()
       // Eigenvalue is real
             Real lambda = sqrt(eig(0,i));  // Take square root
             eig(0,i)=lambda; 
-            printF("Eigenvalue %3d : k=%16.10f (after square root)\n",i,eig(0,i)); 
+            if( debug>2 )
+                printF("Eigenvalue %3d : k=%16.10f (after square root)\n",i,eig(0,i)); 
         }
         else
         {
@@ -284,55 +368,79 @@ int CgWave::initializeDeflation()
         }
     }
 
-  // ---- compute multiplicities ---
-  // ---- WE COULD HAVE genEigs save the multiplicity ****** FIX ME ****
-    for( int i=0; i<numberOfEigenvectors; i++ )
-    {  
+  // ----- Find the range of eigenvalues in the show file and check that omega is contained in that range ----
+    Range all;
+    const Real lambdaMin = min( eig(0,all) );
+    const Real lambdaMax = max( eig(0,all) );
+    printF("CgWave::initializeDeflation:: Eigenvalues from showfile: lambdaMin=%9.2e, lambdaMax=%9.2e, omega=%9.2e\n",lambdaMin,lambdaMax,frequencyArray(0));
+    if( frequencyArray(0) < lambdaMin || frequencyArray(0) > lambdaMax )
+    {
+        printF("CgWave::initializeDeflation::ERROR omega=%10.2e is outside the range of eigenvalues [%9.2e,%9.2e].\n"
+                      "                                   Deflation will not work very well. Stopping here for now.\n"
+                      ,frequencyArray(0),lambdaMin,lambdaMax);
+        OV_ABORT("ERROR");
+    }
 
-    // bool doubleEig=false;
-    // const Real eigTol = 1.e-4; // ** FIX ME 
-        int ie=i; // first eig of multiple set 
-        int je=i; // last eig of multiple set
-        const int maxMultiplicity=10; 
-        int multiplicity=1; 
-        for( int m=0; m<maxMultiplicity; m++ )
-        {
-            bool matchFound=false;
 
-      // if( ie>0 )
-      //   printF("ie=%d, eig(0,ie-1)=%.4g\n",ie, eig(0,ie-1));
+    if( !eigenVectorsAreOrthogonal )
+    {
+    // ***** OLD STUFF -- this should be done in genEigs now ****
+    // ---- compute multiplicities ---
 
-            if( ie>0 && fabs(eig(0,ie-1)-eig(0,i))< eigTol*(1.+fabs(eig(0,i))) ) 
+        eigenVectorIsNormalized.redim(numberOfEigenvectors); eigenVectorIsNormalized=0;
+        eigMultiplicity.redim(numberOfEigenvectors);         eigMultiplicity=1;
+    // eigenVectorMaxNorm.redim(numberOfEigenvectors);      eigenVectorMaxNorm=-1.;  // -1 means max-norm 
+
+    // ---- WE COULD HAVE genEigs save the multiplicity ****** FIX ME ****
+        for( int i=0; i<numberOfEigenvectors; i++ )
+        {  
+
+      // bool doubleEig=false;
+      // const Real eigTol = 1.e-4; // ** FIX ME 
+            int ie=i; // first eig of multiple set 
+            int je=i; // last eig of multiple set
+            const int maxMultiplicity=10; 
+            int multiplicity=1; 
+            for( int m=0; m<maxMultiplicity; m++ )
             {
-                multiplicity++;
-        // printF("MATCH FOUND: multiplicity=%d\n",multiplicity);
-                ie--; 
-                matchFound=true;
-            }
-      // if( je<numberOfEigenvectors-1)
-      //   printF("je=%d, eig(0,je+1)=%.4g\n",je, eig(0,je+1));
+                bool matchFound=false;
 
-            if( (je<numberOfEigenvectors-1) && fabs(eig(0,je+1)-eig(0,i)) < eigTol*(1.+fabs(eig(0,i))) )
+        // if( ie>0 )
+        //   printF("ie=%d, eig(0,ie-1)=%.4g\n",ie, eig(0,ie-1));
+
+                if( ie>0 && fabs(eig(0,ie-1)-eig(0,i))< eigTol*(1.+fabs(eig(0,i))) ) 
+                {
+                    multiplicity++;
+          // printF("MATCH FOUND: multiplicity=%d\n",multiplicity);
+                    ie--; 
+                    matchFound=true;
+                }
+        // if( je<numberOfEigenvectors-1)
+        //   printF("je=%d, eig(0,je+1)=%.4g\n",je, eig(0,je+1));
+
+                if( (je<numberOfEigenvectors-1) && fabs(eig(0,je+1)-eig(0,i)) < eigTol*(1.+fabs(eig(0,i))) )
+                {
+                    multiplicity++;
+          // printF("MATCH FOUND: multiplicity=%d\n",multiplicity);
+                    je++; 
+                    matchFound=true;
+          // doubleEig=true;
+          // j=i+1; 
+                }
+                if( !matchFound ) break;
+            }
+            eigMultiplicity(i) = multiplicity;
+            if( debug>2 )
+                printF(" i=%3d : eig=%14.6e, multiplicity=%d (eigTol=%9.2e)\n",i,eig(0,i),eigMultiplicity(i),eigTol);
+
+
+            if( false )
             {
-                multiplicity++;
-        // printF("MATCH FOUND: multiplicity=%d\n",multiplicity);
-                je++; 
-                matchFound=true;
-        // doubleEig=true;
-        // j=i+1; 
+                Real evNorm = maxNorm( uev,i);
+                printF("maxNorm( uev[%d] ) = %9.2e\n",i,evNorm);
             }
-            if( !matchFound ) break;
+
         }
-        eigMultiplicity(i) = multiplicity;
-        printF(" i=%3d : eig=%14.6e, multiplicity=%d (eigTol=%9.2e)\n",i,eig(0,i),eigMultiplicity(i),eigTol);
-
-
-        if( false )
-        {
-            Real evNorm = maxNorm( uev,i);
-            printF("maxNorm( uev[%d] ) = %9.2e\n",i,evNorm);
-        }
-
     }
 
   // ::display(eigMultiplicity,"eigMultiplicity","%2d ");
@@ -340,122 +448,275 @@ int CgWave::initializeDeflation()
 
     showFileReader.close();
 
-    if( !dbase.has_key("integrate") )
+    if( eigenVectorsAreOrthogonal )
     {
-        dbase.put<Integrate>("integrate");
-    }
-    Integrate & integrate = dbase.get<Integrate>("integrate");;
+    // **NEW WAY** eigenvectors are orthonormal  Sept 5, 2024
 
-    integrate.updateToMatchGrid(cg);
+    // ---- MAKE A LIST OF EIGENVECTORS TO USE FOR DEFLATION -----
+        const int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
+        const RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+        const RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+        const RealArray & periodArray           = dbase.get<RealArray>("periodArray");  
 
-    if( numToDeflate>0 )
-    {
-        Real volume;
-        volume = integrate.volume();
-        printf("initializeDeflation: computed volume of the domain = %9.2e\n",volume);
-    }
+        eigenVectorIsNormalized.redim(numberOfEigenvectors);   
+        eigenVectorIsNormalized=1; 
 
-  // uDeflate : holds intermediate results for deflation:
-    if( !dbase.has_key("uDeflate") )
-    {
-        realCompositeGridFunction & u = dbase.put<realCompositeGridFunction>("uDeflate");
-        u.updateToMatchGrid(cg);
-    }
+        eigNumbersToDeflate.redim(numToDeflate*2+10);
 
-  // ---- MAKE A LIST OF EIGENVECTORS TO USE FOR DEFLATION -----
-    const int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
-    const RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
-    const RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
-    const RealArray & periodArray           = dbase.get<RealArray>("periodArray");  
+        RealArray beta(numberOfEigenvectors);
+        IntegerArray iperm(numberOfEigenvectors); // for sorting 
 
-    eigNumbersToDeflate.redim(numToDeflate*2+10);
-
-    RealArray beta(numberOfEigenvectors);
-    IntegerArray iperm(numberOfEigenvectors); // for sorting 
-
-    if( !computeEigenmodes )
-    {
-    // **** Choose eigenvalues to deflate based on the theoretical convergence rate ****
-
-        RealArray lamv(numberOfEigenvectors);
-        for( int i=0; i<numberOfEigenvectors; i++ )
+        if( !computeEigenmodes )
         {
-            lamv(i) = eig(0,i);
-        }
+      // **** Choose eigenvalues to deflate based on the theoretical convergence rate ****
 
-    // Evaluate the "beta" or "mu" function that determines the convergence of the WaveHoltz iteration
-        getWaveHoltzIterationEigenvalue( lamv, beta );
-
-        for( int i=0; i<numberOfEigenvectors; i++ )
-        {
-            Real lambda = lamv(i);
-            iperm(i)=i; // for sorting 
-            beta(i) = fabs( beta(i) );
-            printF(" i=%4d: lambda=%12.4e, |beta|=%12.4e\n",i,lambda,beta(i));
-        }
-    // -- bubble sort ---
-        for( int i=0; i<numberOfEigenvectors-1; i++ )
-        {
-            bool changed=false;
-            for( int j=0; j<numberOfEigenvectors-1; j++ )
+            RealArray lamv(numberOfEigenvectors);
+            for( int i=0; i<numberOfEigenvectors; i++ )
             {
-                if( beta(j) < beta(j+1) )
+                lamv(i) = eig(0,i);
+            }
+
+      // -----------------------------------------------------------------------------------------------
+      // Evaluate the "beta" or "mu" function that determines the convergence of the WaveHoltz iteration
+      // -----------------------------------------------------------------------------------------------
+            getWaveHoltzIterationEigenvalue( lamv, beta );
+
+            RealArray betaSave; // save for below
+            betaSave= beta;
+
+            for( int i=0; i<numberOfEigenvectors; i++ )
+            {
+                Real lambda = lamv(i);
+                iperm(i)=i; // for sorting 
+
+                beta(i) = fabs( beta(i) );  // NOTE ABSOLUTE VALUE 
+
+                if( debug>2 )
+                    printF(" WaveHoltz filter values: i=%4d: lambda=%12.4e, |beta|=%12.4e\n",i,lambda,beta(i));
+            }
+      // -- bubble sort ---
+            for( int i=0; i<numberOfEigenvectors-1; i++ )
+            {
+                bool changed=false;
+                for( int j=0; j<numberOfEigenvectors-1; j++ )
                 {
-                    changed=true;
-                    Real temp=beta(j);   beta(j)= beta(j+1);  beta(j+1)=temp;
-                    int itemp=iperm(j); iperm(j)=iperm(j+1); iperm(j+1)=itemp;
+                    if( beta(j) < beta(j+1) )
+                    {
+                        changed=true;
+                        Real temp=beta(j);   beta(j)= beta(j+1);  beta(j+1)=temp;
+                        int itemp=iperm(j); iperm(j)=iperm(j+1); iperm(j+1)=itemp;
+                    }
+                }
+                if( !changed ) break;
+            }
+
+            if( debug>2 )
+                printF("\n ---- SORTED by beta: freq(0)=%12.4e\n",frequencyArray(0));
+            for( int j=0; j<numberOfEigenvectors; j++ )
+            {
+                int i = iperm(j);  // original ordering 
+                Real lambda = eig(0,i);
+                if( debug>2 )
+                    printF(" i=%4d: lambda=%12.4e, |beta|=%12.4e\n",i,lambda,beta(j));
+            }
+
+            if( debug>2 )
+                printF("\n ---- CHOOSE EIGENVALUES TO DEFLATE: (freq(0)=%12.4e) \n",frequencyArray(0));
+
+            int ied = 0; // counts eigenvectors to deflate
+            int j=0; 
+            for( j=0; j<numToDeflate && j<numberOfEigenvectors-1; j++ )
+            {
+                int eigNumber = iperm(j);  // original ordering 
+                eigNumbersToDeflate(ied)=eigNumber;  ied++;
+
+
+                Real lambda = eig(0,eigNumber);
+                
+                if( true || debug>2 )
+                    printF("deflate ied=%3d eigeNumber=%d: lambda=%12.4e, (multiplicity=%d) beta=%12.4e\n",ied,eigNumber,lambda,eigMultiplicity(eigNumber),beta(j));       
+
+        // normalizeEigenvector( eigNumber );
+
+                if( eigMultiplicity(eigNumber)>1 && j<numberOfEigenvectors-1 )
+                {
+          // Include the multiple eigenvalue 
+          // assert( eigMultiplicity(eigNumber) );
+                    int eigMult = eigMultiplicity(eigNumber);
+                    for( int k=1; k<eigMult && j<numberOfEigenvectors-1 ; k++ )
+                    {
+                        j++; numToDeflate++;
+                        eigNumber = iperm(j);  // original ordering 
+                        eigNumbersToDeflate(ied)=eigNumber;  ied++;
+
+                        Real lambda2 =  eig(0,eigNumber);
+                        if( debug>2 )
+                            printF("deflate ied=%3d eigNumber=%d: lambda=%12.4e, (multiplicity=%d) *** duplicate ***\n",ied,eigNumber,lambda2,eigMultiplicity(eigNumber)); 
+
+                    }
+
+                }
+
+            } // end for j
+            int numToDeflateNew =min(j,numberOfEigenvectors);
+
+            printF("ACTUAL numToDeflate=%d, numberOfEigenvectors=%d .. using numToDeflate=%d\n",numToDeflate,numberOfEigenvectors,numToDeflateNew);
+            numToDeflate=numToDeflateNew;
+
+      // --- Save beta eigenvalues for augmented GMRES ----
+            RealArray & betaDeflate = dbase.get<RealArray>("betaDeflate"); 
+            betaDeflate.redim(numToDeflate);
+            for( int ied=0; ied<numToDeflate; ied++ )
+            {
+        // if( eigNumbersToDeflate(ied)>=numToDeflate )
+        //   printF("ERROR: Setting betaDeflate but ied=%d, eigNumbersToDeflate(ied)=%d, numberOfEigenvectors=%d\n",ied,eigNumbersToDeflate(ied),numberOfEigenvectors);
+
+                betaDeflate(ied) = betaSave(eigNumbersToDeflate(ied)); // check me 
+            }
+
+
+            Real & waveHoltzAsymptoticConvergenceRate = dbase.get<real>("waveHoltzAsymptoticConvergenceRate");
+            waveHoltzAsymptoticConvergenceRate = beta(numToDeflate);
+
+      // numToDeflate=ied;
+            printF(">>> number of eigenvectors to deflate (including multiplicities) = %d\n",numToDeflate);
+            printF(">>> Estimated asymptotic convergence rate=%6.2f\n",waveHoltzAsymptoticConvergenceRate);
+
+        }
+
+
+    }
+    else 
+    {
+     // *** OLD WAY ***
+
+        if( !dbase.has_key("integrate") )
+        {
+            dbase.put<Integrate>("integrate");
+        }
+        Integrate & integrate = dbase.get<Integrate>("integrate");;
+
+        printF("==== INITIALIZE DEFLATION : compute integration weights...\n");
+        integrate.updateToMatchGrid(cg);
+
+        if( numToDeflate>0 )
+        {
+            Real volume;
+            volume = integrate.volume();
+            printf("initializeDeflation: computed volume of the domain = %9.2e\n",volume);
+        }
+
+    // uDeflate : holds intermediate results for deflation:
+        if( !dbase.has_key("uDeflate") )
+        {
+            realCompositeGridFunction & u = dbase.put<realCompositeGridFunction>("uDeflate");
+            u.updateToMatchGrid(cg);
+        }
+
+    // ---- MAKE A LIST OF EIGENVECTORS TO USE FOR DEFLATION -----
+        const int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
+        const RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+        const RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+        const RealArray & periodArray           = dbase.get<RealArray>("periodArray");  
+
+        eigNumbersToDeflate.redim(numToDeflate*2+10);
+
+        RealArray beta(numberOfEigenvectors);
+        IntegerArray iperm(numberOfEigenvectors); // for sorting 
+
+        if( !computeEigenmodes )
+        {
+      // **** Choose eigenvalues to deflate based on the theoretical convergence rate ****
+
+            RealArray lamv(numberOfEigenvectors);
+            for( int i=0; i<numberOfEigenvectors; i++ )
+            {
+                lamv(i) = eig(0,i);
+            }
+
+      // Evaluate the "beta" or "mu" function that determines the convergence of the WaveHoltz iteration
+            getWaveHoltzIterationEigenvalue( lamv, beta );
+
+            for( int i=0; i<numberOfEigenvectors; i++ )
+            {
+                Real lambda = lamv(i);
+                iperm(i)=i; // for sorting 
+                beta(i) = fabs( beta(i) );
+                if( debug>2 )
+                    printF(" WaveHoltz filter values: i=%4d: lambda=%12.4e, |beta|=%12.4e\n",i,lambda,beta(i));
+            }
+      // -- bubble sort ---
+            for( int i=0; i<numberOfEigenvectors-1; i++ )
+            {
+                bool changed=false;
+                for( int j=0; j<numberOfEigenvectors-1; j++ )
+                {
+                    if( beta(j) < beta(j+1) )
+                    {
+                        changed=true;
+                        Real temp=beta(j);   beta(j)= beta(j+1);  beta(j+1)=temp;
+                        int itemp=iperm(j); iperm(j)=iperm(j+1); iperm(j+1)=itemp;
+                    }
+                }
+                if( !changed ) break;
+            }
+            if( debug>2 )
+                printF("\n ---- SORTED by beta: freq(0)=%12.4e\n",frequencyArray(0));
+            for( int j=0; j<numberOfEigenvectors; j++ )
+            {
+                int i = iperm(j);  // original ordering 
+                Real lambda = eig(0,i);
+                if( debug>2 )
+                    printF(" i=%4d: lambda=%12.4e, |beta|=%12.4e\n",i,lambda,beta(j));
+            }
+
+            if( true || debug>2 )
+                printF("\n ---- CHOOSE EIGENVALUES TO DEFLATE: (freq(0)=%12.4e) \n",frequencyArray(0));
+            int ied = 0; // counts eigenvectors to deflate
+            for( int j=0; j<numToDeflate; j++ )
+            {
+                int eigNumber = iperm(j);  // original ordering 
+                eigNumbersToDeflate(ied)=eigNumber;  ied++;
+
+                Real lambda = eig(0,eigNumber);
+                
+                if( debug>2 )
+                    printF("deflate eig=%d: lambda=%12.4e, (multiplicity=%d)\n",eigNumber,lambda,eigMultiplicity(eigNumber));       
+
+                normalizeEigenvector( eigNumber );
+
+                if( eigMultiplicity(eigNumber)>1 )
+                {
+         // Include the multiple eigenvalue 
+                  assert( eigMultiplicity(eigNumber) );
+                  j++; numToDeflate++;
+                  eigNumber = iperm(j);  // original ordering 
+                  eigNumbersToDeflate(ied)=eigNumber;  ied++;
+                  Real lambda2 =  eig(0,eigNumber);
+                  const Real lamTol=1.e-3; // ** FIX ME **
+                  if( fabs(lambda-lambda2)/(1.+abs(lambda)) >= lamTol ) 
+                  {
+                    printF("WARNING: Checking for duplicate eigenvalue *but* fabs(lambda-lambda2)/(1.+abs(lambda)) = %9.2e >= lamTol=%9.2e\n",
+                            fabs(lambda-lambda2)/(1.+abs(lambda)) , lamTol );
+                  }
+                  if( debug>2 )
+                      printF("deflate eig=%d: lambda=%12.4e, (multiplicity=%d) *** duplicate ***\n",eigNumber,lambda2,eigMultiplicity(eigNumber));   
                 }
             }
-            if( !changed ) break;
+
+
+
+            Real & waveHoltzAsymptoticConvergenceRate = dbase.get<real>("waveHoltzAsymptoticConvergenceRate");
+            waveHoltzAsymptoticConvergenceRate = beta(numToDeflate);
+
+      // numToDeflate=ied;
+            printF(">>> number of eigenvectors to deflate (including multiplicities) = %d\n",numToDeflate);
+            printF(">>> Estimated asymptotic convergence rate=%6.2f\n",waveHoltzAsymptoticConvergenceRate);
+
+
         }
-        printF("\n ---- SORTED by beta: freq(0)=%12.4e\n",frequencyArray(0));
-        for( int j=0; j<numberOfEigenvectors; j++ )
-        {
-            int i = iperm(j);  // original ordering 
-            Real lambda = eig(0,i);
-            printF(" i=%4d: lambda=%12.4e, |beta|=%12.4e\n",i,lambda,beta(j));
-        }
+    } // end old way
 
-        printF("\n ---- CHOOSE EIGENVALUES TO DEFLATE: \n");
-        int ied = 0; // counts eigenvectors to deflate
-        for( int j=0; j<numToDeflate; j++ )
-        {
-            int eigNumber = iperm(j);  // original ordering 
-            eigNumbersToDeflate(ied)=eigNumber;  ied++;
-
-            Real lambda = eig(0,eigNumber);
-            
-            printF("deflate eig=%d: lambda=%12.4e, (multiplicity=%d)\n",
-                            eigNumber,lambda,eigMultiplicity(eigNumber));       
-
-            normalizeEigenvector( eigNumber );
-
-            if( eigMultiplicity(eigNumber)>1 )
-            {
-       // Include the multiple eigenvalue 
-              assert( eigMultiplicity(eigNumber) );
-              j++; numToDeflate++;
-              eigNumber = iperm(j);  // original ordering 
-              eigNumbersToDeflate(ied)=eigNumber;  ied++;
-              Real lambda2 =  eig(0,eigNumber);
-              const Real lamTol=1.e-3; // ** FIX ME **
-              assert( fabs(lambda-lambda2)/(1.+abs(lambda)) < lamTol );
-              printF("deflate eig=%d: lambda=%12.4e, (multiplicity=%d) *** duplicate ***\n",
-                        eigNumber,lambda2,eigMultiplicity(eigNumber));   
-            }
-        }
-
-
-
-        Real & waveHoltzAsymptoticConvergenceRate = dbase.get<real>("waveHoltzAsymptoticConvergenceRate");
-        waveHoltzAsymptoticConvergenceRate = beta(numToDeflate);
-
-    // numToDeflate=ied;
-        printF(">>> number of eigenvectors to deflate (including multiplicities) = %d\n",numToDeflate);
-        printF(">>> Estimated asymptotic convergence rate=%6.2f\n",waveHoltzAsymptoticConvergenceRate);
-
-
-    }
   
 
     return 0;
@@ -614,11 +875,12 @@ checkDeflation()
 // ==============================================================================================
 /// \brief Normalize eigenvector number "eigNumber". Orthogonalize any eigenvectors corresponding to
 ///      multiple eigenvalues.
-/// \return value: multipilicty of the eigenvector: 1=simple, 2=double, ...
+/// \return value: multipilicity of the eigenvector: 1=simple, 2=double, ...
 // ==============================================================================================
 int CgWave::
 normalizeEigenvector( int eigNumber )
 {
+    const int & debug                       = dbase.get<int>("debug");
     const int & solveHelmholtz              = dbase.get<int>("solveHelmholtz");
     const int & computeTimeIntegral         = dbase.get<int>("computeTimeIntegral");
     const int & adjustOmega                 = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
@@ -639,8 +901,11 @@ normalizeEigenvector( int eigNumber )
     }
     int multiplicity=1; 
 
-    printF("\n ==== NORMALIZE EIGENVECTOR eigNumber=%d =====\n",eigNumber);
-    printF("  deflateWaveHoltz=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,numToDeflate,(const char*)eigenVectorFile);
+    if( debug>2 )
+    {
+        printF("\n ==== NORMALIZE EIGENVECTOR eigNumber=%d =====\n",eigNumber);
+        printF("  deflateWaveHoltz=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,numToDeflate,(const char*)eigenVectorFile);
+    }
 
     if( !dbase.has_key("uev") )
     {
@@ -697,7 +962,7 @@ normalizeEigenvector( int eigNumber )
     // ---  multiple eigenvalue ----
         multiplicity = eigMultiplicity(i);
 
-        printF(" >>> Multiple eigenvalue found: i=%d, eig=%10.3e, will orthogonalize eigenvectors...\n",i,eig(0,i));
+        printF(" >>> Multiple eigenvalue found: i=%d, eig=%12.5e, eigMultiplicity(i)=%d will orthogonalize eigenvectors...\n",i,eig(0,i),eigMultiplicity(i));
 
         int j=i;
     
@@ -711,7 +976,11 @@ normalizeEigenvector( int eigNumber )
         }
 
         assert( eigMultiplicity(i) > 1 );
-        assert( eigenVectorIsNormalized(i) == 0 );
+        if( eigenVectorIsNormalized(i) != 0 )
+        {
+            printF(">>> ERROR: eigenVectorIsNormalized(i)=%d, expecting zero. i=%d, j=%d, eigMultiplicity(i)=%d\n",eigenVectorIsNormalized(i),i,j,eigMultiplicity(i));
+            OV_ABORT("error");
+        }
 
     // Real delta = fabs(eig(0,i)-eig(0,j))/fabs(eig(0,i));
     // Real eigTol = 1.e-3; // ** FIX ME 
@@ -829,11 +1098,15 @@ int CgWave::
 deflateSolution()
 {
     bool & deflationInitialized = dbase.get<bool>("deflationInitialized");
+    const int & debug           = dbase.get<int>("debug"); 
     if( !deflationInitialized )
     {
         initializeDeflation();
     // checkDeflation();   // This will normalized eigenvectors ****** FIX ME *******
     }
+
+
+  
 
     const int & numberOfFrequencies          = dbase.get<int>("numberOfFrequencies");
     const int & deflateWaveHoltz             = dbase.get<int>("deflateWaveHoltz");
@@ -844,6 +1117,12 @@ deflateSolution()
         return 0;
 
   // -- holds intermediate results: 
+  // uDeflate : holds intermediate results for deflation:
+    if( !dbase.has_key("uDeflate") )
+    {
+        realCompositeGridFunction & u = dbase.put<realCompositeGridFunction>("uDeflate");
+        u.updateToMatchGrid(cg);
+    }  
     realCompositeGridFunction & u = dbase.get<realCompositeGridFunction>("uDeflate");
 
   // -- eigenvectors:
@@ -852,7 +1131,14 @@ deflateSolution()
   // WaveHoltz solution:
     realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
 
+    if( !dbase.has_key("integrate") )
+    {
+        printF("==== CgWave::deflateSolution: compute integration weights...\n");
+        Integrate & integrate = dbase.put<Integrate>("integrate");
+        integrate.updateToMatchGrid(cg);    
+    }
     Integrate & integrate = dbase.get<Integrate>("integrate");
+
 
   // int freq=0;      // adjust this frequency **FIX ME**
 
@@ -861,8 +1147,9 @@ deflateSolution()
     {
         for( int ied=0; ied<numToDeflate; ied++ )
         {
-            int eigNumber = eigNumbersToDeflate(ied); // deflate this eigenvector **FIX ME**
-            printF("deflateSolution: freq=%d : deflate eigenvector %d (numToDeflate=%d)\n",freq,eigNumber,numToDeflate);
+            int eigNumber = eigNumbersToDeflate(ied); // deflate this eigenvector 
+            if( debug>1  )
+                printF("deflateSolution: freq=%d : deflate eigenvector %d (numToDeflate=%d)\n",freq,eigNumber,numToDeflate);
 
       // --- Compute the inner product (phi,v)_h ----
             for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
@@ -908,6 +1195,7 @@ inflateSolution()
     const int & deflateWaveHoltz             = dbase.get<int>("deflateWaveHoltz");
     const int & numToDeflate                 = dbase.get<int>("numToDeflate");
     const IntegerArray & eigNumbersToDeflate = dbase.get<IntegerArray>("eigNumbersToDeflate");
+    const int & debug                        = dbase.get<int>("debug");
 
     if( deflateWaveHoltz==0 || numToDeflate<=0 )
         return 0;
@@ -965,7 +1253,8 @@ inflateSolution()
 
             const Real factor = phiDotF/( omega*omega - lambda*lambda );
 
-            printF("inflateSolution: freq=%d: inflate eigenvector %d, lambda=%12.4e, omega=%12.4e\n",freq,eigNumber,lambda,omega);
+            if( debug>1 )
+                printF("inflateSolution: freq=%d: inflate eigenvector %d, lambda=%12.4e, omega=%12.4e\n",freq,eigNumber,lambda,omega);
 
             for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
             {

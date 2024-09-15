@@ -1,3 +1,112 @@
+mpiexec -n 2 xterm -e gdb --args $cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=implicit -solveri=best -upwind=0 -nuc=1 -bcApproach=cbc -debug=1 -go=go
+
+
+****************************************************
+****** Tues April 23, 2024
+
+START TEST PARALLEL
+
+
+BUGS FIXED -- implicit.bC
+
+Upwind: OK 
+mpiexec -n 2 $cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=implicit -solveri=best -upwind=1 -nuc=1 -bcApproach=cbc -debug=1 -go=go
+
+
+mpirun -np 2 $cgWave -noplot known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=implicit -solveri=best -orderInTime=4 -upwind=0 -nuc=1 -debug=1 -go=go
+cgWave:FD44 t=1.000e+00 (70 steps) dt=1.429e-02 maxErr= 3.30e-05, ||u||= 4.32e-01, cpu= 2.81e-01(s)
+
+OK: O4, orderInTime=2 
+mpirun -np 2 $cgWave -noplot known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=implicit -solveri=best -orderInTime=2 -upwind=0 -nuc=1 -debug=1 -go=go
+cgWave:FD24 t=1.000e+00 (80 steps) dt=1.250e-02 maxErr= 1.72e-03, ||u||= 4.33e-01, cpu= 2.92e-01(s)
+
+trouble fill implicit matrix 
+mpiexec -n 2 xterm -e gdb --args $cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=implicit -solveri=best -upwind=0 -nuc=1 -bcApproach=cbc -debug=1 -go=go
+
+
+Trouble: fill implicit matrix  
+mpirun -np 2 $cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=implicit -solveri=best -upwind=0 -nuc=1 -bcApproach=cbc -debug=1 -go=go
+
+np=2: 
+cgWave:FD22 t=1.000e+00 (70 steps) dt=1.429e-02 maxErr= 4.79e-03, ||u||= 4.36e-01, cpu= 1.77e-01(s)
+np=1:
+cgWave:FD22 t=1.000e+00 (70 steps) dt=1.429e-02 maxErr= 4.79e-03, ||u||= 4.36e-01, cpu= 1.73e-01(s)
+
+OK : no CBC 
+mpirun -np 2 $cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=implicit -solveri=best -upwind=0 -nuc=1 -debug=1 -go=go
+
+
+OK:
+mpirun -np 2 $cgWave -noplot known.cmd -g=nonSquare32.order2 -kx=1 -ky=1 -kz=1 -tf=2 -tp=.1 -known=squareEig -ts=implicit -solveri=best -bc=d -debug=0 -go=go
+
+****************************************************
+****** Mon April 22, 2024
+
+START TEST PARALLEL
+
+upwind=1 or order=4 : BROKEN: advance,bC line 162 uDot 
+$cgWave -noplot known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=implicit -solveri=best -upwind=0 -nuc=1 -bcApproach=cbc -debug=1 -go=go
+
+$cgWave -noplot known.cmd -g=sice4.order2 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=implicit -solveri=best -upwind=0 -nuc=1 -bcApproach=cbc -debug=1 -go=go
+
+disk: explicit: 
+$cgWave -noplot known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=0.1 -tf=1 -known=diskEig -ts=explicit -upwind=1 -nuc=1 -bcApproach=cbc -debug=1 -go=go
+
+
+++++ SQUARE ++++
+
+IMPLICIT: 
+mpirun -np 2 $cgWave -noplot known.cmd -g=nonSquare32.order2 -kx=1 -ky=1 -kz=1 -tf=2 -tp=.1 -known=squareEig -ts=implicit -solveri=best -bc=d -debug=0 -go=go
+
+np=2:
+CgWave::takeImplicitStep: implicit solve: t= 4.17e-01 max-res= 1.76e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: t= 4.33e-01 max-res= 1.63e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: t= 4.50e-01 max-res= 1.47e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: t= 4.67e-01 max-res= 1.27e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: t= 4.83e-01 max-res= 1.05e-15 (iterations=3) ***
+CgWave::takeImplicitStep: implicit solve: t= 5.00e-01 max-res= 7.99e-16 (iterations=3) ***
+cgWave:FD22 t=5.000e-01 ( 30 steps) dt=1.667e-02 maxErr= 1.42e-02, ||u||= 2.80e-01, cpu= 5.89e+00(s)
+
+np=1: 
+CgWave::takeImplicitStep: implicit solve: t= 4.17e-01 max-res= 2.00e-12 (iterations=1) ***
+CgWave::takeImplicitStep: implicit solve: t= 4.33e-01 max-res= 1.86e-12 (iterations=1) ***
+CgWave::takeImplicitStep: implicit solve: t= 4.50e-01 max-res= 1.67e-12 (iterations=1) ***
+CgWave::takeImplicitStep: implicit solve: t= 4.67e-01 max-res= 1.45e-12 (iterations=1) ***
+CgWave::takeImplicitStep: implicit solve: t= 4.83e-01 max-res= 1.19e-12 (iterations=1) ***
+CgWave::takeImplicitStep: implicit solve: t= 5.00e-01 max-res= 9.14e-13 (iterations=1) ***
+cgWave:FD22 t=5.000e-01 ( 30 steps) dt=1.667e-02 maxErr= 1.42e-02, ||u||= 2.80e-01, cpu= 1.52e+01(s)
+
+
+EXPLICIT
+mpirun -np 2 $cgWave known.cmd -g=nonSquare32.order2 -kx=1 -ky=1 -kz=1 -tf=2 -tp=.1 -known=squareEig -bc=d -debug=0 -go=halt
+
+
+-np=1 or np=2
+cgWave:FD22 t=1.000e-01 (  6 steps) dt=1.667e-02 maxErr= 4.78e-04, ||u||= 6.31e-01, cpu= 4.28e+00(s)
+cgWave:FD22 t=2.000e-01 ( 12 steps) dt=1.667e-02 maxErr= 1.21e-03, ||u||= 2.04e-01, cpu= 5.67e+00(s)
+cgWave:FD22 t=3.000e-01 ( 18 steps) dt=1.667e-02 maxErr= 8.49e-04, ||u||= 8.88e-01, cpu= 6.53e+00(s)
+cgWave:FD22 t=4.000e-01 ( 24 steps) dt=1.667e-02 maxErr= 9.86e-04, ||u||= 9.17e-01, cpu= 7.31e+00(s)
+cgWave:FD22 t=5.000e-01 ( 30 steps) dt=1.667e-02 maxErr= 2.97e-03, ||u||= 2.69e-01, cpu= 7.97e+00(s)
+
+****************************************************
+****** Mon April 8, 2024
+
+
+++++++++++++ SPHERE EIGENMODE
+cgWave -noplot known.cmd -g=spheree2.order4.ng3 -amp=1 -mPhi=2 -mTheta=1 -mr=1 -tf=.1 -tp=.1 -known=sphereEig -upwind=1 -ts=implicit -solveri=cgs -orderInTime=4 -debug=0 -assignInterpNeighbours=interp -bc=d -bcApproach=cbc  -takeImplicitFirstStep=1 -go=go
+
+
+CHECK WEIGHTS 
+
+
+cgWave -noplot known.cmd -g=sice4.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=.1 -known=diskEig -ts=implicit -upwind=1 -nuc=2 -bcApproach=cbc -debug=1 -go=go
+
+
+FULL WEIGHTING:
+   implicit time-stepping weights: cImp(-1,0)=0.25, cImp(0,0)=0.5, cImp(1,0)=0.25 (2nd-order term)
+                                 : cImp(-1,1)=0.0833333, cImp(0,1)=0, cImp(1,1)=0.0833333 (4th-order term)
+
+
 ****************************************************
 ****** Sat Feb 24, 2024
 

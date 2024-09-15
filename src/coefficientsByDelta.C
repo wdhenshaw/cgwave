@@ -3,6 +3,7 @@
 //
 //
 #include "CompositeGridOperators.h"
+#include "ParallelUtility.h"
 
 #include "display.h"
 

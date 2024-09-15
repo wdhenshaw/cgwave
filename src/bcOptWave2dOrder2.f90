@@ -79,7 +79,7 @@
    integer j1a,j1b,j2a,j2b,ja,j3b
    integer extra1a,extra1b,extra2a,extra2b,extra3a,extra3b,extram
    integer maxExtrapWidth,extrapWidth
-   integer cornerBC(0:2,0:2,0:2), iparc(0:10), orderOfExtrapolationForCorners
+   integer cornerBC(0:2,0:2,0:2), iparc(0:10), orderOfExtrapolationForCorners, orderOfExtrapolation
    real rparc(0:10)
    real ca,cEM2,rhs
    ! boundary conditions parameters and interfaceType values
@@ -1137,6 +1137,7 @@ real uzzzz
    bcApproach                      = ipar(17)
    numberOfFrequencies             = ipar(18)
    assignCornerGhostPoints         = ipar(19)
+   orderOfExtrapolation            = ipar(20)
    t         = rpar( 0)
    dt        = rpar( 1)
    dx(0)     = rpar( 2)
@@ -2929,8 +2930,9 @@ real uzzzz
        !         E--+--+--+--+
        !           n1a       n1b
        maxExtrapWidth = gridIndexRange(1,axis)-gridIndexRange(0,axis)+1
-       extrapWidth = min(orderOfAccuracy+1,maxExtrapWidth)
-       if( extrapWidth .lt. orderOfAccuracy+1)then
+       ! extrapWidth = min(orderOfAccuracy+1,maxExtrapWidth) ! *wdh* July 21, 2024
+       extrapWidth = min(orderOfExtrapolation,maxExtrapWidth)
+       if( extrapWidth .lt. orderOfExtrapolation )then
          write(*,'("bcOptWave:WARNING: reducing extrapolation width to ",i2," since there are not enough grid points")') extrapWidth
        end if
        if( extrapWidth==2 )then
@@ -5751,7 +5753,8 @@ real uzzzz
            end do
            end do
            ! orderOfExtrapolationForCorners=5
-           orderOfExtrapolationForCorners= orderOfAccuracy+1
+           ! orderOfExtrapolationForCorners= orderOfAccuracy+1 ! *wdh* July 21, 2024
+           orderOfExtrapolationForCorners= orderOfExtrapolation;
            iparc(0)=uc
            iparc(1)=uc
            iparc(2)=0                              ! useWhereMask;

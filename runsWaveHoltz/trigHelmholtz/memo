@@ -1,4 +1,78 @@
 
+*************************************************
+********** Wed Jul 24, 2024
+
+++++++++++++ REVISIT POLY PERIODIC SOLUTION FOR PARALLEL
+
+>>>>>>LINEAR IN SPACE
+
+FPI does not converge to correct solution ?!? (serial fails too)
+
+mpirun -np 1 $cgwh trigHelmholtz.cmd -g=square16.order2.hdf -known=polyPeriodic -omega=5 -freq=5 -adjustOmega=1 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -degreeInSpaceForPolyPeriodic=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-16 -atolh=1.0e-16 -go=halt
+
+np=1
+CgWaveHoltz::residual: grid=0 : maxRes= 1.36e-12
+CgWaveHoltz::residual: freq= 0, omega=   1.000, max-res=1.357e-12.
+CgWaveHoltz: omega=1.000e+00, max-res=1.357e-12 (direct Helmholtz solution)
+userDefinedKnownSolution: eval polyPeriodic omega=1, a0=1, a1=1, b1=1, c1=1 at t=0.000e+00
+cgwh: max-err =1.20e-14 (between WaveHoltz and known solution, all frequencies)
+
+np=2
+CgWaveHoltz::residual: grid=0 : maxRes= 1.75e-05
+CgWaveHoltz::residual: freq= 0, omega=   1.000, max-res=3.422e-04.
+CgWaveHoltz: omega=1.000e+00, max-res=3.422e-04 (direct Helmholtz solution)
+userDefinedKnownSolution: eval polyPeriodic omega=1, a0=1, a1=1, b1=1, c1=1 at t=0.000e+00
+cgwh: max-err =1.07e-06 (between WaveHoltz and known solution, all frequencies)
+
+
+
+mpirun -np 1 $cgwh trigHelmholtz.cmd -g=square8.order2.hdf -known=polyPeriodic -omega=1 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -degreeInSpaceForPolyPeriodic=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-16 -atolh=1.0e-16 -go=halt
+
+np=4: 
+CgWaveHoltz::residual: grid=0 : maxRes= 1.55e-13
+CgWaveHoltz::residual: freq= 0, omega=   1.000, max-res=2.824e-13.
+CgWaveHoltz: omega=1.000e+00, max-res=2.824e-13 (direct Helmholtz solution)
+userDefinedKnownSolution: eval polyPeriodic omega=1, a0=1, a1=1, b1=1, c1=1 at t=0.000e+00
+cgwh: max-err =2.22e-15 (between WaveHoltz and known solution, all frequencies)
+
+
+np=2
+CgWaveHoltz::residual: grid=0 : maxRes= 1.27e-13
+CgWaveHoltz::residual: freq= 0, omega=   1.000, max-res=3.388e-13.
+CgWaveHoltz: omega=1.000e+00, max-res=3.388e-13 (direct Helmholtz solution)
+userDefinedKnownSolution: eval polyPeriodic omega=1, a0=1, a1=1, b1=1, c1=1 at t=0.000e+00
+cgwh: max-err =2.22e-15 (between WaveHoltz and known solution, all frequencies)
+
+np=1:
+CgWaveHoltz::residual: grid=0 : maxRes= 3.11e-13
+CgWaveHoltz::residual: freq= 0, omega=   1.000, max-res=3.113e-13.
+CgWaveHoltz: omega=1.000e+00, max-res=3.113e-13 (direct Helmholtz solution)
+userDefinedKnownSolution: eval polyPeriodic omega=1, a0=1, a1=1, b1=1, c1=1 at t=0.000e+00
+cgwh: max-err =1.33e-15 (between WaveHoltz and known solution, all frequencies)
+
+
+mpirun -np 1 $cgwh trigHelmholtz.cmd -g=square32.order2.hdf -known=polyPeriodic -omega=1 -adjustOmega=0 -solver=none -matlab=junk -tol=1e-12 -tp=1000 -ad4=0 -imode=1 -debug=3 -maxIterations=100 -degreeInSpaceForPolyPeriodic=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=halt
+
+-np=2
+*** freq=0: omega=1, max residual=2.31e-11, time for direct Helmholtz solve = 2.13e-02 (s) (iterations=28) ***
+
+ @@@@@@@ CgWaveHoltz::residual WARNING: omega=30.1 is NOT EQUAL TO frequencyArray(0)=1 @@@@@@@
+
+CgWaveHoltz::residual: grid=0 : maxRes= 6.07e-03
+CgWaveHoltz::residual: freq= 0, omega=   1.000, max-res=6.067e-03.
+CgWaveHoltz: omega=1.000e+00, max-res=6.067e-03 (direct Helmholtz solution)
+userDefinedKnownSolution: eval polyPeriodic omega=1, a0=1, a1=1, b1=1, c1=1 at t=0.000e+00
+cgwh: max-err =7.36e-06 (between WaveHoltz and known solution, all frequencies)
+
+
+
+-np=1
+CgWaveHoltz::residual: grid=0 : maxRes= 5.53e-10
+CgWaveHoltz::residual: freq= 0, omega=   1.000, max-res=5.528e-10.
+CgWaveHoltz: omega=1.000e+00, max-res=5.528e-10 (direct Helmholtz solution)
+userDefinedKnownSolution: eval polyPeriodic omega=1, a0=1, a1=1, b1=1, c1=1 at t=0.000e+00
+cgwh: max-err =4.68e-12 (between WaveHoltz and known solution, all frequencies)
+
 
 *************************************************
 ********** Wed Jul 12, 2023
