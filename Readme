@@ -6,6 +6,15 @@ Getting started:
 
 git clone ssh://wdhenshaw@git.code.sf.net/p/cgwave/code cgwave
 
+
+(3) Define PETSc and SLEPc enviromnental variables
+
+For example: 
+setenv PETSC_DIR /Users/henshaw/software/petsc
+setenv PETSC_ARCH darwin-opt
+
+setenv SLEPC_DIR /Users/henshaw/software/slepsc
+
 (2) Build CgWave. in the cgwave directory type:
     > make
 

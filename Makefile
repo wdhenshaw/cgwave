@@ -30,9 +30,9 @@ ifeq ($(usePETSc),on)
   PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/petsc/mpiuni
   PETSC_LIBS = -Wl,-rpath,$(PETSC_LIB) -L$(PETSC_LIB) -lpetsc
 
-  SLEPC_INCLUDE = -I$(SLEPC_DIR) -I$(SLEPC_DIR)/linux-gnu-opt/include -I$(SLEPC_DIR)/include 
+  SLEPC_INCLUDE = -I$(SLEPC_DIR) -I$(SLEPC_DIR)/$(PETSC_ARCH)/include -I$(SLEPC_DIR)/include 
 
-  SLEPC_LIBS = $(LIB_ARPACK) -Wl,-rpath,$(SLEPC_DIR)/linux-gnu-opt/lib -L$(SLEPC_DIR)/linux-gnu-opt/lib -lslepc
+  SLEPC_LIBS = $(LIB_ARPACK) -Wl,-rpath,$(SLEPC_DIR)/$(PETSC_ARCH)/lib -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc
 
 else
   usePETSc   = off
