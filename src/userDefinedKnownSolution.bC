@@ -1884,12 +1884,12 @@ updateUserDefinedKnownSolution()
       printF("UDKS: Setting k0=%g : modulation wave-number in Gaussian plane wave, will be scaled by 2*pi.\n",k0);
     }
 
-    else if( len=answer.matches("wave numbers:") )
+    else if( (len=answer.matches("wave numbers:")) )
     {
       sScanF(answer(len,answer.length()-1),"%e %e %e",&kv[0],&kv[1],&kv[2]);
       printF("UDKS: Setting wave numbers: kx=%g, ky=%g, kz=%g (may be normalized or scaled by 2*pi)\n",kv[0],kv[1],kv[2]);
     }
-    else if( len=answer.matches("offset:") )
+    else if( (len=answer.matches("offset:")) )
     {
       sScanF(answer(len,answer.length()-1),"%e %e %e",&x0v[0],&x0v[1],&x0v[2]);
       printF("UDKS: Setting offset (x0,y0,z0)=(%g,%g,%g) (for Gaussian plane-wave)\n",x0v[0],x0v[1],x0v[2]);

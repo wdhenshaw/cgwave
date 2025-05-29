@@ -310,7 +310,12 @@ foreach $cmdCommand ( @cmdFiles )
         {
           chop($lineNew); 
           $lineOld = <$infoOld>; chop($lineOld);
-          if( $lineNew != $lineOld )     
+          #if( 1==1 )
+          #{
+          #  printf("lineNew=[$lineNew]\n");
+          #  printf("lineOld=[$lineOld]\n"); 
+          #}          
+          if( $lineNew ne $lineOld )     
           {
             printf("** DIFFERENCE FOUND at line $. :\n");
             printf("lineNew=[$lineNew]\n");
@@ -326,7 +331,7 @@ foreach $cmdCommand ( @cmdFiles )
         {
           printf("diff=$diff\n");
 
-          if( $verbose ){ printf("\n ++++ The check files for \"$checkFilePrefix\" do not agree +++++\n\n"); }
+          if( $verbose ){ printf("\n ++++ The check files for \"$checkFilePrefix\" do not agree, $diff differences found. +++++\n\n"); }
           $numberOfErrors++;
         }
         else
@@ -353,13 +358,19 @@ foreach $cmdCommand ( @cmdFiles )
   }
 }
 if( $verbose == 0 ){ printf("\n"); }
-if ( $numberOfErrors == 0 )
+if ( $numberOfErrors == 0 && $m>0 )
 {
   if( $verbose ){  printf("\n>>> clean up temp files: eigenWave.check, cgWave.out, cgWave.debug, ...\n"); }
   @FILENAMES = ("cgWaveHoltz.check", "cgWave.check", "cgWave.debug", "cgWave.out", 
                 "cgWaveHoltz.debug", "cgWaveHoltz.out", "cgWaveHoltz.cmd", 
-                "cgWaveHoltzFP.m", "cgWaveHoltzKrylov.m"  ); 
-  unlink(@FILENAMES) == @FILENAMES  or die "Couldn't unlink all of @FILENAMES: $!\n";  
+                "cgWaveHoltzFD22TSINf3Np4gmres.m", "cgWaveHoltzFD22TSINp2gmres.m", "junkFD24TSENp1agmres.m", "junkFD24TSENp1gmres.m", "junkFD24TSINp1FP.m",
+                "cgWaveHoltzFD22TSINp2FP.m", "cgWaveHoltzFD22TSINp4gmres.m", "junkagmres.m", "junkFD24TSENp1FP.m", "junkFD24TSINp1agmres.m", "junkFD24TSINp1gmres.m"                
+              ); 
+  foreach $ufile ( @FILENAMES )
+  {
+    unlink($ufile) or warn "checkWaveHoltz: couldn't unlink $ufile\n"; 
+  }
+
   $numChecks=$m+1;   
   printf("==============================================================\n");
   printf("============== WaveHoltz: All $numChecks tests successful =============\n");

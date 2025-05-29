@@ -1,12 +1,12 @@
-// This file automatically generated from testAugmentedGmres.bC with bpp.
+// This file automatically generated from testAugmentedKrylov.bC with bpp.
 //===============================================================================
 //
 //  Test the Augmented GMRES algorithm
-//  set testag = $HOME/Dropbox/research/cgwave/bin/testAugmentedGmres 
+//  set testag = $HOME/Dropbox/research/cgwave/bin/testAugmentedKrylov 
 //==============================================================================
 
 
-#include "AugmentedGmres.h"
+#include "AugmentedKrylov.h"
 #include "display.h"
 
 
@@ -28,7 +28,7 @@ extern "C"
 {
     void GETRF( int & m, int & n, real & a, const int & lda, int & ipvt, int & info );
 
-    void GETRS( char *trans, const int & n, const int & nrhs, const Real & a, const int & lda, int & ipiv, Real & b, const int & ldb, const int & info );
+    void GETRS( const char *trans, const int & n, const int & nrhs, const Real & a, const int & lda, int & ipiv, Real & b, const int & ldb, const int & info );
   // void GETRI( int & n, real & a, const int & lda, const int & ipvt, real & work, const int & iwork, int & info );
 
   // void GECON( char *norm, int & n, real & a, const int & lda, real & anorm, real & rcond, real & work, int & iwork, int & info );
@@ -40,10 +40,14 @@ extern "C"
 }
 
 
-RealArray *Aptr=NULL; // set below to point to the matrix A 
+RealArray *Aptr=NULL; // set below to pointer to the matrix A 
 
+Real timeForMatVect=0.;
+
+// --------------- MATRIX-VECTOR PRODUCT ------------------
 void matVectFunction( const RealArray & x, RealArray & y )
 {
+    Real cpu0=getCPU();
     RealArray & A = *Aptr;
 
     const int m = A.getLength(0);
@@ -57,6 +61,7 @@ void matVectFunction( const RealArray & x, RealArray & y )
 
         y(i) = temp; 
     }
+    timeForMatVect += getCPU()-cpu0;
 
 } 
 
@@ -67,7 +72,7 @@ main(int argc, char *argv[])
     Overture::start(argc,argv);  // initialize Overture
 
 
-    printF("Usage: testAugmentedGmres -Nx=<i> -nit=<i> -numToDeflate=<i> -tol=<f>\n");
+    printF("Usage: testAugmentedKrylov -Nx=<i> -nit=<i> -numToDeflate=<i> -tol=<f> krylovType=<gmres|bicgstab|cg>\n");
 
     int debug=0; 
     int Nx=100; 
@@ -78,6 +83,7 @@ main(int argc, char *argv[])
     int useFunction=0;  // 1 = use matrix free mat-vec function
     Real tol = 1e-10;
 
+    aString krylovType = "gmres"; // or "bicgstab"
     
     int len=0;
     if( argc >= 1 )
@@ -124,7 +130,12 @@ main(int argc, char *argv[])
             {
                 sScanF(arg(len,arg.length()-1),"%e",&tol);
                 printF("Setting tol=%i\n",tol );
-            }                   
+            }   
+            else if( (len=arg.matches("-krylovType=")) )
+            {
+                krylovType=arg(len,arg.length()-1);
+                printF("Setting krylovType={%s]\n",(const char*)krylovType );
+            }                        
       // else if( (len=arg.matches("-orderOfAccuracy=")) )
       // {
       //   sScanF(arg(len,arg.length()-1),"%i",&orderOfAccuracy);
@@ -138,9 +149,9 @@ main(int argc, char *argv[])
     }
 
     printF("=================================================================================\n"
-                  " ---  test the Augmented GMRES algorithm ---  \n"
+                  " ---  test the Augmented %s algorithm ---  \n"
                   "   Nx=%d, maxit=%d, numToDefalate=%d, includeBCs=%d, initialGuess=%d, useFunction=%d tol=%9.2e \n",
-                  Nx,maxit,numToDeflate,includeBCs, initialGuess,useFunction, tol);
+                    (const char*)krylovType, Nx,maxit,numToDeflate,includeBCs, initialGuess,useFunction, tol);
 
 
 
@@ -207,7 +218,7 @@ main(int argc, char *argv[])
         b(m-1) += (exp(-beta*(bx-xe)*(bx-xe)))/dxSq; 
     }
 
-    ::display(transpose(A),"A (transposed for output to look like a Matrix)","%7.2f ");
+  // ::display(transpose(A),"A (transposed for output to look like a Matrix)","%7.2f ");
 
     Aptr = &A; // for matVectFunction above 
 
@@ -242,36 +253,53 @@ main(int argc, char *argv[])
         x0 = (exp(-beta*(xg(I)-xe)*(xg(I)-xe)));
     }
     RealArray y(m); 
-    AugmentedGmres::matVect( A,x0, y); 
+    AugmentedKrylov::matVect( A,x0, y); 
     r0 = b - y; 
 
-    Real resid = AugmentedGmres::norm(r0);
+    Real resid = AugmentedKrylov::norm(r0);
+  // ::display(b,"b");
     printF("Init: resid=%9.2e\n",resid);
 
-    AugmentedGmres auGmres;
+    AugmentedKrylov auKrylov;
+
+    if( krylovType=="gmres" )
+        auKrylov.setKrylovType( AugmentedKrylov::gmres );
+    else if( krylovType=="bicgstab" )
+        auKrylov.setKrylovType( AugmentedKrylov::biConjugateGradientStabilized );
+    else if( krylovType=="cg" )
+        auKrylov.setKrylovType( AugmentedKrylov::conjugateGradient );  
+    else
+    {
+        OV_ABORT("Unknown krylovType");
+    }
 
     RealArray x(m); // put solution here
 
-  // ========== CALL AUGMENTED GMRES =========
+  // ========== CALL AUGMENTED KRYLOV =========
+    Real cpu0= getCPU();
     if( useFunction==0 )
     {
     // pass matrix
-        auGmres.solve( A, b, x0, W, maxit, tol, x );
+        auKrylov.solve( A, b, x0, W, maxit, tol, x );
     }
     else
     {
     // Use a function to compute the matrix vector product
-        auGmres.solve( matVectFunction, b, x0, W, maxit, tol, x );
+        auKrylov.solve( matVectFunction, b, x0, W, maxit, tol, x );
     }
+    Real timeToSolve=getCPU()-cpu0;
+    printF("Time to solve = %9.2e(s), timeFotMatVect=%9.2e (s)\n",timeToSolve,timeForMatVect);
 
+    if( false )
+        ::display(x,"Done: solution x","%7.3f ");
 
-    ::display(x,"Done: solution x","%7.3f ");
+    int numberOfIterations = auKrylov.getNumberOfIterations();
+    int numberOfMatrixVectorProducts = auKrylov.getNumberOfMatrixVectorProducts();
+    printF("number of %s iterations=%d, number of mat-vects=%d\n",(const char*)krylovType,numberOfIterations,numberOfMatrixVectorProducts);
 
-    int numberOfIterations = auGmres.getNumberOfIterations();
-    printF("number of GMRES iterations=%d\n",numberOfIterations);
-
-    const RealArray & resVect = auGmres.getResidualVector();
-    ::display(resVect, "resVect","%9.2e ");
+    const RealArray & resVect = auKrylov.getResidualVector();
+    if( false )
+        ::display(resVect, "resVect","%9.2e ");
 
 
   // --- Check errors ----
@@ -284,7 +312,7 @@ main(int argc, char *argv[])
     int nrhs=1; 
     GETRS( "N", m, nrhs, A(0,0), m, ipvt(0), xTrue(0), m, info );
 
-    ::display(xTrue,"xTrue","%7.3f ");
+  // ::display(xTrue,"xTrue","%7.3f ");
 
     Real maxErr;
 

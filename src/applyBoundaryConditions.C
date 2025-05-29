@@ -69,7 +69,11 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
 
     dbase.get<int>("bcCount")++;    // count the number of times applyBC is called
 
-
+  // if( applyExplicitBoundaryConditions )
+  // {
+  //   printF("**** DO NOT APPLY EXPLICIT BCS ----------- TEMP -------------\n");
+  //   return 0;
+  // }
 
     if( debug & 8 )
         printF("applyBoundaryConditions at t=%9.3e\n",t);
@@ -137,7 +141,7 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
         ForBoundary(side,axis) 
         {
             int bc = mg.boundaryCondition(side,axis);
-            if( !( bc<=0 || bc==dirichlet || bc==evenSymmetry || bc==neumann || bc==exactBC || bc==absorbing ) )
+            if( !( bc<=0 || bc==dirichlet || bc==evenSymmetry || bc==neumann || bc==exactBC || bc==abcEM2 || bc==characteristic || bc==absorbing ) )
             {
                 printF("CgWave:applyBoundaryConditions:ERROR: grid=%i side=%i axis=%i bc=%i not implemented\n",grid,side,axis,bc);
                 printF(" You should set boundary conditions in the interactiveUpdate \n");
@@ -432,13 +436,27 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                                         bcLocal(0,0), frequencyArray(0),
                                         pdb, ipar[0],rpar[0], ierr );
 
+          // NOTES:
+          //   DO NOT CALL ABC FOR EM order 4 implicit -- FIX ME FOR UPWINDING 
+          //   DO CALL ABC FOR EM ORDER 2 implicit and upwinding since we need to assign ABCs after upwind step
 
+                    bool applyABCs=  !gridIsImplicit(grid); // no need to apply ABC's if we are implicit
+                    if( useUpwindDissipation && !implicitUpwind )
+                        applyABCs=true;               // do call ABCs if we are upwinding 
 
-                    if( !fillImplicitBoundaryConditions )
+                    if( !fillImplicitBoundaryConditions && applyABCs )
+          // if( !fillImplicitBoundaryConditions && (orderOfAccuracy==2 || !gridIsImplicit(grid)) )
+          // if( !fillImplicitBoundaryConditions )
                     {
             // Non-reflecting and Absorbing boundary conditions
             // ***NOTE*** symmetry corners and edges are assigned in this next routine *fix me*
             // OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
+
+                        if( gridIsImplicit(grid) && orderOfAccuracy==4 )
+                        {
+                            printF("applyBC:ERROR: implicit time-stepping, order=4, EM RBCs -- cannot use abcWave since order=4 Em BC's use extrapolation instead to CBCs\n");
+                            OV_ABORT("FINISH ME");
+                        }
 
                         Real *uptr = uLocal.getDataPointer();
                         Real *uOldptr = unLocal.getDataPointer();

@@ -1,3 +1,316 @@
+*******************************************
+********* Fri May 2, 2025 
+
+ADD ADJUSTED BOUNDARIES -- EXTENDED DIRICHLET 
+
+
+***************************************************
+****** Fri April 25, 2025
+
+START EXPLICIT EM ORDER 4
+
+Stable to t=10
+cgWave gaussian.cmd -g=square32.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.5 -upwind=0 -tf=10 -tp=.01 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+*** BC=rrrr 
+  cfl= 10 : UNSTABLE -- BUT MATLAB CODE IS OK !!
+  cfl = .5 : OK 
+cgWave gaussian.cmd -g=square128.order4 -beta=15 -x0=0.5 -y0=0.5 -omega=20 -amp=-500 -ts=implicit -cfl=10 -takeImplicitFirstStep=1 -upwind=0 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+***************************************************
+****** Thurs April 24, 2025
+
+**BUG FOUND** IMPLICIT MATRIX INCLUDED 4TH ORDER CORRECTIONS
+
+TEST CASE:
+
+cgWave gaussian.cmd -g=square16.order4 -x0=0.5 -y0=0.5 -omega=20 -amp=-400 -beta=15 -ts=implicit -cfl=10 -takeImplicitFirstStep=1 -upwind=0 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.2 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+cgWave gaussian.cmd -g=square32.order4 -x0=0.5 -y0=0.5 -omega=20 -amp=-400 -beta=15 -ts=implicit -cfl=10 -takeImplicitFirstStep=1 -upwind=0 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.2 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+
+CgWave::initialize and assign forcing... numberOfFrequencies=1
+CgWave::initialize: ***ASSIGN HELMHOLTZ FORCING***
+
+ ##### userDefinedForcing: t=0.000e+00 option=[gaussianSources] fSign=-1 ####
+
+
+
+
+
+FD24E EM 
+   cfl=.95 : *bad*
+   cfl=.5  : OK 
+   cfl=.25 : OK 
+cgWave gaussian.cmd -g=square128.order4 -beta=15 -x0=0.5 -y0=0.5 -omega=20 -amp=-500 -ts=explicit -cfl=.5 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+SQUARENP 
+cgWave gaussian.cmd -g=square128np.order4.ng3 -beta=15 -x0=0.5 -y0=0.5 -omega=20 -amp=-500 -ts=implicit -cfl=10 -takeImplicitFirstStep=1 -upwind=0 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+*** BC=rrrr 
+  cfl= 10 : UNSTABLE -- BUT MATLAB CODE IS OK !!
+  cfl = .5 : OK 
+cgWave gaussian.cmd -g=square128.order4 -beta=15 -x0=0.5 -y0=0.5 -omega=20 -amp=-500 -ts=implicit -cfl=10 -takeImplicitFirstStep=1 -upwind=0 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+cgWave -noplot gaussian.cmd -g=square128.order2 -beta=15 -x0=0.5 -y0=0.5 -omega=20 -amp=-500 -ts=implicit -cfl=.5 -takeImplicitFirstStep=1 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+***************************************************
+****** Wed April 23, 2025
+
+*** BC=rrrr UNSTABLE -- BUT MATLAB CODE IS OK !!
+cgWave gaussian.cmd -g=square128.order4 -beta=15 -x0=0.5 -y0=0.5 -omega=20 -amp=-500 -ts=implicit -cfl=10 -takeImplicitFirstStep=1 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+
+BC=rrdd **TROUBLE**
+cgWave gaussian.cmd -g=square128.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=20 -amp=-500 -ts=implicit -cfl=10 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc1=a -bc2=a -debug=1 -go=halt
+
+
+
+
+
+
+
+cgWave gaussian.cmd -g=square128.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=20 -amp=-500 -ts=implicit -cfl=1 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+cgWave gaussian.cmd -g=square64.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=20 -amp=-500 -ts=implicit -cfl=1 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+
+***************************************************
+****** Tues April 22, 2025
+
+
++++ IMPLICIT + RBC-CBCS
+CFL=10 :  **BUG FIXED BUT CORNERS EVENTUALLY GO BAD -- EXTRAPOLATION 
+cgWave gaussian.cmd -g=square64.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=10 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 1: max-res=[ 1.67e-10, 3.57e-10], max|forcing(ghost)|= 2.64e-26
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 2: max-res=[ 5.61e-09, 5.74e-08]
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 1: max-res=[ 1.67e-10, 3.55e-10], max|forcing(ghost)|= 2.64e-26
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 2: max-res=[ 5.75e-09, 5.37e-08]
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 1: max-res=[ 1.67e-10, 3.55e-10], max|forcing(ghost)|= 2.64e-26
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 2: max-res=[ 5.61e-09, 5.34e-08]
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 1: max-res=[ 1.67e-10, 3.57e-10], max|forcing(ghost)|= 2.64e-26
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 2: max-res=[ 5.65e-09, 5.56e-08]
+CgWaveHoltz::residual: grid=0 : maxRes= 4.54e-01
+solveHelmholtz: max-residual [Re,Im]=[4.54e-01,1.13e-01] (gmres, numIts=17, ave-CR= 0.24 )
+solveHelmholtz: rel-max-diff [Re,Im]=[3.34e-01,1.20e-01],  norm [Re,Im]=[1.34e-01,2.86e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+***************************************************
+****** Fri Jan 31 2025
+
+START TEST 4th ORDER EM2 RBC's **IMPLICIT**
+
++++ IMPLICIT + RBC-CBCS
+CFL=10 : UNSTABLE: 
+cgWave gaussian.cmd -g=square64.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=10 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+CFL=0.9 looks OK: 
+cgWave gaussian.cmd  -g=square64.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.9 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+
+
+CORNERS GO BAD:  CFL=.5 is better longer
+cgWave gaussian.cmd -g=square64.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1000 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+IMP STARTS TO WORK maybe 
+cgWave gaussian.cmd -g=square32.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1000 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+
+
+
+***************************************************
+****** Thurs Jan 30 2025
+
+START TEST 4th ORDER EM2 RBC's
+
+TO DO: IMPLICIT
+
+
+3D order=2 -- look ok
+cgWave gaussian.cmd -g=box4.order2 -beta=10 -x0=0.5 -y0=0.5 -z0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=.9 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+cgWave gaussian.cmd -g=box2.order2 -beta=10 -x0=0.5 -y0=0.5 -z0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=.9 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+TEST UPWIND -- looks ok
+cgWave gaussian.cmd -g=square32.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=.9 -upwind=1 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+
+STARTS TO WORK:
+cgWave gaussian.cmd -g=square32.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=.9 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+
+***************************************************
+****** Tues Jan 28, 2025
+
+START 4th ORDER EM2 RBC's
+
+
+cgWave gaussian.cmd -g=square64.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=.9 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+
+
+
+FD24: using 2nd-order accurate EM2 - Ok 
+cgWave gaussian.cmd -g=square64np.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=.9 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+cgWave gaussian.cmd -g=square32np.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=.9 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+***************************************************
+****** Tues Jan 28, 2025
+
+START 4th ORDER EM2 RBC's
+
+
+FD24: using 2nd-order accurate EM2 - Ok 
+cgWave gaussian.cmd -g=square32np.order4.ng3 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=.9 -upwind=0 -tf=100 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=halt
+
+***************************************************
+****** Wed Oct 2, 2024
+
+
+CONTINUE RADIATION BCS
+
+$$$ BUGFIXED -- bcOptWave -- do NOT EXTRAPOLATE GHOST for abcEM2 and absorbing 
+$$$ bug found in implicit.bC 
+
+IMP + EM2 **OK** EM2 residuals are zero now 
+cgWave gaussian.cmd -g=square8.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+
+cgWave gaussian.cmd -g=square32.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+<<<<<<<<<<<< DONE CALL applyBoundaryConditions after implicit solve
+WARNING : AFTER IMP solve: (side,axis,grid)=(0,0,0) c=  1.0000e+00, cEM2=  1.0000e+00, bc=absorbing maxRes= 2.84e-13
+WARNING : AFTER IMP solve: (side,axis,grid)=(1,0,0) c=  1.0000e+00, cEM2=  1.0000e+00, bc=absorbing maxRes= 2.56e-13
+WARNING : AFTER IMP solve: (side,axis,grid)=(0,1,0) c=  1.0000e+00, cEM2=  1.0000e+00, bc=absorbing maxRes= 1.85e-13
+WARNING : AFTER IMP solve: (side,axis,grid)=(1,1,0) c=  1.0000e+00, cEM2=  1.0000e+00, bc=absorbing maxRes= 1.71e-13
+>>>>>>>>>>>>> CALL applyBoundaryConditions after implicit solve
+>EM2: t=  4.80E-01 cEM2=  1.0000E+00 i1,i2,forcex,un,res,r1=  0  0  0.00E+00  1.20E-03  4.34E-19 -8.88E-16
+>EM2: t=  4.80E-01 cEM2=  1.0000E+00 i1,i2,forcex,un,res,r1=  0  1  0.00E+00  2.59E-03  8.67E-19 -8.88E-16
+>EM2: t=  4.80E-01 cEM2=  1.0000E+00 i1,i2,forcex,un,res,r1=  0  2  0.00E+00  5.33E-03  2.60E-18 -3.55E-15
+>EM2: t=  4.80E-01 cEM2=  1.0000E+00 i1,i2,forcex,un,res,r1=  0  3  0.00E+00  1.03E-02  1.73E-18 -1.78E-15
+>EM2: t=  4.80E-01 cEM2=  1.0000E+00 i1,i2,forcex,un,res,r1=  0  4  0.00E+00  1.88E-02 -3.47E-18  1.42E-14
+>EM2: t=  4.80E-01 cEM2=  1.0000E+00 i1,i2,forcex,un,res,r1=  0  5  0.00E+00  3.22E-02  0.00E+00 -3.55E-15
+
+
+
+
+
+
+IMP + EM2
+cgWave gaussian.cmd -g=square32.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=.95 -upwind=0 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+
+
+
+IMP + SUPERGRID .. looks ok 
+cgWave gaussian.cmd -g=square32.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=1 -implicitUpwind=0 -go=halt
+
+
+getAugmentedSolution: adjustPlotsForSuperGrid...
+AFTER IMP solve: (side,axis,grid)=(0,0,0) c=  1.0000e+00, bc=absorbing maxRes= 5.68e-13
+AFTER IMP solve: (side,axis,grid)=(1,0,0) c=  1.0000e+00, bc=absorbing maxRes= 5.12e-13
+AFTER IMP solve: (side,axis,grid)=(0,1,0) c=  1.0000e+00, bc=absorbing maxRes= 1.99e-13
+AFTER IMP solve: (side,axis,grid)=(1,1,0) c=  1.0000e+00, bc=absorbing maxRes= 3.69e-13
+AFTER IMP solve: (side,axis,grid)=(0,0,0) c=  1.0000e+00, bc=absorbing maxRes= 3.30e-13
+
+
+
+
+
+IMP + UW  + EM2 -- looks ok
+cgWave gaussian.cmd -g=square32.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+cgWave:FD22u t=1.400e+00 (  70 steps) dt=2.000e-02 ||u||= 6.24e+00, cpu= 1.45e+01(s)
+AFTER IMP solve: (side,axis,grid)=(0,0,0) c=  1.0000e+00, bc=absorbing maxRes= 5.68e-13
+AFTER IMP solve: (side,axis,grid)=(1,0,0) c=  1.0000e+00, bc=absorbing maxRes= 7.67e-13
+
+
+
+IMP NO UPWIND -- looks OK
+cgWave gaussian.cmd -g=square32.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=0 -tf=100 -tp=.05 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+
+
+***************************************************
+****** Tues Oct 1, 2024
+
+
+BACK RADIATION BCS
+
+COMPARE TO MATLAB:
+
+cgWave gaussian.cmd -g=square5.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=0 -tf=100 -tp=.05 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=7 -implicitUpwind=0 -go=halt
+
+
+
+
+IMP NO UPWIND -- GHOST CORNERS GO BAD 
+cgWave gaussian.cmd -g=square8.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=0 -tf=100 -tp=.05 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+cgWave gaussian.cmd -g=square32.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=0 -tf=100 -tp=.05 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+
+
+IMP NO UPWIND -- GHOST CORNERS GO BAD 
+cgWave gaussian.cmd -g=square32.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=0 -tf=100 -tp=.05 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+
+IMP + UW -- CORNERS BAD 
+cgWave gaussian.cmd -g=square32.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=1 -tf=100 -tp=.01 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+
+
+explicit: EM2 OK
+cgWave gaussian.cmd -g=square64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+
+
+***************************************************
+****** Sun Sept 29, 2024
+
+
+
+
+
+---------
+
+>>>>check EM2 
+
+IMP --> corners go bad
+cgWave gaussian.cmd -g=square32.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=1 -tf=100 -tp=.01 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=1 -upwind=1 -tf=100 -tp=.01 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+
+explicit: EM2 OK
+cgWave gaussian.cmd -g=square64.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -implicitUpwind=0 -go=halt
+
+
+---------- OLD : 
+>>> FIXED: extrap extra ghost line in ABC
+
+
+IMP + EM2 + IUW +SG : **TROUBLE** .. OK NOW
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=implicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=1 -go=halt
+
+
+cgWave:FD22u t=1.000e-01 (   20 steps) dt=5.000e-03 ||u||= 1.13e+00, cpu= 2.37e+01(s)
+
+EXP
+cgWave gaussian.cmd -g=square128.order2 -beta=10 -x0=0.5 -y0=0.5 -omega=10 -amp=-1000 -ts=explicit -cfl=0.95 -upwind=1 -tf=100 -tp=.1 -orderInTime=-1 -dtMax=.05 -useSuperGrid=1 -bc=a -debug=3 -implicitUpwind=0 -go=halt
+
+cgWave:FD22u t=1.000e-01 (   20 steps) dt=5.000e-03 ||u||= 1.14e+00, cpu= 2.12e+00(s)
+
+
 
 
 ***************************************************

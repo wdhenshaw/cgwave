@@ -1,5 +1,8 @@
 // This file automatically generated from solveEigen.bC with bpp.
+// ----------------------------------------------
+// -------------- EIGENWAVE ---------------------
 // ----  Solve for eigenpairs using WaveHoltz ---
+// ----------------------------------------------
 
 
 #include "CgWaveHoltz.h"
@@ -11,7 +14,7 @@
 #include "display.h"
 #include "gridFunctionNorms.h"
 #include "Ogshow.h"  
-
+#include "HDF_DataBase.h"
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
@@ -94,13 +97,21 @@ CgWaveHoltz::plotEigenVectors( realCompositeGridFunction & eigenVector, const Re
 
         }        
         gi.erase();
-        if( abs(eig(1,vector)) < 1.e-10*abs(eig(0,vector)) )
-        { // Real eigenvalue
-            psp.set(GI_TOP_LABEL,sPrintF(buff,"%s %d, eig=%.5g",(const char*)name,vector,eig(0,vector)));
+        if( eig.getLength(0)==numberOfEigenvectors )
+        {
+            psp.set(GI_TOP_LABEL,sPrintF(buff,"%s %d, eig=%.5g",(const char*)name,vector,eig(vector)));
         }
         else
-        { // complex eigenvalue 
-            psp.set(GI_TOP_LABEL,sPrintF(buff,"%s %d, eig=%.5g + (%.5g) I",(const char*)name,vector,eig(0,vector),eig(1,vector)));
+        {
+      // --- possible complex eigenvalue ---
+            if( abs(eig(1,vector)) < 1.e-10*abs(eig(0,vector)) )
+            { // Real eigenvalue
+                psp.set(GI_TOP_LABEL,sPrintF(buff,"%s %d, eig=%.5g",(const char*)name,vector,eig(0,vector)));
+            }
+            else
+            { // complex eigenvalue 
+                psp.set(GI_TOP_LABEL,sPrintF(buff,"%s %d, eig=%.5g + (%.5g) I",(const char*)name,vector,eig(0,vector),eig(1,vector)));
+            }
         }
 
         psp.set(GI_COMPONENT_FOR_CONTOURS,vector);
@@ -156,20 +167,19 @@ int CgWaveHoltz::outputEigenTable()
     const int & useAccurateInnerProduct      = cgWave.dbase.get<int>("useAccurateInnerProduct");  
 
   // total number of steps taken:
-    const int & numberOfStepsTaken    = cgWave.dbase.get<int>("numberOfStepsTaken");      
-    const int & numberOfStepsPerSolve = cgWave.dbase.get<int>("numberOfStepsPerSolve");
-    const Real & cfl                  = cgWave.dbase.get<real>("cfl");
-    const Real & dt                   = cgWave.dbase.get<real>("dtUsed");
-    const int & minStepsPerPeriod     = cgWave.dbase.get<int>("minStepsPerPeriod");
-    const RealArray & timing          = cgWave.timing;
-    const int & assignRitzFrequency   = cgWave.dbase.get<int>("assignRitzFrequency");
-    const int & iterationStartRR      = cgWave.dbase.get<int>("iterationStartRR");      // start at this WH iteration
-    const int & numPeriods            = cgWaveHoltz.dbase.get<int>("numPeriods");
+    const int & numberOfStepsTaken           = cgWave.dbase.get<int>("numberOfStepsTaken");      
+    const int & numberOfStepsPerSolve        = cgWave.dbase.get<int>("numberOfStepsPerSolve");
+    const Real & cfl                         = cgWave.dbase.get<real>("cfl");
+    const Real & dt                          = cgWave.dbase.get<real>("dtUsed");
+    const int & minStepsPerPeriod            = cgWave.dbase.get<int>("minStepsPerPeriod");
+    const RealArray & timing                 = cgWave.timing;
+    const int & assignRitzFrequency          = cgWave.dbase.get<int>("assignRitzFrequency");
+    const int & iterationStartRR             = cgWave.dbase.get<int>("iterationStartRR");      // start at this WH iteration
 
-
-    const Real & maxResidual          = cgWaveHoltz.dbase.get<real>("maxResidual");
-    const real & omega                = cgWaveHoltz.dbase.get<real>("omega");
-    const int & numberOfIterations    = cgWaveHoltz.dbase.get<int>("numberOfIterations");  // holds actual number of iterations taken
+    const int & numPeriods                   = cgWaveHoltz.dbase.get<int>("numPeriods");
+    const Real & maxResidual                 = cgWaveHoltz.dbase.get<real>("maxResidual");
+    const real & omega                       = cgWaveHoltz.dbase.get<real>("omega");
+    const int & numberOfIterations           = cgWaveHoltz.dbase.get<int>("numberOfIterations");  // holds actual number of iterations taken
 
     const CgWave::TimeSteppingMethodEnum & timeSteppingMethod = cgWave.dbase.get<CgWave::TimeSteppingMethodEnum>("timeSteppingMethod");
     aString implicitSolverName =  timeSteppingMethod==CgWave::explicitTimeStepping ? 
@@ -218,11 +228,14 @@ int CgWaveHoltz::outputEigenTable()
     printF(" -----------------------------------------------------------------------------\n");
     printF(" ------------------------- EigenWave SUMMARY ---------------------------------\n");
     printF(" omega=%12.4e, orderOfAccuracy=%d, grid=%s\n",omega,orderOfAccuracy,(const char*)gridNameNoPrefix);
-    aString eigenSolverName = (eigenSolver==CgWave::defaultEigenSolver     ? "KrylovSchur" :
-                                                          eigenSolver==CgWave::KrylovSchurEigenSolver ? "KrylovSchur" :
-                                                          eigenSolver==CgWave::ArnoldiEigenSolver     ? "Arnoldi" : 
-                                                          eigenSolver==CgWave::ArpackEigenSolver      ? "Arpack" : 
-                                                          eigenSolver==CgWave::fixedPointEigenSolver  ? "fixedPoint" : 
+    aString eigenSolverName = (eigenSolver==CgWave::defaultEigenSolver          ? "KrylovSchur" :
+                                                          eigenSolver==CgWave::KrylovSchurEigenSolver      ? "KrylovSchur" :
+                                                          eigenSolver==CgWave::ArnoldiEigenSolver          ? "Arnoldi" : 
+                                                          eigenSolver==CgWave::ArpackEigenSolver           ? "Arpack" : 
+                                                          eigenSolver==CgWave::fixedPointEigenSolver       ? "fixedPoint" : 
+                                                          eigenSolver==CgWave::powerEigenSolver            ? "power" :
+                                                          eigenSolver==CgWave::inverseIterationEigenSolver ? "inverseIteration" :
+                                                          eigenSolver==CgWave::JacobiDavidsonEigenSolver   ? "JacobiDavidson" :
                                                           "unknown" );
     aString eigenSolverNameLong = eigenSolverName; 
     if( eigenSolver !=CgWave::fixedPointEigenSolver )
@@ -234,7 +247,6 @@ int CgWaveHoltz::outputEigenTable()
     }
 
     printF(" eigenSolver = %s\n",(const char*)eigenSolverNameLong);
-
   
     printF(" Provide initial vector(s) for eigenSolver = %d, eigenValueTolForMultiplicity=%g\n",initialVectorsForEigenSolver,eigenValueTolForMultiplicity);
     printF(" Use accurate inner product = %d.\n",useAccurateInnerProduct);
@@ -265,316 +277,727 @@ int CgWaveHoltz::outputEigenTable()
         } 
     }
     printF(" tol=%9.2e, number of wave-solves (mat-vecs) = %d, cpu=%9.2e(s)\n",tol,numberOfMatrixVectorMultiplications,cpuSolveEigenWave);
-    printF(" num eigs requested=%d, number eigs converged =%d, numArnoldiVectors=%d\n",numEigsToCompute,numEigenVectors,numArnoldiVectors);
+    const Real numWaveSolvesPerEig = numberOfMatrixVectorMultiplications/max(Real(numEigenVectors),1.);
+    printF(" num eigs requested=%d, number eigs converged =%d, numArnoldiVectors=%d, wave-solves/eig=%5.1f\n",
+        numEigsToCompute,numEigenVectors,numArnoldiVectors,numWaveSolvesPerEig);
     printF(" numberOfIterations=%d, iterationStartRR=%d, assignRitzFrequency=%d, numberOfRitzVectors=%d (for fixed-point)\n",
                 numberOfIterations,iterationStartRR,assignRitzFrequency,numberOfRitzVectors);
     printF(" -----------------------------------------------------------------------------\n");
 
-    realCompositeGridFunction & eigenVector = dbase.get<realCompositeGridFunction>("eigenVectorRayleighRitz");
-
-    RealArray & eigenValues = dbase.get<RealArray>("eigenValues");  // best estimate of eigenvalues
-    
-    realCompositeGridFunction & res = cgWaveHoltz.dbase.get<realCompositeGridFunction>("residual");
-    Range all;
-    res.updateToMatchGrid(cg,all,all,all,numEigenVectors);
-    res.setName("evectRes");
-
-  // // -- sort the eigenvalues:
-  // IntegerArray iperm(numEigenVectors);
-  // RealArray eigenValuesSorted;
-  // eigenValuesSorted = eigenValues;
-  // sortArray( eigenValuesSorted, iperm );
-
-
-    bool saveErrors=false;
-    RealArray lambda(numEigenVectors), lambdaTrue(numEigenVectors), relErrEigenvalue(numEigenVectors), relErrEigenvector(numEigenVectors);
-    
-
-    RealArray eigenPairResidual(numEigenVectors);
-    for( int ie=0; ie<numEigenVectors; ie++ ) 
+    if( numEigenVectors>0 )
     {
-        res.setName(sPrintF("res%d",ie),ie);
 
-        Real lamRQ = eigenValues(ie);
-        eigenPairResidual(ie) = cgWave.getEigenPairResidual( lamRQ, eigenVector, res, ie );
-        lambda(ie) = lamRQ;  // may be over-written below 
+        realCompositeGridFunction & eigenVector = dbase.get<realCompositeGridFunction>("eigenVectorRayleighRitz");
 
-    // printF(" i=%d: lamRQ = %16.10e,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 = %9.2e\n",ie,lamRQ,eigenPairResidual(ie));
-    }
+        RealArray & eigenValues = dbase.get<RealArray>("eigenValues");  // best estimate of eigenvalues
+        
+        realCompositeGridFunction & res = cgWaveHoltz.dbase.get<realCompositeGridFunction>("residual");
+        Range all;
+        res.updateToMatchGrid(cg,all,all,all,numEigenVectors);
+        res.setName("evectRes");
 
-    if( cgWave.dbase.has_key("uev") )
-    {
-    // --- True values are known ----
+    // // -- sort the eigenvalues:
+    // IntegerArray iperm(numEigenVectors);
+    // RealArray eigenValuesSorted;
+    // eigenValuesSorted = eigenValues;
+    // sortArray( eigenValuesSorted, iperm );
 
 
-        IntegerArray multipleEigIndex(numEigenVectors);
+        bool saveErrors=false;
+        RealArray lambda(numEigenVectors), lambdaTrue(numEigenVectors), relErrEigenvalue(numEigenVectors), relErrEigenvector(numEigenVectors);
+        
 
-        if( !dbase.has_key("eigIndex") )
-        {
-            dbase.put<IntegerArray>("eigIndex");
-        }
-        IntegerArray & eigIndex = dbase.get<IntegerArray>("eigIndex");
-        eigIndex.redim(numEigenVectors);
-
-    // ------ check errrors in with "true" discrete eigenvalues -----
-        saveErrors=true; // save errors in cgWave.dbase.get<realCompositeGridFunction>("error")
-
-        RealArray eigRelErr(numEigenVectors);
-
-    // Here are the "true" eigenvectors and eigenvalues:
-        realCompositeGridFunction & uev = cgWave.dbase.get<realCompositeGridFunction>("uev");
-        RealArray & eigTrue             = cgWave.dbase.get<RealArray>("eig");
-        IntegerArray & eigMultiplicity  = cgWave.dbase.get<IntegerArray>("eigMultiplicity");
-
-        const int numberOfEigenvectorsTrue = uev.getComponentBound(0) - uev.getComponentBase(0) + 1;
-    // printF(">> There are %d eigenvectors (true, from file).\n",numberOfEigenvectorsTrue);
-
-        if( saveErrors )
-        {
-            realCompositeGridFunction & error = cgWave.dbase.get<realCompositeGridFunction>("error");
-            int numErrComp = error.getComponentBound(0)- error.getComponentBase(0)+1;
-            if( numErrComp != numEigenVectors || 
-                    error.numberOfComponentGrids()<1 )
-            {
-        // printF("\n ++++++ REDIMENSION ERROR GF ++++++++\n\n");
-                error.updateToMatchGrid( cg,all,all,all,numEigenVectors );
-            }
-            for( int ie=0; ie<numEigenVectors; ie++ )
-                error.setName(sPrintF("err%d",ie),ie);    
-        }
-
-        printF("\n");
-        printF("  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res\n");
-        printF(" .............................................................................\n");
-        for( int ie=0; ie<numEigenVectors; ie++ )
-        {
-      // int ie = iperm(je);    // sorted order
-      // int ie = je; // not sorted 
-            lambda(ie) = eigenValues(ie);
-
-      // Real diffMin = REAL_MAX*.1;
-            eigIndex(ie)=0;  
-
-      // Real lambdaTrue, relErrEigenvalue, relErrEigenvector;
-
-            cgWave.getErrorInEigenPair( lambda(ie), eigenVector, ie, lambdaTrue(ie), relErrEigenvalue(ie), relErrEigenvector(ie), 
-                                                                    eigIndex(ie), multipleEigIndex(ie), saveErrors ); 
-
-            printF(" %2d  %14.8e  [%2d]=%14.8e   %d %9.2e %9.2e %9.2e\n",
-                                ie,lambda(ie),eigIndex(ie),lambdaTrue(ie),eigMultiplicity(eigIndex(ie)), relErrEigenvalue(ie), relErrEigenvector(ie),eigenPairResidual(ie));
-      // printF(" ie=%2d: lamRQ=%16.10e, true[%2d]=%16.10e, mult=%d, eig-relerr = %9.2e, eig-vector-relerr = %9.2e\n",
-      //           ie,lambda,eigIndex,lambdaTrue,eigMultiplicity(eigIndex), relErrEigenvalue, relErrEigenvector);
-        }
-        printf(" .............................................................................\n");
-        printF(" Note:  relative-errors, eig-res = || Lv+lamRQ^2 v ||/lamRQ^2\n");
-
-    }
-    else
-    {
+        RealArray eigenPairResidual(numEigenVectors);
         for( int ie=0; ie<numEigenVectors; ie++ ) 
         {
+            res.setName(sPrintF("res%d",ie),ie);
+
             Real lamRQ = eigenValues(ie);
-      // eigenPairResidual(ie) = cgWave.getEigenPairResidual( lamRQ, eigenVector, ie );
+            eigenPairResidual(ie) = cgWave.getEigenPairResidual( lamRQ, eigenVector, res, ie );
+            lambda(ie) = lamRQ;  // may be over-written below 
 
-            printF(" i=%d: lamRQ = %16.10e,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 = %9.2e\n",ie,lamRQ,eigenPairResidual(ie));
+      // printF(" i=%d: lamRQ = %16.10e,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 = %9.2e\n",ie,lamRQ,eigenPairResidual(ie));
         }
-    }
 
-            
-
-
-  // Output results as a LaTeX table
-    fPrintF(output,"\n\n%% ------------ EigenWave Table for LaTeX -------------------------------\n");
-
-    const Real maxEigErr    = max(relErrEigenvalue);
-    const Real maxEvectErr  = max(relErrEigenvector);
-    const Real maxEigResid  = max(eigenPairResidual);
-
-    if( saveErrors )
-    {  
-        IntegerArray & eigMultiplicity  = cgWave.dbase.get<IntegerArray>("eigMultiplicity");
-        IntegerArray & eigIndex         = dbase.get<IntegerArray>("eigIndex");
-        fPrintF(output,"\\newcommand{\\eigenWaveLongTable}{%% start of LongTable for %s\n",(const char*)gridNameNoPrefix);
-        fPrintF(output,
-                    "\\begin{table}[hbt]\n"
-                    "\\begin{center}\\tableFontSize\n"
-                    "\\begin{tabular}{|c|r|r|c|c|c|c|c|} \\hline\n"
-                    " \\multicolumn{8}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
-                    "   $j$  & \\multicolumn{1}{c|}{$\\lambda_j$} &  \\multicolumn{1}{c|}{$\\lambda_{\\rm true}$}  & eig &  mult &  eig-err & evect-err & eig-res  \\\\ \\hline\n",
-                    (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
-        for( int ie=0; ie<numEigenVectors; ie++ )
+        if( cgWave.dbase.has_key("uev") )
         {
-            fPrintF(output," %3d   & %10.6f & %10.6f &  %4d & %4d  & %9.2e & %9.2e & %9.2e \\\\ \n",
-                                ie,lambda(ie),lambdaTrue(ie),eigIndex(ie),eigMultiplicity(eigIndex(ie)), relErrEigenvalue(ie), relErrEigenvector(ie),eigenPairResidual(ie));
+      // --- True values are known ----
+            IntegerArray multipleEigIndex(numEigenVectors);
+
+            if( !dbase.has_key("eigIndex") )
+            {
+                dbase.put<IntegerArray>("eigIndex");
+            }
+            IntegerArray & eigIndex = dbase.get<IntegerArray>("eigIndex");
+            eigIndex.redim(numEigenVectors);
+
+      // ------ check errrors in with "true" discrete eigenvalues -----
+            saveErrors=true; // save errors in cgWave.dbase.get<realCompositeGridFunction>("error")
+
+            RealArray eigRelErr(numEigenVectors);
+
+      // Here are the "true" eigenvectors and eigenvalues:
+            realCompositeGridFunction & uev = cgWave.dbase.get<realCompositeGridFunction>("uev");
+            RealArray & eigTrue             = cgWave.dbase.get<RealArray>("eig");
+            IntegerArray & eigMultiplicity  = cgWave.dbase.get<IntegerArray>("eigMultiplicity");
+
+            const int numberOfEigenvectorsTrue = uev.getComponentBound(0) - uev.getComponentBase(0) + 1;
+      // printF(">> There are %d eigenvectors (true, from file).\n",numberOfEigenvectorsTrue);
+
+            if( saveErrors )
+            {
+                realCompositeGridFunction & error = cgWave.dbase.get<realCompositeGridFunction>("error");
+                int numErrComp = error.getComponentBound(0)- error.getComponentBase(0)+1;
+                if( numErrComp != numEigenVectors || 
+                        error.numberOfComponentGrids()<1 )
+                {
+          // printF("\n ++++++ REDIMENSION ERROR GF ++++++++\n\n");
+                    error.updateToMatchGrid( cg,all,all,all,numEigenVectors );
+                }
+                for( int ie=0; ie<numEigenVectors; ie++ )
+                    error.setName(sPrintF("err%d",ie),ie);    
+            }
+
+            printF("\n");
+            printF("  ie     lambda      [eig]   lamTrue     mult  eig-err  evect-err  eig-res\n");
+            printF(" .............................................................................\n");
+            for( int ie=0; ie<numEigenVectors; ie++ )
+            {
+        // int ie = iperm(je);    // sorted order
+        // int ie = je; // not sorted 
+                lambda(ie) = eigenValues(ie);
+
+        // Real diffMin = REAL_MAX*.1;
+                eigIndex(ie)=0;  
+
+        // Real lambdaTrue, relErrEigenvalue, relErrEigenvector;
+
+                cgWave.getErrorInEigenPair( lambda(ie), eigenVector, ie, lambdaTrue(ie), relErrEigenvalue(ie), relErrEigenvector(ie), 
+                                                                        eigIndex(ie), multipleEigIndex(ie), saveErrors ); 
+
+                printF(" %2d  %14.8e  [%2d]=%14.8e   %d %9.2e %9.2e %9.2e\n",
+                                    ie,lambda(ie),eigIndex(ie),lambdaTrue(ie),eigMultiplicity(eigIndex(ie)), relErrEigenvalue(ie), relErrEigenvector(ie),eigenPairResidual(ie));
+        // printF(" ie=%2d: lamRQ=%16.10e, true[%2d]=%16.10e, mult=%d, eig-relerr = %9.2e, eig-vector-relerr = %9.2e\n",
+        //           ie,lambda,eigIndex,lambdaTrue,eigMultiplicity(eigIndex), relErrEigenvalue, relErrEigenvector);
+            }
+            printf(" .............................................................................\n");
+            printF(" Note:  relative-errors, eig-res = || Lv+lamRQ^2 v ||/lamRQ^2\n");
+
         }
-
-        fPrintF(output,
-                    " \\hline \n"
-                    "\\end{tabular}\n"
-                    "\\end{center}\n"
-                    "\\caption{grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
-                    "\\label{tab:%sOrder%d}\n"
-                    "\\end{table}\n", (const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, 
-                    orderOfAccuracy, omega, numPeriods, (const char*)gridNameNoPrefix,orderOfAccuracy );
-
-        fPrintF(output,"}%% end of LongTable for %s\n",(const char*)gridNameNoPrefix);
-
-    // ---- summary table ----
-    // Real maxEigErr    = max(relErrEigenvalue);
-    // Real maxEvectErr  = max(relErrEigenvector);
-    // Real maxEigResid  = max(eigenPairResidual);
-
-        fPrintF(output,"\n");
-    // fPrintF(output,
-    //      "\\begin{table}[hbt]\n"
-    //       "\\begin{center}\\tableFontSize\n"
-    //       "\\begin{tabular}{|c|c|c|c|c|c|c|} \\hline\n"
-    //       "   eig-err  & evect-err & eig-res   &  num      &  total        & wave-solve &  time-steps \\\\\n"
-    //       "            &           &           &  eigs     &  wave-solves  &  per eig    &  per-eig \\\\ \\hline\n");
-    // fPrintF(output," %9.2e & % 9.2e & %9.2e &   %d  &  %d    &  %d    &  %d \\\\\n",
-    //      maxEigErr,maxEvectErr,maxEigResid,numEigenVectors,numberOfMatrixVectorMultiplications,
-    //      (int)round(numberOfMatrixVectorMultiplications/numEigenVectors), 
-    //      (int)round(numberOfStepsTaken/numEigenVectors) );
-
-        const Real waveSolvesPerEig = 1.*numberOfMatrixVectorMultiplications/numEigenVectors;
-        fPrintF(output,"\\newcommand{\\eigenWaveSummaryTable}{%% start of summary table for %s\n",(const char*)gridNameNoPrefix);
-        fPrintF(output,
-                  "\\begin{table}[hbt]\n"
-                    "\\begin{center}\\tableFontSize\n"
-                    "\\begin{tabular}{|c|c|c|c|c|c|c|c|} \\hline\n"
-                    " \\multicolumn{8}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
-                    "   num   &  wave       & time-steps  & wave-solves &  time-steps &   max      &  max      &  max       \\\\ \n"
-                    "   eigs  &  solves     & per period  &  per eig    &  per-eig    &   eig-err  & evect-err & eig-res    \\\\ \n \\hline\n",
-                      (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
-        fPrintF(output,"    %d    &       %d     &      %d     &    %3.1f    &     %d     & %9.2e & % 9.2e & %9.2e \\\\\n",
-                  numEigenVectors,
-                  numberOfMatrixVectorMultiplications,
-                  minStepsPerPeriod,
-         // (int)round(numberOfMatrixVectorMultiplications/numEigenVectors), 
-                  waveSolvesPerEig,
-                  (int)round(numberOfStepsTaken/numEigenVectors),
-                  maxEigErr,maxEvectErr,maxEigResid
-                  );
-
-        fPrintF(output,
-                    " \\hline \n"
-                    "\\end{tabular}\n"
-                    "\\end{center}\n"
-                    "\\vspace*{-1\\baselineskip}\n"
-                    "\\caption{EigenWave: grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
-                    "\\label{tab:%sOrder%dSummary}\n"
-                    "\\end{table}\n",(const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, orderOfAccuracy, 
-                    omega, numPeriods,(const char*)gridNameNoPrefix,orderOfAccuracy );    
-        fPrintF(output,"}%% end of summary table for %s\n",(const char*)gridNameNoPrefix);
-
-    }
-    else
-    {
-    // ------------ just save residuals in the table ---------
-
-        fPrintF(output,"\\newcommand{\\eigenWaveLongTable}{%% start of LongTable for %s\n",(const char*)gridNameNoPrefix);
-        fPrintF(output,
-                    "\\begin{table}[hbt]\n"
-                    "\\begin{center}\\tableFontSize\n"
-                    "\\begin{tabular}{|c|r|c|} \\hline\n"
-                    " \\multicolumn{3}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
-                    "   $j$  & \\multicolumn{1}{c|}{$\\lambda_j$} &  eig-res  \\\\ \\hline\n",
-                    (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
-        for( int ie=0; ie<numEigenVectors; ie++ )
+        else
         {
-      // fPrintF(output," %3d   & %10.6f & %10.6f &  %4d & %4d  & %9.2e & %9.2e & %9.2e \\\\ \n",
-      //           ie,lambda(ie),lambdaTrue(ie),eigIndex(ie),eigMultiplicity(eigIndex(ie)), relErrEigenvalue(ie), relErrEigenvector(ie),eigenPairResidual(ie));
-            fPrintF(output," %4d & %10.6f  & %9.2e \\\\ \n",
-                                ie,lambda(ie),eigenPairResidual(ie));      
+            for( int ie=0; ie<numEigenVectors; ie++ ) 
+            {
+                Real lamRQ = eigenValues(ie);
+        // eigenPairResidual(ie) = cgWave.getEigenPairResidual( lamRQ, eigenVector, ie );
+
+                printF(" i=%d: lamRQ = %16.10e,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 = %9.2e\n",ie,lamRQ,eigenPairResidual(ie));
+            }
         }
 
-        fPrintF(output,
-                    " \\hline \n"
-                    "\\end{tabular}\n"
-                    "\\end{center}\n"
-                    "\\caption{grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
-                    "\\label{tab:%sOrder%d}\n"
-                    "\\end{table}\n", (const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, 
-                    orderOfAccuracy, omega, numPeriods, (const char*)gridNameNoPrefix,orderOfAccuracy );
-
-        fPrintF(output,"}%% end of LongTable for %s\n",(const char*)gridNameNoPrefix);
-
-    // -----------------------------------------------
-    // ---------------- summary table ----------------
-    // -----------------------------------------------
-
-        fPrintF(output,"\n");
-
-        const Real waveSolvesPerEig = 1.*numberOfMatrixVectorMultiplications/numEigenVectors;
-        fPrintF(output,"\\newcommand{\\eigenWaveSummaryTable}{%% start of summary table for %s\n",(const char*)gridNameNoPrefix);
-        fPrintF(output,
-                  "\\begin{table}[hbt]\n"
-                    "\\begin{center}\\tableFontSize\n"
-                    "\\begin{tabular}{|c|c|c|c|c|c|} \\hline\n"
-                    " \\multicolumn{6}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
-                    "   num   &  wave       & time-steps  & wave-solves &  time-steps  &  max       \\\\ \n"
-                    "   eigs  &  solves     & per period  &  per eig    &  per-eig     & eig-res    \\\\ \n \\hline\n",
-                      (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
-        fPrintF(output,"    %d   &   %d    &      %d     &    %3.1f    &     %d     &  %9.2e \\\\\n",
-                  numEigenVectors,
-                  numberOfMatrixVectorMultiplications,
-                  minStepsPerPeriod,
-                  waveSolvesPerEig,
-                  (int)round(numberOfStepsTaken/numEigenVectors),
-                  maxEigResid
-                  );
-
-        fPrintF(output,
-                    " \\hline \n"
-                    "\\end{tabular}\n"
-                    "\\end{center}\n"
-                    "\\vspace*{-1\\baselineskip}\n"
-                    "\\caption{EigenWave: grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
-                    "\\label{tab:%sOrder%dSummary}\n"
-                    "\\end{table}\n",(const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, orderOfAccuracy, 
-                    omega, numPeriods,(const char*)gridNameNoPrefix,orderOfAccuracy );    
-        fPrintF(output,"}%% end of summary table for %s\n",(const char*)gridNameNoPrefix);
 
 
+    // Output results as a LaTeX table
+        fPrintF(output,"\n\n%% ------------ EigenWave Table for LaTeX -------------------------------\n");
 
-    }
-    fclose(output);
-    printF("Wrote results to LaTeX file [%s]\n",(const char*)eigenWaveLatexTableName);
+        const Real maxEigErr    = max(relErrEigenvalue);
+        const Real maxEvectErr  = max(relErrEigenvector);
+        const Real maxEigResid  = max(eigenPairResidual);
+
+        if( saveErrors )
+        {  
+            IntegerArray & eigMultiplicity  = cgWave.dbase.get<IntegerArray>("eigMultiplicity");
+            IntegerArray & eigIndex         = dbase.get<IntegerArray>("eigIndex");
+            fPrintF(output,"\\newcommand{\\eigenWaveLongTable}{%% start of LongTable for %s\n",(const char*)gridNameNoPrefix);
+            fPrintF(output,
+                        "\\begin{table}[hbt]\n"
+                        "\\begin{center}\\tableFontSize\n"
+                        "\\begin{tabular}{|c|r|r|c|c|c|c|c|} \\hline\n"
+                        " \\multicolumn{8}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
+                        "   $j$  & \\multicolumn{1}{c|}{$\\lambda_j$} &  \\multicolumn{1}{c|}{$\\lambda_{h,k}^{\\rm true}$}  & $k$ &  mult &  eig-err & evect-err & eig-res  \\\\ \\hline\n",
+                        (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
+            for( int ie=0; ie<numEigenVectors; ie++ )
+            {
+                fPrintF(output," %3d   & %10.6f & %10.6f &  %4d & %4d  & %9.2e & %9.2e & %9.2e \\\\ \n",
+                                    ie,lambda(ie),lambdaTrue(ie),eigIndex(ie),eigMultiplicity(eigIndex(ie)), relErrEigenvalue(ie), relErrEigenvector(ie),eigenPairResidual(ie));
+            }
+
+            fPrintF(output,
+                        " \\hline \n"
+                        "\\end{tabular}\n"
+                        "\\end{center}\n"
+                        "\\caption{grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
+                        "\\label{tab:%sOrder%d}\n"
+                        "\\end{table}\n", (const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, 
+                        orderOfAccuracy, omega, numPeriods, (const char*)gridNameNoPrefix,orderOfAccuracy );
+
+            fPrintF(output,"}%% end of LongTable for %s\n",(const char*)gridNameNoPrefix);
+
+      // ---- summary table ----
+      // Real maxEigErr    = max(relErrEigenvalue);
+      // Real maxEvectErr  = max(relErrEigenvector);
+      // Real maxEigResid  = max(eigenPairResidual);
+
+            fPrintF(output,"\n");
+      // fPrintF(output,
+      //      "\\begin{table}[hbt]\n"
+      //       "\\begin{center}\\tableFontSize\n"
+      //       "\\begin{tabular}{|c|c|c|c|c|c|c|} \\hline\n"
+      //       "   eig-err  & evect-err & eig-res   &  num      &  total        & wave-solve &  time-steps \\\\\n"
+      //       "            &           &           &  eigs     &  wave-solves  &  per eig    &  per-eig \\\\ \\hline\n");
+      // fPrintF(output," %9.2e & % 9.2e & %9.2e &   %d  &  %d    &  %d    &  %d \\\\\n",
+      //      maxEigErr,maxEvectErr,maxEigResid,numEigenVectors,numberOfMatrixVectorMultiplications,
+      //      (int)round(numberOfMatrixVectorMultiplications/numEigenVectors), 
+      //      (int)round(numberOfStepsTaken/numEigenVectors) );
+
+            const Real waveSolvesPerEig = 1.*numberOfMatrixVectorMultiplications/numEigenVectors;
+            fPrintF(output,"\\newcommand{\\eigenWaveSummaryTable}{%% start of summary table for %s\n",(const char*)gridNameNoPrefix);
+            fPrintF(output,
+                      "\\begin{table}[hbt]\n"
+                        "\\begin{center}\\tableFontSize\n"
+                        "\\begin{tabular}{|c|c|c|c|c|c|c|c|} \\hline\n"
+                        " \\multicolumn{8}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
+                        "   num   &  wave       & time-steps  & wave-solves &  time-steps &   max      &  max      &  max       \\\\ \n"
+                        "   eigs  &  solves     & per period  &  per eig    &  per-eig    &   eig-err  & evect-err & eig-res    \\\\ \n \\hline\n",
+                          (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
+            fPrintF(output,"    %d    &       %d     &      %d     &    %3.1f    &     %d     & %9.2e & % 9.2e & %9.2e \\\\\n",
+                      numEigenVectors,
+                      numberOfMatrixVectorMultiplications,
+                      minStepsPerPeriod,
+           // (int)round(numberOfMatrixVectorMultiplications/numEigenVectors), 
+                      waveSolvesPerEig,
+                      (int)round(numberOfStepsTaken/numEigenVectors),
+                      maxEigErr,maxEvectErr,maxEigResid
+                      );
+
+            fPrintF(output,
+                        " \\hline \n"
+                        "\\end{tabular}\n"
+                        "\\end{center}\n"
+                        "\\vspace*{-1\\baselineskip}\n"
+                        "\\caption{EigenWave: grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
+                        "\\label{tab:%sOrder%dSummary}\n"
+                        "\\end{table}\n",(const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, orderOfAccuracy, 
+                        omega, numPeriods,(const char*)gridNameNoPrefix,orderOfAccuracy );    
+            fPrintF(output,"}%% end of summary table for %s\n",(const char*)gridNameNoPrefix);
+
+        }
+        else
+        {
+      // ------------ just save residuals in the table ---------
+
+            fPrintF(output,"\\newcommand{\\eigenWaveLongTable}{%% start of LongTable for %s\n",(const char*)gridNameNoPrefix);
+            fPrintF(output,
+                        "\\begin{table}[hbt]\n"
+                        "\\begin{center}\\tableFontSize\n"
+                        "\\begin{tabular}{|c|r|c|} \\hline\n"
+                        " \\multicolumn{3}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
+                        "   $j$  & \\multicolumn{1}{c|}{$\\lambda_j$} &  eig-res  \\\\ \\hline\n",
+                        (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
+            for( int ie=0; ie<numEigenVectors; ie++ )
+            {
+        // fPrintF(output," %3d   & %10.6f & %10.6f &  %4d & %4d  & %9.2e & %9.2e & %9.2e \\\\ \n",
+        //           ie,lambda(ie),lambdaTrue(ie),eigIndex(ie),eigMultiplicity(eigIndex(ie)), relErrEigenvalue(ie), relErrEigenvector(ie),eigenPairResidual(ie));
+                fPrintF(output," %4d & %10.6f  & %9.2e \\\\ \n",
+                                    ie,lambda(ie),eigenPairResidual(ie));      
+            }
+
+            fPrintF(output,
+                        " \\hline \n"
+                        "\\end{tabular}\n"
+                        "\\end{center}\n"
+                        "\\caption{grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
+                        "\\label{tab:%sOrder%d}\n"
+                        "\\end{table}\n", (const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, 
+                        orderOfAccuracy, omega, numPeriods, (const char*)gridNameNoPrefix,orderOfAccuracy );
+
+            fPrintF(output,"}%% end of LongTable for %s\n",(const char*)gridNameNoPrefix);
+
+      // -----------------------------------------------
+      // ---------------- summary table ----------------
+      // -----------------------------------------------
+
+            fPrintF(output,"\n");
+
+            const Real waveSolvesPerEig = 1.*numberOfMatrixVectorMultiplications/numEigenVectors;
+            fPrintF(output,"\\newcommand{\\eigenWaveSummaryTable}{%% start of summary table for %s\n",(const char*)gridNameNoPrefix);
+            fPrintF(output,
+                      "\\begin{table}[hbt]\n"
+                        "\\begin{center}\\tableFontSize\n"
+                        "\\begin{tabular}{|c|c|c|c|c|c|} \\hline\n"
+                        " \\multicolumn{6}{|c|}{EigenWave: grid=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$, %s } \\\\ \\hline \n"
+                        "   num   &  wave       & time-steps  & wave-solves &  time-steps  &  max       \\\\ \n"
+                        "   eigs  &  solves     & per period  &  per eig    &  per-eig     & eig-res    \\\\ \n \\hline\n",
+                          (const char*)gridNameNoPrefix,(const char*)timeSteppingName, orderOfAccuracy, omega, numPeriods, (const char*)eigenSolverName );
+            fPrintF(output,"    %d   &   %d    &      %d     &    %3.1f    &     %d     &  %9.2e \\\\\n",
+                      numEigenVectors,
+                      numberOfMatrixVectorMultiplications,
+                      minStepsPerPeriod,
+                      waveSolvesPerEig,
+                      (int)round(numberOfStepsTaken/numEigenVectors),
+                      maxEigResid
+                      );
+
+            fPrintF(output,
+                        " \\hline \n"
+                        "\\end{tabular}\n"
+                        "\\end{center}\n"
+                        "\\vspace*{-1\\baselineskip}\n"
+                        "\\caption{EigenWave: grid=%s, method=%s, ts=%s, order=%d, $\\omega=%6.1f$, $N_p=%d$.}\n"
+                        "\\label{tab:%sOrder%dSummary}\n"
+                        "\\end{table}\n",(const char*)gridNameNoPrefix,(const char*)eigenSolverName, (const char*)timeSteppingName, orderOfAccuracy, 
+                        omega, numPeriods,(const char*)gridNameNoPrefix,orderOfAccuracy );    
+            fPrintF(output,"}%% end of summary table for %s\n",(const char*)gridNameNoPrefix);
+
+
+
+        }
+        fclose(output);
+        printF("Wrote results to LaTeX file [%s]\n",(const char*)eigenWaveLatexTableName);
 
 
   // --- save a check file for EigenWave ---
-    FILE *checkFile=NULL;
-    checkFile = fopen("eigenWave.check","w" );        // for regression and convergence tests
+        FILE *checkFile=NULL;
+        checkFile = fopen("eigenWave.check","w" );        // for regression and convergence tests
 
-    assert( checkFile != NULL );
+        assert( checkFile != NULL );
 
-  // Get the current date
-    time_t *tp= new time_t;
-    time(tp);
-    const char *dateString = ctime(tp);
-    fPrintF(checkFile,"# Check file for EigenWave, grid=%s, %s",(const char*)gridNameNoPrefix,dateString);  // Note: dateString include newline
-    delete tp; 
+    // Get the current date
+        time_t *tp= new time_t;
+        time(tp);
+        const char *dateString = ctime(tp);
+        fPrintF(checkFile,"# Check file for EigenWave, grid=%s, %s",(const char*)gridNameNoPrefix,dateString);  // Note: dateString include newline
+        delete tp; 
 
-    fPrintF(checkFile,"grid=%s;\n",(const char*)gridNameNoPrefix);
-    fPrintF(checkFile,"eigenSolver=%s;\n",(const char*)eigenSolverName);
-    fPrintF(checkFile,"timeStepping=%s;\n",(const char*)timeSteppingName);
-    fPrintF(checkFile,"orderOfAccuracy=%d;\n",orderOfAccuracy);
-    fPrintF(checkFile,"numPeriods=%d;\n",numPeriods);
-    fPrintF(checkFile,"numberOfStepsPerSolve=%d;\n",numberOfStepsPerSolve);
-    fPrintF(checkFile,"numEigsRequested=%d;\n",numEigsToCompute);
-    fPrintF(checkFile,"numEigsComputed=%d;\n",numEigenVectors);
-    fPrintF(checkFile,"numArnoldiVectors=%d;\n",numArnoldiVectors);
-    fPrintF(checkFile,"numWaveSolves=%d;\n",numberOfMatrixVectorMultiplications);
-    fPrintF(checkFile,"maxEigErr=%9.2e;\n",maxEigErr);
-    fPrintF(checkFile,"maxEvectErr=%9.2e;\n",maxEvectErr);
-    fPrintF(checkFile,"maxEigResid=%9.2e;\n",maxEigResid);
-    fclose(checkFile);
+        fPrintF(checkFile,"grid=%s;\n",(const char*)gridNameNoPrefix);
+        fPrintF(checkFile,"eigenSolver=%s;\n",(const char*)eigenSolverName);
+        fPrintF(checkFile,"timeStepping=%s;\n",(const char*)timeSteppingName);
+        fPrintF(checkFile,"orderOfAccuracy=%d;\n",orderOfAccuracy);
+        fPrintF(checkFile,"numPeriods=%d;\n",numPeriods);
+        fPrintF(checkFile,"numberOfStepsPerSolve=%d;\n",numberOfStepsPerSolve);
+        fPrintF(checkFile,"numEigsRequested=%d;\n",numEigsToCompute);
+        fPrintF(checkFile,"numEigsComputed=%d;\n",numEigenVectors);
+        fPrintF(checkFile,"numArnoldiVectors=%d;\n",numArnoldiVectors);
+        fPrintF(checkFile,"numWaveSolves=%d;\n",numberOfMatrixVectorMultiplications);
+        fPrintF(checkFile,"maxEigErr=%9.2e;\n",maxEigErr);
+        fPrintF(checkFile,"maxEvectErr=%9.2e;\n",maxEvectErr);
+        fPrintF(checkFile,"maxEigResid=%9.2e;\n",maxEigResid);
+        fclose(checkFile);
 
-    printF("Wrote results to the check file [eigenWave.check]\n");
+        printF("Wrote results to the check file [eigenWave.check]\n");
+
+    } // end numEigenVectors>0 
 
     return 0;
 
 }
+
+
+// ============================================================================================
+/// \brief Assign the initial condition used by SLEPc eigen solvers
+// ============================================================================================
+int CgWaveHoltz::assignEigenSolverInitialCondition( bool smoothInitialCondition )
+{
+    CgWaveHoltz & cgWaveHoltz = *this;
+    CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
+    CgWave::EigenSolverInitialConditionEnum & eigenSolverInitialCondition 
+                                                                                      = cgWave.dbase.get<CgWave::EigenSolverInitialConditionEnum>("eigenSolverInitialCondition");
+    const int numberOfDimensions = cg.numberOfDimensions();
+
+    if( eigenSolverInitialCondition == CgWave::defaultEigenSolverInitialCondition )
+    {
+        printF("assignEigenSolverInitialCondition: Setting eigen solver initial condition to use the default in SLEPSc.\n");
+    }    
+    else if( eigenSolverInitialCondition == CgWave::randomEigenSolverInitialCondition )
+    {
+        printF("assignEigenSolverInitialCondition: Set RANDOM initial conditions for SLEPc\n");
+
+        realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+        CompositeGrid & cg = *v.getCompositeGrid();
+        Index I1,I2,I3;
+
+        std::srand(12789.);
+
+        const Real scale=1.; // 1.e-5; // TEST
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            MappedGrid & mg = cg[grid];
+            OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+            OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+            vLocal=0.;
+            getIndex(mg.gridIndexRange(),I1,I2,I3);
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            {
+        // do this for now
+        // vLocal(i1,i2,i3) = sin(i1)*cos(i2);
+                if( maskLocal(i1,i2,i3)!=0 )
+                {
+                    vLocal(i1,i2,i3) = (-1. + std::rand()*(2./RAND_MAX))*scale; // [-1,1]
+                }
+
+            }
+        }
+    // replot=true;
+    // cgWave.resetTimings(); // reset CPU timings to zero 
+    }  
+
+    else if( eigenSolverInitialCondition == CgWave::sineEigenSolverInitialCondition )
+    {
+    // eigenSolverInitialCondition = CgWave::sineEigenSolverInitialCondition;
+        printF("assignEigenSolverInitialCondition: Set SINE initial conditions for SLEPc\n");
+
+        realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+        CompositeGrid & cg = *v.getCompositeGrid();
+        Index I1,I2,I3;
+
+    // ---- Base frequency of the sine solution on the target frequency ----
+        const Real & c     = cgWave.dbase.get<Real>("c");
+        const Real & omega = cgWaveHoltz.dbase.get<real>("omega");
+        const Real k = omega/c; 
+        const Real theta = .5*(twoPi/4.); // Pi/4 
+
+        const Real kxHat = cos(theta);
+        const Real kyHat = sin(theta);
+
+        const Real kx = kxHat*k;
+        const Real ky = kyHat*k;
+        const Real kz = kx;      
+        
+        const Real scale=1.; // should not matter
+        printF("solveEigen: Set initial condition sin(kx*x)*sin(ky*y) [*sin(kz*z)] kx=%9.2e ky=%9.2e [kz=%8.2e]\n",kx,ky,kz);
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            MappedGrid & mg = cg[grid];
+            OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+            OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+            mg .update(MappedGrid::THEvertex);
+            OV_GET_SERIAL_ARRAY( Real, mg.vertex(),xLocal);        
+
+            vLocal=0.;
+            getIndex(mg.gridIndexRange(),I1,I2,I3);
+
+            if( numberOfDimensions==2 )
+                vLocal(I1,I2,I3) = scale*sin( kx*xLocal(I1,I2,I3,0) ) * sin( ky*xLocal(I1,I2,I3,1) );
+            else
+                vLocal(I1,I2,I3) = scale*sin( kx*xLocal(I1,I2,I3,0) ) * sin( ky*xLocal(I1,I2,I3,1) )* sin( kz*xLocal(I1,I2,I3,2) );
+
+      // FOR_3D(i1,i2,i3,I1,I2,I3)
+      // {
+      //   if( maskLocal(i1,i2,i3)!=0 )
+      //   {
+      //     if( numberOfDimensions==2 )
+      //       vLocal(i1,i2,i3) = scale*sin( kx*xLocal(i1,i2,i3,0) ) * sin( ky*xLocal(i1,i2,i3,1) );
+      //     else
+      //       vLocal(i1,i2,i3) = scale*sin( kx*xLocal(i1,i2,i3,0) ) * sin( ky*xLocal(i1,i2,i3,1) )* sin( kz*xLocal(i1,i2,i3,2) );
+
+      //   }
+
+      // }
+        }
+
+
+    }
+
+    else if( eigenSolverInitialCondition == CgWave::sumOfEigenvectorsInitialCondition )
+    {
+
+        realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+        CompositeGrid & cg = *v.getCompositeGrid();
+
+    // --- get eigenvectors
+        cgWave.initializeDeflation();
+
+    // Here are the eigenvectors and eigenvalues:
+        realCompositeGridFunction & uev = cgWave.dbase.get<realCompositeGridFunction>("uev");
+        RealArray & eig                 = cgWave.dbase.get<RealArray>("eig");
+        const Real & omega = cgWaveHoltz.dbase.get<real>("omega");
+
+        const int numKnownEigs = eig.getLength(1); 
+        const int & numEigsToCompute = cgWave.dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute
+        const int numInSum = min(2*numEigsToCompute+1,numKnownEigs);
+        printF("Set initial condition to be the sum of %d known eigenvectors. There are %d known eigenvectors\n",numInSum,numKnownEigs);
+
+        printF("*** TO DO : find eigenvectors closest to target*****\n");
+        for( int ie=0; ie<numInSum; ie++ )
+        {
+            const Real lambda=eig(0,ie); 
+            printF("Adding eigenvector=%d: eig=%12.4e to the sum...\n",ie,lambda);
+
+            Index I1,I2,I3;
+            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+            {
+                MappedGrid & mg = cg[grid];
+                OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+                OV_GET_SERIAL_ARRAY(real,uev[grid],uevLocal);
+
+                getIndex(mg.dimension(),I1,I2,I3);
+                Real scale = 1./(lambda*lambda);  // does this matter ? 
+                if( ie==0 )
+                    vLocal(I1,I2,I3) = uevLocal(I1,I2,I3,ie)*scale;
+                else
+                    vLocal(I1,I2,I3) += uevLocal(I1,I2,I3,ie)*scale;
+            }
+        }
+    // replot=true;      
+
+    // printF("solveEigen:TESTING: call cgWave.updateEigenmodes ...\n");
+    // cgWave.updateEigenmodes();
+    // OV_ABORT("stop here for now");
+    }   
+
+    if(  smoothInitialCondition &&  eigenSolverInitialCondition != CgWave::defaultEigenSolverInitialCondition )
+    {
+        smoothEigenSolverInitialCondition();
+    }
+    return 0;
+}
+
+// ============================================================================================
+/// \brief Smooth the initial condition for eigen solves
+// ============================================================================================
+int CgWaveHoltz::smoothEigenSolverInitialCondition()
+{
+    CgWaveHoltz & cgWaveHoltz = *this;
+    CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
+    CgWave::EigenSolverInitialConditionEnum & eigenSolverInitialCondition 
+                                                                                      = cgWave.dbase.get<CgWave::EigenSolverInitialConditionEnum>("eigenSolverInitialCondition");
+    const int numberOfDimensions = cg.numberOfDimensions();
+
+  // ---- SMOOTH THE INITIAL CONDITIONS ---
+    realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+    CompositeGrid & cg = *v.getCompositeGrid();
+    Index I1,I2,I3;      
+
+    const int & initialVectorSmooths = cgWave.dbase.get<int>("initialVectorSmooths");
+    const int numSmooths= initialVectorSmooths; 
+
+    printF("smoothEigenSolverInitialCondition: SMOOTH (EXISTING) INITIAL CONDITIONS with %d smooths\n",initialVectorSmooths);
+
+    Real omega = 4./5.; // optimal value for smoothing in 2D is omega=4/5 => smoothing rate mu = 3/5
+    if( numberOfDimensions==3 )
+        omega= 6./7.;   // Owl book p 73 -- optimal smoothing parameter in 3D,  mu=5/7 smoothing fractor
+
+  //   (.6)^10 = .00604...
+  //   (.6)^20 = 3.6 e -5 
+    for( int itsm=0; itsm<numSmooths; itsm++ )
+    {
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            MappedGrid & mg = cg[grid];
+            getIndex(mg.gridIndexRange(),I1,I2,I3);
+            OV_GET_SERIAL_ARRAY( Real,v[grid],vLocal);
+
+            if( numberOfDimensions==2 )
+            {
+                vLocal(I1,I2,I3) = (1.-omega)*(vLocal(I1,I2,I3) ) +
+                                                      (.25*omega)*(vLocal(I1+1,I2  ,I3) + 
+                                                                                vLocal(I1-1,I2  ,I3) + 
+                                                                                vLocal(I1  ,I2+1,I3) +
+                                                                                vLocal(I1  ,I2-1,I3) );
+            }
+            else
+            {
+                vLocal(I1,I2,I3) = (1.-omega)*(vLocal(I1,I2,I3) ) +
+                                                        (omega/6.)*(vLocal(I1+1,I2  ,I3) + 
+                                                                                vLocal(I1-1,I2  ,I3) + 
+                                                                                vLocal(I1  ,I2+1,I3) +
+                                                                                vLocal(I1  ,I2-1,I3) +
+                                                                                vLocal(I1  ,I2,I3+1) +
+                                                                                vLocal(I1  ,I2,I3+1)                                             
+                                                                                );            
+            }
+        }
+        cgWave.applyEigenFunctionBoundaryConditions( v );
+    }
+
+
+    return 0;
+}
+
+
+
+// // ============================================================================================
+// /// \brief Plot the WaveHoltz filter function and any known eigenvalues 
+// // ============================================================================================
+// int CgWaveHoltz::plotFilter( RealArray & eigenValues, GL_GraphicsInterface & ps, PlotStuffParameters & psp )
+// {
+
+//   CgWaveHoltz & cgWaveHoltz = *this;
+//   CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
+
+//   // Plot WaveHoltz beta function 
+
+
+//   const int & computeEigenmodes     = cgWave.dbase.get<int>("computeEigenmodes");
+//   RealArray & frequencyArray        = cgWave.dbase.get<RealArray>("frequencyArray");
+//   RealArray & frequencyArrayAdjusted= cgWave.dbase.get<RealArray>("frequencyArrayAdjusted");
+//   RealArray & periodArray           = cgWave.dbase.get<RealArray>("periodArray"); 
+//   RealArray & periodArrayAdjusted   = cgWave.dbase.get<RealArray>("periodArrayAdjusted"); 
+//   IntegerArray & numPeriodsArray    = cgWave.dbase.get<IntegerArray>("numPeriodsArray");
+//   RealArray & frequencyArraySave    = cgWave.dbase.get<RealArray>("frequencyArraySave");
+//   RealArray & periodArraySave       = cgWave.dbase.get<RealArray>("periodArraySave");   
+
+
+//   // const RealArray & frequencyArray         = cgWave.dbase.get<RealArray>("frequencyArray");
+//   // const RealArray & frequencyArrayAdjusted = cgWave.dbase.get<RealArray>("frequencyArrayAdjusted");
+//   const Real & dt                          = cgWave.dbase.get<real>("dtUsed");
+//   // RealArray & eigenValues            = dbase.get<RealArray>("eigenValues");  // best estimate of eigenvalues
+//   // const int & numEigenVectors        = dbase.get<int>("numEigenVectors");
+
+
+
+//   const int numEigenVectors = eigenValues.getLength(0); //  THIS IS NUM TO DEFLATE  ********* FIX ME *******
+
+
+//   const Real dtSaved = cgWave.dbase.get<real>("dt"); 
+//   if( !computeEigenmodes )
+//   {
+//     // -- We need to use the adjusted frequencies in getWaveHoltzIterationEigenvalue ---
+//     frequencyArray = frequencyArrayAdjusted;
+//     periodArray    = periodArrayAdjusted; 
+
+//     cgWave.dbase.get<real>("dt") = cgWave.dbase.get<real>("dtUsed");
+//   }
+//   printF("\n ^^^^^^ plotFilter: numEigenVectors=%d, dt=%9.3e, frequencyArray(0)=%10.3e frequencyArrayAdjusted(0)=%10.3e\n",
+//     numEigenVectors, dt, frequencyArray(0),frequencyArrayAdjusted(0) );
+
+    
+//   Real maxEig = max(eigenValues);
+
+//   // --- plot WaveHoltz filter mu ----
+//   int numLambda=201;
+//   Real lamMin=0., lamMax= 2*maxEig+20; // 60;
+//   RealArray lambda(numLambda);
+//   RealArray mu(numLambda);
+//   for( int i=0; i<numLambda; i++ )
+//   {
+//     lambda(i) = lamMin + (lamMax-lamMin)*(i-1.)/(numLambda-1.);
+//   }
+
+//   // -- Evaluate the beta function at all points in lambda(:) --
+//   bool useAdjusted= true; // !computeEigenmodes; 
+    
+//   cgWave.getWaveHoltzIterationEigenvalue( lambda, mu, useAdjusted );
+
+
+//   ps.erase();
+
+//   RealArray points, value; 
+
+//   // --- Mark true eigenvalues if known ----
+//   // eigTrue(0:1,0:)
+//   const bool trueEigenPairsKnown = cgWave.dbase.has_key("uev");
+//   if( trueEigenPairsKnown )
+//   {
+//     RealArray & eigTrue                = cgWave.dbase.get<RealArray>("eig");
+//     const int numberOfEigenvectorsTrue = eigTrue.getLength(1);  
+        
+
+//     if( numberOfEigenvectorsTrue>0 )
+//     {
+//       // for( int ie=0; ie<numberOfEigenvectorsTrue; ie++ )
+//       //   printF("plotfilter: ie=%3d eigTrue=%12.5e\n",ie,eigTrue(0,ie));
+
+//       int numToPlot=0;
+//       for( int ie=0; ie<numberOfEigenvectorsTrue; ie++ )
+//       {
+//         if( eigTrue(0,ie)>lamMax )
+//           break;
+//         numToPlot=ie+1;
+//       }
+//       assert( numToPlot > 0 );
+
+//       RealArray lam(numToPlot);
+//       for( int ie=0; ie<numToPlot; ie++ )
+//       {
+//         lam(ie) = eigTrue(0,ie);
+//       }
+//       RealArray betaTrue(numToPlot);
+//       cgWave.getWaveHoltzIterationEigenvalue( lam, betaTrue, useAdjusted );  
+
+//       points.redim(numToPlot,2);
+//       value.redim(numToPlot); 
+//       for( int ie=0; ie<numToPlot; ie++ )
+//       {
+//         points(ie,0) = eigTrue(0,ie);
+//         points(ie,1) = betaTrue(ie);
+//         // printF("ie=%3d: true: eig=%12.4e adjusted=%12.4e beta=%12.4e\n",ie,eigTrue(0,ie),lam(ie),betaTrue(ie));
+//         value(ie)    = 0.2;                // colour point i by value(i)
+//       } 
+//       // --- plot locations of true eigenavleus 
+//       printF("plot numPlot=%d true values\n",numToPlot);
+//       psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);        
+//       psp.set(GI_POINT_SIZE,(real) 4.);  // size in pixels
+//       psp.set(GI_POINT_COLOUR,"BLACK");
+
+//       ps.plotPoints(points,psp); // colour point i by value(i)  
+
+//       // ps.plotPoints(points,value,psp); // colour point i by value(i)   
+//     } 
+//   }       
+
+//   // ---- mark eigenvalues found as points ----
+//   if( eigenValues.getLength(0)>0 )
+//   {
+//     RealArray beta(numEigenVectors);
+//     points.redim(numEigenVectors,2);
+//     value.redim(numEigenVectors);
+
+//     cgWave.getWaveHoltzIterationEigenvalue( eigenValues, beta, useAdjusted );
+
+//     value=.6; 
+//     for( int ie=0; ie<numEigenVectors; ie++ )
+//     {
+//       points(ie,0) = eigenValues(ie); // plot versus original
+//       points(ie,1) = beta(ie);
+
+//       // printF("ie=%3d eig=%12.4e beta=%12.4e omega=%12.4e\n",ie,eigenValues(ie),beta(ie),frequencyArrayAdjusted(0));
+//       // value(ie)    = 0.4 + .6* (ie+1.)/(numEigenVectors+1.); // point colour in [0,1]
+
+//       value(ie)    =  .2 + .8 * fabs(beta(ie)+.5)/(1.5);  // defines the colout of the point in [0,1]
+//     }
+
+//     psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);        
+//     psp.set(GI_POINT_SIZE,(real) 8.);  // size in pixels
+
+//     // ps.plotPoints(points,value,psp); // colour point i by value(i)
+
+//     // psp.set(GI_POINT_COLOUR,"LIGHTBLUE");
+//     // psp.set(GI_POINT_COLOUR,"BLUE");
+//     psp.set(GI_POINT_COLOUR,"MEDIUMAQUAMARINE");
+//     ps.plotPoints(points,psp); 
+
+//     aString tName="omega";
+//     aString title=sPrintF("WaveHoltz Filter, omega=%6.2f",frequencyArray(0));
+//     aString xName[1];
+//     xName[0]="beta";
+
+//     psp.set(GI_PLOT_GRID_POINTS_ON_CURVES,false);
+//     psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);  
+        
+//     // PlotIt::plot(ps,t,x,title,tName,xName,psp);
+//     #ifndef USE_PPP
+//       PlotIt::plot(ps,lambda,mu,title,tName,xName,psp);
+//     #else
+//       printF("FINISH ME FOR PARALLEL: PlotIt::plot(ps,lambda,mu,title,tName,xName,psp)\n");
+//     #endif
+
+//   }
+
+//   psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);        
+
+//   if( !computeEigenmodes )
+//   {
+//     // -- reset ---
+//     frequencyArray = frequencyArraySave;
+//     periodArray    = periodArraySave;
+//     cgWave.dbase.get<real>("dt") = dtSaved; 
+
+//   }
+
+//   return 0;
+// }
 
 // ============================================================================================
 /// \brief Solve for eigenpairs using WaveHoltz
@@ -605,6 +1028,9 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
     int & initialVectorSmooths               = cgWave.dbase.get<int>("initialVectorSmooths");
     const int & useAccurateInnerProduct      = cgWave.dbase.get<int>("useAccurateInnerProduct");
 
+    CgWave::EigenSolverInitialConditionEnum & eigenSolverInitialCondition 
+                                                                                      = cgWave.dbase.get<CgWave::EigenSolverInitialConditionEnum>("eigenSolverInitialCondition");
+
     cgWaveHoltz.dbase.get<int>("orderOfAccuracy")=orderOfAccuracy; // set value in CgWaveHoltz
 
     const int & numberOfFrequencies          = cgWaveHoltz.dbase.get<int>("numberOfFrequencies");
@@ -620,13 +1046,14 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
 
     aString nameOfShowFile = "eigenWave.show";
     bool showFileIsOpen=false;
+    bool smoothInitialCondition=false;
 
     bool plotOption=true;  // by default we plot interactively
     GL_GraphicsInterface & ps = (GL_GraphicsInterface&)(*Overture::getGraphicsInterface("EigenWave",plotOption,argc,argv));
 
     PlotStuffParameters psp;  
 
-  
+    const int numberOfDimensions = cg.numberOfDimensions();
 
   // Build a dialog menu for changing parameters
     GUIState gui;
@@ -635,37 +1062,22 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
     dialog.setWindowTitle("EigenWave - EigenMode Solver");
     dialog.setExitCommand("exit", "exit");
 
-  // dialog.setOptionMenuColumns(1);
-
-  // aString accuracyLabel[] = {"second order", "fourth order", "" };
-  // dialog.addOptionMenu("accuracy:", accuracyLabel, accuracyLabel, (orderOfAccuracy==2 ? 0 : 1) );
-
-  // aString initialConditionLabel[] = {"smooth pulse", "pulse", "" };
-  // dialog.addOptionMenu("Initial Condition:",initialConditionLabel,initialConditionLabel,(int)option );
-
-  // enum TypeOfApproximation
-  // {
-  //   nonConservative=0,
-  //   conservative=1
-  // } typeOfApproximation=nonConservative;
-        
-  // aString approximationLabel[] = {"nonconservative", "conservative", "" };
-  // dialog.addOptionMenu("Approximation:",approximationLabel,approximationLabel,(int)typeOfApproximation );
-
     aString pbLabels[] = {
                                                 "compute",
-                                                "zero initial condition",
-                                                "random initial condition",
-                                                "eigenvector initial condition",
+                        // "zero initial condition",
+                        // "random initial condition",
+                        // "sine initial condition",
+                        // "eigenvector initial condition",
+                        // "smooth initial condition",
                                                 "change parameters",
-                                                "contour",
+                                                "plot initial condition",
                                                 "grid",
                                                 "plot residuals",
                                                 "plot eigenVectors",
                                                 "run cgWave and plot",
                                                 "save show file",
                                                 "plot errors",
-                                                "plot beta",
+                                                "plot filter",
                         // "plot sequences",
                                                 "erase",
                                                 "exit",
@@ -673,17 +1085,13 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
     int numRows=9;
     dialog.setPushButtons( pbLabels, pbLabels, numRows ); 
 
-
-
-    aString eigenSolverLabel[] = { "default", "KrylovSchur", "Arnoldi", "Arpack", "fixedPoint", "" };
+    dialog.setOptionMenuColumns(1);
+    aString eigenSolverLabel[] = { "default", "KrylovSchur", "Arnoldi", "Arpack", "fixedPoint", "power", "inverseIteration", "JacobiDavidson", "" };
     dialog.addOptionMenu("EigenSolver:", eigenSolverLabel, eigenSolverLabel, (int)eigenSolver );
 
-  // aString tbCommands[] = {"save show file",
-  //                          ""};
-  // int tbState[10];
-  // tbState[0] = saveShowFile==true;
-  // int numColumns=1;
-  // dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
+    aString eigenSolverInitialConditionLabel[] = { "defaultIC", "randomIC", "sineIC", "eigenvectorIC", "" };
+    dialog.addOptionMenu("Initial Condition:", eigenSolverInitialConditionLabel, eigenSolverInitialConditionLabel, (int)eigenSolverInitialCondition );
+
 
   // ----- Text strings ------
     const int numberOfTextStrings=20;
@@ -725,11 +1133,14 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
                                                     "run cgWave with debugging",
                                                     "deflate",
                                                     "set initial vectors",
+                                                    "smooth initial condition",
                                                         ""};
     int tbState[10];
+    
     tbState[0] = cgWaveDebugMode;
     tbState[1] = deflateWaveHoltz;
     tbState[2] = initialVectorsForEigenSolver;
+    tbState[3] = smoothInitialCondition;
 
     int numColumns=1;
     dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -763,6 +1174,7 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
 
     bool helmholtzFromDirectSolverWasComputed=false;
     Real cpuSolveHelmholtz=-1.;
+    bool initialConditionsHaveBeenAssigned=false;
 
     Ogshow show;  // show file for saving solutions
 
@@ -774,11 +1186,15 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
         {
             break;
         }
-        else if( answer=="default"     ||
-                          answer=="KrylovSchur" ||
-                          answer=="Arnoldi"     ||
-                          answer=="Arpack"      ||
-                          answer=="fixedPoint" )
+        else if( answer=="default"          ||
+                          answer=="KrylovSchur"      ||
+                          answer=="Arnoldi"          ||
+                          answer=="Arpack"           ||
+                          answer=="fixedPoint"       ||
+                          answer=="power"            ||
+                          answer=="inverseIteration" ||
+                          answer=="JacobiDavidson"  
+                          )
         {
             if( answer=="default" )
                 eigenSolver=CgWave::defaultEigenSolver;
@@ -790,13 +1206,20 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
                 eigenSolver=CgWave::ArpackEigenSolver;      
             else if( answer=="fixedPoint" )
                 eigenSolver=CgWave::fixedPointEigenSolver;  
+            else if( answer=="power" )
+                eigenSolver=CgWave::powerEigenSolver;  
+            else if( answer=="inverseIteration" )
+                eigenSolver=CgWave::inverseIterationEigenSolver;  
+            else if( answer=="JacobiDavidson" )
+                eigenSolver=CgWave::JacobiDavidsonEigenSolver;  
             else
             {
-                printF("answer=[%s]\n",(const char*)answer);
+                printF("Unknown eigenSolver =[%s]\n",(const char*)answer);
                 OV_ABORT("this should not happen");
             }            
             printF("Setting eigenSolver=[%s]\n",(const char*)answer);
         }
+
         else if( answer=="change parameters" )
         {
             cgWaveHoltz.interactiveUpdate();
@@ -843,7 +1266,8 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
         }
         else if( dialog.getTextValue(answer,"max iterations","%i",maximumNumberOfIterations) )
         {
-            printF("Setting maximumNumberOfIterations=%i\n",maximumNumberOfIterations);
+            printF("Setting maximumNumberOfIterations=%i. **NOTE*** These are OUTER iterations for Arnoldi algorithms.\n",maximumNumberOfIterations);
+
         }
         else if( dialog.getTextValue(answer,"number to deflate","%i",numToDeflate) )
         {
@@ -886,7 +1310,12 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
         else if( dialog.getToggleValue(answer,"set initial vectors",initialVectorsForEigenSolver) )
         {
             printF("Setting initialVectorsForEigenSolver=%d\n",initialVectorsForEigenSolver);
-        }             
+        }  
+        else if( dialog.getToggleValue(answer,"smooth initial condition",smoothInitialCondition) )
+        {
+            printF("Setting smoothInitialCondition=%d. Smoothing will happen when the initial conditions are next set.\n",
+                (int)smoothInitialCondition);
+        }                 
 
         else if( answer=="compute" )
         {
@@ -899,6 +1328,14 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
         // -- This next call will read in any known eigenmodes ---
                 cgWave.initializeDeflation();
             }
+
+            printF("\n\n )))))))))))  initialConditionsHaveBeenAssigned=%d ((((((((((\n\n",(int)initialConditionsHaveBeenAssigned);
+            if( !initialConditionsHaveBeenAssigned )
+            {
+        // --- initial conditions may have been assigned yet, e.g. if we re-compute ---
+                assignEigenSolverInitialCondition( smoothInitialCondition );
+            }
+            initialConditionsHaveBeenAssigned=false;  // this means we need to re-assign the IC's next time,  since the grid function v is changed
 
             const Real cpu0=getCPU();
             Real cpuSolve; 
@@ -966,20 +1403,21 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
 
             cgWaveHoltz.dbase.get<Real>("cpuSolveEigenWave")=cpuSolve;
             
-      // ------------------------------------
-      // ----- output a table of results ----
-      // ------------------------------------
 
-            outputEigenTable( );
+            const int & numEigenVectors = dbase.get<int>("numEigenVectors"); // from CgWave::updateEigenmodes()
 
-
-
-            replot=true;
-            reComputeErrors=true;
-
-            if( true )
+            if( numEigenVectors>0 )
             {
-        // ***** FIX ME ****
+        // ------------------------------------
+        // ----- output a table of results ----
+        // ------------------------------------
+
+                outputEigenTable( );
+
+
+
+                replot=true;
+                reComputeErrors=true;
 
         // save results to a matlab file
                 const aString & matlabFileName = cgWaveHoltz.dbase.get<aString>("matlabFileName");  
@@ -995,6 +1433,7 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
                     localName = matlabFileName + "Krylov"; 
                 }
                 cgWaveHoltz.outputMatlabFile( localName );
+
             }
 
         }
@@ -1009,80 +1448,229 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
         }
         else if( answer == "zero initial condition" )
         {
-            realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-            v=0.;
+      // Keep for backward compat
+      //   realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+      //   v=0.;
 
-            cgWave.resetTimings(); // reset CPU timings to zero 
+      //   cgWave.resetTimings(); // reset CPU timings to zero 
         }
-        else if( answer == "random initial condition" )
+        else if( answer=="defaultIC"      ||
+                          answer=="randomIC"       || answer == "random initial condition"      ||
+                          answer=="sineIC"         || answer == "sine initial condition"        ||
+                          answer== "eigenvectorIC" || answer == "eigenvector initial condition"
+                          )
         {
-            realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-            CompositeGrid & cg = *v.getCompositeGrid();
-            Index I1,I2,I3;
-
-            std::srand(12789.);
-
-            const Real scale=1.; // 1.e-5; // TEST
-            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+            if( answer=="defaultIC" )
+                eigenSolverInitialCondition = CgWave::defaultEigenSolverInitialCondition;
+            else if( answer=="randomIC"  ||  answer == "random initial condition" )
+                eigenSolverInitialCondition = CgWave::randomEigenSolverInitialCondition;
+            else if( answer=="sineIC"  || answer == "sine initial condition" )
+                eigenSolverInitialCondition = CgWave::sineEigenSolverInitialCondition;      
+            else if( answer== "eigenvectorIC" || answer == "eigenvector initial condition" )
+                eigenSolverInitialCondition = CgWave::sumOfEigenvectorsInitialCondition;
+            else
             {
-                MappedGrid & mg = cg[grid];
-                OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-                OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-
-                vLocal=0.;
-                getIndex(mg.gridIndexRange(),I1,I2,I3);
-                for( int freq=0; freq<numberOfFrequencies; freq++ )
-                {
-                    FOR_3D(i1,i2,i3,I1,I2,I3)
-                    {
-            // do this for now
-            // vLocal(i1,i2,i3) = sin(i1)*cos(i2);
-                        if( maskLocal(i1,i2,i3)!=0 )
-                        {
-                            vLocal(i1,i2,i3,freq) = (-1. + std::rand()*(2./RAND_MAX))*scale; // [-1,1]
-                        }
-
-                    }
-                }
+                OV_ABORT("ERROR - this should not happen");
             }
+
+            assignEigenSolverInitialCondition(smoothInitialCondition);
+
+            initialConditionsHaveBeenAssigned=true;
             replot=true;
 
-            cgWave.resetTimings(); // reset CPU timings to zero 
-        }  
-        else if( answer == "eigenvector initial condition" )
-        {
-            realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-            CompositeGrid & cg = *v.getCompositeGrid();
+            cgWave.resetTimings(); // reset CPU timings to zero       
 
-      // --- get eigenvectors
-            cgWave.initializeDeflation();
+        }    
+    // else if( answer=="randomIC"  ||  answer == "random initial condition" )
+    // {
+    //   printF("solveEigen: Set RANDOM initial conditions for SLEPc\n");
+    //   eigenSolverInitialCondition = CgWave::randomEigenSolverInitialCondition;
 
-      // Here are the eigenvectors and eigenvalues:
-            realCompositeGridFunction & uev = cgWave.dbase.get<realCompositeGridFunction>("uev");
-            RealArray & eig                 = cgWave.dbase.get<RealArray>("eig");
+    //   realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+    //   CompositeGrid & cg = *v.getCompositeGrid();
+    //   Index I1,I2,I3;
 
-            int ie=0;
-            printF("Choosing eigenvector=%d: eig=%12.4e\n",ie,eig(0,ie));
+    //   std::srand(12789.);
 
-            Index I1,I2,I3;
-            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-            {
-                MappedGrid & mg = cg[grid];
-                OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
-                OV_GET_SERIAL_ARRAY(real,uev[grid],uevLocal);
+    //   const Real scale=1.; // 1.e-5; // TEST
+    //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    //   {
+    //     MappedGrid & mg = cg[grid];
+    //     OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+    //     OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
 
-                getIndex(mg.dimension(),I1,I2,I3);
-                for( int freq=0; freq<numberOfFrequencies; freq++ )
-                {
-                    vLocal(I1,I2,I3,freq) = uevLocal(I1,I2,I3,ie);
-                }
-            }
-            replot=true;      
+    //     vLocal=0.;
+    //     getIndex(mg.gridIndexRange(),I1,I2,I3);
+    //     for( int freq=0; freq<numberOfFrequencies; freq++ )
+    //     {
+    //       FOR_3D(i1,i2,i3,I1,I2,I3)
+    //       {
+    //         // do this for now
+    //         // vLocal(i1,i2,i3) = sin(i1)*cos(i2);
+    //         if( maskLocal(i1,i2,i3)!=0 )
+    //         {
+    //           vLocal(i1,i2,i3,freq) = (-1. + std::rand()*(2./RAND_MAX))*scale; // [-1,1]
+    //         }
 
-            printF("solveEigen:TESTING: call cgWave.updateEigenmodes ...\n");
-            cgWave.updateEigenmodes();
-      // OV_ABORT("stop here for now");
-        }      
+    //       }
+    //     }
+    //   }
+    //   replot=true;
+
+    //   cgWave.resetTimings(); // reset CPU timings to zero 
+    // }  
+
+    // else if( answer=="sineIC"  || answer == "sine initial condition" )
+    // {
+    //   eigenSolverInitialCondition = CgWave::sineEigenSolverInitialCondition;
+            
+    //   realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+    //   CompositeGrid & cg = *v.getCompositeGrid();
+    //   Index I1,I2,I3;
+
+    //   // ---- Base frequency of the sine solution on the target frequency ----
+    //   const Real & c  = cgWave.dbase.get<Real>("c");
+    //   const Real k = omega/c; 
+    //   const Real theta = .5*(twoPi/4.); // Pi/4 
+
+    //   const Real kxHat = cos(theta);
+    //   const Real kyHat = sin(theta);
+
+    //   const Real kx = kxHat*k;
+    //   const Real ky = kyHat*k;
+    //   const Real kz = kx;      
+            
+    //   const Real scale=1.; // should not matter
+    //   printF("solveEigen: Set initial condition sin(kx*x)*sin(ky*y) [*sin(kz*z)] kx=%9.2e ky=%9.2e [kz=%8.2e]\n",kx,ky,kz);
+    //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    //   {
+    //     MappedGrid & mg = cg[grid];
+    //     OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+    //     OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+    //     mg .update(MappedGrid::THEvertex);
+    //     OV_GET_SERIAL_ARRAY( Real, mg.vertex(),xLocal);        
+
+    //     vLocal=0.;
+    //     getIndex(mg.gridIndexRange(),I1,I2,I3);
+    //     FOR_3D(i1,i2,i3,I1,I2,I3)
+    //     {
+    //       if( maskLocal(i1,i2,i3)!=0 )
+    //       {
+    //         if( numberOfDimensions==2 )
+    //           vLocal(I1,I2,I3) = scale*sin( kx*xLocal(I1,I2,I3,0) ) * sin( ky*xLocal(I1,I2,I3,1) );
+    //         else
+    //           vLocal(I1,I2,I3) = scale*sin( kx*xLocal(I1,I2,I3,0) ) * sin( ky*xLocal(I1,I2,I3,1) )* sin( kz*xLocal(I1,I2,I3,2) );
+
+    //       }
+
+    //     }
+    //   }
+
+
+    // }
+
+    // else if( answer=="smooth initial condition" )
+    // {
+    //   // ---- SMOOTH THE INTIAL CONDITIONS ---
+    //   realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+    //   CompositeGrid & cg = *v.getCompositeGrid();
+    //   Index I1,I2,I3;      
+
+    //   const int & initialVectorSmooths = cgWave.dbase.get<int>("initialVectorSmooths");
+    //   const int numSmooths= initialVectorSmooths; 
+
+    //   printF("solveEigen: SMOOTH (EXISTING) INITIAL CONDITIONS with %d smooths\n",initialVectorSmooths);
+
+    //   Real omega = 4./5.; // optimal value for smoothing in 2D is omega=4/5 => smoothing rate mu = 3/5
+    //   if( numberOfDimensions==3 )
+    //     omega= 6./7.;   // Owl book p 73 -- optimal smoothing parameter in 3D,  mu=5/7 smoothing fractor
+
+    //   //   (.6)^10 = .00604...
+    //   //   (.6)^20 = 3.6 e -5 
+    //   for( int itsm=0; itsm<numSmooths; itsm++ )
+    //   {
+    //     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    //     {
+    //       MappedGrid & mg = cg[grid];
+    //       getIndex(mg.gridIndexRange(),I1,I2,I3);
+    //       OV_GET_SERIAL_ARRAY( Real,v[grid],vLocal);
+
+    //       if( numberOfDimensions==2 )
+    //       {
+    //         vLocal(I1,I2,I3) = (1.-omega)*(vLocal(I1,I2,I3) ) +
+    //                            (.25*omega)*(vLocal(I1+1,I2  ,I3) + 
+    //                                         vLocal(I1-1,I2  ,I3) + 
+    //                                         vLocal(I1  ,I2+1,I3) +
+    //                                         vLocal(I1  ,I2-1,I3) );
+    //       }
+    //       else
+    //       {
+    //         vLocal(I1,I2,I3) = (1.-omega)*(vLocal(I1,I2,I3) ) +
+    //                             (omega/6.)*(vLocal(I1+1,I2  ,I3) + 
+    //                                         vLocal(I1-1,I2  ,I3) + 
+    //                                         vLocal(I1  ,I2+1,I3) +
+    //                                         vLocal(I1  ,I2-1,I3) +
+    //                                         vLocal(I1  ,I2,I3+1) +
+    //                                         vLocal(I1  ,I2,I3+1)                                             
+    //                                         );            
+    //       }
+    //     }
+    //     cgWave.applyEigenFunctionBoundaryConditions( v );
+    //   }
+
+
+    //   replot=true;
+
+    //   cgWave.resetTimings(); // reset CPU timings to zero 
+    // }  
+
+    // else if( answer== "eigenvectorIC" || answer == "eigenvector initial condition" )
+    // {
+    //   eigenSolverInitialCondition = CgWave::sumOfEigenvectorsInitialCondition;
+
+    //   realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+    //   CompositeGrid & cg = *v.getCompositeGrid();
+
+    //   // --- get eigenvectors
+    //   cgWave.initializeDeflation();
+
+    //   // Here are the eigenvectors and eigenvalues:
+    //   realCompositeGridFunction & uev = cgWave.dbase.get<realCompositeGridFunction>("uev");
+    //   RealArray & eig                 = cgWave.dbase.get<RealArray>("eig");
+
+    //   const int numKnownEigs = eig.getLength(1); 
+    //   const int & numEigsToCompute = cgWave.dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute
+    //   const int numInSum = min(2*numEigsToCompute+1,numKnownEigs);
+    //   printF("Set initial condition to be the sum of %d known eigenvectors. There are %d known eigenvectors\n",numInSum,numKnownEigs);
+
+    //   printF("*** TO DO : find eigenvectors closest to target*****\n");
+    //   for( int ie=0; ie<numInSum; ie++ )
+    //   {
+    //     const Real lambda=eig(0,ie); 
+    //     printF("Adding eigenvector=%d: eig=%12.4e to the sum...\n",ie,lambda);
+
+    //     Index I1,I2,I3;
+    //     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    //     {
+    //       MappedGrid & mg = cg[grid];
+    //       OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+    //       OV_GET_SERIAL_ARRAY(real,uev[grid],uevLocal);
+
+    //       getIndex(mg.dimension(),I1,I2,I3);
+    //       Real scale = 1./(lambda*lambda);  // does this matter ? 
+    //       if( ie==0 )
+    //         vLocal(I1,I2,I3) = uevLocal(I1,I2,I3,ie)*scale;
+    //       else
+    //         vLocal(I1,I2,I3) += uevLocal(I1,I2,I3,ie)*scale;
+    //     }
+    //   }
+    //   replot=true;      
+
+    //   // printF("solveEigen:TESTING: call cgWave.updateEigenmodes ...\n");
+    //   // cgWave.updateEigenmodes();
+    //   // OV_ABORT("stop here for now");
+    // }    
+
         else if( answer=="save show file" || answer=="save to show" )
         {
             printF("Save the eigenvectors to the show file [%s].\n",(const char*)nameOfShowFile);
@@ -1104,40 +1692,53 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
 
             const bool trueEigenPairsKnown = cgWave.dbase.has_key("uev");
             const IntegerArray & eigIndex = trueEigenPairsKnown? dbase.get<IntegerArray>("eigIndex") : numPeriodsArray;
-            if( true )
+
+
+            show.startFrame(); 
+
+      // -- save eigenvalues --
+            HDF_DataBase *dbp=NULL;
+
+            dbp = show.getFrame();
+            assert( dbp!=NULL );
+
+      // save parameters that go in this frame
+            HDF_DataBase & db = *dbp;
+      // We save the eigs of -Delta 
+            RealArray eig(2,numEigenVectors); // holds real and imag parts
+
+            for( int ie=0; ie<numEigenVectors; ie++ ) 
             {
-        // -- save eigenvectors as separate solutions --
+                eig(0,ie) = SQR(eigenValues(ie));   // NOTE SQUARE 
+                eig(1,ie) = 0.; // imaginary part
+            }
 
-                realCompositeGridFunction q(cg,all,all,all);
-                q.setName("phi",0);
-                Index I1,I2,I3;
-                for( int ie=0; ie<numEigenVectors; ie++ )
+            db.put(eig,"eig");   
+
+      // -- save eigenvectors as separate solutions --
+
+            realCompositeGridFunction q(cg,all,all,all);
+            q.setName("phi",0);
+            Index I1,I2,I3;
+            for( int ie=0; ie<numEigenVectors; ie++ )
+            {
+                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                 {
-                    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-                    {
-                        OV_GET_SERIAL_ARRAY(real,q[grid],qLocal);
-                        OV_GET_SERIAL_ARRAY(Real,eigenVector[grid],eigenVectorLocal);
-                        getIndex(cg[grid].dimension(),I1,I2,I3);
-                        qLocal(I1,I2,I3)=eigenVectorLocal(I1,I2,I3,ie);
-                    }
-
-                    show.startFrame();                       // start a new frame
-                    if( trueEigenPairsKnown )
-                        show.saveComment(0,sPrintF("EigenWave: FD%i, eig=%d, lambda=%.5g",orderOfAccuracy,eigIndex(ie),eigenValues(ie)));   
-                    else
-                        show.saveComment(0,sPrintF("EigenWave: FD%i, lambda[%d]=%.5g",orderOfAccuracy,ie,eigenValues(ie)));   
-                    show.saveSolution( q );              // save to show file
-                    show.endFrame();
-
+                    OV_GET_SERIAL_ARRAY(real,q[grid],qLocal);
+                    OV_GET_SERIAL_ARRAY(Real,eigenVector[grid],eigenVectorLocal);
+                    getIndex(cg[grid].dimension(),I1,I2,I3);
+                    qLocal(I1,I2,I3)=eigenVectorLocal(I1,I2,I3,ie);
                 }
 
-            }
-            else
-            {
-                show.startFrame();                       // start a new frame
-                show.saveComment(0,sPrintF("EigenWave: FD%i",orderOfAccuracy,(upwind ? "u" : "")));   // comment 0 (shown on plot)
-                show.saveSolution( eigenVector );              // save to show file
+                if( ie>0 ) 
+                    show.startFrame();                       // start a new frame
+                if( trueEigenPairsKnown )
+                    show.saveComment(0,sPrintF("EigenWave: FD%i, eig=%d, lambda=%.5g",orderOfAccuracy,eigIndex(ie),eigenValues(ie)));   
+                else
+                    show.saveComment(0,sPrintF("EigenWave: FD%i, lambda[%d]=%.5g",orderOfAccuracy,ie,eigenValues(ie)));   
+                show.saveSolution( q );              // save to show file
                 show.endFrame();
+
             }
 
             show.close();
@@ -1163,7 +1764,7 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
       // RealArray & eigTrue                = cgWave.dbase.get<RealArray>("eig");
 
             if( cg.numberOfDimensions()==3 )
-                cg.update(MappedGrid::THEmask | MappedGrid::THEcenter | MappedGrid::THEvertex ); // TESTING FOR 3D 
+                cg.update(MappedGrid::THEmask | MappedGrid::THEcenter | MappedGrid::THEvertex ); // This is needed in 3D for some reason 
 
             plotEigenVectors( eigenVector, eig, "EigenVector", ps,psp );
 
@@ -1172,7 +1773,12 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
         {
             realCompositeGridFunction & res = cgWaveHoltz.dbase.get<realCompositeGridFunction>("residual");
 
-            RealArray & eig                       = cgWave.dbase.get<RealArray>("eig");
+      // RealArray & eig                       = cgWave.dbase.get<RealArray>("eig");
+            RealArray & eig                       = dbase.get<RealArray>("eigenValues");
+
+            if( cg.numberOfDimensions()==3 )
+                cg.update(MappedGrid::THEmask | MappedGrid::THEcenter | MappedGrid::THEvertex ); // This is needed in 3D for some reason 
+
             if( true )
             {
                 plotEigenVectors( res, eig, "Residual", ps,psp );
@@ -1194,6 +1800,15 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
             }
 
         }
+        else if( answer=="plot initial condition" )
+        {
+              realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");      
+              ps.erase();
+              psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
+              psp.set(GI_TOP_LABEL,sPrintF("Initial conditions for omega=%.5g",omega));
+              PlotIt::contour(ps,v,psp);
+              psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);      
+        }
         else if( answer=="plot errors" )
         {
             const bool trueEigenPairsKnown = cgWave.dbase.has_key("uev");
@@ -1213,119 +1828,11 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
 
         }
 
-        else if( answer=="plot beta" )
+        else if( answer=="plot filter" || answer=="plot beta" )
         {
-      // Plot WaveHoltz beta function 
-            const int & computeEigenmodes      = cgWave.dbase.get<int>("computeEigenmodes");
-            RealArray & eigenValues            = dbase.get<RealArray>("eigenValues");  // best estimate of eigenvalues
-            const int & numEigenVectors        = dbase.get<int>("numEigenVectors");
-
-            Real maxEig = max(eigenValues);
-
-      // --- plot WaveHoltz filter mu ----
-            int numLambda=201;
-            Real lamMin=0., lamMax= 2*maxEig+20; // 60;
-            RealArray lambda(numLambda);
-            RealArray mu(numLambda);
-            for( int i=0; i<numLambda; i++ )
-            {
-                lambda(i) = lamMin + (lamMax-lamMin)*(i-1.)/(numLambda-1.);
-            }
-            cgWave.getWaveHoltzIterationEigenvalue( lambda, mu );
-
-
-            ps.erase();
-
-            RealArray points, value; 
-
-      // --- Mark true eigenvalues if known ----
-      // eigTrue(0:1,0:)
-            const bool trueEigenPairsKnown = cgWave.dbase.has_key("uev");
-            if( trueEigenPairsKnown )
-            {
-                RealArray & eigTrue                = cgWave.dbase.get<RealArray>("eig");
-                const int numberOfEigenvectorsTrue = eigTrue.getLength(1);  
-                
-
-                if( numberOfEigenvectorsTrue>0 )
-                {
-
-                    int numToPlot=0;
-                    for( int ie=0; ie<numberOfEigenvectorsTrue; ie++ )
-                    {
-                        if( eigTrue(0,ie)>lamMax )
-                            break;
-                        numToPlot=ie+1;
-                    }
-                    assert( numToPlot > 0 );
-
-                    RealArray lam(numToPlot);
-                    for( int ie=0; ie<numToPlot; ie++ )
-                    {
-                        lam(ie) = eigTrue(0,ie);
-                    }
-                    RealArray betaTrue(numToPlot);
-                    cgWave.getWaveHoltzIterationEigenvalue( lam, betaTrue );  
-
-                    points.redim(numToPlot,2);
-                    value.redim(numToPlot); 
-                    for( int ie=0; ie<numToPlot; ie++ )
-                    {
-                        points(ie,0) = lam(ie);
-                        points(ie,1) = betaTrue(ie);
-                        value(ie)    = 0.2;                // colour point i by value(i)
-                    } 
-          // --- plot locations of true eigenavleus 
-                    printF("plot numPlot=%d true values\n",numToPlot);
-                    psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);        
-                    psp.set(GI_POINT_SIZE,(real) 4.);  // size in pixels
-                    psp.set(GI_POINT_COLOUR,"BLACK");
-                    ps.plotPoints(points,psp); // colour point i by value(i)   
-          // ps.plotPoints(points,value,psp); // colour point i by value(i)   
-                } 
-            }       
-
-      // ---- mark eigenvalues found as points ----
-            RealArray beta(numEigenVectors);
-            points.redim(numEigenVectors,2);
-            value.redim(numEigenVectors);
-            cgWave.getWaveHoltzIterationEigenvalue( eigenValues, beta );
-
-            value=.6; 
-            for( int ie=0; ie<numEigenVectors; ie++ )
-            {
-                points(ie,0) = eigenValues(ie);
-                points(ie,1) = beta(ie);
-        // value(ie)    = 0.4 + .6* (ie+1.)/(numEigenVectors+1.); // point colour in [0,1]
-                value(ie)    =  .2 + .8 * fabs(beta(ie)+.5)/(1.5);
-            }
-
-            psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);        
-            psp.set(GI_POINT_SIZE,(real) 8.);  // size in pixels
-
-      // psp.set(GI_POINT_COLOUR,"LIGHTBLUE");
-      // psp.set(GI_POINT_COLOUR,"BLUE");
-            psp.set(GI_POINT_COLOUR,"MEDIUMAQUAMARINE");
-      // ps.plotPoints(points,value,psp); // colour point i by value(i)
-            ps.plotPoints(points,psp); // colour point i by value(i)
-
-            aString tName="omega";
-            aString title="WaveHoltz";
-            aString xName[1];
-            xName[0]="beta";
-
-            psp.set(GI_PLOT_GRID_POINTS_ON_CURVES,false);
-            psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);  
-            
-      // PlotIt::plot(ps,t,x,title,tName,xName,psp);
-            #ifndef USE_PPP
-                PlotIt::plot(ps,lambda,mu,title,tName,xName,psp);
-            #else
-                printF("FINISH ME FOR PARALLEL: PlotIt::plot(ps,lambda,mu,title,tName,xName,psp)\n");
-            #endif
-
-            psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);        
-
+      // Plot WaveHoltz beta function
+            RealArray & eigenValues = dbase.get<RealArray>("eigenValues");  // best estimate of eigenvalues
+            cgWave.plotFilter( eigenValues );
 
         }
 
@@ -1533,3 +2040,6 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
 
     return 0;
 }
+
+
+

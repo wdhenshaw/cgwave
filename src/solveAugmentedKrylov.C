@@ -1,4 +1,4 @@
-// This file automatically generated from solveAugmentedGmres.bC with bpp.
+// This file automatically generated from solveAugmentedKrylov.bC with bpp.
 #include "CgWaveHoltz.h" 
 #include "CgWave.h" 
 #include "Overture.h"
@@ -12,7 +12,7 @@
 //#include "PlotStuff.h"
 //#include "GL_GraphicsInterface.h"
 
-#include "AugmentedGmres.h"
+#include "AugmentedKrylov.h"
 
 
 // -- global variables -- do this for now 
@@ -28,6 +28,7 @@ static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
 #define FOR3N(i1,i2,i3,n,n1a,n1b,n2a,n2b,n3a,n3b)       for( i3=n3a; i3<=n3b; i3++ )                        for( i2=n2a; i2<=n2b; i2++ )                      for( i1=n1a; i1<=n1b; i1++ )                    for( n=0; n<numberOfComponents; n++ )
+
 
 // --------------------------------------------------------------------------------------
 //   Macro: return the index's for possible active points
@@ -46,10 +47,10 @@ static void matVectFunction( const RealArray & x, RealArray & y )
 
     if( true || debug>2 )
     {
-        if( iteration==-2 )
-            printF(" **************** MatVec for WaveHoltz (Augmented GMRES) iteration=%i : Computing the RHS *************\n",iteration);
+        if( iteration==computeRightHandSide )
+            printF(" **************** MatVec for WaveHoltz (Augmented Krylov) iteration=%i : Computing the RHS *************\n",iteration);
         else
-            printF(" **************** MatVec for WaveHoltz (Augmented GMRES) iteration=%i *************\n",iteration);
+            printF(" **************** MatVec for WaveHoltz (Augmented Krylov) iteration=%i *************\n",iteration);
     }
 
     assert( pCgWaveHoltz!=NULL );
@@ -61,7 +62,11 @@ static void matVectFunction( const RealArray & x, RealArray & y )
 
   // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
-    const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
+    const int & numCompWaveHoltz          = cgWave.dbase.get<int>("numCompWaveHoltz");
+    const int & numberOfFrequencies       = cgWave.dbase.get<int>("numberOfFrequencies");
+    const int & filterTimeDerivative      = cgWave.dbase.get<int>("filterTimeDerivative");
+    const int & orderOfAccuracy           = cgWave.dbase.get<int>("orderOfAccuracy");
+    const int numGhost = orderOfAccuracy/2;  
 
   // -- cgWave solution is stored here: 
     realCompositeGridFunction & v    = cgWave.dbase.get<realCompositeGridFunction>("v");
@@ -79,7 +84,7 @@ static void matVectFunction( const RealArray & x, RealArray & y )
   // int iab[2];
 
     int i=0;
-    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    for( int freq=0; freq<numCompWaveHoltz; freq++ )
     {
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
@@ -100,7 +105,12 @@ static void matVectFunction( const RealArray & x, RealArray & y )
                         int is = 1-2*side;
                         iab[side]=gid(side,axis);
                         const int bc = mg.boundaryCondition(side,axis);
-                        if( bc==CgWave::dirichlet )
+                        if( filterTimeDerivative )
+                        {
+              // complex valued solution: include all points : Jan 26, 2025
+                            iab[side] -= is*numGhost;
+                        }      
+                        else if( bc==CgWave::dirichlet )
                         {
                               iab[side] += is;  // Dirichlet BC -- ignore the boundary
                         }
@@ -139,7 +149,12 @@ static void matVectFunction( const RealArray & x, RealArray & y )
             }
         }
     }
-    assert( i==numberOfActivePoints );
+    if( i !=numberOfActivePoints )
+    {
+        printF("matVectFunction:ERROR:(I) i=%d is not equal to numberOfActivePoints=%g, numCompWaveHoltz=%d filterTimeDerivative=%d\n",
+            i,numberOfActivePoints,numCompWaveHoltz,filterTimeDerivative );
+        OV_ABORT("ERROR");
+    }
 
 
   // *** APPLY BOUNDARY CONDITIONS to v  ****
@@ -166,7 +181,11 @@ static void matVectFunction( const RealArray & x, RealArray & y )
   // ----------------------------------------------------------------------
   // -- advance the wave equation for one period (or multiple periods ) ---
   // ----------------------------------------------------------------------
-    cgWave.advance( iteration );
+    int it = iteration+1;
+    if( iteration==computeRightHandSide || iteration==-1 )
+        it=0; // it =0 means this is the start of a new WaveHoltz solve so deflate the RHS
+
+    cgWave.advance( it);
 
 
   // To apply the oprator we do this:
@@ -182,7 +201,7 @@ static void matVectFunction( const RealArray & x, RealArray & y )
     RealArray & b = *pb; 
 
     i=0;
-    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    for( int freq=0; freq<numCompWaveHoltz; freq++ )
     {       
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
@@ -204,7 +223,12 @@ static void matVectFunction( const RealArray & x, RealArray & y )
                         int is = 1-2*side;
                         iab[side]=gid(side,axis);
                         const int bc = mg.boundaryCondition(side,axis);
-                        if( bc==CgWave::dirichlet )
+                        if( filterTimeDerivative )
+                        {
+              // complex valued solution: include all points : Jan 26, 2025
+                            iab[side] -= is*numGhost;
+                        }      
+                        else if( bc==CgWave::dirichlet )
                         {
                               iab[side] += is;  // Dirichlet BC -- ignore the boundary
                         }
@@ -258,7 +282,11 @@ static void matVectFunction( const RealArray & x, RealArray & y )
             }
         }
     }
-    assert( i==numberOfActivePoints );
+    if( i !=numberOfActivePoints )
+    {
+        printF("matVectFunction:ERROR:(end) i=%d is not equal to numberOfActivePoints=%g\n",i,numberOfActivePoints);
+        OV_ABORT("ERROR");
+    }  
 
     iteration++;
     
@@ -285,13 +313,14 @@ static void matVectFunction( const RealArray & x, RealArray & y )
 
 // ============================================================================
 /// \brief Solve for the Helmholtz solution using WaveHoltz and 
-///           Augmented GMRES
+///           Augmented KRYLOV
 // ============================================================================
 int CgWaveHoltz::
-solveAugmentedGmres(int argc,char **args)
+solveAugmentedKrylov(int argc,char **args)
 {
 
-    printF("\n @@@@@@@@@@@@@@@@ ENTERING solveAugmentedGmres @@@@@@@@@@@@@@@@@@@@\n\n");
+    printF("\n @@@@@@@@@@@@@@@@ ENTERING solveAugmentedKrylov @@@@@@@@@@@@@@@@@@@@\n\n");
+    Real cpuStart=getCPU();
 
 
     pCgWaveHoltz=this;
@@ -318,12 +347,16 @@ solveAugmentedGmres(int argc,char **args)
     const int & filterTimeDerivative            = cgWave.dbase.get<int>("filterTimeDerivative");
     const int & augmentedVectorsAreEigenvectors = cgWave.dbase.get<int>("augmentedVectorsAreEigenvectors");  // 1 = augmented vectors are true discrete eigenvectors
 
+    const int & orderOfAccuracy                 = cgWave.dbase.get<int>("orderOfAccuracy");
+    const int numGhost = orderOfAccuracy/2;  
+
+
     if( omega!=0. )
         Tperiod=numPeriods*twoPi/omega; 
     else 
         Tperiod=1.;
   
-    printF("CgWaveHoltz::solveAugmentedGmres: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
+    printF("CgWaveHoltz::solveAugmentedKrylov: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
   
   // --- set values in CgWave:  *** COULD DO BETTER ***
   
@@ -380,7 +413,7 @@ solveAugmentedGmres(int argc,char **args)
   // }
   // numEquations *= numCompWaveHoltz;
 
-  // printF("solveAugmentedGmres: numEquations=%d\n",numEquations);  
+  // printF("solveAugmentedKrylov: numEquations=%d\n",numEquations);  
 
 
   // ----- compute the number of active points ---
@@ -404,7 +437,12 @@ solveAugmentedGmres(int argc,char **args)
                         int is = 1-2*side;
                         iab[side]=gid(side,axis);
                         const int bc = mg.boundaryCondition(side,axis);
-                        if( bc==CgWave::dirichlet )
+                        if( filterTimeDerivative )
+                        {
+              // complex valued solution: include all points : Jan 26, 2025
+                            iab[side] -= is*numGhost;
+                        }      
+                        else if( bc==CgWave::dirichlet )
                         {
                               iab[side] += is;  // Dirichlet BC -- ignore the boundary
                         }
@@ -442,8 +480,7 @@ solveAugmentedGmres(int argc,char **args)
     }
     numberOfActivePoints = ParallelUtility::getSum(numberOfActivePoints);
 
-    printF("solveAugmentedGmres: numberOfActivePoints=%g\n",numberOfActivePoints);
-
+    printF("solveAugmentedKrylov: numberOfActivePoints=%g\n",numberOfActivePoints);
 
     RealArray x(numberOfActivePoints), b(numberOfActivePoints);
     pb = &b; // set global variable pb
@@ -471,7 +508,12 @@ solveAugmentedGmres(int argc,char **args)
                         int is = 1-2*side;
                         iab[side]=gid(side,axis);
                         const int bc = mg.boundaryCondition(side,axis);
-                        if( bc==CgWave::dirichlet )
+                        if( filterTimeDerivative )
+                        {
+              // complex valued solution: include all points : Jan 26, 2025
+                            iab[side] -= is*numGhost;
+                        }      
+                        else if( bc==CgWave::dirichlet )
                         {
                               iab[side] += is;  // Dirichlet BC -- ignore the boundary
                         }
@@ -514,7 +556,7 @@ solveAugmentedGmres(int argc,char **args)
     }
     assert( i==numberOfActivePoints );
 
-    printF("solveAugmentedGmres: Set initial guess to v, max-norm(v)=%8.2e, numberOfActivePoints=%g\n",normV,numberOfActivePoints);
+    printF("solveAugmentedKrylov: Set initial guess to v, max-norm(v)=%8.2e, numberOfActivePoints=%g\n",normV,numberOfActivePoints);
 
 
 
@@ -527,9 +569,9 @@ solveAugmentedGmres(int argc,char **args)
 
     matVectFunction( x, b ); 
 
-    bNorm = AugmentedGmres::norm( b ); 
+    bNorm = AugmentedKrylov::norm( b ); 
     Real bNorm2h = bNorm/sqrt(numberOfActivePoints); 
-    printF("solveAugmentedGmres: RHS is b: l2-norm(b)=%9.3e, L2h-norm(b)=%9.2e\n",bNorm,bNorm2h);
+    printF("solveAugmentedKrylov: RHS is b: l2-norm(b)=%9.3e, L2h-norm(b)=%9.2e\n",bNorm,bNorm2h);
 
     
 
@@ -543,6 +585,7 @@ solveAugmentedGmres(int argc,char **args)
     // **NOTE** WE must have alrady called cgWave.advance before getting here so that  cgWave.initializeDeflation() has been called
     // to read in the known eigenvectors 
 
+        const int & onlyLoadDeflatedEigenVectors = cgWave.dbase.get<int>("onlyLoadDeflatedEigenVectors");
         const IntegerArray & eigNumbersToDeflate = cgWave.dbase.get<IntegerArray>("eigNumbersToDeflate");
 
         realCompositeGridFunction & uev          = cgWave.dbase.get<realCompositeGridFunction>("uev");
@@ -550,7 +593,7 @@ solveAugmentedGmres(int argc,char **args)
 
         for( int ied=0; ied<numToDeflate; ied++ )
         {
-            int eigNumber = eigNumbersToDeflate(ied); // deflate this eigenvector
+            const int eigNumber = onlyLoadDeflatedEigenVectors ? ied : eigNumbersToDeflate(ied); // deflate this eigenvector
             int i=0;
             for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
             {
@@ -569,7 +612,12 @@ solveAugmentedGmres(int argc,char **args)
                             int is = 1-2*side;
                             iab[side]=gid(side,axis);
                             const int bc = mg.boundaryCondition(side,axis);
-                            if( bc==CgWave::dirichlet )
+                            if( filterTimeDerivative )
+                            {
+                // complex valued solution: include all points : Jan 26, 2025
+                                iab[side] -= is*numGhost;
+                            }      
+                            else if( bc==CgWave::dirichlet )
                             {
                                   iab[side] += is;  // Dirichlet BC -- ignore the boundary
                             }
@@ -618,74 +666,122 @@ solveAugmentedGmres(int argc,char **args)
     const Real & tol = dbase.get<Real>("tol");
     iteration=0;    // Start true iterations
 
-    AugmentedGmres auGmres;
+    AugmentedKrylov auKrylov;
+
+  // Choose the type of Augmented Krylov Solver 
+    AugmentedKrylov::KrylovTypesEnum augmentedKrylovType = AugmentedKrylov::gmres;
+    if( krylovType=="gmres" ) 
+    {
+          augmentedKrylovType = AugmentedKrylov::gmres;
+          printF("CgWaveHoltz::solveAugmentedKrylov: setting AUGMENTED Krylov solver GMRES.\n");
+    }
+    else if( krylovType=="bicgstab" || krylovType=="bcgs" || krylovType=="bicgs" )
+    {
+        augmentedKrylovType = AugmentedKrylov::biConjugateGradientStabilized;
+        printF("CgWaveHoltz::solveAugmentedKrylov: setting AUGMENTED Krylov solver to bi-conjugate-gradient stabilized.\n");
+    }
+    else if( krylovType=="cg" )
+    {
+        augmentedKrylovType = AugmentedKrylov::conjugateGradient;
+        printF("CgWaveHoltz::solveAugmentedKrylov: setting AUGMENTED Krylov solver to conjugate-gradient.\n");
+    }  
+    else
+    {
+        printf("CgWaveHoltz::solveAugmentedKrylov:WARNING: unknown krylovType=[%s] for augmented methods.\n"
+                      "  Valid options: gmres, bicgstab, cg\n",(const char*)krylovType);
+        OV_ABORT("error");
+    }    
+
+    auKrylov.setKrylovType( augmentedKrylovType );
 
     const int eigenvectorsAreTrueEigenvectors = cgWave.dbase.get<int>("eigenvectorsAreTrueEigenvectors");
-    printF("\n $$$$$$$$$$$$$ AugGMRES:eigenvectorsAreTrueEigenvectors=%d, augmentedVectorsAreEigenvectors=%d $$$$$$$$ (both must be true to assume this) \n\n",
+    printF("\n $$$$$$$$$$$$$ AuKrylov:eigenvectorsAreTrueEigenvectors=%d, augmentedVectorsAreEigenvectors=%d $$$$$$$$ (both must be true to assume this) \n\n",
         eigenvectorsAreTrueEigenvectors,augmentedVectorsAreEigenvectors);
     if( eigenvectorsAreTrueEigenvectors && augmentedVectorsAreEigenvectors)
     {
     // Supply beta eigevalues for the augmented eigenvectors -- these are used to avoid multiplying the augmented vectors by "A"
         const RealArray & betaDeflate = cgWave.dbase.get<RealArray>("betaDeflate");
-        auGmres.setAugmentedEigenvalues( betaDeflate );
+        auKrylov.setAugmentedEigenvalues( betaDeflate );
 
     }
 
-    auGmres.solve( matVectFunction, b, x0, W, maximumNumberOfIterations, tol, x );
+    auKrylov.solve( matVectFunction, b, x0, W, maximumNumberOfIterations, tol, x );
+
+
+  // save some timings so we can estimate the cost by pre-computing somethings
+    if( auKrylov.dbase.has_key("cpuAugmentedInitialMatVects") )
+    {
+        if( !dbase.has_key("cpuAugmentedInitialMatVects") )
+            dbase.put<Real>("cpuAugmentedInitialMatVects")=0.;
+        dbase.get<Real>("cpuAugmentedInitialMatVects")=auKrylov.dbase.get<Real>("cpuAugmentedInitialMatVects");
+    }
+    if( auKrylov.dbase.has_key("cpuAugmentedQR") )
+    {
+        if( !dbase.has_key("cpuAugmentedQR") )
+            dbase.put<Real>("cpuAugmentedQR");
+        dbase.get<Real>("cpuAugmentedQR")=auKrylov.dbase.get<Real>("cpuAugmentedQR"); 
+    }   
 
   // ---- Form the solution x as a grid function v -----
-    int freq=0; 
     i=0;
-    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    for( int freq=0; freq<numCompWaveHoltz; freq++ )
     {
-        MappedGrid & mg = cg[grid];
-        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-        OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            MappedGrid & mg = cg[grid];
+            OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+            OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
 
-        {
-            const IntegerArray & gid = mg.gridIndexRange();
-            int iab[2]; // for getActivePoints 
-            Iv[2]=Range(0,0);
-            for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
             {
-                for( int side=0; side<=1; side++ )
+                const IntegerArray & gid = mg.gridIndexRange();
+                int iab[2]; // for getActivePoints 
+                Iv[2]=Range(0,0);
+                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
                 {
-                    int is = 1-2*side;
-                    iab[side]=gid(side,axis);
-                    const int bc = mg.boundaryCondition(side,axis);
-                    if( bc==CgWave::dirichlet )
+                    for( int side=0; side<=1; side++ )
                     {
-                          iab[side] += is;  // Dirichlet BC -- ignore the boundary
+                        int is = 1-2*side;
+                        iab[side]=gid(side,axis);
+                        const int bc = mg.boundaryCondition(side,axis);
+                        if( filterTimeDerivative )
+                        {
+              // complex valued solution: include all points : Jan 26, 2025
+                            iab[side] -= is*numGhost;
+                        }      
+                        else if( bc==CgWave::dirichlet )
+                        {
+                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
+                        }
+                        else if( bc==CgWave::neumann )
+                        {
+              // include boundary
+                        }
+                        else if( bc>0 )
+                        {
+                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
+                            OV_ABORT("error");
+                        }
+                        else if( bc<0 )
+                        {
+              // periodic -- include left end
+                            if( side==1 )
+                                iab[side] += is; 
+                        }
+                        else
+                        {
+              // interpolation boundary : include end 
+                        }
                     }
-                    else if( bc==CgWave::neumann )
-                    {
-            // include boundary
-                    }
-                    else if( bc>0 )
-                    {
-                        printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                        OV_ABORT("error");
-                    }
-                    else if( bc<0 )
-                    {
-            // periodic -- include left end
-                        if( side==1 )
-                            iab[side] += is; 
-                    }
-                    else
-                    {
-            // interpolation boundary : include end 
-                    }
+                    Iv[axis] = Range(iab[0],iab[1]);
                 }
-                Iv[axis] = Range(iab[0],iab[1]);
             }
-        }
-        FOR_3D(i1,i2,i3,I1,I2,I3)
-        {
-            if( maskLocal(i1,i2,i3) > 0 )
+            FOR_3D(i1,i2,i3,I1,I2,I3)
             {
-                vLocal(i1,i2,i3,freq) = x(i);
-                i++;
+                if( maskLocal(i1,i2,i3) > 0 )
+                {
+                    vLocal(i1,i2,i3,freq) = x(i);
+                    i++;
+                }
             }
         }
     }
@@ -701,17 +797,21 @@ solveAugmentedGmres(int argc,char **args)
 
 
     int & numberOfIterations = dbase.get<int>("numberOfIterations");
-    numberOfIterations = auGmres.getNumberOfIterations();
-    printF("number of AugmentedGmres iterations=%d\n",numberOfIterations);
+    numberOfIterations = auKrylov.getNumberOfIterations();
+    printF("number of AugmentedKrylov iterations=%d\n",numberOfIterations);
+
+  // save num mat-vects: 
+    int & numberOfMatrixVectorMultiplications = dbase.get<int>("numberOfMatrixVectorMultiplications");
+    numberOfMatrixVectorMultiplications = auKrylov.getNumberOfMatrixVectorProducts();
 
     RealArray & resVector = cgWave.dbase.get<RealArray>("resVector");
     resVector.redim(numberOfIterations);
     Range Ni = numberOfIterations;
 
-  // auGmres return the L2h norm of the residual = || r ||_2 / sqrt(numberOfPoints)
-    resVector(Ni) = auGmres.getResidualVector()(Ni);
+  // auKrylov return the L2h norm of the residual = || r ||_2 / sqrt(numberOfPoints)
+    resVector(Ni) = auKrylov.getResidualVector()(Ni);
 
-  // // auGmres returns || residual ||/|| b \||
+  // // auKrylov returns || residual ||/|| b \||
   // // We save the L2h norm of the residual
   // resVector(Ni) *= bNorm/sqrt(numberOfActivePoints); 
 
@@ -733,7 +833,10 @@ solveAugmentedGmres(int argc,char **args)
         convergenceRatePerPeriod = 1.;
     }
 
-    dbase.get<real>("maxResidual") = auGmres.getResidual(); // really scaled L2 residual
+    dbase.get<real>("maxResidual") = auKrylov.getResidual(); // really scaled L2 residual
+
+    Real cpuTotal = getCPU() - cpuStart;
+    printF("solveAugmentedKrylov: cpuTotal=%9.2e(s)\n",cpuTotal);
     return 0;
 }
 

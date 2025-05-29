@@ -69,6 +69,8 @@ int CgWave::takeImplicitStep( Real t )
   int & totalImplicitIterations        = dbase.get<int>("totalImplicitIterations");  
   int & totalImplicitSolves            = dbase.get<int>("totalImplicitSolves");  
 
+  Real & timeForOgesSolve              = dbase.get<Real>("timeForOgesSolve");
+
   const int & addForcing                  = dbase.get<int>("addForcing");
   const ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
   const bool twilightZone = forcingOption==twilightZoneForcing; 
@@ -82,6 +84,8 @@ int CgWave::takeImplicitStep( Real t )
   const int cur = current;   // current time level
   const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
   const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+
+  const int numberOfDimensions = cg.numberOfDimensions();
 
   realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
   realCompositeGridFunction & up = u[prev];       // previous time 
@@ -185,13 +189,16 @@ int CgWave::takeImplicitStep( Real t )
   {
     bool applyExplicitBoundaryConditions = false; // what should this be ? 
     bool fillImplicitBoundaryConditions  = true;
-    applyBoundaryConditions( rhs, rhs, t, applyExplicitBoundaryConditions, fillImplicitBoundaryConditions );
+    // *fixed* Oct 1, 2024: need to pass uc for EM radiation BC
+    applyBoundaryConditions( rhs, uc, t, applyExplicitBoundaryConditions, fillImplicitBoundaryConditions ); 
+
+    // applyBoundaryConditions( rhs, rhs, t, applyExplicitBoundaryConditions, fillImplicitBoundaryConditions );
   }
 
 
-  if( debug & 16 )
+  if( false || debug & 16 )
   {
-    rhs.display("RHS AFTER filling BCs");
+    rhs.display("RHS AFTER filling BCs","%5.3f ");
   }
 
   // ------- SOLVE THE IMPLICIT EQUATIONS -----
@@ -216,7 +223,9 @@ int CgWave::takeImplicitStep( Real t )
 
     // **  for iterative solvers we want un to be the good guess for u(t+dt) **************
 
-    impSolver.solve( un,rhs );  
+    Real cpuStart=getCPU();
+    impSolver.solve( un,rhs ); 
+    timeForOgesSolve += getCPU()-cpuStart; 
 
     int numIterations = impSolver.getNumberOfIterations();
     totalImplicitIterations += numIterations;
@@ -232,7 +241,14 @@ int CgWave::takeImplicitStep( Real t )
     {
       rhs.display("RHS before implicit solve");
     }
-    impSolver.solve( un,un );   
+    Real cpuStart=getCPU();
+
+    impSolver.solve( un,un ); 
+
+    timeForOgesSolve += getCPU()-cpuStart; 
+
+    if( false )
+      ::display(un[0],"un after imp solve","%5.3f ");
   }
   if( outputMatrix )
   {
@@ -249,7 +265,8 @@ int CgWave::takeImplicitStep( Real t )
   bool checkResiduals=false;
   if( checkResiduals )
   {
-    // ---- CHECK SOME RESIDUALS ---
+    // ---- CHECK RESIDUALS IN RADIATION BOUNDARY CONDITIONS ---
+
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       MappedGrid & mg = cg[grid];
@@ -277,49 +294,177 @@ int CgWave::takeImplicitStep( Real t )
 
       
       Real ca = c; // c*0;
+      if( solveHelmholtz )
+      {
+        // Adjust c for the EM2 absorbing BC to account for time-discretization errors
+        //   D+t (Dx ) w + A+( ... )            
+        ca = c*tan(frequencyArray(0)*dt/2)/(frequencyArraySave(0)*dt/2); 
+      }      
 
       ForBoundary(side,axis)
       {
         int is = 1-2*side;
-        if( mg.boundaryCondition(side,axis)==absorbing )
+        if( mg.boundaryCondition(side,axis)==absorbing || mg.boundaryCondition(side,axis)==abcEM2 )
         {
           getBoundaryIndex(mg.gridIndexRange(),side,axis,I1,I2,I3);
           // Engquist-Majda order2 scheme
           //  D+t (-D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : left 
           //  D+t ( D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : right 
  
-           RealArray unx(I1,I2,I3), unxx(I1,I2,I3), unyy(I1,I2,I3);
-           unxx(I1,I2,I3) = (unLocal(I1+1,I2,I3)-2.*unLocal(I1,I2,I3)+unLocal(I1-1,I2,I3))/(dx[0]*dx[0]);
-           unyy(I1,I2,I3) = (unLocal(I1,I2+1,I3)-2.*unLocal(I1,I2,I3)+unLocal(I1,I2-1,I3))/(dx[1]*dx[1]);
+          RealArray unx(I1,I2,I3), unxx(I1,I2,I3), unyy(I1,I2,I3);
+          RealArray ucx(I1,I2,I3), ucxx(I1,I2,I3), ucyy(I1,I2,I3);
+          if( orderOfAccuracy==2 )
+          {
+            unxx(I1,I2,I3) = (unLocal(I1+1,I2,I3)-2.*unLocal(I1,I2,I3)+unLocal(I1-1,I2,I3))/(dx[0]*dx[0]);
+            unyy(I1,I2,I3) = (unLocal(I1,I2+1,I3)-2.*unLocal(I1,I2,I3)+unLocal(I1,I2-1,I3))/(dx[1]*dx[1]);
 
-           RealArray ucx(I1,I2,I3), ucxx(I1,I2,I3), ucyy(I1,I2,I3);
-           ucxx(I1,I2,I3) = (ucLocal(I1+1,I2,I3)-2.*ucLocal(I1,I2,I3)+ucLocal(I1-1,I2,I3))/(dx[0]*dx[0]);
-           ucyy(I1,I2,I3) = (ucLocal(I1,I2+1,I3)-2.*ucLocal(I1,I2,I3)+ucLocal(I1,I2-1,I3))/(dx[1]*dx[1]); 
+            ucxx(I1,I2,I3) = (ucLocal(I1+1,I2,I3)-2.*ucLocal(I1,I2,I3)+ucLocal(I1-1,I2,I3))/(dx[0]*dx[0]);
+            ucyy(I1,I2,I3) = (ucLocal(I1,I2+1,I3)-2.*ucLocal(I1,I2,I3)+ucLocal(I1,I2-1,I3))/(dx[1]*dx[1]); 
+          }
+          else if( orderOfAccuracy==4 )
+          {
+            unxx(I1,I2,I3) = (-unLocal(I1-2,I2,I3)+16.*unLocal(I1-1,I2,I3)-30.*unLocal(I1,I2,I3)+16.*unLocal(I1+1,I2,I3)-unLocal(I1+2,I2,I3))/(12.*dx[0]*dx[0]);
+            unyy(I1,I2,I3) = (-unLocal(I1,I2-2,I3)+16.*unLocal(I1,I2-1,I3)-30.*unLocal(I1,I2,I3)+16.*unLocal(I1,I2+1,I3)-unLocal(I1,I2+2,I3))/(12.*dx[1]*dx[1]);
+            ucxx(I1,I2,I3) = (-ucLocal(I1-2,I2,I3)+16.*ucLocal(I1-1,I2,I3)-30.*ucLocal(I1,I2,I3)+16.*ucLocal(I1+1,I2,I3)-ucLocal(I1+2,I2,I3))/(12.*dx[0]*dx[0]);
+            ucyy(I1,I2,I3) = (-ucLocal(I1,I2-2,I3)+16.*ucLocal(I1,I2-1,I3)-30.*ucLocal(I1,I2,I3)+16.*ucLocal(I1,I2+1,I3)-ucLocal(I1,I2+2,I3))/(12.*dx[1]*dx[1]);             
+          }
+          else
+          {
+            OV_ABORT("finish me");
+          }
            
-           RealArray res(I1,I2,I3);
+          RealArray res(I1,I2,I3);
  
-             // .5*(-2.*c/dxa2)
-           if( axis==0 ) 
-           {             
-             unx(I1,I2,I3) = (unLocal(I1+1,I2,I3) -unLocal(I1-1,I2,I3))/(2.*dx[0]);
-             ucx(I1,I2,I3) = (ucLocal(I1+1,I2,I3) -ucLocal(I1-1,I2,I3))/(2.*dx[0]);
-             res = -is*(unx-ucx)/dt  + (.5*ca)*( unxx + ucxx ) + (.25*ca)*( unyy + ucyy );
-           }
-           else
-           {
-             unx(I1,I2,I3) = (unLocal(I1,I2+1,I3) -unLocal(I1,I2-1,I3))/(2.*dx[1]);
-             ucx(I1,I2,I3) = (ucLocal(I1,I2+1,I3) -ucLocal(I1,I2-1,I3))/(2.*dx[1]);
-             res = -is*(unx-ucx)/dt  + (.5*ca)*( unyy + ucyy ) + (.25*ca)*( unxx + ucxx );
-           }
+          if( axis==0 ) 
+          {       
+            if( orderOfAccuracy==2 )
+            {      
+              unx(I1,I2,I3) = (unLocal(I1+1,I2,I3) -unLocal(I1-1,I2,I3))/(2.*dx[0]);
+              ucx(I1,I2,I3) = (ucLocal(I1+1,I2,I3) -ucLocal(I1-1,I2,I3))/(2.*dx[0]);
+            }
+            else
+            {
+              unx(I1,I2,I3) = (unLocal(I1-2,I2,I3)-8.*unLocal(I1-1,I2,I3)+8.*unLocal(I1+1,I2,I3)-unLocal(I1+2,I2,I3))/(12.*dx[0]);
+              ucx(I1,I2,I3) = (ucLocal(I1-2,I2,I3)-8.*ucLocal(I1-1,I2,I3)+8.*ucLocal(I1+1,I2,I3)-ucLocal(I1+2,I2,I3))/(12.*dx[0]);
+            }
+            res = -is*(unx-ucx)/dt  + (.5*ca)*( unxx + ucxx ) + (.25*ca)*( unyy + ucyy );
+          }
+          else
+          {
+            if( orderOfAccuracy==2 )
+            {
+              unx(I1,I2,I3) = (unLocal(I1,I2+1,I3) -unLocal(I1,I2-1,I3))/(2.*dx[1]);
+              ucx(I1,I2,I3) = (ucLocal(I1,I2+1,I3) -ucLocal(I1,I2-1,I3))/(2.*dx[1]);
+            }
+            else
+            {
+              unx(I1,I2,I3) = (unLocal(I1,I2-2,I3)-8.*unLocal(I1,I2-1,I3)+8.*unLocal(I1,I2+1,I3)-unLocal(I1,I2+2,I3))/(12.*dx[1]);
+              ucx(I1,I2,I3) = (ucLocal(I1,I2-2,I3)-8.*ucLocal(I1,I2-1,I3)+8.*ucLocal(I1,I2+1,I3)-ucLocal(I1,I2+2,I3))/(12.*dx[1]);              
+            }
+            res = -is*(unx-ucx)/dt  + (.5*ca)*( unyy + ucyy ) + (.25*ca)*( unxx + ucxx );
+          }
+
+          RealArray res2(I1,I2,I3);
+          if( orderOfAccuracy==4 )
+          {
+             // check the CBC
+            RealArray unxxxx(I1,I2,I3), ucxxxx(I1,I2,I3);
+            RealArray unxxyy(I1,I2,I3), ucxxyy(I1,I2,I3);
+            RealArray unyyyy(I1,I2,I3), ucyyyy(I1,I2,I3);
+
+            unxxxx(I1,I2,I3) = (unLocal(I1-2,I2,I3)-4.*unLocal(I1-1,I2,I3)+6.*unLocal(I1,I2,I3)-4.*unLocal(I1+1,I2,I3)+unLocal(I1+2,I2,I3))/(dx[0]*dx[0]*dx[0]*dx[0]);
+            unyyyy(I1,I2,I3) = (unLocal(I1,I2-2,I3)-4.*unLocal(I1,I2-1,I3)+6.*unLocal(I1,I2,I3)-4.*unLocal(I1,I2+1,I3)+unLocal(I1,I2+2,I3))/(dx[1]*dx[1]*dx[1]*dx[1]);
+
+            unxxyy(I1,I2,I3) = (  4.*unLocal(I1,I2,I3)
+                                 -2.*unLocal(I1-1,I2  ,I3)-2.*unLocal(I1+1,I2  ,I3) -2.*unLocal(I1  ,I2-1,I3)-2.*unLocal(I1  ,I2+1,I3)
+                                    +unLocal(I1-1,I2-1,I3)   +unLocal(I1+1,I2-1,I3)    +unLocal(I1-1,I2+1,I3)   +unLocal(I1+1,I2+1,I3)
+                               )/(dx[0]*dx[0]*dx[1]*dx[1]);
+            
+            ucxxxx(I1,I2,I3) = (ucLocal(I1-2,I2,I3)-4.*ucLocal(I1-1,I2,I3)+6.*ucLocal(I1,I2,I3)-4.*ucLocal(I1+1,I2,I3)+ucLocal(I1+2,I2,I3))/(dx[0]*dx[0]*dx[0]*dx[0]);
+            ucyyyy(I1,I2,I3) = (ucLocal(I1,I2-2,I3)-4.*ucLocal(I1,I2-1,I3)+6.*ucLocal(I1,I2,I3)-4.*ucLocal(I1,I2+1,I3)+ucLocal(I1,I2+2,I3))/(dx[1]*dx[1]*dx[1]*dx[1]);
+
+            ucxxyy(I1,I2,I3) = (  4.*ucLocal(I1,I2,I3)
+                                 -2.*ucLocal(I1-1,I2,I3)-2.*ucLocal(I1+1,I2,I3) -2.*ucLocal(I1,I2-1,I3)-2.*ucLocal(I1,I2+1,I3)
+                                 +ucLocal(I1-1,I2-1,I3)+ucLocal(I1+1,I2-1,I3)+ucLocal(I1-1,I2+1,I3)+ucLocal(I1+1,I2+1,I3)
+                               )/(dx[0]*dx[0]*dx[1]*dx[1]);
+
+            if( axis==0 ) 
+            {       
+              RealArray unxxx(I1,I2,I3), ucxxx(I1,I2,I3);
+              unxxx(I1,I2,I3) = (-unLocal(I1-2,I2,I3)+2.*unLocal(I1-1,I2,I3)-2.*unLocal(I1+1,I2,I3)+unLocal(I1+2,I2,I3))/(2.*dx[0]*dx[0]*dx[0]);
+              ucxxx(I1,I2,I3) = (-ucLocal(I1-2,I2,I3)+2.*ucLocal(I1-1,I2,I3)-2.*ucLocal(I1+1,I2,I3)+ucLocal(I1+2,I2,I3))/(2.*dx[0]*dx[0]*dx[0]);
+              res2 = -is*(unxxx-ucxxx)/dt  + (.5*ca)*( unxxxx + ucxxxx ) + (.25*ca)*( unxxyy + ucxxyy );
+            }
+            else
+            {
+              RealArray unyyy(I1,I2,I3), ucyyy(I1,I2,I3);
+              unyyy(I1,I2,I3) = (-unLocal(I1,I2-2,I3)+2.*unLocal(I1,I2-1,I3)-2.*unLocal(I1,I2+1,I3)+unLocal(I1,I2+2,I3))/(2.*dx[1]*dx[1]*dx[1]);
+              ucyyy(I1,I2,I3) = (-ucLocal(I1,I2-2,I3)+2.*ucLocal(I1,I2-1,I3)-2.*ucLocal(I1,I2+1,I3)+ucLocal(I1,I2+2,I3))/(2.*dx[1]*dx[1]*dx[1]);              
+              res2 = -is*(unyyy-ucyyy)/dt  + (.5*ca)*( unyyyy + ucyyyy ) + (.25*ca)*( unxxyy + ucxxyy );
+            }
+          }
+
+          if( twilightZone )
+          {
+            assert( dbase.get<OGFunction*>("tz")!=NULL );
+            OGFunction & e = *dbase.get<OGFunction*>("tz"); 
+            OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
+            // RealArray utx(I1,I2,I3);
+            const Real tc = t-dt;    // previous time
+            // const Real th = t-.5*dt; // half time 
+            const int isRectangular=0;
+
+            e.gd( ucxx,xLocal,numberOfDimensions,isRectangular,0,2,0,0,I1,I2,I3,0,tc ); 
+            e.gd( ucyy,xLocal,numberOfDimensions,isRectangular,0,0,2,0,I1,I2,I3,0,tc ); 
+
+            e.gd( unxx,xLocal,numberOfDimensions,isRectangular,0,2,0,0,I1,I2,I3,0,t ); 
+            e.gd( unyy,xLocal,numberOfDimensions,isRectangular,0,0,2,0,I1,I2,I3,0,t ); 
+
+            if( axis==0 ) 
+            {
+             //::display(ucx,"ucx (computed)","%9.2e ");                  
+             //::display(unx,"unx (computed)","%9.2e ");                  
+             e.gd( ucx ,xLocal,numberOfDimensions,isRectangular,0,1,0,0,I1,I2,I3,0,tc );
+             e.gd( unx ,xLocal,numberOfDimensions,isRectangular,0,1,0,0,I1,I2,I3,0,t  );
+
+              // ::display(ucx,"ucx (true)","%9.2e ");                  
+              // ::display(unx,"unx (true)","%9.2e ");                  
+              res -= -is*(unx-ucx)/dt  + (.5*ca)*( unxx + ucxx ) + (.25*ca)*( unyy + ucyy );
+            }
+            else
+            {
+              e.gd( ucx ,xLocal,numberOfDimensions,isRectangular,0,0,1,0,I1,I2,I3,0,tc );
+              e.gd( unx ,xLocal,numberOfDimensions,isRectangular,0,0,1,0,I1,I2,I3,0,t  );
+
+              res -= -is*(unx-ucx)/dt  + (.5*ca)*( unyy + ucyy ) + (.25*ca)*( unxx + ucxx );
+            }  
+
+
+          }
 
           Real maxRes = max(fabs(res));
-          printF("AFTER IMP solve: (side,axis,grid)=(%d,%d,%d) c=%12.4e, bc=absorbing maxRes=%9.2e\n",side,axis,grid,c,maxRes); 
-          ::display(res,"res","%9.2e ");
-            
+
+          if( orderOfAccuracy==4 )
+          {
+            Real maxRes2= max(fabs(res2));
+            if( 1==1 || maxRes>1.e10 || maxRes2>1.e-9 )
+            {
+              printF("AFTER IMP solve: (side,axis,grid)=(%d,%d,%d) c=%12.4e, cEM2=%12.4e, bc=EM2 maxRes=[%9.2e,%9.2e]\n",side,axis,grid,c,ca,maxRes,maxRes2);
+            }
+          }
+          else
+          {
+            if( maxRes > 1e-10 )
+            {
+              printF("WARNING : AFTER IMP solve: (side,axis,grid)=(%d,%d,%d) c=%12.4e, cEM2=%12.4e, bc=absorbing maxRes=%9.2e\n",side,axis,grid,c,ca,maxRes);
+              if( debug & 4 ) 
+                ::display(res,"res","%9.2e ");
+            }
+          }
         }
       }
     }
-    OV_ABORT("STOP here for now");
+    // OV_ABORT("STOP here for now");
   } // end if checkResiduals
 
   timing(timeForImplicitSolve) += getCPU()-cpu0;
@@ -2915,7 +3060,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
       if( mg.boundaryCondition(side,axis)==CgWave::absorbing ||  
           mg.boundaryCondition(side,axis)==CgWave::abcEM2 )
       {
-       usePredefined=false;
+        usePredefined=false;
       }
 
     }    
@@ -3141,6 +3286,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
     int isv[3], &is1=isv[0], &is2=isv[1], &is3=isv[2];
     int m1,m2,m3; 
 
+    const bool useCompatibility = orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions;    
+
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       MappedGrid &mg = cg[grid];
@@ -3260,7 +3407,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
         }
 
-        if( orderOfAccuracy==4 )
+        // if( orderOfAccuracy==4 )
+        if( orderOfAccuracyInTime==4 ) // **BUG FIXED** April 24, 2025
         {
            // Add modified equation term 
            //     (L_2h)^2
@@ -3408,10 +3556,27 @@ int CgWave::formImplicitTimeSteppingMatrix()
         else if( mg.boundaryCondition(side,axis)==CgWave::absorbing || 
                  mg.boundaryCondition(side,axis)==CgWave::abcEM2 )
         {
-          if( debug & 1 )
-            printF("+++++ IMPLICIT BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) ABSORBING/EM2, c=%e\n",grid,side,axis,c);
+          Real ca = c;
+          if( solveHelmholtz )
+          {
+            // Adjust c for the EM2 absorbing BC to account for time-discretization errors
+            //   D+t (Dx ) w + A+( ... )            
+            ca = c*tan(frequencyArray(0)*dt/2)/(frequencyArraySave(0)*dt/2); 
+          }
 
-          // OV_ABORT(" IMP BC ABORBING -- FINISH ME"); 
+          if( debug & 1 )
+          {
+            if( mg.boundaryCondition(side,axis)==CgWave::absorbing )
+              printF("+++++ IMPLICIT BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) ABSORBING/EM2, c=%12.4e, cEM2=%12.4e\n",grid,side,axis,c,ca);
+            else if( mg.boundaryCondition(side,axis)==CgWave::abcEM2 )
+              printF("+++++ IMPLICIT BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) EM2, c=%12.4e, cEM2=%12.4e\n",grid,side,axis,c,ca);
+          }
+
+
+          if( numberOfDimensions==3 )
+          {
+            OV_ABORT(" IMPLICIT BC: FILL MATRIX -- FINISH ME in 3D"); 
+          }
 
           // EM2 
           // Engquist-Majda order2 scheme
@@ -3442,37 +3607,181 @@ int CgWave::formImplicitTimeSteppingMatrix()
           //                      + 2.*forcey(cc) )\
           //                                   )/(1.+c1abcem2*dt/dya) )          
 
-          Real ca = c;
-          if( solveHelmholtz )
-          {
-            // Adjust c for the EM2 absorbing BC to account for time-discretization errors
-            //   D+t (Dx ) w + A+( ... )            
-            ca = c*tan(frequencyArray(0)*dt/2)/(frequencyArraySave(0)*dt/2); 
-          }
-
           // res = -is*(unx-ucx)/dt + (.5*c)*( unxx + ucxx) + (.25*c)*( unyy + ucyy );
 
-          Range Rw(-halfWidth1,halfWidth1);
-          RealArray abcCoeff(Rw,Rw,Rw);
-          abcCoeff=0.;
+          // printF("fill Implicit with EM2 BC -- c=%12.4e, ca=%12.4e dt=%12.4e\n",c,ca,dt );
 
+          Range Rw(-halfWidth1,halfWidth1);
+          RealArray abcCoeff(Rw,Rw,Rw), abcCoeff2(Rw,Rw,Rw);
+          abcCoeff=0.; abcCoeff2=0.; 
+
+          bool useCompatiblityRBC= orderOfAccuracy>=4; // if true apply a CBC for the 2nd ghost line on an EM2 boundary
+
+
+
+          // Engquist-Majda order2 scheme: 
+          //  -is*D+t ( D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = f 
+          //  -is*D+t ( D0x W^n) + L*( .5 W^{n+1} + .5*W^n ) = f
+          //  -is ( D0x W^{n+1} - W^n )/dt + L*( .5 W^{n+1} + .5*W^n ) = f 
+          //  -is*D0x W^{n+1}/dt + .5*L W^{n+1} = -is*D0xW^n/dt - .5*L W^n + f 
           if( isRectangular )
           {
-            const Real dxa2 = dx[axis]*dx[axis];
-            const Real dya2 = dx[axisp1]*dx[axisp1];
-            abcCoeff(-is1,-is2,0) = .5*(    ca/dxa2           )  + 1./(2.*dx[axis]*dt);    // ghost
-            abcCoeff(   0,   0,0) = .5*(-2.*ca/dxa2 - ca/dya2 );                           // boundary 
-            abcCoeff(+is1,+is2,0) = .5*(    ca/dxa2           )  - 1./(2.*dx[axis]*dt);    // first line in
-            
-            if( axis==0 )
+
+            if( orderOfAccuracy==2 ) 
             {
-              abcCoeff(0,-1,0) = .5*( .5*ca/(dx[1]*dx[1]) ); 
-              abcCoeff(0,+1,0) = .5*( .5*ca/(dx[1]*dx[1]) ); 
+              const Real cxx = axis==0 ? ca/(dx[0]*dx[0]) : .5*ca/(dx[0]*dx[0]);
+              const Real cyy = axis==1 ? ca/(dx[1]*dx[1]) : .5*ca/(dx[1]*dx[1]);
+              const Real cx  = axis==0 ? -is1*1./(2.*dx[0]*dt) : 0.;                
+              const Real cy  = axis==1 ? -is2*1./(2.*dx[1]*dt) : 0.;
+
+              abcCoeff( 0,-1,0) = .5*(         1.*cyy )    - cy;
+              abcCoeff(-1, 0,0) = .5*( 1.*cxx         )    - cx;
+              abcCoeff( 0, 0,0) = .5*(-2.*cxx -2.*cyy );
+              abcCoeff(+1, 0,0) = .5*( 1.*cxx         )    + cx;
+              abcCoeff( 0,+1,0) = .5*(         1.*cyy )    + cy;
+
+            }
+            else if( orderOfAccuracy==4 )
+            {
+
+              // -is * D+t D4x W^n + c*(Dxx4+.5*Dyy4) (W^{n+1} + W^n)/2
+
+              if( 1==1 )
+              {
+                // exactly match matlab code
+                int is; 
+                const Real dx1=dx[0], dy1=dx[1];
+                const Real dx2=dx1*dx1, dx3=dx2*dx1, dx4=dx3*dx1;
+                const Real dy2=dy1*dy1, dy3=dy2*dy1, dy4=dy3*dy1;  
+                Real cx=0., cxx=0., cy=0., cyy=0.;              
+                if( axis==0 ) 
+                {
+                  is = is1;
+                  cx=1./(12.*dx1); cy=0;            cxx=1./(12.*dx2); cyy=.5/(12.*dy2); 
+                }
+                else
+                {
+                  is = is2; 
+                  cx=0;            cy=1./(12.*dy1); cxx=.5/(12.*dx2); cyy=1./(12.*dy2); 
+                }
+
+
+                abcCoeff( 0,-2,0) = (1./(dt))*(      + 1.*cy) -is*.5*ca*(          - 1.*cyy ); 
+                abcCoeff( 0,-1,0) = (1./(dt))*(      - 8.*cy) -is*.5*ca*(          +16.*cyy ); 
+                abcCoeff(-2, 0,0) = (1./(dt))*( 1.*cx       ) -is*.5*ca*(  -1.*cxx          ); 
+                abcCoeff(-1, 0,0) = (1./(dt))*(-8.*cx       ) -is*.5*ca*(  16.*cxx          );
+                abcCoeff( 0, 0,0) = (1./(dt))*( 0.*cx       ) -is*.5*ca*( -30.*cxx -30.*cyy );
+                abcCoeff(+1, 0,0) = (1./(dt))*( 8.*cx       ) -is*.5*ca*(  16.*cxx          );
+                abcCoeff(+2, 0,0) = (1./(dt))*(-1.*cx       ) -is*.5*ca*(  -1.*cxx          ); 
+                abcCoeff( 0,+1,0) = (1./(dt))*(      + 8.*cy) -is*.5*ca*(          +16.*cyy ); 
+                abcCoeff( 0,+2,0) = (1./(dt))*(      - 1.*cy) -is*.5*ca*(          - 1.*cyy ); 
+
+                if( useCompatiblityRBC )
+                {
+                  Real cxxx=0., cxxxx=0., cyyy=0., cyyyy=0., cxxyy=0.;
+                  if( axis==0 ) 
+                  {
+                    is=is1;
+                    cxxx=1./(2.*dx3 ); cyyy=0;          cxxxx=1./(dx4 ); cyyyy=0;         cxxyy=.5/(dx2 *dy2 ); 
+                  }
+                  else 
+                  {
+                    is=is2;
+                    cxxx=0;            cyyy=1/(2.*dy3 ); cxxxx=0;        cyyyy=1./(dy4 ); cxxyy=.5/(dx2 *dy2 );
+                  }
+
+                  abcCoeff2(-1,-1,0) =                               -is*.5*ca*(                           cxxyy); 
+                  abcCoeff2(+1,-1,0) =                               -is*.5*ca*(                           cxxyy); 
+                  abcCoeff2( 0,-2,0) = (1./(dt))*(        - 1.*cyyy) -is*.5*ca*(             1.*cyyyy           ); 
+                  abcCoeff2( 0,-1,0) = (1./(dt))*(        + 2.*cyyy) -is*.5*ca*(            -4.*cyyyy  -2.*cxxyy); 
+                  abcCoeff2(-2, 0,0) = (1./(dt))*(-1.*cxxx         ) -is*.5*ca*(   1.*cxxxx                     ); 
+                  abcCoeff2(-1, 0,0) = (1./(dt))*( 2.*cxxx         ) -is*.5*ca*(  -4.*cxxxx            -2.*cxxyy);
+                  abcCoeff2( 0, 0,0) = (1./(dt))*( 0.*cxxx         ) -is*.5*ca*(   6.*cxxxx  +6.*cyyyy +4.*cxxyy);
+                  abcCoeff2(+1, 0,0) = (1./(dt))*(-2.*cxxx         ) -is*.5*ca*(  -4.*cxxxx            -2.*cxxyy);
+                  abcCoeff2(+2, 0,0) = (1./(dt))*( 1.*cxxx         ) -is*.5*ca*(   1.*cxxxx                     ); 
+                  abcCoeff2( 0,+1,0) = (1./(dt))*(        - 2.*cyyy) -is*.5*ca*(            -4.*cyyyy  -2.*cxxyy); 
+                  abcCoeff2( 0,+2,0) = (1./(dt))*(          1.*cyyy) -is*.5*ca*(             1.*cyyyy           );
+                  abcCoeff2(-1,+1,0) =                               -is*.5*ca*(                           cxxyy); 
+                  abcCoeff2(+1,+1,0) =                               -is*.5*ca*(                           cxxyy);  
+
+
+                }
+
+              }
+              else
+              {
+                const Real cxx = axis==0 ? ca/(12.*dx[0]*dx[0]) : .5*ca/(12.*dx[0]*dx[0]);
+                const Real cyy = axis==1 ? ca/(12.*dx[1]*dx[1]) : .5*ca/(12.*dx[1]*dx[1]);
+                const Real cx  = axis==0 ? -is1*1./(12.*dx[0]*dt) : 0.;                
+                const Real cy  = axis==1 ? -is2*1./(12.*dx[1]*dt) : 0.;
+
+                abcCoeff( 0,-2,0) = .5*(              -cyy )         +   cy;
+                abcCoeff( 0,-1,0) = .5*(           16.*cyy )         -8.*cy; 
+                abcCoeff(-2, 0,0) = .5*(     -cxx          )  +   cx       ;         
+                abcCoeff(-1, 0,0) = .5*(  16.*cxx          )  -8.*cx       ;         
+                abcCoeff( 0, 0,0) = .5*( -30.*cxx -30.*cyy )               ;
+                abcCoeff(+1, 0,0) = .5*(  16.*cxx          )  +8.*cx       ; 
+                abcCoeff(+2, 0,0) = .5*(     -cxx          )  -   cx       ;
+                abcCoeff( 0,+1,0) = .5*(           16.*cyy )         +8.*cy;
+                abcCoeff( 0,+2,0) = .5*(              -cyy )         -   cy;
+
+                if( useCompatiblityRBC )
+                {
+                  // ghost line 2:
+                  // Use:
+                  // D_x^2( EM2 BC ) (left/right)
+                  // D_y^2( EM2 BC )  (bottom/top) 
+
+                  // -is * D+t D0x D+dD-x W^n + c*Dxx4 (W^{n+1} + W^n)/2
+
+                  Real cxxxx = axis==0 ?    ca/(dx[0]*dx[0]*dx[0]*dx[0]) : 0.;
+                  Real cxxyy =           .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]);
+                  Real cyyyy = axis==1 ?    ca/(dx[1]*dx[1]*dx[1]*dx[1]) : 0.;
+                  Real cxxx  = axis==0 ? -is1*1./(2.*dx[0]*dx[0]*dx[0]*dt) : 0.;                
+                  Real cyyy  = axis==1 ? -is2*1./(2.*dx[1]*dx[1]*dx[1]*dt) : 0.;
+
+                  // ***check me**
+                  abcCoeff2(-1,-1,0) = .5*(                          cxxyy )          ;
+                  abcCoeff2(+1,-1,0) = .5*(                          cxxyy )          ;
+                  abcCoeff2( 0,-2,0) = .5*(                cyyyy           )  -   cyyy;
+                  abcCoeff2( 0,-1,0) = .5*(            -4.*cyyyy -2.*cxxyy )  +2.*cyyy; 
+                  abcCoeff2(-2, 0,0) = .5*(      cxxxx                     )  -   cxxx;         
+                  abcCoeff2(-1, 0,0) = .5*(  -4.*cxxxx           -2.*cxxyy )  +2.*cxxx;         
+                  abcCoeff2( 0, 0,0) = .5*(  +6.*cxxxx +6.*cyyyy +4.*cxxyy )          ;
+                  abcCoeff2(+1, 0,0) = .5*(  -4.*cxxxx           -2.*cxxyy )  -2.*cxxx; 
+                  abcCoeff2(+2, 0,0) = .5*(      cxxxx                     )  +   cxxx;
+                  abcCoeff2( 0,+1,0) = .5*(            -4.*cyyyy -2.*cxxyy )  -2.*cyyy;
+                  abcCoeff2( 0,+2,0) = .5*(                cyyyy           )  +   cyyy;
+                  abcCoeff2(-1,+1,0) = .5*(                          cxxyy )          ;
+                  abcCoeff2(+1,+1,0) = .5*(                          cxxyy )          ;
+
+                }
+              }
+
             }
             else
             {
-              abcCoeff(-1,0,0) = .5*( .5*ca/(dx[0]*dx[0]) ); 
-              abcCoeff(+1,0,0) = .5*( .5*ca/(dx[0]*dx[0]) );                   
+              OV_ABORT("FINISH ME - order>4 EM implicit BCs");
+            }
+            if( false )
+            {
+              // OLD WAY 
+              const Real dxa2 = dx[axis]*dx[axis];
+              const Real dya2 = dx[axisp1]*dx[axisp1];
+              abcCoeff(-is1,-is2,0) = .5*(    ca/dxa2           )  + 1./(2.*dx[axis]*dt);    // ghost
+              abcCoeff(   0,   0,0) = .5*(-2.*ca/dxa2 - ca/dya2 );                           // boundary 
+              abcCoeff(+is1,+is2,0) = .5*(    ca/dxa2           )  - 1./(2.*dx[axis]*dt);    // first line in
+              
+              if( axis==0 )
+              {
+                abcCoeff(0,-1,0) = .5*( .5*ca/(dx[1]*dx[1]) ); 
+                abcCoeff(0,+1,0) = .5*( .5*ca/(dx[1]*dx[1]) ); 
+              }
+              else
+              {
+                abcCoeff(-1,0,0) = .5*( .5*ca/(dx[0]*dx[0]) ); 
+                abcCoeff(+1,0,0) = .5*( .5*ca/(dx[0]*dx[0]) );                   
+              }
             }     
           }
           else
@@ -3500,12 +3809,31 @@ int CgWave::formImplicitTimeSteppingMatrix()
                 int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
                 setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
               }
+
+              if( useCompatiblityRBC )
+              {
+                int i1m=i1-2*is1, i2m=i2-2*is2, i3m=i3-2*is3; //  2nd ghost point is (i1m,i2m,i3m)
+                setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost2);  
+                ForStencil(m1,m2,m3)
+                {
+                  int m  = M123(m1,m2,m3);        // the single-component coeff-index
+
+                  coeffLocal(m,i1m,i2m,i3m) = abcCoeff2(m1,m2,m3);
+
+                  // Specify that the above coeff value is the coefficient of component c at the grid point (j1,j2,j3).
+                  int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
+                  setEquationNumber(m, e,i1m,i2m,i3m,  cc,j1,j2,j3 );      // macro to set equationNumber
+                }                 
+
+              }
             }
 
           } // end FOR_3D
 
-          // fill ghost 2 with extrapolation
-          for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
+          // fill additional ghost with extrapolation
+          int ghostStart= useCompatiblityRBC ? orderOfAccuracy/2+1 : 2;
+          printF("  ...useCompatiblityRBC=%d, ghostStart=%d\n'",(int)useCompatiblityRBC,ghostStart);
+          for( int ghost=ghostStart; ghost<=numberOfGhostLines; ghost++ )
           {
             fillGhostExtrapolation(ghost);
           } // end for ghost
@@ -3531,7 +3859,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
 
 
       // --- FILL CORNERS AND EDGES ----
-      const bool useCompatibility = orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions;
+
       if( useCompatibility && numberOfDimensions==2 )
       {
         // --- corner points in two dimensions ---
@@ -3836,19 +4164,28 @@ int CgWave::formImplicitTimeSteppingMatrix()
       displayCoeff(impCoeff[grid],sPrintF("BEFORE FINISH BC: implicit time-stepping matrix on grid=%d",grid),debugFile);
     } 
 
-    // do we need to limit the extrapolation order here?
-    // BoundaryConditionParameters extrapParams;
-    // extrapParams.orderOfExtrapolation=3;      // ** TEST
+    
+    if( !useCompatibility )
+    {
+      // *wdh* add this back Oct 1, 2024
 
-    // impCoeff.finishBoundaryConditions(extrapParams); 
+      BoundaryConditionParameters extrapParams;
+      extrapParams.orderOfExtrapolation=orderOfAccuracy+1;      // ** TEST
 
-    impCoeff.finishBoundaryConditions(); 
+      impCoeff.finishBoundaryConditions(extrapParams); 
+      printF("FILL IMP CORNER BCS -- EXTRAP TO ORDER %d\n",extrapParams.orderOfExtrapolation);
+    }
+    else
+    {
+      impCoeff.finishBoundaryConditions(); 
+    }
 
     if( debug & 8 )
     {
       int grid=0;
       displayCoeff(impCoeff[grid],sPrintF("AFTER FINISH BC: implicit time-stepping matrix on grid=%d",grid),debugFile);
-      // OV_ABORT("stop here for now");
+      fflush(debugFile);
+      OV_ABORT("stop here for now");
     }    
 
     impSolver.setCoefficientArray( impCoeff );   // supply coefficients to Oges

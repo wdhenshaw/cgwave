@@ -1,45 +1,19 @@
-#
 # 
 #   plotStuff plotSolution.cmd -show=gaussianSquare.show -name=gaussianSquareOmega -solution=1
 #   plotStuff plotSolution.cmd -show=gaussianShapesOmega9p777.show -name=gaussianShapesOmega9p777 -solution=1
-#   plotStuff plotSolution.cmd -show=gaussianDiskOmega8p1.show -name=gaussianDiskOmega8p1 -solution=1
-#   plotStuff plotSolution.cmd -show=annulusOmega9p777.show -name=annulusOmega9p777 -solution=1
 #
 #   plotStuff plotSolution.cmd -show=shapesOmega66.show -name=shapesOmega66 -solution=1
-#   plotStuff plotSolution.cmd -show=shapesOmega67.show -name=shapesOmega67 -solution=1
-#   plotStuff plotSolution.cmd -show=shapesOmega68.show -name=shapesOmega68 -solution=1
-#   plotStuff plotSolution.cmd -show=shapesOmega69.show -name=shapesOmega69 -solution=1
-#   plotStuff plotSolution.cmd -show=shapesOmega70.show -name=shapesOmega70 -solution=1
-#
 # plotStuff plotSolution.cmd -show=shapesG4O4freq45Np80 -name=shapesG4O4freq45Np80 -solution=1
-# plotStuff plotSolution.cmd -show=shapesG4O4freq44Np80 -name=shapesG4O4freq44Np80 -solution=1
-# plotStuff plotSolution.cmd -show=shapesG4O4freq43Np80 -name=shapesG4O4freq43Np80 -solution=1
-#
 #
 # plotStuff plotSolution.cmd -show=multiObjectsFreq10Np8G4Order2Deflate64 -name=multiObjectsFreq10Np8G4Order2Deflate64 -solution=1
-# plotStuff plotSolution.cmd -show=multiObjectsFreq10Np8G8Order2Deflate64 -name=multiObjectsFreq10Np8G8Order2Deflate64 -solution=1
-# plotStuff plotSolution.cmd -show=multiObjectsFreq10Np8G4Order4Deflate128.show -name=multiObjectsFreq10Np8G4Order4Deflate128 -solution=1
 # Plot DHS: 
 # plotStuff plotSolution.cmd -show=multiObjectsFreq10Np2G8Order4DHS.show -name=multiObjectsFreq10G8Order4DHS -solution=1
 #
 # Order=2:
 # plotStuff plotSolution.cmd -show=darkCornerRoomFreq5Np8G4Order2Deflate64 -name=darkCornerRoomFreq5Np8G4Order2Deflate64 -solution=1
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq10Np8Nit10NG4Order2Deflate64 -name=darkCornerRoomFreq10Np8Nit10NG4Order2Deflate64 -solution=1
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq10Np8G8Order2Deflate64 -name=darkCornerRoomFreq10Np8G8Order2Deflate64 -solution=1
 # Plot DHS: 
 #   plotStuff plotSolution.cmd -show=darkCornerRoomFreq10Np8G16Order2 -name=darkCornerRoomFreq10Np8G16Order2 -solution=1 -comp=uDHS
 # Order=4 
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq10Np8G4Order4Deflate64 -name=darkCornerRoomFreq10Np8G4Order4Deflate64 -solution=1
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq10Np8G8Order4Deflate64 -name=darkCornerRoomFreq10Np8G8Order4Deflate64 -solution=1
-# 
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq15Np8Nit10NG4Order4Deflate100 -name=darkCornerRoomFreq15Np8Nit10NG4Order4Deflate100 -solution=1
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq10Np8Nit10NG4Order4Deflate256 -name=darkCornerRoomFreq10Np8Nit10NG4Order4Deflate256 -solution=1
-#
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq15Np8Nit10NG4Order4Deflate256 -name=darkCornerRoomFreq15Np8Nit10NG4Order4Deflate256 -solution=1
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq5Np8Nit10NG4Order4Deflat646 -name=darkCornerRoomFreq5Np8Nit10NG4Order4Deflate46 -solution=1
-# 
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq30G16O4 -name=darkCornerRoomFreq30G16O4 -solution=1 -comp=absv -emin=0 -emax=1
-# plotStuff plotSolution.cmd -show=darkCornerRoomFreq30G8O4X3Y3 -name=darkCornerRoomFreq30G8O4X3Y3 -solution=1 -comp=absv -emin=0 -emax=1
 # plotStuff plotSolution.cmd -show=darkCornerRoomFreq40G8O4X3Y3 -name=darkCornerRoomFreq40G8O4X3Y3 -solution=1 -comp=absv -emin=0 -emax=0.3
 #
 $show="gaussianSquare.show"; $solution="-1"; $name="plot"; $field="Ey"; $emin=0; $emax=-1; $numFreq=1; $clines=0; $comp="v"; 

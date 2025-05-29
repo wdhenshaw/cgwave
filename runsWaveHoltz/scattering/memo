@@ -1,4 +1,1265 @@
+SUPER GRID : **FINISH DIRECT SOLVER ORDER 4 ***
+           : FINISH IMPLICIT ORDER 4
 
+REMAKE OBJECTS GRIDS (in ~/grids) (NO LONGER BIGGER ON LEFT)
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=3 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=4 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=8 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=16 
+
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=4 -factor=4
+
+GRID -- slighty bigger on left  
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=4 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=8 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=16 
+
+
+
+*******************************************
+********* Fri May 9, 2025
+
++++ FIXED FPI RESIDUAL -- INCLUDE BOTH COMPONENTS
+
+MAKE CYLCSCAT PLOTS
+
+CYL SCAT O4 todo .. done
+cgwh -noplot scat.cmd -g=cice4.order4 -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO4G4kx4FW.show -takeImplicitFirstStep=1 -matlab=cicG4O4kx4BrrrrdFW -go=dfks > scatCylO4G4kx4FW.out
+
+CYL SCAT O2 REDO use FW .. running ... done
+setsid $cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO2G4kx4.show -takeImplicitFirstStep=1 -matlab=cicG4O2kx4Brrrrd -go=dfks > scatCylO2G4kx4
+
+
+>>>>>>>>> SPLIT ANNULUS: redo...
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitAnnulusGridLeftGape6.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitAnnulusScatLeftGapG6O4kx4.show -takeImplicitFirstStep=1 -matlab=splitAnnulusScatLeftGapG6O4kx4 -go=dfks > splitAnnulusScatLeftGapG6O4kx4.out
+
+
+>>>> split-ring left gap: DONE
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape4.order4.hdf -ts=implicit -beta2=.25 -cfl=1000 -nf=1 -amp=1 -kx=3.536 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG4O4kx3p536.show -takeImplicitFirstStep=1 -matlab=splitRingScatLeftGapG4O4kx3p536 -go=dfks > splitRingScatLeftGapG4O4kx3p536.out 
+
+*******************************************
+********* Tues/Wed/Thurs May 6/7/8, 2025
+
+
+++++O4: kx=3.536 -- near resonance LEFT gap: 
+
+plotStuff plotSolution.cmd -show=splitRingScatLeftGapG4O4kx3p536.show -name=splitRingScatLeftGapG4O4kx3p536 -field=speed
+
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape4.order4.hdf -ts=implicit -beta2=.25 -cfl=1000 -nf=1 -amp=1 -kx=3.536 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG4O4kx3p536.show -takeImplicitFirstStep=1 -matlab=splitRingScatLeftGapG4O4kx3p536 -go=dfks > splitRingScatLeftGapG4O4kx3p536.out 
+
+
+
+++++O4: kx=3.5 LEFT gap: 
+
+plotStuff plotSolution.cmd -show=splitRingScatLeftGapG4O4kx3p5.show -name=splitRingScatLeftGapG4O4kx3p5 -field=speed
+
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape4.order4.hdf -ts=implicit -beta2=.25 -cfl=1000 -nf=1 -amp=1 -kx=3.5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG4O4kx3p5.show -takeImplicitFirstStep=1 -matlab=splitRingScatLeftGapG4O4kx3p5 -go=dfks > splitRingScatLeftGapG4O4kx3p5.out 
+
+
+
+O4: kx=3 LEFT gap: 
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape4.order4.hdf -ts=implicit -beta2=.25 -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG4O4kx3.show -takeImplicitFirstStep=1 -matlab=splitRingScatLeftGapG4O4kx3 -go=dfks > splitRingScatLeftGapG4O4kx3.out 
+
+
+O4: kx=3 top gap: 
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape4.order4.hdf -ts=implicit -beta2=.25 -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG4O4kx3.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapG4O4kx3 -go=dfks > splitRingScatTopGapG4O4kx3.out 
+
+
+O4: kx=4 top gap: 
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape4.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG4O4kx4.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapG4O4kx4 -go=dfks > splitRingScatTopGapG4O4kx4.out 
+
+
+
+SPLIT_ANNULUS PLOT:
+plotStuff plotSolution.cmd -show=splitAnnulusScatLeftGapG6O4kx4.show -name=splitAnnulusScatLeftGapG6O4kx4 -field=speed
+
+plotStuff plotSolution.cmd -show=splitAnnulusScatLeftGapG8O4kx9.show -name=splitAnnulusScatLeftGapG8O4kx9 -field=speed
+
+MULTI-OBJECTS PLOT:
+plotStuff plotSolution.cmd -show=multiObjectsG8O4ky7.show -name=multiObjectsG8O4ky7 -field=speed
+
+>>>>>>>>> START SPLIT ANNULUS:
+
+
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitAnnulusGridLeftGape6.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitAnnulusScatLeftGapG6O4kx4.show -takeImplicitFirstStep=1 -matlab=splitAnnulusScatLeftGapG6O4kx4 -go=dfks > splitAnnulusScatLeftGapG6O4kx4.out
+
+solveHelmholtz: max-residual [Re,Im]=[1.84e-12,1.23e-12] (gmres, numIts=63, ave-CR= 0.66 )
+solveHelmholtz: rel-max-diff [Re,Im]=[3.67e-12,4.82e-12],  norm [Re,Im]=[3.23e+00,5.92e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+NICE DISK MODE kx=9
+PPW=17.8 PPW4=18.7
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitAnnulusGridLeftGape8.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=9 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitAnnulusScatLeftGapG8O4kx9.show -takeImplicitFirstStep=1 -matlab=splitAnnulusScatLeftGapG8O4kx9 -go=dks > splitAnnulusScatLeftGapG8O4kx9.out
+
+solveHelmholtz: max-residual [Re,Im]=[4.05e-12,8.93e-13] (gmres, numIts=855, ave-CR= 0.97 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.75e-10,1.71e-10],  norm [Re,Im]=[6.08e+00,3.39e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+kx=5 resonance PPW=32 PPW4=16 *OK*
+omega=  3.14e+01, k=  3.14e+01, lambda=  2.00e-01, dx=  6.25e-03, domainSize=  2.50e+00, NLambda=12.5, ppw=lambda/dx= 32.0, ppw(rule-of-thumb)= 16.1 (epsr=0.01)<<<
+
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitAnnulusGridLeftGape8.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitAnnulusScatLeftGapG8O4.show -takeImplicitFirstStep=1 -matlab=splitAnnulusScatLeftGapG8O4 -go=og dfk
+
+splitAnnulusGride4.order2.hdf
+kx=5 resonance 
+But O2 way under-resolved
+omega=  3.14e+01, k=  3.14e+01, lambda=  2.00e-01, dx=  1.25e-02, domainSize=  2.50e+00, NLambda=12.5, ppw=lambda/dx= 16.0, ppw(rule-of-thumb)=113.7 (epsr=0.01)<<<
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitAnnulusGridLeftGape4.order2.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitAnnulusScatLeftGapG4O2.show -takeImplicitFirstStep=1 -matlab=splitAnnulusScatLeftGapG4O2 -go=og dfk
+
+
+
+>>>>>>>>>>>>  RUNS FOR PAPER -- MULTI-OBJECTS
+
+(m,n)=( 6, 6) kx=  7.0711e+00 omega=  4.4429e+01
+
+(m,n)=( 9, 0) kx=  7.5000e+00 omega=  4.7124e+01
+(m,n)=( 0, 9) kx=  7.5000e+00 omega=  4.7124e+01
+
+G4 O4 kx=3 -- resonant 
+plotStuff plotSolution.cmd -show=multiObjectsG4O4ky3.show -name=multiObjectsG4O4ky3 -res=2048 -field=speed
+
+PPW OK: 
+omega=  4.44e+01, k=  4.44e+01, lambda=  1.41e-01, dx=  6.25e-03, domainSize=  8.50e+00, NLambda=60.1044, ppw=lambda/dx= 22.6, ppw(rule-of-thumb)= 23.9 (epsr=0.01)<<<
+
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride8.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=7.0711 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0  -debug=0 -takeImplicitFirstStep=1 -matlab=multObjectsG8O4ky7 -show=multiObjectsG8O4ky7.show -go=ks > multiObjectsG8O4ky7.out
+
+
+$cgwh -noplot scat.cmd -g=multiObjectsGride8.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=7.0711 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=1 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -takeImplicitFirstStep=1 -matlab=multObjectsG8O4ky7 -show=multiObjectsG8O4ky7.show -go=k
+
+*******************************************
+********* Mon May 5, 2025
+
+RETURN TO MULTI-OBJECTS SCATTERING
+
+>>>>>> NEW RUNS:
+
+G4 O4 kx=3 -- resonant 
+plotStuff plotSolution.cmd -show=multiObjectsG4O4ky3.show -name=multiObjectsG4O4ky3 -res=2048 -field=speed
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride4.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=3 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -takeImplicitFirstStep=1 -matlab=multObjectsG4ky3 -show=multiObjectsG4O4ky3.show -go=dks > multiObjectsG4O4ky3.out
+
+
+
+G4 O4 ky=4:  PPW OK 
+plotStuff plotSolution.cmd -show=multiObjectsG4O4ky4.show -name=multiObjectsG4O4ky4 -res=2048 -field=speed
+
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride4.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=4 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -takeImplicitFirstStep=1 -matlab=multObjectsG4ky4 -show=multiObjectsG4O4ky4.show -go=dks > multiObjectsG4O4ky4.out
+
+grid=/home/henshw/grids/multiObjectsGride4.order4.hdf
+ Convergence rate CR=0.960, CR-perPeriod=0.990, Time to solve = 3.67e+03(s) : CgWave= 3.66e+03(s) 99.54%, advance= 3.65e+03(s) 99.39%
+ max-residual=-1.00e+00 (WaveHoltz its), numberOfIterations = 422 (gmres) (maximumNumberOfIterations=1000)
+ omega=  2.51e+01, k=  2.51e+01, lambda=  2.50e-01, dx=  1.25e-02, domainSize=  8.50e+00, NLambda=34, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 20.7 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 2.03e-11, 1.77e-10] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 1.46e-12, 1.29e-11] (Re,Im) (scale= 2.44e-08)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.68e-11, 1.82e-10] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 1.31e-12, 1.69e-11] (Re,Im) (scale= 2.44e-08)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 2.45e-11, 2.66e-10] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 1.92e-12, 1.97e-11] (Re,Im) (scale= 2.44e-08)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.59e-11, 1.81e-10] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 1.88e-12, 1.54e-11] (Re,Im) (scale= 2.44e-08)
+CgWaveHoltz::residual: grid=0 : maxRes= 1.27e-06
+CgWaveHoltz::residual: grid=1 : maxRes= 1.65e-08
+CgWaveHoltz::residual: grid=2 : maxRes= 1.03e-08
+CgWaveHoltz::residual: grid=3 : maxRes= 1.56e-08
+CgWaveHoltz::residual: grid=4 : maxRes= 1.43e-08
+CgWaveHoltz::residual: grid=5 : maxRes= 7.06e-09
+CgWaveHoltz::residual: grid=6 : maxRes= 1.55e-08
+CgWaveHoltz::residual: grid=7 : maxRes= 1.43e-08
+CgWaveHoltz::residual: grid=8 : maxRes= 1.37e-08
+CgWaveHoltz::residual: grid=9 : maxRes= 1.11e-08
+CgWaveHoltz::residual: grid=10 : maxRes= 1.16e-08
+CgWaveHoltz::residual: grid=11 : maxRes= 5.84e-09
+CgWaveHoltz::residual: grid=12 : maxRes= 1.06e-08
+solveHelmholtz: max-residual [Re,Im]=[1.56e-08,1.67e-08] (gmres, numIts=422, ave-CR= 0.96 )
+solveHelmholtz: rel-max-diff [Re,Im]=[3.99e-07,3.18e-07],  norm [Re,Im]=[3.78e+00,4.82e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+>>>>>>>>>>>>>>>> OLD RUNS <<<<<<<<<<<<<<<<<<<<< 
+runs/overHoltz/scattering: 
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride16.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=16 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=multiObjectsG16ky16 -show=multiObjectsG16ky16.show -go=ks > multiObjectsG16ky16.out
+
+RUNNING ... ok .. run more iterations
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride8.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=8 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=multiObjectsG8ky8 -show=multiObjectsG8ky8.show -go=dks > multiObjectsG8ky8.out
+
+ky=4: look good: 
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=4 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=mulitObjectsG4ky4 -show=multiObjectsG4ky4.show -go=dks > mulitObjectsG4ky4.out
+
+
+plotStuff plotSolution.cmd -show=multiObjectsG4ky4.show -name=multiObjectsG4ky4 -res=2048 -field=absur absui
+plotStuff plotSolution.cmd -show=multiObjectsG4ky4.show -name=multiObjectsG4ky4 -res=2048 -field=absurTotal absuiTotal
+
+
+
+RE-RUN TOP GAP MORE ITS ..scattering2.. running .... STILL NO EXCITED MODE
+plotStuff plotSolution.cmd -show=splitRingScatTopGapG16O4kx16.show -name=splitRingScatTopGapG16O4kx16 -field=speed
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape16.order4.hdf -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8 -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG16O4kx16.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapG16O4kx16 -go=ks > splitRingScatTopGapG16O4kx16.out
+
+SCALE RBC RESIDUAL
+
+cgwh -noplot scat.cmd -g=cice4.order4 -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G4kx8.show -takeImplicitFirstStep=1 -matlab=cicO4Gkx8 -go=og
+
+AFTER:
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.25e-11, 3.86e-11] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 4.52e-11, 8.01e-11] (Re,Im) (scale= 3.91e-07)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.68e-11, 1.83e-11] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 9.00e-12, 3.22e-11] (Re,Im) (scale= 3.91e-07)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.23e-11, 4.91e-12] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 1.13e-11, 3.29e-11] (Re,Im) (scale= 3.91e-07)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.10e-10, 2.10e-11] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 5.50e-11, 1.78e-11] (Re,Im) (scale= 3.91e-07)
+CgWaveHoltz::residual: grid=0 : maxRes= 8.12e-08
+CgWaveHoltz::residual: grid=1 : maxRes= 1.01e-10
+
+BEFORE:
+DHS: dx=.025 
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 1: max-res=[ 5.20e-08, 6.18e-08], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 2: max-res=[ 1.16e-04, 2.05e-04]
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 1: max-res=[ 7.48e-08, 2.93e-08], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 2: max-res=[ 2.30e-05, 8.23e-05]
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 1: max-res=[ 1.96e-08, 7.86e-09], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 2: max-res=[ 2.88e-05, 8.42e-05]
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 1: max-res=[ 1.76e-07, 3.36e-08], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 2: max-res=[ 1.41e-04, 4.56e-05]
+
+CgWaveHoltz::residual: grid=0 : maxRes= 8.12e-08
+CgWaveHoltz::residual: grid=1 : maxRes= 1.01e-10
+
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO2G8kx8.show -takeImplicitFirstStep=1 -matlab=cicO2G8kx8 -go=dk
+
+WAVEHOLTZ
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 1: max-res=[ 1.96e-08, 3.71e-07], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 1: max-res=[ 3.32e-08, 2.78e-07], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 1: max-res=[ 2.38e-08, 2.32e-07], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 1: max-res=[ 2.38e-08, 2.32e-07], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.88e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 5.77e-11
+
+DHS:
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 1: max-res=[ 7.45e-10, 4.74e-09], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 1: max-res=[ 1.19e-08, 1.48e-12], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 1: max-res=[ 5.16e-09, 8.35e-09], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 1: max-res=[ 1.47e-08, 1.02e-12], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 9.94e-09
+CgWaveHoltz::residual: grid=1 : maxRes= 3.08e-10
+CgWaveHoltz: omega=5.027e+01, max-res=9.938e-09 (direct Helmholtz solution)
+
+*******************************************
+********* Sun May 4, 2025 
+
+>>> PLOT MULTI-OBJECTS GRID
+
+REMAKE OBJECTS GRIDS (in ~/grids) (NO LONGER BIGGER ON LEFT)
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=3 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=4 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=8 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=2 -factor=16 
+
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -interp=e -order=4 -factor=4 
+
+multiObjectsGride16.order2
+
+>>>>>>>>>> FINE GRID SPLIT RING 
+
+G16 O4 kx=16 PPW=20 PPW4=21.6
+omega=  1.01e+02, k=  1.01e+02, lambda=  6.25e-02, dx=  3.13e-03, domainSize=  2.50e+00, NLambda=40, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 21.6 (epsr=0.01)<<<
+
+plotStuff plotSolution.cmd -show=splitRingScatLeftGapG16O4kx16.show -name=splitRingScatLeftGapG16O4kx16 -field=speed -res=2048
+plotStuff plotSolution.cmd -show=splitRingScatTopGapG16O4kx16.show -name=splitRingScatTopGapG16O4kx16 -field=speed -res=2048
+
+TRY LEFT GAP LOOKS GOOD 
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape16.order4.hdf -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8 -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=600 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG16O4kx16.show -takeImplicitFirstStep=1 -matlab=splitRingScatLeftGapG16O4kx16 -go=ks > splitRingScatLeftGapG16O4kx16.out
+
+##### SAVE KRYLOV RESIDUAL: iteration=307: L2h-residual= 6.67e-04, ratio= 0.98 
+ ##### SAVE KRYLOV RESIDUAL: iteration=616: L2h-residual= 4.25e-05, ratio= 0.99 
+
+setsid $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape16.order4.hdf -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8 -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG16O4kx16.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapG16O4kx16 -go=ks > splitRingScatTopGapG16O4kx16.out
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=204: L2h-residual= 2.42e-05, ratio= 0.99 
+
+>>>>>>>> CYL SCAT <<<<<<<<<<<<<
+
+G64 O4 kx=24 PPW=27 PPW4=27 
+
+plotStuff plotSolution.cmd -show=scatCylO4G64kx24.show -name=scatCylO4G64kx24 -field=speed -res=2048
+
+omega=  1.51e+02, k=  1.51e+02, lambda=  4.17e-02, dx=  1.56e-03, domainSize=  4.00e+00, NLambda=96, ppw=lambda/dx= 26.7, ppw(rule-of-thumb)= 26.9 (epsr=0.01)<<<
+setsid $cgwh -noplot scat.cmd -g=cice64.order4 -ts=implicit -solveri=bcgs -cfl=1000 -nf=1 -amp=1 -kx=24 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G64kx24.show -takeImplicitFirstStep=1 -matlab=scatCylO4G64kx24 -go=ks > scatCylO4G64kx24.out
+
+
+RUN : scattering2 .. done
+plotStuff plotSolution.cmd -show=scatCylO4G32kx14.show -name=scatCylO4G32kx14 -field=speed -res=2048
+G32 O4 kx=14 PPW=23 PPW4=24
+setsid $cgwh -noplot scat.cmd -g=cice32.order4 -ts=implicit -solveri=bcgs -cfl=1000 -nf=1 -amp=1 -kx=14 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G32kx14.show -takeImplicitFirstStep=1 -matlab=scatCylO4G32kx14 -go=ks > scatCylO4G32kx14
+
+##### SAVE KRYLOV RESIDUAL: iteration=102: L2h-residual= 4.10e-11, ratio= 0.91 
+
+
+
+G32 O4 TEST IMP=BICGSTAB: 
+kx=12:
+omega=  7.54e+01, k=  7.54e+01, lambda=  8.33e-02, dx=  3.13e-03, domainSize=  4.00e+00, NLambda=48, ppw=lambda/dx= 26.7, ppw(rule-of-thumb)= 22.6 (epsr=0.01)<<<
+kx=14
+ omega=  8.80e+01, k=  8.80e+01, lambda=  7.14e-02, dx=  3.13e-03, domainSize=  4.00e+00, NLambda=56, ppw=lambda/dx= 22.9, ppw(rule-of-thumb)= 23.5 (epsr=0.01)<<<
+
+cgwh -noplot scat.cmd -g=cice32.order4 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=14 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=2 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=junk.show -go=k
+
+
+
+G16 O4 TEST IMP=multigrid *NO* Did this ever work ??
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -solveri=multigrid -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=6 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=junk.show -go=k
+
+Ogmg::setBoundaryConditions:ERROR: unknown bc(0,0,0)=8
+
+
+G16 O4 TEST IMP=BICGSTAB: this works
+cgwh -noplot scat.cmd -g=cice16.order4 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=6 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=junk.show -go=k
+
+
+
+G16 O2 TEST BICGSTAB: this works
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=6 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=junk.show -go=k
+
+
+DOES MULTIGRID REALY WORK WITH RBCS ?
+
+>>>>>>>> OLD RUNS : 
+runs/overHoltz/scat2: 
+cgwh -noplot scat.cmd -g=cice32.order2.ml3 -ts=implicit -solveri=multigrid -rtoli=1e-8 -atoli=1e-8 -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG32kx16.show -go=og
+
+G128 kx=64 running ...
+BIG-CG-STAB
+runs/overHoltz/scattering2: 
+setsid $cgwh -noplot scat.cmd -g=cice128.order2 -ts=implicit -solveri=bcgs -rtoli=1e-10 -atoli=1e-10  -cfl=1000 -nf=1 -amp=1 -kx=64 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG128kx64.show -go=ks > diskG128kx64.out
+
+
+
+BI-CG 
+runs/overHoltz/scat2: 
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=6 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=junk.show -go=og
+
+
+
+*******************************************
+********* Sat May 3, 2025 
+
+REDO HIGH FREQUENCY CYL SCAT RESULTS
+
+plotStuff plotSolution.cmd -show=diskG32kx16.show -name=diskG32kx16 -field=speed
+
+
+plotStuff plotSolution.cmd -show=scatCylO4G16kx8.show -name=scatCylO4G16kx8 -field=speed
+
+>>>> G16 kx=8: O4 PPW GOOD
+omega=  5.03e+01, k=  5.03e+01, lambda=  1.25e-01, dx=  6.25e-03, domainSize=  4.00e+00, NLambda=32, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 20.4 (epsr=0.01)<<<
+cgwh -noplot scat.cmd -g=cice16.order4 -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G16kx8.show -takeImplicitFirstStep=1 -matlab=scatCylO4G16kx8 -go=dks
+
+G8 O2: PPW way too small
+  omega=  5.03e+01, k=  5.03e+01, lambda=  1.25e-01, dx=  1.25e-02, domainSize=  4.00e+00, NLambda=32, ppw=lambda/dx= 10.0, ppw(rule-of-thumb)=181.9 (epsr=0.01)<<< 
+plotStuff plotSolution.cmd -show=scatCylO2G8kx8.show -name=scatCylO2G8kx8 -field=speed
+
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO2G8kx8.show -takeImplicitFirstStep=1 -matlab=cicO2G8kx8 -go=dks
+
+solveHelmholtz: max-residual [Re,Im]=[1.88e-10,1.77e-10] (gmres, numIts=72, ave-CR= 0.76 )
+solveHelmholtz: rel-max-diff [Re,Im]=[4.47e-09,4.36e-09],  norm [Re,Im]=[1.04e+00,1.07e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+MAKE CYLCSCAT PLOTS
+
+plotStuff plotSolution.cmd -show=scatCylO4G4kx4FW.show -name=scatCylO4G4kx4FW -field=speed
+
+cgwh -noplot scat.cmd -g=cice4.order4 -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO4G4kx4FW.show -takeImplicitFirstStep=1 -matlab=cicG4O4kx4BrrrrdFW -go=dks
+
+
+
+
+
+2x3 resonance 18.84860297/(2*pi) = 2.9999
+Eigenvalue 306 : k=   -0.00000133 + (  -18.84860297) i, mult=1, resid=4.58e-10 resbc=8.03e-05
+Eigenvalue 307 : k=   -0.00000133 + (  +18.84860297) i, mult=1, resid=4.58e-10 resbc=8.03e-05
+
+Eigenvalue 474 : k=   -0.00003846 + (  -23.07124321) i, mult=1, resid=8.74e-10 resbc=7.25e-05
+Eigenvalue 475 : k=   -0.00003846 + (  +23.07124321) i, mult=1, resid=8.74e-10 resbc=7.25e-05
+
+plotStuff plotSolution.cmd -show=splitRingScatTopGapG4O4kx3.show -name=splitRingScatTopGapG4O4kx3 -field=speed
+plotStuff plotSolution.cmd -show=splitRingScatTopGapG4O4kx4.show -name=splitRingScatTopGapG4O4kx4 -field=speed
+
+O4: kx=3 top gap:  -- near resonance -- add more its
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape4.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=120 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG4O4kx3.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapG4O4kx3 -go=dfks
+
+
+
+O4: kx=4 top gap: 
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape4.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG4O4kx4.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapG4O4kx4 -go=dfks
+
+solveHelmholtz: max-residual [Re,Im]=[1.26e-12,1.22e-12] (gmres, numIts=59, ave-CR= 0.64 )
+solveHelmholtz: rel-max-diff [Re,Im]=[4.76e-10,2.56e-11],  norm [Re,Im]=[1.09e+00,1.05e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+O2: kx=3 top gap: 
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape4.order2.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=100 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG4O2kx3.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapG4O2kx3 -go=dfks
+
+
+
+O4: kx=3 top gap: NICE resonace
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape4.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=100 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG4O4kx3.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapG4O4kx3 -go=dfks
+
+
+left gap: not as big a resonance
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape4.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=2.3586 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG8O4kx10.show -takeImplicitFirstStep=1 -matlab=splitRingScatLeftGapO2O4kx10Brrrrd -go=dfk
+
+
+2x2 cavity mode upward and right sound
+Eigenvalue 176 : k=   -0.00000022 + (  -14.81939338) i, mult=1, resid=4.38e-10 resbc=4.49e-05
+Eigenvalue 177 : k=   -0.00000022 + (  +14.81939338) i, mult=1, resid=4.38e-10 resbc=4.49e-05
+
+14.81939338/(2*pi) = 2.3586
+ top gap: fairly big resonance
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape4.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=2.3586 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG8O4kx10.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapO2O4kx10Brrrrd -go=dfk
+
+solveHelmholtz: max-residual [Re,Im]=[1.67e-11,3.65e-12] (gmres, numIts=39, ave-CR= 0.51 )
+solveHelmholtz: rel-max-diff [Re,Im]=[3.84e-11,7.30e-10],  norm [Re,Im]=[8.01e+00,1.18e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+Order=4 top gap G4 kx=10
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape4.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=10 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG8O4kx10.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapO2O4kx10Brrrrd -go=dfk
+
+Order=4 top gap G4 kx=4
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridTopGape4.order4.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatTopGapG8O4kx4.show -takeImplicitFirstStep=1 -matlab=splitRingScatTopGapO2O4kx4 -go=dfk
+
+solveHelmholtz: max-residual [Re,Im]=[1.26e-12,1.22e-12] (gmres, numIts=59, ave-CR= 0.64 )
+solveHelmholtz: rel-max-diff [Re,Im]=[4.76e-10,2.56e-11],  norm [Re,Im]=[1.09e+00,1.05e+00] (between WaveHoltz and Direct Helmholtz)
+
+*******************************************
+********* Fri May 2, 2025 
+
+START ON SPLIT RING RESONATOR
+
+kx=15 : 2nd resonator activw
+
+TWO RESONATORS: multipleResonatorGride8.order2.hdf 
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/multipleResonatorGride8.order2.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=10 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=multipleResonatorScatAngle90O2G8kx10.show -takeImplicitFirstStep=1 -matlab=multipleResonatorScatAngle90G8O2kx10Brrrrd -go=dfk
+
+
+
+>>>> GAP AT TOP: 
+kx=10
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridAngle90e8.order2.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=10 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatAngle90O2G8kx10.show -takeImplicitFirstStep=1 -matlab=splitRingScatAngle90G8O2kx10Brrrrd -go=dfk
+
+>> kx=4
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridAngle90e4.order2.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatAngle90O2G4kx4.show -takeImplicitFirstStep=1 -matlab=splitRingScatAngle90G2O4kx4Brrrrd -go=dfk
+
+>>> GAP ON LEFT:
+kx=10
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGride8.order2.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=10 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatO2G8kx10.show -takeImplicitFirstStep=1 -matlab=splitRingScatG8O2kx10Brrrrd -go=dks
+
+
+plotStuff plotSolution.cmd -show=splitRingScatO4G4kx4.show -name=splitRingScatO4G4kx4 -field=absurTotal absuiTotal 
+
+SAVE A SHOW FILE
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGride4.order2.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatO2G4kx4.show -takeImplicitFirstStep=1 -matlab=splitRingScatG4O2kx4Brrrrd -go=dks
+
+cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGride4.order2.hdf -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatO2G4kx4.show -takeImplicitFirstStep=1 -matlab=splitRingScatG4O2kx4Brrrrd -go=dfk
+
+
+solveHelmholtz: max-residual [Re,Im]=[1.61e-12,1.29e-12] (gmres, numIts=60, ave-CR= 0.65 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.29e-12,2.18e-12],  norm [Re,Im]=[2.67e+00,1.26e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+*******************************************
+********* Thurs May 1, 2025 
+
+
+ORDER=4 - kx=4 FULL WEIGHTING **MATCHES NOW** 
+cgwh -noplot scat.cmd -g=cice4.order4 -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO4G4kx4FW.show -takeImplicitFirstStep=1 -matlab=cicG4O4kx4BrrrrdFW -go=dfk
+
+
+solveHelmholtz: max-residual [Re,Im]=[2.02e-12,1.27e-12] (gmres, numIts=35, ave-CR= 0.49 )
+solveHelmholtz: rel-max-diff [Re,Im]=[3.43e-11,3.58e-11],  norm [Re,Im]=[1.12e+00,1.15e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+************************************
+****** Wed April 30, 2025
+
+SAMPLE RESULTS FOR PAPER
+
+
+ORDER=4 - kx=4 FULL WEIGHTING **NO MATCH TO DHS -- FIX ME --
+cgwh -noplot scat.cmd -g=cice4.order4 -ts=implicit -beta2=.5 -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO4G4kx4FW.show -takeImplicitFirstStep=1 -matlab=cicG4O4kx4BrrrrdFW -go=dfk
+
+solveHelmholtz: max-residual [Re,Im]=[1.36e-01,1.35e-01] (gmres, numIts=44, ave-CR= 0.56 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.58e+00,1.61e+00],  norm [Re,Im]=[1.29e+00,1.27e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+************************************
+****** Tues April 29, 2025
+
+SAMPLE RESULTS FOR PAPER
+REDO WITH IMP FIRST STEP AND FILTER D0t
+
+ORDER=4 - kx=4
+cgwh -noplot scat.cmd -g=cice4.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO4G4kx4.show -takeImplicitFirstStep=1 -matlab=cicG4O4kx4Brrrrd -go=dfk
+
+solveHelmholtz: max-residual [Re,Im]=[1.37e-12,8.47e-13] (gmres, numIts=41, ave-CR= 0.53 )
+solveHelmholtz: rel-max-diff [Re,Im]=[3.41e-11,3.35e-11],  norm [Re,Im]=[1.12e+00,1.15e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+ORDER=4 - kx=2
+cgwh -noplot scat.cmd -g=cice4.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO4G4kx2.show -takeImplicitFirstStep=1 -matlab=cicG4O4kx2Brrrrd -go=dfk
+
+
+
+
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO2G4kx4.show -takeImplicitFirstStep=1 -matlab=cicG4O2kx4Brrrrd -go=dfk
+
+
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO2G4kx2.show -takeImplicitFirstStep=1 -matlab=cicG4O2kx2Brrrrd -go=dfk
+
+************************************
+****** Sun April 27, 2025
+
+SAMPLE RESULTS FOR PAPER
+
+
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO2G4kx2.show -takeImplicitFirstStep=1 -matlab=cicG4O2kx2Brrrrd -go=dfk
+
+
+
+************************************
+****** Sat April 26, 2025
+
+SAMPLE RESULTS FOR PAPER
+
+
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=/home/henshw/runs/overHoltz/eig/cicG4O2BrrrrdEv128.show -show=scatCylO2G4kx4.show -takeImplicitFirstStep=1 -matlab=cicG4O2kx4Brrrrd -go=dfk
+
+
+Wrote results to the check file [cgWaveHoltz.check]
+CgWaveHoltz::saved results in matlab file=[cicG4O2kx4Brrrrdgmres.m]
+Save the current solution, errors and forcings to the show file [scatCylO2G4kx4.show].
+
+
+>>>>>>>> START TEST ORDER=4 EM
+
+FD24 IMP + EM --higher freq-- **MATCHES**
+cgwh -noplot scat.cmd -g=cice4.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -show=scatCylO4G4kx4.show -takeImplicitFirstStep=1 -go=dfk
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 1: max-res=[ 2.39e-11, 4.22e-10], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 2: max-res=[ 2.96e-08, 5.07e-07]
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 1: max-res=[ 5.73e-11, 8.71e-10], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 2: max-res=[ 7.09e-08, 7.37e-07]
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 1: max-res=[ 3.63e-11, 4.88e-10], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 2: max-res=[ 5.28e-08, 5.52e-07]
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 1: max-res=[ 3.66e-11, 4.88e-10], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 2: max-res=[ 5.20e-08, 5.49e-07]
+CgWaveHoltz::residual: grid=0 : maxRes= 1.17e-09
+CgWaveHoltz::residual: grid=1 : maxRes= 9.30e-13
+solveHelmholtz: max-residual [Re,Im]=[2.95e-12,1.76e-12] (gmres, numIts=48, ave-CR= 0.59 )
+solveHelmholtz: rel-max-diff [Re,Im]=[3.75e-11,3.41e-11],  norm [Re,Im]=[1.12e+00,1.15e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+FD24 EXP + EM *MATCHES***
+cgwh -noplot scat.cmd -g=cice2.order4 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0  -debug=0 -go=dk
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 1: max-res=[ 6.02e-11, 7.95e-11], max|forcing(ghost)|= 0.00e+00
+                                                 ghost line 2: max-res=[ 4.92e-13, 6.93e-13] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 1: max-res=[ 4.24e-11, 1.11e-10], max|forcing(ghost)|= 0.00e+00
+                                                 ghost line 2: max-res=[ 7.28e-13, 1.36e-12] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 1: max-res=[ 6.63e-11, 5.04e-11], max|forcing(ghost)|= 0.00e+00
+                                                 ghost line 2: max-res=[ 6.67e-13, 3.45e-13] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 1: max-res=[ 3.75e-11, 5.57e-11], max|forcing(ghost)|= 0.00e+00
+                                                 ghost line 2: max-res=[ 4.07e-13, 5.01e-13] (extrapolation)
+CgWaveHoltz::residual: grid=0 : maxRes= 9.12e-12
+CgWaveHoltz::residual: grid=1 : maxRes= 1.46e-11
+solveHelmholtz: max-residual [Re,Im]=[1.27e-11,1.46e-11] (gmres, numIts=20, ave-CR= 0.27 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.87e-12,3.83e-12],  norm [Re,Im]=[1.03e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+FD24 IMP + EM *MATCHES***
+cgwh -noplot scat.cmd -g=cice2.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylO4G4kx1.show -takeImplicitFirstStep=1 -go=dk
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 1: max-res=[ 6.46e-12, 3.57e-11], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 2: max-res=[ 4.49e-09, 1.48e-08]
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 1: max-res=[ 8.60e-12, 5.48e-11], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 2: max-res=[ 6.99e-09, 2.99e-08]
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 1: max-res=[ 8.86e-12, 4.18e-11], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 2: max-res=[ 5.32e-09, 1.75e-08]
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 1: max-res=[ 1.10e-11, 4.07e-11], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 2: max-res=[ 8.97e-09, 1.77e-08]
+CgWaveHoltz::residual: grid=0 : maxRes= 7.57e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 2.15e-12
+solveHelmholtz: max-residual [Re,Im]=[2.21e-12,2.14e-12] (gmres, numIts=18, ave-CR= 0.24 )
+solveHelmholtz: rel-max-diff [Re,Im]=[4.57e-12,1.44e-12],  norm [Re,Im]=[1.03e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+IMP + EM2 *MATCHES***
+cgwh -noplot scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx1.show -takeImplicitFirstStep=1 -go=dk
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost line 1: max-res=[ 1.26e-09, 4.90e-09], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost line 1: max-res=[ 8.54e-10, 8.21e-09], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost line 1: max-res=[ 1.19e-09, 7.82e-09], max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost line 1: max-res=[ 1.19e-09, 7.82e-09], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 6.50e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 5.36e-10
+solveHelmholtz: max-residual [Re,Im]=[3.14e-10,6.50e-10] (gmres, numIts=15, ave-CR= 0.25 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.72e-10,2.68e-10],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+************************************
+****** Mon Jan 27, 2025
+
+
+ADD CHECKS: 
+
+cgwh -noplot scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -takeImplicitFirstStep=0 -go=dk
+
+solveHelmholtz: max-residual [Re,Im]=[3.14e-10,6.50e-10] (gmres, numIts=15, ave-CR= 0.25 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.72e-10,2.68e-10],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+************************************
+****** Sun Jan 26, 2025
+
+RETURN TO SCATTERING PROBLEMS:
+
+**BUG FIXED*** AUGMENTED KRYLOV for complex solutions : use numCompWaveHoltz
+
+**BUG FIXED** INCLUDE ALL POINTS IN ACTIVE SET FOR COMPLEX SOLUTIONS
+
+IMP + EM2 -- USED TO MATCH DHS 
+cgwh -noplot scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx1.show -takeImplicitFirstStep=0 -go=og
+
+++++++ GMRES:
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 1.26e-09, 4.90e-09], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 8.53e-10, 8.21e-09], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 1.19e-09, 7.82e-09], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 1.19e-09, 7.82e-09], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 6.50e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 5.36e-10
+solveHelmholtz: max-residual [Re,Im]=[3.14e-10,6.50e-10] (gmres, numIts=15, ave-CR= 0.25 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.72e-10,2.68e-10],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
++++++++ FPI MATCHES
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 6.22e-12, 1.33e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 6.78e-12, 1.42e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 6.48e-12, 1.38e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 6.49e-12, 1.38e-10], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.26e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 3.62e-11
+solveHelmholtz: max-residual [Re,Im]=[1.26e-10,1.39e-11] (FP, numIts=30, ave-CR= 0.48 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.23e-10,1.34e-11],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+EXP + EM2 -- USED TO MATCH DHS -->
+cgwh -noplot scat.cmd -g=cice2.order2 -ts=explicit -cfl=.9 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx1.show -takeImplicitFirstStep=0 -go=og
+
+GMRES: include all points in active set: matches: 
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 2.75e-11, 1.07e-09], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 2.28e-11, 1.70e-09], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 1.91e-11, 2.85e-09], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 2.12e-11, 2.84e-09], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.50e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 5.19e-10
+solveHelmholtz: max-residual [Re,Im]=[5.19e-10,7.99e-11] (gmres, numIts=16, ave-CR= 0.26 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.77e-10,1.69e-10],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+++++++ FPI : MATCHES 
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 6.25e-13, 5.53e-11], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 8.60e-13, 5.63e-11], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 9.31e-13, 5.52e-11], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 6.47e-13, 5.50e-11], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.57e-11
+CgWaveHoltz::residual: grid=1 : maxRes= 4.74e-12
+solveHelmholtz: max-residual [Re,Im]=[1.57e-11,9.57e-13] (FP, numIts=24, ave-CR= 0.39 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.51e-11,9.10e-13],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+************************************
+****** Thurs Jan 23, 2025
+
+RETURN TO SCATTERING PROBLEMS:
+
+FIX FIRST STEP WHEN THERE ARE RADIATION BCs --> STILL BROKEN
+
+THIS USED TO WORK 
+IMP + EM2 -- USED TO MATCH DHS **BROKEN**
+cgwh -noplot scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx1.show -go=og
+
+
+EXP + EM2 -- USED TO MATCH DHS **BROKEN**
+cgwh -noplot scat.cmd -g=cice2.order2 -ts=explicit -cfl=.9 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx1.show -go=og
+
+
+************************************
+****** Wed Jan 22, 2025
+
+RETURN TO SCATTERING PROBLEMS:
+
+
+THIS USED TO WORK 
+IMP + EM2 -- USED TO MATCHES DHS **BROKEN**
+cgwh -noplot scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx1.show -go=dk
+
+
+NEW: 
+
+NEW : FPI WORKS !!
+Check residual in absorbing BC: omega=  6.283185e+00, c=  1.000000e+00
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 6.22e-12, 1.33e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 6.78e-12, 1.42e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 6.48e-12, 1.38e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 6.49e-12, 1.38e-10], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.26e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 3.62e-11
+solveHelmholtz: max-residual [Re,Im]=[1.26e-10,1.39e-11] (FP, numIts=30, ave-CR= 0.48 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.23e-10,1.34e-11],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+OLD: 
+Check residual in absorbing BC: omega=  6.283185e+00, c=  1.000000e+00
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 4.13e-11, 5.77e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 7.72e-11, 8.62e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 6.33e-11, 7.95e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 6.33e-11, 7.95e-10], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.49e-10
+Check residual in absorbing BC: omega=  6.283185e+00, c=  1.000000e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 2.74e-11
+solveHelmholtz: max-residual [Re,Im]=[1.49e-10,4.29e-11] (GMRES, numIts=16, CR= 0.25 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.70e-10,8.20e-11],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+TEST CASE FROM MAKEFILE 
+  upwind=0 : **TROUBLE ???
+  upwind=1 : OK 
+
+WHY DON'T WE GET A BETTER MATCH ??
+
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG4kx4 -show=diskG8kx4.show -go=og
+
+omega=  2.51e+01, k=  2.51e+01, lambda=  2.50e-01, dx=  1.25e-02, domainSize=  4.00e+00, NLambda=16, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)=128.6 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[7.96e-03,9.27e-03] (gmres, numIts=40, ave-CR= 0.59 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.90e-02,2.91e-02],  norm [Re,Im]=[1.13e+00,1.12e+00] (between WaveHoltz and Direct Helmholtz)
+
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG4kx4 -show=diskG4kx4.show -go=og
+
+ omega=  2.51e+01, k=  2.51e+01, lambda=  2.50e-01, dx=  2.50e-02, domainSize=  4.00e+00, NLambda=16, ppw=lambda/dx= 10.0, ppw(rule-of-thumb)=128.6 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[1.82e-02,1.86e-02] (gmres, numIts=36, ave-CR= 0.56 )
+solveHelmholtz: rel-max-diff [Re,Im]=[5.57e-02,5.02e-02],  norm [Re,Im]=[1.02e+00,1.02e+00] (between WaveHoltz and Direct Helmholtz)
+
+NO UPWIND EXPLICIT: FPI MATCHES, GMRES BROKEN
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG4kx4 -show=diskG4kx4.show -go=og
+
+NO UPWIND : FPI MATCHES DHS!!
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG4kx4 -show=diskG4kx4.show -go=og
+
+solveHelmholtz: max-residual [Re,Im]=[1.44e-10,8.14e-11] (FP, numIts=64, ave-CR= 0.72 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.09e-09,1.15e-09],  norm [Re,Im]=[1.16e+00,1.12e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+SUPER GRID : OK 
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=og -krylovType=gmres
+
+solveHelmholtz: max-residual [Re,Im]=[1.82e-02,1.83e-02] (gmres, numIts=74, ave-CR= 0.75 )
+
+************************************
+****** Mon Nov 18, 2024
+
+CAN WE USE BCGS ??
+
+
+IMP ORDER=2 -- DOES NOT MATCH EXACTLY ??
+   implicitUpwind=1 : no match either
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=og -krylovType=bicgstab
+
+NP=2
+BI-CGSTAB: 83 its 
+solveHelmholtz: max-residual [Re,Im]=[1.82e-02,1.83e-02] (bicgstab, numIts=83, ave-CR= 0.77 )
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[3.04e-02,3.08e-02],  norm [Re,Im]=[1.01e+00,1.03e+00] (between WaveHoltz and Direct Helmholtz)
+
+GMRES: 75 its 
+solveHelmholtz: max-residual [Re,Im]=[1.82e-02,1.83e-02] (GMRES, numIts=75, CR= 0.75 )
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[3.04e-02,3.08e-02],  norm [Re,Im]=[1.01e+00,1.03e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+************************************
+****** Sat Oct 5, 2024
+
+SEE Makefile:
+
+run in scattering3 
+make disksg
+
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -matlab=diskG16kx8sg -show=diskG16kx8sg.show -go=ks > diskG16kx8sg.out
+
+
+plotStuff plotSolution.cmd -show=diskG16kx8sg.show -name=diskG16kx8sg -res=2048 -field=absur absui
+
+RUNNING ... 
+runs/overHoltz/scattering: 
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride16.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=16 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=multiObjectsG16ky16 -show=multiObjectsG16ky16.show -go=ks > multiObjectsG16ky16.out
+
+************************************
+****** Fri Oct4, 2024
+
+SEE MAKEFILE 
+
+SUPER GRID : **FINISH DIRECT SOLVER ORDER 4 ***
+           : FINISH IMPLICIT ORDER 4
+---------------
+G16 kx=16 UNDER-RESOLVED ... REDO 
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -matlab=diskG16kx16sg -show=diskG16kx16sg.show -go=ks > diskG16kx16sg.out
+
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 3.17e-08, 5.35e-07], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 2.68e-08, 4.53e-07], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 2.52e-09, 4.29e-08], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 2.52e-09, 4.30e-08], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.37e-02
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-8.886, betaUpwind=-8.886
+CgWaveHoltz::residual: grid=1 : maxRes= 2.38e-02
+CgWaveHoltz::residual: INFO: Set residuals to zero in the SuperGrid layers
+solveHelmholtz: max-residual [Re,Im]=[2.37e-02,2.38e-02] (GMRES, numIts=186, CR= 0.90 )
+
+plotStuff plotSolution.cmd -show=diskG16hx16sg.show -name=diskG16hx16sg -res=4096 -field=absur absui
+
+----------------
+G8 kx=8 redi kx=4
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -matlab=diskG18kx8sg -show=diskG18kx8sg.show -go=ks > diskG18kx8sg.out
+
+solveHelmholtz: max-residual [Re,Im]=[2.16e-02,2.19e-02] (GMRES, numIts=121, CR= 0.84 )
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[6.11e-02,5.96e-02],  norm [Re,Im]=[1.01e+00,1.02e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+---------------
+G8 kx=4
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=og
+
+solveHelmholtz: max-residual [Re,Im]=[7.98e-03,9.19e-03] (GMRES, numIts=102, CR= 0.81 )
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[1.55e-02,1.67e-02],  norm [Re,Im]=[1.08e+00,1.08e+00] (between WaveHoltz and Direct Helmholtz)
+
+----------------
+IMP ORDER=2 -- DOES NOT MATCH EXACTLY ??
+   implicitUpwind=1 : no match either
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=og
+
+NP=2
+solveHelmholtz: max-residual [Re,Im]=[1.82e-02,1.83e-02] (GMRES, numIts=75, CR= 0.75 )
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[3.04e-02,3.08e-02],  norm [Re,Im]=[1.01e+00,1.03e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+NP=4 **FASTER**
+solveHelmholtz: max-residual [Re,Im]=[1.82e-02,1.83e-02] (GMRES, numIts=36, CR= 0.55 )
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[3.04e-02,3.08e-02],  norm [Re,Im]=[1.01e+00,1.03e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+NP=8 
+solveHelmholtz: max-residual [Re,Im]=[1.82e-02,1.83e-02] (GMRES, numIts=104, CR= 0.81 )
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[3.04e-02,3.08e-02],  norm [Re,Im]=[1.01e+00,1.03e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+
+ORDER=4 EXPLICIT OK: increase Np 
+cgwh -noplot scat.cmd -g=cice4.order4.ng3 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=og
+
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 2.95e+00, 3.04e+00], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 1.33e+00, 1.22e+00], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 2.60e+00, 2.79e+00], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 2.60e+00, 2.79e+00], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 2.38e+00
+residual: upwindDissipationCoefficient=    2.2097e-02, betaUpwindOld=-0.5554, betaUpwind=-0.5554
+CgWaveHoltz::residual: grid=1 : maxRes= 5.02e-03
+CgWaveHoltz::residual: INFO: Set residuals to zero in the SuperGrid layers
+solveHelmholtz: max-residual [Re,Im]=[3.99e-03,5.02e-03] (GMRES, numIts=124, CR= 0.83 )
+
+
+
+RUNNING ... 
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride16.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=16 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=multiObjectsG16ky16 -show=multiObjectsG16ky16.show -go=ks > multiObjectsG16ky16.out
+
+
+
+plotStuff plotSolution.cmd -show=diskG64kx32.show -name=diskG64kx32 -res=4096 -field=absur absui
+
+plot scattered
+plotStuff plotSolution.cmd -show=diskG64kx32.show -name=diskG64kx32 -res=4096 -field=absur absui
+
+
+RUNNING ... ok .. run more iterations
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride8.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=8 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=multiObjectsG8ky8 -show=multiObjectsG8ky8.show -go=dks > multiObjectsG8ky8.out
+
+plotStuff plotSolution.cmd -show=multiObjectsG8ky8.show -name=multiObjectsG8ky8 -res=2048 -field=absur absui
+plotStuff plotSolution.cmd -show=multiObjectsG8ky8.show -name=multiObjectsG8ky8 -res=2048 -field=absurTotal absuiTotal
+
+solveHelmholtz: max-residual [Re,Im]=[2.34e-04,2.18e-04] (GMRES, numIts=517, CR= 0.98 )
+
+solveHelmholtz: max-residual [Re,Im]=[2.46e-08,6.11e-08] (GMRES, numIts=2313, CR= 0.99 )
+solveHelmholtz: rel-max-diff [Re,Im]=[6.50e-07,2.37e-06],  norm [Re,Im]=[6.69e+00,5.44e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+ky=4: look good: 
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=0 -ky=4 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=mulitObjectsG4ky4 -show=multiObjectsG4ky4.show -go=dks > mulitObjectsG4ky4.out
+
+plotStuff plotSolution.cmd -show=multiObjectsG4ky4.show -name=multiObjectsG4ky4 -res=2048 -field=absur absui
+plotStuff plotSolution.cmd -show=multiObjectsG4ky4.show -name=multiObjectsG4ky4 -res=2048 -field=absurTotal absuiTotal
+
+
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=mulitObjectsG4kx4 -show=multiObjectsG4kx4.show -go=ks > mulitObjectsG4kx4.out
+
+plotStuff plotSolution.cmd -show=multiObjectsG4kx4.show -name=multiObjectsG4kx4 -res=2048 -field=absurTotal absuiTotal
+plotStuff plotSolution.cmd -show=multiObjectsG4kx4.show -name=multiObjectsG4kx4 -res=2048 -field=absur absui
+
+
+************************************
+****** Thurs Oct 3, 2024
+
+@@@ BUGS HAVE BEEN FIXED @@@
+
+SCATTERING FROM A CYLINDER: -- THIS NOW WORKS 
+TEST MG SOLVER *** WILL NOT WORK -- FIX BCS ****
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> MULTI-OBJECTS  I-BEAM SPLIT-RING TRIANGKE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ FIX BC's on grid
+
+GRID -- slighty bigger on left  
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=4 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=8 
+ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=16 
+
+RUNNING ... 
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride8.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=multiObjectsG8kx8 -show=multiObjectsG8kx8.show -go=ks > multiObjectsG8kx8.out
+
+
+WORKS: redo higher freq .. running ...
+setsid $cgwh -noplot scat.cmd -g=multiObjectsGride4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=mulitObjectsG4kx4 -show=multiObjectsG4kx4.show -go=ks > mulitObjectsG4kx4.out
+
+plotStuff plotSolution.cmd -show=multiObjectsG4kx4.show -name=multiObjectsG4kx4 -res=2048 -field=absurTotal absuiTotal
+plotStuff plotSolution.cmd -show=multiObjectsG4kx4.show -name=multiObjectsG4kx4 -res=2048 -field=absur absui
+
+Check residual in absorbing BC: omega=  1.256637e+01, c=  1.000000e+00
+CgWaveHoltz::residual: grid=12 : maxRes= 9.47e-10
+solveHelmholtz: max-residual [Re,Im]=[1.58e-09,1.56e-09] (GMRES, numIts=207, CR= 0.91 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.30e-08,3.13e-08],  norm [Re,Im]=[4.15e+00,2.44e+00] (between WaveHoltz and Direct Helmholtz)
+
+plotStuff plotSolution.cmd -show=mulitObjectsG4kx4.show -name=mulitObjectsG4kx4 -res=2048 -field=absurTotal absuiTotal
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> SHAPES SQUARE CIRCLE TRIANGLE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+ogen -noplot shapesArg -prefix=shapesBigger -xa=-2 -xb=2 -ya=-2 -yb=2 -order=2 -interp=e -factor=32
+
+G32 its=393
+setsid $cgwh -noplot scat.cmd -g=shapesBiggere32.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=32 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0  -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -matlab=shapesG32kx32 -show=shapesG32kx32.show -debug=0 -go=ks > shapesG32kx32.out 
+Check residual in absorbing BC: omega=  2.010619e+02, c=  1.000000e+00
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 6.70e-08, 2.54e-06], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 9.81e-08, 3.19e-06], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 8.95e-08, 3.23e-06], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 8.95e-08, 3.38e-06], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.81e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 4.59e-11
+CgWaveHoltz::residual: grid=2 : maxRes= 1.36e-10
+CgWaveHoltz::residual: grid=3 : maxRes= 1.13e-10
+solveHelmholtz: max-residual [Re,Im]=[1.81e-10,1.37e-10] (GMRES, numIts=393, CR= 0.95 )
+
+plotStuff plotSolution.cmd -show=shapesG32kx32.show -name=shapesG32kx32 -res=4096 -field=absurTotal absuiTotal -emx=2.5
+plotStuff plotSolution.cmd -show=shapesG32kx32.show -name=shapesG32kx32 -res=4096 -field=absur absui -emx=2.5
+
+
+its=186 
+setsid $cgwh -noplot scat.cmd -g=shapesBiggere16.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0  -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -matlab=shapesG16kx16 -show=shapesG16kx16.show -debug=0 -go=dks > shapesG16kx16.out 
+
+plotStuff plotSolution.cmd -show=shapesG16kx16.show -name=shapesG16kx16 -res=2048 -field=absurTotal absuiTotal -emax=2.5
+
+plotStuff plotSolution.cmd -show=shapesG16kx16.show -name=shapesG16kx16 -res=2048 -field=absur absui -emax=2.5
+
+Check residual in absorbing BC: omega=  1.005310e+02, c=  1.000000e+00
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 1.53e-08, 5.87e-07], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 1.74e-08, 6.46e-07], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 2.23e-08, 7.59e-07], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 2.06e-08, 8.93e-07], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 2.13e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 4.89e-11
+CgWaveHoltz::residual: grid=2 : maxRes= 2.12e-10
+CgWaveHoltz::residual: grid=3 : maxRes= 1.40e-10
+solveHelmholtz: max-residual [Re,Im]=[2.13e-10,1.18e-10] (GMRES, numIts=186, CR= 0.89 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.84e-09,7.51e-09],  norm [Re,Im]=[2.15e+00,2.16e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+98 its 
+setsid $cgwh -noplot scat.cmd -g=shapesBiggere8.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0  -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -matlab=shapesG84kx -show=shapesG8kx8.show -debug=0 -go=dks > shapesG84kx.out 
+
+Check residual in absorbing BC: omega=  5.026548e+01, c=  1.000000e+00
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 2.45e-09, 8.32e-08], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 3.18e-09, 1.46e-07], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 3.39e-09, 1.47e-07], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 2.53e-09, 8.43e-08], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.63e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 5.85e-11
+CgWaveHoltz::residual: grid=2 : maxRes= 1.59e-10
+CgWaveHoltz::residual: grid=3 : maxRes= 1.09e-10
+solveHelmholtz: max-residual [Re,Im]=[1.63e-10,9.48e-11] (GMRES, numIts=98, CR= 0.80 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.39e-09,2.55e-09],  norm [Re,Im]=[1.86e+00,2.13e+00] (between WaveHoltz and Direct Helmholtz)
+
+plotStuff plotSolution.cmd -show=shapesG8kx8.show -name=shapesG8kx8 -res=2048 -field=absurTotal absuiTotal
+
+
+
+its=50 -- REDO 
+setsid $cgwh -noplot scat.cmd -g=shapesBiggere4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0  -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -matlab=shapesG4kx4 -show=shapesG4kx4.show -debug=0 -go=dks > shapesG4kx4.out 
+
+Check residual in absorbing BC: omega=  2.513274e+01, c=  1.000000e+00
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 7.89e-10, 1.92e-08], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 1.19e-09, 5.31e-08], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 1.07e-09, 3.90e-08], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 7.16e-10, 1.98e-08], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.15e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 3.09e-11
+CgWaveHoltz::residual: grid=2 : maxRes= 5.18e-11
+CgWaveHoltz::residual: grid=3 : maxRes= 3.77e-11
+solveHelmholtz: max-residual [Re,Im]=[1.11e-10,1.15e-10] (GMRES, numIts=50, CR= 0.65 )
+solveHelmholtz: rel-max-diff [Re,Im]=[6.67e-10,6.89e-10],  norm [Re,Im]=[1.90e+00,1.88e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+plotStuff plotSolution.cmd -show=shapesG4kx4.show -name=shapesG4kx4 -res=1024 -field=absurTotal absuiTotal
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CYLINDER <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+REDO SAVE MATLAB FILES -matlab=darkCornerRoomG8O4Freq27p3
+
+
+
+G128 kx=64 running ...
+BIG-CG-STAB
+runs/overHoltz/scattering2: 
+setsid $cgwh -noplot scat.cmd -g=cice128.order2 -ts=implicit -solveri=bcgs -rtoli=1e-10 -atoli=1e-10  -cfl=1000 -nf=1 -amp=1 -kx=64 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG128kx64.show -go=ks > diskG128kx64.out
+
+
+
+BI-CG 
+runs/overHoltz/scat2: 
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=6 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=junk.show -go=og
+
+
+
+
+runs/overHoltz/scat2: 
+cgwh -noplot scat.cmd -g=cice32.order2.ml3 -ts=implicit -solveri=multigrid -rtoli=1e-8 -atoli=1e-8 -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG32kx16.show -go=og
+
+
+HIGHER-FREQ: OK 
+
+G64 kx=32 GETTING TO BIG FOR DIRECT IMP SOLVER -- DO MG at NEXT LEVEL ...RUNNING .... DONE
+setsid $cgwh -noplot scat.cmd -g=cice64.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=32 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG64kx32 -show=diskG64kx32.show -go=ks > diskG64kx32.out
+
+Check residual in absorbing BC: omega=  2.010619e+02, c=  1.000000e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 9.81e-09
+solveHelmholtz: max-residual [Re,Im]=[2.35e-08,2.21e-08] (GMRES, numIts=207, CR= 0.93 )
+
+plotStuff plotSolution.cmd -show=diskG64kx32.show -name=diskG64kx32 -res=2048 -field=absurTotal absuiTotal
+
+
+setsid $cgwh -noplot scat.cmd -g=cice32.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG32kx16 -show=diskG32kx16.show -go=ks > diskG32kx16.out
+
+plotStuff plotSolution.cmd -show=diskG32kx16.show -name=diskG32kx16 -field=absurTotal
+
+Check residual in absorbing BC: omega=  1.005310e+02, c=  1.000000e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 3.01e-11
+solveHelmholtz: max-residual [Re,Im]=[1.15e-10,1.07e-10] (GMRES, numIts=152, CR= 0.87 )
+
+
+
+omega=50 its=78
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx8.show -go=dks
+
+
+Check residual in absorbing BC: omega=  5.026548e+01, c=  1.000000e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 5.76e-11
+solveHelmholtz: max-residual [Re,Im]=[9.59e-11,9.89e-11] (GMRES, numIts=78, CR= 0.77 )
+solveHelmholtz: rel-max-diff [Re,Im]=[6.57e-09,2.09e-09],  norm [Re,Im]=[1.08e+00,1.08e+00] (between WaveHoltz and Direct Helmholtz)
+
+omega=38 its=58
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=6 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx6.show -go=dks
+
+Check residual in absorbing BC: omega=  3.769911e+01, c=  1.000000e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 3.12e-11
+solveHelmholtz: max-residual [Re,Im]=[2.33e-10,6.88e-11] (GMRES, numIts=58, CR= 0.69 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.61e-09,1.40e-09],  norm [Re,Im]=[1.14e+00,1.14e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+IMP + EM2 : omega=25.133 its=44
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG8kx4.show -go=dks
+
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 6.17e-10, 1.15e-08], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 1.07e-09, 4.68e-08], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 8.24e-10, 2.62e-08], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 8.24e-10, 2.62e-08], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.17e-10
+Check residual in absorbing BC: omega=  2.513274e+01, c=  1.000000e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 4.17e-11
+solveHelmholtz: max-residual [Re,Im]=[1.17e-10,8.57e-11] (GMRES, numIts=42, CR= 0.60 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.19e-09,1.17e-09],  norm [Re,Im]=[1.15e+00,1.14e+00] (between WaveHoltz and Direct Helmholtz)
+
+omega=18.8 its=33
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=junk.show -go=og
+Check residual in absorbing BC: omega=  1.884956e+01, c=  1.000000e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 3.48e-11
+solveHelmholtz: max-residual [Re,Im]=[1.89e-10,4.93e-11] (GMRES, numIts=33, CR= 0.52 )
+solveHelmholtz: rel-max-diff [Re,Im]=[6.13e-10,5.52e-10],  norm [Re,Im]=[1.13e+00,1.12e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+IMP + EM2 -- MATCHES DHS 
+cgwh -noplot scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx1.show -go=og
+
+Check residual in absorbing BC: omega=  6.283185e+00, c=  1.000000e+00
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 4.13e-11, 5.77e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 7.72e-11, 8.62e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 6.33e-11, 7.95e-10], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 6.33e-11, 7.95e-10], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.49e-10
+Check residual in absorbing BC: omega=  6.283185e+00, c=  1.000000e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 2.74e-11
+solveHelmholtz: max-residual [Re,Im]=[1.49e-10,4.29e-11] (GMRES, numIts=16, CR= 0.25 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.70e-10,8.20e-11],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+IMP+EM2+UW 
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx3.show -go=og
+
+residual: Absorbing BC: (side,axis,grid)={0,0,0) max-res=[ 2.94e-10, 7.78e-09], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,0,0) max-res=[ 2.98e-10, 9.50e-09], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={0,1,0) max-res=[ 4.45e-10, 1.39e-08], max|forcing(ghost)|= 0.00e+00
+residual: Absorbing BC: (side,axis,grid)={1,1,0) max-res=[ 4.45e-10, 1.39e-08], max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 9.82e-03
+residual: upwindDissipationCoefficient=    8.8388e-02, betaUpwindOld=-1.666, betaUpwind=-1.666
+Check residual in absorbing BC: omega=  1.884956e+01, c=  1.000000e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 1.22e-02
+solveHelmholtz: max-residual [Re,Im]=[1.11e-02,1.22e-02] (GMRES, numIts=31, CR= 0.50 )
+solveHelmholtz: rel-max-diff [Re,Im]=[4.22e-02,4.19e-02],  norm [Re,Im]=[1.08e+00,1.07e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+***************************************************
+****** Sat Sept 28, 2024
+
+EM2 BC's broken ??? But Gaussian source is ok I think
+
+Double Np 
+setisd $cgwh -noplot scat.cmd -g=cice32.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=32 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -show=diskG32O2SCatkx32.show -debug=0 -go=ks > diskG32O2SCatkx32.out
+
+
+Np=8:
+##### SAVE KRYLOV RESIDUAL: iteration=162: L2h-residual= 1.91e-04 
+
+
+Higher freq: looks ok 
+setsid $cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=100 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -show=diskG16O2SCatkx16.show  -debug=0 -go=ks > diskG16O2SCatkx16.out
+
+##### SAVE KRYLOV RESIDUAL: iteration=102: L2h-residual= 3.52e-04 
+solveHelmholtz: max-residual [Re,Im]=[2.36e-02,2.38e-02]
+
+
+
+Higher freq: looks ok
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=og
+
+max-residual=4.45e-03 (WaveHoltz its), numberOfIterations = 52 (GMRES) (maximumNumberOfIterations=50)
+ numberOfFrequencies= 1, adjustOmega=1, adjustHelmholtzForUpwinding=0
+solveHelmholtz: max-residual [Re,Im]=[2.16e-02,2.19e-02]
+
+
+
+IMP ORDER=2 looks ok:
+cgwh scat.cmd -g=cice4.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+solveHelmholtz: max-residual [Re,Im]=[1.82e-02,1.83e-02]
+
+
+IMP ORDER 4 + SUPERGRID -- FINISH ME ...
+
+ORDER=4 EXP + SUPERGRID : Looks OK: 
+cgwh scat.cmd -g=cice8.order4.ng3 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=100 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=55: L2h-residual= 1.04e-10 
+solveHelmholtz: max-residual [Re,Im]=[6.67e-04,6.50e-04]
+
+OLD cic8: 
+
+solveHelmholtz: max-residual [Re,Im]=[6.67e-04,6.50e-04]
+
+
+cgwh scat.cmd -g=cice4.order4.ng3 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -go=halt
+
+##### SAVE KRYLOV RESIDUAL: iteration=49: L2h-residual= 4.47e-05 
+
+
+solveHelmholtz: max-residual [Re,Im]=[3.99e-03,5.02e-03]
+
+
+
+
+SUPER GRID: maybe ok ??
+
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -show=scatCylG4kx3.show -go=og
+
+solveHelmholtz: max-residual [Re,Im]=[1.11e-02,1.16e-02]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.12e-02,2.16e-02],  norm [Re,Im]=[1.03e+00,1.08e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+cgwh -noplot scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -show=scatCylG4kx3.show -go=og
+
+CgWaveHoltz::residual: grid=1 : maxRes= 4.77e-02
+CgWaveHoltz::residual: INFO: Set residuals to zero in the SuperGrid layers
+solveHelmholtz: max-residual [Re,Im]=[4.77e-02,3.16e-02]
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[8.42e-02,9.78e-02],  norm [Re,Im]=[1.00e+00,1.06e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+SCATTERING FROM A CYLINDER: -- broken nan's ... 
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx3.show -go=og
+
+
+***************************************************
+****** Fri Sept 27, 2024
+
+REVISIT SCATTERING FOR PROPOSAL
+
+
+-- broken : DHS OK, broken : nan's 
+cgwh scat.cmd -g=shapesBiggere4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=1 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -show=shapesG4kx4.show -debug=0 -go=halt
+
+SCATTERING FROM A CYLINDER: -- broken nan's ... 
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=scatCylG4kx3.show -go=og
 
 ***************************************************
 ****** Sun July 16, 2023

@@ -71,7 +71,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
   
   if( true )
   {
-    printF("userDefinedForcing: t=%9.3e option=[%s] fSign=%g\n",t,(const char*)option,fSign);
+    printF("\n ##### userDefinedForcing: t=%9.3e option=[%s] fSign=%g ####\n\n",t,(const char*)option,fSign);
   }
 
   const int numberOfComponentGrids = cg.numberOfComponentGrids();
@@ -191,6 +191,11 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
           }
         }
       }
+    }
+
+    if( false )
+    {
+      ::display(fLocal,"Gaussian forcing","%5.2f ");
     }
   }
   else if( option=="boxHelmholtz" )

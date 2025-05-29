@@ -130,9 +130,10 @@ CgWave::betaDiscreteWaveHoltz( Real lambda, Real omega, Real T, Real dt )
 /// 
 /// \param lambda (input) : array of lambda values to evaluate the mu function at.
 /// \param mu (output) : array of function values
+/// \param useAdjusted (input) : adjust lambda for finite dt to match theory
 // ---------------------------------------------------------------------------------
 int CgWave::
-getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu )
+getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu,  bool useAdjusted /* = true  */ )
 {
   // printF(">>Entering getWaveHoltzIterationEigenvalue.\n");
 
@@ -184,27 +185,28 @@ getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu )
   {
 
     Real lam = lambda(ilam);
-    // if( true ||  !computeEigenmodes)
-    if( timeSteppingMethod==implicitTimeStepping )
+    if( useAdjusted ) // *wdh* added for plot filter with EigenWave
     {
-     // Adjust lambda for finite time-step -- important for implicit time-stepping at large CFL
-     // I think we should adjust for eigenmodes too -- the beta_j will lie on the shifted curve I think
-     // 
-     // See EigenWave paper for derivation: 
-     // D+tD-t W^n = -lam^2 (1/2) ( W^{n+1} + W^{n-1} )
-     //   W^n = e^(I lamTilde dt*n ) W^0
-     //  lamTilde =  acos( 1./( 1.+.5*SQR(lam*dt) ) )/dt
-     lam = acos( 1./( 1.+.5*SQR(lam*dt) ) )/dt;
-    }
-    else
-    {
-      // adjust for explicit time-stepping:
-      // D+tD-t W^n = - lam^2 W^n
+      if( timeSteppingMethod==implicitTimeStepping )
+      {
+       // Adjust lambda for finite time-step -- important for implicit time-stepping at large CFL
+       // I think we should adjust for eigenmodes too -- the beta_j will lie on the shifted curve I think
+       // 
+       // See EigenWave paper for derivation: 
+       // D+tD-t W^n = -lam^2 (1/2) ( W^{n+1} + W^{n-1} )
+       //   W^n = e^(I lamTilde dt*n ) W^0
+       //  lamTilde =  acos( 1./( 1.+.5*SQR(lam*dt) ) )/dt
+       lam = acos( 1./( 1.+.5*SQR(lam*dt) ) )/dt;
+      }
+      else
+      {
+        // adjust for explicit time-stepping:
+        // D+tD-t W^n = - lam^2 W^n
 
-      lam = asin(lam*dt*.5)*2./dt; 
-      // printF("getWaveHoltzIterationEigenvalue: EXPLICIT time-stepping dt=%18.12e\n",dt);
+        lam = asin(lam*dt*.5)*2./dt; 
+        // printF("getWaveHoltzIterationEigenvalue: EXPLICIT time-stepping dt=%18.12e\n",dt);
+      }
     }
-
 
      // --- Form mu (see formulae in waho.pdf)
      //   mu(lambda) = SUM_I beta(i)*w(i) 
@@ -233,7 +235,7 @@ getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu )
 // ----------------------------------------------------------------------------
 /// \brief Return the multi-frequency Wave-Holtz matrix "A"
 //----------------------------------------------------------------------------
-int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
+int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A, bool useAdjusted /* = true  */  )
 {
   const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
   const RealArray & frequencyArray  = dbase.get<RealArray>("frequencyArray");
@@ -278,7 +280,7 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
         A(i,j) = sum( sigma(Range(Nt+1),i)*( (cos(omega*tv)-.5*alphad)*cos(lambda*tv) ) )* (2./T); // qudarture approximation
 
         Real beta = betaWaveHoltz( frequencyArray(j), frequencyArray(i), periodArray(i) );
-        if( 1==1 || debug & 2 )
+        if( debug & 2 )
           printF("getMultiFrequencyWaveHoltzMatrix: A(%d,%d)=%16.8e (exact)   =%16.8e (quadrature)  diff=%8.2e\n",i,j,beta,A(i,j),beta-A(i,j));
 
       }
@@ -304,6 +306,139 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A )
 }
 
 
+
+// ================================================================================================
+/// \brief Initialize the time integral used by the Helmholtz solver
+// ================================================================================================
+int CgWave::
+initializeTimeIntegral( Real dt )
+{
+
+  int & initTimeIntegral = dbase.get<int>("initTimeIntegral");
+  if( !initTimeIntegral )
+  {
+    printF("CgWave::initializeTimeIntegral: time integral has already been initialized\n");
+    return 0;
+  }
+  
+  Real cpu0 = getCPU();
+  // realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
+
+  const int & debug                 = dbase.get<int>("debug");
+  const real & tFinal               = dbase.get<real>("tFinal");
+  // const real & dt                   = dbase.get<real>("dt");
+  const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");  
+  const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz");
+  // const int & adjustOmega           = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+  const int & computeEigenmodes     = dbase.get<int>("computeEigenmodes");
+
+  const real & omega                = dbase.get<real>("omega");
+  const real & Tperiod              = dbase.get<real>("Tperiod");
+  const int & numPeriods            = dbase.get<int>("numPeriods");
+
+  int & numberOfFrequencies         = dbase.get<int>("numberOfFrequencies");
+  RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+  RealArray & periodArray           = dbase.get<RealArray>("periodArray");  
+  // const int & deflateWaveHoltz      = dbase.get<int>("deflateWaveHoltz");
+  // const int & useAugmentedGmres     = dbase.get<int>("useAugmentedGmres"); 
+
+  const int & filterTimeDerivative  = dbase.get<int>("filterTimeDerivative");
+  const int & useFilterWeights      = dbase.get<int>("useFilterWeights"); 
+  const int & filterD0t             = dbase.get<int>("filterD0t"); 
+
+
+  // const int includeParallelGhost=1;
+
+  Index I1,I2,I3;
+
+  const int & numCompWaveHoltz = dbase.get<int>("numCompWaveHoltz");
+  if( filterTimeDerivative )
+    assert( numCompWaveHoltz==2 );
+  else
+    assert( numCompWaveHoltz==numberOfFrequencies );
+
+  // numCompWaveHoltz = filterTimeDerivative ? 2 : numberOfFrequencies;   // ******* MOVE THIS *****
+
+  if( !solveHelmholtz )
+  {
+    // -- we must be just testing the integral ---
+    numberOfFrequencies=1;
+    frequencyArray.redim(numberOfFrequencies);
+    frequencyArray(0)=omega;
+    periodArray.redim(numberOfFrequencies);
+    periodArray(0)=twoPi/frequencyArray(0);
+  }
+
+  if( fabs(tFinal -periodArray(0)) > 100.*REAL_EPSILON*tFinal )
+  {
+    printF("CgWave::initializeTimeIntegral: tFinal != periodArray(0) : tFinal=%12.4e, periodArray(0)=%12.4e, diff=%12.4e\n",
+         tFinal,periodArray(0),tFinal-periodArray(0));
+
+    OV_ABORT("error");
+  }
+
+  // if( false )
+  // {
+  //   // For testing over-write the computed solution with the exact solution
+  //   const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
+  //   if( knownSolutionOption == "userDefinedKnownSolution" )
+  //   {
+  //     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+  //     {
+  //       MappedGrid & mg = cg[grid];
+  //       getIndex(cg[grid].dimension(),I1,I2,I3); // assign all points including ghost points.              
+  //       // -- User defined known solution ---
+  //       getUserDefinedKnownSolution( t, grid, u[grid], I1,I2,I3 );
+  //     }
+  //   }
+  // }
+
+  // const bool firstStep = stepOption==0;
+  // const bool lastStep  = stepOption==2;
+
+  const int Nt = round( tFinal/dt ); // number of time-steps
+
+  // sigma(0:Nt,0:numFreq-1) : integration weights
+  if( !dbase.has_key("sigma") )
+  {
+    dbase.put<RealArray>("sigma");         // holds integration weights
+    dbase.put<RealArray>("filterWeights"); // holds *new* integration weights
+  }
+  RealArray & sigma = dbase.get<RealArray>("sigma");  
+  RealArray & filterWeights = dbase.get<RealArray>("filterWeights");  
+
+  if( true )
+    printF("\n #### initializeTimeIntegral: omega=%16.12e, dt=%16.12e, useFilterWeights=%d filterD0t=%d ####\n\n",omega,dt,useFilterWeights,filterD0t);
+
+  int orderOfQuadrature = orderOfAccuracy; 
+  if( true && ( computeEigenmodes || numberOfFrequencies==1 ) )
+  {
+     orderOfQuadrature = orderOfAccuracyInTime; // *wdh* Sept 24, 2024 : Trapezoidal rule should be fine if orderInTime=2, also matches theory 
+  }
+
+  // --- Evaluate the integration weights for each of the frequencies ---
+  if( useFilterWeights )
+    getFilterWeights( Nt, dt, numberOfFrequencies, periodArray, orderOfQuadrature, sigma, filterWeights );
+  else 
+    getIntegrationWeights( Nt, numberOfFrequencies, periodArray, orderOfQuadrature, sigma );
+
+
+  // // WHY IS THIS DONE HERE ????
+  // if( deflateWaveHoltz && useAugmentedGmres==1 )
+  // { // initialize deflation for Augmented Gmres
+  //   initializeDeflation();
+  // }
+
+  initTimeIntegral=false;
+
+  timing(timeForTimeIntegral) += getCPU()- cpu0;
+
+
+  return 0;
+}
+
+
 // ================================================================================================
 /// \brief Update the time integral used by the Helmholtz solver
 ///
@@ -322,10 +457,10 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
 {
   Real cpu0 = getCPU();
   
-  realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
+  realCompositeGridFunction & v     = dbase.get<realCompositeGridFunction>("v");
 
   const int & debug                 = dbase.get<int>("debug");
-  const real & tFinal               = dbase.get<real>("tFinal");
+  // const real & tFinal               = dbase.get<real>("tFinal");
   // const real & dt                   = dbase.get<real>("dt");
   const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
   const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");  
@@ -345,10 +480,12 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
 
   const int & filterTimeDerivative = dbase.get<int>("filterTimeDerivative");
   const int & useFilterWeights      = dbase.get<int>("useFilterWeights"); 
+  const int & filterD0t             = dbase.get<int>("filterD0t"); 
 
   const int includeParallelGhost=1;
 
   Index I1,I2,I3;
+  Index J1,J2,J3;
 
   const int & numCompWaveHoltz = dbase.get<int>("numCompWaveHoltz");
   if( filterTimeDerivative )
@@ -383,13 +520,13 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
    // u.display(sPrintF("u for updateTimeIntegral, t=%9.3e",t),"%6.2f ");
   }
 
-  if( fabs(tFinal -periodArray(0)) > 100.*REAL_EPSILON*tFinal )
-  {
-    printF("CgWave::updateTimeIntegral: tFinal != periodArray(0) : tFinal=%12.4e, periodArray(0)=%12.4e, diff=%12.4e\n",
-         tFinal,periodArray(0),tFinal-periodArray(0));
+  // if( fabs(tFinal -periodArray(0)) > 100.*REAL_EPSILON*tFinal )
+  // {
+  //   printF("CgWave::updateTimeIntegral: tFinal != periodArray(0) : tFinal=%12.4e, periodArray(0)=%12.4e, diff=%12.4e\n",
+  //        tFinal,periodArray(0),tFinal-periodArray(0));
 
-    OV_ABORT("error");
-  }
+  //   OV_ABORT("error");
+  // }
 
   if( false )
   {
@@ -410,7 +547,8 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
   // const bool firstStep = stepOption==0;
   // const bool lastStep  = stepOption==2;
 
-  const int Nt = round( tFinal/dt ); // number of time-steps
+  // const int Nt = round( tFinal/dt ); // number of time-steps
+  const int Nt = round( periodArray(0)/dt ); // number of time-steps
 
   // sigma(0:Nt,0:numFreq-1) : integration weights
   if( !dbase.has_key("sigma") )
@@ -421,41 +559,63 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
   RealArray & sigma = dbase.get<RealArray>("sigma");  
   RealArray & filterWeights = dbase.get<RealArray>("filterWeights");  
 
-  if( stepOption==firstStep )
+  if( sigma.getLength(0)!= Nt+1 )
   {
-    assert( t==0. && step==0 );
-    if( false )
-      printF("updateTimeIntegral: stepOption=%d omega=%16.12e, t=%12.4e, dt=%16.12e, t/dt=%.3g useFilterWeights=%d\n",stepOption,omega,t,dt,t/dt,useFilterWeights);
-
-    // --- Evaluate the integration weights for each of the frequencies ---
-    if( useFilterWeights )
-      getFilterWeights( Nt, dt, numberOfFrequencies, periodArray, orderOfAccuracy, sigma, filterWeights );
-    else 
-      getIntegrationWeights( Nt, numberOfFrequencies, periodArray, orderOfAccuracy, sigma );
-
-    if( deflateWaveHoltz && useAugmentedGmres==1 )
-    { // initialize deflation for Augmented Gmres
-      initializeDeflation();
-    }
+    printF("updateTimeIntegral:ERROR: sigma.getLength(0)!= Nt+1, sigma.getLength(0)=%d Nt=%d\n");
+    OV_ABORT("error");
   }
+
+  const bool useOpt=true;
+
+  // if( FALSE && stepOption==firstStep )
+  // {
+  //   assert( t==0. && step==0 );
+  //   if( false )
+  //     printF("updateTimeIntegral: stepOption=%d omega=%16.12e, t=%12.4e, dt=%16.12e, t/dt=%.3g useFilterWeights=%d\n",stepOption,omega,t,dt,t/dt,useFilterWeights);
+
+  //   int orderOfQuadrature = orderOfAccuracy; 
+  //   if( true && ( computeEigenmodes || numberOfFrequencies==1 ) )
+  //   {
+  //      orderOfQuadrature = orderOfAccuracyInTime; // *wdh* Sept 24, 2024 : Trapezoidal rule should be fine if orderInTime=2, also matches theory 
+  //   }
+
+  //   // --- Evaluate the integration weights for each of the frequencies ---
+  //   if( useFilterWeights )
+  //     getFilterWeights( Nt, dt, numberOfFrequencies, periodArray, orderOfQuadrature, sigma, filterWeights );
+  //   else 
+  //     getIntegrationWeights( Nt, numberOfFrequencies, periodArray, orderOfQuadrature, sigma );
+
+
+  //   // WHY IS THIS DONE HERE ????
+  //   if( deflateWaveHoltz && useAugmentedGmres==1 )
+  //   { // initialize deflation for Augmented Gmres
+  //     initializeDeflation();
+  //   }
+
+  // }
 
 
   if( stepOption==lastStep )
   {
-    if( step!=Nt )
+    int numTimeSteps=Nt;
+    if( useFilterWeights && filterTimeDerivative && filterD0t )
+      numTimeSteps++; //  we take one extra step
+
+    if( step!=numTimeSteps )
     {
-      printF("updateTimeIntegral:WARNING: lastStep but step=%d != Nt=%d\n",step,Nt);
+      const real & tFinal = dbase.get<real>("tFinal");
+      printF("updateTimeIntegral:WARNING: lastStep but step=%d != numTimeSteps=%d\n",step,numTimeSteps);
       printF("tFinal=%14.6e, dt=%12.4e (Nt = round(tFinal/dt)\n",tFinal,dt);
       OV_ABORT("error");
     }
 
-    const Real tol = REAL_EPSILON*10000.*tFinal; 
-    if( !( fabs(t-tFinal)< tol ) )
-    {
-      printF("CgWave:ERROR: t != tFinal, t=%14.6e tFinal=%14.6e diff=%9.3e, tol=%9.3e\n",t,tFinal,fabs(t-tFinal),tol);
+    // const Real tol = REAL_EPSILON*10000.*tFinal; 
+    // if( !( fabs(t-tFinal)< tol ) )
+    // {
+    //   printF("CgWave:ERROR: t != tFinal, t=%14.6e tFinal=%14.6e diff=%9.3e, tol=%9.3e\n",t,tFinal,fabs(t-tFinal),tol);
       
-      OV_ABORT("ERROR");
-    }
+    //   OV_ABORT("ERROR");
+    // }
   }
 
   
@@ -463,28 +623,66 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
   {
     // When solving the Helmholtz problem with CgWaveHoltz we need to evaluate an integral 
     //      v  = (1/(2*T)* Int_0^T [  ( cos(omega*t)-.25)*u(x,t) dt ] 
+
+
+    realCompositeGridFunction & vOld = dbase.get<realCompositeGridFunction>("vOld");
+    if( false )
+      vOld.display("First Step: vOld","%5.2f ");
+
+
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       OV_GET_SERIAL_ARRAY(real,u[grid],uLocal);
       OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+      OV_GET_SERIAL_ARRAY(real,vOld[grid],vOldLocal);
       getIndex(cg[grid].dimension(),I1,I2,I3);
+
+      getIndex(cg[grid].gridIndexRange(),J1,J2,J3);
 
       bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
       if( ok )
       {
-        for( int freq=0; freq<numCompWaveHoltz; freq++ )
+        if( useFilterWeights && filterTimeDerivative && filterD0t )
         {
-          // vLocal = ( .5*( cos(omega*(t))-.25 ) )*uLocal;  // Trapezoidal first term (.5)
-          if( useFilterWeights )
+          const Real & viFactor = dbase.get<Real>("viFactor");
+          // printF("updateTimeIntegral: firstStep: step=%d : filterD0t omega=%9.2e viFactor=%9.2e fw(0)=%9.2e fw(1)=%9.2ef\n",
+          //     step,omega,viFactor,filterWeights(0,1),filterWeights(1,1));
+
+          // printF("updateTimeIntegral: max(fabs(v(:,:,:,0))=%9.2e max(fabs(v(:,:,:,1))=%9.2e max(fabs(vOld(:,:,:,1))=%9.2e\n",
+          //     max(fabs(vLocal(J1,J2,J3,0))),max(fabs(vLocal(J1,J2,J3,1))),max(fabs(vOldLocal(J1,J2,J3,1))));
+
+          vLocal(I1,I2,I3,0) = filterWeights(step,0)*uLocal(I1,I2,I3);
+
+          // CHECK ME: At the start vLocal(I1,I2,I3,1) should hold D0t W^0 
+          const int nct=1;
+           
+          // // NOTE: currently viFactor=1 which means vLocal(I1,I2,I3,1) holds ui and NOT the time derivative
+          // // THUS we need to scale by the symbol of D0t 
+          // const Real scale = (sin(omega*dt)/dt)/viFactor; // 
+
+          vLocal(I1,I2,I3,1) = filterWeights(0,nct)*vLocal(I1,I2,I3,1)      // D0t W^0 = vDot
+                              +filterWeights(1,nct)*uLocal(I1,I2,I3);       // W^0
+
+          // printF("  after first step:  |v(:,:,:,1)|=%9.2e uLocal=[%9.2e,%9.2e]\n",max(fabs(vLocal(J1,J2,J3,1))),
+          //     min(uLocal(J1,J2,J3)), max(uLocal(J1,J2,J3)));                    
+
+        }
+        else
+        {
+          for( int freq=0; freq<numCompWaveHoltz; freq++ )
           {
-            vLocal(I1,I2,I3,freq) = filterWeights(step,freq)*uLocal(I1,I2,I3);
-          }
-          else
-          {
-            const Real omegaFreq = frequencyArray(freq); 
-            const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha 
-            vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
-            // vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+            // vLocal = ( .5*( cos(omega*(t))-.25 ) )*uLocal;  // Trapezoidal first term (.5)
+            if( useFilterWeights )
+            {
+              vLocal(I1,I2,I3,freq) = filterWeights(step,freq)*uLocal(I1,I2,I3);
+            }
+            else
+            {
+              const Real omegaFreq = frequencyArray(freq); 
+              const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha 
+              vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+              // vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+            }
           }
         }
       }
@@ -506,23 +704,62 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
       OV_GET_SERIAL_ARRAY(real,u[grid],uLocal);   // solution at new time 
       OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
       getIndex(cg[grid].dimension(),I1,I2,I3);
+      getIndex(cg[grid].gridIndexRange(),J1,J2,J3);
       bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
       if( ok )
       {
-        for( int freq=0; freq<numCompWaveHoltz; freq++ )
+
+        const Real *pu  = uLocal.getDataPointer();
+        Real *pv        = vLocal.getDataPointer();
+        const int i1Base=uLocal.getBase(0), i2Base=uLocal.getBase(1), i3Base=uLocal.getBase(2);
+        const int nd1= uLocal.getLength(0), nd2= uLocal.getLength(1), nd3= uLocal.getLength(2);
+        #define ua(i1,i2,i3)       pu[((i1)-i1Base)+nd1*((i2)-i2Base + nd2*((i3)-i3Base          ))]
+        #define va(i1,i2,i3,m)     pv[((i1)-i1Base)+nd1*((i2)-i2Base + nd2*((i3)-i3Base +nd3*(m) ))]
+
+        if( useFilterWeights && filterTimeDerivative && filterD0t )
         {
-          if( useFilterWeights )
+
+          vLocal(I1,I2,I3,0) += filterWeights(step  ,0)*uLocal(I1,I2,I3);  // filter W 
+          vLocal(I1,I2,I3,1) += filterWeights(step+1,1)*uLocal(I1,I2,I3);  // add contribution for D0t W
+
+          // printF("updateTimeIntegral: step=%d : filterD0t t=%9.3e fw(%d,1)=%10.3e |v(:,:,:,1)|=%9.2e\n",step,t,step+1,filterWeights(step+1,1), max(fabs(vLocal(J1,J2,J3,1))));
+        }
+        else
+        {
+          for( int freq=0; freq<numCompWaveHoltz; freq++ )
           {
-            vLocal(I1,I2,I3,freq) += filterWeights(step,freq)*uLocal(I1,I2,I3);
-          }
-          else
-          {
-            const Real omegaFreq = frequencyArray(freq);
-            const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha  
-            vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) )*uLocal(I1,I2,I3);
-            // vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);
+            if( useFilterWeights )
+            {
+              if( useOpt )
+              {
+                const Real fw=filterWeights(step,freq);
+                FOR_3D(i1,i2,i3,I1,I2,I3)
+                  va(i1,i2,i3,freq) += fw*ua(i1,i2,i3);
+              }
+              else
+              {
+                vLocal(I1,I2,I3,freq) += filterWeights(step,freq)*uLocal(I1,I2,I3);
+              }
+            }
+            else
+            {
+              const Real omegaFreq = frequencyArray(freq);
+              const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha  
+              if( useOpt )
+              {
+                const Real factor=( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) );
+                FOR_3D(i1,i2,i3,I1,I2,I3)
+                  va(i1,i2,i3,freq) += factor*ua(i1,i2,i3);
+              }
+              else
+              {
+                vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) )*uLocal(I1,I2,I3);
+              }
+              // vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);
+            }
           }
         }
+
         if( stepOption==lastStep && useFilterWeights==0 )
         {
           for( int freq=0; freq<numberOfFrequencies; freq++ )
@@ -681,9 +918,9 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
 // =================================================================================
 int CgWave::getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma, RealArray & filterWeights  )
 {
-  // printF("\n ##### getFilterWeights #####\n\n");
 
   const int & useFilterWeights = dbase.get<int>("useFilterWeights"); 
+  const int & filterD0t        = dbase.get<int>("filterD0t"); 
 
   getIntegrationWeights( Nt, numFreq, Tv, orderOfAccuracy,sigma );
 
@@ -700,15 +937,26 @@ int CgWave::getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv
     // end
 
     const int & filterTimeDerivative = dbase.get<int>("filterTimeDerivative"); 
+    const int & filterD0t            = dbase.get<int>("filterD0t");
     RealArray & frequencyArray       = dbase.get<RealArray>("frequencyArray");
     RealArray & frequencyArraySave   = dbase.get<RealArray>("frequencyArraySave");
+
+    if( true ) printF("\n ##### getFilterWeights filterTimeDerivative=%d filterD0t=%d #####\n\n",filterTimeDerivative,filterD0t);
+
 
     const Real dt = Tv(0)/Nt; 
 
     int & numCompWaveHoltz = dbase.get<int>("numCompWaveHoltz");
     // numCompWaveHoltz = filterTimeDerivative ? 2 : numFreq;   // ******* MOVE THIS *****
 
-    filterWeights.redim(Nt+1,numCompWaveHoltz); 
+    int Ntfw =Nt+1; // number of filter weights
+    if( filterTimeDerivative && filterD0t ) 
+    {
+      //if we filter D0t W we need to take and extra time-step and save the weights for D0t W^0
+      Ntfw = Nt+3;  //  we need weights for Vdot, W^n n=0,1,2,...,Nt+1
+    }
+
+    filterWeights.redim(Ntfw,numCompWaveHoltz); 
     filterWeights=0.;
 
     // Real alpha = 0.5;
@@ -737,63 +985,192 @@ int CgWave::getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv
 
     if( filterTimeDerivative )
     {
-      // -- integrate weights for the time derivative ---
-      //  Use integration by parts: 
-      //  
-      //   INT (cos(omega*t)-1/4) w_t dt = [(cos(omega*t)-1/4) w] + omega INT sin(omega*t) w dt
-      //   
-      const Real omega = frequencyArray(0);
-      const Real T = Tv(0);
-
-      const Real & damp     = dbase.get<real>("damp"); // coeff of linear damping 
-      const Real & viFactor = dbase.get<Real>("viFactor"); 
-
-      // **NOTE**
-      // viFactor must match in
-      //     getFilterWeights
-      //     takeFirstStep
-      //     solveHelmholtz : definition of Im(u)
-      // omegaTilde must match 1/viFactor in the definition of ui from vDot,  in u = ur*cos(omega*t) + ui*sin(omega*t)
-      Real omegaTilde = omega; 
-      if( true )
+      // -- integration weights for the time derivative ---
+      if( filterD0t )
       {
-        omegaTilde = viFactor; // *new way* June 19, 2023
-      }
-      else if( true )
-      {
-        omegaTilde = omega; // adjusted 
-      }
-      else if( true || damp != 0. ) 
-      {
-        //  --- adjust omega to match D0t used in damping: ----
-        const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+        // --------------------------------------------------------------------------------------
+        //  vDot^{k+1} = (2/T) SUM_{n=0}^Nt sigma_n ( cos(omega*t^n) - alpha/2) D0t W^n   (base 0 sigma_n)
+        //             = SUM_{n=1}^Nt S_n D0t W^n *(2*dt) 
+        //      = S_0*2*dt*vDot + S_1*( W^2-W^0) + S_2*( W^3-W^1) + S_3*(W^4-W^2) + ...
+        // 
+        //      = S_0*2*dt*vDot - S_1*W^0 -S_2*W^1 + (S_1-S_3)*W^2 + (S_2-S_4)*W^3 + ...
+        //      = S_0*2*dt*vDot - S_1*W^0 -S_2*W^1 
+        //        +  SUM_{n=2}^{Nt-1} (S_{n-1} - S_{n+1} ) W^n  
+        //        + S_{Nt-1}*W^{Nt} + S_{Nt}*W^{Nt+1}
+        // 
+        // where 
+        //     S_n = sigma_n  * (2/Tbar) * ( cos(omega*t^n) - alpha/2)  * (1/(2*dt))
+        // with
+        //     Dot W^0 = vDot 
+        // 
+        // -------------------------------------------------------------------------------------- 
 
-        if( true || timeSteppingMethod==CgWave::implicitTimeStepping )
-          omegaTilde = sin(omega*dt)/dt; 
-        else
-          omegaTilde = frequencyArraySave(0);  // unadjusted
+        // printF("**** Form filter weights for D0t W...\n");
+        int freq=0;
+        const Real omega  = frequencyArray(freq);
+        const Real alphad = tan(omega*dt*.5)/tan(omega*dt);  // adjusted alpha *wdh* Sept 10, 2023        
+        const Real T      = Tv(freq);
+
+        // NOTE: currently viFactor=1 which means vLocal(I1,I2,I3,1) holds ui and NOT the time derivative
+        // THUS we need to scale by the symbol of D0t 
+        const Real & viFactor = dbase.get<Real>("viFactor");
+        const Real scaleD0t = viFactor/(sin(omega*dt)/dt);
+        const Real scale = scaleD0t;
+
+        const int nct = 1; // component number for time derivative in filterWeights
+
+
+        filterWeights(0,nct) =  sigma(0,freq)*( cos(omega*(0.*dt))-.5*alphad )*(2./T);               // coeff of vDot NOTE: no scale here
+        filterWeights(1,nct) = -sigma(1,freq)*( cos(omega*(1.*dt))-.5*alphad )*scale*(2./T)/(2.*dt); // coeff of W^n = W^0
+        filterWeights(2,nct) = -sigma(2,freq)*( cos(omega*(2.*dt))-.5*alphad )*scale*(2./T)/(2.*dt); // coeff of W^n = W^1
+        for( int n=2; n<=Nt-1; n++ )
+        {
+          Real t = n*dt;
+          filterWeights(n+1,nct) = (  sigma(n-1,freq)*( cos(omega*(t-dt)) - .5*alphad )*(2./T)
+                                     -sigma(n+1,freq)*( cos(omega*(t+dt)) - .5*alphad )*(2./T)
+                                   )*scale/(2.*dt);
+        }
+        filterWeights(Nt+1,nct) = sigma(Nt-1,freq)*( cos(omega*((Nt-1)*dt))-.5*alphad )*scale*(2./T)/(2.*dt); // coeff of W^{n} = W^{Nt}
+        filterWeights(Nt+2,nct) = sigma(Nt  ,freq)*( cos(omega*((Nt  )*dt))-.5*alphad )*scale*(2./T)/(2.*dt); // coeff of W^{n} = W^{Nt+1}
+
+        // n=0; t=n*dt; par.fw(n+nBase,ncD0t) =  par.sigma(n   +nBase,1)*( cos(omega*(t   ))-.5*alpha )*(2/T)/(2*dt); % coeff of vDot
+
+        // n=0; t=n*dt; par.fw(n+nBase1,ncD0t) = -par.sigma(n+1+nBase,1)*( cos(omega*(t+dt))-.5*alpha )*(2/T)/(2*dt); % coeff of W^n = W^0
+        // n=1; t=n*dt; par.fw(n+nBase1,ncD0t) = -par.sigma(n+1+nBase,1)*( cos(omega*(t+dt))-.5*alpha )*(2/T)/(2*dt); % coeff of W^n = W^1
+        // for n=2:Nt-1
+        //   % coeff of W^{n} 
+        //   t = n*dt;  
+        //   coeff = (  par.sigma(n-1+nBase,1)*( cos(omega*(t-dt))-.5*alpha )*(2/T) ...
+        //            - par.sigma(n+1+nBase,1)*( cos(omega*(t+dt))-.5*alpha )*(2/T) )/(2*dt); 
+        //   par.fw(n+nBase1,ncD0t) = coeff;
+        // end 
+        // n=Nt;   t=n*dt; par.fw(n+nBase1,ncD0t) = par.sigma(n-1+nBase,1)*( cos(omega*(t-dt))-.5*alpha )*(2/T)/(2*dt); % coeff of W^{n} = W^{Nt}
+        // n=Nt+1; t=n*dt; par.fw(n+nBase1,ncD0t) = par.sigma(n-1+nBase,1)*( cos(omega*(t-dt))-.5*alpha )*(2/T)/(2*dt); % coeff of W^{n} = W^{Nt+1}
+
+
+
+
       }
-
-      const int nct = 1; // component number for time derivative in filterWeights
-
-      Real t;
-      for( int n=0; n<=Nt; n++ )
+      else
       {
-        t = n*dt;
-        filterWeights(n,nct) = sigma(n,0)*( omegaTilde* sin(omega*t) )*(2./T);
-        // filterWeights(n,nct) = sigma(n,0)*( omegaTilde*omega sin(omega*t) )*(2./T);
+        //  ---- Use integration by parts ----
+        //  
+        //   INT (cos(omega*t)-1/4) w_t dt = [(cos(omega*t)-1/4) w] + omega INT sin(omega*t) w dt
+        //   
+        const Real omega = frequencyArray(0);
+        const Real T = Tv(0);
+
+        const Real & damp     = dbase.get<real>("damp"); // coeff of linear damping 
+        const Real & viFactor = dbase.get<Real>("viFactor"); 
+
+        // **NOTE**
+        // viFactor must match in
+        //     getFilterWeights
+        //     takeFirstStep
+        //     solveHelmholtz : definition of Im(u)
+        // omegaTilde must match 1/viFactor in the definition of ui from vDot,  in u = ur*cos(omega*t) + ui*sin(omega*t)
+        Real omegaTilde = omega; 
+        if( true )
+        {
+          omegaTilde = viFactor; // *new way* June 19, 2023
+        }
+        else if( true )
+        {
+          omegaTilde = omega; // adjusted 
+        }
+        else if( true || damp != 0. ) 
+        {
+          //  --- adjust omega to match D0t used in damping: ----
+          const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+
+          if( true || timeSteppingMethod==CgWave::implicitTimeStepping )
+            omegaTilde = sin(omega*dt)/dt; 
+          else
+            omegaTilde = frequencyArraySave(0);  // unadjusted
+        }
+
+        const int nct = 1; // component number for time derivative in filterWeights
+
+        Real t;
+        for( int n=0; n<=Nt; n++ )
+        {
+          t = n*dt;
+          filterWeights(n,nct) = sigma(n,0)*( omegaTilde* sin(omega*t) )*(2./T);
+          // filterWeights(n,nct) = sigma(n,0)*( omegaTilde*omega sin(omega*t) )*(2./T);
+        }
+        // add boundary terms from IBP's
+        const Real alphad = tan(omega*dt*.5)/tan(omega*dt);  // adjusted alpha *wdh* Sept 10, 2023 **CHECK ME***
+        t=0; 
+        filterWeights( 0,nct) += -(omegaTilde/omega)* (cos(omega*t) - .5*alphad )*(2./T);
+        t = Nt*dt; 
+        filterWeights(Nt,nct) +=  (omegaTilde/omega)* (cos(omega*t) - .5*alphad )*(2./T);   
+
       }
-      // add boundary terms from IBP's
-      const Real alphad = tan(omega*dt*.5)/tan(omega*dt);  // adjusted alpha *wdh* Sept 10, 2023 **CHECK ME***
-      t=0; 
-      filterWeights( 0,nct) += -(omegaTilde/omega)* (cos(omega*t) - .5*alphad )*(2./T);
-      t = Nt*dt; 
-      filterWeights(Nt,nct) +=  (omegaTilde/omega)* (cos(omega*t) - .5*alphad )*(2./T);   
+    }
+
+
+    if( 1==1 && filterD0t )
+    {
+      // CHECK FILTER WEIGHTS 
+      Real omega = frequencyArray(0);
+      const Real & viFactor = dbase.get<Real>("viFactor");
+      const Real scaleD0t = viFactor/(sin(omega*dt)/dt);
+      const Real scale = scaleD0t;      
+
+      Real tf = Tv(0); 
+      RealArray tv(Nt+2), f(Nt+2), ft(Nt+2);
+     
+      const int nlam=6; 
+
+      for( int ilam=0; ilam<nlam; ilam++ )
+      {
+        Real lambda;
+        lambda = omega*(1. + .123*ilam);
+        for( int i=0; i<=Nt+1; i++ )
+        {
+          tv(i) = i*dt; // tf/Real(Nt); 
+
+          if( ilam<=2 )
+          {
+            f(i)  = cos(lambda*tv(i));
+            ft(i) = ( cos(lambda*(tv(i)+dt)) - cos(lambda*(tv(i)-dt)) )/(2.*dt);  // D0t f 
+          }
+          else
+          {
+            f(i)  = sin(lambda*tv(i));
+            ft(i) = ( sin(lambda*(tv(i)+dt)) - sin(lambda*(tv(i)-dt)) )/(2.*dt);  // D0t f             
+          }
+        }
+
+        // ---- scale the time derivative ---
+        ft *= scale; 
+
+        Real sum1=0., sum2=0., sum1e=0., sum2e=0.;
+
+        sum2 = filterWeights(0,1)*ft(0);   
+        for( int i=0; i<=Nt+1; i++ )
+        {
+          sum1  += filterWeights(i  ,0)*f(i);  // filter f
+
+          sum2  += filterWeights(i+1,1)*f(i);  // filter D0t(f) 
+
+          sum1e += filterWeights(i  ,0)*f(i);        // do this for now
+          sum2e += filterWeights(i  ,0)*ft(i); // filter D0t f for checking -- this should be the exact answer
+        }
+
+        if( ilam<=2 )
+          sum1e = betaDiscreteWaveHoltz( lambda, frequencyArray(0), Tv(0), dt );
+
+        Real err1 = sum1 -sum1e;
+        Real err2 = sum2-sum2e;
+        printF("Check filter weights: omega=%10.3e omegaTilde=%10.3e, lambda=%10.3e sum1=%10.3e (err=%9.2e) sum2=%10.3e (err=%9.2e)\n",
+            frequencyArraySave(0),frequencyArray(0), lambda,sum1,err1,sum2,err2);
+      }
+      // OV_ABORT("stop here for now");
 
     }
 
   } // end useFilterWeights
-
   return 0;
 
 }
@@ -813,7 +1190,8 @@ int CgWave::getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv
 // =================================================================================
 int CgWave::getIntegrationWeights( int Nt, int numFreq, const RealArray & Tv, int orderOfAccuracy, RealArray & sigma )
 {
-  // printF("\n ##### getIntegrationWeights #####\n\n");
+  if( false )
+     printF("\n ##### getIntegrationWeights orderOfAccuracy=%d #####\n\n",orderOfAccuracy);
 
   if( orderOfAccuracy!=2 && orderOfAccuracy!=4 )
   {

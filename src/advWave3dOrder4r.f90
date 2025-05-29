@@ -4484,7 +4484,7 @@ real uzzzzzz
                       end if  
                    else if( forcingOption.eq.helmholtzForcing )then
                      ! forcing for solving the Helmholtz equation   
-                     ! NOTE: change sign of forcing since for Helholtz we want to solve
+                     ! NOTE: change sign of forcing since for Helmholtz we want to solve
                      !      ( omega^2 I + c^2 Delta) w = f    
                      ! Define
                      !   coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
@@ -4589,7 +4589,7 @@ real uzzzzzz
                          end if
                     else if( forcingOption.eq.helmholtzForcing )then
                       ! forcing for solving the Helmholtz equation   
-                      ! NOTE: change sign of forcing since for Helholtz we want to solve
+                      ! NOTE: change sign of forcing since for Helmholtz we want to solve
                       !      ( omega^2 I + c^2 Delta) w = f    
                       ! Define
                       !   coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
@@ -4670,7 +4670,7 @@ real uzzzzzz
                       end if  
                    else if( forcingOption.eq.helmholtzForcing )then
                      ! forcing for solving the Helmholtz equation   
-                     ! NOTE: change sign of forcing since for Helholtz we want to solve
+                     ! NOTE: change sign of forcing since for Helmholtz we want to solve
                      !      ( omega^2 I + c^2 Delta) w = f    
                      ! Define
                      !   coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))
@@ -4782,7 +4782,7 @@ real uzzzzzz
                          end if
                     else if( forcingOption.eq.helmholtzForcing )then
                       ! forcing for solving the Helmholtz equation   
-                      ! NOTE: change sign of forcing since for Helholtz we want to solve
+                      ! NOTE: change sign of forcing since for Helmholtz we want to solve
                       !      ( omega^2 I + c^2 Delta) w = f    
                       ! Define
                       !   coswtAve = cImp(-1)*cos(omega*(t-dt)) + cImp(0)*cos(omega*t) + cImp(1)*cos(omega*(t+dt))

@@ -1,4 +1,4 @@
-# Check file for EigenWave, grid=square64, Tue May 23 15:54:03 2023
+# Check file for EigenWave, grid=square64, Sat Sep 21 14:39:56 2024
 grid=square64;
 eigenSolver=KrylovSchur;
 timeStepping=implicit;
@@ -9,6 +9,6 @@ numEigsRequested=12;
 numEigsComputed=12;
 numArnoldiVectors=25;
 numWaveSolves=59;
-maxEigErr= 2.00e-15;
-maxEvectErr= 4.58e-13;
-maxEigResid= 6.16e-13;
+maxEigErr= 3.29e-15;
+maxEvectErr= 4.27e-14;
+maxEigResid= 7.49e-13;

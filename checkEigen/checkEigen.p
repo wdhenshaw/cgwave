@@ -310,7 +310,7 @@ foreach $cmdCommand ( @cmdFiles )
         {
           chop($lineNew); 
           $lineOld = <$infoOld>; chop($lineOld);
-          if( $lineNew != $lineOld )     
+          if( $lineNew ne $lineOld )     
           {
             printf("** DIFFERENCE FOUND at line $. :\n");
             printf("lineNew=[$lineNew]\n");
@@ -326,7 +326,7 @@ foreach $cmdCommand ( @cmdFiles )
         {
           printf("diff=$diff\n");
 
-          if( $verbose ){ printf("\n ++++ The check files for \"$checkFilePrefix\" do not agree +++++\n\n"); }
+          if( $verbose ){ printf("\n ++++ The check files for \"$checkFilePrefix\" do not agree $diff differences found +++++\n\n"); }
           $numberOfErrors++;
         }
         else

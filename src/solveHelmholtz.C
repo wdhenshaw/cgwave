@@ -14,7 +14,7 @@
 #include "Ogshow.h"  
 #include "ShowFileReader.h"
 #include "InterpolatePointsOnAGrid.h"
-
+#include "GridStatistics.h"
 
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
@@ -27,6 +27,24 @@
 /// Macro: compute errors in the Helmholtz solution
 // ============================================================================================
 
+
+static Real factorial( int n )
+{
+    Real val=1.;
+    for( int k=2; k<=n; k++ )
+    {
+        val*=k;
+    }
+    return val;
+}
+
+static Real nChooseK( int n, int k )
+{
+    Real val;
+
+    val = factorial(n)/( factorial(k) * factorial(n-k) );
+    return val;
+}
 
 // ============================================================================================
 /// \brief Solve the Helmholtz equation using WaveHoltz
@@ -54,7 +72,11 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
     int & augmentedVectorsAreEigenvectors    = cgWave.dbase.get<int>("augmentedVectorsAreEigenvectors");  // 1 = augmented vectors are true discrete eigenvectors
     int & deflateWaveHoltz                   = cgWave.dbase.get<int>("deflateWaveHoltz"); 
     int & numToDeflate                       = cgWave.dbase.get<int>("numToDeflate");
-    aString & eigenVectorFile                = cgWave.dbase.get<aString>("eigenVectorFile");  
+    aString & eigenVectorFile                = cgWave.dbase.get<aString>("eigenVectorFile"); 
+    const int & eigenVectorsAreOrthogonal    = cgWave.dbase.get<int>("eigenVectorsAreOrthogonal"); 
+    int & onlyLoadDeflatedEigenVectors       = cgWave.dbase.get<int>("onlyLoadDeflatedEigenVectors");
+    int & plotFilterAndDeflatedEigenvalues   = cgWave.dbase.get<int>("plotFilterAndDeflatedEigenvalues");
+
     const int & numCompWaveHoltz             = cgWave.dbase.get<int>("numCompWaveHoltz");
     const int & filterTimeDerivative         = cgWave.dbase.get<int>("filterTimeDerivative");
 
@@ -67,6 +89,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
     const RealArray & frequencyArray         = cgWaveHoltz.dbase.get<RealArray>("frequencyArray");
 
     real & omega                             = cgWaveHoltz.dbase.get<real>("omega");
+    Real & cpuWaveHoltz                      = cgWaveHoltz.dbase.get<Real>("cpuWaveHoltz");
     int & numPeriods                         = cgWaveHoltz.dbase.get<int>("numPeriods");
     real & tol                               = cgWaveHoltz.dbase.get<real>("tol");
     int & adjustOmega                        = cgWaveHoltz.dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
@@ -74,7 +97,12 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
     int & numberOfIterations                 = cgWaveHoltz.dbase.get<int>("numberOfIterations");  // holds actual number of iterations taken
     int & cgWaveDebugMode                    = cgWaveHoltz.dbase.get<int>("cgWaveDebugMode");
     
+
+    onlyLoadDeflatedEigenVectors = true; // *new way* Sept 26, 2024
+
+
     int plotTotalField = false; 
+
 
     Index I1,I2,I3;
 
@@ -125,6 +153,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                                                 "show file initial condition",
                                                 "random initial condition",
                                                 "eigenvector initial condition",
+                                                "helmholtz initial condition",
                                                 "change parameters",
                                                 "contour",
                                                 "grid",
@@ -136,11 +165,12 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                                                 "plot errors",
                                                 "plot forcing",
                                                 "plot sequences",
+                                                "plot filter",
                                                 "animate",
                                                 "erase",
                                                 "exit",
                                                 ""};
-    int numRows=10;
+    int numRows=12;
     dialog.setPushButtons( pbLabels, pbLabels, numRows ); 
 
   // aString tbCommands[] = {"save show file",
@@ -191,7 +221,9 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                                                     "adjust errors for superGrid",
                                                     "plot total field",
                                                     "use augmented gmres",
-                                                    "augmented eigenvectors",
+                                                    "augmented are eigenvectors",
+                                                    "plot filter and deflated eigs",
+                                                    "only load deflated eigs",
                                                         ""};
     int tbState[10];
     tbState[0] = cgWaveDebugMode;
@@ -201,6 +233,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
     tbState[4] = plotTotalField;
     tbState[5] = useAugmentedGmres;
     tbState[6] = augmentedVectorsAreEigenvectors;
+    tbState[7] = plotFilterAndDeflatedEigenvalues;
+    tbState[8] = onlyLoadDeflatedEigenVectors; 
 
     int numColumns=1;
     dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -241,6 +275,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
     }  
 
     bool helmholtzFromDirectSolverWasComputed=false;
+    bool waveHoltzSolutionWasComputed=false;
     Real cpuSolveHelmholtz=-1.;
 
     Ogshow show;  // show file for saving solutions
@@ -303,36 +338,6 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       // new way: 
             bool gridsMatch = CgWave::compositeGridsMatch( cg, cgsf );
 
-      // old way: moved to a function
-      // bool gridsMatch=true;
-      // if( cg.numberOfComponentGrids() != cgsf.numberOfComponentGrids() )
-      // {
-      //   gridsMatch=false;
-      //   printF("INFO: The number of component grids (=%d) in the show file does not match the number in the current grid (=%d)\n",
-      //     cgsf.numberOfComponentGrids(),cg.numberOfComponentGrids());
-
-      //   // OV_ABORT("ERROR");
-      // }
-      // else
-      // {
-      //   // --- check if grids have the same number of points: 
-      //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-      //   {
-      //     OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
-      //     OV_GET_SERIAL_ARRAY(int,cgsf[grid].mask(),sfMaskLocal);  // use mask   
-      //     if( maskLocal.elementCount() != sfMaskLocal.elementCount() )    
-      //     {
-      //       printF("grid=%d: elementCount=%d : showfile elementCount=%d DO NOT MATCH\n",grid,maskLocal.elementCount(),sfMaskLocal.elementCount() );
-      //       gridsMatch=false;
-      //       break;
-      //     }
-      //     else
-      //     {
-      //       printF("grid=%d: elementCount=%d : showfile elementCount=%d MATCH\n",grid,maskLocal.elementCount(),sfMaskLocal.elementCount() );
-      //     }
-      //   }
-
-      // }
             if( gridsMatch )
                 printF("CgWaveHoltz:read IC from show file: Show file grid seems to match with current grid\n");
             else
@@ -406,11 +411,21 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
         {
             printF("Setting useAugmentedGmres=%d\n",useAugmentedGmres);
         }  
-        else if( dialog.getToggleValue(answer,"augmented eigenvectors",augmentedVectorsAreEigenvectors) )
+        else if( dialog.getToggleValue(answer,"augmented are eigenvectors",augmentedVectorsAreEigenvectors) )
         {
             printF("Setting augmentedVectorsAreEigenvectors=%d ( 1 = augmented vectors are true discrete eigenvectors.)\n",augmentedVectorsAreEigenvectors);
         }         
         
+        else if( dialog.getToggleValue(answer,"plot filter and deflated eigs",plotFilterAndDeflatedEigenvalues) )
+        {
+            printF("Setting plotFilterAndDeflatedEigenvalues=%d ( 1 = plot WaveHoltz filter beta and eigenvalues after delation is initialized.)\n",plotFilterAndDeflatedEigenvalues);
+        }
+
+        else if( dialog.getToggleValue(answer,"only load deflated eigs",onlyLoadDeflatedEigenVectors) )
+        {
+            printF("Setting onlyLoadDeflatedEigenVectors=%d ( 1 = only read in eigenvectors used for deflation.)\n",onlyLoadDeflatedEigenVectors);
+        }    
+
         else if( dialog.getToggleValue(answer,"adjust plots for superGrid",adjustPlotsForSuperGrid) )
         {
             printF("Setting adjustPlotsForSuperGrid=%d (zero out solution in SG layers when plotting)\n",adjustPlotsForSuperGrid);
@@ -437,10 +452,13 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                           answer=="compute with petsc"       // backward compatible
                       )
         {
-            const bool useFixedPoint =  answer=="compute with fixed-point";
+            waveHoltzSolutionWasComputed=true; 
 
-            const int & computeEigenmodes     = cgWave.dbase.get<int>("computeEigenmodes");
-            const int readTrueEigenPairs = eigenVectorFile != "none";
+            int & useFixedPoint = dbase.get<int>("useFixedPoint"); 
+            useFixedPoint = answer=="compute with fixed-point";
+
+            const int & computeEigenmodes   = cgWave.dbase.get<int>("computeEigenmodes");
+            const int readTrueEigenPairs    = eigenVectorFile != "none";
             if( computeEigenmodes && readTrueEigenPairs )
             {
         // -- This next call will read in any known eigenmodes ---
@@ -449,17 +467,18 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
             const Real cpu0=getCPU();
 
-            
 
       // -----------------------------------------------------------------
       // ------------------WAVE HOLTZ SOLVE-------------------------------
       // -----------------------------------------------------------------
             if( useFixedPoint )
+            {
                 cgWaveHoltz.solve();
+            }
             else
             {
                 if( useAugmentedGmres )
-                    cgWaveHoltz.solveAugmentedGmres(argc,argv);
+                    cgWaveHoltz.solveAugmentedKrylov(argc,argv);
                 else 
                     cgWaveHoltz.solvePETSc(argc,argv);
             }
@@ -475,7 +494,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             if( deflateWaveHoltz && useAugmentedGmres==0 )
                 cgWave.inflateSolution(); // un-deflate the solution
 
-            const Real cpu = getCPU()-cpu0;
+      // const Real cpu = getCPU()-cpu0;
+            cpuWaveHoltz = getCPU()-cpu0;
 
             Real viFactor; // set below
             if( filterTimeDerivative )
@@ -514,6 +534,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                     viFactor = -sigma/frequencyArray(0);        // unadjusted
                 }
 
+                printF("\n ###### solveHelmholtz: Set complex solution using viFactor=%9.2e#### \n\n",viFactor);
+
                 for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                 {
                     MappedGrid & mg = cg[grid];
@@ -544,6 +566,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
 
             const Real & maxResidual          = cgWaveHoltz.dbase.get<real>("maxResidual");
+            const aString & krylovType        = cgWaveHoltz.dbase.get<aString>("krylovType");  // gmres, bicgstab, cg, ...
+            const int & gmresRestartLength    = cgWaveHoltz.dbase.get<int>("gmresRestartLength"); // restart length for WaveHoltz + GMRES  
 
             const CgWave::TimeSteppingMethodEnum & timeSteppingMethod = cgWave.dbase.get<CgWave::TimeSteppingMethodEnum>("timeSteppingMethod");
             aString implicitSolverName =  timeSteppingMethod==CgWave::explicitTimeStepping ? 
@@ -555,7 +579,31 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
             const Real cpuWave   = timing(CgWave::totalTime);
             const Real cpuAdvance = timing(CgWave::timeForAdvance);
-    
+
+      // -- Compute points-per-wavelength --- 
+            RealArray & dxMinMax = cgWave.dbase.get<RealArray>("dxMinMax");
+            Real  kWaveNumber = frequencyArray(0)/c;     // k = omega/c
+            Real lambdaWaveLength = twoPi/kWaveNumber;   // lambda = 2*pi/k
+            const int gridBackGround=0; 
+            Real dx = dxMinMax(gridBackGround,0);        // grid spacing from backGround grid (hopefully)
+            Real & ppw            = dbase.get<Real>("ppw");            // holds actual points per wavelength
+            Real & ppwRuleOfThumb = dbase.get<Real>("ppwRuleOfThumb"); // holds rule-of-thumb points per wavelength
+            ppw = lambdaWaveLength/dx;        // PPW = lambda/dx 
+
+            Real xMin[3],xMax[3];
+            GridStatistics::getGridCoordinateBounds(cg,xMin,xMax);
+            Real domainSize=0.;
+            for( int axis=0; axis<cg.numberOfDimensions(); axis++ )
+                domainSize = max(domainSize,xMax[axis]-xMin[axis]);
+            const Real NLambda = domainSize/lambdaWaveLength; // size of domain in wavelengths
+            const Real epsr=1e-2; // relative error tolerance
+      //  bp = 2/( (mu+1)^2 *nchoosek(2*mu+2,mu+1) );
+            const int mu = orderOfAccuracy/2; 
+            Real bp = 2./( (mu+1)*(mu+1) * nChooseK(2*mu+2,mu+1) );
+            ppwRuleOfThumb = 2.*Pi*pow( Pi*bp* NLambda/epsr,1./orderOfAccuracy); 
+            Real ppwRuleOfThumbOld = Pi*pow( NLambda/epsr,1./orderOfAccuracy); // ** FIX ME
+            printF("\n >>>omega=%10.2e, k=%10.2e, lambda=%10.2e, dx=%10.2e, domainSize=%10.2e, NLambda=%g, ppw=lambda/dx=%5.1f, ppw(rule-of-thumb)=%5.1f (old=%5.1f) (epsr=%g)<<<\n\n",
+                  kWaveNumber,frequencyArray(0),lambdaWaveLength,dx,domainSize,NLambda,ppw,ppwRuleOfThumb,ppwRuleOfThumbOld,epsr);
 
             printF("\n------------------------ CgWaveHoltz SUMMARY ------------------------------------\n");
             if( filterTimeDerivative==0 )
@@ -567,9 +615,12 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             printF("\n grid=%s\n",(const char*)nameOfOGFile);
 
             printF(" Convergence rate CR=%5.3f, CR-perPeriod=%5.3f, Time to solve =%9.2e(s) : CgWave=%9.2e(s) %5.2f%%, advance=%9.2e(s) %5.2f%%\n",
-                          convergenceRate,convergenceRatePerPeriod,cpu,cpuWave,(cpuWave/cpu)*100.,cpuAdvance,(cpuAdvance/cpu)*100.);
+                          convergenceRate,convergenceRatePerPeriod,cpuWaveHoltz,cpuWave,(cpuWave/cpuWaveHoltz)*100.,cpuAdvance,(cpuAdvance/cpuWaveHoltz)*100.);
             printF(" max-residual=%8.2e (WaveHoltz its), numberOfIterations = %d (%s) (maximumNumberOfIterations=%d)\n",
-                              maxResidual,numberOfIterations,(useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : "GMRES")  ),maximumNumberOfIterations);
+                              maxResidual,numberOfIterations,(useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : (const char*)krylovType)  ),maximumNumberOfIterations);
+            
+            printF(" omega=%10.2e, k=%10.2e, lambda=%10.2e, dx=%10.2e, domainSize=%10.2e, NLambda=%g, ppw=lambda/dx=%5.1f, ppw(rule-of-thumb)=%5.1f (epsr=%g)<<<\n\n",
+                kWaveNumber,frequencyArray(0),lambdaWaveLength,dx,domainSize,NLambda,ppw,ppwRuleOfThumb,epsr);      
             printF(" numberOfFrequencies= %d, adjustOmega=%d, adjustHelmholtzForUpwinding=%d\n",
                         numberOfFrequencies,adjustOmega,adjustHelmholtzForUpwinding);
             printF(" solveForScatteredField=%d\n",solveForScatteredField);
@@ -583,9 +634,12 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                 const Real & omega = cgWave.dbase.get<Real>("omegaPlaneWave");
                 printF(" Scattered field computed with plane-wave: amp=%g, [kx,ky,kz]=[%g,%g,%g]*2*pi, phi=%g\n",amp,kx/twoPi,ky/twoPi,kz/twoPi,phi);        
             }
-            printF(" Time stepping = %s, cfl=%6.2f, dt=%9.3e, minStepsPerPeriod=%d, numberOfStepsPerSolve=%d, totalTimeStepsStaken=%d, aveItsPerImplicitSolve=%5.1f\n",
+            printF(" Time stepping = %s, \n",
+                        (timeSteppingMethod==CgWave::explicitTimeStepping ? "explicit" : "implicit") );
+            printF(" cfl=%6.2f, dt=%9.3e, minStepsPerPeriod=%d, numberOfStepsPerSolve=%d, totalTimeStepsStaken=%d, aveItsPerImplicitSolve=%5.1f\n",
                         (timeSteppingMethod==CgWave::explicitTimeStepping ? "explicit" : "implicit"),cfl,dt,minStepsPerPeriod,numberOfStepsPerSolve,numberOfStepsTaken,
                         aveItsPerImplicitSolve);
+
             const int & takeImplicitFirstStep         = cgWave.dbase.get<int>("takeImplicitFirstStep");
             printF("  takeImplicitFirstStep=%d\n",takeImplicitFirstStep);
             const int & implicitUpwind                = cgWave.dbase.get<int>("implicitUpwind");
@@ -600,13 +654,17 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             }
 
             printF(" c=%g, useSuperGrid=%d, damp=%g\n",c,useSuperGrid,damp);
+            printF(" gmres-restart-length=%d\n",gmresRestartLength);
 
             const int & filterTimeDerivative  = cgWave.dbase.get<int>("filterTimeDerivative");
-            const int & useFilterWeights      = cgWave.dbase.get<int>("useFilterWeights"); 
-            printF(" filterTimeDerivative=%d, useFilterWeights=%d, viFactor=%g\n",filterTimeDerivative,useFilterWeights,viFactor);
+            const int & useFilterWeights      = cgWave.dbase.get<int>("useFilterWeights");
+            const int & filterD0t             = cgWave.dbase.get<int>("filterD0t");
+            const int & deflateForcing        = cgWave.dbase.get<int>("deflateForcing");
+  
+            printF(" filterTimeDerivative=%d, useFilterWeights=%d, viFactor=%g, filterD0t=%d\n",filterTimeDerivative,useFilterWeights,viFactor,filterD0t);
 
             printF("    implicit solver : %s\n =====\n",(const char*)implicitSolverName);
-            printF(" deflateWaveHoltz=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,numToDeflate,
+            printF(" deflateWaveHoltz=%d, deflateForcing=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,deflateForcing,numToDeflate,
                     (const char*)eigenVectorFile);
             if( waveHoltzAsymptoticConvergenceRate>0 )
                 printF(" Estimated asymptotic convergence rate=%6.3f.\n",waveHoltzAsymptoticConvergenceRate);
@@ -616,6 +674,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                 printF(" freq=%2d, omega=%8.3f",freq,frequencyArray(freq));
                 if( adjustOmega )
                     printF(", (adjusted=%8.3f)",frequencyArrayAdjusted(freq));
+
                 const Real T = twoPi/frequencyArray(freq);  // period
                 const Real Tbar  = T*numPeriodsArray(freq);       // periods that fit in time interval
                 const Real Tbar0 = periodArray(0);          // final time integrated to 
@@ -632,7 +691,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             }   
             printF("\n");
 
-            real maxRes;
+            Real & maxRes = dbase.get<Real>("maxRes");
+
             RealArray maxResArray;
             const int useAdjustedOmega=0; // compute residual using original (unadjusted) omega
             if( filterTimeDerivative==0 )
@@ -645,18 +705,39 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                 maxRes = cgWaveHoltz.residual( uh,maxResArray,useAdjustedOmega );
             }
 
+            aString label = deflateWaveHoltz ? sPrintF("deflate=%d",numToDeflate) : "";
+            aString schemeName;
+            if( useFixedPoint )
+                schemeName="FP";
+            else
+            {
+                if( useAugmentedGmres )
+                    schemeName = "a" + krylovType; // Augmented 
+                else
+                    schemeName = krylovType;
+            }
             if( filterTimeDerivative==0 )
             {
-                aString label = deflateWaveHoltz ? sPrintF("deflate=%d",numToDeflate) : "";
                 if( numberOfFrequencies==1 )
-                    printF("solveHelmholtz: max-res=%9.3e (%s, numIts=%d, CR=%5.2f %s)\n",
-                        maxRes,(useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : "GMRES")),numberOfIterations,convergenceRate,(const char*)label);
+                {
+                    printF("solveHelmholtz: max-res=%9.3e (%s, numIts=%d, ave-CR=%5.2f %s, ACR=%5.2f)\n",
+                        maxRes,(const char*)schemeName,numberOfIterations,
+                        convergenceRate,(const char*)label,waveHoltzAsymptoticConvergenceRate);
+          // printF("solveHelmholtz: max-res=%9.3e (%s, numIts=%d, ave-CR=%5.2f %s, ACR=%5.2f)\n",
+          //   maxRes,(useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : (const char*)krylovType)),numberOfIterations,
+          //   convergenceRate,(const char*)label,waveHoltzAsymptoticConvergenceRate);          
+                }
+
                 else
-                    printF("solveHelmholtz: max-res=%9.3e (all freq)\n",maxRes);
+                    printF("solveHelmholtz: max-res=%9.3e (all freq, %s, numIts=%d, ave-CR=%5.2f %s)\n",
+                          maxRes,(const char*)schemeName,numberOfIterations,convergenceRate,(const char*)label );
             }
             else
             {
-                printF("solveHelmholtz: max-residual [Re,Im]=[%8.2e,%8.2e]\n",maxResArray(0),maxResArray(1));
+                printF("solveHelmholtz: max-residual [Re,Im]=[%8.2e,%8.2e] (%s, numIts=%d, ave-CR=%5.2f %s)\n",maxResArray(0),maxResArray(1),
+                                (const char*)schemeName,numberOfIterations,convergenceRate,(const char*)label );
+        // printF("solveHelmholtz: max-residual [Re,Im]=[%8.2e,%8.2e] (%s, numIts=%d, ave-CR=%5.2f %s)\n",maxResArray(0),maxResArray(1),
+        //         (useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : (const char*)krylovType)),numberOfIterations,convergenceRate,(const char*)label );        
             }
 
       // --- COMPUTE ERROR COMPARED TO DIRECT HELMHOLTZ ---
@@ -779,86 +860,119 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       // --------- SAVE CHECK FILE -------------
       // ---------------------------------------
 
-      // saveCheckFile=true;
-
-      // Real solutionNorm=1.;
-      // cgWaveHoltz.saveCheckFile( checkFileCounter,maxRes,solutionNorm ); 
-      // checkFileCounter++; 
-
-            aString timeSteppingName = (timeSteppingMethod==CgWave::explicitTimeStepping ? "explicit" : "implicit");
-            
-            aString & nameOfGridFile = cgWave.dbase.get<aString>("nameOfGridFile");
-            int firstChar=0; 
-            for( int i=nameOfGridFile.length()-1; i>=0; i-- )
+            if( true )
             {
-                if( nameOfGridFile[i]=='/' ){ firstChar=i+1; break; } // start from end, work backwards and look for a directory symbol
+                outputCheckFile( maxResArray, errorBetweenWaveHoltzAndHelmholtz );
             }
-            int lastChar=firstChar; 
-            for( int i=firstChar; i<=nameOfGridFile.length()-1; i++ )
-            {
-                if( nameOfGridFile[i]=='.' ){ lastChar=i-1; break; } // remove suffix: .order2.hdf
-            }
-
-            aString gridNameNoPrefix = nameOfGridFile(firstChar,lastChar);
-            FILE *& checkFile = dbase.get<FILE*>("checkFile");
-            checkFile = fopen("cgWaveHoltz.check","w" );      
-            assert( checkFile != NULL );      
-
-      // Get the current date
-            time_t *tp= new time_t;
-            time(tp);
-            const char *dateString = ctime(tp);
-            fPrintF(checkFile,"# Check file for cgWaveHoltz, grid=%s, %s",(const char*)gridNameNoPrefix,dateString);  // Note: dateString include newline
-            delete tp; 
-
-            fPrintF(checkFile,"grid=%s;\n",(const char*)gridNameNoPrefix);
-            fPrintF(checkFile,"timeStepping=%s;\n",(const char*)timeSteppingName);
-            fPrintF(checkFile,"orderOfAccuracy=%d;\n",orderOfAccuracy);
-            fPrintF(checkFile,"numPeriods=%d;\n",numPeriods);
-
-            fPrintF(checkFile,"numberOfFrequencies=%d;\n",numberOfFrequencies);
-            fPrintF(checkFile,"filterTimeDerivative=%d;\n",filterTimeDerivative);
-
-            fPrintF(checkFile,"useFixedPoint=%d;\n",useFixedPoint);
-            fPrintF(checkFile,"minStepsPerPeriod=%d;\n",minStepsPerPeriod);
-            fPrintF(checkFile,"numberOfStepsPerSolve=%d;\n",numberOfStepsPerSolve);
-
-            fPrintF(checkFile,"convergenceRate=%5.3f;\n",convergenceRate);
-            fPrintF(checkFile,"numberOfIterations=%d;\n",numberOfIterations);
-            if( filterTimeDerivative==0 )
-                fPrintF(checkFile,"maxRes=%9.3e;\n",maxRes);
             else
             {
-                fPrintF(checkFile,"maxResReal=%8.2e;\n",maxResArray(0));
-                fPrintF(checkFile,"maxResImag=%8.2e;\n",maxResArray(1));
+        // ** OLD WAY **
+
+                aString timeSteppingName = (timeSteppingMethod==CgWave::explicitTimeStepping ? "explicit" : "implicit");
+                
+                aString & nameOfGridFile = cgWave.dbase.get<aString>("nameOfGridFile");
+                int firstChar=0; 
+                for( int i=nameOfGridFile.length()-1; i>=0; i-- )
+                {
+                    if( nameOfGridFile[i]=='/' ){ firstChar=i+1; break; } // start from end, work backwards and look for a directory symbol
+                }
+                int lastChar=firstChar; 
+                for( int i=firstChar; i<=nameOfGridFile.length()-1; i++ )
+                {
+                    if( nameOfGridFile[i]=='.' ){ lastChar=i-1; break; } // remove suffix: .order2.hdf
+                }
+
+                aString gridNameNoPrefix = nameOfGridFile(firstChar,lastChar);
+                FILE *& checkFile = dbase.get<FILE*>("checkFile");
+                checkFile = fopen("cgWaveHoltz.check","w" );      
+                assert( checkFile != NULL );      
+
+        // Get the current date
+                time_t *tp= new time_t;
+                time(tp);
+                const char *dateString = ctime(tp);
+                fPrintF(checkFile,"# Check file for cgWaveHoltz, grid=%s, %s",(const char*)gridNameNoPrefix,dateString);  // Note: dateString include newline
+                delete tp; 
+
+                fPrintF(checkFile,"grid=%s;\n",(const char*)gridNameNoPrefix);
+                fPrintF(checkFile,"timeStepping=%s;\n",(const char*)timeSteppingName);
+                fPrintF(checkFile,"orderOfAccuracy=%d;\n",orderOfAccuracy);
+                fPrintF(checkFile,"numPeriods=%d;\n",numPeriods);
+
+                fPrintF(checkFile,"numberOfFrequencies=%d;\n",numberOfFrequencies);
+                for( int freq=0; freq<numberOfFrequencies; freq++ )
+                {
+                    fPrintF(checkFile," freq=%2d, omega=%8.3f",freq,frequencyArray(freq));
+                    if( adjustOmega )
+                        fPrintF(checkFile,", (adjusted=%8.3f)",frequencyArrayAdjusted(freq));
+
+                    const Real T = twoPi/frequencyArray(freq);  // period
+                    const Real Tbar  = T*numPeriodsArray(freq);       // periods that fit in time interval
+                    const Real Tbar0 = periodArray(0);          // final time integrated to 
+                    fPrintF(checkFile," T=%8.5f, Tbar=%8.5f, numPeriods=%3d, Tbar(0)/T=%6.2f",T,Tbar,numPeriodsArray(freq),Tbar0/T);
+                    fPrintF(checkFile,"\n");
+                }
+
+                fPrintF(checkFile,"filterTimeDerivative=%d;\n",filterTimeDerivative);
+
+                fPrintF(checkFile,"useFixedPoint=%d;\n",useFixedPoint);
+                fPrintF(checkFile,"useAugmentedGmres=%d;\n",useAugmentedGmres);
+                fPrintF(checkFile,"minStepsPerPeriod=%d;\n",minStepsPerPeriod);
+                fPrintF(checkFile,"numberOfStepsPerSolve=%d;\n",numberOfStepsPerSolve);
+
+                fPrintF(checkFile,"convergenceRate=%5.3f;\n",convergenceRate);
+                fPrintF(checkFile,"numberOfIterations=%d;\n",numberOfIterations);
+
+                fPrintF(checkFile,"numToDeflate=%d;\n",numToDeflate);
+
+                if( filterTimeDerivative==0 )
+                    fPrintF(checkFile,"maxRes=%9.3e;\n",maxRes);
+                else
+                {
+                    fPrintF(checkFile,"maxResReal=%8.2e;\n",maxResArray(0));
+                    fPrintF(checkFile,"maxResImag=%8.2e;\n",maxResArray(1));
+                }
+                fPrintF(checkFile,"errorBetweenWaveHoltzAndHelmholtz=%9.3e;\n",errorBetweenWaveHoltzAndHelmholtz);
+
+        // fPrintF(checkFile,"numberOfStepsPerSolve=%d;\n",numberOfStepsPerSolve);
+        // fPrintF(checkFile,"numEigsRequested=%d;\n",numEigsToCompute);
+        // fPrintF(checkFile,"numEigsComputed=%d;\n",numEigenVectors);
+        // fPrintF(checkFile,"numArnoldiVectors=%d;\n",numArnoldiVectors);
+        // fPrintF(checkFile,"numWaveSolves=%d;\n",numberOfMatrixVectorMultiplications);
+        // fPrintF(checkFile,"maxEigErr=%9.2e;\n",maxEigErr);
+        // fPrintF(checkFile,"maxEvectErr=%9.2e;\n",maxEvectErr);
+        // fPrintF(checkFile,"maxEigResid=%9.2e;\n",maxEigResid);
+                fclose(checkFile);
+
+                printF("Wrote results to the check file [cgWaveHoltz.check]\n");
             }
-            fPrintF(checkFile,"errorBetweenWaveHoltzAndHelmholtz=%9.3e;\n",errorBetweenWaveHoltzAndHelmholtz);
-
-      // fPrintF(checkFile,"numberOfStepsPerSolve=%d;\n",numberOfStepsPerSolve);
-      // fPrintF(checkFile,"numEigsRequested=%d;\n",numEigsToCompute);
-      // fPrintF(checkFile,"numEigsComputed=%d;\n",numEigenVectors);
-      // fPrintF(checkFile,"numArnoldiVectors=%d;\n",numArnoldiVectors);
-      // fPrintF(checkFile,"numWaveSolves=%d;\n",numberOfMatrixVectorMultiplications);
-      // fPrintF(checkFile,"maxEigErr=%9.2e;\n",maxEigErr);
-      // fPrintF(checkFile,"maxEvectErr=%9.2e;\n",maxEvectErr);
-      // fPrintF(checkFile,"maxEigResid=%9.2e;\n",maxEigResid);
-            fclose(checkFile);
-
-            printF("Wrote results to the check file [cgWaveHoltz.check]\n");
 
       // save results to a matlab file
             const aString & matlabFileName = cgWaveHoltz.dbase.get<aString>("matlabFileName");  
             aString localName; 
+            aString suffix = sPrintF("FD%d%dTS%s",orderOfAccuracyInTime,orderOfAccuracy,
+                                                              timeSteppingMethod==CgWave::implicitTimeStepping ? "I" : "E");
+            if( numberOfFrequencies>1 )
+                suffix = suffix + sPrintF("Nf%d",numberOfFrequencies);
+
+            suffix = suffix + sPrintF("Np%d",numPeriods);
+
+            localName = matlabFileName + suffix;
+
             if( useFixedPoint )
             {
                 cgWaveHoltz.dbase.get<aString>("solverName")="FixedPoint";
-                localName = matlabFileName + "FP"; 
+                localName = localName + "FP"; 
             }
             else
             {
-                aString krylovType = useAugmentedGmres ? "AGmres" : "Krylov"; 
-                cgWaveHoltz.dbase.get<aString>("solverName")=krylovType;
-                localName = matlabFileName + krylovType;
+        // aString krylovTypeName = useAugmentedGmres ? "AGmres" : krylovType; 
+                aString krylovTypeName = krylovType; 
+                if( useAugmentedGmres ) 
+                    krylovTypeName = "a" + krylovTypeName; // Augmented
+
+                cgWaveHoltz.dbase.get<aString>("solverName")=krylovTypeName;
+                localName = localName + krylovTypeName;
             }
             cgWaveHoltz.outputMatlabFile( localName );
 
@@ -906,6 +1020,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
         // Fill in the forcing and boundary conditions: 
         // cgWave.getHelmholtzForcing( fHelmholtz );
+                printF("solveHelmholtz: call residual to check the solution from the direct Helmholtz solver...\n");
                 RealArray maxResArray;
                 Real maxRes = cgWaveHoltz.residual( uHelmholtz, fHelmholtz, maxResArray, useAdjustedOmega );
                 printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e (direct Helmholtz solution)\n",omega,maxRes);
@@ -927,8 +1042,49 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
             v=0.;
 
+      // v.display("v after v=0","%5.2f ");
+
             cgWave.resetTimings(); // reset CPU timings to zero 
         }
+        else if( answer == "helmholtz initial condition" )
+        {
+            if( helmholtzFromDirectSolverWasComputed )
+            {
+                printF("Setting initial condition to the solution from the direct Helmholtz solver.\n");
+                realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+
+                v=uHelmholtz;  // this is ok for complex if viFactor=1 (now default)
+
+        // if( filterTimeDerivative==0 )
+        // {
+        //   v=uHelmholtz;
+        // }
+        // else
+        // {
+        //   // Complex case:
+        //   //  u = ur*cos(omega*t) + ui*sin(omega*t)
+        //   // v(0) = ur
+        //   // v(1) = D_0t u(0) = omega*ui 
+        //   Real omega=frequencyArray(0);
+        //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        //   {
+        //     MappedGrid & mg = cg[grid];
+        //     OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+        //     OV_GET_SERIAL_ARRAY(real,uHelmholtz[grid],uLocal);
+        //     getIndex(mg.dimension(),I1,I2,I3);
+        //     vLocal(I1,I2,I3,0) = uLocal(I1,I2,I3,0);
+        //     vLocal(I1,I2,I3,1) = uLocal(I1,I2,I3,1)*omega; // could do better 
+        //   }
+        // }
+
+
+                cgWave.resetTimings(); // reset CPU timings to zero 
+            }
+            else
+            {
+                printF("The direct Helmholtz solution has not been computed yet.\n");
+            }
+        }    
 
         else if( answer == "random initial condition" )
         {
@@ -975,11 +1131,14 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             cgWave.initializeDeflation();
 
       // Here are the eigenvectors and eigenvalues:
-            realCompositeGridFunction & uev = cgWave.dbase.get<realCompositeGridFunction>("uev");
-            RealArray & eig                 = cgWave.dbase.get<RealArray>("eig");
+            realCompositeGridFunction & uev          = cgWave.dbase.get<realCompositeGridFunction>("uev");
+            RealArray & eig                          = cgWave.dbase.get<RealArray>("eig");
+            IntegerArray & eigNumbersToDeflate       = cgWave.dbase.get<IntegerArray>("eigNumbersToDeflate");
+            const int & onlyLoadDeflatedEigenVectors = cgWave.dbase.get<int>("onlyLoadDeflatedEigenVectors");
 
-            int ie=0;
-            printF("Choosing eigenvector=%d: eig=%12.4e\n",ie,eig(0,ie));
+            const int ie=0;
+            const int je = onlyLoadDeflatedEigenVectors ? eigNumbersToDeflate(ie) : ie; 
+            printF("Choosing eigenvector=%d: eig=%12.4e\n",ie,eig(0,je));
 
   
             for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
@@ -1052,94 +1211,102 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                 numShowComponents += numberOfComponents;       // save total field
             }
 
+            if( !waveHoltzSolutionWasComputed && helmholtzFromDirectSolverWasComputed )
+            {
+        // save save direct solve and forcing
+                numShowComponents = 2*numberOfComponents; 
+            }
+
             realCompositeGridFunction q(cg,all,all,all,numShowComponents);
             q.setName("q");
             int ishow=0;  // counts components in q as we fill them in
 
-            if( !filterTimeDerivative )
+            if( waveHoltzSolutionWasComputed )
             {
-                realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-                for( int freq=0; freq<numberOfFrequencies; freq++ )
+                if( !filterTimeDerivative )
                 {
-                    q.setName(sPrintF("v%d",freq),ishow); 
+                    realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+                    for( int freq=0; freq<numberOfFrequencies; freq++ )
+                    {
+                        q.setName(sPrintF("v%d",freq),ishow); 
+
+                        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                        {
+                            OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+                            OV_GET_SERIAL_ARRAY(Real,q[grid],qLocal);
+                            getIndex(cg[grid].dimension(),I1,I2,I3);
+                            bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
+                            if( ok )
+                              qLocal(I1,I2,I3,ishow) = vLocal(I1,I2,I3,freq);   // waveHoltz solution
+
+              // q[grid](all,all,all,ishow) = v[grid](all,all,all,freq);   // waveHoltz solution
+                        }
+
+                        ishow++;
+                    }
+                }
+                else
+                {
+          // ---- complex solution ---
+                    int iur=ishow; q.setName("ur",iur); ishow++;
+                    int iui=ishow; q.setName("ui",iui); ishow++;
 
                     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                     {
-                        OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+                        OV_GET_SERIAL_ARRAY(Real,uh[grid],uhLocal);
                         OV_GET_SERIAL_ARRAY(Real,q[grid],qLocal);
                         getIndex(cg[grid].dimension(),I1,I2,I3);
-                        bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
+                        bool ok=ParallelUtility::getLocalArrayBounds(uh[grid],uhLocal,I1,I2,I3);
                         if( ok )
-                          qLocal(I1,I2,I3,ishow) = vLocal(I1,I2,I3,freq);   // waveHoltz solution
-
-            // q[grid](all,all,all,ishow) = v[grid](all,all,all,freq);   // waveHoltz solution
+                        {
+                            qLocal(I1,I2,I3,iur) = uhLocal(I1,I2,I3,0);   // waveHoltz solution
+                            qLocal(I1,I2,I3,iui) = uhLocal(I1,I2,I3,1);   // waveHoltz solution
+                        }
                     }
 
-                    ishow++;
                 }
-            }
-            else
-            {
-        // ---- complex solution ---
-                int iur=ishow; q.setName("ur",iur); ishow++;
-                int iui=ishow; q.setName("ui",iui); ishow++;
-
-                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                if( solveForScatteredField )
                 {
-                    OV_GET_SERIAL_ARRAY(Real,uh[grid],uhLocal);
-                    OV_GET_SERIAL_ARRAY(Real,q[grid],qLocal);
-                    getIndex(cg[grid].dimension(),I1,I2,I3);
-                    bool ok=ParallelUtility::getLocalArrayBounds(uh[grid],uhLocal,I1,I2,I3);
-                    if( ok )
+          // -- plot TOTAL field = incident + scattered ---
+
+                    const Real & amp   = cgWave.dbase.get<Real>("ampPlaneWave");
+                    const Real & kx    = cgWave.dbase.get<Real>("kxPlaneWave");
+                    const Real & ky    = cgWave.dbase.get<Real>("kyPlaneWave");
+                    const Real & kz    = cgWave.dbase.get<Real>("kzPlaneWave");
+                    const Real & phi   = cgWave.dbase.get<Real>("phiPlaneWave");
+                    const Real & omega = cgWave.dbase.get<Real>("omegaPlaneWave");
+
+                    int iur=ishow; q.setName("urTotal",iur); ishow++;
+                    int iui=ishow; q.setName("uiTotal",iui); ishow++;
+
+                    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                     {
-                        qLocal(I1,I2,I3,iur) = uhLocal(I1,I2,I3,0);   // waveHoltz solution
-                        qLocal(I1,I2,I3,iui) = uhLocal(I1,I2,I3,1);   // waveHoltz solution
+                        MappedGrid & mg = cg[grid];
+
+                        OV_GET_SERIAL_ARRAY(Real,uh[grid],uhLocal);
+                        OV_GET_SERIAL_ARRAY(Real,q[grid],qLocal);
+                        OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
+
+                        getIndex(cg[grid].dimension(),I1,I2,I3);
+                        bool ok=ParallelUtility::getLocalArrayBounds(uh[grid],uhLocal,I1,I2,I3);
+                        if( ok )
+                        {
+                            if( cg.numberOfDimensions()==2 )
+                            {
+                                qLocal(I1,I2,I3,iur) = uhLocal(I1,I2,I3,0) + amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + phi );
+                                qLocal(I1,I2,I3,iui) = uhLocal(I1,I2,I3,1) - amp*cos( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + phi );
+                            }
+                            else
+                            {
+                                qLocal(I1,I2,I3,iur) = uhLocal(I1,I2,I3,0) + amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) + phi );
+                                qLocal(I1,I2,I3,iui) = uhLocal(I1,I2,I3,1) - amp*cos( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) + phi );
+                            }
+
+                        }            
                     }
+
                 }
-
             }
-            if( solveForScatteredField )
-            {
-        // -- plot TOTAL field = incident + scattered ---
-
-                const Real & amp   = cgWave.dbase.get<Real>("ampPlaneWave");
-                const Real & kx    = cgWave.dbase.get<Real>("kxPlaneWave");
-                const Real & ky    = cgWave.dbase.get<Real>("kyPlaneWave");
-                const Real & kz    = cgWave.dbase.get<Real>("kzPlaneWave");
-                const Real & phi   = cgWave.dbase.get<Real>("phiPlaneWave");
-                const Real & omega = cgWave.dbase.get<Real>("omegaPlaneWave");
-
-                int iur=ishow; q.setName("urTotal",iur); ishow++;
-                int iui=ishow; q.setName("uiTotal",iui); ishow++;
-
-                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-                {
-                    MappedGrid & mg = cg[grid];
-
-                    OV_GET_SERIAL_ARRAY(Real,uh[grid],uhLocal);
-                    OV_GET_SERIAL_ARRAY(Real,q[grid],qLocal);
-                    OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
-
-                    getIndex(cg[grid].dimension(),I1,I2,I3);
-                    bool ok=ParallelUtility::getLocalArrayBounds(uh[grid],uhLocal,I1,I2,I3);
-                    if( ok )
-                    {
-                        if( cg.numberOfDimensions()==2 )
-                        {
-                            qLocal(I1,I2,I3,iur) = uhLocal(I1,I2,I3,0) + amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + phi );
-                            qLocal(I1,I2,I3,iui) = uhLocal(I1,I2,I3,1) - amp*cos( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + phi );
-                        }
-                        else
-                        {
-                            qLocal(I1,I2,I3,iur) = uhLocal(I1,I2,I3,0) + amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) + phi );
-                            qLocal(I1,I2,I3,iui) = uhLocal(I1,I2,I3,1) - amp*cos( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) + phi );
-                        }
-
-                    }            
-                }
-
-            }
-
 
             if( helmholtzFromDirectSolverWasComputed )
             { 
@@ -1163,7 +1330,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
             }
 
-            if( saveErrors || helmholtzFromDirectSolverWasComputed )
+            if( waveHoltzSolutionWasComputed && ( saveErrors || helmholtzFromDirectSolverWasComputed )  )
             { 
                 realCompositeGridFunction & error = cgWave.dbase.get<realCompositeGridFunction>("error");
 
@@ -1340,6 +1507,32 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);
 
         }
+        else if( answer== "plot filter" )
+        {
+      // plot the WaveHoltz filter function beta and any eigenvalues use for deflation
+            if( numToDeflate>0 && cgWave.dbase.has_key("uev") )
+            {
+
+
+                IntegerArray & eigNumbersToDeflate = cgWave.dbase.get<IntegerArray>("eigNumbersToDeflate");
+
+                RealArray & eigTrue                = cgWave.dbase.get<RealArray>("eig"); // known true eigenvalues 
+
+                RealArray eigenValues(numToDeflate);
+                for( int ie=0; ie<numToDeflate; ie++ )
+                    eigenValues(ie) = eigTrue(0,eigNumbersToDeflate(ie));
+
+        // ::display(eigenValues,"eigs to deflate for plotFilter");
+        // plotFilter( eigenValues, ps,psp );
+                cgWave.plotFilter( eigenValues );
+
+            }
+            else
+            {
+                printF("There are no eigenvalues to deflate to plot with the filter function\n");
+            }
+
+        }
         else if( answer=="plot sequences" )
         {
       // Plot residual history
@@ -1480,6 +1673,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
         }
         else if( answer=="run cgWave and plot" )    
         {
+
             printF("Run cgWave and plot the solution over time...\n");
             int & plotChoices  = cgWave.dbase.get<int>("plotChoices");
             int & plotOptions  = cgWave.dbase.get<int>("plotOptions");
@@ -1487,7 +1681,15 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             plotChoices=2; // contours
             plotOptions = CgWave::plotAndWait; // plotNoWait
 
-            cgWave.dbase.get<real>("omega")     = omega;
+            const Real Tperiod=numPeriods*twoPi/omega;  
+            cgWave.dbase.get<real>("omega")     = omega;        // ** FIX ME **
+            cgWave.dbase.get<real>("tFinal")    = Tperiod;      // ** FIX ME **
+            cgWave.dbase.get<real>("Tperiod")   = Tperiod;      // ** FIX ME **
+            cgWave.dbase.get<int>("numPeriods") = numPeriods;          // ** FIX ME **
+            cgWave.dbase.get<int>("adjustOmega")= adjustOmega;  // 1 : choose omega from the symbol of D+t D-t 
+
+      // const int & numPeriods            = cgWave.dbase.get<int>("numPeriods");
+      // cgWave.dbase.get<real>("tFinal")  = numPeriods*twoPi/omega;
 
             int it=0;
             cgWave.advance( it );

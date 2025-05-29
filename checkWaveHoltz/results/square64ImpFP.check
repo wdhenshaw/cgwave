@@ -1,14 +1,20 @@
-# Check file for cgWaveHoltz, grid=square64, Wed Jul 12 09:12:54 2023
+# Check file for cgWaveHoltz, grid=square64, Fri May  2 07:58:05 2025
 grid=square64;
 timeStepping=implicit;
 orderOfAccuracy=2;
 numPeriods=2;
 numberOfFrequencies=1;
+ freq= 0, omega=  20.000, (adjusted=  19.585) T= 0.31416, Tbar= 0.62832, numPeriods=  2, Tbar(0)/T=  2.00
+numCompWaveHoltz=1;
 filterTimeDerivative=0;
+adjustOmega=1;
 useFixedPoint=1;
+useAugmentedGmres=0;
 minStepsPerPeriod=20;
 numberOfStepsPerSolve=40;
-convergenceRate=0.823;
+convergenceRate=0.810;
 numberOfIterations=50;
-maxRes=1.079e-02;
-errorBetweenWaveHoltzAndHelmholtz=1.818e-04;
+deflateWaveHoltz=0;
+numToDeflate=1;
+maxRes=4.697e-03;
+errorBetweenWaveHoltzAndHelmholtz=7.945e-05;

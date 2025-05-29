@@ -4,7 +4,7 @@
 #     cgwh gaussian.cmd -g=<grid-name> -x0=<f> -y0=<f> -omega=<f> -solver=[none|fixedPoint|krylov] -tol=<f> -tp=<f> ...
 #                         -kx=<f> -ky=<f> -kz=<f> -forcing=[gaussian|sine] -adjustOmega=[0|1] -maxIterations=<>
 #                          -upwind=[0|1] -imode=[0|1] -bcApproach=[cbc|lcbc|oneSided] -go=[go|og|halt]
-#                         -krylovType=[gmres|bicgstab] -gmresRestartLength=<i> -icshow=<s>
+#                         -krylovType=[gmres|bicgstab] -gmresRestartLength=<i> -icshow=<s> -takeImplicitFirstStep=[0|1]
 #
 #   -solver=[fixedPoint|krylov] : fixed-point or Krylov 
 #   -imode=1 : do not wait in cgWave
@@ -25,7 +25,8 @@ $numberOfFrequencies=1;
 $beta2=.0; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping 
 $upwind=0; $implicitUpwind=0; 
 $tp=.5; $imode=1; 
-$filterTimeDerivative=0; 
+$filterTimeDerivative=0; # solve for complex solutions
+$filterD0t=0;            # filter D0t directly instead of using IBPs
 $solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIterations=100; $adjustOmega=0; 
 $krylovType="gmres"; # [gmres|bicgstab]
 $gmresRestartLength=500; # for WaveHoltz
@@ -35,7 +36,7 @@ $cfl=.9; $bc="d";
 $ts="explicit"; $dtMax=1; $takeImplicitFirstStep=1;
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $orderInTime=-1;  # -1 = use default
-$deflateWaveHoltz=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; 
+$deflateWaveHoltz=0; $deflateForcing=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; 
 $eigTol=1.e-4; # eigenvalue tol for multiplicity 
 $adjustHelmholtzForUpwinding=1; # remove upwinding from Helmholtz solution
 $useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsForSuperGrid=1; $useVariableTolerance=0; 
@@ -57,13 +58,16 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"orderOfExtrapolation=i"=>\$orderOfExtrapolation,\
             "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid,"eigTol=f"=>\$eigTol,\
             "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"krylovType=s"=>\$krylovType, "gmresRestartLength=i"=>\$gmresRestartLength,\
-            "restarti=i"=>\$restarti,"ilui=i"=>\$ilui,"useVariableTolerance=i"=>\$useVariableTolerance );
+            "restarti=i"=>\$restarti,"ilui=i"=>\$ilui,"useVariableTolerance=i"=>\$useVariableTolerance,"deflateForcing=i"=>\$deflateForcing,\
+            "filterD0t=i"=>\$filterD0t);
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
 if( $bc eq "e" ){ $bc="evenSymmetry"; }
 if( $bc eq "r" ){ $bc="radiation"; }
 if( $bc eq "a" ){ $bc="absorbing"; }
+# Do not use takeImplcitiFirstStep with complex solutions
+# if( $filterTimeDerivative ){ $takeImplicitFirstStep=0; }
 #
 if( $solveri eq "best" ){ $solveri="choose best iterative solver"; }
 #
@@ -85,6 +89,7 @@ krylov type $krylovType
 gmres restart length $gmresRestartLength
 tol $tol 
 filter time derivative $filterTimeDerivative
+filter D0t $filterD0t
 number of periods $numPeriods
 adjust omega $adjustOmega
 number of frequencies $numberOfFrequencies
@@ -93,9 +98,11 @@ matlab filename: $matlab
 # choose parameters for the direct Helmholtz solver
 direct solver parameters
   if( $solverh eq "best" ){ $solverh="choose best iterative solver"; }
+  if( $solverh eq "gmres" ){ $solverh = "choose best iterative solver\n generalized minimal residual"; }
   $solverh
+  # pause
   # fillin ratio
-  #   50
+  #    80
   number of incomplete LU levels
     $iluh
   number of GMRES vectors
@@ -163,6 +170,7 @@ implicit upwind $implicitUpwind
 adjust Helmholtz for upwinding $adjustHelmholtzForUpwinding
 #
 deflate WaveHoltz $deflateWaveHoltz
+deflate forcing $deflateForcing
 number to deflate $numToDeflate
 eigenVectorFile $eigenVectorFile
 eig multiplicity tol $eigTol
@@ -229,7 +237,12 @@ if( $go eq "k"  ){ $cmd="$initialCondition\n compute with krylov\n exit"; }
 if( $go eq "d"  ){ $cmd="$initialCondition\n solve Helmholtz directly\n exit"; }
 # also solve with AuGmres
 if( $go eq "dfka" ){ $cmd="solve Helmholtz directly\n $initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n $initialCondition\n use augmented gmres 1\n $initialCondition\n compute with krylov\nexit"; }
+if( $go eq "ka" ){ $cmd="$initialCondition\n compute with krylov\n $initialCondition\n use augmented gmres 1\n $initialCondition\n compute with krylov\nexit"; }
+if( $go eq "dfkas" ){ $cmd="solve Helmholtz directly\n $initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n $initialCondition\n use augmented gmres 1\n $initialCondition\n compute with krylov\n save to show\n exit"; }
 if( $go eq "da" ){ $cmd="solve Helmholtz directly\n $initialCondition\n use augmented gmres 1\n compute with krylov\nexit"; }
+if( $go eq "a" ){ $cmd="$initialCondition\n use augmented gmres 1\n compute with krylov\nexit"; }
+if( $go eq "das" ){ $cmd="solve Helmholtz directly\n $initialCondition\n use augmented gmres 1\n compute with krylov\n save to show\nexit"; }
+if( $go eq "ds" ){ $cmd="solve Helmholtz directly\n save to show\nexit"; }
 $cmd
 
 

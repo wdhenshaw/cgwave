@@ -65,7 +65,7 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
 
   if( forcingOption==helmholtzForcing && !solveForScatteredField )
   {
-    printF("CgWave::getHelmholtzForcing: ***FILL IN RHS FOR DIRECT HELMHOLTZ SOLVER***\n");
+    printF("CgWave::getHelmholtzForcing: ***EVALUATE THE HELMHOLTZ FORCING***\n");
     
     int current=0; // not used 
     real t=0.;
@@ -137,10 +137,13 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
     // f[grid].updateGhostBoundaries();  // *** TEST ****
   } // end for grid 
 
-  for( int grid=0; grid<cg.numberOfComponentGrids(); grid ++ )
+  if( false )
   {
-    OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
-    ::display(fLocal,sPrintF("getHelmholtzForcing: fLocal after BCs grid=%d",grid),pDebugFile,"%9.2e ");
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid ++ )
+    {
+      OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
+      ::display(fLocal,sPrintF("getHelmholtzForcing: fLocal after BCs grid=%d",grid),pDebugFile,"%9.2e ");
+    }
   }
 
 

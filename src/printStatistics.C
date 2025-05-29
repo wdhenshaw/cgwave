@@ -22,6 +22,8 @@ printStatistics(FILE *file /* = stdout */)
   const int & orderOfAccuracyInTime  = dbase.get<int>("orderOfAccuracyInTime");
   const int & bcCount                = dbase.get<int>("bcCount");
 
+
+
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
   const ModifiedEquationApproachEnum & modifiedEquationApproach  
                            = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
@@ -86,6 +88,12 @@ printStatistics(FILE *file /* = stdout */)
   time(tp);
   // tm *ptm=localtime(tp);
   const char *dateString = ctime(tp);
+
+  // -- put this here for now:
+  const Real & timeForOgesSolve      = dbase.get<Real>("timeForOgesSolve");
+  if( timeForOgesSolve>0. )
+    printF("CgWave:printStatistics: timeForOgesSolve=%9.2e(s), per-step=%9.2e(s) (for implicit solve factor)\n",timeForOgesSolve,timeForOgesSolve/numberOfStepsTaken);
+
 
   for( int fileio=0; fileio<2; fileio++ )
   {

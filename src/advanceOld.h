@@ -65,6 +65,7 @@ advanceOld( int it )
   const aString & eigenVectorFile         = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
   const int & computeEigenmodes           = dbase.get<int>("computeEigenmodes");
   const int & computeEigenmodesWithSLEPc  = dbase.get<int>("computeEigenmodesWithSLEPc");
+  const int & filterTimeDerivative        = dbase.get<int>("filterTimeDerivative");
 
   real & omega                      = dbase.get<real>("omega");
   real & Tperiod                    = dbase.get<real>("Tperiod");

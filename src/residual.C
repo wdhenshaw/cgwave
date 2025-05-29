@@ -1,17 +1,17 @@
 // This file automatically generated from residual.bC with bpp.
 #include "CgWaveHoltz.h"
-#include "CompositeGridOperators.h" 
-#include "PlotStuff.h"
-#include "display.h"
-#include "ParallelOverlappingGridInterpolator.h"
+#include "CgWave.h"
 #include "ParallelUtility.h"
-#include "LoadBalancer.h"
+#include "CompositeGridOperators.h"
+// #include "PlotStuff.h"
+#include "display.h"
 #include "gridFunctionNorms.h"
+// #include "Ogshow.h"  
+// #include "ShowFileReader.h"
+// #include "InterpolatePointsOnAGrid.h"
+// #include "GridStatistics.h"
 #include "SparseRep.h"
 
-#include <sstream>
-
-#include "CgWave.h"
 
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
@@ -117,6 +117,8 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
   // realCompositeGridFunction & f           = cgWave.dbase.get<realCompositeGridFunction>("f");
     CompositeGridOperators & operators      = cgWave.dbase.get<CompositeGridOperators>("operators");
 
+  const CgWave::TimeSteppingMethodEnum & timeSteppingMethod = cgWave.dbase.get<CgWave::TimeSteppingMethodEnum>("timeSteppingMethod");  
+
 
     const int numberOfComponents = filterTimeDerivative ? 2 : numberOfFrequencies;
 
@@ -181,6 +183,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
     maxRes.redim(numCompWaveHoltz);
     maxRes=0.;
     maxResFromDiscreteSymbol=0.;
+    Real maxBoundaryForce=0;
 
     Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
     Index Ibv[3], &Ib1=Ibv[0], &Ib2=Ibv[1], &Ib3=Ibv[2];
@@ -218,7 +221,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
 
     for( int ires=0; ires<numRes; ires++ )
     {
-
+        
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
             MappedGrid & mg = cg[grid];
@@ -301,6 +304,16 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                       bool okb=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
                                       if( okb )
                                       {
+                      // check size of the forcing on the boundary
+                                            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
+                                            {
+                                                if( maskLocal(i1,i2,i3)>0 )
+                                                {
+                                                    for( int freq=0; freq<numberOfFrequencies; freq++ )
+                                                        maxBoundaryForce = max( maxBoundaryForce, fLocal(i1,i2,i3,freq) );
+                                                }
+                                            }
+
                                           resLocal(Ib1,Ib2,Ib3,all)=0.;
                                       }
                                   }
@@ -463,9 +476,13 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                     }
                                 } 
                                 Range all;
+                                if( grid==0 )
+                                    printF("Check residual in absorbing BC: omega=%14.6e, c=%14.6e\n",omega,c);
                                 ForBoundary(side,axis)
                                 {
                                       int is = 1 -2*side;
+                                      isv[0]=0; isv[1]= 0; isv[2]=0;  // holds direction to extrapolate 
+                                      isv[axis]=is; 
                    // set residual to zero on dirichlet boundaries 
                                       if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
                                       {
@@ -477,6 +494,18 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                       {
                                             getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
                                             getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,1);
+                                                Real dx[3]={1.,1.,1.};
+                                                Real dr[3]={1.,1.,1.};
+                                                if( isRectangular )
+                                                { // rectangular grid grid-spacings: 
+                                                    mg.getDeltaX(dx);
+                                                }
+                                                else
+                                                {
+                          // unit square grid spacings: 
+                                                    for( int dir=0; dir<3; dir++ )
+                                                        dr[dir]=mg.gridSpacing(dir);           
+                                                }        
                       // EM2: BC: 
                       //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
                       // => 
@@ -508,11 +537,103 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                                 resLocal(Ig1,Ig2,Ig3,0)=0.;
                                                 resLocal(Ig1,Ig2,Ig3,1)=0.;
                                             } 
-                                            Real maxResBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
-                                            Real maxResBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));
+                      // scale residual in CBC by this amount : estimate of condition number in BC
+                                            const Real bcScale = isRectangular ? min(dx[0]*dx[0],dx[1]*dx[1]) : min(dr[0]*dr[0],dr[1]*dr[1]); 
+                                            Real maxResBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)))*bcScale;
+                                            Real maxResBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)))*bcScale;
                                             Real maxRHS = max(abs(fLocal(Ig1,Ig2,Ig3)));
                                             if( ires==numRes-1)
-                                                printF("residual: Absorbing BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e], max|rhs|=%9.2e\n",side,axis,grid,maxResBC1,maxResBC2,maxRHS);
+                                                printF("residual: Radiation BC: (side,axis,grid)={%d,%d,%d) ghost 1: max-res=[%9.2e,%9.2e] (Re,Im) (scale=%9.2e), max|forcing(ghost)|=%9.2e\n",
+                                                    side,axis,grid,maxResBC1,maxResBC2,bcScale,maxRHS);
+                      // --- ghost line 2 ---
+                                            if( orderOfAccuracy==4 )
+                                            {
+                                                const bool useCBC = timeSteppingMethod==CgWave::implicitTimeStepping; // currently explicit EM order 4 uses extrap5
+                                                if( useCBC)
+                                                {
+                          // *** CHECK CBC ***
+                                                    getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,2); // ghost 2
+                                                    RealArray uxxyy(Ib1,Ib2,Ib3,2);
+                                                    Range R2(0,1);
+                                                    uxxyy = ( 
+                                                                                vLocal(Ib1-1,Ib2-1,Ib3,R2)  
+                                                                              +vLocal(Ib1+1,Ib2-1,Ib3,R2)  
+                                                                        -2.*vLocal(Ib1  ,Ib2-1,Ib3,R2)  
+                                                                        -2.*vLocal(Ib1-1,Ib2  ,Ib3,R2) 
+                                                                        +4.*vLocal(Ib1  ,Ib2  ,Ib3,R2) 
+                                                                        -2.*vLocal(Ib1+1,Ib2  ,Ib3,R2) 
+                                                                        -2.*vLocal(Ib1  ,Ib2+1,Ib3,R2)
+                                                                              +vLocal(Ib1-1,Ib2+1,Ib3,R2)  
+                                                                              +vLocal(Ib1+1,Ib2+1,Ib3,R2)  
+                                                                    )/(dx[0]*dx[0]*dx[1]*dx[1]);            
+                                                    if( axis==0 )
+                                                    {
+                                                        RealArray uxxx(Ib1,Ib2,Ib3,2);
+                                                        RealArray uxxxx(Ib1,Ib2,Ib3,2);
+                                                        uxxx =  (    -vLocal(Ib1-2,Ib2,Ib3,R2)  
+                                                                            +2.*vLocal(Ib1-1,Ib2,Ib3,R2) 
+                                                                            -2.*vLocal(Ib1+1,Ib2,Ib3,R2) 
+                                                                                  +vLocal(Ib1+2,Ib2,Ib3,R2)
+                                                                        )/(2.*dx[0]*dx[0]*dx[0]);
+                                                        uxxxx = (    +vLocal(Ib1-2,Ib2,Ib3,R2)  
+                                                                            -4.*vLocal(Ib1-1,Ib2,Ib3,R2) 
+                                                                            +6.*vLocal(Ib1  ,Ib2,Ib3,R2) 
+                                                                            -4.*vLocal(Ib1+1,Ib2,Ib3,R2) 
+                                                                                  +vLocal(Ib1+2,Ib2,Ib3,R2)
+                                                                        )/(dx[0]*dx[0]*dx[0]*dx[0]);              
+                                                        resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
+                                                        resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
+                                                    }
+                                                    else
+                                                    {
+                                                        RealArray uyyy(Ib1,Ib2,Ib3,2);
+                                                        RealArray uyyyy(Ib1,Ib2,Ib3,2); 
+                                                        uyyy =  (    -vLocal(Ib1,Ib2-2,Ib3,R2)  
+                                                                            +2.*vLocal(Ib1,Ib2-1,Ib3,R2) 
+                                                                            -2.*vLocal(Ib1,Ib2+1,Ib3,R2) 
+                                                                                  +vLocal(Ib1,Ib2+2,Ib3,R2)
+                                                                        )/(2.*dx[1]*dx[1]*dx[1]);
+                                                        uyyyy = (    +vLocal(Ib1,Ib2-2,Ib3,R2)  
+                                                                            -4.*vLocal(Ib1,Ib2-1,Ib3,R2) 
+                                                                            +6.*vLocal(Ib1,Ib2  ,Ib3,R2) 
+                                                                            -4.*vLocal(Ib1,Ib2+1,Ib3,R2) 
+                                                                                  +vLocal(Ib1,Ib2+2,Ib3,R2)
+                                                                        )/(dx[1]*dx[1]*dx[1]*dx[1]);                      
+                                                        resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
+                                                        resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
+                                                    }
+                          // -- zero residual at unused points ---
+                                                    where( maskLocal(Ib1,Ib2,Ib3) <=0  )   
+                                                    {
+                                                        resLocal(Ig1,Ig2,Ig3,0)=0.;
+                                                        resLocal(Ig1,Ig2,Ig3,1)=0.;
+                                                    } 
+                                                    const Real cbcScale = bcScale*bcScale; //  scale residuakl by this amount : estimate of condition number in CBC
+                                                    Real maxResCBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)))*cbcScale;
+                                                    Real maxResCBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)))*cbcScale;
+                                                    if( ires==numRes-1)
+                                                        printF("residual: Radiation BC: (side,axis,grid)={%d,%d,%d) ghost 2: max-res=[%9.2e,%9.2e] (Re,Im) (scale=%9.2e)\n",
+                                                                      side,axis,grid,maxResCBC1,maxResCBC2,cbcScale);
+                                                }
+                                                else // check extrapolation
+                                                {
+                          // ghost line 2 is extrapolated for order 4 for explicit time-stepping
+                                                    getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,2); // ghost 2
+                                                    for( int m=0; m<=1; m++ ) // real and iamg parts
+                                                    {
+                                                        resLocal(Ig1,Ig2,Ig3,m) =     vLocal(Ig1+0*is1,Ig2+0*is2,Ig3,m)
+                                                                                                            -5.*vLocal(Ig1+1*is1,Ig2+1*is2,Ig3,m)
+                                                                                                          +10.*vLocal(Ig1+2*is1,Ig2+2*is2,Ig3,m)
+                                                                                                          -10.*vLocal(Ig1+3*is1,Ig2+3*is2,Ig3,m)
+                                                                                                            +5.*vLocal(Ig1+4*is1,Ig2+4*is2,Ig3,m)
+                                                                                                                - vLocal(Ig1+5*is1,Ig2+5*is2,Ig3,m);
+                                                    }
+                                                    Real maxResExtrap1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
+                                                    Real maxResExtrap2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));          
+                                                    if( ires==numRes-1)
+                                                        printF("                                                 ghost line 2: max-res=[%9.2e,%9.2e] (extrapolation)\n",maxResExtrap1,maxResExtrap2);
+                                                }
+                                            }
                       // ::display(resLocal(Ig1,Ig2,Ig3,0),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
                       // ::display(resLocal(Ig1,Ig2,Ig3,1),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
                                       }
@@ -599,6 +720,15 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
         {
             printF("CgWaveHoltz::residual: freq=%d, omega=%g, max-res=%9.3e (using omega from discrete symbol)\n",freq,frequencyArray(freq),maxResFromDiscreteSymbol(freq));
         }
+
+    }
+
+    if( maxBoundaryForce>1e-10 )
+    {
+        printF("\n******************************************************************************\n"
+                          "****** CgWaveHoltz::residual: WARNING: maxBoundaryForce=%9.2e is LARGE *******\n"
+                          "****** Currently the forcing is not included in the boundary condition *******\n"
+                          "******************************************************************************\n", maxBoundaryForce);
 
     }
 

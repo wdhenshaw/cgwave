@@ -790,397 +790,11 @@ end do
   end if
 #endMacro
 
-      subroutine abcWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
-                               ndf1a,ndf1b,ndf2a,ndf2b,ndf3a,ndf3b,\
-                               gridIndexRange, u, un, f,mask,rsxy, xy,\
-                               bc, boundaryCondition, ipar, rpar, ierr )
-! ===================================================================================
-!  Absorbing boundary conditions for the Wave Equation
-!
-!  gridType : 0=rectangular, 1=curvilinear
-!  useForcing : 1=use f for RHS to BC
-!  side,axis : 0:1 and 0:2
-!
-!  u : solution at time t-dt
-!  un : solution at time t (apply BC to this solution)
-!
-! ===================================================================================
 
-  implicit none
-
-  integer nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b, ndf1a,ndf1b,ndf2a,ndf2b,ndf3a,ndf3b,\
-          n1a,n1b,n2a,n2b,n3a,n3b, ndc, bc,ierr
-
-  real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
-  real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
-  real f(ndf1a:ndf1b,ndf2a:ndf2b,ndf3a:ndf3b,0:*)
-  integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
-  real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
-  real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
-  integer gridIndexRange(0:1,0:2)
-
-  integer ipar(0:*),boundaryCondition(0:1,0:2)
-  real rpar(0:*)
-
-  !     --- local variables ----
-      
-  integer side,axis,gridType,orderOfAccuracy,orderOfExtrapolation,useForcing,\
-    ex,ey,ez,hx,hy,hz,useWhereMask,grid,debug,side1,side2,side3,forcingOption,myid
-  real dx(0:2),dr(0:2),t,ep,dt,c,cEM2     
-  real dxa,dya,dza
-  integer axisp1,axisp2,i1,i2,i3,is1,is2,is3,js1,js2,js3,ks1,ks2,ks3,is,j1,j2,j3,m1,m2,m3,mSum
-  integer ip1,ip2,ip3,ig1,ig2,ig3,ghost1,ghost2,ghost3,mm
-  integer extra,extra1a,extra1b,extra2a,extra2b,extra3a,extra3b,numberOfGhostPoints
-  integer edgeDirection,sidea,sideb,sidec,bc1,bc2,bc3
-
-  real p0,p2,q0,q2,c1abcem2,c2abcem2
-  real an1,an2,an3,aNorm,epsX
-
-  real rx0,ry0,rz0 , rxx0,ryy0, rzz0 
-  real dr0,cxt,cxx,cyy,czz,cm1,g,bxx,byy,bzz
-  real rxNorm, rxNormSq, Dn2, Lu, ur0,urr0, unr0, unrr0
-  real ux0,uy0,uz0, uxx0,uyy0,uzz0
-  real unx0,uny0,unz0, unxx0,unyy0,unzz0
-  real t0,t1,t2
-  real x,y,z,eyTrue
-  real forcex(0:11),forcey(0:11),forcez(0:11),forcep(0:11),forcef(0:11)
-  real tp,tm,tf,utx,uty,utz,uxx,uyy,uzz
-
-  integer ksv(0:2)
-  integer isign1,isign2,idir,extrapOrder
-  real r1,r2,f1,f2,a11,a12,a21,a22,uA,uB,det
-
-  real ux,vy,vxy,alpha,uGhost,aGhost
-
-  real eps,mu,kx,ky,kz,slowStartInterval,twoPi,cc
-
-  real ax,ay,az,aSq,div,divCoeff
-  logical adjacentFaceIsABC, applyABC
-  integer projectDivLine
-
-  ! ! boundary conditions parameters
-  ! #Include "../include/bcDefineFortranInclude.h"
-
-  integer dirichlet,neumann,evenSymmetry,radiation,exactBC,abcEM2,characteristic,absorbing
-  parameter( dirichlet=1, neumann=2, evenSymmetry=3, radiation=4, exactBC=5, abcEM2=6, characteristic=7, absorbing=8  )    
-
-  ! DO THIS FOR NOW 
-  integer symmetryBoundaryCondition
-  parameter( symmetryBoundaryCondition=evenSymmetry )  
-
-  ! forcing options
-  #Include "../include/forcingDefineFortranInclude.h"
-
-  integer method,nfdtd,bamx
-  parameter( nfdtd=5,bamx=7 ) 
-
-  integer rectangular,curvilinear
-  parameter(\
-    rectangular=0,\
-    curvilinear=1)
-
-
-  ! ---bcOpt variables ---
-  integer addForcingBC,assignBCForImplicitForImplicit,assignKnownSolutionAtBoundaries,bcApproach,gridIsImplicit,knownSolutionOption
-  integer numberOfComponents,numberOfFrequencies,numberOfProcessors,numGhost,twilightZone,useUpwindDissipation
-  integer uc,ghost
-  real REAL_MIN
-
-!     --- start statement function ----
-  integer kd,m,n
-  real rx,ry,rz,sx,sy,sz,tx,ty,tz
-
-  declareDifferenceOrder2(u,RX)
-  declareDifferenceOrder2(un,none)
-
-  declareDifferenceOrder4(u,RX)
-  declareDifferenceOrder4(un,none)
-#Include "../include/declareJacobianDerivatives.h"
-
-!.......statement functions for jacobian
-  rx(i1,i2,i3)=rsxy(i1,i2,i3,0,0)
-  ry(i1,i2,i3)=rsxy(i1,i2,i3,0,1)
-  rz(i1,i2,i3)=rsxy(i1,i2,i3,0,2)
-  sx(i1,i2,i3)=rsxy(i1,i2,i3,1,0)
-  sy(i1,i2,i3)=rsxy(i1,i2,i3,1,1)
-  sz(i1,i2,i3)=rsxy(i1,i2,i3,1,2)
-  tx(i1,i2,i3)=rsxy(i1,i2,i3,2,0)
-  ty(i1,i2,i3)=rsxy(i1,i2,i3,2,1)
-  tz(i1,i2,i3)=rsxy(i1,i2,i3,2,2)
-
-
-!     The next macro call will define the difference approximation statement functions
-  defineDifferenceOrder2Components1(u,RX)
-  defineDifferenceOrder2Components1(un,none)
-  defineDifferenceOrder4Components1(u,RX)
-  defineDifferenceOrder4Components1(un,none)
-
-#Include "../include/jacobianDerivatives.h"
-
-!............... end statement functions
-
-  ! write(*,'("ENTERING abcWave ")') 
-
-  ierr=0
-
-  uc                              = ipar( 0)
-  numberOfComponents              = ipar( 1)
-  grid                            = ipar( 2)
-  gridType                        = ipar( 3)
-  orderOfAccuracy                 = ipar( 4)
-  gridIsImplicit                  = ipar( 5)
-  twilightZone                    = ipar( 6)
-  numberOfProcessors              = ipar( 7)
-  debug                           = ipar( 8)
-  myid                            = ipar( 9)
-  assignKnownSolutionAtBoundaries = ipar(10)
-  knownSolutionOption             = ipar(11)
-  addForcingBC                    = ipar(12)
-  forcingOption                   = ipar(13)
-  useUpwindDissipation            = ipar(14)
-  numGhost                        = ipar(15)  
-  assignBCForImplicitForImplicit  = ipar(16)
-  bcApproach                      = ipar(17)
-  numberOfFrequencies             = ipar(18)
- 
-  t         = rpar( 0)
-  dt        = rpar( 1)
-  dx(0)     = rpar( 2)
-  dx(1)     = rpar( 3)
-  dx(2)     = rpar( 4)
-  dr(0)     = rpar( 5)
-  dr(1)     = rpar( 6)
-  dr(2)     = rpar( 7)
-  ep        = rpar( 8) ! pointer for exact solution -- new : 110311 
-  REAL_MIN  = rpar( 9)
-  c         = rpar(10)
-  cEM2      = rpar(11)
-
-  if( t==0. )then
-    ! write(*,'("abcWave: t=0: DO NOTHING since past time is not known ")') 
-    return
-  end if
-
-
-
-  ierr=0
-
-  ! ** Fill in old parameters ***
-
-  side=0; axis=0; 
-  n1a=gridIndexRange(0,0); n1b=gridIndexRange(1,0);
-  n2a=gridIndexRange(0,1); n2b=gridIndexRange(1,1);
-  n3a=gridIndexRange(0,2); n3b=gridIndexRange(1,2);
-
-  orderOfExtrapolation=3;     ! not used ? 
-  useForcing = 0              ! not used ?
-  ex=uc; ey=uc; ez=uc; 
-  hx=uc; hy=uc; hz=uc;
-  useWhereMask=1;
-
-  if( twilightZone==1 )then
-    forcingOption=twilightZoneForcing
-  else
-    forcingOption=0  ! CHECK ME
-  end if
-
-  method=nfdtd
-  myid=0;
-
-  eps=1; mu=1; 
-  kx=1; ky=0; kz=0;
-  slowStartInterval=.5; 
-
-
-  ! else
-  !   ! OLD INPUT LIST 
-  !   side                 =ipar(0)
-  !   axis                 =ipar(1)
-  !   n1a                  =ipar(2)
-  !   n1b                  =ipar(3)
-  !   n2a                  =ipar(4)
-  !   n2b                  =ipar(5)
-  !   n3a                  =ipar(6)
-  !   n3b                  =ipar(7)
-  !   gridType             =ipar(8)
-  !   orderOfAccuracy      =ipar(9)
-  !   orderOfExtrapolation =ipar(10)
-  !   useForcing           =ipar(11)
-  !   ex                   =ipar(12)
-  !   ey                   =ipar(13)
-  !   ez                   =ipar(14)
-  !   hx                   =ipar(15)
-  !   hy                   =ipar(16)
-  !   hz                   =ipar(17)
-  !   useWhereMask         =ipar(18)
-  !   grid                 =ipar(19)
-  !   debug                =ipar(20)
-  !   forcingOption        =ipar(21)
-  !   method               =ipar(28)
-  !   myid                 =ipar(39)
-
-  !   dx(0)                =rpar(0)
-  !   dx(1)                =rpar(1)
-  !   dx(2)                =rpar(2)
-  !   dr(0)                =rpar(3)
-  !   dr(1)                =rpar(4)
-  !   dr(2)                =rpar(5)
-  !   t                    =rpar(6)
-  !   ep                   =rpar(7) ! pointer for exact solution
-  !   dt                   =rpar(8)
-  !   c                    =rpar(9)
-  !   eps                  =rpar(10)
-  !   mu                   =rpar(11)
-  !   kx                   =rpar(12)  ! for plane wave forcing
-  !   ky                   =rpar(13)
-  !   kz                   =rpar(14)
-  !   slowStartInterval    =rpar(15)
-
-
-
-  ! end if
-
-  tp=t-dt ! previous time
-  tm=t-.5*dt ! midpoint in time
-
-  ! -----------------------------------------
-  ! ------- In 3D we just set hz=ez ---------
-  ! -----------------------------------------
-  if( nd.eq.3 )then
-    hz=ez
-  end if
-
-  ! Return if there are no ABC's *wdh* Aug 16, 2018
-  applyABC=.false.
-  do axis=0,nd-1
-  do side=0,1
-    if( boundaryCondition(side,axis).eq.abcEM2 .or. boundaryCondition(side,axis).eq.absorbing )then
-      applyABC=.true.
-      exit
-    end if
-  end do
-  end do
-  if( .not.applyABC )then
-    return
-  end if
-
-
-  if( twilightZone==1 .and. gridType==curvilinear )then
-    write(*,'("abcWave: TZ NOT IMPLEMENTED FOR CURVILINEAR GRIDS")') 
-    stop 1111
-  end if
-
-  if( debug.gt.1 .and. t.le.3*dt )then
-    write(*,'("abcWave: grid=",i4," order=",i2," gridType=",i2," t=",e9.2", dt=",e9.2)') grid,orderOfAccuracy,gridType,t,dt
-    write(*,'("abcWave: c=",e14.6," cEM2=",e14.6)') c,cEM2
-    write(*,'("abcWave: useForcing=",i2," forcingOption=",i2)') useForcing,forcingOption
-    write(*,'("abcWave: method=",i2," (5=nfdtd,7=bamx)")') method
-    write(*,'("abcWave: gridIsImplicit=",i2," numGhost=",i4)') gridIsImplicit,numGhost
-  end if
-  if( method .ne. nfdtd .and. method.ne.bamx )then
-     write(*,'("abcWave:ERROR: unknown method")')
-     stop 12234
-  end if 
-
-  ! if( gridIsImplicit==1 )then
-  !   write(*,'("abcWave: gridIsImplicit: SKIPPING explicit ABCs")')
-  !   return
-  ! end if
-
-
-  ! if( debug.gt.1 .ab)then
-  !   write(*,'(" abcMaxwell: **START** grid=",i4," side,axis=",2i2," projectDivLine=",i2)') grid,side,axis,projectDivLine
-  ! end if
-     
-
-
-  ! for plane wave forcing 
-  twoPi=8.*atan2(1.,1.)
-  cc= c*sqrt( kx*kx+ky*ky+kz*kz )
-
-  epsX=1.e-30 ! fix this ***
-
-  ! Engquist-Majda 2nd-order
-  !    u.xt = (1/c)*u.tt - c/2 * (u.yy + u.zz)   at x=0
-  !         = c*( u.xx + .5*( u.yy + u.zz ) 
- 
-  ! We need un : u(t+dt) 
-  !         u  : u(t)
-
-  ! Generalized form:
-  ! u.xt = c1abcem2*u.xx + c2abcem2*( u.yy + u.zz )
-  !   Taylor: p0=1 p2=-1/2
-  !   Cheby:  p0=1.00023, p2=-.515555
-  p0=1.  
-  p2=-.5
-  ! p0=1.00023   !   Cheby on a subinterval
-  ! p2=-.515555  !   Cheby on a subinterval
-  c1abcem2=cEM2*p0
-  c2abcem2=cEM2*(p0+p2)
-
-  if( method.eq.bamx )then
-    ! bamx: turn off tangential derivatives for now 
-    p2=-p0             
-    c2abcem2=cEM2*(p0+p2) 
-  end if
-     
-  ! ***************************************************
-  ! write(*,'("abcWave -- stop here for now ")') 
-  ! stop 1234
-
-  extra=-1  ! no need to do corners -- these are already done in another way
-  extra=0   ! re-compute corners
-  numberOfGhostPoints=orderOfAccuracy/2
-
-  if( gridType.eq.curvilinear )then
-    ! do this for testing:
-    dx(0)=dr(0)
-    dx(1)=dr(1)
-    dx(2)=dr(2)
-  end if
-
-  dxa=dx(0) 
-  dya=dx(1) 
-  dza=dx(2) 
-
-  if( gridType.eq.curvilinear )then
-    ! On a curvilinear grid we need to make sure that there are valid values on the
-    ! first ghost line -- these may be used on non-orthogonal grids (cross terms in uxx, uyy, ...)
-
-    ! Note: This next loop only applies to boundaries that are ABCs : 
-    beginLoopOverSides(extra,numberOfGhostPoints)
-      if( orderOfAccuracy.eq.2 )then
-
-       ! ** we could also impose the first-order in time explicit formula **
-       beginLoops()
-        extrapLine1Order2(i1,i2,i3,is1,is2,is3,ex)
-       endLoops()
-
-      else if( orderOfAccuracy.eq.4 )then
-
-       ! extrap to order 3 in case we adjust for incident fields 
-       beginLoops()
-        extrapLine1Order3(i1,i2,i3,is1,is2,is3,ex)
-       endLoops()
-
-      else
-        stop 8822 ! unknown orderOfAccuracy
-      end if
-
-    endLoopOverSides()
-
-  end if
-
-  ! -- initialize for forcing:
-  z=0.
-  do mm=0,11
-    forcex(mm)=0.
-    forcey(mm)=0.
-    forcez(mm)=0.
-    forcep(mm)=0.
-    forcef(mm)=0.
-  end do
-
+! ----------------------------------------------------------------------------
+! Macro: Assign edges and corners : ORDER OF ACCURACY 2
+! --------------------------------------------------------------------------
+#beginMacro assignEdgesAndCornersOrder2Macro()
   ! ------------------------------------------------------------------------
   ! ------------------Corners-----------------------------------------------
   ! ------------------------------------------------------------------------
@@ -1528,6 +1142,605 @@ end do
    !  end if
 
   end if
+#endMacro
+
+
+
+! ----------------------------------------------------------------------------
+! Macro: Evaluate the residuals in the EM conditions at a corner
+! --------------------------------------------------------------------------
+#beginMacro evalCornerResidual(ORDER,DIM)
+  resv(1) = is1*(unx42r(i1,i2,i3,ex)-ux42r(i1,i2,i3,ex))/(dt)- \
+        .5*( c1abcem2*unxx42r(i1,i2,i3,ex) + c2abcem2*unyy42r(i1,i2,i3,ex) + \
+             c1abcem2* uxx42r(i1,i2,i3,ex) + c2abcem2* uyy42r(i1,i2,i3,ex) ) - forcex(ex) 
+
+  resv(2) = is2*(uny42r(i1,i2,i3,ex)-uy42r(i1,i2,i3,ex))/(dt)- \
+        .5*( c1abcem2*unyy42r(i1,i2,i3,ex) + c2abcem2*unxx42r(i1,i2,i3,ex) + \
+             c1abcem2* uyy42r(i1,i2,i3,ex) + c2abcem2* uxx42r(i1,i2,i3,ex) ) - forcey(ex)  
+
+  resv(3) =    un(i1-2*is1,i2,i3,ex) \
+           -5.*un(i1-1*is1,i2,i3,ex) \
+          +10.*un(i1+0*is1,i2,i3,ex) \
+          -10.*un(i1+1*is1,i2,i3,ex) \
+           +5.*un(i1+2*is1,i2,i3,ex) \
+              -un(i1+3*is1,i2,i3,ex)
+   
+  resv(4) =    un(i1,i2-2*is2,i3,ex) \
+           -5.*un(i1,i2-1*is2,i3,ex) \
+          +10.*un(i1,i2+0*is2,i3,ex) \
+          -10.*un(i1,i2+1*is2,i3,ex) \
+           +5.*un(i1,i2+2*is2,i3,ex) \
+              -un(i1,i2+3*is2,i3,ex)
+#endMacro
+
+! ----------------------------------------------------------------------------
+! Macro: Assign edges and corners : ORDER OF ACCURACY 4
+! --------------------------------------------------------------------------
+#beginMacro assignEdgesAndCornersOrder4Macro()
+
+  ! ------------------------------------------------------------------------
+  ! ------------------Corners-----------------------------------------------
+  ! ------------------------------------------------------------------------
+
+  ! We need to assign points in the corner region:
+  !
+  !           |  |  |
+  !           +--+--+--
+  !           |  |  |
+  !     D--A--X--+--+--
+  !     |  |  |
+  !     D--C--B
+  !     |  |  |
+  !     D--D--D
+  ! 
+  if( nd.eq.2 )then
+
+    ! **** 2D ****
+
+    i3=gridIndexRange(0,2)
+    is3=0
+    do side1=0,1
+    do side2=0,1
+
+     bc1=boundaryCondition(side1,0)
+     bc2=boundaryCondition(side2,1)
+     if( ((bc1.eq.abcEM2 .or. bc1.eq.absorbing) .and. bc2.gt.0 ) .or. \
+         ((bc2.eq.abcEM2 .or. bc2.eq.absorbing) .and. bc1.gt.0 ) )then
+
+       ! --- One of the faces at this corner is an ABC and the other has bc>0 ---         
+
+       ! Adjacent side is also an ABC: 
+       adjacentFaceIsABC = bc1.eq.abcEM2 .or. bc1.eq.absorbing .and. \
+                           bc2.eq.abcEM2 .or. bc2.eq.absorbing
+
+       i1=gridIndexRange(side1,0) ! (i1,i2,i3)=corner point
+       i2=gridIndexRange(side2,1)
+
+       if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
+
+        ! write(*,'(" ABC:set corner order 4: grid,side1,side2,i1,i2=",3i3,2i5)') grid,side1,side2,i1,i2
+
+        ! --- start by extrapolating all points on the extended boundary and adjacent to the corner ---
+        !* is1=1-2*side1
+        !* is2=1-2*side2
+        !* is3=0
+        !* j3=0
+        !* extrapolateGhost(ex,ey,hz,numberOfGhostPoints,numberOfGhostPoints,0)
+
+
+
+        ! Solve: 
+        !   f1 = is1* u_xt - c( u_xx + .5*u_yy )
+        !   f2 = (D+x)^5 U_{-2} = 0 
+        !   f3 = is2* u_yt - c( u_yy + .5*u_xx )
+        !   f4 = (D+y)^5 U_{-2} = 0 
+        !
+
+        ! Evaluate the equations with current ghost 
+        ! There four coupled equations we need to solve for ghost points A,B,C,D below
+        !                   |
+        !                   +   X = corner 
+        !                   |
+        !             B--A--X---+---+
+        !                   |
+        !             G  G  C
+        !                   |
+        !             G  G  D 
+        !
+        !  f(u)  = [ f(u_old) - A (u_old) ] + A u = 0 
+        !
+        !  [ a11 a12 a13 a14 ][ uA ]   [ a11 a12 a13 a14 ][ uA_old ]   [ f1(u_old) ]
+        !  [ a21 a22 a23 a24 ][ uB ] = [ a21 a22 a23 a24 ][ uB_old ] - [ f2(u_old) ]  
+        !  [ a31 a32 a33 a34 ][ uC ]   [ a31 a32 a33 a34 ][ uC_old ]   [ f3(u_old) ]   
+        !  [ a41 a42 a43 a44 ][ uD ]   [ a41 a42 a43 a44 ][ uD_old ]   [ f4(u_old) ]   
+        if( adjacentFaceIsABC )then
+
+          is1=1-2*side1
+          is2=1-2*side2
+          is3 = 0 
+          if( gridType.eq.rectangular )then
+
+
+            getForcingTrapezoidEM2(X,2,tp,t,is1,is2,is3,forcex)
+            getForcingTrapezoidEM2(Y,2,tp,t,is1,is2,is3,forcey)
+
+            ! Evaluate the residuals in the corner equations using current ghos values 
+            ! evalCornerResidual(ORDER,DIM)
+            evalCornerResidual(4,2)
+
+            a4(1,1) = -8./(12.*dt*dx(axis1))  - .5*c1abcem2*(16.)/(12.*dx(axis1)**2) ! coeff of uA in r1
+            a4(1,2) =  1./(12.*dt*dx(axis1))  - .5*c1abcem2*(-1.)/(12.*dx(axis1)**2) ! coeff of uB in r1
+            a4(1,3) =                         - .5*c2abcem2*(16.)/(12.*dx(axis2)**2) ! coeff of uC in r1
+            a4(1,4) =                         - .5*c2abcem2*(-1.)/(12.*dx(axis2)**2) ! coeff of uD in r1
+
+            a4(2,1) =                         - .5*c2abcem2*(16.)/(12.*dx(axis1)**2) ! coeff of uC in r2
+            a4(2,2) =                         - .5*c2abcem2*(-1.)/(12.*dx(axis1)**2) ! coeff of uD in r2
+            a4(2,3) = -8./(12.*dt*dx(axis2))  - .5*c1abcem2*(16.)/(12.*dx(axis2)**2) ! coeff of uA in r2
+            a4(2,4) =  1./(12.*dt*dx(axis2))  - .5*c1abcem2*(-1.)/(12.*dx(axis2)**2) ! coeff of uB in r2
+
+            a4(3,1) = -5.                                                    ! coeff of uA in r1
+            a4(3,2) =  1.                                                    ! coeff of uB in r2
+            a4(3,3)  = 0.
+            a4(3,4)  = 0.
+
+            a4(4,1) =  0.                                                    ! coeff of uA in r1
+            a4(4,2) =  0.                                                    ! coeff of uB in r2
+            a4(4,3) = -5.
+            a4(4,4) =  1.
+
+            uv(1) = un(i1-1*is1,i2      ,i3,ex)   ! uA
+            uv(2) = un(i1-2*is1,i2      ,i3,ex)   ! uB
+            uv(3) = un(i1      ,i2-1*is2,i3,ex)   ! uC
+            uv(4) = un(i1      ,i2-2*is2,i3,ex)   ! uD
+            do m=1,4
+              b4(m) = a4(m,1)*uv(1) + a4(m,2)*uv(2) + a4(m,3)*uv(3) + a4(m,4)*uv(4) - resv(m)
+            end do
+
+            ! Solve A4 * x = b4
+            numberOfEquations=4
+            call dgeco( a4(1,1), numberOfEquations, numberOfEquations, ipvt4(1), rcond, work4(1) )
+            job=0
+            call dgesl( a4(1,1), numberOfEquations, numberOfEquations, ipvt4(1), b4(1), job )
+
+            un(i1-1*is1,i2      ,i3,ex) = b4(1)            
+            un(i1-2*is1,i2      ,i3,ex) = b4(2)
+            un(i1      ,i2-1*is2,i3,ex) = b4(3)
+            un(i1      ,i2-2*is2,i3,ex) = b4(4)
+
+            if( .false. )then
+              ! check the residuals after solve
+              evalCornerResidual(4,2)
+
+              write(*,'("abcWave: EM order 4: i1,i2=",2i4," corner residuals=",4(1pe10.2,1x))') i1,i2,(resv(m),m=1,4)
+
+            end if
+
+          else
+
+           ! --- curvilinear grid ----
+           stop 4449
+
+           side=side1
+           axis=0 
+           abcSetup2d(i1,i2,i3,is1,is2,is3,side,axis)
+           abc2d(i1,i2,i3,is1,is2,is3,side,axis,ex)
+
+          end if
+        
+
+        else 
+
+          ! --- adjacent face is NOT another ABC ---
+
+          ! Extrapolate -- do this for now
+          extrapOrder=5
+
+          if( bc1.ne.symmetryBoundaryCondition )then
+            extrapGhostInDirection(i1,i2,i3,side1,0,ex,ey,hz,extrapOrder)
+          end if
+
+          if( bc2.ne.symmetryBoundaryCondition )then
+            extrapGhostInDirection(i1,i2,i3,side2,1,ex,ey,hz,extrapOrder)
+          end if 
+
+        end if ! end if adjacentFaceIsABC
+
+        ! --- Now extrapolate the 3 ghost points "G" adjacent to the corner ---
+
+        j1=i1-is1; j2=i2-is2; j3=0; 
+        un(j1,j2,j3,ex)=extrap5(un,j1+is1,j2+is2,j3+is3,ex,is1,is2,is3)
+        j1=i1-2*is1; j2=i2-is2; 
+        un(j1,j2,j3,ex)=extrap5(un,j1+is1,j2+is2,j3+is3,ex,is1,is2,is3)
+        j1=i1-is1; j2=i2-2*is2; 
+        un(j1,j2,j3,ex)=extrap5(un,j1+is1,j2+is2,j3+is3,ex,is1,is2,is3)
+
+
+       end if ! mask 
+      end if ! if one face is ABC
+    end do          
+    end do          
+
+  else 
+
+    ! ***** 3D *****
+    write(*,*) 'abcWave: corners and edges FINISH ME - 3D'
+    stop 3434
+
+  end if  
+
+#endMacro
+
+
+      subroutine abcWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,\
+                               ndf1a,ndf1b,ndf2a,ndf2b,ndf3a,ndf3b,\
+                               gridIndexRange, u, un, f,mask,rsxy, xy,\
+                               bc, boundaryCondition, ipar, rpar, ierr )
+! ===================================================================================
+!  Absorbing boundary conditions for the Wave Equation
+!
+!  gridType : 0=rectangular, 1=curvilinear
+!  useForcing : 1=use f for RHS to BC
+!  side,axis : 0:1 and 0:2
+!
+!  u : solution at time t-dt
+!  un : solution at time t (apply BC to this solution)
+!
+! ===================================================================================
+
+  implicit none
+
+  integer nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b, ndf1a,ndf1b,ndf2a,ndf2b,ndf3a,ndf3b,\
+          n1a,n1b,n2a,n2b,n3a,n3b, ndc, bc,ierr
+
+  real u(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
+  real un(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:*)
+  real f(ndf1a:ndf1b,ndf2a:ndf2b,ndf3a:ndf3b,0:*)
+  integer mask(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b)
+  real rsxy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1,0:nd-1)
+  real xy(nd1a:nd1b,nd2a:nd2b,nd3a:nd3b,0:nd-1)
+  integer gridIndexRange(0:1,0:2)
+
+  integer ipar(0:*),boundaryCondition(0:1,0:2)
+  real rpar(0:*)
+
+  !     --- local variables ----
+      
+  integer side,axis,gridType,orderOfAccuracy,orderOfExtrapolation,useForcing,\
+    ex,ey,ez,hx,hy,hz,useWhereMask,grid,debug,side1,side2,side3,forcingOption,myid
+  real dx(0:2),dr(0:2),t,ep,dt,c,cEM2     
+  real dxa,dya,dza
+  integer axisp1,axisp2,i1,i2,i3,is1,is2,is3,js1,js2,js3,ks1,ks2,ks3,is,j1,j2,j3,m1,m2,m3,mSum
+  integer ip1,ip2,ip3,ig1,ig2,ig3,ghost1,ghost2,ghost3,mm
+  integer extra,extra1a,extra1b,extra2a,extra2b,extra3a,extra3b,numberOfGhostPoints
+  integer edgeDirection,sidea,sideb,sidec,bc1,bc2,bc3
+
+  real p0,p2,q0,q2,c1abcem2,c2abcem2
+  real an1,an2,an3,aNorm,epsX
+
+  real rx0,ry0,rz0 , rxx0,ryy0, rzz0 
+  real dr0,cxt,cxx,cyy,czz,cm1,g,bxx,byy,bzz
+  real rxNorm, rxNormSq, Dn2, Lu, ur0,urr0, unr0, unrr0
+  real ux0,uy0,uz0, uxx0,uyy0,uzz0
+  real unx0,uny0,unz0, unxx0,unyy0,unzz0
+  real t0,t1,t2
+  real x,y,z,eyTrue
+  real forcex(0:11),forcey(0:11),forcez(0:11),forcep(0:11),forcef(0:11)
+  real tp,tm,tf,utx,uty,utz,uxx,uyy,uzz
+
+  integer ksv(0:2)
+  integer isign1,isign2,idir,extrapOrder
+  real r1,r2,f1,f2,a11,a12,a21,a22,uA,uB,det
+
+  real ux,vy,vxy,alpha,uGhost,aGhost
+
+  real eps,mu,kx,ky,kz,slowStartInterval,twoPi,cc
+
+  real ax,ay,az,aSq,div,divCoeff,res
+  logical adjacentFaceIsABC, applyABC
+  integer projectDivLine
+
+  ! For solves with 4 unknowns
+  real a4(4,4), b4(4), work4(4), rcond, resv(4), uv(10)
+  integer job, ipvt4(4), numberOfEquations,axis1,axis2,axis3
+
+  ! ! boundary conditions parameters
+  ! #Include "../include/bcDefineFortranInclude.h"
+
+  integer dirichlet,neumann,evenSymmetry,radiation,exactBC,abcEM2,characteristic,absorbing
+  parameter( dirichlet=1, neumann=2, evenSymmetry=3, radiation=4, exactBC=5, abcEM2=6, characteristic=7, absorbing=8  )    
+
+  ! DO THIS FOR NOW 
+  integer symmetryBoundaryCondition
+  parameter( symmetryBoundaryCondition=evenSymmetry )  
+
+  ! forcing options
+  #Include "../include/forcingDefineFortranInclude.h"
+
+  integer method,nfdtd,bamx
+  parameter( nfdtd=5,bamx=7 ) 
+
+  integer rectangular,curvilinear
+  parameter(\
+    rectangular=0,\
+    curvilinear=1)
+
+
+  ! ---bcOpt variables ---
+  integer addForcingBC,assignBCForImplicit,assignKnownSolutionAtBoundaries,bcApproach,gridIsImplicit,knownSolutionOption
+  integer numberOfComponents,numberOfFrequencies,numberOfProcessors,numGhost,twilightZone,useUpwindDissipation
+  integer uc,ghost
+  real REAL_MIN
+  logical checkResiduals
+
+!     --- start statement function ----
+  integer kd,m,n
+  real rx,ry,rz,sx,sy,sz,tx,ty,tz
+
+  declareDifferenceOrder2(u,RX)
+  declareDifferenceOrder2(un,none)
+
+  declareDifferenceOrder4(u,RX)
+  declareDifferenceOrder4(un,none)
+#Include "../include/declareJacobianDerivatives.h"
+
+!.......statement functions for jacobian
+  rx(i1,i2,i3)=rsxy(i1,i2,i3,0,0)
+  ry(i1,i2,i3)=rsxy(i1,i2,i3,0,1)
+  rz(i1,i2,i3)=rsxy(i1,i2,i3,0,2)
+  sx(i1,i2,i3)=rsxy(i1,i2,i3,1,0)
+  sy(i1,i2,i3)=rsxy(i1,i2,i3,1,1)
+  sz(i1,i2,i3)=rsxy(i1,i2,i3,1,2)
+  tx(i1,i2,i3)=rsxy(i1,i2,i3,2,0)
+  ty(i1,i2,i3)=rsxy(i1,i2,i3,2,1)
+  tz(i1,i2,i3)=rsxy(i1,i2,i3,2,2)
+
+
+!     The next macro call will define the difference approximation statement functions
+  defineDifferenceOrder2Components1(u,RX)
+  defineDifferenceOrder2Components1(un,none)
+  defineDifferenceOrder4Components1(u,RX)
+  defineDifferenceOrder4Components1(un,none)
+
+#Include "../include/jacobianDerivatives.h"
+
+!............... end statement functions
+
+  ! write(*,'("ENTERING abcWave ")') 
+
+  ierr=0
+
+  uc                              = ipar( 0)
+  numberOfComponents              = ipar( 1)
+  grid                            = ipar( 2)
+  gridType                        = ipar( 3)
+  orderOfAccuracy                 = ipar( 4)
+  gridIsImplicit                  = ipar( 5)
+  twilightZone                    = ipar( 6)
+  numberOfProcessors              = ipar( 7)
+  debug                           = ipar( 8)
+  myid                            = ipar( 9)
+  assignKnownSolutionAtBoundaries = ipar(10)
+  knownSolutionOption             = ipar(11)
+  addForcingBC                    = ipar(12)
+  forcingOption                   = ipar(13)
+  useUpwindDissipation            = ipar(14)
+  numGhost                        = ipar(15)  
+  assignBCForImplicit  = ipar(16)
+  bcApproach                      = ipar(17)
+  numberOfFrequencies             = ipar(18)
+ 
+  t         = rpar( 0)
+  dt        = rpar( 1)
+  dx(0)     = rpar( 2)
+  dx(1)     = rpar( 3)
+  dx(2)     = rpar( 4)
+  dr(0)     = rpar( 5)
+  dr(1)     = rpar( 6)
+  dr(2)     = rpar( 7)
+  ep        = rpar( 8) ! pointer for exact solution -- new : 110311 
+  REAL_MIN  = rpar( 9)
+  c         = rpar(10)
+  cEM2      = rpar(11)
+
+  if( t==0. )then
+    ! write(*,'("abcWave: t=0: DO NOTHING since past time is not known ")') 
+    return
+  end if
+
+
+
+  ierr=0
+  axis1=0
+  axis2=1
+  axis3=2
+
+  ! ** Fill in old parameters ***
+
+  side=0; axis=0; 
+  n1a=gridIndexRange(0,0); n1b=gridIndexRange(1,0);
+  n2a=gridIndexRange(0,1); n2b=gridIndexRange(1,1);
+  n3a=gridIndexRange(0,2); n3b=gridIndexRange(1,2);
+
+  orderOfExtrapolation=3;     ! not used ? 
+  useForcing = 0              ! not used ?
+  ex=uc; ey=uc; ez=uc; 
+  hx=uc; hy=uc; hz=uc;
+  useWhereMask=1;
+
+  if( twilightZone==1 )then
+    forcingOption=twilightZoneForcing
+  else
+    forcingOption=0  ! CHECK ME
+  end if
+
+  method=nfdtd
+  myid=0;
+
+  eps=1; mu=1; 
+  kx=1; ky=0; kz=0;
+  slowStartInterval=.5; 
+
+
+
+  tp=t-dt ! previous time
+  tm=t-.5*dt ! midpoint in time
+
+  ! -----------------------------------------
+  ! ------- In 3D we just set hz=ez ---------
+  ! -----------------------------------------
+  if( nd.eq.3 )then
+    hz=ez
+  end if
+
+  ! Return if there are no ABC's *wdh* Aug 16, 2018
+  applyABC=.false.
+  do axis=0,nd-1
+  do side=0,1
+    if( boundaryCondition(side,axis).eq.abcEM2 .or. boundaryCondition(side,axis).eq.absorbing )then
+      applyABC=.true.
+      exit
+    end if
+  end do
+  end do
+  if( .not.applyABC )then
+    return
+  end if
+
+
+  if( twilightZone==1 .and. gridType==curvilinear )then
+    write(*,'("abcWave: TZ NOT IMPLEMENTED FOR CURVILINEAR GRIDS")') 
+    stop 1111
+  end if
+
+  if( debug.gt.1 .and. t.le.3*dt )then
+    write(*,'("abcWave: grid=",i4," order=",i2," gridType=",i2," t=",e9.2", dt=",e9.2)') grid,orderOfAccuracy,gridType,t,dt
+    write(*,'("abcWave: c=",e14.6," cEM2=",e14.6)') c,cEM2
+    write(*,'("abcWave: useForcing=",i2," forcingOption=",i2)') useForcing,forcingOption
+    write(*,'("abcWave: method=",i2," (5=nfdtd,7=bamx)")') method
+    write(*,'("abcWave: gridIsImplicit=",i2," numGhost=",i4)') gridIsImplicit,numGhost
+  end if
+  if( method .ne. nfdtd .and. method.ne.bamx )then
+     write(*,'("abcWave:ERROR: unknown method")')
+     stop 12234
+  end if 
+
+  ! if( gridIsImplicit==1 )then
+  !   write(*,'("abcWave: gridIsImplicit: SKIPPING explicit ABCs")')
+  !   return
+  ! end if
+
+
+  ! if( debug.gt.1 .ab)then
+  !   write(*,'(" abcMaxwell: **START** grid=",i4," side,axis=",2i2," projectDivLine=",i2)') grid,side,axis,projectDivLine
+  ! end if
+     
+
+
+  ! for plane wave forcing 
+  twoPi=8.*atan2(1.,1.)
+  cc= c*sqrt( kx*kx+ky*ky+kz*kz )
+
+  epsX=1.e-30 ! fix this ***
+
+  ! Engquist-Majda 2nd-order
+  !    u.xt = (1/c)*u.tt - c/2 * (u.yy + u.zz)   at x=0
+  !         = c*( u.xx + .5*( u.yy + u.zz ) 
+ 
+  ! We need un : u(t+dt) 
+  !         u  : u(t)
+
+  ! Generalized form:
+  ! u.xt = c1abcem2*u.xx + c2abcem2*( u.yy + u.zz )
+  !   Taylor: p0=1 p2=-1/2
+  !   Cheby:  p0=1.00023, p2=-.515555
+  p0=1.  
+  p2=-.5
+  ! p0=1.00023   !   Cheby on a subinterval
+  ! p2=-.515555  !   Cheby on a subinterval
+  c1abcem2=cEM2*p0
+  c2abcem2=cEM2*(p0+p2)
+
+  if( method.eq.bamx )then
+    ! bamx: turn off tangential derivatives for now 
+    p2=-p0             
+    c2abcem2=cEM2*(p0+p2) 
+  end if
+     
+  ! ***************************************************
+  ! write(*,'("abcWave -- stop here for now ")') 
+  ! stop 1234
+
+  extra=-1  ! no need to do corners -- these are already done in another way
+  extra=0   ! re-compute corners
+  numberOfGhostPoints=orderOfAccuracy/2
+
+  if( gridType.eq.curvilinear )then
+    ! do this for testing:
+    dx(0)=dr(0)
+    dx(1)=dr(1)
+    dx(2)=dr(2)
+  end if
+
+  dxa=dx(0) 
+  dya=dx(1) 
+  dza=dx(2) 
+
+  if( gridType.eq.curvilinear )then
+    ! On a curvilinear grid we need to make sure that there are valid values on the
+    ! first ghost line -- these may be used on non-orthogonal grids (cross terms in uxx, uyy, ...)
+
+    ! Note: This next loop only applies to boundaries that are ABCs : 
+    beginLoopOverSides(extra,numberOfGhostPoints)
+      if( orderOfAccuracy.eq.2 )then
+
+       ! ** we could also impose the first-order in time explicit formula **
+       beginLoops()
+        extrapLine1Order2(i1,i2,i3,is1,is2,is3,ex)
+       endLoops()
+
+      else if( orderOfAccuracy.eq.4 )then
+
+       ! extrap to order 3 in case we adjust for incident fields 
+       beginLoops()
+        extrapLine1Order3(i1,i2,i3,is1,is2,is3,ex)
+       endLoops()
+
+      else
+        stop 8822 ! unknown orderOfAccuracy
+      end if
+
+    endLoopOverSides()
+
+  end if
+
+  ! -- initialize for forcing:
+  z=0.
+  do mm=0,11
+    forcex(mm)=0.
+    forcey(mm)=0.
+    forcez(mm)=0.
+    forcep(mm)=0.
+    forcef(mm)=0.
+  end do
+
+  ! ------------------------------------------------------------------------
+  ! ------------------ EDGES AND CORNERS------------------------------------
+  ! ------------------------------------------------------------------------
+  if( orderOfAccuracy==2 )then
+    
+    ! write(*,*) 'abcWave: assign edges and corners, order 2'
+    assignEdgesAndCornersOrder2Macro()
+
+  else if( orderOfAccuracy==4 )then
+
+    ! write(*,*) 'abcWave: assign edges and corners, order 4'
+    assignEdgesAndCornersOrder4Macro()
+
+  else
+    write(*,*) 'abcWave: assign edges and corners, finish me for orderOfAccuracy=',orderOfAccuracy
+    stop 6666
+  end if
+
 
 
   ! -------------------------------------------------------------------------
@@ -1545,6 +1758,26 @@ end do
     ! write(*,'(" Apply abcEM2 rectangular: grid,side,axis=",3i3," dt,c=",2e12.3," is1,is2=",2i2)') grid,side,axis,dt,c,is1,is2
     if( nd.eq.2 )then
      if( axis.eq.0 )then
+
+      checkResiduals=.false.
+      if( checkResiduals )then
+        beginLoopsMask()
+              ! macro: 
+         getForcingTrapezoidEM2(X,2,tp,t,is1,is2,is3,forcex)
+
+         ! check residual on input (use to check implicit solve)
+         res = un(i1-is1,i2-is2,i3-is3,ex) - ABCEM2X(i1,i2,i3,ex)
+
+         ! res -= -is*(unx-ucx)/dt  + (.5*ca)*( unxx + ucxx ) + (.25*ca)*( unyy + ucyy );
+         r1 = is1*(unx22r(i1,i2,i3,ex)-ux22r(i1,i2,i3,ex))/(dt)- \
+           .5*( (cEM2)*unxx22r(i1,i2,i3,ex) + (.5*cEM2)*unyy22r(i1,i2,i3,ex) +\
+                (cEM2)* uxx22r(i1,i2,i3,ex) + (.5*cEM2)* uyy22r(i1,i2,i3,ex) ) - forcex(ex) 
+
+         ! res2 = -is1*(unx-ucx)/dt  + (.5*cEM2)*( unxx + ucxx ) + (.25*cEM2)*( unyy + ucyy );         
+         write(*,'(">EM2: t=",1pe10.2," cEM2=",1pe12.4," i1,i2,forcex,un,res,r1=",2i3,1pe10.2,1pe10.2,1pe10.2,1pe10.2)') t,cEM2,i1,i2,forcex(ex),un(i1-is1,i2-is2,i3-is3,ex),res,r1
+        endLoopsMask()        
+      end if
+
       beginLoopsMask()
    
        ! macro: 
@@ -1554,7 +1787,21 @@ end do
 
       endLoopsMask()
 
+
      else if( axis.eq.1 )then
+
+      if( checkResiduals )then
+        beginLoopsMask()
+          ! macro: 
+          getForcingTrapezoidEM2(Y,2,tp,t,is1,is2,is3,forcey)
+
+         ! check residual on input (use to check implicit solve)
+         res = un(i1-is1,i2-is2,i3-is3,ex) - ABCEM2Y(i1,i2,i3,ex)
+         write(*,'(">EM2: t=",1pe10.2," cEM2=",1pe12.4," i1,i2,forcey,residual=",2i3,1pe10.2,1pe10.2)') t,cEM2,i1,i2,forcey(ex),res
+
+        endLoopsMask()        
+      end if
+
       beginLoopsMask()
 
        ! macro: 
@@ -1619,20 +1866,85 @@ end do
     ! ***********************************************
 
    
-    ! >>>>>>>>>>>>>>>> this is only second-order ---- fix this <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-    
-    ! write(*,'(" Apply abcEM2 CART order=4: grid,side,axis=",3i3," dt,c=",2e12.3)') grid,side,axis,dt,c
+    ! write(*,'(" Apply abcEM2 CARTESIAN order=4: grid,side,axis=",3i3," dt,c=",2e12.3)') grid,side,axis,dt,c
 
     if( nd.eq.2 )then
-     if( axis.eq.0 )then
+
+     if( .true. )then
+
       beginLoopsMask()
-   
-       un(i1-is1,i2-is2,i3-is3,ex)=ABCEM2X(i1,i2,i3,ex)
-   
-       extrapLine2Order4(i1,i2,i3,is1,is2,is3,ex)
+        ! Solve: 
+        !   f1 = is* u_xt - c( u_xx + .5*u_yy )
+        !   f2 = D^5 U_{-2} = 0 
+        !
+        !   f1 = a11*U(-1) + a12*U(-2) + ...
+
+        ! Evaluate the equations with current ghost 
+        ! There two coupled equations we need to solve for ghost points A,B below
+        !                   +
+        !                   |
+        !             B--A--+---+---+
+        !                   |
+        !                   +
+        !  f(u)  = [ f(u_old) - A (u_old) ] + A u = 0 
+        !
+        !  [ a11 a12 ][ uA ] = [ a11 a12 ][ uA_old ] - [ f1(u_old) ]
+        !  [ a21 a22 ][ uB ]   [ a21 a22 ][ uB_old ]   [ f2(u_old) ]
+
+        ! first evaluate residuals in equations given current (wrong) values at A, B
+
+        if( axis==0 )then
+          getForcingTrapezoidEM2(X,2,tp,t,is1,is2,is3,forcex)
+          r1 = is1*(unx42r(i1,i2,i3,ex)-ux42r(i1,i2,i3,ex))/(dt)- \
+                  .5*( c1abcem2*unxx42r(i1,i2,i3,ex) + c2abcem2*unyy42r(i1,i2,i3,ex) + \
+                       c1abcem2* uxx42r(i1,i2,i3,ex) + c2abcem2* uyy42r(i1,i2,i3,ex) ) - forcex(ex) 
+        else
+          getForcingTrapezoidEM2(Y,2,tp,t,is1,is2,is3,forcey)
+          r1 = is2*(uny42r(i1,i2,i3,ex)-uy42r(i1,i2,i3,ex))/(dt)- \
+                  .5*( c1abcem2*unyy42r(i1,i2,i3,ex) + c2abcem2*unxx42r(i1,i2,i3,ex) + \
+                       c1abcem2* uyy42r(i1,i2,i3,ex) + c2abcem2* uxx42r(i1,i2,i3,ex) ) - forcey(ex)           
+        end if
+
+        r2 =    un(i1-2*is1,i2-2*is2,i3,ex) \
+            -5.*un(i1-1*is1,i2-1*is2,i3,ex) \
+           +10.*un(i1+0*is1,i2+0*is2,i3,ex) \
+           -10.*un(i1+1*is1,i2+1*is2,i3,ex) \
+            +5.*un(i1+2*is1,i2+2*is2,i3,ex) \
+               -un(i1+3*is1,i2+3*is2,i3,ex)
+
+
+        a11 = -8./(12.*dt*dx(axis))  - .5*c1abcem2*(16.)/(12.*dx(axis)**2) ! coeff of uA in r1
+        a12 =  1./(12.*dt*dx(axis))  - .5*c1abcem2*(-1.)/(12.*dx(axis)**2) ! coeff of uB in r2
+        a21 = -5.                                                    ! coeff of uA in r1
+        a22 =  1.                                                    ! coeff of uB in r2
+
+        det = a11*a22-a21*a12
+
+        uA = un(i1-1*is1,i2-1*is2,i3,ex)
+        uB = un(i1-2*is1,i2-2*is2,i3,ex)
+        f1 = a11*uA + a12*uB - r1 
+        f2 = a21*uA + a22*uB - r2 
+
+        ! Solve for A, B
+        un(i1-1*is1,i2-1*is2,i3,ex) = ( f1*a22 - f2*a12)/det
+        un(i1-2*is1,i2-2*is2,i3,ex) = (-f1*a21 + f2*a11)/det         
 
       endLoopsMask()
+
+     else if( axis.eq.0 )then
+
+        ! ----- OLD WAY -----
+
+        ! Version 1: 2nd-order
+        beginLoopsMask()
+     
+         un(i1-is1,i2-is2,i3-is3,ex)=ABCEM2X(i1,i2,i3,ex)
+     
+         extrapLine2Order4(i1,i2,i3,is1,is2,is3,ex)
+
+        endLoopsMask()
+      
+
      else if( axis.eq.1 )then
       beginLoopsMask()
        un(i1-is1,i2-is2,i3-is3,ex)=ABCEM2Y(i1,i2,i3,ex)

@@ -1,0 +1,21 @@
+# Check file for cgWaveHoltz, grid=cice2, Fri May  2 07:58:20 2025
+grid=cice2;
+timeStepping=implicit;
+orderOfAccuracy=2;
+numPeriods=4;
+numberOfFrequencies=1;
+ freq= 0, omega=   6.283, (adjusted=   5.745) T= 1.00000, Tbar= 4.00000, numPeriods=  4, Tbar(0)/T=  4.00
+numCompWaveHoltz=2;
+filterTimeDerivative=1;
+adjustOmega=1;
+useFixedPoint=0;
+useAugmentedGmres=0;
+minStepsPerPeriod=10;
+numberOfStepsPerSolve=41;
+convergenceRate=0.241;
+numberOfIterations=14;
+deflateWaveHoltz=0;
+numToDeflate=1;
+maxResReal=1.12e-09;
+maxResImag=6.93e-10;
+errorBetweenWaveHoltzAndHelmholtz=1.114e-09;

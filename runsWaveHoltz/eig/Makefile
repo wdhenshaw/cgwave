@@ -5,6 +5,10 @@ eigenWave= $(HOME)/Dropbox/eigenWave
 
 # CASES FOR EigenWave PAPER
 
+# SQUARE
+# cgwh -noplot eig.cmd -g=square128.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -numPeriods=1  -matlab=eigSquareO2ImpEig12 -eigenVectorFile=/home/henshw/runs/eig/square128O2EigsEv512.show  -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=12 -numEigs=24 -eigenSolver=default -go=k
+
+
 # ---- DISK EIGS IN PAPER ---
 diskFreq10:
 	$(cgwh) -noplot eig.cmd -g=sice4.order2  -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG4O2Freq10 -eigenVectorFile=/home/henshw/runs/eig/sice4O2EigsEv256.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -freq=10 -numEigs=42 -go=k > diskG4O2Freq10.out
@@ -82,18 +86,63 @@ squareOrder4mg:
 
 # ------------- MULTIGRID FOR A DISK -- runs to show O(N) scaling
 
+
+
+# -------------- DISK FIXED ORDER 2 ----------
+diskFixedOrder2mg: diskFixed4 diskFixed8 diskFixed16 diskFixed32 diskFixed64 diskFixed128
+
+diskFixed128:
+	setsid $(cgwh) -noplot eig.cmd -g=sicFixede128.order2.ml6 -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskFixedO2Freq6G128 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskFixedO2Freq6G128.out
+	cp diskFixedO2Freq6G128Krylov.m $(eigenWave)/results
+
+diskFixed64:
+	setsid $(cgwh) -noplot eig.cmd -g=sicFixede64.order2.ml5  -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskFixedO2Freq6G64  -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskFixedO2Freq6G64.out
+	cp diskFixedO2Freq6G64Krylov.m $(eigenWave)/results
+
+diskFixed32:
+	setsid $(cgwh) -noplot eig.cmd -g=sicFixede32.order2.ml5  -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskFixedO2Freq6G32  -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskFixedO2Freq6G32.out
+	cp diskFixedO2Freq6G32Krylov.m $(eigenWave)/results
+
+diskFixed16:
+	setsid $(cgwh) -noplot eig.cmd -g=sicFixede16.order2.ml4  -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskFixedO2Freq6G16  -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskFixedO2Freq6G16.out
+	cp diskFixedO2Freq6G16Krylov.m $(eigenWave)/results
+
+diskFixed8:
+	setsid $(cgwh) -noplot eig.cmd -g=sicFixede8.order2.ml4   -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskFixedO2Freq6G8   -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskFixedO2Freq6G8.out
+	cp diskFixedO2Freq6G8Krylov.m $(eigenWave)/results
+
+diskFixed4:
+	setsid $(cgwh) -noplot eig.cmd -g=sicFixede4.order2.ml3   -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskFixedO2Freq6G4   -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskFixedO2Freq6G4.out
+	cp diskFixedO2Freq6G4Krylov.m $(eigenWave)/results
+
+
 # -------------- DISK ORDER 2 ----------
 diskOrder2mg: disk4 disk8 disk16 disk32 disk64 disk128
 
-# G128: 6.7M points 
+# G128: -- more levels
+disk128ml6:
+	setsid $(cgwh) -noplot eig.cmd -g=sice128.order2.ml6 -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskO2Freq6G128 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskO2Freq6G128ml6.out
+
+# G128: 6.7M points	
 disk128:
 	setsid $(cgwh) -noplot eig.cmd -g=sice128.order2.ml5 -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskO2Freq6G128 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskO2Freq6G128.out
 
 # G64: 1.7M points 
+disk64ml6:
+	setsid $(cgwh) -noplot eig.cmd -g=sice64.order2.ml6  -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskO2Freq6G64  -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskO2Freq6G64ml6.out
 disk64:
 	setsid $(cgwh) -noplot eig.cmd -g=sice64.order2.ml5  -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskO2Freq6G64  -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskO2Freq6G64.out
 
-# G32: 424K points 
+# G32: 424K points
+# ml=6 
+disk32ml6:
+	setsid $(cgwh) -noplot eig.cmd -g=sice32.order2.ml6  -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskO2Freq6G32  -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskO2Freq6G32ml6.out
+
+#ml=5  
+disk32ml5:
+	setsid $(cgwh) -noplot eig.cmd -g=sice32.order2.ml5  -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskO2Freq6G32  -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskO2Freq6G32ml5.out
+
+# ml=4
 disk32:
 	setsid $(cgwh) -noplot eig.cmd -g=sice32.order2.ml4  -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskO2Freq6G32  -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -freq=6 -numEigs=16 -go=k > diskO2Freq6G32.out
 

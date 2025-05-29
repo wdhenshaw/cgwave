@@ -1,4 +1,210 @@
-set testag = $HOME/Dropbox/research/cgwave/bin/testAugmentedGmres 
+set testag = $HOME/Dropbox/research/cgwave/bin/testAugmentedKrylov 
+
+
+
+*******************************************
+***** Thurs Nov 28, 2024
+
+Continue optimizations for AGMRES
+
+
+$testag -Nx=1000 -numToDeflate=5 -maxit=200 -initialGuess=0 -useFunction=1 -krylovType=gmres
+
+AugmentedKrylov:gmres: matVect= 1.14e+00(s) total cpu =  1.22e+00(s)
+Time to solve =  1.22e+00(s), timeFotMatVect= 1.14e+00 (s)
+number of gmres iterations=205, number of mat-vects=206
+maxErr= 1.48e-02
+
+
+We have already sped up bicgstab: 
+$testag -Nx=1000 -numToDeflate=5 -maxit=200 -initialGuess=0 -useFunction=1 -krylovType=bicgstab
+
+Time to solve =  2.18e+00(s), timeFotMatVect= 2.17e+00 (s)
+number of bicgstab iterations=406, number of mat-vects=406
+maxErr= 3.47e-03
+
+*******************************************
+***** Mon Nov 25, 2024
+
+START MEASURE TIMINGS:
+
+$testag -Nx=1000 -numToDeflate=100 -maxit=200 -initialGuess=0 -useFunction=1 -krylovType=gmres
+
+
+
+
+$testag -Nx=1000 -numToDeflate=5 -maxit=200 -initialGuess=0 -useFunction=1 -krylovType=bicgstab
+
+$testag -Nx=1000 -numToDeflate=5 -maxit=200 -initialGuess=0 -useFunction=1 -krylovType=gmres
+
+optimize mat-vect and dotProduct
+AUG-GMRES: it=200, || r ||_2h = 3.40e+00, ratio=9.82e-01, (matrixIsAFunction=1)
+AugmentedKrylov:gmres: total cpu =  1.27e+00(s)
+Time to solve =  1.27e+00(s), timeFotMatVect= 1.11e+00 (s)
+number of gmres iterations=205, number of mat-vects=206
+maxErr= 1.48e-02
+
+
+COMPILE BOTH -O3: 
+AugmentedKrylov:gmres: total cpu =  1.44e+00(s)
+Time to solve =  1.44e+00(s), timeFotMatVect= 1.12e+00 (s)
+number of gmres iterations=205, number of mat-vects=206
+
+
+COMPILE testAugmentedKrylov.C  with -O
+AugmentedKrylov:gmres: total cpu =  1.51e+00(s)
+Time to solve =  1.51e+00(s), timeFotMatVect= 1.11e+00 (s)
+number of gmres iterations=205, number of mat-vects=206
+
+
+START:
+AugmentedKrylov:gmres: total cpu =  3.74e+00(s)
+Time to solve =  3.74e+00(s), timeFotMatVect= 3.24e+00 (s)
+number of gmres iterations=205, number of mat-vects=206
+
+
+$testag -Nx=50 -numToDeflate=5 -maxit=200 -initialGuess=0 -useFunction=1 -krylovType=gmres
+
+useOpt=0: 
+AUG-GMRES: it= 42, || r ||_2h = 4.81e-09, ratio=1.87e-01, (matrixIsAFunction=1)
+AUG-GMRES: it= 43, || r ||_2h = 5.40e-10, ratio=1.12e-01, (matrixIsAFunction=1)
+INFO: in AuGmres: H(k+1,k)= 2.08e-27 *happy break down*. Solution must have converged.
+AUG-GMRES: it= 44, || r ||_2h = 1.29e-40, ratio=2.38e-31, (matrixIsAFunction=1)
+AugmentedKrylov:gmres: total cpu =  7.64e-03(s)
+Time to solve =  7.67e-03(s), timeFotMatVect= 7.73e-04 (s)
+number of gmres iterations=49, number of mat-vects=50
+maxErr= 4.77e-15
+
+
+*******************************************
+***** Thus Oct 21, 2024
+
+START ON AUGMENTED Bi-CG-STAB
+
+$testag -Nx=50 -numToDeflate=5 -maxit=200 -initialGuess=0 -useFunction=1 -krylovType=bicgstab
+
+recycled BiCGStab: it= 67 rel-Norm= 1.57e-10 ratio= 0.25
+
+AUG-GMRES: it= 43, || r ||_2h = 5.40e-10, ratio=1.12e-01, (matrixIsAFunction=1)
+
+>> matlab:
+recycled BiCGStab: it= 67 rel-Norm= 1.57e-10 ratio= 0.25
+rBiCGStab:  max-err= 4.16e-11, its=  68.0, mat-vects=its=68
+
+>>> DEFLATE 1
+$testag -Nx=10 -numToDeflate=1 -maxit=15 -initialGuess=0 -useFunction=1 -krylovType=bicgstab
+
++++++++ MATLAB 
+>> testBiCGStab -m=9 -extra=1 -useApprox=0 -sol=1 -idebug=1
+m=9, dx=0.1
+myBiCGStab: max-err= 5.55e-16, its=  10.0, matvects=its*2=20
+bicgstab:   max-err= 5.55e-16, its=   8.5, mat-vects=its*2=17
+bicgstabl:  max-err= 6.66e-16, its=   4.2, mat-vects=its*4=17
+bNorm=50.2874, ||x0||=0, ||r||=50.2874
+recycled BiCGStab: it=  1 rel-Norm= 2.78e-01 ratio= 0.28
+recycled BiCGStab: it=  2 rel-Norm= 1.30e-01 ratio= 0.47
+recycled BiCGStab: it=  3 rel-Norm= 5.26e-02 ratio= 0.40
+recycled BiCGStab: it=  4 rel-Norm= 1.95e-02 ratio= 0.37
+recycled BiCGStab: it=  5 rel-Norm= 3.09e-03 ratio= 0.16
+recycled BiCGStab: it=  6 rel-Norm= 4.93e-04 ratio= 0.16
+recycled BiCGStab: it=  7 rel-Norm= 4.32e-05 ratio= 0.09
+rBiCGStab:  max-err= 3.33e-16, its=   9.5, mat-vects=its*2=19
+
+
+>>>>>>>>> NO Deflate : agrees: 
+$testag -Nx=10 -numToDeflate=0 -maxit=15 -initialGuess=0 -useFunction=1 -krylovType=bicgstab
+
+AugmentedKrylov::solveBiCGStab: m=9, numAugmented=0, matrixIsAFunction=1, maxit=15, tol= 1.00e-10
+ bNorm=50.2874, rNorm=  5.03e+01, resv(0)=  1.00e+00
+recycled BiCGStab: it=  2 rel-Norm= 4.79e-01 ratio= 0.48
+recycled BiCGStab: it=  4 rel-Norm= 3.39e-01 ratio= 0.71
+recycled BiCGStab: it=  6 rel-Norm= 2.52e-01 ratio= 0.74
+recycled BiCGStab: it=  8 rel-Norm= 1.84e-01 ratio= 0.73
+recycled BiCGStab: it= 10 rel-Norm= 1.02e-01 ratio= 0.56
+recycled BiCGStab: it= 12 rel-Norm= 5.35e-02 ratio= 0.52
+recycled BiCGStab: it= 14 rel-Norm= 1.78e-02 ratio= 0.33
+recycled BiCGStab: it= 16 rel-Norm= 4.15e-03 ratio= 0.23
+maxErr= 5.00e-16
+
+
++++++++ MATLAB
+testBiCGStab -m=9 -extra=0 -useApprox=0 -sol=1 -idebug=1
+m=9, dx=0.1
+myBiCGStab: max-err= 5.55e-16, its=  10.0, matvects=its*2=20
+bicgstab:   max-err= 5.55e-16, its=   8.5, mat-vects=its*2=17
+bicgstabl:  max-err= 6.66e-16, its=   4.2, mat-vects=its*4=17
+bNorm=50.2874, ||x0||=0, ||r||=50.2874
+recycled BiCGStab: it=  1 rel-Norm= 4.79e-01 ratio= 0.48
+recycled BiCGStab: it=  2 rel-Norm= 3.39e-01 ratio= 0.71
+recycled BiCGStab: it=  3 rel-Norm= 2.52e-01 ratio= 0.74
+recycled BiCGStab: it=  4 rel-Norm= 1.84e-01 ratio= 0.73
+recycled BiCGStab: it=  5 rel-Norm= 1.02e-01 ratio= 0.56
+recycled BiCGStab: it=  6 rel-Norm= 5.35e-02 ratio= 0.52
+recycled BiCGStab: it=  7 rel-Norm= 1.78e-02 ratio= 0.33
+recycled BiCGStab: it=  8 rel-Norm= 4.15e-03 ratio= 0.23
+rBiCGStab:  max-err= 5.55e-16, its=  10.0, mat-vects=its*2=20
+
+
+*******************************************
+***** Wed Oct 20, 2024
+
+START ON AUGMENTED Bi-CG-STAB
+
+$testag -Nx=10 -numToDeflate=2 -maxit=15 -initialGuess=0 -useFunction=1 -krylovType=bicgstab
+
+
+BiCGSTAB: (No deflated)
+$testag -Nx=10 -numToDeflate=0 -maxit=15 -initialGuess=0 -useFunction=1 -krylovType=bicgstab
+recycled BiCGStab: it=  2 rel-Norm= 8.02e+00 ratio= 0.48
+recycled BiCGStab: it=  4 rel-Norm= 5.68e+00 ratio= 0.71
+recycled BiCGStab: it=  6 rel-Norm= 4.23e+00 ratio= 0.74
+recycled BiCGStab: it=  8 rel-Norm= 3.08e+00 ratio= 0.73
+recycled BiCGStab: it= 10 rel-Norm= 1.72e+00 ratio= 0.56
+recycled BiCGStab: it= 12 rel-Norm= 8.96e-01 ratio= 0.52
+recycled BiCGStab: it= 14 rel-Norm= 2.99e-01 ratio= 0.33
+recycled BiCGStab: it= 16 rel-Norm= 6.95e-02 ratio= 0.23
+Done: solution x
+    (    0) (    1) (    2) (    3) (    4) (    5) (    6) (    7) (    8) 
+(0)   0.641   0.825   0.961   1.011   0.961   0.826   0.641   0.450   0.286 
+number of GMRES iterations=18
+resVect
+    (      0) (      1) (      2) (      3) (      4) (      5) (      6) (      7) (      8) (      9) (     10) (     11) (     12) (     13) (     14) (     15) (     16) (     17) 
+(0)  1.68e+01  1.22e+01  8.02e+00  7.03e+00  5.68e+00  4.95e+00  4.23e+00  3.51e+00  3.08e+00  2.04e+00  1.72e+00  1.14e+00  8.96e-01  3.65e-01  2.99e-01  8.43e-02  6.95e-02  3.92e-15 
+xTrue
+    (    0) (    1) (    2) (    3) (    4) (    5) (    6) (    7) (    8) 
+(0)   0.641   0.825   0.961   1.011   0.961   0.826   0.641   0.450   0.286 
+maxErr= 5.00e-16
+
+
+
+$testag -Nx=10 -numToDeflate=0 -maxit=7 -initialGuess=0 -useFunction=1 -krylovType=bicgstab
+
+$testag -Nx=10 -numToDeflate=2 -maxit=7 -initialGuess=0 -useFunction=1 -krylovType=bicgstab
+
+$testag -Nx=10 -numToDeflate=2 -maxit=7 -initialGuess=0 -useFunction=1
+
+AugmentedKrylov::solve: m=9, numToDeflate=2, matrixIsAFunction=1, maxit=7, tol= 1.00e-10
+AUG-GMRES: Compute A*W(:,0) (Augmented vectors)
+AUG-GMRES: Compute A*W(:,1) (Augmented vectors)
+AUG-GMRES: it=  2, || r ||_2h = 2.28e+00, ratio=4.57e-01, (matrixIsAFunction=1)
+AUG-GMRES: it=  3, || r ||_2h = 1.07e+00, ratio=4.71e-01, (matrixIsAFunction=1)
+AUG-GMRES: it=  4, || r ||_2h = 3.08e-01, ratio=2.86e-01, (matrixIsAFunction=1)
+AUG-GMRES: it=  5, || r ||_2h = 1.07e-01, ratio=3.46e-01, (matrixIsAFunction=1)
+AUG-GMRES: it=  6, || r ||_2h = 2.48e-02, ratio=2.32e-01, (matrixIsAFunction=1)
+INFO: in AuGmres: H(k+1,k)= 1.67e-29 *happy break down*. Solution must have converged.
+AUG-GMRES: it=  7, || r ||_2h = 1.39e-33, ratio=5.59e-32, (matrixIsAFunction=1)
+Done: solution x
+    (    0) (    1) (    2) (    3) (    4) (    5) (    6) (    7) (    8) 
+(0)   0.641   0.825   0.961   1.011   0.961   0.826   0.641   0.450   0.286 
+number of GMRES iterations=9
+resVect
+    (      0) (      1) (      2) (      3) (      4) (      5) (      6) (      7) (      8) 
+(0)  4.99e+00  4.99e+00  4.99e+00  2.28e+00  1.07e+00  3.08e-01  1.07e-01  2.48e-02  1.39e-33 
+xTrue
+    (    0) (    1) (    2) (    3) (    4) (    5) (    6) (    7) (    8) 
+(0)   0.641   0.825   0.961   1.011   0.961   0.826   0.641   0.450   0.286 
+maxErr= 7.77e-16
+
 
 
 *******************************************

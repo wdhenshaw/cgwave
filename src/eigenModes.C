@@ -2834,6 +2834,8 @@ int CgWave::getErrorInEigenPair( const Real lambda, realCompositeGridFunction & 
     if( !computeEigenmodes ) 
         return 0;
 
+    
+
   // -- This next call will read in any known eigenmodes ---
   // cgWave.initializeDeflation();
     if( !dbase.has_key("uev") )  
@@ -3349,7 +3351,10 @@ int CgWave::getErrorInEigenPair( const Real lambda, realCompositeGridFunction & 
 
     }
 
-  // printF("CgWave::computeErrorsInEigenmodes: iteration=%d: relative errors in eigenvalue=%8.2e, eigenvector=%8.2e\n",iteration,relErrEigenvalue, relErrEigenvector);
+
+    if( false )
+        printF("getErrorInEigenPair: lambda=%16.8e, eigIndex=%3d (true discrete): relErrEigenvalue=%8.2e, relErrEigenvector=%8.2e, multiplicity=%d (computed)\n",
+                lambda,eigIndex,relErrEigenvalue,relErrEigenvector,eigMultiplicity(eigIndex));
 
     return 1;
 }

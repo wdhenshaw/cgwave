@@ -27,6 +27,12 @@
 !! #Include "../maple/defineGetSixthDerivativesMacros.h"
 
 
+! Evaluate the twilight-zone forcing 
+#beginMacro OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+  call ogDeriv(ep, ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+#endMacro
+
+
 ! From bcOptSmFOS.bf
 ! DataBase *pdb = &parameters.dbase;
 ! double precision pdb  ! pointer to data base
@@ -2839,6 +2845,146 @@ end do ! end edgeDirection
 #endMacro 
 
 
+! --------------------------------------------------------------------------
+! Macro: Evaluate the forcing for the ABC EM2 for twilight zone   
+!        Cartesian grid version
+!    DIR = X or Y or Z
+!    DIM = 2 or 3
+!    tf : evaluate the forcing at this time
+! Output: 
+!    force(0:2) 
+! --------------------------------------------------------------------------
+#beginMacro getForcingEM2(DIR,DIM,tf,is1,is2,is3,force)
+ if( forcingOption.eq.twilightZoneForcing )then
+   ! Test: set to exact solution at time t:
+   ! x=xy(i1-is1,i2,i3,0)
+   ! y=xy(i1-is1,i2,i3,1)
+   ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+   ! un(i1-is1,i2,i3,ey)=eyTrue
+   ! add TZ forcing *wdh* Sept 17, 2016
+   ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+   x=xy(i1,i2,i3,0)
+   y=xy(i1,i2,i3,1)
+   #If #DIM eq "2" 
+     #If #DIR eq "X"
+      ! Values for force(ex) are currently needed at corners:
+      OGDERIV(1,1,0,0,x,y,z,tf,ex,utx)
+      OGDERIV(0,2,0,0,x,y,z,tf,ex,uxx)
+      OGDERIV(0,0,2,0,x,y,z,tf,ex,uyy)
+      force(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+
+      ! write(*,*) "i1,i2,i3,is1,ex,tf,utx,uxx,uyy,c1abcem2,c2abcem2,x,y,z,force=",i1,i2,i3,is1,ex,tf,utx,uxx,uyy,c1abcem2,c2abcem2,x,y,z,force(ex)
+
+      ! OGDERIV(1,1,0,0,x,y,z,tf,ey,utx)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,ey,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,ey,uyy)
+      ! force(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+
+      ! OGDERIV(1,1,0,0,x,y,z,tf,hz,utx)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,hz,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,hz,uyy)
+      ! force(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+     #Else
+      OGDERIV(1,0,1,0,x,y,z,tf,ex,uty)
+      OGDERIV(0,2,0,0,x,y,z,tf,ex,uxx)
+      OGDERIV(0,0,2,0,x,y,z,tf,ex,uyy)
+      force(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+
+      ! ! Values for force(ey) are currently needed at corners:
+      ! OGDERIV(1,0,1,0,x,y,z,tf,ey,uty)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,ey,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,ey,uyy)
+      ! force(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+
+      ! OGDERIV(1,0,1,0,x,y,z,tf,hz,uty)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,hz,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,hz,uyy)
+      ! force(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+     #End
+
+   #Else
+     ! ------ Cartesian Grid 3d forcing ----------
+     z=xy(i1,i2,i3,2)
+     #If #DIR eq "X"
+      ! Values for force(ex) are currently needed at corners:
+      OGDERIV(1,1,0,0,x,y,z,tf,ex,utx)
+      OGDERIV(0,2,0,0,x,y,z,tf,ex,uxx)
+      OGDERIV(0,0,2,0,x,y,z,tf,ex,uyy)
+      OGDERIV(0,0,0,2,x,y,z,tf,ex,uzz)
+      force(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
+
+      ! OGDERIV(1,1,0,0,x,y,z,tf,ey,utx)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,ey,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,ey,uyy)
+      ! OGDERIV(0,0,0,2,x,y,z,tf,ey,uzz)
+      ! force(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
+
+      ! OGDERIV(1,1,0,0,x,y,z,tf,ez,utx)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,ez,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,ez,uyy)
+      ! OGDERIV(0,0,0,2,x,y,z,tf,ez,uzz)
+      ! force(ez) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) )
+
+     #Elif #DIR eq "Y"
+      OGDERIV(1,0,1,0,x,y,z,tf,ex,uty)
+      OGDERIV(0,2,0,0,x,y,z,tf,ex,uxx)
+      OGDERIV(0,0,2,0,x,y,z,tf,ex,uyy)
+      OGDERIV(0,0,0,2,x,y,z,tf,ex,uzz)
+      force(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
+
+      ! OGDERIV(1,0,1,0,x,y,z,tf,ey,uty)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,ey,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,ey,uyy)
+      ! OGDERIV(0,0,0,2,x,y,z,tf,ey,uzz)
+      ! force(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
+
+      ! OGDERIV(1,0,1,0,x,y,z,tf,ez,uty)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,ez,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,ez,uyy)
+      ! OGDERIV(0,0,0,2,x,y,z,tf,ez,uzz)
+      ! force(ez) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) )
+
+     #Else
+      OGDERIV(1,0,0,1,x,y,z,tf,ex,utz)
+      OGDERIV(0,2,0,0,x,y,z,tf,ex,uxx)
+      OGDERIV(0,0,2,0,x,y,z,tf,ex,uyy)
+      OGDERIV(0,0,0,2,x,y,z,tf,ex,uzz)
+      force(ex) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
+
+      ! OGDERIV(1,0,0,1,x,y,z,tf,ey,utz)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,ey,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,ey,uyy)
+      ! OGDERIV(0,0,0,2,x,y,z,tf,ey,uzz)
+      ! force(ey) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
+
+      ! OGDERIV(1,0,0,1,x,y,z,tf,ez,utz)
+      ! OGDERIV(0,2,0,0,x,y,z,tf,ez,uxx)
+      ! OGDERIV(0,0,2,0,x,y,z,tf,ez,uyy)
+      ! OGDERIV(0,0,0,2,x,y,z,tf,ez,uzz)
+      ! force(ez) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) )
+     #End
+
+   #End
+
+   ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+ end if
+#endMacro
+
+! ----------------------------------------------------------------------------
+! Macro: Get the forcing for the trapezoid rule by averaging times tp amd tf
+!   This will make the scheme exact for degree 2 polynomials in time 
+! --------------------------------------------------------------------------
+#beginMacro getForcingTrapezoidEM2(DIR,DIM,tp,tf,is1,is2,is3,force)
+  ! getForcingEM2(DIR,DIM,tm,is1,is2,force)
+  getForcingEM2(DIR,DIM,tp,is1,is2,is3,forcep)
+  getForcingEM2(DIR,DIM,tf,is1,is2,is3,forcef)
+  ! do idir=0,2
+  do idir=0,0 ! ex only 
+    force(idir)=.5*(forcep(idir)+forcef(idir))
+  end do
+#endMacro
+
+
 ! =========================================================================
 ! Macro: 
 !   Assign the RHS for implicit boundary conditions
@@ -3218,31 +3364,106 @@ end do ! end edgeDirection
       ! cEM2 = c*tan(frequencyArray(0)*dt/2.)/(frequencyArraySave(0)*dt/2.);
 
       ca = cEM2;  ! Adjusted c 
+      ! if( t<=4.*dt )then
+      !   write(*,*) "bcOpt: assign RHS for implicit EM2: assignBCForImplicit, side,axis,cEM2=",assignBCForImplicit, side,axis,cEM2
+      ! end if
 
       if( gridType.eq.rectangular )then
+        useCompatiblityRBC = 1  ! 1 =  apply a CBC for the 2nd ghost line on an EM2 boundary
+        ! rhs for extrapolation conditions
+        if( useCompatiblityRBC==1 )then
+          startGhost=3
+        else
+          startGhost=2
+        end if        
         beginLoops3d()
           if( mask(i1,i2,i3).ne.0 )then
             j1  = i1-is1; j2  = i2-is2; j3  = i3-is3;     ! ghost 
             i1p = i1+is1; i2p = i2+is2; i3p = i3+is3;     ! first line inside
 
-            ! We need current solution un here
-            ! res = -is*(unx-ucx)/dt + (.5*c)*( unxx + ucxx) + (.25*c)*( unyy + ucyy );
+            ! ** We need to match the formula in implicit.bC
+            ! 
+            ! Engquist-Majda order2 scheme: 
+            !  -is*D+t ( D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 
+            !  -is*D+t ( D0x W^n) + L*( .5 W^{n+1} + .5*W^n ) = 0 
+            !  -is ( D0x W^{n+1} - W^n )/dt + L*( .5 W^{n+1} + .5*W^n ) = 0 
+            !  -is*D0x W^{n+1}/dt + .5*L W^{n+1} = -is*D0xW^n/dt - .5*L W^n            
             if( assignBCForImplicit.eq.1 )then
-              if( axis==0 )then
-                u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                    \
-                      - .5*(   ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   \
-                      - .5*(.5*ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) ) 
+              if( orderOfAccuracy==2 )then
+                if( axis==0 )then
+                  u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                    \
+                        - .5*(   ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   \
+                        - .5*(.5*ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) ) 
+                else
+                  u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                     \
+                        - .5*( .5*ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   \
+                        - .5*(    ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) )                   
+                end if 
+              else if( orderOfAccuracy==4 )then
+                !if( .true. )then
+                ! exactly match Matlab code
+                if( axis==0 )then
+                  u(j1,j2,j3,uc) =          unx42r(i1,i2,i3,uc)/(dt) \
+                            +is1*.5*(   ca*unxx42r(i1,i2,i3,uc) )    \
+                            +is1*.5*(.5*ca*unyy42r(i1,i2,i3,uc) ) 
+                  ! ghost 2:
+                  u(j1-is1,j2-is2,j3,uc) =          unxxx22r(i1,i2,i3,uc)/(dt) \
+                                    +is1*.5*(   ca*unxxxx22r(i1,i2,i3,uc) )    \
+                                    +is1*.5*(.5*ca*unxxyy22r(i1,i2,i3,uc) )                   
+                else
+                  u(j1,j2,j3,uc) =          uny42r(i1,i2,i3,uc)/(dt) \
+                            +is2*.5*(.5*ca*unxx42r(i1,i2,i3,uc) )    \
+                            +is2*.5*(   ca*unyy42r(i1,i2,i3,uc) ) 
+                  ! ghost 2: 
+                  u(j1-is1,j2-is2,j3,uc) =          unyyy22r(i1,i2,i3,uc)/(dt) \
+                                    +is2*.5*(.5*ca*unxxyy22r(i1,i2,i3,uc) )    \
+                                    +is2*.5*(   ca*unyyyy22r(i1,i2,i3,uc) )                                               
+                end if                   
+                ! else
+                !   ! OLD WAY 
+                !   if( axis==0 )then
+                !     u(j1,j2,j3,uc) =  -is1*unx42r(i1,i2,i3,uc)/(dt) \
+                !               - .5*(   ca*unxx42r(i1,i2,i3,uc) )    \
+                !               - .5*(.5*ca*unyy42r(i1,i2,i3,uc) ) 
+                !     ! ghost 2:
+                !     u(j1-is1,j2-is2,j3,uc) =  -is1*unxxx22r(i1,i2,i3,uc)/(dt) \
+                !                       - .5*(   ca*unxxxx22r(i1,i2,i3,uc) )    \
+                !                       - .5*(.5*ca*unxxyy22r(i1,i2,i3,uc) )                   
+                !   else
+                !     u(j1,j2,j3,uc) =  -is2*uny42r(i1,i2,i3,uc)/(dt) \
+                !               - .5*(.5*ca*unxx42r(i1,i2,i3,uc) )    \
+                !               - .5*(   ca*unyy42r(i1,i2,i3,uc) ) 
+                !     ! ghost 2: 
+                !     u(j1-is1,j2-is2,j3,uc) =  -is2*unyyy22r(i1,i2,i3,uc)/(dt) \
+                !                       - .5*(.5*ca*unxxyy22r(i1,i2,i3,uc) )    \
+                !                       - .5*(   ca*unyyyy22r(i1,i2,i3,uc) )                                               
+                !   end if 
+                ! end if
+
               else
-                u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                     \
-                      - .5*( .5*ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   \
-                      - .5*(    ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) )                   
-              end if 
+                write(*,*) "bcOpt: assign RHS for implicit EM2: finish me for orderOfAccuracy=",orderOfAccuracy
+                stop 6661
+              end if
+
+              if( assignTwilightZone.eq.1 )then
+                ! CHECK ME -- added Oct 1, 2024
+                ! macro: 
+                if( axis==0 )then
+                  getForcingTrapezoidEM2(X,2,tp,t,is1,is2,is3,forcex)
+                else
+                  getForcingTrapezoidEM2(Y,2,tp,t,is1,is2,is3,forcex)
+                end if
+                u(j1,j2,j3,uc) = u(j1,j2,j3,uc) - forcex(uc)
+                ! write(*,*) "i1,i2,un(j1,j2,j3,uc),un(i1p,i2p,i3p,uc),forcex,rhs=",i1,i2,un(j1,j2,j3,uc),un(i1p,i2p,i3p,uc),forcex(uc),u(j1,j2,j3,uc)
+
+              end if              
             else
                ! Bc for direct Helmholtz solve
                u(j1,j2,j3,uc) = 0.
             end if
 
-            do ghost=2,numGhost
+
+            do ghost=startGhost,numGhost
               j1=i1-is1*ghost
               j2=i2-is2*ghost
               j3=i3-is3*ghost
@@ -3377,6 +3598,8 @@ end do ! end edgeDirection
 
   endLoopOverSides()
   #endMacro
+
+
 
 
 ! Argument list
@@ -3557,6 +3780,13 @@ subroutine NAME( ARGLIST() )
   ! parameters for polyPeriodic known solution
   real omegaPolyPeriodic,a0PolyPeriodic, a1PolyPeriodic, b1PolyPeriodic, c1PolyPeriodic
 
+  real forcex(0:11),forcey(0:11),forcez(0:11),forcep(0:11),forcef(0:11)
+  real tp,tm,x,y,z,utx,uty,utz
+  real p0,p2,c1abcem2,c2abcem2
+  integer ex,idir
+  integer useCompatiblityRBC, startGhost
+
+
   ! --- forcing options ----
   ! These must match the values in CgWave.h: 
   ! enum ForcingOptionEnum
@@ -3613,6 +3843,7 @@ subroutine NAME( ARGLIST() )
   declareDifferenceOrder2(u,RX)
   #If #ORDER eq "4"
    declareDifferenceOrder4(u,RX)
+   declareDifferenceOrder4(un,none)
   #End
 
   declareDifferenceOrder2(v,none)
@@ -3622,6 +3853,7 @@ subroutine NAME( ARGLIST() )
   defineDifferenceOrder2Components1(u,RX)
   #If #ORDER eq "4"
    defineDifferenceOrder4Components1(u,RX)
+   defineDifferenceOrder4Components1(un,none)
   #End
 
   defineDifferenceOrder2Components1(v,none)
@@ -3634,6 +3866,8 @@ subroutine NAME( ARGLIST() )
 
  real ux,uy,uz
  real uxxx,uxxy,uxyy,uyyy,uxxz,uxzz,uzzz,uyyz,uyzz,uxyz
+ real unxxx22r, unyyy22r
+ real unxxxx22r, unyyyy22r, unxxyy22r
 
   ! 4th-order 1 sided derivative  extrap=(1 5 10 10 5 1)
   uxOneSided(i1,i2,i3,m)=-(10./3.)*u(i1,i2,i3,m)+6.*u(i1+is1,i2+is2,i3+is3,m)-2.*u(i1+2*is1,i2+2*is2,i3+2*is3,m)\
@@ -3670,6 +3904,17 @@ subroutine NAME( ARGLIST() )
      -4.*(u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m)+u(i1,i2,i3+1,m)+u(i1,i2,i3-1,m))   \
      +2.*(u(i1,i2+1,i3+1,m)+u(i1,i2-1,i3+1,m)+u(i1,i2+1,i3-1,m)+u(i1,i2-1,i3-1,m)) )/( (dx(1)*dx(2))**2 ) 
  
+
+  ! D0 (D_D-) 
+  unxxx22r(i1,i2,i3,m) = ( -un(i1-2,i2,i3,m) +2.*un(i1-1,i2,i3,m) -2.*un(i1+1,i2,i3,m) + un(i1+2,i2,i3,m) )/(2.*dx(0)**3) 
+  unyyy22r(i1,i2,i3,m) = ( -un(i1,i2-2,i3,m) +2.*un(i1,i2-1,i3,m) -2.*un(i1,i2+1,i3,m) + un(i1,i2+2,i3,m) )/(2.*dx(1)**3) 
+
+  ! (D+D-)^2
+  unxxxx22r(i1,i2,i3,m) = ( 6.*un(i1,i2,i3,m) -4.*un(i1-1,i2,i3,m) -4.*un(i1+1,i2,i3,m) + un(i1-2,i2,i3,m) + un(i1+2,i2,i3,m) )/(dx(0)**4) 
+  unyyyy22r(i1,i2,i3,m) = ( 6.*un(i1,i2,i3,m) -4.*un(i1,i2-1,i3,m) -4.*un(i1,i2+1,i3,m) + un(i1,i2-2,i3,m) + un(i1,i2+2,i3,m) )/(dx(1)**4)
+  ! (D+xD-x)(D_yD-y) 
+  unxxyy22r(i1,i2,i3,m) = ( 4.*un(i1,i2,i3,m) -2.*un(i1-1,i2,i3,m) -2.*un(i1+1,i2,i3,m) -2.*un(i1,i2-1,i3,m) -2.*un(i1,i2+1,i3,m) \
+                             + un(i1-1,i2-1,i3,m) + un(i1+1,i2-1,i3,m) + un(i1-1,i2+1,i3,m) + un(i1+1,i2+1,i3,m) )/(dx(0)**2 * dx(1)**2 )
 
   ! ! Here is the the generic boundary condition forcing array. It uses the bcOffset(side,axis) values as an
   ! ! an offset from the bcf0 array to access the bcf10, bcf01, bcf11, ... arrays
@@ -3745,6 +3990,24 @@ subroutine NAME( ARGLIST() )
   c8 = c**8
   twoPi = atan2(1.,1.)*8.; ! atan2(1,1)=pi/4
 
+  tp=t-dt ! previous time
+  tm=t-.5*dt ! midpoint in time
+
+
+
+  ex=uc
+ ! Generalized form:
+  ! u.xt = c1abcem2*u.xx + c2abcem2*( u.yy + u.zz )
+  !   Taylor: p0=1 p2=-1/2
+  !   Cheby:  p0=1.00023, p2=-.515555
+  p0=1.  
+  p2=-.5
+  ! p0=1.00023   !   Cheby on a subinterval
+  ! p2=-.515555  !   Cheby on a subinterval
+  c1abcem2=cEM2*p0
+  c2abcem2=cEM2*(p0+p2)
+  x=0; y=0; z=0; 
+
   if( gridType.eq.rectangular )then
     ! some macros want dr=dx for rectangular grids
     do axis=0,2
@@ -3773,12 +4036,12 @@ subroutine NAME( ARGLIST() )
   end if
 
   if( t.le.3*dt .and. debug.gt.1 )then
-  ! if( .true. )then
+  ! if( t.le.3*dt  )then
 
     write(*,'(" bcOptWave: nd=",i2," grid=",i4," gridType=",i2," orderOfAccuracy=",i2," uc=",i3," twilightZone=",i2)') nd,grid,gridType,orderOfAccuracy,uc,twilightZone
     write(*,'("  addForcingBC=",i4," forcingOption=",i4," assignKnownSolutionAtBoundaries=",i4)') addForcingBC, forcingOption, assignKnownSolutionAtBoundaries
     write(*,'("  t=",e10.2," dt=",e10.2," knownSolutionOption=",i4," REAL_MIN=",e10.2)') t,dt,knownSolutionOption,REAL_MIN
-    write(*,'("  abcWave: c=",e14.6," cEM2=",e14.6)') c,cEM2
+    write(*,'("  for abcWave: c=",e14.6," cEM2=",e14.6)') c,cEM2
     write(*,'("  useUpwindDissipation=",i2," numGhost=",i2," assignCornerGhostPoints=",i2)') useUpwindDissipation,numGhost,assignCornerGhostPoints
     write(*,'("  assignBCForImplicit=",i4," bcApproach=",i4," gridIsImplicit=",i2)') assignBCForImplicit,bcApproach,gridIsImplicit
     write(*,'("  boundaryCondition=",6i4)') ((boundaryCondition(side,axis),side=0,1),axis=0,2)
@@ -3830,9 +4093,9 @@ subroutine NAME( ARGLIST() )
          if( solveHelmholtz==1 )then 
             ! Get adjusted omega:
             getRealParameter(omega)
-            if( t.le.2*dt )then
-              write(*,'(" bcOptWave:solveHelmholtz:scattering: Use adjusted omega=",1pe15.8," in place of omegaPlaneWave=",1pe15.8)') omega,omegaPlaneWave
-            end if
+            ! if( t.le.2*dt )then
+            !   write(*,'(" bcOptWave:solveHelmholtz:scattering: Use adjusted omega=",1pe15.8," in place of omegaPlaneWave=",1pe15.8)') omega,omegaPlaneWave
+            ! end if
             omegaPlaneWave = omega
          end if
 
@@ -4001,7 +4264,9 @@ subroutine NAME( ARGLIST() )
     !      .or. bcApproach.eq.useCompatibilityBoundaryConditions ) \
     !      .and. bc(side,axis).gt.0 )then
 
-    if(  bc(side,axis).gt.0 .and. bc(side,axis).ne.exactBC )then ! *wdh* Dec 2, 2023 -- always do this at least for CBCs
+    ! *wdh* Dec 2, 2023 -- always do this at least for CBCs  
+    ! Oct 2, 2024 -- skip radiation BC's  
+    if(  bc(side,axis).gt.0 .and. bc(side,axis).ne.exactBC .and. bc(side,axis).ne.abcEM2 .and. bc(side,axis).ne.absorbing )then
 
       ! If the grid is too coarse then we can only extrapolate using point from n1a to n1b 
       !         E--+--+--+--+
@@ -4249,7 +4514,7 @@ subroutine NAME( ARGLIST() )
       if( nd.eq.2 )then
         ! Turn this back on for 2D -- Nov 23, 2023
         if( t.le.3*dt .and. debug.gt.1 )then
-          write(*,'("bcOpt: Assign corner ghost")')
+          write(*,'("bcOpt: Assign corner ghost : orderOfExtrapolation=",i2)') orderOfExtrapolation
         end if
         assignCornerGhostsMacro()
       end if
@@ -4274,10 +4539,10 @@ subroutine NAME( ARGLIST() )
 ! --- construct the different files ----
 ! ****************************************************************
 
-buildFile(bcOptWave2dOrder2,2,2)
-buildFile(bcOptWave3dOrder2,3,2)
+! buildFile(bcOptWave2dOrder2,2,2)
+! buildFile(bcOptWave3dOrder2,3,2)
 buildFile(bcOptWave2dOrder4,2,4)
-buildFile(bcOptWave3dOrder4,3,4)
+! buildFile(bcOptWave3dOrder4,3,4)
 
 
 ! buildFile(bcOptWave2dOrder4,2,6)

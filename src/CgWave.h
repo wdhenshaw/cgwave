@@ -102,7 +102,18 @@ enum EigenSolverEnum
   KrylovSchurEigenSolver,
   ArnoldiEigenSolver,
   ArpackEigenSolver,
-  fixedPointEigenSolver
+  fixedPointEigenSolver,
+  powerEigenSolver,
+  inverseIterationEigenSolver,
+  JacobiDavidsonEigenSolver
+};
+
+enum EigenSolverInitialConditionEnum
+{
+  defaultEigenSolverInitialCondition=0, // this means let the eigensolver choose the initial condition
+  randomEigenSolverInitialCondition,
+  sineEigenSolverInitialCondition,
+  sumOfEigenvectorsInitialCondition
 };
 
 CgWave(CompositeGrid & cg, GenericGraphicsInterface & gi);
@@ -141,14 +152,19 @@ bool adjustBoundsForAbsorbingLayer( MappedGrid & mg, Index Iv[3], int extra =0 )
 
 int checkDeflation();
 
+// check parameters for consistency
+int checkParameters(); 
+
 int correctEigenfunction();
 
-// deflate WaveHoltz solution
-int deflateSolution();
+// deflate the WaveHoltz solution (or forcing)
+int deflateSolution( int deflateOption= 0 );
 
 void displayBoundaryConditions( FILE *file = stdout );
 
 int formImplicitTimeSteppingMatrix();
+
+int getAdjustedBoundaryIndex( MappedGrid & mg, int side, int axis, Index & Ib1, Index & Ib2, Index & Ib3 );
 
 realCompositeGridFunction& getAugmentedSolution(int current, realCompositeGridFunction & v, const real t);
 
@@ -186,7 +202,7 @@ int getIntegrationWeights( int Nt, int numFreq, const RealArray & Tv, int orderO
 
 aString getMethodName() const;
 
-int getMultiFrequencyWaveHoltzMatrix( RealArray & A );
+int getMultiFrequencyWaveHoltzMatrix( RealArray & A, bool useAdjusted = true  );
 
 Real getRayleighQuotient( realCompositeGridFunction & v, int component =0 );
 
@@ -200,7 +216,7 @@ Real getUpwindDissipationCoefficient( int grid, Real dtUpwind = -1., bool adjust
 int getUserDefinedKnownSolution(real t,  int grid, realArray & ua, const Index & I1a, const Index &I2a, const Index &I3a, 
 				int numberOfTimeDerivatives = 0 );
 
-int getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu );
+int getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu, bool useAdjusted = true  );
 
 // Check if two composite grids match
 static bool compositeGridsMatch( CompositeGrid & cg, CompositeGrid & cgsf );
@@ -220,6 +236,9 @@ int initializeLCBC();
 // Initialize PETSc as needed
 int initializePETSc( int argc = 0 , char **args = NULL );
 
+// Initialize the time integral used by WaveHoltz
+int initializeTimeIntegral( Real dt );
+
 // Assign parameters 
 int interactiveUpdate();
 
@@ -233,6 +252,13 @@ int outputResults( int current, real t );
 int printStatistics(FILE *file = stdout );
 
 int plot( int current, real t, real dt );
+
+// plot the WaveHoltz filter beta and any eigenvalues 
+int plotFilter( RealArray & eigenValues );
+
+int adjustFrequencyArrays();
+
+int resetFrequencyArrays();
 
 // Reset CPU timings to zero:
 int resetTimings();
@@ -292,6 +318,7 @@ int userDefinedForcing( realArray & f, int iparam[], real rparam[] );
     timeForForcing,
     timeForUserDefinedKnownSolution,
     timeForTimeIntegral,
+    timeForDeflation,
     timeForGetError,
     timeForPlotting,
     timeForOutputResults,

@@ -4,6 +4,7 @@
 #include "ParallelUtility.h"
 
 
+
 //=================================================================================================
 // Macro: Add forcing to the first step update
 //=================================================================================================
@@ -21,7 +22,7 @@
 
     assert( dbase.get<OGFunction*>("tz")!=NULL );
     OGFunction & e = *dbase.get<OGFunction*>("tz");
-    OV_GET_SERIAL_ARRAY(real,mg.vertex(),xLocal);
+    OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
     Range C=Range(0,0);
     int isRectangular=0;
 
@@ -295,8 +296,10 @@ takeFirstStep( int cur, real t )
 
   bool takeFirstStepImplicit = timeSteppingMethod==implicitTimeStepping &&  takeImplicitFirstStep; 
 
-  if( (solveHelmholtz || forcingOption==helmholtzForcing) 
-      && !takeFirstStepImplicit  )
+  const bool useTakeFirstStepHelmholtz = solveHelmholtz || forcingOption==helmholtzForcing;
+  // const bool useTakeFirstStepHelmholtz = solveHelmholtz;
+
+  if( useTakeFirstStepHelmholtz )
   {
     return takeFirstStepHelmholtz( cur, t );
   }
@@ -356,8 +359,12 @@ takeFirstStep( int cur, real t )
   // }
 
    if( debug>0 )
-    printF("\n $$$$$$$ CgWave:takeFirstStep: Take First Step using Taylor Series approach $$$$$$$\n\n");
-
+   {
+    if( takeImplicitFirstStep )
+      printF("\n $$$$$$$ CgWave:takeFirstStep: take implicit first step -- eval u.t(x,0) to use with implicit time step $$$$$$$\n\n");
+    else
+      printF("\n $$$$$$$ CgWave:takeFirstStep: Take First Step using Taylor Series approach $$$$$$$\n\n");
+   }
   const Real c2=c*c, c3=c2*c, c4=c2*c2, c6=c4*c2;
   const Real dt2=dt*dt, dt3=dt2*dt, dt4=dt3*dt, dt5=dt4*dt, dt6=dt5*dt; 
   const Real cdt = c*dt, cdt2=cdt*cdt, cdt3=cdt2*cdt, cdt4=cdt3*cdt, cdt6=cdt3*cdt3; // powers of c*dt 
@@ -376,9 +383,9 @@ takeFirstStep( int cur, real t )
     }
 
     MappedGrid & mg = cg[grid];
-    OV_GET_SERIAL_ARRAY(real,up[grid],upLocal);
-    OV_GET_SERIAL_ARRAY(real,uc[grid],ucLocal);
-    OV_GET_SERIAL_ARRAY(real,un[grid],unLocal);
+    OV_GET_SERIAL_ARRAY(Real,up[grid],upLocal);
+    OV_GET_SERIAL_ARRAY(Real,uc[grid],ucLocal);
+    OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
 
     getIndex(mg.gridIndexRange(),I1,I2,I3);
     const int includeGhost=1;
@@ -405,7 +412,10 @@ takeFirstStep( int cur, real t )
       // TZ:
       //     f = ue.tt - c^2*Delta( ue )     
 
-      // FINISH ME FOR WHEN THERE IS FORCING 
+      // FINISH ME FOR WHEN THERE IS FORCING
+      // if( forcingOption ~
+      if( forcingOption==userForcing || forcingOption==helmholtzForcing )
+        printF("**** takeFirstStep: EXPLICIT FIRST STEP -- FIX ME : ADD FORCING forcingOption=%d\n",(int)forcingOption);
 
       RealArray lap(J1,J2,J3);
       operators[grid].derivative(MappedGridOperators::laplacianOperator,ucLocal,lap,J1,J2,J3);
@@ -423,7 +433,7 @@ takeFirstStep( int cur, real t )
       //   printF("takeFirstStep **TEMP** t+dt=%9.3e \n",t+dt);
       //   assert( dbase.get<OGFunction*>("tz")!=NULL );
       //   OGFunction & e = *dbase.get<OGFunction*>("tz");
-      //   OV_GET_SERIAL_ARRAY(real,mg.vertex(),xLocal);
+      //   OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
       //   Range C=Range(0,0);
       //   int isRectangular=0;
       //   e.gd( ucLocal ,xLocal,mg.numberOfDimensions(),isRectangular,0,0,0,0,I1,I2,I3,C,t ); // u
@@ -437,7 +447,7 @@ takeFirstStep( int cur, real t )
       //   printF("takeFirstStep **TEMP** set to TZ exact at t+dt=%9.3e \n",t+dt);
       //   assert( dbase.get<OGFunction*>("tz")!=NULL );
       //   OGFunction & e = *dbase.get<OGFunction*>("tz");
-      //   OV_GET_SERIAL_ARRAY(real,mg.vertex(),xLocal);
+      //   OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
       //   Range C=Range(0,0);
       //   int isRectangular=0;
       //   e.gd( unLocal ,xLocal,mg.numberOfDimensions(),isRectangular,0,0,0,0,I1,I2,I3,C,t+dt);
@@ -562,12 +572,13 @@ takeFirstStepHelmholtz( int cur, real t )
 
   const int & debug           = dbase.get<int>("debug");
   if( debug & 4 )
-    printF("*******  CgWave::takeFirstStep GET SOLUTION at dt *************\n");
+    printF("*******  CgWave::takeFirstStepHelmholtz GET SOLUTION at t=dt *************\n");
   
   const real & c                        = dbase.get<real>("c");
   const real & dt                       = dbase.get<real>("dt");
-  const real & omega                    = dbase.get<real>("omega");
+  // const real & omega                    = dbase.get<real>("omega");
   const int & orderOfAccuracy           = dbase.get<int>("orderOfAccuracy");
+  const int & orderOfAccuracyInTime     = dbase.get<int>("orderOfAccuracyInTime");
 
   const int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
   const RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");  
@@ -575,6 +586,8 @@ takeFirstStepHelmholtz( int cur, real t )
 
   const int & solveHelmholtz            = dbase.get<int>("solveHelmholtz");
   const int & filterTimeDerivative      = dbase.get<int>("filterTimeDerivative");
+  const int & takeImplicitFirstStep     = dbase.get<int>("takeImplicitFirstStep");
+  const int & useSuperGrid              = dbase.get<int>("useSuperGrid");
 
   ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
@@ -602,15 +615,33 @@ takeFirstStepHelmholtz( int cur, real t )
     printF("+++++++++++++ takeFirstStepHelmholtz: do NOT use periodic first step ++++++++++++\n");
   }
 
+
   if( ( computeEigenmodes || numberOfFrequencies>1 ) && timeSteppingMethod == implicitTimeStepping )
   {
-    usePeriodicFirstStep=true; // *wdh* Sept 15, 2024 -- keep this for implicit time-stepping -- otherwise we need an implicit first step!!
+    usePeriodicFirstStep=true; 
   }
 
+  if( timeSteppingMethod == implicitTimeStepping && takeImplicitFirstStep )
+  {
+    usePeriodicFirstStep=false; // added April 29, 2025 -- we can do explicit/implicit first steps now
+    printF("+++++++++++++ takeFirstStepHelmholtz: TAKE IMPLICIT FIRST STEP ++++++++++++\n");
+  }
+  else if( filterTimeDerivative ) 
+  {
+    usePeriodicFirstStep=true; // DO this for COMPLEX solutions **Sept 28, 2024 **
+  }
 
-  // const int & solveHelmholtz = dbase.get<int>("solveHelmholtz");
-  // const Real fSign = solveHelmholtz ? -1.0 : 1.0;  
   
+
+  if( filterTimeDerivative && useSuperGrid && takeImplicitFirstStep ) 
+  {
+    printF(">>> takeFirstStepHelmholtz:ERROR: takeImplicitFirstStep with SUPERGRID not working yet **FIX ME** ++++++++++++\n");
+    OV_ABORT("error");
+
+  }
+
+  if( usePeriodicFirstStep )
+   printF("+++++++++++++ takeFirstStepHelmholtz: USE periodic first step ++++++++++++\n");
 
   const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
   const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
@@ -618,6 +649,7 @@ takeFirstStepHelmholtz( int cur, real t )
 
 
   realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
+  realCompositeGridFunction & up = u[prev];    // previous time 
   realCompositeGridFunction & uc = u[cur];     // current time 
   realCompositeGridFunction & un = u[next];    // next time
 
@@ -630,11 +662,15 @@ takeFirstStepHelmholtz( int cur, real t )
 
   realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
 
+  const Real & viFactor = dbase.get<Real>("viFactor");
+  const Real omega  = frequencyArray(0);
+  const Real scaleD0t = (sin(omega*dt)/dt)/viFactor;      
+
   Index I1,I2,I3;
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
   {
     MappedGrid & mg = cg[grid];
-    OV_GET_SERIAL_ARRAY(real,un[grid],unLocal);
+    OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
 
     if( usePeriodicFirstStep )
     {
@@ -644,7 +680,7 @@ takeFirstStepHelmholtz( int cur, real t )
 
       if( solveHelmholtz )
       {
-        OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+        OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
 
         if( ok )
         {      
@@ -683,6 +719,17 @@ takeFirstStepHelmholtz( int cur, real t )
             if( true )
             { // *new way* June 19, 2023
               const Real & viFactor = dbase.get<Real>("viFactor");
+              if( true || debug & 4 )
+              {
+                printF("\n @@@@@@ takeFirstStepHelmholtz: use periodic first step for filterTimeDerivative=%d frequencyArray(0)=%12.4e viFactor=%9.2e @@@@@@@@ \n\n",
+                  filterTimeDerivative,frequencyArray(0),viFactor);
+
+                // ::display(vLocal,"vLocal","%5.2f ");
+
+                // Real vMax = max(fabs(vLocal(I1,I2,I3,1)));
+                // printF(" max(fabs(v(:,:,:,1))=%9.2e\n",vMax);
+              }
+
               unLocal(I1,I2,I3) = vLocal(I1,I2,I3,0)*cos(frequencyArray(0)*dt ) + viFactor*vLocal(I1,I2,I3,1)*sin(frequencyArray(0)*dt);
             }
             else if( true || timeSteppingMethod==explicitTimeStepping )
@@ -702,7 +749,7 @@ takeFirstStepHelmholtz( int cur, real t )
       }
       else
       {
-        OV_GET_SERIAL_ARRAY(real,uc[grid],ucLocal);
+        OV_GET_SERIAL_ARRAY(Real,uc[grid],ucLocal);
 
         if( ok )
         {      
@@ -714,10 +761,48 @@ takeFirstStepHelmholtz( int cur, real t )
       }
 
     }
+    else if( timeSteppingMethod == implicitTimeStepping )
+    {
+      // -----IMPLICIT FIRST STEP : COMPLEX CASE ----
+
+
+
+      if( debug>2 )
+        printF("\n **** takeFirstStep: IMPLICIT FIRST STEP : save v(:,:,:,1) in up(:,:,:) for use in implicit first step *****\n\n");   
+
+      Index I1,I2,I3;
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      {
+        //   Save v(:,:,:,1) in up(:,:,:), this is used in advWave
+ 
+        MappedGrid & mg = cg[grid];
+        OV_GET_SERIAL_ARRAY(Real,up[grid],upLocal);
+        OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+
+        if( filterTimeDerivative )
+        {
+          getIndex(mg.dimension(),I1,I2,I3);
+          upLocal(I1,I2,I3) = vLocal(I1,I2,I3,1)*scaleD0t; // this is really D0t W^0 
+        }
+        else
+        {
+          upLocal(I1,I2,I3) = 0.; // assume initial time derivative is zero
+        }
+
+
+      }
+
+
+    }
     else
     {
-      OV_GET_SERIAL_ARRAY(real,uc[grid],ucLocal);
-      OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
+      // ---- EXPLICIT FIRST STEP -----
+
+      OV_GET_SERIAL_ARRAY(Real,uc[grid],ucLocal);
+      OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
+
+      RealArray & vg = filterTimeDerivative ? v[grid] : uc[grid];
+      OV_GET_SERIAL_ARRAY(Real,vg,vLocal);
 
       getIndex(mg.gridIndexRange(),I1,I2,I3);
       bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
@@ -740,11 +825,32 @@ takeFirstStepHelmholtz( int cur, real t )
         //  utttt = c^2*Delta(utt) + ftt
         //        = (c^2*Delta)^2 u + c^2*Delta(f) + ftt 
 
-        // ** TEMP *** April 28, 2023
-        printF("~~~~~~~~~~~~~~ Take first step assuming D0t U  = 0 : omega=%14.6e\n",omega);
-        unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
-        // unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*(0.) + (.5*dt*dt*c*c)*lap(I1,I2,I3);
-        if( orderOfAccuracy==4 )
+        if( filterTimeDerivative )
+        {
+          printF("~~~~~~~~~~~~~~ Take EXPLICIT first step Complex case : omega=%14.6e\n",omega);
+          unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*vLocal(I1,I2,I3,1)*scaleD0t + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
+        }
+        else
+        {
+
+          if( numberOfFrequencies==1 )
+          {
+            printF("~~~~~~~~~~~~~~ Take EXPLICIT first step assuming D0t U  = 0 : omega=%14.6e\n",omega);
+            unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
+          }
+          else
+          {  // *WDH* May 15, 2025
+            printF("~~~~~~~~~~~~~~ Take EXPLICIT first step assuming D0t U  = 0 ~~~~~~~~~~~~~\n");
+            unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + (.5*dt*dt*c*c)*lap(I1,I2,I3);
+            for( int freq=0; freq<numberOfFrequencies; freq++ )
+            {
+              unLocal(I1,I2,I3) += (.5*dt*dt *cos(frequencyArray(freq)*t)*fSign)*fLocal(I1,I2,I3,freq);
+            }
+          }
+        }
+
+        // if( orderOfAccuracy==4 ) // *WDH* May 15, 2025
+        if( orderOfAccuracyInTime==4 )
         {
           // this may be good enough for 4th-order -- local error is dt^4
           real DeltaUt =0.; // we assume ut=0
@@ -757,14 +863,10 @@ takeFirstStepHelmholtz( int cur, real t )
     }
   } // end for grid
 
-  if( !usePeriodicFirstStep )
+  if( !usePeriodicFirstStep && 
+      timeSteppingMethod == explicitTimeStepping ) // May 2, 2025 added after implicit first step added for complex case
   {
-    // // This will not work for implicit since only explicit conditions are done here:
-    // if( timeSteppingMethod == implicitTimeStepping )
-    // {
-    //   printF("takeFirstStep: ERROR: fix applyBC for implicit time-stepping\n");
-    //   OV_ABORT("error");
-    // }
+
     bool applyExplicitBoundaryConditions=true;
     applyBoundaryConditions( u[next],u[cur], t+dt, applyExplicitBoundaryConditions );
   }
@@ -825,9 +927,9 @@ takeFirstBackwardStep( int cur, real t )
   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
   {
     MappedGrid & mg = cg[grid];
-    OV_GET_SERIAL_ARRAY(real,un[grid],unLocal);
-    OV_GET_SERIAL_ARRAY(real,up[grid],upLocal);
-    OV_GET_SERIAL_ARRAY(real,f[grid],fLocal);
+    OV_GET_SERIAL_ARRAY(Real,un[grid],unLocal);
+    OV_GET_SERIAL_ARRAY(Real,up[grid],upLocal);
+    OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
 
     getIndex(mg.gridIndexRange(),I1,I2,I3);
     bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);

@@ -26,8 +26,10 @@ $numberOfFrequencies=1;
 $beta2=.0; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping 
 $upwind=0; $implicitUpwind=0; 
 $tp=.5; $imode=1; 
-$filterTimeDerivative=1; $solveForScatteredField=1
+$filterTimeDerivative=1; $solveForScatteredField=1; $takeImplicitFirstStep=1;
+$filterD0t=1;            # filter D0t directly instead of using IBPs
 $solver="fixedPoint";  $maxIterations=100; $adjustOmega=0; 
+$krylovType="gmres"; # [gmres|bicgstab]
 $matlab="cgWaveHoltz"; $show="scat.show"; 
 $cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
@@ -51,8 +53,9 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "solveri=s"=>\$solveri,"rtoli=f"=>\$rtoli,"atoli=f"=>\$atoli,"maxiti=i"=>\$maxiti,"adjustHelmholtzForUpwinding=i"=>\$adjustHelmholtzForUpwinding,\
             "deflateWaveHoltz=i"=>\$deflateWaveHoltz,"numToDeflate=i"=>\$numToDeflate,"damp=f"=>\$damp,"useSuperGrid=i"=>\$useSuperGrid,\
             "eigenVectorFile=s"=>\$eigenVectorFile,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"filterTimeDerivative=i"=>\$filterTimeDerivative,\
-            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,\
-            "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid );
+            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"krylovType=s"=>\$krylovType,\
+            "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid,"filterD0t=i"=>\$filterD0t,\
+            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -71,7 +74,7 @@ if( $freq[0] eq "" ){ @freq=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15); }
 # For SCATTERING : assign omega from kv : omega/|k| = c 
 #
 $pi = atan2(1.,1.)*4; 
-if( $solveForScatteredField eq "1" ){ $freq[0] = 2.*$pi*sqrt($kx*$kx + $ky*ky + $kz*kz);  }
+if( $solveForScatteredField eq "1" ){ $freq[0] = 2.*$pi*sqrt($kx*$kx + $ky*$ky + $kz*$kz);  }
 printf("scat.cmd: Setting freq[0]=$freq[0]\n");
 # 
 $omega = $freq[0];
@@ -81,7 +84,9 @@ $omega = $freq[0];
 omega $omega
 maximum number of iterations $maxIterations 
 tol $tol 
+krylov type $krylovType
 filter time derivative $filterTimeDerivative
+filter D0t $filterD0t
 number of periods $numPeriods
 adjust omega $adjustOmega
 number of frequencies $numberOfFrequencies
@@ -116,6 +121,7 @@ exit
 $ts
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
+take implicit first step $takeImplicitFirstStep
 dtMax $dtMax
 implicit weights $beta2 $beta4 $beta6 $beta8
 cfl $cfl
@@ -200,11 +206,13 @@ contour
 exit
 if( $solver eq "fixedPoint" ){ $cmd="compute with fixed-point"; }elsif( $solver eq "krylov" ){ $cmd="compute with petsc"; }else{ $cmd="#" }; 
 if( $go eq "go" && $cmd ne "#" ){ $cmd .= "\n exit"; }
+if( $go eq "og" ){ $cmd ="open graphics"; }
 if( $go eq "dk"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\nexit"; }
 if( $go eq "df"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with fixed-point\nexit"; }
 if( $go eq "dks"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\n save to show\n exit"; }
 if( $go eq "fk" ){ $cmd="zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
 if( $go eq "dfk" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
+if( $go eq "dfks" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\n save to show\nexit"; }
 if( $go eq "ks"  ){ $cmd="zero initial condition\n compute with krylov\n save to show\n exit"; }
 if( $go eq "k"  ){ $cmd="zero initial condition\n compute with krylov\n exit"; }
 $cmd

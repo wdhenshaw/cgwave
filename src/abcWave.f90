@@ -260,6 +260,22 @@
 ! Macro: Extrapolate the ghost point along a given direction
 ! --------------------------------------------------------------------------
 
+
+! ----------------------------------------------------------------------------
+! Macro: Assign edges and corners : ORDER OF ACCURACY 2
+! --------------------------------------------------------------------------
+
+
+
+! ----------------------------------------------------------------------------
+! Macro: Evaluate the residuals in the EM conditions at a corner
+! --------------------------------------------------------------------------
+
+! ----------------------------------------------------------------------------
+! Macro: Assign edges and corners : ORDER OF ACCURACY 4
+! --------------------------------------------------------------------------
+
+
       subroutine abcWave( nd, nd1a,nd1b,nd2a,nd2b,nd3a,nd3b,ndf1a,ndf1b,ndf2a,ndf2b,ndf3a,ndf3b,gridIndexRange, u, un, f,mask,rsxy, xy,bc, boundaryCondition, ipar, rpar, ierr )
 ! ===================================================================================
 !  Absorbing boundary conditions for the Wave Equation
@@ -319,9 +335,13 @@
 
   real eps,mu,kx,ky,kz,slowStartInterval,twoPi,cc
 
-  real ax,ay,az,aSq,div,divCoeff
+  real ax,ay,az,aSq,div,divCoeff,res
   logical adjacentFaceIsABC, applyABC
   integer projectDivLine
+
+  ! For solves with 4 unknowns
+  real a4(4,4), b4(4), work4(4), rcond, resv(4), uv(10)
+  integer job, ipvt4(4), numberOfEquations,axis1,axis2,axis3
 
   ! ! boundary conditions parameters
   ! #Include "../include/bcDefineFortranInclude.h"
@@ -349,10 +369,11 @@
 
 
   ! ---bcOpt variables ---
-  integer addForcingBC,assignBCForImplicitForImplicit,assignKnownSolutionAtBoundaries,bcApproach,gridIsImplicit,knownSolutionOption
+  integer addForcingBC,assignBCForImplicit,assignKnownSolutionAtBoundaries,bcApproach,gridIsImplicit,knownSolutionOption
   integer numberOfComponents,numberOfFrequencies,numberOfProcessors,numGhost,twilightZone,useUpwindDissipation
   integer uc,ghost
   real REAL_MIN
+  logical checkResiduals
 
 !     --- start statement function ----
   integer kd,m,n
@@ -1550,7 +1571,7 @@
   forcingOption                   = ipar(13)
   useUpwindDissipation            = ipar(14)
   numGhost                        = ipar(15)  
-  assignBCForImplicitForImplicit  = ipar(16)
+  assignBCForImplicit  = ipar(16)
   bcApproach                      = ipar(17)
   numberOfFrequencies             = ipar(18)
  
@@ -1575,6 +1596,9 @@
 
 
   ierr=0
+  axis1=0
+  axis2=1
+  axis3=2
 
   ! ** Fill in old parameters ***
 
@@ -1603,53 +1627,6 @@
   slowStartInterval=.5; 
 
 
-  ! else
-  !   ! OLD INPUT LIST 
-  !   side                 =ipar(0)
-  !   axis                 =ipar(1)
-  !   n1a                  =ipar(2)
-  !   n1b                  =ipar(3)
-  !   n2a                  =ipar(4)
-  !   n2b                  =ipar(5)
-  !   n3a                  =ipar(6)
-  !   n3b                  =ipar(7)
-  !   gridType             =ipar(8)
-  !   orderOfAccuracy      =ipar(9)
-  !   orderOfExtrapolation =ipar(10)
-  !   useForcing           =ipar(11)
-  !   ex                   =ipar(12)
-  !   ey                   =ipar(13)
-  !   ez                   =ipar(14)
-  !   hx                   =ipar(15)
-  !   hy                   =ipar(16)
-  !   hz                   =ipar(17)
-  !   useWhereMask         =ipar(18)
-  !   grid                 =ipar(19)
-  !   debug                =ipar(20)
-  !   forcingOption        =ipar(21)
-  !   method               =ipar(28)
-  !   myid                 =ipar(39)
-
-  !   dx(0)                =rpar(0)
-  !   dx(1)                =rpar(1)
-  !   dx(2)                =rpar(2)
-  !   dr(0)                =rpar(3)
-  !   dr(1)                =rpar(4)
-  !   dr(2)                =rpar(5)
-  !   t                    =rpar(6)
-  !   ep                   =rpar(7) ! pointer for exact solution
-  !   dt                   =rpar(8)
-  !   c                    =rpar(9)
-  !   eps                  =rpar(10)
-  !   mu                   =rpar(11)
-  !   kx                   =rpar(12)  ! for plane wave forcing
-  !   ky                   =rpar(13)
-  !   kz                   =rpar(14)
-  !   slowStartInterval    =rpar(15)
-
-
-
-  ! end if
 
   tp=t-dt ! previous time
   tm=t-.5*dt ! midpoint in time
@@ -1907,1309 +1884,1549 @@
   end do
 
   ! ------------------------------------------------------------------------
-  ! ------------------Corners-----------------------------------------------
+  ! ------------------ EDGES AND CORNERS------------------------------------
   ! ------------------------------------------------------------------------
-
-  ! We need to assign points in the corner region:
-  !
-  !           |  |  |
-  !           +--+--+--
-  !           |  |  |
-  !     D--A--X--+--+--
-  !     |  |  |
-  !     D--C--B
-  !     |  |  |
-  !     D--D--D
-  ! 
-  if( nd.eq.2 )then
-
-   ! **** 2D ****
-
-    i3=gridIndexRange(0,2)
-    do side1=0,1
-    do side2=0,1
-
-     bc1=boundaryCondition(side1,0)
-     bc2=boundaryCondition(side2,1)
-     if( ((bc1.eq.abcEM2 .or. bc1.eq.absorbing) .and. bc2.gt.0 ) .or. ((bc2.eq.abcEM2 .or. bc2.eq.absorbing) .and. bc1.gt.0 ) )then
-
-       ! --- One of the faces at this corner is an ABC and the other has bc>0 ---         
-
-       ! Adjacent side is also an ABC: 
-       adjacentFaceIsABC = bc1.eq.abcEM2 .or. bc1.eq.absorbing .and. bc2.eq.abcEM2 .or. bc2.eq.absorbing
-
-       i1=gridIndexRange(side1,0) ! (i1,i2,i3)=corner point
-       i2=gridIndexRange(side2,1)
-
-       if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
-
-        ! write(*,'(" ABC:set corner: grid,side1,side2,i1,i2=",3i3,2i5)') grid,side1,side2,i1,i2
-
-        ! --- start by extrapolating all points on the extended boundary and adjacent to the corner ---
-        !* is1=1-2*side1
-        !* is2=1-2*side2
-        !* is3=0
-        !* j3=0
-        !* extrapolateGhost(ex,ey,hz,numberOfGhostPoints,numberOfGhostPoints,0)
-
-
-
-        ! --- Assign points 'A' and 'B" on the extended boundary ---
-        if( adjacentFaceIsABC )then
-          is1=1-2*side1
-          is2=0
-          is3=0
-
-          if( gridType.eq.rectangular )then
-           if( .true. )then
-            ! *new* way
+  if( orderOfAccuracy==2 )then
+    
+    ! write(*,*) 'abcWave: assign edges and corners, order 2'
+      ! ------------------------------------------------------------------------
+      ! ------------------Corners-----------------------------------------------
+      ! ------------------------------------------------------------------------
+      ! We need to assign points in the corner region:
+      !
+      !           |  |  |
+      !           +--+--+--
+      !           |  |  |
+      !     D--A--X--+--+--
+      !     |  |  |
+      !     D--C--B
+      !     |  |  |
+      !     D--D--D
+      ! 
+      if( nd.eq.2 )then
+       ! **** 2D ****
+        i3=gridIndexRange(0,2)
+        do side1=0,1
+        do side2=0,1
+         bc1=boundaryCondition(side1,0)
+         bc2=boundaryCondition(side2,1)
+         if( ((bc1.eq.abcEM2 .or. bc1.eq.absorbing) .and. bc2.gt.0 ) .or. ((bc2.eq.abcEM2 .or. bc2.eq.absorbing) .and. bc1.gt.0 ) )then
+           ! --- One of the faces at this corner is an ABC and the other has bc>0 ---         
+           ! Adjacent side is also an ABC: 
+           adjacentFaceIsABC = bc1.eq.abcEM2 .or. bc1.eq.absorbing .and. bc2.eq.abcEM2 .or. bc2.eq.absorbing
+           i1=gridIndexRange(side1,0) ! (i1,i2,i3)=corner point
+           i2=gridIndexRange(side2,1)
+           if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
+            ! write(*,'(" ABC:set corner: grid,side1,side2,i1,i2=",3i3,2i5)') grid,side1,side2,i1,i2
+            ! --- start by extrapolating all points on the extended boundary and adjacent to the corner ---
+            !* is1=1-2*side1
+            !* is2=1-2*side2
+            !* is3=0
+            !* j3=0
+            !* extrapolateGhost(ex,ey,hz,numberOfGhostPoints,numberOfGhostPoints,0)
+            ! --- Assign points 'A' and 'B" on the extended boundary ---
+            if( adjacentFaceIsABC )then
+              is1=1-2*side1
+              is2=0
+              is3=0
+              if( gridType.eq.rectangular )then
+               if( .true. )then
+                ! *new* way
+                is1=1-2*side1
+                is2=1-2*side2
+                  ! getForcingEM2(X,2,tm,is1,is2,forcex)
+                   if( forcingOption.eq.twilightZoneForcing )then
+                     ! Test: set to exact solution at time t:
+                     ! x=xy(i1-is1,i2,i3,0)
+                     ! y=xy(i1-is1,i2,i3,1)
+                     ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                     ! un(i1-is1,i2,i3,ey)=eyTrue
+                     ! add TZ forcing *wdh* Sept 17, 2016
+                     ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                     x=xy(i1,i2,i3,0)
+                     y=xy(i1,i2,i3,1)
+                        ! Values for forcep(ex) are currently needed at corners:
+                          call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
+                          call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                          call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                        forcep(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                        ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
+                        ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                        ! forcep(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                        ! OGDERIV(1,1,0,0,x,y,z,tp,hz,utx)
+                        ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                        ! forcep(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+                     ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                   end if
+                   if( forcingOption.eq.twilightZoneForcing )then
+                     ! Test: set to exact solution at time t:
+                     ! x=xy(i1-is1,i2,i3,0)
+                     ! y=xy(i1-is1,i2,i3,1)
+                     ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                     ! un(i1-is1,i2,i3,ey)=eyTrue
+                     ! add TZ forcing *wdh* Sept 17, 2016
+                     ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                     x=xy(i1,i2,i3,0)
+                     y=xy(i1,i2,i3,1)
+                        ! Values for forcef(ex) are currently needed at corners:
+                          call ogDeriv(ep, 1,1,0,0,x,y,z,t,ex,utx)
+                          call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                          call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                        forcef(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                        ! OGDERIV(1,1,0,0,x,y,z,t,ey,utx)
+                        ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                        ! forcef(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                        ! OGDERIV(1,1,0,0,x,y,z,t,hz,utx)
+                        ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                        ! forcef(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+                     ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                   end if
+                  ! do idir=0,2
+                  do idir=0,0 ! ex only 
+                    forcex(idir)=.5*(forcep(idir)+forcef(idir))
+                  end do
+                  ! getForcingEM2(Y,2,tm,is1,is2,forcey)
+                   if( forcingOption.eq.twilightZoneForcing )then
+                     ! Test: set to exact solution at time t:
+                     ! x=xy(i1-is1,i2,i3,0)
+                     ! y=xy(i1-is1,i2,i3,1)
+                     ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                     ! un(i1-is1,i2,i3,ey)=eyTrue
+                     ! add TZ forcing *wdh* Sept 17, 2016
+                     ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                     x=xy(i1,i2,i3,0)
+                     y=xy(i1,i2,i3,1)
+                          call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
+                          call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                          call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                        forcep(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                        ! ! Values for forcep(ey) are currently needed at corners:
+                        ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
+                        ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                        ! forcep(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                        ! OGDERIV(1,0,1,0,x,y,z,tp,hz,uty)
+                        ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                        ! forcep(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+                     ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                   end if
+                   if( forcingOption.eq.twilightZoneForcing )then
+                     ! Test: set to exact solution at time t:
+                     ! x=xy(i1-is1,i2,i3,0)
+                     ! y=xy(i1-is1,i2,i3,1)
+                     ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                     ! un(i1-is1,i2,i3,ey)=eyTrue
+                     ! add TZ forcing *wdh* Sept 17, 2016
+                     ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                     x=xy(i1,i2,i3,0)
+                     y=xy(i1,i2,i3,1)
+                          call ogDeriv(ep, 1,0,1,0,x,y,z,t,ex,uty)
+                          call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                          call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                        forcef(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                        ! ! Values for forcef(ey) are currently needed at corners:
+                        ! OGDERIV(1,0,1,0,x,y,z,t,ey,uty)
+                        ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                        ! forcef(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                        ! OGDERIV(1,0,1,0,x,y,z,t,hz,uty)
+                        ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                        ! forcef(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+                     ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                   end if
+                  ! do idir=0,2
+                  do idir=0,0 ! ex only 
+                    forcey(idir)=.5*(forcep(idir)+forcef(idir))
+                  end do
+                  ! At a corner there are two coupled equations we need to solve for ghost points A,B below
+                  !                   |
+                  !                 A +---+----
+                  !                   B
+                  !  f(u)  = [ f(u_old) - A (u_old) ] + A u = 0 
+                  !  [ a11 a12 ][ uA ] = [ a11 a12 ][ uA_old ] - [ f1(u_old) ]
+                  !  [ a21 a22 ][ uB ]   [ a21 a22 ][ uB_old ]   [ f2(u_old) ]
+                  isign1=1-2*side1
+                  isign2=1-2*side2
+                  ! first evaluate residuals in equations given current (wrong) values at A, B
+                  r1 = isign1*(unx22r(i1,i2,i3,ex)-ux22r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unxx22r(i1,i2,i3,ex) + c2abcem2*unyy22r(i1,i2,i3,ex) +c1abcem2* uxx22r(i1,i2,i3,ex) + c2abcem2* uyy22r(i1,i2,i3,ex) ) - forcex(ex) 
+                  r2 = isign2*(uny22r(i1,i2,i3,ex)-uy22r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unyy22r(i1,i2,i3,ex) + c2abcem2*unxx22r(i1,i2,i3,ex) +c1abcem2* uyy22r(i1,i2,i3,ex) + c2abcem2* uxx22r(i1,i2,i3,ex) ) - forcey(ex)
+                  a11 = -1./(2.*dt*dx(0))  - .5*c1abcem2/(dx(0)**2)
+                  a12 = -.5*c2abcem2/(dx(1)**2)
+                  a21 = -.5*c2abcem2/(dx(0)**2)
+                  a22 = -1./(2.*dt*dx(1))  - .5*c1abcem2/(dx(1)**2)
+                  det = a11*a22-a21*a12
+                  uA = un(i1-isign1,i2,i3,ex)
+                  uB = un(i1,i2-isign2,i3,ex)
+                  f1 = a11*uA + a12*uB - r1 
+                  f2 = a21*uA + a22*uB - r2 
+                  ! Solve for A, B
+                  un(i1-isign1,i2,i3,ex) = ( f1*a22 - f2*a12)/det
+                  un(i1,i2-isign2,i3,ex) = (-f1*a21 + f2*a11)/det
+               else           
+                ! *old* way          
+                ! --- Assign point 'A' on the extended boundary ---
+                ! Use first-order-in-time formula since it doesn't require other ghost point 'B' at new time (un)
+                 if( forcingOption.eq.twilightZoneForcing )then
+                   ! Test: set to exact solution at time t:
+                   ! x=xy(i1-is1,i2,i3,0)
+                   ! y=xy(i1-is1,i2,i3,1)
+                   ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                   ! un(i1-is1,i2,i3,ey)=eyTrue
+                   ! add TZ forcing *wdh* Sept 17, 2016
+                   ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                   x=xy(i1,i2,i3,0)
+                   y=xy(i1,i2,i3,1)
+                      ! Values for forcex(ex) are currently needed at corners:
+                        call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
+                        call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                        call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                      forcex(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                      ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                      ! forcex(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                      ! OGDERIV(1,1,0,0,x,y,z,tp,hz,utx)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                      ! forcex(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+                   ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                 end if
+                un(i1-is1,i2-is2,i3-is3,ex)=(un(i1+is1,i2+is2,i3+is3,ex)-(u(i1+is1,i2+is2,i3+is3,ex)-u(i1-is1,i2-is2,i3-is3,ex))-(2.*dxa*dt)*(c1abcem2*uxx22r(i1,i2,i3,ex)+c2abcem2*uyy22r(i1,i2,i3,ex)+forcex(ex)))
+               end if
+              else
+               ! curvilinear grid 
+               side=side1
+               axis=0 
+                 is =1-2*side
+                 dr0=dr(axis)
+                 rx0 = rsxy(i1,i2,i3,axis,0)
+                 ry0 = rsxy(i1,i2,i3,axis,1)
+                 rxNormSq = rx0**2 + ry0**2 
+                 rxNorm = max( epsX, sqrt(rxNormSq) )
+                 rxx0 = rsxyx22(i1,i2,i3,axis,0)
+                 ryy0 = rsxyy22(i1,i2,i3,axis,1)
+                 ! cm1 : coeff of u(i1-is1,i2-is2,i3-is3,cc) in g (given below): 
+                 cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0)/(2.*dr0) ) )
+                 ! u: derivatives at time t: 
+                 ! un: derivatives at time t+dt : evaluate using the incorrect ghost values 
+                 if( axis.eq.0 )then
+                   ur0   =   ur2(i1,i2,i3,ex)
+                   urr0  =  urr2(i1,i2,i3,ex)
+                   unr0  =  unr2(i1,i2,i3,ex)
+                   unrr0 = unrr2(i1,i2,i3,ex)
+                 else
+                   ur0   =   us2(i1,i2,i3,ex)
+                   urr0  =  uss2(i1,i2,i3,ex)
+                   unr0  =  uns2(i1,i2,i3,ex)
+                   unrr0 = unss2(i1,i2,i3,ex)
+                 end if
+                 uxx0 = uxx22(i1,i2,i3,ex)
+                 uyy0 = uyy22(i1,i2,i3,ex)
+                 unxx0 = unxx22(i1,i2,i3,ex)
+                 unyy0 = unyy22(i1,i2,i3,ex)
+                 ! first evaluate the BC using the incorrect ghost values 
+                 Dn2 = rxNormSq*(unrr0+urr0) 
+                 Lu  = unxx0+unyy0 + uxx0+uyy0 
+                 g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
+                 ! note: this assumes an orthogonal grid -- we should make sure that the 
+                 !       ghost values have an initial guess in them (extrapolate ?)
+                 un(i1-is1,i2-is2,i3-is3,ex) = -(g - cm1*un(i1-is1,i2-is2,i3-is3,ex) )/cm1 
+              end if
+              ! --- Assign point 'B'  on the extended boundary --
+              is1=0
+              is2=1-2*side2
+              if( gridType.eq.rectangular )then
+               if( .false. )then
+                ! *old* way
+                 if( forcingOption.eq.twilightZoneForcing )then
+                   ! Test: set to exact solution at time t:
+                   ! x=xy(i1-is1,i2,i3,0)
+                   ! y=xy(i1-is1,i2,i3,1)
+                   ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                   ! un(i1-is1,i2,i3,ey)=eyTrue
+                   ! add TZ forcing *wdh* Sept 17, 2016
+                   ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                   x=xy(i1,i2,i3,0)
+                   y=xy(i1,i2,i3,1)
+                        call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
+                        call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                        call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                      forcey(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                      ! ! Values for forcey(ey) are currently needed at corners:
+                      ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                      ! forcey(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                      ! OGDERIV(1,0,1,0,x,y,z,tp,hz,uty)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                      ! forcey(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+                   ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                 end if
+                un(i1-is1,i2-is2,i3-is3,ex)=(un(i1+is1,i2+is2,i3+is3,ex)-(u(i1+is1,i2+is2,i3+is3,ex)-u(i1-is1,i2-is2,i3-is3,ex))-(2.*dya*dt)*(c1abcem2*uyy22r(i1,i2,i3,ex)+c2abcem2*uxx22r(i1,i2,i3,ex)+forcey(ex)))
+               end if
+              else
+               ! curvilinear grid 
+               side=side2
+               axis=1 
+                 is =1-2*side
+                 dr0=dr(axis)
+                 rx0 = rsxy(i1,i2,i3,axis,0)
+                 ry0 = rsxy(i1,i2,i3,axis,1)
+                 rxNormSq = rx0**2 + ry0**2 
+                 rxNorm = max( epsX, sqrt(rxNormSq) )
+                 rxx0 = rsxyx22(i1,i2,i3,axis,0)
+                 ryy0 = rsxyy22(i1,i2,i3,axis,1)
+                 ! cm1 : coeff of u(i1-is1,i2-is2,i3-is3,cc) in g (given below): 
+                 cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0)/(2.*dr0) ) )
+                 ! u: derivatives at time t: 
+                 ! un: derivatives at time t+dt : evaluate using the incorrect ghost values 
+                 if( axis.eq.0 )then
+                   ur0   =   ur2(i1,i2,i3,ex)
+                   urr0  =  urr2(i1,i2,i3,ex)
+                   unr0  =  unr2(i1,i2,i3,ex)
+                   unrr0 = unrr2(i1,i2,i3,ex)
+                 else
+                   ur0   =   us2(i1,i2,i3,ex)
+                   urr0  =  uss2(i1,i2,i3,ex)
+                   unr0  =  uns2(i1,i2,i3,ex)
+                   unrr0 = unss2(i1,i2,i3,ex)
+                 end if
+                 uxx0 = uxx22(i1,i2,i3,ex)
+                 uyy0 = uyy22(i1,i2,i3,ex)
+                 unxx0 = unxx22(i1,i2,i3,ex)
+                 unyy0 = unyy22(i1,i2,i3,ex)
+                 ! first evaluate the BC using the incorrect ghost values 
+                 Dn2 = rxNormSq*(unrr0+urr0) 
+                 Lu  = unxx0+unyy0 + uxx0+uyy0 
+                 g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
+                 ! note: this assumes an orthogonal grid -- we should make sure that the 
+                 !       ghost values have an initial guess in them (extrapolate ?)
+                 un(i1-is1,i2-is2,i3-is3,ex) = -(g - cm1*un(i1-is1,i2-is2,i3-is3,ex) )/cm1 
+              end if
+            else if( .true. )then
+              ! .false. .and. bc1.ne.symmetryBoundaryCondition .and. bc2.ne.symmetryBoundaryCondition )then
+              ! --- adjacent face is NOT another ABC ---
+              ! Do this for now *wdh* Sept 19, 2016
+              if( orderOfAccuracy.eq.2 )then
+                extrapOrder=3
+              else if( orderOfAccuracy.eq.4 )then
+                extrapOrder=5
+              else
+                stop 4114
+              end if
+              if( bc1.ne.symmetryBoundaryCondition )then
+                  ksv(0)=0
+                  ksv(1)=0
+                  ksv(2)=0
+                  ksv(0)=1-2*side1
+                  ks1=ksv(0)
+                  ks2=ksv(1)
+                  ks3=ksv(2)
+                  if( extrapOrder.eq.3 )then
+                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+ks1,i2+ks2,i3+ks3,ex)+un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex))
+                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap3(un,i1,i2,i3,ey,ks1,ks2,ks3)
+                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap3(un,i1,i2,i3,hz,ks1,ks2,ks3)
+                  else if( extrapOrder.eq.5 )then
+                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(5.*un(i1,i2,i3,ex)-10.*un(i1+ks1,i2+ks2,i3+ks3,ex)+10.*un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex)-5.*un(i1+3*ks1,i2+3*ks2,i3+3*ks3,ex)+un(i1+4*ks1,i2+4*ks2,i3+4*ks3,ex))
+                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap5(un,i1,i2,i3,ey,ks1,ks2,ks3)
+                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap5(un,i1,i2,i3,hz,ks1,ks2,ks3)
+                  else
+                    stop 1782
+                  end if
+              end if
+              if( bc2.ne.symmetryBoundaryCondition )then
+                  ksv(0)=0
+                  ksv(1)=0
+                  ksv(2)=0
+                  ksv(1)=1-2*side2
+                  ks1=ksv(0)
+                  ks2=ksv(1)
+                  ks3=ksv(2)
+                  if( extrapOrder.eq.3 )then
+                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+ks1,i2+ks2,i3+ks3,ex)+un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex))
+                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap3(un,i1,i2,i3,ey,ks1,ks2,ks3)
+                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap3(un,i1,i2,i3,hz,ks1,ks2,ks3)
+                  else if( extrapOrder.eq.5 )then
+                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(5.*un(i1,i2,i3,ex)-10.*un(i1+ks1,i2+ks2,i3+ks3,ex)+10.*un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex)-5.*un(i1+3*ks1,i2+3*ks2,i3+3*ks3,ex)+un(i1+4*ks1,i2+4*ks2,i3+4*ks3,ex))
+                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap5(un,i1,i2,i3,ey,ks1,ks2,ks3)
+                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap5(un,i1,i2,i3,hz,ks1,ks2,ks3)
+                  else
+                    stop 1782
+                  end if
+              end if 
+            end if ! end if adjacentFaceIsABC
+            ! --- Now extrapolate all other points on the extended boundary and adjacent to the corner ---
             is1=1-2*side1
             is2=1-2*side2
-              ! getForcingEM2(X,2,tm,is1,is2,forcex)
-               if( forcingOption.eq.twilightZoneForcing )then
-                 ! Test: set to exact solution at time t:
-                 ! x=xy(i1-is1,i2,i3,0)
-                 ! y=xy(i1-is1,i2,i3,1)
-                 ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-                 ! un(i1-is1,i2,i3,ey)=eyTrue
-                 ! add TZ forcing *wdh* Sept 17, 2016
-                 ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-                 x=xy(i1,i2,i3,0)
-                 y=xy(i1,i2,i3,1)
-                    ! Values for forcep(ex) are currently needed at corners:
-                      call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
-                      call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                      call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                    forcep(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
-                    ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
-                    ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                    ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                    ! forcep(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
-                    ! OGDERIV(1,1,0,0,x,y,z,tp,hz,utx)
-                    ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
-                    ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
-                    ! forcep(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
-                 ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-               end if
-               if( forcingOption.eq.twilightZoneForcing )then
-                 ! Test: set to exact solution at time t:
-                 ! x=xy(i1-is1,i2,i3,0)
-                 ! y=xy(i1-is1,i2,i3,1)
-                 ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-                 ! un(i1-is1,i2,i3,ey)=eyTrue
-                 ! add TZ forcing *wdh* Sept 17, 2016
-                 ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-                 x=xy(i1,i2,i3,0)
-                 y=xy(i1,i2,i3,1)
-                    ! Values for forcef(ex) are currently needed at corners:
-                      call ogDeriv(ep, 1,1,0,0,x,y,z,t,ex,utx)
-                      call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
-                      call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
-                    forcef(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
-                    ! OGDERIV(1,1,0,0,x,y,z,t,ey,utx)
-                    ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
-                    ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
-                    ! forcef(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
-                    ! OGDERIV(1,1,0,0,x,y,z,t,hz,utx)
-                    ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
-                    ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
-                    ! forcef(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
-                 ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-               end if
-              ! do idir=0,2
-              do idir=0,0 ! ex only 
-                forcex(idir)=.5*(forcep(idir)+forcef(idir))
-              end do
-              ! getForcingEM2(Y,2,tm,is1,is2,forcey)
-               if( forcingOption.eq.twilightZoneForcing )then
-                 ! Test: set to exact solution at time t:
-                 ! x=xy(i1-is1,i2,i3,0)
-                 ! y=xy(i1-is1,i2,i3,1)
-                 ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-                 ! un(i1-is1,i2,i3,ey)=eyTrue
-                 ! add TZ forcing *wdh* Sept 17, 2016
-                 ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-                 x=xy(i1,i2,i3,0)
-                 y=xy(i1,i2,i3,1)
-                      call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
-                      call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                      call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                    forcep(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
-                    ! ! Values for forcep(ey) are currently needed at corners:
-                    ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
-                    ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                    ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                    ! forcep(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
-                    ! OGDERIV(1,0,1,0,x,y,z,tp,hz,uty)
-                    ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
-                    ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
-                    ! forcep(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
-                 ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-               end if
-               if( forcingOption.eq.twilightZoneForcing )then
-                 ! Test: set to exact solution at time t:
-                 ! x=xy(i1-is1,i2,i3,0)
-                 ! y=xy(i1-is1,i2,i3,1)
-                 ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-                 ! un(i1-is1,i2,i3,ey)=eyTrue
-                 ! add TZ forcing *wdh* Sept 17, 2016
-                 ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-                 x=xy(i1,i2,i3,0)
-                 y=xy(i1,i2,i3,1)
-                      call ogDeriv(ep, 1,0,1,0,x,y,z,t,ex,uty)
-                      call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
-                      call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
-                    forcef(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
-                    ! ! Values for forcef(ey) are currently needed at corners:
-                    ! OGDERIV(1,0,1,0,x,y,z,t,ey,uty)
-                    ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
-                    ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
-                    ! forcef(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
-                    ! OGDERIV(1,0,1,0,x,y,z,t,hz,uty)
-                    ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
-                    ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
-                    ! forcef(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
-                 ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-               end if
-              ! do idir=0,2
-              do idir=0,0 ! ex only 
-                forcey(idir)=.5*(forcep(idir)+forcef(idir))
-              end do
-
-              ! At a corner there are two coupled equations we need to solve for ghost points A,B below
-              !                   |
-              !                 A +---+----
-              !                   B
-              !  f(u)  = [ f(u_old) - A (u_old) ] + A u = 0 
-              !  [ a11 a12 ][ uA ] = [ a11 a12 ][ uA_old ] - [ f1(u_old) ]
-              !  [ a21 a22 ][ uB ]   [ a21 a22 ][ uB_old ]   [ f2(u_old) ]
-              isign1=1-2*side1
-              isign2=1-2*side2
-              ! first evaluate residuals in equations given current (wrong) values at A, B
-              r1 = isign1*(unx22r(i1,i2,i3,ex)-ux22r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unxx22r(i1,i2,i3,ex) + c2abcem2*unyy22r(i1,i2,i3,ex) +c1abcem2* uxx22r(i1,i2,i3,ex) + c2abcem2* uyy22r(i1,i2,i3,ex) ) - forcex(ex) 
-              r2 = isign2*(uny22r(i1,i2,i3,ex)-uy22r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unyy22r(i1,i2,i3,ex) + c2abcem2*unxx22r(i1,i2,i3,ex) +c1abcem2* uyy22r(i1,i2,i3,ex) + c2abcem2* uxx22r(i1,i2,i3,ex) ) - forcey(ex)
-              a11 = -1./(2.*dt*dx(0))  - .5*c1abcem2/(dx(0)**2)
-              a12 = -.5*c2abcem2/(dx(1)**2)
-              a21 = -.5*c2abcem2/(dx(0)**2)
-              a22 = -1./(2.*dt*dx(1))  - .5*c1abcem2/(dx(1)**2)
-              det = a11*a22-a21*a12
-              uA = un(i1-isign1,i2,i3,ex)
-              uB = un(i1,i2-isign2,i3,ex)
-              f1 = a11*uA + a12*uB - r1 
-              f2 = a21*uA + a22*uB - r2 
-              ! Solve for A, B
-              un(i1-isign1,i2,i3,ex) = ( f1*a22 - f2*a12)/det
-              un(i1,i2-isign2,i3,ex) = (-f1*a21 + f2*a11)/det
-
-           else           
-            ! *old* way          
-            ! --- Assign point 'A' on the extended boundary ---
-            ! Use first-order-in-time formula since it doesn't require other ghost point 'B' at new time (un)
-
-             if( forcingOption.eq.twilightZoneForcing )then
-               ! Test: set to exact solution at time t:
-               ! x=xy(i1-is1,i2,i3,0)
-               ! y=xy(i1-is1,i2,i3,1)
-               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-               ! un(i1-is1,i2,i3,ey)=eyTrue
-               ! add TZ forcing *wdh* Sept 17, 2016
-               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-               x=xy(i1,i2,i3,0)
-               y=xy(i1,i2,i3,1)
-                  ! Values for forcex(ex) are currently needed at corners:
-                    call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
-                    call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                    call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                  forcex(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
-                  ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                  ! forcex(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
-                  ! OGDERIV(1,1,0,0,x,y,z,tp,hz,utx)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
-                  ! forcex(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
-               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-             end if
-
-            un(i1-is1,i2-is2,i3-is3,ex)=(un(i1+is1,i2+is2,i3+is3,ex)-(u(i1+is1,i2+is2,i3+is3,ex)-u(i1-is1,i2-is2,i3-is3,ex))-(2.*dxa*dt)*(c1abcem2*uxx22r(i1,i2,i3,ex)+c2abcem2*uyy22r(i1,i2,i3,ex)+forcex(ex)))
-
-           end if
-
-          else
-
-           ! curvilinear grid 
-           side=side1
-           axis=0 
-             is =1-2*side
-             dr0=dr(axis)
-             rx0 = rsxy(i1,i2,i3,axis,0)
-             ry0 = rsxy(i1,i2,i3,axis,1)
-             rxNormSq = rx0**2 + ry0**2 
-             rxNorm = max( epsX, sqrt(rxNormSq) )
-             rxx0 = rsxyx22(i1,i2,i3,axis,0)
-             ryy0 = rsxyy22(i1,i2,i3,axis,1)
-             ! cm1 : coeff of u(i1-is1,i2-is2,i3-is3,cc) in g (given below): 
-             cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0)/(2.*dr0) ) )
-             ! u: derivatives at time t: 
-             ! un: derivatives at time t+dt : evaluate using the incorrect ghost values 
-             if( axis.eq.0 )then
-               ur0   =   ur2(i1,i2,i3,ex)
-               urr0  =  urr2(i1,i2,i3,ex)
-               unr0  =  unr2(i1,i2,i3,ex)
-               unrr0 = unrr2(i1,i2,i3,ex)
-             else
-               ur0   =   us2(i1,i2,i3,ex)
-               urr0  =  uss2(i1,i2,i3,ex)
-               unr0  =  uns2(i1,i2,i3,ex)
-               unrr0 = unss2(i1,i2,i3,ex)
-             end if
-             uxx0 = uxx22(i1,i2,i3,ex)
-             uyy0 = uyy22(i1,i2,i3,ex)
-             unxx0 = unxx22(i1,i2,i3,ex)
-             unyy0 = unyy22(i1,i2,i3,ex)
-             ! first evaluate the BC using the incorrect ghost values 
-             Dn2 = rxNormSq*(unrr0+urr0) 
-             Lu  = unxx0+unyy0 + uxx0+uyy0 
-             g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
-             ! note: this assumes an orthogonal grid -- we should make sure that the 
-             !       ghost values have an initial guess in them (extrapolate ?)
-             un(i1-is1,i2-is2,i3-is3,ex) = -(g - cm1*un(i1-is1,i2-is2,i3-is3,ex) )/cm1 
-
-          end if
-        
-          ! --- Assign point 'B'  on the extended boundary --
-          is1=0
-          is2=1-2*side2
-
-          if( gridType.eq.rectangular )then
-           if( .false. )then
-            ! *old* way
-             if( forcingOption.eq.twilightZoneForcing )then
-               ! Test: set to exact solution at time t:
-               ! x=xy(i1-is1,i2,i3,0)
-               ! y=xy(i1-is1,i2,i3,1)
-               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-               ! un(i1-is1,i2,i3,ey)=eyTrue
-               ! add TZ forcing *wdh* Sept 17, 2016
-               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-               x=xy(i1,i2,i3,0)
-               y=xy(i1,i2,i3,1)
-                    call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
-                    call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                    call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                  forcey(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
-                  ! ! Values for forcey(ey) are currently needed at corners:
-                  ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                  ! forcey(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
-                  ! OGDERIV(1,0,1,0,x,y,z,tp,hz,uty)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
-                  ! forcey(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
-               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-             end if
-
-            un(i1-is1,i2-is2,i3-is3,ex)=(un(i1+is1,i2+is2,i3+is3,ex)-(u(i1+is1,i2+is2,i3+is3,ex)-u(i1-is1,i2-is2,i3-is3,ex))-(2.*dya*dt)*(c1abcem2*uyy22r(i1,i2,i3,ex)+c2abcem2*uxx22r(i1,i2,i3,ex)+forcey(ex)))
-
-           end if
-          else
-
-           ! curvilinear grid 
-           side=side2
-           axis=1 
-             is =1-2*side
-             dr0=dr(axis)
-             rx0 = rsxy(i1,i2,i3,axis,0)
-             ry0 = rsxy(i1,i2,i3,axis,1)
-             rxNormSq = rx0**2 + ry0**2 
-             rxNorm = max( epsX, sqrt(rxNormSq) )
-             rxx0 = rsxyx22(i1,i2,i3,axis,0)
-             ryy0 = rsxyy22(i1,i2,i3,axis,1)
-             ! cm1 : coeff of u(i1-is1,i2-is2,i3-is3,cc) in g (given below): 
-             cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0)/(2.*dr0) ) )
-             ! u: derivatives at time t: 
-             ! un: derivatives at time t+dt : evaluate using the incorrect ghost values 
-             if( axis.eq.0 )then
-               ur0   =   ur2(i1,i2,i3,ex)
-               urr0  =  urr2(i1,i2,i3,ex)
-               unr0  =  unr2(i1,i2,i3,ex)
-               unrr0 = unrr2(i1,i2,i3,ex)
-             else
-               ur0   =   us2(i1,i2,i3,ex)
-               urr0  =  uss2(i1,i2,i3,ex)
-               unr0  =  uns2(i1,i2,i3,ex)
-               unrr0 = unss2(i1,i2,i3,ex)
-             end if
-             uxx0 = uxx22(i1,i2,i3,ex)
-             uyy0 = uyy22(i1,i2,i3,ex)
-             unxx0 = unxx22(i1,i2,i3,ex)
-             unyy0 = unyy22(i1,i2,i3,ex)
-             ! first evaluate the BC using the incorrect ghost values 
-             Dn2 = rxNormSq*(unrr0+urr0) 
-             Lu  = unxx0+unyy0 + uxx0+uyy0 
-             g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
-             ! note: this assumes an orthogonal grid -- we should make sure that the 
-             !       ghost values have an initial guess in them (extrapolate ?)
-             un(i1-is1,i2-is2,i3-is3,ex) = -(g - cm1*un(i1-is1,i2-is2,i3-is3,ex) )/cm1 
-
-          end if
-
-
-        else if( .true. )then
-          ! .false. .and. bc1.ne.symmetryBoundaryCondition .and. bc2.ne.symmetryBoundaryCondition )then
-          ! --- adjacent face is NOT another ABC ---
-          ! Do this for now *wdh* Sept 19, 2016
-          if( orderOfAccuracy.eq.2 )then
-            extrapOrder=3
-          else if( orderOfAccuracy.eq.4 )then
-            extrapOrder=5
-          else
-            stop 4114
-          end if
-
-          if( bc1.ne.symmetryBoundaryCondition )then
-              ksv(0)=0
-              ksv(1)=0
-              ksv(2)=0
-              ksv(0)=1-2*side1
-              ks1=ksv(0)
-              ks2=ksv(1)
-              ks3=ksv(2)
-              if( extrapOrder.eq.3 )then
-                un(i1-ks1,i2-ks2,i3-ks3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+ks1,i2+ks2,i3+ks3,ex)+un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex))
-                ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap3(un,i1,i2,i3,ey,ks1,ks2,ks3)
-                ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap3(un,i1,i2,i3,hz,ks1,ks2,ks3)
-              else if( extrapOrder.eq.5 )then
-                un(i1-ks1,i2-ks2,i3-ks3,ex)=(5.*un(i1,i2,i3,ex)-10.*un(i1+ks1,i2+ks2,i3+ks3,ex)+10.*un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex)-5.*un(i1+3*ks1,i2+3*ks2,i3+3*ks3,ex)+un(i1+4*ks1,i2+4*ks2,i3+4*ks3,ex))
-                ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap5(un,i1,i2,i3,ey,ks1,ks2,ks3)
-                ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap5(un,i1,i2,i3,hz,ks1,ks2,ks3)
-              else
-                stop 1782
+            is3=0
+            j3=0
+             do m3=0,0
+             do m2=0,numberOfGhostPoints
+             do m1=0,numberOfGhostPoints
+              mSum = m1+m2+m3
+              if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
+               ! extrap ghost point (j1,j2,j3)
+               j1=i1-is1*m1
+               j2=i2-is2*m2
+               j3=i3-is3*m3
+               ! js1=0 if m1=0 and js1=is1 if m1>0
+               js1 = is1*min(m1,1)
+               js2 = is2*min(m2,1)
+               js3 = is3*min(m3,1)
+               if( orderOfAccuracy.eq.2 )then
+                 ! Changed to third-order extra *wdh* Sept 18, 2016
+                 un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
+                 ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                 ! un(j1,j2,j3,hz)=extrap3(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
+                 ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                 ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                 ! un(j1,j2,j3,hz)=extrap2(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
+               else                                                                           
+                 ! Note: adjust for incident fields should take into account the width of extrapolation: 
+                 if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
+                   ! increased extrapolation to order=5 *wdh* June 20, 2016
+                   un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                   ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                   ! un(j1,j2,j3,hz)=extrap5(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
+                   !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                   !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                   !un(j1,j2,j3,hz)=extrap3(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
+                 else
+                   ! 2nd-ghost line 
+                   un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                   ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                   ! un(j1,j2,j3,hz)=extrap5(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
+                   ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                   ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                   ! un(j1,j2,j3,hz)=extrap4(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
+                 end if
               end if
-          end if
-
-          if( bc2.ne.symmetryBoundaryCondition )then
-              ksv(0)=0
-              ksv(1)=0
-              ksv(2)=0
-              ksv(1)=1-2*side2
-              ks1=ksv(0)
-              ks2=ksv(1)
-              ks3=ksv(2)
-              if( extrapOrder.eq.3 )then
-                un(i1-ks1,i2-ks2,i3-ks3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+ks1,i2+ks2,i3+ks3,ex)+un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex))
-                ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap3(un,i1,i2,i3,ey,ks1,ks2,ks3)
-                ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap3(un,i1,i2,i3,hz,ks1,ks2,ks3)
-              else if( extrapOrder.eq.5 )then
-                un(i1-ks1,i2-ks2,i3-ks3,ex)=(5.*un(i1,i2,i3,ex)-10.*un(i1+ks1,i2+ks2,i3+ks3,ex)+10.*un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex)-5.*un(i1+3*ks1,i2+3*ks2,i3+3*ks3,ex)+un(i1+4*ks1,i2+4*ks2,i3+4*ks3,ex))
-                ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap5(un,i1,i2,i3,ey,ks1,ks2,ks3)
-                ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap5(un,i1,i2,i3,hz,ks1,ks2,ks3)
-              else
-                stop 1782
               end if
-          end if 
-
-        end if ! end if adjacentFaceIsABC
-
-        ! --- Now extrapolate all other points on the extended boundary and adjacent to the corner ---
-        is1=1-2*side1
-        is2=1-2*side2
-        is3=0
-        j3=0
-         do m3=0,0
-         do m2=0,numberOfGhostPoints
-         do m1=0,numberOfGhostPoints
-          mSum = m1+m2+m3
-          if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
-           ! extrap ghost point (j1,j2,j3)
-           j1=i1-is1*m1
-           j2=i2-is2*m2
-           j3=i3-is3*m3
-           ! js1=0 if m1=0 and js1=is1 if m1>0
-           js1 = is1*min(m1,1)
-           js2 = is2*min(m2,1)
-           js3 = is3*min(m3,1)
-           if( orderOfAccuracy.eq.2 )then
-             ! Changed to third-order extra *wdh* Sept 18, 2016
-             un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
-             ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-             ! un(j1,j2,j3,hz)=extrap3(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
-             ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-             ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-             ! un(j1,j2,j3,hz)=extrap2(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
-           else                                                                           
-             ! Note: adjust for incident fields should take into account the width of extrapolation: 
-             if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
-               ! increased extrapolation to order=5 *wdh* June 20, 2016
-               un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-               ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-               ! un(j1,j2,j3,hz)=extrap5(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
-               !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-               !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-               !un(j1,j2,j3,hz)=extrap3(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
+             end do
+             end do
+             end do
+           end if ! mask 
+          end if ! if one face is ABC
+        end do          
+        end do          
+      else 
+        ! ***** 3D *****
+         do edgeDirection=0,2 ! direction parallel to the edge
+         do sidea=0,1
+         do sideb=0,1
+          if( edgeDirection.eq.0 )then
+            side1=0
+            side2=sidea
+            side3=sideb
+          else if( edgeDirection.eq.1 )then
+            side1=sideb 
+            side2=0
+            side3=sidea
+          else
+            side1=sidea
+            side2=sideb
+            side3=0
+          end if
+         is1=1-2*(side1)
+         is2=1-2*(side2)
+         is3=1-2*(side3)
+         if( edgeDirection.eq.2 )then
+          is3=0
+          n1a=gridIndexRange(side1,0)
+          n1b=gridIndexRange(side1,0)
+          n2a=gridIndexRange(side2,1)
+          n2b=gridIndexRange(side2,1)
+          n3a=gridIndexRange(0,2)
+          n3b=gridIndexRange(1,2)
+          bc1=boundaryCondition(side1,0)
+          bc2=boundaryCondition(side2,1)
+         else if( edgeDirection.eq.1 )then
+          is2=0
+          n1a=gridIndexRange(side1,0)
+          n1b=gridIndexRange(side1,0)
+          n2a=gridIndexRange(    0,1)
+          n2b=gridIndexRange(    1,1)
+          n3a=gridIndexRange(side3,2)
+          n3b=gridIndexRange(side3,2)
+          bc1=boundaryCondition(side1,0)
+          bc2=boundaryCondition(side3,2)
+         else 
+          is1=0  
+          n1a=gridIndexRange(    0,0)
+          n1b=gridIndexRange(    1,0)
+          n2a=gridIndexRange(side2,1)
+          n2b=gridIndexRange(side2,1)
+          n3a=gridIndexRange(side3,2)
+          n3b=gridIndexRange(side3,2)
+          bc1=boundaryCondition(side2,1)
+          bc2=boundaryCondition(side3,2)
+         end if
+         if( ( (bc1.eq.abcEM2 .or. bc1.eq.absorbing) .and. bc2.gt.0 ) .or. ( (bc2.eq.abcEM2 .or. bc2.eq.absorbing) .and. bc1.gt.0 ) )then
+          ! --- One face is an ABC  and the other has bc>0 ---
+          ! Adjacent side is also an ABC: 
+          adjacentFaceIsABC = bc1.eq.abcEM2 .or. bc1.eq.absorbing .and. bc2.eq.abcEM2 .or. bc2.eq.absorbing
+          if( edgeDirection.eq.0 )then
+           i2=n2a
+           i3=n3a
+           do i1=n1a,n1b
+           if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
+             ! Use first-order-in-time formula since it doesn't require other ghost point at new time (un)
+             if( adjacentFaceIsABC )then
+              if( gridType.eq.rectangular )then
+                if( forcingOption.eq.twilightZoneForcing )then
+                  ! Test: set to exact solution at time t:
+                  ! x=xy(i1-is1,i2,i3,0)
+                  ! y=xy(i1-is1,i2,i3,1)
+                  ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                  ! un(i1-is1,i2,i3,ey)=eyTrue
+                  ! add TZ forcing *wdh* Sept 17, 2016
+                  ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                  x=xy(i1,i2,i3,0)
+                  y=xy(i1,i2,i3,1)
+                    ! ------ Cartesian Grid 3d forcing ----------
+                    z=xy(i1,i2,i3,2)
+                       call ogDeriv(ep, 1,0,0,1,x,y,z,tp,ex,utz)
+                       call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                       call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                       call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
+                     forcez(ex) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
+                     ! OGDERIV(1,0,0,1,x,y,z,tp,ey,utz)
+                     ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                     ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                     ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
+                     ! forcez(ey) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
+                     ! OGDERIV(1,0,0,1,x,y,z,tp,ez,utz)
+                     ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
+                     ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
+                     ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
+                     ! forcez(ez) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) )
+                  ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                end if
+               un(i1,i2,i3-is3,ex)=(un(i1+0,i2+0,i3+is3,ex)-(u(i1+0,i2+0,i3+is3,ex)-u(i1-0,i2-0,i3-is3,ex))-(2.*dza*dt)*(c1abcem2*uzz23r(i1,i2,i3,ex)+c2abcem2*(uxx23r(i1,i2,i3,ex)+uyy23r(i1,i2,i3,ex))+forcez(ex)))
+                if( forcingOption.eq.twilightZoneForcing )then
+                  ! Test: set to exact solution at time t:
+                  ! x=xy(i1-is1,i2,i3,0)
+                  ! y=xy(i1-is1,i2,i3,1)
+                  ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                  ! un(i1-is1,i2,i3,ey)=eyTrue
+                  ! add TZ forcing *wdh* Sept 17, 2016
+                  ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                  x=xy(i1,i2,i3,0)
+                  y=xy(i1,i2,i3,1)
+                    ! ------ Cartesian Grid 3d forcing ----------
+                    z=xy(i1,i2,i3,2)
+                       call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
+                       call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                       call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                       call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
+                     forcey(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
+                     ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
+                     ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                     ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                     ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
+                     ! forcey(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
+                     ! OGDERIV(1,0,1,0,x,y,z,tp,ez,uty)
+                     ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
+                     ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
+                     ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
+                     ! forcey(ez) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) )
+                  ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                end if
+               un(i1,i2-is2,i3,ex)=(un(i1+0,i2+is2,i3+0,ex)-(u(i1+0,i2+is2,i3+0,ex)-u(i1-0,i2-is2,i3-0,ex))-(2.*dya*dt)*(c1abcem2*uyy23r(i1,i2,i3,ex)+c2abcem2*(uxx23r(i1,i2,i3,ex)+uzz23r(i1,i2,i3,ex))+forcey(ex)))
+              else
+                 is =1-2*side3
+                 dr0=dr(2)
+                 rx0 = rsxy(i1,i2,i3,2,0)
+                 ry0 = rsxy(i1,i2,i3,2,1)
+                 rz0 = rsxy(i1,i2,i3,2,2)
+                 rxNormSq = rx0**2 + ry0**2 + rz0**2
+                 rxNorm = max( epsX, sqrt(rxNormSq) )
+                 rxx0 = rsxyx23(i1,i2,i3,2,0)
+                 ryy0 = rsxyy23(i1,i2,i3,2,1)
+                 rzz0 = rsxyz23(i1,i2,i3,2,2)
+                 ! cm1 : coeff of u(i1-0,i2-0,i3-is3,cc) in g (given below): 
+                 cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
+                 ! derivatives at time t: 
+                 ! derivatives at time t+dt : evaluate using the incorrect ghost values 
+                 if( 2.eq.0 )then
+                   ur0   =   ur2(i1,i2,i3,ex)
+                   urr0  =  urr2(i1,i2,i3,ex)
+                   unr0  =  unr2(i1,i2,i3,ex)
+                   unrr0 = unrr2(i1,i2,i3,ex)
+                 else if( 2.eq.1 )then
+                   ur0   =   us2(i1,i2,i3,ex)
+                   urr0  =  uss2(i1,i2,i3,ex)
+                   unr0  =  uns2(i1,i2,i3,ex)
+                   unrr0 = unss2(i1,i2,i3,ex)
+                 else
+                   ur0   =   ut2(i1,i2,i3,ex)
+                   urr0  =  utt2(i1,i2,i3,ex)
+                   unr0  =  unt2(i1,i2,i3,ex)
+                   unrr0 = untt2(i1,i2,i3,ex)
+                 end if
+                 uxx0 = uxx23(i1,i2,i3,ex)
+                 uyy0 = uyy23(i1,i2,i3,ex)
+                 uzz0 = uzz23(i1,i2,i3,ex)
+                 unxx0 = unxx23(i1,i2,i3,ex)
+                 unyy0 = unyy23(i1,i2,i3,ex)
+                 unzz0 = unzz23(i1,i2,i3,ex)
+                 ! first evaluate the BC using the incorrect ghost values 
+                 Dn2 = rxNormSq*(unrr0+urr0) 
+                 Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
+                 g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
+                 ! note: this assumes an orthogonal grid -- we should make sure that the 
+                 !       ghost values have an initial guess in them (extrapolate ?)
+                 un(i1-0,i2-0,i3-is3,ex) = -(g - cm1*un(i1-0,i2-0,i3-is3,ex) )/cm1 
+                 is =1-2*side2
+                 dr0=dr(1)
+                 rx0 = rsxy(i1,i2,i3,1,0)
+                 ry0 = rsxy(i1,i2,i3,1,1)
+                 rz0 = rsxy(i1,i2,i3,1,2)
+                 rxNormSq = rx0**2 + ry0**2 + rz0**2
+                 rxNorm = max( epsX, sqrt(rxNormSq) )
+                 rxx0 = rsxyx23(i1,i2,i3,1,0)
+                 ryy0 = rsxyy23(i1,i2,i3,1,1)
+                 rzz0 = rsxyz23(i1,i2,i3,1,2)
+                 ! cm1 : coeff of u(i1-0,i2-is2,i3-0,cc) in g (given below): 
+                 cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
+                 ! derivatives at time t: 
+                 ! derivatives at time t+dt : evaluate using the incorrect ghost values 
+                 if( 1.eq.0 )then
+                   ur0   =   ur2(i1,i2,i3,ex)
+                   urr0  =  urr2(i1,i2,i3,ex)
+                   unr0  =  unr2(i1,i2,i3,ex)
+                   unrr0 = unrr2(i1,i2,i3,ex)
+                 else if( 1.eq.1 )then
+                   ur0   =   us2(i1,i2,i3,ex)
+                   urr0  =  uss2(i1,i2,i3,ex)
+                   unr0  =  uns2(i1,i2,i3,ex)
+                   unrr0 = unss2(i1,i2,i3,ex)
+                 else
+                   ur0   =   ut2(i1,i2,i3,ex)
+                   urr0  =  utt2(i1,i2,i3,ex)
+                   unr0  =  unt2(i1,i2,i3,ex)
+                   unrr0 = untt2(i1,i2,i3,ex)
+                 end if
+                 uxx0 = uxx23(i1,i2,i3,ex)
+                 uyy0 = uyy23(i1,i2,i3,ex)
+                 uzz0 = uzz23(i1,i2,i3,ex)
+                 unxx0 = unxx23(i1,i2,i3,ex)
+                 unyy0 = unyy23(i1,i2,i3,ex)
+                 unzz0 = unzz23(i1,i2,i3,ex)
+                 ! first evaluate the BC using the incorrect ghost values 
+                 Dn2 = rxNormSq*(unrr0+urr0) 
+                 Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
+                 g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
+                 ! note: this assumes an orthogonal grid -- we should make sure that the 
+                 !       ghost values have an initial guess in them (extrapolate ?)
+                 un(i1-0,i2-is2,i3-0,ex) = -(g - cm1*un(i1-0,i2-is2,i3-0,ex) )/cm1 
+              end if
              else
-               ! 2nd-ghost line 
-               un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-               ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-               ! un(j1,j2,j3,hz)=extrap5(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
-               ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-               ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-               ! un(j1,j2,j3,hz)=extrap4(un,j1+js1,j2+js2,j3+js3,hz,js1,js2,js3)
+              ! --- adjacent face is NOT another ABC ---
+              ! *CHECK ME*
+              ! Do this for now *wdh* Sept 20, 2016
+              js1=0
+              js2=0
+              js3=is3
+              un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
+              js1=0
+              js2=is2
+              js3=0
+              un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
+             end if ! end adjacentFace
+              do m3=0,numberOfGhostPoints
+              do m2=0,numberOfGhostPoints
+              do m1=0,0
+               mSum = m1+m2+m3
+               if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
+                ! extrap ghost point (j1,j2,j3)
+                j1=i1-is1*m1
+                j2=i2-is2*m2
+                j3=i3-is3*m3
+                ! js1=0 if m1=0 and js1=is1 if m1>0
+                js1 = is1*min(m1,1)
+                js2 = is2*min(m2,1)
+                js3 = is3*min(m3,1)
+                if( orderOfAccuracy.eq.2 )then
+                  ! Changed to third-order extra *wdh* Sept 18, 2016
+                  un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
+                  ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  ! un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                  ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  ! un(j1,j2,j3,ez)=extrap2(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                else                                                                           
+                  ! Note: adjust for incident fields should take into account the width of extrapolation: 
+                  if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
+                    ! increased extrapolation to order=5 *wdh* June 20, 2016
+                    un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                    ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                    !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                    !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    !un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  else
+                    ! 2nd-ghost line 
+                    un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                    ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                    ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                    ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    ! un(j1,j2,j3,ez)=extrap4(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  end if
+               end if
+               end if
+              end do
+              end do
+              end do
+           end if
+           end do
+          else if( edgeDirection.eq.1 )then
+           i1=n1a
+           i3=n3a
+           do i2=n2a,n2b
+           if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
+             if( adjacentFaceIsABC )then
+               ! Use first-order-in-time formula since it doesn't require other ghost point at new time (un)
+               if( gridType.eq.rectangular )then
+                 if( forcingOption.eq.twilightZoneForcing )then
+                   ! Test: set to exact solution at time t:
+                   ! x=xy(i1-is1,i2,i3,0)
+                   ! y=xy(i1-is1,i2,i3,1)
+                   ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                   ! un(i1-is1,i2,i3,ey)=eyTrue
+                   ! add TZ forcing *wdh* Sept 17, 2016
+                   ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                   x=xy(i1,i2,i3,0)
+                   y=xy(i1,i2,i3,1)
+                     ! ------ Cartesian Grid 3d forcing ----------
+                     z=xy(i1,i2,i3,2)
+                      ! Values for forcex(ex) are currently needed at corners:
+                        call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
+                        call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                        call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                        call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
+                      forcex(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
+                      ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                      ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
+                      ! forcex(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
+                      ! OGDERIV(1,1,0,0,x,y,z,tp,ez,utx)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
+                      ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
+                      ! forcex(ez) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) )
+                   ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                 end if
+                un(i1-is1,i2,i3,ex)=(un(i1+is1,i2+0,i3+0,ex)-(u(i1+is1,i2+0,i3+0,ex)-u(i1-is1,i2-0,i3-0,ex))-(2.*dxa*dt)*(c1abcem2*uxx23r(i1,i2,i3,ex)+c2abcem2*(uyy23r(i1,i2,i3,ex)+uzz23r(i1,i2,i3,ex))+forcex(ex)))
+                 if( forcingOption.eq.twilightZoneForcing )then
+                   ! Test: set to exact solution at time t:
+                   ! x=xy(i1-is1,i2,i3,0)
+                   ! y=xy(i1-is1,i2,i3,1)
+                   ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                   ! un(i1-is1,i2,i3,ey)=eyTrue
+                   ! add TZ forcing *wdh* Sept 17, 2016
+                   ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                   x=xy(i1,i2,i3,0)
+                   y=xy(i1,i2,i3,1)
+                     ! ------ Cartesian Grid 3d forcing ----------
+                     z=xy(i1,i2,i3,2)
+                        call ogDeriv(ep, 1,0,0,1,x,y,z,tp,ex,utz)
+                        call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                        call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                        call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
+                      forcez(ex) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
+                      ! OGDERIV(1,0,0,1,x,y,z,tp,ey,utz)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                      ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
+                      ! forcez(ey) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
+                      ! OGDERIV(1,0,0,1,x,y,z,tp,ez,utz)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
+                      ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
+                      ! forcez(ez) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) )
+                   ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                 end if
+                un(i1,i2,i3-is3,ex)=(un(i1+0,i2+0,i3+is3,ex)-(u(i1+0,i2+0,i3+is3,ex)-u(i1-0,i2-0,i3-is3,ex))-(2.*dza*dt)*(c1abcem2*uzz23r(i1,i2,i3,ex)+c2abcem2*(uxx23r(i1,i2,i3,ex)+uyy23r(i1,i2,i3,ex))+forcez(ex)))
+               else
+                  is =1-2*side1
+                  dr0=dr(0)
+                  rx0 = rsxy(i1,i2,i3,0,0)
+                  ry0 = rsxy(i1,i2,i3,0,1)
+                  rz0 = rsxy(i1,i2,i3,0,2)
+                  rxNormSq = rx0**2 + ry0**2 + rz0**2
+                  rxNorm = max( epsX, sqrt(rxNormSq) )
+                  rxx0 = rsxyx23(i1,i2,i3,0,0)
+                  ryy0 = rsxyy23(i1,i2,i3,0,1)
+                  rzz0 = rsxyz23(i1,i2,i3,0,2)
+                  ! cm1 : coeff of u(i1-is1,i2-0,i3-0,cc) in g (given below): 
+                  cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
+                  ! derivatives at time t: 
+                  ! derivatives at time t+dt : evaluate using the incorrect ghost values 
+                  if( 0.eq.0 )then
+                    ur0   =   ur2(i1,i2,i3,ex)
+                    urr0  =  urr2(i1,i2,i3,ex)
+                    unr0  =  unr2(i1,i2,i3,ex)
+                    unrr0 = unrr2(i1,i2,i3,ex)
+                  else if( 0.eq.1 )then
+                    ur0   =   us2(i1,i2,i3,ex)
+                    urr0  =  uss2(i1,i2,i3,ex)
+                    unr0  =  uns2(i1,i2,i3,ex)
+                    unrr0 = unss2(i1,i2,i3,ex)
+                  else
+                    ur0   =   ut2(i1,i2,i3,ex)
+                    urr0  =  utt2(i1,i2,i3,ex)
+                    unr0  =  unt2(i1,i2,i3,ex)
+                    unrr0 = untt2(i1,i2,i3,ex)
+                  end if
+                  uxx0 = uxx23(i1,i2,i3,ex)
+                  uyy0 = uyy23(i1,i2,i3,ex)
+                  uzz0 = uzz23(i1,i2,i3,ex)
+                  unxx0 = unxx23(i1,i2,i3,ex)
+                  unyy0 = unyy23(i1,i2,i3,ex)
+                  unzz0 = unzz23(i1,i2,i3,ex)
+                  ! first evaluate the BC using the incorrect ghost values 
+                  Dn2 = rxNormSq*(unrr0+urr0) 
+                  Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
+                  g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
+                  ! note: this assumes an orthogonal grid -- we should make sure that the 
+                  !       ghost values have an initial guess in them (extrapolate ?)
+                  un(i1-is1,i2-0,i3-0,ex) = -(g - cm1*un(i1-is1,i2-0,i3-0,ex) )/cm1 
+                  is =1-2*side3
+                  dr0=dr(2)
+                  rx0 = rsxy(i1,i2,i3,2,0)
+                  ry0 = rsxy(i1,i2,i3,2,1)
+                  rz0 = rsxy(i1,i2,i3,2,2)
+                  rxNormSq = rx0**2 + ry0**2 + rz0**2
+                  rxNorm = max( epsX, sqrt(rxNormSq) )
+                  rxx0 = rsxyx23(i1,i2,i3,2,0)
+                  ryy0 = rsxyy23(i1,i2,i3,2,1)
+                  rzz0 = rsxyz23(i1,i2,i3,2,2)
+                  ! cm1 : coeff of u(i1-0,i2-0,i3-is3,cc) in g (given below): 
+                  cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
+                  ! derivatives at time t: 
+                  ! derivatives at time t+dt : evaluate using the incorrect ghost values 
+                  if( 2.eq.0 )then
+                    ur0   =   ur2(i1,i2,i3,ex)
+                    urr0  =  urr2(i1,i2,i3,ex)
+                    unr0  =  unr2(i1,i2,i3,ex)
+                    unrr0 = unrr2(i1,i2,i3,ex)
+                  else if( 2.eq.1 )then
+                    ur0   =   us2(i1,i2,i3,ex)
+                    urr0  =  uss2(i1,i2,i3,ex)
+                    unr0  =  uns2(i1,i2,i3,ex)
+                    unrr0 = unss2(i1,i2,i3,ex)
+                  else
+                    ur0   =   ut2(i1,i2,i3,ex)
+                    urr0  =  utt2(i1,i2,i3,ex)
+                    unr0  =  unt2(i1,i2,i3,ex)
+                    unrr0 = untt2(i1,i2,i3,ex)
+                  end if
+                  uxx0 = uxx23(i1,i2,i3,ex)
+                  uyy0 = uyy23(i1,i2,i3,ex)
+                  uzz0 = uzz23(i1,i2,i3,ex)
+                  unxx0 = unxx23(i1,i2,i3,ex)
+                  unyy0 = unyy23(i1,i2,i3,ex)
+                  unzz0 = unzz23(i1,i2,i3,ex)
+                  ! first evaluate the BC using the incorrect ghost values 
+                  Dn2 = rxNormSq*(unrr0+urr0) 
+                  Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
+                  g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
+                  ! note: this assumes an orthogonal grid -- we should make sure that the 
+                  !       ghost values have an initial guess in them (extrapolate ?)
+                  un(i1-0,i2-0,i3-is3,ex) = -(g - cm1*un(i1-0,i2-0,i3-is3,ex) )/cm1 
+               end if
+             else
+              ! --- adjacent face is NOT another ABC ---
+              ! *CHECK ME*
+              ! Do this for now *wdh* Sept 20, 2016
+              js1=is1
+              js2=0
+              js3=0
+              un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
+              js1=0
+              js2=0
+              js3=is3
+              un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
+             end if ! end adjacentFace
+              do m3=0,numberOfGhostPoints
+              do m2=0,0
+              do m1=0,numberOfGhostPoints
+               mSum = m1+m2+m3
+               if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
+                ! extrap ghost point (j1,j2,j3)
+                j1=i1-is1*m1
+                j2=i2-is2*m2
+                j3=i3-is3*m3
+                ! js1=0 if m1=0 and js1=is1 if m1>0
+                js1 = is1*min(m1,1)
+                js2 = is2*min(m2,1)
+                js3 = is3*min(m3,1)
+                if( orderOfAccuracy.eq.2 )then
+                  ! Changed to third-order extra *wdh* Sept 18, 2016
+                  un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
+                  ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  ! un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                  ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  ! un(j1,j2,j3,ez)=extrap2(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                else                                                                           
+                  ! Note: adjust for incident fields should take into account the width of extrapolation: 
+                  if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
+                    ! increased extrapolation to order=5 *wdh* June 20, 2016
+                    un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                    ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                    !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                    !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    !un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  else
+                    ! 2nd-ghost line 
+                    un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                    ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                    ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                    ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    ! un(j1,j2,j3,ez)=extrap4(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  end if
+               end if
+               end if
+              end do
+              end do
+              end do
+           end if
+           end do
+          else if( edgeDirection.eq.2 )then
+           ! write(*,'(" ABC:set corner: grid,side1,side2,i1,i2=",3i3,2i5)') grid,side1,side2,i1,i2
+           i1=n1a
+           i2=n2a
+           do i3=n3a,n3b
+           if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
+             if( adjacentFaceIsABC )then
+               ! Use first-order-in-time formula since it doesn't require other ghost point at new time (un)
+               if( gridType.eq.rectangular )then
+                 if( forcingOption.eq.twilightZoneForcing )then
+                   ! Test: set to exact solution at time t:
+                   ! x=xy(i1-is1,i2,i3,0)
+                   ! y=xy(i1-is1,i2,i3,1)
+                   ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                   ! un(i1-is1,i2,i3,ey)=eyTrue
+                   ! add TZ forcing *wdh* Sept 17, 2016
+                   ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                   x=xy(i1,i2,i3,0)
+                   y=xy(i1,i2,i3,1)
+                     ! ------ Cartesian Grid 3d forcing ----------
+                     z=xy(i1,i2,i3,2)
+                      ! Values for forcex(ex) are currently needed at corners:
+                        call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
+                        call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                        call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                        call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
+                      forcex(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
+                      ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                      ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
+                      ! forcex(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
+                      ! OGDERIV(1,1,0,0,x,y,z,tp,ez,utx)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
+                      ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
+                      ! forcex(ez) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) )
+                   ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                 end if
+                un(i1-is1,i2,i3,ex)=(un(i1+is1,i2+0,i3+0,ex)-(u(i1+is1,i2+0,i3+0,ex)-u(i1-is1,i2-0,i3-0,ex))-(2.*dxa*dt)*(c1abcem2*uxx23r(i1,i2,i3,ex)+c2abcem2*(uyy23r(i1,i2,i3,ex)+uzz23r(i1,i2,i3,ex))+forcex(ex)))
+                 if( forcingOption.eq.twilightZoneForcing )then
+                   ! Test: set to exact solution at time t:
+                   ! x=xy(i1-is1,i2,i3,0)
+                   ! y=xy(i1-is1,i2,i3,1)
+                   ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                   ! un(i1-is1,i2,i3,ey)=eyTrue
+                   ! add TZ forcing *wdh* Sept 17, 2016
+                   ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                   x=xy(i1,i2,i3,0)
+                   y=xy(i1,i2,i3,1)
+                     ! ------ Cartesian Grid 3d forcing ----------
+                     z=xy(i1,i2,i3,2)
+                        call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
+                        call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                        call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                        call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
+                      forcey(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
+                      ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                      ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
+                      ! forcey(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
+                      ! OGDERIV(1,0,1,0,x,y,z,tp,ez,uty)
+                      ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
+                      ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
+                      ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
+                      ! forcey(ez) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) )
+                   ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                 end if
+                un(i1,i2-is2,i3,ex)=(un(i1+0,i2+is2,i3+0,ex)-(u(i1+0,i2+is2,i3+0,ex)-u(i1-0,i2-is2,i3-0,ex))-(2.*dya*dt)*(c1abcem2*uyy23r(i1,i2,i3,ex)+c2abcem2*(uxx23r(i1,i2,i3,ex)+uzz23r(i1,i2,i3,ex))+forcey(ex)))
+               else
+                  is =1-2*side1
+                  dr0=dr(0)
+                  rx0 = rsxy(i1,i2,i3,0,0)
+                  ry0 = rsxy(i1,i2,i3,0,1)
+                  rz0 = rsxy(i1,i2,i3,0,2)
+                  rxNormSq = rx0**2 + ry0**2 + rz0**2
+                  rxNorm = max( epsX, sqrt(rxNormSq) )
+                  rxx0 = rsxyx23(i1,i2,i3,0,0)
+                  ryy0 = rsxyy23(i1,i2,i3,0,1)
+                  rzz0 = rsxyz23(i1,i2,i3,0,2)
+                  ! cm1 : coeff of u(i1-is1,i2-0,i3-0,cc) in g (given below): 
+                  cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
+                  ! derivatives at time t: 
+                  ! derivatives at time t+dt : evaluate using the incorrect ghost values 
+                  if( 0.eq.0 )then
+                    ur0   =   ur2(i1,i2,i3,ex)
+                    urr0  =  urr2(i1,i2,i3,ex)
+                    unr0  =  unr2(i1,i2,i3,ex)
+                    unrr0 = unrr2(i1,i2,i3,ex)
+                  else if( 0.eq.1 )then
+                    ur0   =   us2(i1,i2,i3,ex)
+                    urr0  =  uss2(i1,i2,i3,ex)
+                    unr0  =  uns2(i1,i2,i3,ex)
+                    unrr0 = unss2(i1,i2,i3,ex)
+                  else
+                    ur0   =   ut2(i1,i2,i3,ex)
+                    urr0  =  utt2(i1,i2,i3,ex)
+                    unr0  =  unt2(i1,i2,i3,ex)
+                    unrr0 = untt2(i1,i2,i3,ex)
+                  end if
+                  uxx0 = uxx23(i1,i2,i3,ex)
+                  uyy0 = uyy23(i1,i2,i3,ex)
+                  uzz0 = uzz23(i1,i2,i3,ex)
+                  unxx0 = unxx23(i1,i2,i3,ex)
+                  unyy0 = unyy23(i1,i2,i3,ex)
+                  unzz0 = unzz23(i1,i2,i3,ex)
+                  ! first evaluate the BC using the incorrect ghost values 
+                  Dn2 = rxNormSq*(unrr0+urr0) 
+                  Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
+                  g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
+                  ! note: this assumes an orthogonal grid -- we should make sure that the 
+                  !       ghost values have an initial guess in them (extrapolate ?)
+                  un(i1-is1,i2-0,i3-0,ex) = -(g - cm1*un(i1-is1,i2-0,i3-0,ex) )/cm1 
+                  is =1-2*side2
+                  dr0=dr(1)
+                  rx0 = rsxy(i1,i2,i3,1,0)
+                  ry0 = rsxy(i1,i2,i3,1,1)
+                  rz0 = rsxy(i1,i2,i3,1,2)
+                  rxNormSq = rx0**2 + ry0**2 + rz0**2
+                  rxNorm = max( epsX, sqrt(rxNormSq) )
+                  rxx0 = rsxyx23(i1,i2,i3,1,0)
+                  ryy0 = rsxyy23(i1,i2,i3,1,1)
+                  rzz0 = rsxyz23(i1,i2,i3,1,2)
+                  ! cm1 : coeff of u(i1-0,i2-is2,i3-0,cc) in g (given below): 
+                  cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
+                  ! derivatives at time t: 
+                  ! derivatives at time t+dt : evaluate using the incorrect ghost values 
+                  if( 1.eq.0 )then
+                    ur0   =   ur2(i1,i2,i3,ex)
+                    urr0  =  urr2(i1,i2,i3,ex)
+                    unr0  =  unr2(i1,i2,i3,ex)
+                    unrr0 = unrr2(i1,i2,i3,ex)
+                  else if( 1.eq.1 )then
+                    ur0   =   us2(i1,i2,i3,ex)
+                    urr0  =  uss2(i1,i2,i3,ex)
+                    unr0  =  uns2(i1,i2,i3,ex)
+                    unrr0 = unss2(i1,i2,i3,ex)
+                  else
+                    ur0   =   ut2(i1,i2,i3,ex)
+                    urr0  =  utt2(i1,i2,i3,ex)
+                    unr0  =  unt2(i1,i2,i3,ex)
+                    unrr0 = untt2(i1,i2,i3,ex)
+                  end if
+                  uxx0 = uxx23(i1,i2,i3,ex)
+                  uyy0 = uyy23(i1,i2,i3,ex)
+                  uzz0 = uzz23(i1,i2,i3,ex)
+                  unxx0 = unxx23(i1,i2,i3,ex)
+                  unyy0 = unyy23(i1,i2,i3,ex)
+                  unzz0 = unzz23(i1,i2,i3,ex)
+                  ! first evaluate the BC using the incorrect ghost values 
+                  Dn2 = rxNormSq*(unrr0+urr0) 
+                  Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
+                  g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
+                  ! note: this assumes an orthogonal grid -- we should make sure that the 
+                  !       ghost values have an initial guess in them (extrapolate ?)
+                  un(i1-0,i2-is2,i3-0,ex) = -(g - cm1*un(i1-0,i2-is2,i3-0,ex) )/cm1 
+               end if
+             else
+              ! --- adjacent face is NOT another ABC ---
+              ! *CHECK ME*
+              ! Do this for now *wdh* Sept 20, 2016
+              js1=is1
+              js2=0
+              js3=0
+              un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
+              js1=0
+              js2=is2
+              js3=0
+              un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
+             end if ! end adjacentFace
+              do m3=0,0
+              do m2=0,numberOfGhostPoints
+              do m1=0,numberOfGhostPoints
+               mSum = m1+m2+m3
+               if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
+                ! extrap ghost point (j1,j2,j3)
+                j1=i1-is1*m1
+                j2=i2-is2*m2
+                j3=i3-is3*m3
+                ! js1=0 if m1=0 and js1=is1 if m1>0
+                js1 = is1*min(m1,1)
+                js2 = is2*min(m2,1)
+                js3 = is3*min(m3,1)
+                if( orderOfAccuracy.eq.2 )then
+                  ! Changed to third-order extra *wdh* Sept 18, 2016
+                  un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
+                  ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  ! un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                  ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  ! un(j1,j2,j3,ez)=extrap2(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                else                                                                           
+                  ! Note: adjust for incident fields should take into account the width of extrapolation: 
+                  if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
+                    ! increased extrapolation to order=5 *wdh* June 20, 2016
+                    un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                    ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                    !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                    !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    !un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  else
+                    ! 2nd-ghost line 
+                    un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                    ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                    ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                    ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                    ! un(j1,j2,j3,ez)=extrap4(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  end if
+               end if
+               end if
+              end do
+              end do
+              end do
+           end if
+           end do
+          end if ! end if edgeDirection
+         end if ! bc
+         end do ! end sideb
+         end do ! end sidea
+         end do ! end edgeDirection
+        ! ***** vertices in 3D  *****
+        do side3=0,1
+        do side2=0,1
+        do side1=0,1
+         bc1=boundaryCondition(side1,0)
+         bc2=boundaryCondition(side2,1)
+         bc3=boundaryCondition(side3,2)
+         if( ( (bc1.eq.abcEM2 .or. bc1.eq.absorbing) .or. (bc2.eq.abcEM2 .or. bc2.eq.absorbing) .or. (bc3.eq.abcEM2 .or. bc3.eq.absorbing) ) .and.  ( bc1.gt.0 .and. bc2.gt.0 .and. bc3.gt.0 ) )then
+          ! Three physical faces meet at this corner and at least one face is an ABC
+          i1=gridIndexRange(side1,0)
+          i2=gridIndexRange(side2,1)
+          i3=gridIndexRange(side3,2)
+          if( mask(i1,i2,i3).gt.0 )then 
+           is1=1-2*side1
+           is2=1-2*side2
+           is3=1-2*side3
+            do m3=0,numberOfGhostPoints
+            do m2=0,numberOfGhostPoints
+            do m1=0,numberOfGhostPoints
+             mSum = m1+m2+m3
+             if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
+              ! extrap ghost point (j1,j2,j3)
+              j1=i1-is1*m1
+              j2=i2-is2*m2
+              j3=i3-is3*m3
+              ! js1=0 if m1=0 and js1=is1 if m1>0
+              js1 = is1*min(m1,1)
+              js2 = is2*min(m2,1)
+              js3 = is3*min(m3,1)
+              if( orderOfAccuracy.eq.2 )then
+                ! Changed to third-order extra *wdh* Sept 18, 2016
+                un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
+                ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                ! un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                ! un(j1,j2,j3,ez)=extrap2(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+              else                                                                           
+                ! Note: adjust for incident fields should take into account the width of extrapolation: 
+                if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
+                  ! increased extrapolation to order=5 *wdh* June 20, 2016
+                  un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                  ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                  !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  !un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                else
+                  ! 2nd-ghost line 
+                  un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
+                  ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                  ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
+                  ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
+                  ! un(j1,j2,j3,ez)=extrap4(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+                end if
              end if
-          end if
-          end if
-         end do
-         end do
-         end do
-
-       end if ! mask 
-      end if ! if one face is ABC
-    end do          
-    end do          
-
-  else 
-
-    ! ***** 3D *****
-
-     do edgeDirection=0,2 ! direction parallel to the edge
-     do sidea=0,1
-     do sideb=0,1
-      if( edgeDirection.eq.0 )then
-        side1=0
-        side2=sidea
-        side3=sideb
-      else if( edgeDirection.eq.1 )then
-        side1=sideb 
-        side2=0
-        side3=sidea
-      else
-        side1=sidea
-        side2=sideb
-        side3=0
+             end if
+            end do
+            end do
+            end do
+          end if ! mask
+         end if
+        end do
+        end do
+        end do
+       !  end if
       end if
-     is1=1-2*(side1)
-     is2=1-2*(side2)
-     is3=1-2*(side3)
-     if( edgeDirection.eq.2 )then
-      is3=0
-      n1a=gridIndexRange(side1,0)
-      n1b=gridIndexRange(side1,0)
-      n2a=gridIndexRange(side2,1)
-      n2b=gridIndexRange(side2,1)
-      n3a=gridIndexRange(0,2)
-      n3b=gridIndexRange(1,2)
-      bc1=boundaryCondition(side1,0)
-      bc2=boundaryCondition(side2,1)
-     else if( edgeDirection.eq.1 )then
-      is2=0
-      n1a=gridIndexRange(side1,0)
-      n1b=gridIndexRange(side1,0)
-      n2a=gridIndexRange(    0,1)
-      n2b=gridIndexRange(    1,1)
-      n3a=gridIndexRange(side3,2)
-      n3b=gridIndexRange(side3,2)
-      bc1=boundaryCondition(side1,0)
-      bc2=boundaryCondition(side3,2)
-     else 
-      is1=0  
-      n1a=gridIndexRange(    0,0)
-      n1b=gridIndexRange(    1,0)
-      n2a=gridIndexRange(side2,1)
-      n2b=gridIndexRange(side2,1)
-      n3a=gridIndexRange(side3,2)
-      n3b=gridIndexRange(side3,2)
-      bc1=boundaryCondition(side2,1)
-      bc2=boundaryCondition(side3,2)
-     end if
-     if( ( (bc1.eq.abcEM2 .or. bc1.eq.absorbing) .and. bc2.gt.0 ) .or. ( (bc2.eq.abcEM2 .or. bc2.eq.absorbing) .and. bc1.gt.0 ) )then
 
-      ! --- One face is an ABC  and the other has bc>0 ---
+  else if( orderOfAccuracy==4 )then
 
-      ! Adjacent side is also an ABC: 
-      adjacentFaceIsABC = bc1.eq.abcEM2 .or. bc1.eq.absorbing .and. bc2.eq.abcEM2 .or. bc2.eq.absorbing
-
-      if( edgeDirection.eq.0 )then
-
-       i2=n2a
-       i3=n3a
-       do i1=n1a,n1b
-       if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
-
-
-         ! Use first-order-in-time formula since it doesn't require other ghost point at new time (un)
-         if( adjacentFaceIsABC )then
-          if( gridType.eq.rectangular )then
-
-            if( forcingOption.eq.twilightZoneForcing )then
-              ! Test: set to exact solution at time t:
-              ! x=xy(i1-is1,i2,i3,0)
-              ! y=xy(i1-is1,i2,i3,1)
-              ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-              ! un(i1-is1,i2,i3,ey)=eyTrue
-              ! add TZ forcing *wdh* Sept 17, 2016
-              ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-              x=xy(i1,i2,i3,0)
-              y=xy(i1,i2,i3,1)
-                ! ------ Cartesian Grid 3d forcing ----------
-                z=xy(i1,i2,i3,2)
-                   call ogDeriv(ep, 1,0,0,1,x,y,z,tp,ex,utz)
-                   call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                   call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                   call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
-                 forcez(ex) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
-                 ! OGDERIV(1,0,0,1,x,y,z,tp,ey,utz)
-                 ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                 ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                 ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
-                 ! forcez(ey) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
-                 ! OGDERIV(1,0,0,1,x,y,z,tp,ez,utz)
-                 ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
-                 ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
-                 ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
-                 ! forcez(ez) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) )
-              ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-            end if
-
-           un(i1,i2,i3-is3,ex)=(un(i1+0,i2+0,i3+is3,ex)-(u(i1+0,i2+0,i3+is3,ex)-u(i1-0,i2-0,i3-is3,ex))-(2.*dza*dt)*(c1abcem2*uzz23r(i1,i2,i3,ex)+c2abcem2*(uxx23r(i1,i2,i3,ex)+uyy23r(i1,i2,i3,ex))+forcez(ex)))
-        
-            if( forcingOption.eq.twilightZoneForcing )then
-              ! Test: set to exact solution at time t:
-              ! x=xy(i1-is1,i2,i3,0)
-              ! y=xy(i1-is1,i2,i3,1)
-              ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-              ! un(i1-is1,i2,i3,ey)=eyTrue
-              ! add TZ forcing *wdh* Sept 17, 2016
-              ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-              x=xy(i1,i2,i3,0)
-              y=xy(i1,i2,i3,1)
-                ! ------ Cartesian Grid 3d forcing ----------
-                z=xy(i1,i2,i3,2)
-                   call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
-                   call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                   call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                   call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
-                 forcey(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
-                 ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
-                 ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                 ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                 ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
-                 ! forcey(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
-                 ! OGDERIV(1,0,1,0,x,y,z,tp,ez,uty)
-                 ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
-                 ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
-                 ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
-                 ! forcey(ez) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) )
-              ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-            end if
-
-           un(i1,i2-is2,i3,ex)=(un(i1+0,i2+is2,i3+0,ex)-(u(i1+0,i2+is2,i3+0,ex)-u(i1-0,i2-is2,i3-0,ex))-(2.*dya*dt)*(c1abcem2*uyy23r(i1,i2,i3,ex)+c2abcem2*(uxx23r(i1,i2,i3,ex)+uzz23r(i1,i2,i3,ex))+forcey(ex)))
-
-          else
-
-             is =1-2*side3
-             dr0=dr(2)
-             rx0 = rsxy(i1,i2,i3,2,0)
-             ry0 = rsxy(i1,i2,i3,2,1)
-             rz0 = rsxy(i1,i2,i3,2,2)
-             rxNormSq = rx0**2 + ry0**2 + rz0**2
-             rxNorm = max( epsX, sqrt(rxNormSq) )
-             rxx0 = rsxyx23(i1,i2,i3,2,0)
-             ryy0 = rsxyy23(i1,i2,i3,2,1)
-             rzz0 = rsxyz23(i1,i2,i3,2,2)
-             ! cm1 : coeff of u(i1-0,i2-0,i3-is3,cc) in g (given below): 
-             cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
-             ! derivatives at time t: 
-             ! derivatives at time t+dt : evaluate using the incorrect ghost values 
-             if( 2.eq.0 )then
-               ur0   =   ur2(i1,i2,i3,ex)
-               urr0  =  urr2(i1,i2,i3,ex)
-               unr0  =  unr2(i1,i2,i3,ex)
-               unrr0 = unrr2(i1,i2,i3,ex)
-             else if( 2.eq.1 )then
-               ur0   =   us2(i1,i2,i3,ex)
-               urr0  =  uss2(i1,i2,i3,ex)
-               unr0  =  uns2(i1,i2,i3,ex)
-               unrr0 = unss2(i1,i2,i3,ex)
-             else
-               ur0   =   ut2(i1,i2,i3,ex)
-               urr0  =  utt2(i1,i2,i3,ex)
-               unr0  =  unt2(i1,i2,i3,ex)
-               unrr0 = untt2(i1,i2,i3,ex)
-             end if
-             uxx0 = uxx23(i1,i2,i3,ex)
-             uyy0 = uyy23(i1,i2,i3,ex)
-             uzz0 = uzz23(i1,i2,i3,ex)
-             unxx0 = unxx23(i1,i2,i3,ex)
-             unyy0 = unyy23(i1,i2,i3,ex)
-             unzz0 = unzz23(i1,i2,i3,ex)
-             ! first evaluate the BC using the incorrect ghost values 
-             Dn2 = rxNormSq*(unrr0+urr0) 
-             Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
-             g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
-             ! note: this assumes an orthogonal grid -- we should make sure that the 
-             !       ghost values have an initial guess in them (extrapolate ?)
-             un(i1-0,i2-0,i3-is3,ex) = -(g - cm1*un(i1-0,i2-0,i3-is3,ex) )/cm1 
-
-             is =1-2*side2
-             dr0=dr(1)
-             rx0 = rsxy(i1,i2,i3,1,0)
-             ry0 = rsxy(i1,i2,i3,1,1)
-             rz0 = rsxy(i1,i2,i3,1,2)
-             rxNormSq = rx0**2 + ry0**2 + rz0**2
-             rxNorm = max( epsX, sqrt(rxNormSq) )
-             rxx0 = rsxyx23(i1,i2,i3,1,0)
-             ryy0 = rsxyy23(i1,i2,i3,1,1)
-             rzz0 = rsxyz23(i1,i2,i3,1,2)
-             ! cm1 : coeff of u(i1-0,i2-is2,i3-0,cc) in g (given below): 
-             cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
-             ! derivatives at time t: 
-             ! derivatives at time t+dt : evaluate using the incorrect ghost values 
-             if( 1.eq.0 )then
-               ur0   =   ur2(i1,i2,i3,ex)
-               urr0  =  urr2(i1,i2,i3,ex)
-               unr0  =  unr2(i1,i2,i3,ex)
-               unrr0 = unrr2(i1,i2,i3,ex)
-             else if( 1.eq.1 )then
-               ur0   =   us2(i1,i2,i3,ex)
-               urr0  =  uss2(i1,i2,i3,ex)
-               unr0  =  uns2(i1,i2,i3,ex)
-               unrr0 = unss2(i1,i2,i3,ex)
-             else
-               ur0   =   ut2(i1,i2,i3,ex)
-               urr0  =  utt2(i1,i2,i3,ex)
-               unr0  =  unt2(i1,i2,i3,ex)
-               unrr0 = untt2(i1,i2,i3,ex)
-             end if
-             uxx0 = uxx23(i1,i2,i3,ex)
-             uyy0 = uyy23(i1,i2,i3,ex)
-             uzz0 = uzz23(i1,i2,i3,ex)
-             unxx0 = unxx23(i1,i2,i3,ex)
-             unyy0 = unyy23(i1,i2,i3,ex)
-             unzz0 = unzz23(i1,i2,i3,ex)
-             ! first evaluate the BC using the incorrect ghost values 
-             Dn2 = rxNormSq*(unrr0+urr0) 
-             Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
-             g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
-             ! note: this assumes an orthogonal grid -- we should make sure that the 
-             !       ghost values have an initial guess in them (extrapolate ?)
-             un(i1-0,i2-is2,i3-0,ex) = -(g - cm1*un(i1-0,i2-is2,i3-0,ex) )/cm1 
-
-          end if
-
-         else
-          ! --- adjacent face is NOT another ABC ---
-          ! *CHECK ME*
-
-          ! Do this for now *wdh* Sept 20, 2016
-          js1=0
-          js2=0
-          js3=is3
-          un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
-          
-          js1=0
-          js2=is2
-          js3=0
-          un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
-
-         end if ! end adjacentFace
-
-          do m3=0,numberOfGhostPoints
-          do m2=0,numberOfGhostPoints
-          do m1=0,0
-           mSum = m1+m2+m3
-           if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
-            ! extrap ghost point (j1,j2,j3)
-            j1=i1-is1*m1
-            j2=i2-is2*m2
-            j3=i3-is3*m3
-            ! js1=0 if m1=0 and js1=is1 if m1>0
-            js1 = is1*min(m1,1)
-            js2 = is2*min(m2,1)
-            js3 = is3*min(m3,1)
-            if( orderOfAccuracy.eq.2 )then
-              ! Changed to third-order extra *wdh* Sept 18, 2016
-              un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
-              ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              ! un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-              ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-              ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              ! un(j1,j2,j3,ez)=extrap2(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-            else                                                                           
-              ! Note: adjust for incident fields should take into account the width of extrapolation: 
-              if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
-                ! increased extrapolation to order=5 *wdh* June 20, 2016
-                un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-                ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-                !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-                !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                !un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+    ! write(*,*) 'abcWave: assign edges and corners, order 4'
+      ! ------------------------------------------------------------------------
+      ! ------------------Corners-----------------------------------------------
+      ! ------------------------------------------------------------------------
+      ! We need to assign points in the corner region:
+      !
+      !           |  |  |
+      !           +--+--+--
+      !           |  |  |
+      !     D--A--X--+--+--
+      !     |  |  |
+      !     D--C--B
+      !     |  |  |
+      !     D--D--D
+      ! 
+      if( nd.eq.2 )then
+        ! **** 2D ****
+        i3=gridIndexRange(0,2)
+        is3=0
+        do side1=0,1
+        do side2=0,1
+         bc1=boundaryCondition(side1,0)
+         bc2=boundaryCondition(side2,1)
+         if( ((bc1.eq.abcEM2 .or. bc1.eq.absorbing) .and. bc2.gt.0 ) .or. ((bc2.eq.abcEM2 .or. bc2.eq.absorbing) .and. bc1.gt.0 ) )then
+           ! --- One of the faces at this corner is an ABC and the other has bc>0 ---         
+           ! Adjacent side is also an ABC: 
+           adjacentFaceIsABC = bc1.eq.abcEM2 .or. bc1.eq.absorbing .and. bc2.eq.abcEM2 .or. bc2.eq.absorbing
+           i1=gridIndexRange(side1,0) ! (i1,i2,i3)=corner point
+           i2=gridIndexRange(side2,1)
+           if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
+            ! write(*,'(" ABC:set corner order 4: grid,side1,side2,i1,i2=",3i3,2i5)') grid,side1,side2,i1,i2
+            ! --- start by extrapolating all points on the extended boundary and adjacent to the corner ---
+            !* is1=1-2*side1
+            !* is2=1-2*side2
+            !* is3=0
+            !* j3=0
+            !* extrapolateGhost(ex,ey,hz,numberOfGhostPoints,numberOfGhostPoints,0)
+            ! Solve: 
+            !   f1 = is1* u_xt - c( u_xx + .5*u_yy )
+            !   f2 = (D+x)^5 U_{-2} = 0 
+            !   f3 = is2* u_yt - c( u_yy + .5*u_xx )
+            !   f4 = (D+y)^5 U_{-2} = 0 
+            !
+            ! Evaluate the equations with current ghost 
+            ! There four coupled equations we need to solve for ghost points A,B,C,D below
+            !                   |
+            !                   +   X = corner 
+            !                   |
+            !             B--A--X---+---+
+            !                   |
+            !             G  G  C
+            !                   |
+            !             G  G  D 
+            !
+            !  f(u)  = [ f(u_old) - A (u_old) ] + A u = 0 
+            !
+            !  [ a11 a12 a13 a14 ][ uA ]   [ a11 a12 a13 a14 ][ uA_old ]   [ f1(u_old) ]
+            !  [ a21 a22 a23 a24 ][ uB ] = [ a21 a22 a23 a24 ][ uB_old ] - [ f2(u_old) ]  
+            !  [ a31 a32 a33 a34 ][ uC ]   [ a31 a32 a33 a34 ][ uC_old ]   [ f3(u_old) ]   
+            !  [ a41 a42 a43 a44 ][ uD ]   [ a41 a42 a43 a44 ][ uD_old ]   [ f4(u_old) ]   
+            if( adjacentFaceIsABC )then
+              is1=1-2*side1
+              is2=1-2*side2
+              is3 = 0 
+              if( gridType.eq.rectangular )then
+                  ! getForcingEM2(X,2,tm,is1,is2,forcex)
+                   if( forcingOption.eq.twilightZoneForcing )then
+                     ! Test: set to exact solution at time t:
+                     ! x=xy(i1-is1,i2,i3,0)
+                     ! y=xy(i1-is1,i2,i3,1)
+                     ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                     ! un(i1-is1,i2,i3,ey)=eyTrue
+                     ! add TZ forcing *wdh* Sept 17, 2016
+                     ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                     x=xy(i1,i2,i3,0)
+                     y=xy(i1,i2,i3,1)
+                        ! Values for forcep(ex) are currently needed at corners:
+                          call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
+                          call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                          call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                        forcep(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                        ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
+                        ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                        ! forcep(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                        ! OGDERIV(1,1,0,0,x,y,z,tp,hz,utx)
+                        ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                        ! forcep(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+                     ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                   end if
+                   if( forcingOption.eq.twilightZoneForcing )then
+                     ! Test: set to exact solution at time t:
+                     ! x=xy(i1-is1,i2,i3,0)
+                     ! y=xy(i1-is1,i2,i3,1)
+                     ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                     ! un(i1-is1,i2,i3,ey)=eyTrue
+                     ! add TZ forcing *wdh* Sept 17, 2016
+                     ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                     x=xy(i1,i2,i3,0)
+                     y=xy(i1,i2,i3,1)
+                        ! Values for forcef(ex) are currently needed at corners:
+                          call ogDeriv(ep, 1,1,0,0,x,y,z,t,ex,utx)
+                          call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                          call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                        forcef(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                        ! OGDERIV(1,1,0,0,x,y,z,t,ey,utx)
+                        ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                        ! forcef(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                        ! OGDERIV(1,1,0,0,x,y,z,t,hz,utx)
+                        ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                        ! forcef(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+                     ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                   end if
+                  ! do idir=0,2
+                  do idir=0,0 ! ex only 
+                    forcex(idir)=.5*(forcep(idir)+forcef(idir))
+                  end do
+                  ! getForcingEM2(Y,2,tm,is1,is2,forcey)
+                   if( forcingOption.eq.twilightZoneForcing )then
+                     ! Test: set to exact solution at time t:
+                     ! x=xy(i1-is1,i2,i3,0)
+                     ! y=xy(i1-is1,i2,i3,1)
+                     ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                     ! un(i1-is1,i2,i3,ey)=eyTrue
+                     ! add TZ forcing *wdh* Sept 17, 2016
+                     ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                     x=xy(i1,i2,i3,0)
+                     y=xy(i1,i2,i3,1)
+                          call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
+                          call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                          call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                        forcep(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                        ! ! Values for forcep(ey) are currently needed at corners:
+                        ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
+                        ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                        ! forcep(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                        ! OGDERIV(1,0,1,0,x,y,z,tp,hz,uty)
+                        ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                        ! forcep(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+                     ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                   end if
+                   if( forcingOption.eq.twilightZoneForcing )then
+                     ! Test: set to exact solution at time t:
+                     ! x=xy(i1-is1,i2,i3,0)
+                     ! y=xy(i1-is1,i2,i3,1)
+                     ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                     ! un(i1-is1,i2,i3,ey)=eyTrue
+                     ! add TZ forcing *wdh* Sept 17, 2016
+                     ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                     x=xy(i1,i2,i3,0)
+                     y=xy(i1,i2,i3,1)
+                          call ogDeriv(ep, 1,0,1,0,x,y,z,t,ex,uty)
+                          call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                          call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                        forcef(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                        ! ! Values for forcef(ey) are currently needed at corners:
+                        ! OGDERIV(1,0,1,0,x,y,z,t,ey,uty)
+                        ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                        ! forcef(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                        ! OGDERIV(1,0,1,0,x,y,z,t,hz,uty)
+                        ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                        ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                        ! forcef(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+                     ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                   end if
+                  ! do idir=0,2
+                  do idir=0,0 ! ex only 
+                    forcey(idir)=.5*(forcep(idir)+forcef(idir))
+                  end do
+                ! Evaluate the residuals in the corner equations using current ghos values 
+                ! evalCornerResidual(ORDER,DIM)
+                  resv(1) = is1*(unx42r(i1,i2,i3,ex)-ux42r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unxx42r(i1,i2,i3,ex) + c2abcem2*unyy42r(i1,i2,i3,ex) + c1abcem2* uxx42r(i1,i2,i3,ex) + c2abcem2* uyy42r(i1,i2,i3,ex) ) - forcex(ex) 
+                  resv(2) = is2*(uny42r(i1,i2,i3,ex)-uy42r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unyy42r(i1,i2,i3,ex) + c2abcem2*unxx42r(i1,i2,i3,ex) + c1abcem2* uyy42r(i1,i2,i3,ex) + c2abcem2* uxx42r(i1,i2,i3,ex) ) - forcey(ex)  
+                  resv(3) =    un(i1-2*is1,i2,i3,ex) -5.*un(i1-1*is1,i2,i3,ex) +10.*un(i1+0*is1,i2,i3,ex) -10.*un(i1+1*is1,i2,i3,ex) +5.*un(i1+2*is1,i2,i3,ex) -un(i1+3*is1,i2,i3,ex)
+                  resv(4) =    un(i1,i2-2*is2,i3,ex) -5.*un(i1,i2-1*is2,i3,ex) +10.*un(i1,i2+0*is2,i3,ex) -10.*un(i1,i2+1*is2,i3,ex) +5.*un(i1,i2+2*is2,i3,ex) -un(i1,i2+3*is2,i3,ex)
+                a4(1,1) = -8./(12.*dt*dx(axis1))  - .5*c1abcem2*(16.)/(12.*dx(axis1)**2) ! coeff of uA in r1
+                a4(1,2) =  1./(12.*dt*dx(axis1))  - .5*c1abcem2*(-1.)/(12.*dx(axis1)**2) ! coeff of uB in r1
+                a4(1,3) =                         - .5*c2abcem2*(16.)/(12.*dx(axis2)**2) ! coeff of uC in r1
+                a4(1,4) =                         - .5*c2abcem2*(-1.)/(12.*dx(axis2)**2) ! coeff of uD in r1
+                a4(2,1) =                         - .5*c2abcem2*(16.)/(12.*dx(axis1)**2) ! coeff of uC in r2
+                a4(2,2) =                         - .5*c2abcem2*(-1.)/(12.*dx(axis1)**2) ! coeff of uD in r2
+                a4(2,3) = -8./(12.*dt*dx(axis2))  - .5*c1abcem2*(16.)/(12.*dx(axis2)**2) ! coeff of uA in r2
+                a4(2,4) =  1./(12.*dt*dx(axis2))  - .5*c1abcem2*(-1.)/(12.*dx(axis2)**2) ! coeff of uB in r2
+                a4(3,1) = -5.                                                    ! coeff of uA in r1
+                a4(3,2) =  1.                                                    ! coeff of uB in r2
+                a4(3,3)  = 0.
+                a4(3,4)  = 0.
+                a4(4,1) =  0.                                                    ! coeff of uA in r1
+                a4(4,2) =  0.                                                    ! coeff of uB in r2
+                a4(4,3) = -5.
+                a4(4,4) =  1.
+                uv(1) = un(i1-1*is1,i2      ,i3,ex)   ! uA
+                uv(2) = un(i1-2*is1,i2      ,i3,ex)   ! uB
+                uv(3) = un(i1      ,i2-1*is2,i3,ex)   ! uC
+                uv(4) = un(i1      ,i2-2*is2,i3,ex)   ! uD
+                do m=1,4
+                  b4(m) = a4(m,1)*uv(1) + a4(m,2)*uv(2) + a4(m,3)*uv(3) + a4(m,4)*uv(4) - resv(m)
+                end do
+                ! Solve A4 * x = b4
+                numberOfEquations=4
+                call dgeco( a4(1,1), numberOfEquations, numberOfEquations, ipvt4(1), rcond, work4(1) )
+                job=0
+                call dgesl( a4(1,1), numberOfEquations, numberOfEquations, ipvt4(1), b4(1), job )
+                un(i1-1*is1,i2      ,i3,ex) = b4(1)            
+                un(i1-2*is1,i2      ,i3,ex) = b4(2)
+                un(i1      ,i2-1*is2,i3,ex) = b4(3)
+                un(i1      ,i2-2*is2,i3,ex) = b4(4)
+                if( .false. )then
+                  ! check the residuals after solve
+                    resv(1) = is1*(unx42r(i1,i2,i3,ex)-ux42r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unxx42r(i1,i2,i3,ex) + c2abcem2*unyy42r(i1,i2,i3,ex) + c1abcem2* uxx42r(i1,i2,i3,ex) + c2abcem2* uyy42r(i1,i2,i3,ex) ) - forcex(ex) 
+                    resv(2) = is2*(uny42r(i1,i2,i3,ex)-uy42r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unyy42r(i1,i2,i3,ex) + c2abcem2*unxx42r(i1,i2,i3,ex) + c1abcem2* uyy42r(i1,i2,i3,ex) + c2abcem2* uxx42r(i1,i2,i3,ex) ) - forcey(ex)  
+                    resv(3) =    un(i1-2*is1,i2,i3,ex) -5.*un(i1-1*is1,i2,i3,ex) +10.*un(i1+0*is1,i2,i3,ex) -10.*un(i1+1*is1,i2,i3,ex) +5.*un(i1+2*is1,i2,i3,ex) -un(i1+3*is1,i2,i3,ex)
+                    resv(4) =    un(i1,i2-2*is2,i3,ex) -5.*un(i1,i2-1*is2,i3,ex) +10.*un(i1,i2+0*is2,i3,ex) -10.*un(i1,i2+1*is2,i3,ex) +5.*un(i1,i2+2*is2,i3,ex) -un(i1,i2+3*is2,i3,ex)
+                  write(*,'("abcWave: EM order 4: i1,i2=",2i4," corner residuals=",4(1pe10.2,1x))') i1,i2,(resv(m),m=1,4)
+                end if
               else
-                ! 2nd-ghost line 
-                un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-                ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-                ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-                ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                ! un(j1,j2,j3,ez)=extrap4(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
+               ! --- curvilinear grid ----
+               stop 4449
+               side=side1
+               axis=0 
+                 is =1-2*side
+                 dr0=dr(axis)
+                 rx0 = rsxy(i1,i2,i3,axis,0)
+                 ry0 = rsxy(i1,i2,i3,axis,1)
+                 rxNormSq = rx0**2 + ry0**2 
+                 rxNorm = max( epsX, sqrt(rxNormSq) )
+                 rxx0 = rsxyx22(i1,i2,i3,axis,0)
+                 ryy0 = rsxyy22(i1,i2,i3,axis,1)
+                 ! cm1 : coeff of u(i1-is1,i2-is2,i3-is3,cc) in g (given below): 
+                 cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0)/(2.*dr0) ) )
+                 ! u: derivatives at time t: 
+                 ! un: derivatives at time t+dt : evaluate using the incorrect ghost values 
+                 if( axis.eq.0 )then
+                   ur0   =   ur2(i1,i2,i3,ex)
+                   urr0  =  urr2(i1,i2,i3,ex)
+                   unr0  =  unr2(i1,i2,i3,ex)
+                   unrr0 = unrr2(i1,i2,i3,ex)
+                 else
+                   ur0   =   us2(i1,i2,i3,ex)
+                   urr0  =  uss2(i1,i2,i3,ex)
+                   unr0  =  uns2(i1,i2,i3,ex)
+                   unrr0 = unss2(i1,i2,i3,ex)
+                 end if
+                 uxx0 = uxx22(i1,i2,i3,ex)
+                 uyy0 = uyy22(i1,i2,i3,ex)
+                 unxx0 = unxx22(i1,i2,i3,ex)
+                 unyy0 = unyy22(i1,i2,i3,ex)
+                 ! first evaluate the BC using the incorrect ghost values 
+                 Dn2 = rxNormSq*(unrr0+urr0) 
+                 Lu  = unxx0+unyy0 + uxx0+uyy0 
+                 g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
+                 ! note: this assumes an orthogonal grid -- we should make sure that the 
+                 !       ghost values have an initial guess in them (extrapolate ?)
+                 un(i1-is1,i2-is2,i3-is3,ex) = -(g - cm1*un(i1-is1,i2-is2,i3-is3,ex) )/cm1 
               end if
-           end if
-           end if
-          end do
-          end do
-          end do
-
-       end if
-       end do
-
-      else if( edgeDirection.eq.1 )then
-
-       i1=n1a
-       i3=n3a
-       do i2=n2a,n2b
-       if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
-
-         if( adjacentFaceIsABC )then
-           ! Use first-order-in-time formula since it doesn't require other ghost point at new time (un)
-           if( gridType.eq.rectangular )then
-
-             if( forcingOption.eq.twilightZoneForcing )then
-               ! Test: set to exact solution at time t:
-               ! x=xy(i1-is1,i2,i3,0)
-               ! y=xy(i1-is1,i2,i3,1)
-               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-               ! un(i1-is1,i2,i3,ey)=eyTrue
-               ! add TZ forcing *wdh* Sept 17, 2016
-               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-               x=xy(i1,i2,i3,0)
-               y=xy(i1,i2,i3,1)
-                 ! ------ Cartesian Grid 3d forcing ----------
-                 z=xy(i1,i2,i3,2)
-                  ! Values for forcex(ex) are currently needed at corners:
-                    call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
-                    call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                    call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                    call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
-                  forcex(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
-                  ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                  ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
-                  ! forcex(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
-                  ! OGDERIV(1,1,0,0,x,y,z,tp,ez,utx)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
-                  ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
-                  ! forcex(ez) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) )
-               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-             end if
-
-            un(i1-is1,i2,i3,ex)=(un(i1+is1,i2+0,i3+0,ex)-(u(i1+is1,i2+0,i3+0,ex)-u(i1-is1,i2-0,i3-0,ex))-(2.*dxa*dt)*(c1abcem2*uxx23r(i1,i2,i3,ex)+c2abcem2*(uyy23r(i1,i2,i3,ex)+uzz23r(i1,i2,i3,ex))+forcex(ex)))
-
-             if( forcingOption.eq.twilightZoneForcing )then
-               ! Test: set to exact solution at time t:
-               ! x=xy(i1-is1,i2,i3,0)
-               ! y=xy(i1-is1,i2,i3,1)
-               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-               ! un(i1-is1,i2,i3,ey)=eyTrue
-               ! add TZ forcing *wdh* Sept 17, 2016
-               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-               x=xy(i1,i2,i3,0)
-               y=xy(i1,i2,i3,1)
-                 ! ------ Cartesian Grid 3d forcing ----------
-                 z=xy(i1,i2,i3,2)
-                    call ogDeriv(ep, 1,0,0,1,x,y,z,tp,ex,utz)
-                    call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                    call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                    call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
-                  forcez(ex) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
-                  ! OGDERIV(1,0,0,1,x,y,z,tp,ey,utz)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                  ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
-                  ! forcez(ey) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) ) 
-                  ! OGDERIV(1,0,0,1,x,y,z,tp,ez,utz)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
-                  ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
-                  ! forcez(ez) = is3*utz - ( c1abcem2*uzz + c2abcem2*(uxx+uyy) )
-               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-             end if
-
-            un(i1,i2,i3-is3,ex)=(un(i1+0,i2+0,i3+is3,ex)-(u(i1+0,i2+0,i3+is3,ex)-u(i1-0,i2-0,i3-is3,ex))-(2.*dza*dt)*(c1abcem2*uzz23r(i1,i2,i3,ex)+c2abcem2*(uxx23r(i1,i2,i3,ex)+uyy23r(i1,i2,i3,ex))+forcez(ex)))
-
-           else
-
-              is =1-2*side1
-              dr0=dr(0)
-              rx0 = rsxy(i1,i2,i3,0,0)
-              ry0 = rsxy(i1,i2,i3,0,1)
-              rz0 = rsxy(i1,i2,i3,0,2)
-              rxNormSq = rx0**2 + ry0**2 + rz0**2
-              rxNorm = max( epsX, sqrt(rxNormSq) )
-              rxx0 = rsxyx23(i1,i2,i3,0,0)
-              ryy0 = rsxyy23(i1,i2,i3,0,1)
-              rzz0 = rsxyz23(i1,i2,i3,0,2)
-              ! cm1 : coeff of u(i1-is1,i2-0,i3-0,cc) in g (given below): 
-              cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
-              ! derivatives at time t: 
-              ! derivatives at time t+dt : evaluate using the incorrect ghost values 
-              if( 0.eq.0 )then
-                ur0   =   ur2(i1,i2,i3,ex)
-                urr0  =  urr2(i1,i2,i3,ex)
-                unr0  =  unr2(i1,i2,i3,ex)
-                unrr0 = unrr2(i1,i2,i3,ex)
-              else if( 0.eq.1 )then
-                ur0   =   us2(i1,i2,i3,ex)
-                urr0  =  uss2(i1,i2,i3,ex)
-                unr0  =  uns2(i1,i2,i3,ex)
-                unrr0 = unss2(i1,i2,i3,ex)
-              else
-                ur0   =   ut2(i1,i2,i3,ex)
-                urr0  =  utt2(i1,i2,i3,ex)
-                unr0  =  unt2(i1,i2,i3,ex)
-                unrr0 = untt2(i1,i2,i3,ex)
+            else 
+              ! --- adjacent face is NOT another ABC ---
+              ! Extrapolate -- do this for now
+              extrapOrder=5
+              if( bc1.ne.symmetryBoundaryCondition )then
+                  ksv(0)=0
+                  ksv(1)=0
+                  ksv(2)=0
+                  ksv(0)=1-2*side1
+                  ks1=ksv(0)
+                  ks2=ksv(1)
+                  ks3=ksv(2)
+                  if( extrapOrder.eq.3 )then
+                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+ks1,i2+ks2,i3+ks3,ex)+un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex))
+                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap3(un,i1,i2,i3,ey,ks1,ks2,ks3)
+                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap3(un,i1,i2,i3,hz,ks1,ks2,ks3)
+                  else if( extrapOrder.eq.5 )then
+                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(5.*un(i1,i2,i3,ex)-10.*un(i1+ks1,i2+ks2,i3+ks3,ex)+10.*un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex)-5.*un(i1+3*ks1,i2+3*ks2,i3+3*ks3,ex)+un(i1+4*ks1,i2+4*ks2,i3+4*ks3,ex))
+                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap5(un,i1,i2,i3,ey,ks1,ks2,ks3)
+                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap5(un,i1,i2,i3,hz,ks1,ks2,ks3)
+                  else
+                    stop 1782
+                  end if
               end if
-              uxx0 = uxx23(i1,i2,i3,ex)
-              uyy0 = uyy23(i1,i2,i3,ex)
-              uzz0 = uzz23(i1,i2,i3,ex)
-              unxx0 = unxx23(i1,i2,i3,ex)
-              unyy0 = unyy23(i1,i2,i3,ex)
-              unzz0 = unzz23(i1,i2,i3,ex)
-              ! first evaluate the BC using the incorrect ghost values 
-              Dn2 = rxNormSq*(unrr0+urr0) 
-              Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
-              g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
-              ! note: this assumes an orthogonal grid -- we should make sure that the 
-              !       ghost values have an initial guess in them (extrapolate ?)
-              un(i1-is1,i2-0,i3-0,ex) = -(g - cm1*un(i1-is1,i2-0,i3-0,ex) )/cm1 
+              if( bc2.ne.symmetryBoundaryCondition )then
+                  ksv(0)=0
+                  ksv(1)=0
+                  ksv(2)=0
+                  ksv(1)=1-2*side2
+                  ks1=ksv(0)
+                  ks2=ksv(1)
+                  ks3=ksv(2)
+                  if( extrapOrder.eq.3 )then
+                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+ks1,i2+ks2,i3+ks3,ex)+un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex))
+                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap3(un,i1,i2,i3,ey,ks1,ks2,ks3)
+                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap3(un,i1,i2,i3,hz,ks1,ks2,ks3)
+                  else if( extrapOrder.eq.5 )then
+                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(5.*un(i1,i2,i3,ex)-10.*un(i1+ks1,i2+ks2,i3+ks3,ex)+10.*un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex)-5.*un(i1+3*ks1,i2+3*ks2,i3+3*ks3,ex)+un(i1+4*ks1,i2+4*ks2,i3+4*ks3,ex))
+                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap5(un,i1,i2,i3,ey,ks1,ks2,ks3)
+                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap5(un,i1,i2,i3,hz,ks1,ks2,ks3)
+                  else
+                    stop 1782
+                  end if
+              end if 
+            end if ! end if adjacentFaceIsABC
+            ! --- Now extrapolate the 3 ghost points "G" adjacent to the corner ---
+            j1=i1-is1; j2=i2-is2; j3=0; 
+            un(j1,j2,j3,ex)=(5.*un(j1+is1,j2+is2,j3+is3,ex)-10.*un(j1+is1+is1,j2+is2+is2,j3+is3+is3,ex)+10.*un(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,ex)-5.*un(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,ex)+un(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,ex))
+            j1=i1-2*is1; j2=i2-is2; 
+            un(j1,j2,j3,ex)=(5.*un(j1+is1,j2+is2,j3+is3,ex)-10.*un(j1+is1+is1,j2+is2+is2,j3+is3+is3,ex)+10.*un(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,ex)-5.*un(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,ex)+un(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,ex))
+            j1=i1-is1; j2=i2-2*is2; 
+            un(j1,j2,j3,ex)=(5.*un(j1+is1,j2+is2,j3+is3,ex)-10.*un(j1+is1+is1,j2+is2+is2,j3+is3+is3,ex)+10.*un(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,ex)-5.*un(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,ex)+un(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,ex))
+           end if ! mask 
+          end if ! if one face is ABC
+        end do          
+        end do          
+      else 
+        ! ***** 3D *****
+        write(*,*) 'abcWave: corners and edges FINISH ME - 3D'
+        stop 3434
+      end if  
 
-              is =1-2*side3
-              dr0=dr(2)
-              rx0 = rsxy(i1,i2,i3,2,0)
-              ry0 = rsxy(i1,i2,i3,2,1)
-              rz0 = rsxy(i1,i2,i3,2,2)
-              rxNormSq = rx0**2 + ry0**2 + rz0**2
-              rxNorm = max( epsX, sqrt(rxNormSq) )
-              rxx0 = rsxyx23(i1,i2,i3,2,0)
-              ryy0 = rsxyy23(i1,i2,i3,2,1)
-              rzz0 = rsxyz23(i1,i2,i3,2,2)
-              ! cm1 : coeff of u(i1-0,i2-0,i3-is3,cc) in g (given below): 
-              cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
-              ! derivatives at time t: 
-              ! derivatives at time t+dt : evaluate using the incorrect ghost values 
-              if( 2.eq.0 )then
-                ur0   =   ur2(i1,i2,i3,ex)
-                urr0  =  urr2(i1,i2,i3,ex)
-                unr0  =  unr2(i1,i2,i3,ex)
-                unrr0 = unrr2(i1,i2,i3,ex)
-              else if( 2.eq.1 )then
-                ur0   =   us2(i1,i2,i3,ex)
-                urr0  =  uss2(i1,i2,i3,ex)
-                unr0  =  uns2(i1,i2,i3,ex)
-                unrr0 = unss2(i1,i2,i3,ex)
-              else
-                ur0   =   ut2(i1,i2,i3,ex)
-                urr0  =  utt2(i1,i2,i3,ex)
-                unr0  =  unt2(i1,i2,i3,ex)
-                unrr0 = untt2(i1,i2,i3,ex)
-              end if
-              uxx0 = uxx23(i1,i2,i3,ex)
-              uyy0 = uyy23(i1,i2,i3,ex)
-              uzz0 = uzz23(i1,i2,i3,ex)
-              unxx0 = unxx23(i1,i2,i3,ex)
-              unyy0 = unyy23(i1,i2,i3,ex)
-              unzz0 = unzz23(i1,i2,i3,ex)
-              ! first evaluate the BC using the incorrect ghost values 
-              Dn2 = rxNormSq*(unrr0+urr0) 
-              Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
-              g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
-              ! note: this assumes an orthogonal grid -- we should make sure that the 
-              !       ghost values have an initial guess in them (extrapolate ?)
-              un(i1-0,i2-0,i3-is3,ex) = -(g - cm1*un(i1-0,i2-0,i3-is3,ex) )/cm1 
-
-           end if
-
-         else
-          ! --- adjacent face is NOT another ABC ---
-          ! *CHECK ME*
-
-          ! Do this for now *wdh* Sept 20, 2016
-          js1=is1
-          js2=0
-          js3=0
-          un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
-          
-          js1=0
-          js2=0
-          js3=is3
-          un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
-
-         end if ! end adjacentFace
-
-          do m3=0,numberOfGhostPoints
-          do m2=0,0
-          do m1=0,numberOfGhostPoints
-           mSum = m1+m2+m3
-           if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
-            ! extrap ghost point (j1,j2,j3)
-            j1=i1-is1*m1
-            j2=i2-is2*m2
-            j3=i3-is3*m3
-            ! js1=0 if m1=0 and js1=is1 if m1>0
-            js1 = is1*min(m1,1)
-            js2 = is2*min(m2,1)
-            js3 = is3*min(m3,1)
-            if( orderOfAccuracy.eq.2 )then
-              ! Changed to third-order extra *wdh* Sept 18, 2016
-              un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
-              ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              ! un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-              ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-              ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              ! un(j1,j2,j3,ez)=extrap2(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-            else                                                                           
-              ! Note: adjust for incident fields should take into account the width of extrapolation: 
-              if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
-                ! increased extrapolation to order=5 *wdh* June 20, 2016
-                un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-                ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-                !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-                !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                !un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-              else
-                ! 2nd-ghost line 
-                un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-                ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-                ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-                ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                ! un(j1,j2,j3,ez)=extrap4(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-              end if
-           end if
-           end if
-          end do
-          end do
-          end do
-
-       end if
-       end do
-
-      else if( edgeDirection.eq.2 )then
-       ! write(*,'(" ABC:set corner: grid,side1,side2,i1,i2=",3i3,2i5)') grid,side1,side2,i1,i2
-       i1=n1a
-       i2=n2a
-       do i3=n3a,n3b
-       if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
-
-         if( adjacentFaceIsABC )then
-           ! Use first-order-in-time formula since it doesn't require other ghost point at new time (un)
-           if( gridType.eq.rectangular )then
-             if( forcingOption.eq.twilightZoneForcing )then
-               ! Test: set to exact solution at time t:
-               ! x=xy(i1-is1,i2,i3,0)
-               ! y=xy(i1-is1,i2,i3,1)
-               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-               ! un(i1-is1,i2,i3,ey)=eyTrue
-               ! add TZ forcing *wdh* Sept 17, 2016
-               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-               x=xy(i1,i2,i3,0)
-               y=xy(i1,i2,i3,1)
-                 ! ------ Cartesian Grid 3d forcing ----------
-                 z=xy(i1,i2,i3,2)
-                  ! Values for forcex(ex) are currently needed at corners:
-                    call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
-                    call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                    call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                    call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
-                  forcex(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
-                  ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                  ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
-                  ! forcex(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) ) 
-                  ! OGDERIV(1,1,0,0,x,y,z,tp,ez,utx)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
-                  ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
-                  ! forcex(ez) = is1*utx - ( c1abcem2*uxx + c2abcem2*(uyy+uzz) )
-               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-             end if
-
-            un(i1-is1,i2,i3,ex)=(un(i1+is1,i2+0,i3+0,ex)-(u(i1+is1,i2+0,i3+0,ex)-u(i1-is1,i2-0,i3-0,ex))-(2.*dxa*dt)*(c1abcem2*uxx23r(i1,i2,i3,ex)+c2abcem2*(uyy23r(i1,i2,i3,ex)+uzz23r(i1,i2,i3,ex))+forcex(ex)))
-         
-             if( forcingOption.eq.twilightZoneForcing )then
-               ! Test: set to exact solution at time t:
-               ! x=xy(i1-is1,i2,i3,0)
-               ! y=xy(i1-is1,i2,i3,1)
-               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
-               ! un(i1-is1,i2,i3,ey)=eyTrue
-               ! add TZ forcing *wdh* Sept 17, 2016
-               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
-               x=xy(i1,i2,i3,0)
-               y=xy(i1,i2,i3,1)
-                 ! ------ Cartesian Grid 3d forcing ----------
-                 z=xy(i1,i2,i3,2)
-                    call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
-                    call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
-                    call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
-                    call ogDeriv(ep, 0,0,0,2,x,y,z,tp,ex,uzz)
-                  forcey(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
-                  ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
-                  ! OGDERIV(0,0,0,2,x,y,z,tp,ey,uzz)
-                  ! forcey(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) ) 
-                  ! OGDERIV(1,0,1,0,x,y,z,tp,ez,uty)
-                  ! OGDERIV(0,2,0,0,x,y,z,tp,ez,uxx)
-                  ! OGDERIV(0,0,2,0,x,y,z,tp,ez,uyy)
-                  ! OGDERIV(0,0,0,2,x,y,z,tp,ez,uzz)
-                  ! forcey(ez) = is2*uty - ( c1abcem2*uyy + c2abcem2*(uxx+uzz) )
-               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
-             end if
-
-            un(i1,i2-is2,i3,ex)=(un(i1+0,i2+is2,i3+0,ex)-(u(i1+0,i2+is2,i3+0,ex)-u(i1-0,i2-is2,i3-0,ex))-(2.*dya*dt)*(c1abcem2*uyy23r(i1,i2,i3,ex)+c2abcem2*(uxx23r(i1,i2,i3,ex)+uzz23r(i1,i2,i3,ex))+forcey(ex)))
-
-           else
-
-              is =1-2*side1
-              dr0=dr(0)
-              rx0 = rsxy(i1,i2,i3,0,0)
-              ry0 = rsxy(i1,i2,i3,0,1)
-              rz0 = rsxy(i1,i2,i3,0,2)
-              rxNormSq = rx0**2 + ry0**2 + rz0**2
-              rxNorm = max( epsX, sqrt(rxNormSq) )
-              rxx0 = rsxyx23(i1,i2,i3,0,0)
-              ryy0 = rsxyy23(i1,i2,i3,0,1)
-              rzz0 = rsxyz23(i1,i2,i3,0,2)
-              ! cm1 : coeff of u(i1-is1,i2-0,i3-0,cc) in g (given below): 
-              cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
-              ! derivatives at time t: 
-              ! derivatives at time t+dt : evaluate using the incorrect ghost values 
-              if( 0.eq.0 )then
-                ur0   =   ur2(i1,i2,i3,ex)
-                urr0  =  urr2(i1,i2,i3,ex)
-                unr0  =  unr2(i1,i2,i3,ex)
-                unrr0 = unrr2(i1,i2,i3,ex)
-              else if( 0.eq.1 )then
-                ur0   =   us2(i1,i2,i3,ex)
-                urr0  =  uss2(i1,i2,i3,ex)
-                unr0  =  uns2(i1,i2,i3,ex)
-                unrr0 = unss2(i1,i2,i3,ex)
-              else
-                ur0   =   ut2(i1,i2,i3,ex)
-                urr0  =  utt2(i1,i2,i3,ex)
-                unr0  =  unt2(i1,i2,i3,ex)
-                unrr0 = untt2(i1,i2,i3,ex)
-              end if
-              uxx0 = uxx23(i1,i2,i3,ex)
-              uyy0 = uyy23(i1,i2,i3,ex)
-              uzz0 = uzz23(i1,i2,i3,ex)
-              unxx0 = unxx23(i1,i2,i3,ex)
-              unyy0 = unyy23(i1,i2,i3,ex)
-              unzz0 = unzz23(i1,i2,i3,ex)
-              ! first evaluate the BC using the incorrect ghost values 
-              Dn2 = rxNormSq*(unrr0+urr0) 
-              Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
-              g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
-              ! note: this assumes an orthogonal grid -- we should make sure that the 
-              !       ghost values have an initial guess in them (extrapolate ?)
-              un(i1-is1,i2-0,i3-0,ex) = -(g - cm1*un(i1-is1,i2-0,i3-0,ex) )/cm1 
-
-              is =1-2*side2
-              dr0=dr(1)
-              rx0 = rsxy(i1,i2,i3,1,0)
-              ry0 = rsxy(i1,i2,i3,1,1)
-              rz0 = rsxy(i1,i2,i3,1,2)
-              rxNormSq = rx0**2 + ry0**2 + rz0**2
-              rxNorm = max( epsX, sqrt(rxNormSq) )
-              rxx0 = rsxyx23(i1,i2,i3,1,0)
-              ryy0 = rsxyy23(i1,i2,i3,1,1)
-              rzz0 = rsxyz23(i1,i2,i3,1,2)
-              ! cm1 : coeff of u(i1-0,i2-is2,i3-0,cc) in g (given below): 
-              cm1 = -rxNorm/(2.*dr0*dt) -.5*( c1abcem2*( rxNormSq/dr0**2 ) + c2abcem2*( -is*(rxx0+ryy0+rzz0)/(2.*dr0) ) )
-              ! derivatives at time t: 
-              ! derivatives at time t+dt : evaluate using the incorrect ghost values 
-              if( 1.eq.0 )then
-                ur0   =   ur2(i1,i2,i3,ex)
-                urr0  =  urr2(i1,i2,i3,ex)
-                unr0  =  unr2(i1,i2,i3,ex)
-                unrr0 = unrr2(i1,i2,i3,ex)
-              else if( 1.eq.1 )then
-                ur0   =   us2(i1,i2,i3,ex)
-                urr0  =  uss2(i1,i2,i3,ex)
-                unr0  =  uns2(i1,i2,i3,ex)
-                unrr0 = unss2(i1,i2,i3,ex)
-              else
-                ur0   =   ut2(i1,i2,i3,ex)
-                urr0  =  utt2(i1,i2,i3,ex)
-                unr0  =  unt2(i1,i2,i3,ex)
-                unrr0 = untt2(i1,i2,i3,ex)
-              end if
-              uxx0 = uxx23(i1,i2,i3,ex)
-              uyy0 = uyy23(i1,i2,i3,ex)
-              uzz0 = uzz23(i1,i2,i3,ex)
-              unxx0 = unxx23(i1,i2,i3,ex)
-              unyy0 = unyy23(i1,i2,i3,ex)
-              unzz0 = unzz23(i1,i2,i3,ex)
-              ! first evaluate the BC using the incorrect ghost values 
-              Dn2 = rxNormSq*(unrr0+urr0) 
-              Lu  = unxx0 + unyy0 + unzz0 + uxx0 + uyy0 + uzz0 
-              g = is*rxNorm*(unr0-ur0)/dt -.5*( c1abcem2*( Dn2 ) + c2abcem2*( Lu - Dn2 ) )
-              ! note: this assumes an orthogonal grid -- we should make sure that the 
-              !       ghost values have an initial guess in them (extrapolate ?)
-              un(i1-0,i2-is2,i3-0,ex) = -(g - cm1*un(i1-0,i2-is2,i3-0,ex) )/cm1 
-
-           end if
-
-         else
-          ! --- adjacent face is NOT another ABC ---
-          ! *CHECK ME*
-
-          ! Do this for now *wdh* Sept 20, 2016
-          js1=is1
-          js2=0
-          js3=0
-          un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
-          
-          js1=0
-          js2=is2
-          js3=0
-          un(i1-js1,i2-js2,i3-js3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+js1,i2+js2,i3+js3,ex)+un(i1+2*js1,i2+2*js2,i3+2*js3,ex))
-
-         end if ! end adjacentFace
-
-          do m3=0,0
-          do m2=0,numberOfGhostPoints
-          do m1=0,numberOfGhostPoints
-           mSum = m1+m2+m3
-           if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
-            ! extrap ghost point (j1,j2,j3)
-            j1=i1-is1*m1
-            j2=i2-is2*m2
-            j3=i3-is3*m3
-            ! js1=0 if m1=0 and js1=is1 if m1>0
-            js1 = is1*min(m1,1)
-            js2 = is2*min(m2,1)
-            js3 = is3*min(m3,1)
-            if( orderOfAccuracy.eq.2 )then
-              ! Changed to third-order extra *wdh* Sept 18, 2016
-              un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
-              ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              ! un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-              ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-              ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              ! un(j1,j2,j3,ez)=extrap2(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-            else                                                                           
-              ! Note: adjust for incident fields should take into account the width of extrapolation: 
-              if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
-                ! increased extrapolation to order=5 *wdh* June 20, 2016
-                un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-                ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-                !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-                !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                !un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-              else
-                ! 2nd-ghost line 
-                un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-                ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-                ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-                ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-                ! un(j1,j2,j3,ez)=extrap4(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-              end if
-           end if
-           end if
-          end do
-          end do
-          end do
-
-       end if
-       end do
-
-      end if ! end if edgeDirection
-     end if ! bc
-     end do ! end sideb
-     end do ! end sidea
-     end do ! end edgeDirection
-
-    ! ***** vertices in 3D  *****
-    do side3=0,1
-    do side2=0,1
-    do side1=0,1
-     bc1=boundaryCondition(side1,0)
-     bc2=boundaryCondition(side2,1)
-     bc3=boundaryCondition(side3,2)
-     if( ( (bc1.eq.abcEM2 .or. bc1.eq.absorbing) .or. (bc2.eq.abcEM2 .or. bc2.eq.absorbing) .or. (bc3.eq.abcEM2 .or. bc3.eq.absorbing) ) .and.  ( bc1.gt.0 .and. bc2.gt.0 .and. bc3.gt.0 ) )then
-      ! Three physical faces meet at this corner and at least one face is an ABC
-      i1=gridIndexRange(side1,0)
-      i2=gridIndexRange(side2,1)
-      i3=gridIndexRange(side3,2)
-      if( mask(i1,i2,i3).gt.0 )then 
-
-       is1=1-2*side1
-       is2=1-2*side2
-       is3=1-2*side3
-
-        do m3=0,numberOfGhostPoints
-        do m2=0,numberOfGhostPoints
-        do m1=0,numberOfGhostPoints
-         mSum = m1+m2+m3
-         if( mSum.gt.0 .and. mSum.ne.1 )then ! mSum=1 : these points have already been assigned
-          ! extrap ghost point (j1,j2,j3)
-          j1=i1-is1*m1
-          j2=i2-is2*m2
-          j3=i3-is3*m3
-          ! js1=0 if m1=0 and js1=is1 if m1>0
-          js1 = is1*min(m1,1)
-          js2 = is2*min(m2,1)
-          js3 = is3*min(m3,1)
-          if( orderOfAccuracy.eq.2 )then
-            ! Changed to third-order extra *wdh* Sept 18, 2016
-            un(j1,j2,j3,ex)=(3.*un(j1+js1,j2+js2,j3+js3,ex)-3.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex))
-            ! un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-            ! un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-            ! un(j1,j2,j3,ex)=extrap2(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-            ! un(j1,j2,j3,ey)=extrap2(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-            ! un(j1,j2,j3,ez)=extrap2(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-          else                                                                           
-            ! Note: adjust for incident fields should take into account the width of extrapolation: 
-            if( m1.le.1 .and. m2.le.1 .and. m3.le.1 )then
-              ! increased extrapolation to order=5 *wdh* June 20, 2016
-              un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-              ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-              !un(j1,j2,j3,ex)=extrap3(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-              !un(j1,j2,j3,ey)=extrap3(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              !un(j1,j2,j3,ez)=extrap3(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-            else
-              ! 2nd-ghost line 
-              un(j1,j2,j3,ex)=(5.*un(j1+js1,j2+js2,j3+js3,ex)-10.*un(j1+js1+js1,j2+js2+js2,j3+js3+js3,ex)+10.*un(j1+js1+2*js1,j2+js2+2*js2,j3+js3+2*js3,ex)-5.*un(j1+js1+3*js1,j2+js2+3*js2,j3+js3+3*js3,ex)+un(j1+js1+4*js1,j2+js2+4*js2,j3+js3+4*js3,ex))
-              ! un(j1,j2,j3,ey)=extrap5(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              ! un(j1,j2,j3,ez)=extrap5(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-              ! un(j1,j2,j3,ex)=extrap4(un,j1+js1,j2+js2,j3+js3,ex,js1,js2,js3)
-              ! un(j1,j2,j3,ey)=extrap4(un,j1+js1,j2+js2,j3+js3,ey,js1,js2,js3)
-              ! un(j1,j2,j3,ez)=extrap4(un,j1+js1,j2+js2,j3+js3,ez,js1,js2,js3)
-            end if
-         end if
-         end if
-        end do
-        end do
-        end do
-
-      end if ! mask
-     end if
-    end do
-    end do
-    end do
-
-   !  end if
-
+  else
+    write(*,*) 'abcWave: assign edges and corners, finish me for orderOfAccuracy=',orderOfAccuracy
+    stop 6666
   end if
+
 
 
   ! -------------------------------------------------------------------------
@@ -3331,6 +3548,84 @@
     ! write(*,'(" Apply abcEM2 rectangular: grid,side,axis=",3i3," dt,c=",2e12.3," is1,is2=",2i2)') grid,side,axis,dt,c,is1,is2
     if( nd.eq.2 )then
      if( axis.eq.0 )then
+
+      checkResiduals=.false.
+      if( checkResiduals )then
+        do i3=n3a,n3b
+        do i2=n2a,n2b
+        do i1=n1a,n1b
+        if( mask(i1,i2,i3).gt.0 )then
+              ! macro: 
+           ! getForcingEM2(X,2,tm,is1,is2,forcex)
+            if( forcingOption.eq.twilightZoneForcing )then
+              ! Test: set to exact solution at time t:
+              ! x=xy(i1-is1,i2,i3,0)
+              ! y=xy(i1-is1,i2,i3,1)
+              ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+              ! un(i1-is1,i2,i3,ey)=eyTrue
+              ! add TZ forcing *wdh* Sept 17, 2016
+              ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+              x=xy(i1,i2,i3,0)
+              y=xy(i1,i2,i3,1)
+                 ! Values for forcep(ex) are currently needed at corners:
+                   call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
+                   call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                   call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                 forcep(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                 ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
+                 ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                 ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                 ! forcep(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                 ! OGDERIV(1,1,0,0,x,y,z,tp,hz,utx)
+                 ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                 ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                 ! forcep(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+              ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+            end if
+            if( forcingOption.eq.twilightZoneForcing )then
+              ! Test: set to exact solution at time t:
+              ! x=xy(i1-is1,i2,i3,0)
+              ! y=xy(i1-is1,i2,i3,1)
+              ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+              ! un(i1-is1,i2,i3,ey)=eyTrue
+              ! add TZ forcing *wdh* Sept 17, 2016
+              ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+              x=xy(i1,i2,i3,0)
+              y=xy(i1,i2,i3,1)
+                 ! Values for forcef(ex) are currently needed at corners:
+                   call ogDeriv(ep, 1,1,0,0,x,y,z,t,ex,utx)
+                   call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                   call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                 forcef(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                 ! OGDERIV(1,1,0,0,x,y,z,t,ey,utx)
+                 ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                 ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                 ! forcef(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                 ! OGDERIV(1,1,0,0,x,y,z,t,hz,utx)
+                 ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                 ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                 ! forcef(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+              ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+            end if
+           ! do idir=0,2
+           do idir=0,0 ! ex only 
+             forcex(idir)=.5*(forcep(idir)+forcef(idir))
+           end do
+
+         ! check residual on input (use to check implicit solve)
+         res = un(i1-is1,i2-is2,i3-is3,ex) - ((un(i1+is1,i2+is2,i3+is3,ex)-(u(i1+is1,i2+is2,i3+is3,ex)-u(i1-is1,i2-is2,i3-is3,ex))-(dxa*dt)*(c1abcem2*uxx22r(i1,i2,i3,ex)+c2abcem2*uyy22r(i1,i2,i3,ex)+c1abcem2*(-2.*un(i1,i2,i3,ex)+un(i1+is1,i2,i3,ex))/dxa**2+c2abcem2*(un(i1,i2-1,i3,ex)-2.*un(i1,i2,i3,ex)+un(i1,i2+1,i3,ex))/dx(1)**2+2.*forcex(ex)))/(1.+c1abcem2*dt/dxa))
+
+         ! res -= -is*(unx-ucx)/dt  + (.5*ca)*( unxx + ucxx ) + (.25*ca)*( unyy + ucyy );
+         r1 = is1*(unx22r(i1,i2,i3,ex)-ux22r(i1,i2,i3,ex))/(dt)- .5*( (cEM2)*unxx22r(i1,i2,i3,ex) + (.5*cEM2)*unyy22r(i1,i2,i3,ex) +(cEM2)* uxx22r(i1,i2,i3,ex) + (.5*cEM2)* uyy22r(i1,i2,i3,ex) ) - forcex(ex) 
+
+         ! res2 = -is1*(unx-ucx)/dt  + (.5*cEM2)*( unxx + ucxx ) + (.25*cEM2)*( unyy + ucyy );         
+         write(*,'(">EM2: t=",1pe10.2," cEM2=",1pe12.4," i1,i2,forcex,un,res,r1=",2i3,1pe10.2,1pe10.2,1pe10.2,1pe10.2)') t,cEM2,i1,i2,forcex(ex),un(i1-is1,i2-is2,i3-is3,ex),res,r1
+        end if
+        end do
+        end do
+        end do
+      end if
+
       do i3=n3a,n3b
       do i2=n2a,n2b
       do i1=n1a,n1b
@@ -3400,7 +3695,81 @@
       end do
       end do
 
+
      else if( axis.eq.1 )then
+
+      if( checkResiduals )then
+        do i3=n3a,n3b
+        do i2=n2a,n2b
+        do i1=n1a,n1b
+        if( mask(i1,i2,i3).gt.0 )then
+          ! macro: 
+            ! getForcingEM2(Y,2,tm,is1,is2,forcey)
+             if( forcingOption.eq.twilightZoneForcing )then
+               ! Test: set to exact solution at time t:
+               ! x=xy(i1-is1,i2,i3,0)
+               ! y=xy(i1-is1,i2,i3,1)
+               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+               ! un(i1-is1,i2,i3,ey)=eyTrue
+               ! add TZ forcing *wdh* Sept 17, 2016
+               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+               x=xy(i1,i2,i3,0)
+               y=xy(i1,i2,i3,1)
+                    call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
+                    call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                    call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                  forcep(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                  ! ! Values for forcep(ey) are currently needed at corners:
+                  ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
+                  ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                  ! forcep(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                  ! OGDERIV(1,0,1,0,x,y,z,tp,hz,uty)
+                  ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                  ! forcep(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+             end if
+             if( forcingOption.eq.twilightZoneForcing )then
+               ! Test: set to exact solution at time t:
+               ! x=xy(i1-is1,i2,i3,0)
+               ! y=xy(i1-is1,i2,i3,1)
+               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+               ! un(i1-is1,i2,i3,ey)=eyTrue
+               ! add TZ forcing *wdh* Sept 17, 2016
+               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+               x=xy(i1,i2,i3,0)
+               y=xy(i1,i2,i3,1)
+                    call ogDeriv(ep, 1,0,1,0,x,y,z,t,ex,uty)
+                    call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                    call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                  forcef(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                  ! ! Values for forcef(ey) are currently needed at corners:
+                  ! OGDERIV(1,0,1,0,x,y,z,t,ey,uty)
+                  ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                  ! forcef(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                  ! OGDERIV(1,0,1,0,x,y,z,t,hz,uty)
+                  ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                  ! forcef(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+             end if
+            ! do idir=0,2
+            do idir=0,0 ! ex only 
+              forcey(idir)=.5*(forcep(idir)+forcef(idir))
+            end do
+
+         ! check residual on input (use to check implicit solve)
+         res = un(i1-is1,i2-is2,i3-is3,ex) - ((un(i1+is1,i2+is2,i3+is3,ex)-(u(i1+is1,i2+is2,i3+is3,ex)-u(i1-is1,i2-is2,i3-is3,ex))-(dya*dt)*(c1abcem2*uyy22r(i1,i2,i3,ex)+c2abcem2*uxx22r(i1,i2,i3,ex)+c1abcem2*(-2.*un(i1,i2,i3,ex)+un(i1,i2+is2,i3,ex))/dya**2+c2abcem2*(un(i1-1,i2,i3,ex)-2.*un(i1,i2,i3,ex)+un(i1+1,i2,i3,ex))/dx(0)**2+2.*forcey(ex)))/(1.+c1abcem2*dt/dya))
+         write(*,'(">EM2: t=",1pe10.2," cEM2=",1pe12.4," i1,i2,forcey,residual=",2i3,1pe10.2,1pe10.2)') t,cEM2,i1,i2,forcey(ex),res
+
+        end if
+        end do
+        end do
+        end do
+      end if
+
       do i3=n3a,n3b
       do i2=n2a,n2b
       do i1=n1a,n1b
@@ -3737,26 +4106,196 @@
     ! ***********************************************
 
    
-    ! >>>>>>>>>>>>>>>> this is only second-order ---- fix this <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-    
-    ! write(*,'(" Apply abcEM2 CART order=4: grid,side,axis=",3i3," dt,c=",2e12.3)') grid,side,axis,dt,c
+    ! write(*,'(" Apply abcEM2 CARTESIAN order=4: grid,side,axis=",3i3," dt,c=",2e12.3)') grid,side,axis,dt,c
 
     if( nd.eq.2 )then
-     if( axis.eq.0 )then
+
+     if( .true. )then
+
       do i3=n3a,n3b
       do i2=n2a,n2b
       do i1=n1a,n1b
       if( mask(i1,i2,i3).gt.0 )then
-   
-       un(i1-is1,i2-is2,i3-is3,ex)=((un(i1+is1,i2+is2,i3+is3,ex)-(u(i1+is1,i2+is2,i3+is3,ex)-u(i1-is1,i2-is2,i3-is3,ex))-(dxa*dt)*(c1abcem2*uxx22r(i1,i2,i3,ex)+c2abcem2*uyy22r(i1,i2,i3,ex)+c1abcem2*(-2.*un(i1,i2,i3,ex)+un(i1+is1,i2,i3,ex))/dxa**2+c2abcem2*(un(i1,i2-1,i3,ex)-2.*un(i1,i2,i3,ex)+un(i1,i2+1,i3,ex))/dx(1)**2+2.*forcex(ex)))/(1.+c1abcem2*dt/dxa))
-   
-         un(i1-2*is1,i2-2*is2,i3-2*is3,ex)=4.*un(i1-is1,i2-is2,i3-is3,ex)-6.*un(i1,i2,i3,ex)+4.*un(i1+is1,i2+is2,i3+is3,ex)-un(i1+2*is1,i2+2*is2,i3+2*is3,ex)
+        ! Solve: 
+        !   f1 = is* u_xt - c( u_xx + .5*u_yy )
+        !   f2 = D^5 U_{-2} = 0 
+        !
+        !   f1 = a11*U(-1) + a12*U(-2) + ...
+
+        ! Evaluate the equations with current ghost 
+        ! There two coupled equations we need to solve for ghost points A,B below
+        !                   +
+        !                   |
+        !             B--A--+---+---+
+        !                   |
+        !                   +
+        !  f(u)  = [ f(u_old) - A (u_old) ] + A u = 0 
+        !
+        !  [ a11 a12 ][ uA ] = [ a11 a12 ][ uA_old ] - [ f1(u_old) ]
+        !  [ a21 a22 ][ uB ]   [ a21 a22 ][ uB_old ]   [ f2(u_old) ]
+
+        ! first evaluate residuals in equations given current (wrong) values at A, B
+
+        if( axis==0 )then
+            ! getForcingEM2(X,2,tm,is1,is2,forcex)
+             if( forcingOption.eq.twilightZoneForcing )then
+               ! Test: set to exact solution at time t:
+               ! x=xy(i1-is1,i2,i3,0)
+               ! y=xy(i1-is1,i2,i3,1)
+               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+               ! un(i1-is1,i2,i3,ey)=eyTrue
+               ! add TZ forcing *wdh* Sept 17, 2016
+               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+               x=xy(i1,i2,i3,0)
+               y=xy(i1,i2,i3,1)
+                  ! Values for forcep(ex) are currently needed at corners:
+                    call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
+                    call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                    call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                  forcep(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                  ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
+                  ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                  ! forcep(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                  ! OGDERIV(1,1,0,0,x,y,z,tp,hz,utx)
+                  ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                  ! forcep(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+             end if
+             if( forcingOption.eq.twilightZoneForcing )then
+               ! Test: set to exact solution at time t:
+               ! x=xy(i1-is1,i2,i3,0)
+               ! y=xy(i1-is1,i2,i3,1)
+               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+               ! un(i1-is1,i2,i3,ey)=eyTrue
+               ! add TZ forcing *wdh* Sept 17, 2016
+               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+               x=xy(i1,i2,i3,0)
+               y=xy(i1,i2,i3,1)
+                  ! Values for forcef(ex) are currently needed at corners:
+                    call ogDeriv(ep, 1,1,0,0,x,y,z,t,ex,utx)
+                    call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                    call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                  forcef(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                  ! OGDERIV(1,1,0,0,x,y,z,t,ey,utx)
+                  ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                  ! forcef(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                  ! OGDERIV(1,1,0,0,x,y,z,t,hz,utx)
+                  ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                  ! forcef(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+             end if
+            ! do idir=0,2
+            do idir=0,0 ! ex only 
+              forcex(idir)=.5*(forcep(idir)+forcef(idir))
+            end do
+          r1 = is1*(unx42r(i1,i2,i3,ex)-ux42r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unxx42r(i1,i2,i3,ex) + c2abcem2*unyy42r(i1,i2,i3,ex) + c1abcem2* uxx42r(i1,i2,i3,ex) + c2abcem2* uyy42r(i1,i2,i3,ex) ) - forcex(ex) 
+        else
+            ! getForcingEM2(Y,2,tm,is1,is2,forcey)
+             if( forcingOption.eq.twilightZoneForcing )then
+               ! Test: set to exact solution at time t:
+               ! x=xy(i1-is1,i2,i3,0)
+               ! y=xy(i1-is1,i2,i3,1)
+               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+               ! un(i1-is1,i2,i3,ey)=eyTrue
+               ! add TZ forcing *wdh* Sept 17, 2016
+               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+               x=xy(i1,i2,i3,0)
+               y=xy(i1,i2,i3,1)
+                    call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
+                    call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                    call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                  forcep(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                  ! ! Values for forcep(ey) are currently needed at corners:
+                  ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
+                  ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                  ! forcep(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                  ! OGDERIV(1,0,1,0,x,y,z,tp,hz,uty)
+                  ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                  ! forcep(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+             end if
+             if( forcingOption.eq.twilightZoneForcing )then
+               ! Test: set to exact solution at time t:
+               ! x=xy(i1-is1,i2,i3,0)
+               ! y=xy(i1-is1,i2,i3,1)
+               ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+               ! un(i1-is1,i2,i3,ey)=eyTrue
+               ! add TZ forcing *wdh* Sept 17, 2016
+               ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+               x=xy(i1,i2,i3,0)
+               y=xy(i1,i2,i3,1)
+                    call ogDeriv(ep, 1,0,1,0,x,y,z,t,ex,uty)
+                    call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                    call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                  forcef(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                  ! ! Values for forcef(ey) are currently needed at corners:
+                  ! OGDERIV(1,0,1,0,x,y,z,t,ey,uty)
+                  ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                  ! forcef(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                  ! OGDERIV(1,0,1,0,x,y,z,t,hz,uty)
+                  ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                  ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                  ! forcef(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+               ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+             end if
+            ! do idir=0,2
+            do idir=0,0 ! ex only 
+              forcey(idir)=.5*(forcep(idir)+forcef(idir))
+            end do
+          r1 = is2*(uny42r(i1,i2,i3,ex)-uy42r(i1,i2,i3,ex))/(dt)- .5*( c1abcem2*unyy42r(i1,i2,i3,ex) + c2abcem2*unxx42r(i1,i2,i3,ex) + c1abcem2* uyy42r(i1,i2,i3,ex) + c2abcem2* uxx42r(i1,i2,i3,ex) ) - forcey(ex)           
+        end if
+
+        r2 =    un(i1-2*is1,i2-2*is2,i3,ex) -5.*un(i1-1*is1,i2-1*is2,i3,ex) +10.*un(i1+0*is1,i2+0*is2,i3,ex) -10.*un(i1+1*is1,i2+1*is2,i3,ex) +5.*un(i1+2*is1,i2+2*is2,i3,ex) -un(i1+3*is1,i2+3*is2,i3,ex)
+
+
+        a11 = -8./(12.*dt*dx(axis))  - .5*c1abcem2*(16.)/(12.*dx(axis)**2) ! coeff of uA in r1
+        a12 =  1./(12.*dt*dx(axis))  - .5*c1abcem2*(-1.)/(12.*dx(axis)**2) ! coeff of uB in r2
+        a21 = -5.                                                    ! coeff of uA in r1
+        a22 =  1.                                                    ! coeff of uB in r2
+
+        det = a11*a22-a21*a12
+
+        uA = un(i1-1*is1,i2-1*is2,i3,ex)
+        uB = un(i1-2*is1,i2-2*is2,i3,ex)
+        f1 = a11*uA + a12*uB - r1 
+        f2 = a21*uA + a22*uB - r2 
+
+        ! Solve for A, B
+        un(i1-1*is1,i2-1*is2,i3,ex) = ( f1*a22 - f2*a12)/det
+        un(i1-2*is1,i2-2*is2,i3,ex) = (-f1*a21 + f2*a11)/det         
 
       end if
       end do
       end do
       end do
+
+     else if( axis.eq.0 )then
+
+        ! ----- OLD WAY -----
+
+        ! Version 1: 2nd-order
+        do i3=n3a,n3b
+        do i2=n2a,n2b
+        do i1=n1a,n1b
+        if( mask(i1,i2,i3).gt.0 )then
+     
+         un(i1-is1,i2-is2,i3-is3,ex)=((un(i1+is1,i2+is2,i3+is3,ex)-(u(i1+is1,i2+is2,i3+is3,ex)-u(i1-is1,i2-is2,i3-is3,ex))-(dxa*dt)*(c1abcem2*uxx22r(i1,i2,i3,ex)+c2abcem2*uyy22r(i1,i2,i3,ex)+c1abcem2*(-2.*un(i1,i2,i3,ex)+un(i1+is1,i2,i3,ex))/dxa**2+c2abcem2*(un(i1,i2-1,i3,ex)-2.*un(i1,i2,i3,ex)+un(i1,i2+1,i3,ex))/dx(1)**2+2.*forcex(ex)))/(1.+c1abcem2*dt/dxa))
+     
+           un(i1-2*is1,i2-2*is2,i3-2*is3,ex)=4.*un(i1-is1,i2-is2,i3-is3,ex)-6.*un(i1,i2,i3,ex)+4.*un(i1+is1,i2+is2,i3+is3,ex)-un(i1+2*is1,i2+2*is2,i3+2*is3,ex)
+
+        end if
+        end do
+        end do
+        end do
+      
+
      else if( axis.eq.1 )then
       do i3=n3a,n3b
       do i2=n2a,n2b

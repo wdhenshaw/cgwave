@@ -57,6 +57,9 @@
 !! #Include "../maple/defineGetSixthDerivativesMacros.h"
 
 
+! Evaluate the twilight-zone forcing 
+
+
 ! From bcOptSmFOS.bf
 ! DataBase *pdb = &parameters.dbase;
 ! double precision pdb  ! pointer to data base
@@ -286,6 +289,22 @@
 ! ===================================================================================
 
 
+! --------------------------------------------------------------------------
+! Macro: Evaluate the forcing for the ABC EM2 for twilight zone   
+!        Cartesian grid version
+!    DIR = X or Y or Z
+!    DIM = 2 or 3
+!    tf : evaluate the forcing at this time
+! Output: 
+!    force(0:2) 
+! --------------------------------------------------------------------------
+
+! ----------------------------------------------------------------------------
+! Macro: Get the forcing for the trapezoid rule by averaging times tp amd tf
+!   This will make the scheme exact for degree 2 polynomials in time 
+! --------------------------------------------------------------------------
+
+
 ! =========================================================================
 ! Macro: 
 !   Assign the RHS for implicit boundary conditions
@@ -295,6 +314,8 @@
 ! ===============================================================================
 ! ----------- STAGE I : Assign Dirichlet Conditions -------------
 ! ===============================================================================
+
+
 
 
 ! Argument list
@@ -314,6 +335,9 @@
 ! --- construct the different files ----
 ! ****************************************************************
 
+! buildFile(bcOptWave2dOrder2,2,2)
+! buildFile(bcOptWave3dOrder2,3,2)
+! buildFile(bcOptWave3dOrder4,3,4)
 
 
 ! buildFile(bcOptWave2dOrder4,2,6)

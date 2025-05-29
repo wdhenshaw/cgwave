@@ -1,4 +1,32 @@
 
+
+
+****************************************************
+****** We Oct 2, 2024
+
+
+ORDER=2
+EM2  -- look ok 
+cgWave scat.cmd -g=cice4.order2 -useSuperGrid=0 -superGridWidth=.2 -known=pw -ts=implicit -cfl=1 -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 
+
+cgWave:FD22u t=2.600e+00 (182 steps) dt=1.429e-02 maxErr= 2.02e+00, ||u||= 1.02e+00, cpu= 2.27e+01(s)
+AFTER IMP solve: (side,axis,grid)=(0,0,0) c=  1.0000e+00, bc=absorbing maxRes= 2.49e-13
+AFTER IMP solve: (side,axis,grid)=(1,0,0) c=  1.0000e+00, bc=absorbing maxRes= 6.57e-13
+AFTER IMP solve: (side,axis,grid)=(0,1,0) c=  1.0000e+00, bc=absorbing maxRes= 2.26e-13
+AFTER IMP solve: (side,axis,grid)=(1,1,0) c=  1.0000e+00, bc=absorbing maxRes= 2.04e-13
+
+
+
+SUPEGrID 
+cgWave scat.cmd -g=cice4.order2 -useSuperGrid=1 -superGridWidth=.2 -known=pw -ts=implicit -cfl=1 -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 
+
+
+
+ORDER=2
+cgWave scat.cmd -g=cice4.order2 -useSuperGrid=1 -superGridWidth=.2 -known=pw -bc=d -ic=zero -upwind=1 -kx=3 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 
+
+
+
 ****************************************************
 ****** Thurs March 7, 2024
 
@@ -8,6 +36,8 @@ MOVIES
 
 FD44 : SPIE k0=20 
 cgWave -noplot scat.cmd -g=tipGridThine64.order4.ng3.hdf -kx=1 -ky=0 -tp=.0025 -tf=1.5 -known=gpw -k0=20 -beta=80 -x0=-.75 -y0=0 -bc=n -bc5=d -bcApproach=cbc -ts=implicit -rectangular=explicit -upwind=1 -setKnownOnBoundaries=0 -assignInterpNeighbours=interp -plotScatteredField=0 -solveForScatteredField=0 -ic=known -debug=0 -show=tipGridG64O5SPIEk20.show -flushFrequency=50 -go=go > tipGridG64O5SPIEk20.out 
+
+
 
 
 ****************************************************

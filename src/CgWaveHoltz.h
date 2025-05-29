@@ -4,6 +4,7 @@
 #include "mpi.h"
 #include "Overture.h"
 #include "Oges.h"
+#include "PlotStuff.h"
 
 
 // // krb do not use extern "C" if PETSc is linked using BOPT=g_c++
@@ -31,11 +32,8 @@ public:
 CgWaveHoltz(CompositeGrid & cg, GenericGraphicsInterface & gi);
 ~CgWaveHoltz();
 
-// advance the solution over a period (or multiple periods)
-// int advance( int it );
+int assignEigenSolverInitialCondition( bool smoothInitialCondition );
 
-// int getTimeStep();
-  
 // Initialize time-step and forcing 
 int initialize();
 
@@ -47,10 +45,16 @@ int outputHeader();
 // output tables for eigenWave
 int outputEigenTable();
 
+// save results to a check file
+int outputCheckFile( const RealArray & maxResArray, const Real errorBetweenWaveHoltzAndHelmholtz );
+
 // save results to a Matlab file
 int outputMatlabFile( const aString & matlabFileName );
 
 int plotEigenVectors( realCompositeGridFunction & eigenVectors, const RealArray & eig, const aString & name, GL_GraphicsInterface & ps, GraphicsParameters & psp );
+
+// plot WaveHoltz filter beta and any eigenvalues 
+// int plotFilter( RealArray & eigenValues, GL_GraphicsInterface & ps, PlotStuffParameters & psp );
 
 // Compute the residual in the current solution
 real residual( RealArray & maxRes, int useAdjustedOmega = 2 );
@@ -67,11 +71,13 @@ int setNameOfGridFile( aString & nameOfOGFile );
 // Setup grids and grid functions
 int setup();
 
+int smoothEigenSolverInitialCondition();
+
 // WaveHoltz iteration:
 int solve();
 
-// Solve Helmholtz with WaveHoltz and GMRES augmented with eigenvectors 
-int solveAugmentedGmres(int argc,char **args);
+// Solve Helmholtz with WaveHoltz and a Krylov method augmented with eigenvectors 
+int solveAugmentedKrylov(int argc,char **args);
 
 // Solve for eigenvalues and eigenwvectors using WaveHoltz
 int solveEigen(int argc,char **argv);

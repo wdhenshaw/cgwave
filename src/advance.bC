@@ -400,6 +400,7 @@ extern "C"
   }
 #endMacro
 
+
 // ===========================================================================
 // Macro:
 //   Adjust the time-step and frequencies/periods for WaveHoltz and EigenWave
@@ -432,9 +433,20 @@ extern "C"
 
 
         // IMP-FIX 2 : adjust omega
-        dts = (1./omega)*sqrt( 2.*( 1./cos(2.*Pi/numPlotSteps) -1. ) );
-        omegas= (2.*Pi/numPlotSteps)*1/dts;
-        
+        const Real alpha2=cImp(-1,0), beta2=1.-2.*alpha2; // implicit weights
+        if( 1==1 )
+        {
+          // *new* way for general implicit weights, April 30, 2025,  See complexWaveHoltz/notes.pdf 
+          Real ct = cos(2*Pi/numPlotSteps);
+          dts = (1./frequencyArray(0))*sqrt( (1.-ct)/(alpha2*ct + beta2/2.) );
+          omegas= (2.*Pi/numPlotSteps)*1/dts;
+        }
+        else
+        {
+          dts = (1./omega)*sqrt( 2.*( 1./cos(2.*Pi/numPlotSteps) -1. ) );
+          omegas= (2.*Pi/numPlotSteps)*1/dts;
+        }
+
         frequencyArray(0) = omegas;
         periodArray.redim(numberOfFrequencies);
         numPeriodsArray(0)=numPeriods; 
@@ -445,7 +457,14 @@ extern "C"
         for( int freq=1; freq<numberOfFrequencies; freq++ )
         {
           Real omegaDt = frequencyArray(freq)*dts;
-          frequencyArray(freq) = (1./dts) * acos( 1./( 1. + SQR(omegaDt)/2. ) );
+          if( 1==1 )
+          { // *new* way -- check me 
+            frequencyArray(freq) = (1./dts) * acos( (1. - .5*beta2*SQR(omegaDt))/( 1. + alpha2*SQR(omegaDt) ) );
+          }
+          else
+          {
+            frequencyArray(freq) = (1./dts) * acos( 1./( 1. + SQR(omegaDt)/2. ) );
+          }
         }        
 
         // this next section is repeated below -- fix me 
@@ -596,8 +615,7 @@ extern "C"
       Tperiod = (twoPi/omega)*numPeriods;
       tFinal  = Tperiod; 
 
-      printF("\n >>>>>>>>>>> CgWave : computeEigenmodes <<<<<<<<<<\n");
-      printF(" omega=%12.4e, numPeriods=%d, tFinal=%10.2e\n",omega,numPeriods, tFinal );    
+      printF("\n >>>>>>>>>>> CgWave : computeEigenmodes omega=%12.4e, numPeriods=%d, tFinal=%10.2e <<<<<<<<<<<<<\n",omega,numPeriods,tFinal );    
     }    
 
     if( it<=1 && solveHelmholtz )
@@ -705,20 +723,28 @@ extern "C"
         for( int freq=1; freq<numberOfFrequencies; freq++ )
           u1Local(I1,I2,I3) += vLocal(I1,I2,I3,freq);
       }
-    }      
-    
-    bool applyExplicitBoundaryConditions=true;
-    applyBoundaryConditions( u1, u1, t, applyExplicitBoundaryConditions );  // *wdh* Mar 6, 2020 -- try this 
+    }  
 
-    if( false ||              // *** TESTING TEMP *********
-        computeEigenmodes )
+
+    // if( TRUE )
+    //   u1.display("u1 : initial conditions","%5.2f ");
+
+    
+    if( !filterTimeDerivative ) // Oct 2, 2024
+    {
+      // We cannot do this with radiation BCs since they use previous solutions
+      bool applyExplicitBoundaryConditions=true;
+      applyBoundaryConditions( u1, u1, t, applyExplicitBoundaryConditions );  // *wdh* Mar 6, 2020 -- try this 
+    }
+
+    if( computeEigenmodes )
     {
       // --- forcing for computing eigenmodes ----
       //   force = v * cos(omega t) 
 
       const Real & eigenVectorForcingFactor = dbase.get<Real>("eigenVectorForcingFactor");
-      printF("\n ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=%g+++++\n\n",
-           eigenVectorForcingFactor);
+      // printF("\n ++++ CgWave::advance: Set forcing to v for computing eigenmodes eigenVectorForcingFactor=%g+++++\n\n",
+      //      eigenVectorForcingFactor);
 
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
       {
@@ -756,57 +782,60 @@ extern "C"
 // =======================================================================================
 #beginMacro addUpwindDissipation(step)
 
-  for( int upwindCorrectionStep=1; upwindCorrectionStep<=numUpwindCorrections; upwindCorrectionStep++ )
+  const int useUpwindDissipation = upwind;  
+  if( useUpwindDissipation )
   {
-
-    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    for( int upwindCorrectionStep=1; upwindCorrectionStep<=numUpwindCorrections; upwindCorrectionStep++ )
     {
-      MappedGrid & mg = cg[grid];
-      const int useUpwindDissipation = upwind;  
 
-      // useUpwindDissipation : true if grid is implicit AND upwind dissipation in ON AND implicitUpwind=1
-      int useImplicitUpwindDissipation=false;
-      if( gridIsImplicit(grid) && upwind && implicitUpwind )
-        useImplicitUpwindDissipation=true;
-
-      if( useUpwindDissipation &&
-             !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added with option=0 below
-             ( (step % dissipationFrequency)==0 ) ||
-             ( (step % dissipationFrequency)==1 ) )
+      for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
       {
-        // ---- upwind dissipation ------
+        MappedGrid & mg = cg[grid];
 
+        // useUpwindDissipation : true if grid is implicit AND upwind dissipation in ON AND implicitUpwind=1
+        int useImplicitUpwindDissipation=false;
+        if( gridIsImplicit(grid) && upwind && implicitUpwind )
+          useImplicitUpwindDissipation=true;
 
-        OV_GET_SERIAL_ARRAY(real,u[prev][grid],umLocal);
-        OV_GET_SERIAL_ARRAY(real,u[cur ][grid],uLocal);
-        OV_GET_SERIAL_ARRAY(real,u[next][grid],unLocal);
-
-        // const int prev2= (cur-2+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
-        // OV_GET_SERIAL_ARRAY(real,u[prev2][grid],umLocal);  // u(t-2*dt)
-        // OV_GET_SERIAL_ARRAY(real,u[prev ][grid],uLocal);   // u(t-dt)
-        // OV_GET_SERIAL_ARRAY(real,u[cur  ][grid],unLocal);  // u(t)
-
-        OV_GET_SERIAL_ARRAY_CONDITIONAL(real,vOld[grid],vOldLocal,solveHelmholtz);
-
-        if( debug & 4 )
+        if( useUpwindDissipation &&
+               !useImplicitUpwindDissipation &&           // implicit upwind dissipation is added with option=0 below
+               ( (step % dissipationFrequency)==0 ) ||
+               ( (step % dissipationFrequency)==1 ) )
         {
-          printF("advance: ADD UPWIND DISSIPATION: step=%d, upwindCorrectionStep=%d,t=%9.3e using [prev,cur,next]=[%d,%d,%d]\n",
-            step,upwindCorrectionStep,t,prev,cur,next);
+          // ---- upwind dissipation ------
+
+
+          OV_GET_SERIAL_ARRAY(real,u[prev][grid],umLocal);
+          OV_GET_SERIAL_ARRAY(real,u[cur ][grid],uLocal);
+          OV_GET_SERIAL_ARRAY(real,u[next][grid],unLocal);
+
+          // const int prev2= (cur-2+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+          // OV_GET_SERIAL_ARRAY(real,u[prev2][grid],umLocal);  // u(t-2*dt)
+          // OV_GET_SERIAL_ARRAY(real,u[prev ][grid],uLocal);   // u(t-dt)
+          // OV_GET_SERIAL_ARRAY(real,u[cur  ][grid],unLocal);  // u(t)
+
+          OV_GET_SERIAL_ARRAY_CONDITIONAL(real,vOld[grid],vOldLocal,solveHelmholtz);
+
+          if( debug & 4 )
+          {
+            printF("advance: ADD UPWIND DISSIPATION: step=%d, upwindCorrectionStep=%d,t=%9.3e using [prev,cur,next]=[%d,%d,%d]\n",
+              step,upwindCorrectionStep,t,prev,cur,next);
+          }
+          
+          int option = 1;    // 0=advance, 1=add dissipation
+          callOptimizedAdvance();
+
         }
+
+
         
-        int option = 1;    // 0=advance, 1=add dissipation
-        callOptimizedAdvance();
+      }  // end for grid 
 
-      }
+      bool applyExplicitBoundaryConditions=true;
+      applyBoundaryConditions( u[next],u[cur],t, applyExplicitBoundaryConditions );     
 
-
-      
-    }  // end for grid 
-
-    bool applyExplicitBoundaryConditions=true;
-    applyBoundaryConditions( u[next],u[cur],t, applyExplicitBoundaryConditions );     
-
-  } // end for upwindCorrectionStep
+    } // end for upwindCorrectionStep
+  }
 #endMacro
 
 // ===================================================
@@ -876,10 +905,14 @@ advance( int it )
   const int & adjustOmega                 = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
   const int & adjustHelmholtzForUpwinding = dbase.get<int>("adjustHelmholtzForUpwinding");
   const int & deflateWaveHoltz            = dbase.get<int>("deflateWaveHoltz");
+  const int & deflateForcing              = dbase.get<int>("deflateForcing");
   const int & numToDeflate                = dbase.get<int>("numToDeflate");
   const aString & eigenVectorFile         = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
   const int & computeEigenmodes           = dbase.get<int>("computeEigenmodes");
   const int & computeEigenmodesWithSLEPc  = dbase.get<int>("computeEigenmodesWithSLEPc");
+  const int & filterTimeDerivative        = dbase.get<int>("filterTimeDerivative");
+  const int & initTimeIntegral            = dbase.get<int>("initTimeIntegral");
+  const int & filterD0t                   = dbase.get<int>("filterD0t");
 
   real & omega                      = dbase.get<real>("omega");
   real & Tperiod                    = dbase.get<real>("Tperiod");
@@ -927,6 +960,10 @@ advance( int it )
   
   BCTypes::BCNames boundaryCondition=BCTypes::evenSymmetry; 
   // BCTypes::BCNames boundaryCondition=BCTypes::dirichlet;
+
+
+  // check parameters for consistency
+  checkParameters(); 
 
   Index I1,I2,I3;
 
@@ -1075,6 +1112,7 @@ advance( int it )
   // --------------------------------------------------------------------------------
   adjustTimeStepAndFrequenciesMacro(); 
 
+  dtUsed = dt; // save dt actually used
 
   int i1,i2,i3;
 
@@ -1090,6 +1128,42 @@ advance( int it )
 
   realCompositeGridFunction & u1 = u[cur];     // current time 
   realCompositeGridFunction & u2 = u[prev];    // previous time
+
+
+  if( solveHelmholtz )
+  {
+
+     printF("\n &&&&&&&& advance : it=%d  &&&&&&&&&&& \n\n",it);
+     if( it<0 )
+     {
+      printF("CgWave::advance: solveHelmholtz but it=%d < 0 ?\n",it);
+      OV_ABORT("ERROR");
+     }
+
+    if( initTimeIntegral ) 
+    {
+      initializeTimeIntegral( dt ); // *new* Nov 29, 2024 
+      if( deflateWaveHoltz )        // *wdh* Nov 29, 2024
+      { // initialize deflation and deflate forcing 
+        initializeDeflation();
+      }
+    }
+    if( it==0 && deflateWaveHoltz && (deflateForcing || true) )
+    {
+      // deflate initial condition 
+      int deflateOption=2;     // deflate solution even if deflateForcing=1
+      deflateSolution( deflateOption );
+      if( false )
+      {
+         realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v"); 
+         psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
+         psp.set(GI_TOP_LABEL,"advance: deflated initial condition");
+         ps.erase();
+         PlotIt::contour(ps,v,psp);     
+         psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);      
+      }
+    }
+  }
 
   // u1=0.;
   // u2=0.;
@@ -1136,7 +1210,28 @@ advance( int it )
   
   real cpua=getCPU();
 
-  dtUsed = dt; // save dt actually used
+ 
+  if( false && deflateForcing )
+  {
+     realCompositeGridFunction & f = dbase.get<realCompositeGridFunction>("f");      
+     GenericGraphicsInterface & ps = gi;
+     PlotStuffParameters & psp =  dbase.get<PlotStuffParameters>("psp");
+
+     psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
+     psp.set(GI_TOP_LABEL,"ADVANCE: deflated forcing");
+     ps.erase();
+     PlotIt::contour(ps,f,psp);     
+     psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);
+  }
+
+  bool takeAnExtraStep=false;
+  if( solveHelmholtz && filterTimeDerivative && filterD0t )
+  {
+    // -- if we filter D0t U^n then we need to take an extra step;
+    takeAnExtraStep=true;
+    printF("&&&&& ADD AN EXTRA STEP: tFinal=%9.3e --> tFinal=%9.3e\n\n",tFinal,tFinal+dt);
+    tFinal=tFinal+dt; // *** CHECK ME : DOES THIS BREAK SOMETHING ???
+  }
 
   // =======================================================
   // ================== TIME STEPS =========================
@@ -1151,6 +1246,7 @@ advance( int it )
 
     current = cur; 
 
+    // --- NOTE: LOOP ENDS INSIDE THIS NEXT MACRO WHEN t=tFinal of user CHOOSES finish -----
     plotAndOutputResults(); 
 
     // vOld : current guess for Helmholtz solution 
@@ -1248,8 +1344,19 @@ advance( int it )
           printF("Call applyBoundaryConditions : explicit BC's for step=%d, t(new)=%10.3e, dt=%10.3e\n",step,t,dt);
 
         bool applyExplicitBoundaryConditions=true;
-        if( true )
+        if( false )
+        {
+          applyBoundaryConditions( u[next],u[cur],t ); 
+          printF("$$$$$$$$$$$$$$$$$$$$ TEMP $$$$$$$$$$$$$$$$$$$ TEST FOR ABC's $$$$$$$$$$$$$\n");
+        }
+        else if( true )
+        {
+          // printF(">>>>>>>>>>>>> CALL applyBoundaryConditions after implicit solve\n");
+          // ::display(u[next][0],"u[next] before applyBC","%12.4e ");
           applyBoundaryConditions( u[next],u[cur],t, applyExplicitBoundaryConditions ); 
+          // ::display(u[next][0],"u[next] after applyBC","%12.4e ");
+          // printF("<<<<<<<<<<<< DONE CALL applyBoundaryConditions after implicit solve\n");
+        }
         else
           printF(" advance: do NOT Apply explicitBCs after implicit solve ############################################################ TEMP \n");
       }
@@ -1290,7 +1397,7 @@ advance( int it )
 
   current = next; // curent solution
 
-
+  // const Real tShift = takeAnExtraStep ? dt : 0;
   if( fabs(t-tFinal)/tFinal > dt*1e-3 )
   {
     printF("CgWave::advance:ERROR: done time-stepping but t is NOT equal to tFinal! Something is wrong.\n");
@@ -1300,15 +1407,25 @@ advance( int it )
 
   if( solveHelmholtz && adjustOmega )
   {
-     // Reset adjusted omega and Tperiod
-     omega   = omegaSave;
-     Tperiod = TperiodSave;
-     dt      = dtSave; 
-     tFinal  = Tperiod; // reset too *wdh* Jul 25, 2021
-     damp = dampSave;
+    // Reset adjusted omega and Tperiod
 
-    frequencyArray = frequencyArraySave;  // reset to original values 
-    periodArray    = periodArraySave;     // reset to original values
+    // make this a function
+    if( true )
+    {
+       resetFrequencyArrays();
+    }
+    else
+    {
+      omega   = omegaSave;
+      Tperiod = TperiodSave;
+      dt      = dtSave; 
+      tFinal  = Tperiod; // reset too *wdh* Jul 25, 2021
+      damp = dampSave;
+
+      frequencyArray = frequencyArraySave;  // reset to original values 
+      periodArray    = periodArraySave;     // reset to original values
+    } 
+
     if( debug>2 )
     {
       printF("RESET periodArray\n");   

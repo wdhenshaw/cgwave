@@ -1,4 +1,6 @@
+// ======================================================================================
 // ====================== Composite Grid Wave Equation Solver Class =====================
+// ======================================================================================
 
 #include "CgWave.h"
 #include "CompositeGridOperators.h";    
@@ -62,6 +64,9 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<Real>("dt")=-1.;
   dbase.put<Real>("dtUsed")=-1.; // dt actually used
   dbase.put<Real>("dtMax")=-1.;  // save maximum allowable dt (before corrections to reach a given time)
+  // domainSize : estimate of the domain size (used, for example, to compute estimate points-per-wavelength for Helmholtz problems)
+  //            : -1 : compute from grids
+  dbase.put<Real>("domainSize")=-1.;  
 
   dbase.put<int>("upwind")=0;                // use upwind dissipation
   dbase.put<int>("numUpwindCorrections")=1;  // number of upwind corrections
@@ -94,14 +99,17 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("secondOrderGrid")=1;
   dbase.put<int>("debug")=0;
 
-  dbase.put<int>("useFilterWeights")     = 1;           //  1 = new filter weights for WaveHoltz
-  dbase.put<int>("filterTimeDerivative") = 0;           //  filter time-derivative for WaveHoltz
-  dbase.put<int>("numCompWaveHoltz")     = 0;           //  number of components in WaveHoltz
+  dbase.put<int>("initTimeIntegral")       = 1;           // initialize time integral for WaveHoltz 
+  dbase.put<int>("useFilterWeights")       = 1;           //  1 = new filter weights for WaveHoltz
+  dbase.put<int>("filterTimeDerivative")   = 0;           //  filter time-derivative for WaveHoltz
+  dbase.put<int>("numCompWaveHoltz")       = 0;           //  number of components in WaveHoltz
+  dbase.put<int>("filterD0t")              = 0;           // directly filter D0t instead of using integration by parts
 
   
 
   dbase.put<int>("deflateWaveHoltz") = 0;               //  set to 1 to turn on deflation for WaveHoltz
   dbase.put<int>("numToDeflate")     = 1;               //  number of eigenvectors to deflate
+  dbase.put<int>("deflateForcing")   = 0;               //  1 = "deflate" forcing at start but do not adjust iterates 
   dbase.put<bool>("deflationInitialized") = false;      //  set too true if deflation has been initialized
   dbase.put<aString>("eigenVectorFile")= "none";        //  name of file holding eigs and eigenvectors for deflation
   dbase.put<Real>("eigenVectorForcingFactor")=0.;       // scale eigenvector forcing by this amount
@@ -109,6 +117,10 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("numArnoldiVectors")=-1;               // total number of Arnolidi vectors to keep (-1 = use default)
   dbase.put<int>("useAugmentedGmres")=0;                // 1 = use augmented GMRES for deflation
   dbase.put<int>("augmentedVectorsAreEigenvectors")=1;  // 1 = augmented vectors are true discrete eigenvectors
+  dbase.put<int>("eigenVectorsAreOrthogonal")=false;    // 1 = eigenvectors read from a show file have are orthogonal
+  dbase.put<int>("onlyLoadDeflatedEigenVectors")=false;    // 1 = only read in eigenvectors used for deflation from the show file (*new* way)
+
+  dbase.put<int>("plotFilterAndDeflatedEigenvalues")=false;    // 1 = plot filter function and deflated eigenvalues after they are found
 
   dbase.put<int>("eigenvectorsAreTrueEigenvectors")=true;  // eigenvectors for deflation may be the true ones or approximate
   dbase.put<RealArray>("betaDeflate");                     // beta values for deflated eigenvectors 
@@ -158,6 +170,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   //                                   = 0 : choose dt from CFL and grid spacing on all grids
   dbase.put<int>("chooseTimeStepFromExplicitGrids")=1;
 
+  dbase.put<bool>("hasRadiationBoundaryConditions")=false; // true if there are radition BCs
 
   dbase.put<int>("useSuperGrid")=0;      
   dbase.put<Real>("superGridWidth")=.2;          // superGrid layer width (in parameter space)
@@ -199,12 +212,14 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   // dbase.put<int>("computeErrors")=0;   // true of we compute errors 
 
   // For Helmholtz solve with CgWaveHoltz
-  dbase.put<int>("solveHelmholtz")=false;      // if true,  use the WaveHoltz algorithm to solve the Helmholtz equation
-  dbase.put<int>("computeEigenmodes")=false;   // if true, use the WaveHoltz algorithm to compute eigenvalues and eigenvectors
-  dbase.put<int>("computeEigenmodesWithSLEPc")=false;   // if true, we are solving for eigenvalues and eigenvectors with SLEPc
-  dbase.put<EigenSolverEnum>("eigenSolver") = defaultEigenSolver;     // eigensolver used by SLEPSc
-  dbase.put<int>("initialVectorsForEigenSolver")=true;          // provide initial vectors used by SLEPSc solvers
-  dbase.put<int>("initialVectorSmooths")=500;           // number of times to smooth the initial vectors for the eigen solvers
+  dbase.put<int>("solveHelmholtz")=false;                           // if true,  use the WaveHoltz algorithm to solve the Helmholtz equation
+  dbase.put<int>("computeEigenmodes")=false;                        // if true, use the WaveHoltz algorithm to compute eigenvalues and eigenvectors
+  dbase.put<int>("computeEigenmodesWithSLEPc")=false;               // if true, we are solving for eigenvalues and eigenvectors with SLEPc
+  dbase.put<EigenSolverEnum>("eigenSolver") = defaultEigenSolver;   // eigensolver used by SLEPSc
+  dbase.put<int>("initialVectorsForEigenSolver")=true;              // provide initial vectors used by SLEPSc solvers
+  dbase.put<int>("initialVectorSmooths")=500;                       // number of times to smooth the initial vectors for the eigen solvers
+
+  dbase.put<EigenSolverInitialConditionEnum>("eigenSolverInitialCondition") = defaultEigenSolverInitialCondition; 
 
   dbase.put<int>("computeTimeIntegral")=false; // if true compute the time-integral (for the Helmholtz solve or other reason)
   dbase.put<int>("iteration")=-1;              // iteration number of WaveHoltz
@@ -320,6 +335,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("plotChoices")=0;
   // dbase.put<int>("plotHelmholtzErrors")=0;  // 1 = compute error w.r.t the Helmholtz solution
 
+  dbase.put<int>("checkParameters")=1;  // 1= check problem parameters for consistency
   
   dbase.put<PlotStuffParameters>("psp");
 
@@ -346,11 +362,13 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<bool>("saveShowFile")     =false; 
   dbase.put<aString>("nameOfShowFile")="cgWave.show"; // name of the show file
   dbase.put<Ogshow*>("showFile")      =NULL;
-  dbase.put<int>("flushFrequency")    =10;  // number of solutions per sub-showFile
+  dbase.put<int>("flushFrequency")    =100;  // number of solutions per sub-showFile
   dbase.put<int>("numberOfSequences") =1;   // for sequences in the show file
   dbase.put<int>("sequenceCount")     =0;   // for sequences in the show file
   dbase.put<RealArray>("timeSequence");
   dbase.put<RealArray>("sequence");
+
+  dbase.put<Real>("timeForOgesSolve") = 0;  // record Oges time for implicit solve
 
   // enum TimingEnum
   // { 
@@ -365,6 +383,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   //   timeForDissipation,
   //   timeForBoundaryConditions,
   //   timeForInterpolate,
+  //   timeForDeflation,
   //   timeForUpdateGhostBoundaries,
   //   timeForForcing,
   //   timeForUserDefinedKnownSolution,
@@ -398,6 +417,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   timingName[timeForUpdateGhostBoundaries]       ="  update ghost (parallel)";
   timingName[timeForInterpolate]                 ="  interpolation";
   timingName[timeForTimeIntegral]                ="  time integral";
+  timingName[timeForDeflation]                   ="  deflation";
   timingName[timeForGetError]                    ="  get errors";
   timingName[timeForPlotting]                    ="  plotting";
   timingName[timeForOutputResults]               ="output results";
@@ -453,6 +473,139 @@ CgWave::
     delete [] dbase.get<RealArray*>("rxOriginal");
   }
 
+}
+
+// ================================================================================================
+/// \brief Adjust the frequency arrays for WaveHoltz 
+/// \note this was out here for plotFilter
+// ================================================================================================
+int CgWave::adjustFrequencyArrays()
+{
+  Real & tFinal                     = dbase.get<real>("tFinal");
+  Real & omega                      = dbase.get<real>("omega");
+  Real & damp                       = dbase.get<Real>("damp"); 
+  Real & dampSave                   = dbase.get<Real>("dampSave"); 
+  Real & Tperiod                    = dbase.get<real>("Tperiod");
+  int & numPeriods                  = dbase.get<int>("numPeriods");
+  Real & omegaSave                  = dbase.get<real>("omegaSave");
+  Real & TperiodSave                = dbase.get<real>("TperiodSave");  
+  Real & dt                         = dbase.get<real>("dt");
+  Real & dtSave                     = dbase.get<real>("dtSave");
+
+  RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+  RealArray & frequencyArrayAdjusted= dbase.get<RealArray>("frequencyArrayAdjusted");
+  RealArray & periodArray           = dbase.get<RealArray>("periodArray"); 
+  RealArray & periodArrayAdjusted   = dbase.get<RealArray>("periodArrayAdjusted"); 
+  IntegerArray & numPeriodsArray    = dbase.get<IntegerArray>("numPeriodsArray");
+  RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+  RealArray & periodArraySave       = dbase.get<RealArray>("periodArraySave");     
+
+  OV_ABORT("finish me");
+  // omegaSave   = omega;
+  // TperiodSave = Tperiod;
+  // dtSave      = dt; 
+  // Tperiod     = Tperiod; 
+  // dampSave    = damp;
+
+  // frequencyArraySave = frequencyArray;  
+  // periodArraySave    = periodArray;     
+
+
+  return 0;
+}
+
+// ================================================================================================
+/// \brief Reset frequency arrays to their un-adjusted values
+/// \note this was out here for plotFilter
+// ================================================================================================
+int CgWave::resetFrequencyArrays()
+{
+  Real & tFinal                     = dbase.get<real>("tFinal");
+  Real & omega                      = dbase.get<real>("omega");
+  Real & damp                       = dbase.get<Real>("damp"); 
+  Real & dampSave                   = dbase.get<Real>("dampSave"); 
+  Real & Tperiod                    = dbase.get<real>("Tperiod");
+  int & numPeriods                  = dbase.get<int>("numPeriods");
+  Real & omegaSave                  = dbase.get<real>("omegaSave");
+  Real & TperiodSave                = dbase.get<real>("TperiodSave");  
+  Real & dt                         = dbase.get<real>("dt");
+  Real & dtSave                     = dbase.get<real>("dtSave");
+
+  RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+  RealArray & frequencyArrayAdjusted= dbase.get<RealArray>("frequencyArrayAdjusted");
+  RealArray & periodArray           = dbase.get<RealArray>("periodArray"); 
+  RealArray & periodArrayAdjusted   = dbase.get<RealArray>("periodArrayAdjusted"); 
+  IntegerArray & numPeriodsArray    = dbase.get<IntegerArray>("numPeriodsArray");
+  RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+  RealArray & periodArraySave       = dbase.get<RealArray>("periodArraySave");     
+
+  omega   = omegaSave;
+  Tperiod = TperiodSave;
+  dt      = dtSave; 
+  tFinal  = Tperiod; // reset too *wdh* Jul 25, 2021
+  damp    = dampSave;
+
+  frequencyArray = frequencyArraySave;  // reset to original values 
+  periodArray    = periodArraySave;     // reset to original values
+
+  return 0;
+
+}
+
+
+// ----------------------------------------------------------------------------------------------
+/// \brief Return the adjusted boundary index
+///   (1) return extended boundaries for dirichlet BCs
+///    (2) for neumann/characteristic BCs, skip ends that meet adjacent Dirichlet BCs
+///
+/// \param Ib1,Ib2,Ib3 (output)
+// ----------------------------------------------------------------------------------------------
+int CgWave::getAdjustedBoundaryIndex( MappedGrid & mg, int side, int axis, Index & Ib1, Index & Ib2, Index & Ib3 )
+{
+  const int numberOfDimensions = mg.numberOfDimensions();
+
+  IntegerArray abi(2,3); // adjusted boundary index
+
+  if( mg.boundaryCondition(side,axis)==dirichlet )
+    abi = mg.dimension();     // return extended boundary for a Dirichlet BC
+  else
+    abi = mg.gridIndexRange();
+
+  abi(0,axis) = mg.gridIndexRange(side,axis);
+  abi(1,axis) = mg.gridIndexRange(side,axis);
+
+  // if( mg.boundaryCondition(side,axis)==dirichlet )
+  // {
+  //   // return extended boundary for a Dirichlet BC
+  //   abi(0,axis) = mg.dimension(side,axis);
+  //   abi(1,axis) = mg.dimension(side,axis);
+  // }
+
+  if( mg.boundaryCondition(side,axis)==neumann || 
+      mg.boundaryCondition(side,axis)==characteristic )
+  {
+    // On a neumann or characteristic boundary, do not include end points on adjacent dirichlet BCs
+    for( int dir=0; dir<numberOfDimensions; dir++ )
+    {
+      if( dir!=axis )
+      {
+        for( int side2=0; side2<=1; side2++ )
+        {
+          if( mg.boundaryCondition(side2,dir)==dirichlet )
+          {
+            const int is2=1-2*side2;
+            abi(side2,dir) += is2;
+          }
+        }
+      }
+    }
+  }
+
+  Ib1 = Range(abi(0,0),abi(1,0));
+  Ib2 = Range(abi(0,1),abi(1,1));
+  Ib3 = Range(abi(0,2),abi(1,2));
+
+  return 0;
 }
 
 // ================================================================================================
@@ -566,7 +719,7 @@ int CgWave::initialize()
       int numGhost = min(numberOfGhostPoints(Range(0,1),Rx));
       if( numGhost < minGhostNeeded )
       {
-        printF("--CgWave-- setupGridFunctions: ERROR: the grid does not have enough ghost points for upwind dissipation.\n"
+        printF("--CgWave-- initialize: ERROR: the grid does not have enough ghost points for upwind dissipation.\n"
         "   orderOfAccuracy=%i requires at least %i ghost points.\n"
         "   You could remake the grid with more ghost points to fix this error.\n",
         orderOfAccuracyInSpace,minGhostNeeded);
@@ -644,6 +797,23 @@ int CgWave::initialize()
   }
   
   
+  // ---- check for radiation boundary conditions ---
+  bool & hasRadiationBoundaryConditions = dbase.get<bool>("hasRadiationBoundaryConditions");
+  for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+  {
+    MappedGrid & mg = cg[grid];
+    ForBoundary(side,axis) 
+    {
+      int bc = mg.boundaryCondition(side,axis);
+      if( bc==abcEM2 || bc==characteristic || bc==absorbing ) 
+      {
+        hasRadiationBoundaryConditions=true;
+        break;
+      }
+    }
+  }
+
+  // ============= INITIALIZE FORCING ================
   realCompositeGridFunction & f = dbase.get<realCompositeGridFunction>("f");
   if( forcingOption != noForcing )
     f.updateToMatchGrid(cg,all,all,all,numberOfFrequencies);
@@ -869,6 +1039,15 @@ bool CgWave::compositeGridsMatch( CompositeGrid & cg, CompositeGrid & cgsf )
       else
       {
         printF("grid=%d: elementCount=%d : showfile elementCount=%d MATCH\n",grid,maskLocal.elementCount(),sfMaskLocal.elementCount() );
+      }
+
+      const IntegerArray & dwcg   = cg[grid].discretizationWidth();
+      const IntegerArray & dwcgsf = cgsf[grid].discretizationWidth();
+      if( max(abs(dwcg-dwcgsf)) > 0 )
+      {
+        printF("grid=%d: discretizationWidths DO NOT MATCH\n",grid);
+        gridsMatch=false;
+        break;
       }
     }
 
@@ -1158,19 +1337,22 @@ buildWaveHoltzOptionsDialog(DialogData & dialog )
   int & adjustHelmholtzForUpwinding    = dbase.get<int>("adjustHelmholtzForUpwinding");
   int & computeTimeIntegral            = dbase.get<int>("computeTimeIntegral");
   int & deflateWaveHoltz               = dbase.get<int>("deflateWaveHoltz");
+  int & deflateForcing                 = dbase.get<int>("deflateForcing");
   const real & omega                   = dbase.get<real>("omega");
 
   aString tbCommands[] = {
                           "solve Helmholtz",
                           "compute time integral",
                           "adjust Helmholtz for upwinding", 
-                          "deflate WaveHoltz",                             
+                          "deflate WaveHoltz", 
+                          "deflate forcing",                            
                             ""};
   int tbState[15];
   tbState[ 0] = solveHelmholtz;
   tbState[ 1] = computeTimeIntegral;
   tbState[ 2] = adjustHelmholtzForUpwinding;
   tbState[ 3] = deflateWaveHoltz;
+  tbState[ 4] = deflateForcing;
 
   int numColumns=1;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -1216,6 +1398,7 @@ getWaveHoltzOption(const aString & answer,
   int & adjustHelmholtzForUpwinding    = dbase.get<int>("adjustHelmholtzForUpwinding");
   int & computeTimeIntegral            = dbase.get<int>("computeTimeIntegral");
   int & deflateWaveHoltz               = dbase.get<int>("deflateWaveHoltz");
+  int & deflateForcing                 = dbase.get<int>("deflateForcing");
   real & omega                         = dbase.get<real>("omega");
   RealArray & frequencyArray           = dbase.get<RealArray>("frequencyArray");
   RealArray & frequencyArraySave       = dbase.get<RealArray>("frequencyArraySave");
@@ -1242,6 +1425,10 @@ getWaveHoltzOption(const aString & answer,
   {
     printF("Setting deflateWaveHoltz=%i (1=apply deflate to WaveHoltz iteration\n",deflateWaveHoltz);
   }   
+  else if( dialog.getToggleValue(answer,"deflate forcing",deflateForcing) )
+  {
+    printF("Setting deflateForcing=%i (1=deflate forcing (remove components along deflation eigenvectors) but do not adjust iterates)\n",deflateForcing);
+  }     
   else if( dialog.getTextValue(answer,"omega","%e",omega) )
   {
     printF("Setting omega=%g (and frequencyArray(0))\n",omega);
@@ -1540,6 +1727,7 @@ int CgWave::interactiveUpdate()
   int & useKnownSolutionForFirstStep   = dbase.get<int>("useKnownSolutionForFirstStep"); 
   int & debug                          = dbase.get<int>("debug");
   int & interactiveMode                = dbase.get<int>("interactiveMode");
+  int & checkParameters                = dbase.get<int>("checkParameters");  // 1= check problem parameters for consistency
 
   int & solveForScatteredField         = dbase.get<int>("solveForScatteredField");
   int & plotScatteredField             = dbase.get<int>("plotScatteredField");
@@ -1651,8 +1839,9 @@ int CgWave::interactiveUpdate()
                           "plot scattered field",
                           "compute energy",
                           "save max errors",
+                          "check parameters",
                             ""};
-  int tbState[16];
+  int tbState[20];
   tbState[ 0] = saveShowFile;
   tbState[ 1] = upwind;
   tbState[ 2] = addForcing;
@@ -1669,6 +1858,7 @@ int CgWave::interactiveUpdate()
   tbState[12] = plotScatteredField;
   tbState[13] = computeEnergy;
   tbState[14] = saveMaxErrors;
+  tbState[15] = checkParameters;
 
   int numColumns=2;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -1923,6 +2113,11 @@ int CgWave::interactiveUpdate()
     else if( dialog.getTextValue(answer,"flush frequency","%i",flushFrequency) )
     {
       printF("Setting flushFrequency=%i (number of solution in each sun showFile)\n",flushFrequency);
+    }
+
+    else if( dialog.getToggleValue(answer,"check parameters",checkParameters) )
+    {
+      printF("Setting checkParameters=%d (1=check parmeters for consistenty)\n",checkParameters);
     }
 
     else if( dialog.getToggleValue(answer,"save show file",saveShowFile) )
@@ -2948,7 +3143,6 @@ getUpwindDissipationCoefficient( int grid, Real dtUpwind /* = -1. */, bool adjus
 
   const int numberOfDimensions = cg.numberOfDimensions();
 
-
   if( dtUpwind <=0. )
     dtUpwind = dt; 
 
@@ -3071,6 +3265,54 @@ getUpwindDissipationCoefficient( int grid, Real dtUpwind /* = -1. */, bool adjus
   // Implicit monolithic scheme 
 
   return upwindCoefficient;
+
+}
+
+// =============================================================================
+/// \brief : Check parameters for consistency.
+/// \notes: Add more checks here to avoid user (any my) mistakes 
+/// \notes: WDH : started Oct 3, 2024.
+// =============================================================================
+int CgWave::checkParameters()
+{
+
+  const real & c                        = dbase.get<real>("c");
+  const real & dt                       = dbase.get<real>("dt");
+  const real & omega                    = dbase.get<real>("omega");
+  const int & orderOfAccuracy           = dbase.get<int>("orderOfAccuracy");
+  const int & takeImplicitFirstStep     = dbase.get<int>("takeImplicitFirstStep");
+  const int & checkParameters           = dbase.get<int>("checkParameters");  // 1= check problem parameters for consistency
+
+
+  const int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
+  const RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");  
+  const RealArray & frequencyArraySave  = dbase.get<RealArray>("frequencyArraySave");  
+
+  const int & solveHelmholtz            = dbase.get<int>("solveHelmholtz");
+  const int & filterTimeDerivative      = dbase.get<int>("filterTimeDerivative");
+
+  ForcingOptionEnum & forcingOption     = dbase.get<ForcingOptionEnum>("forcingOption");
+  const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");  
+
+  int numErrors=0; 
+  // if( solveHelmholtz && takeImplicitFirstStep && filterTimeDerivative && timeSteppingMethod == implicitTimeStepping )
+  // {
+  //   printF("CgWave::checkParameters: ERROR: takeImplicitFirstStep should not be used with solveHelmholtz and filterTimeDerivative.\n");
+  //   numErrors++;
+  // }
+
+  if( solveHelmholtz && filterTimeDerivative && numberOfFrequencies>1  )
+  {
+    printF("CgWave::checkParameters: ERROR: numberOfFrequencies>1 cannot yet be used with solveHelmholtz and filterTimeDerivative.\n");
+    numErrors++;
+  }
+
+  if( checkParameters && numErrors>0 )
+  {
+    printF("CgWave::checkParameters: Fix errors (or set checkParameters=0 to continue anyway)\n");
+    OV_ABORT("CgWave::checkParameters: Fix errors (or set checkParameters=0 to continue anyway)")
+  }
+
 
 }
 

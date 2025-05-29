@@ -287,8 +287,7 @@ main(int argc, char *argv[])
       int it=0;
       int & plotOptions = cgWave.dbase.get<int>("plotOptions");
       plotOptions= CgWave::plotAndWait;
-       
-      cgWave.advance(it);
+      cgWave.advance( it );
     }
 
     else if( answer=="check known solution" )

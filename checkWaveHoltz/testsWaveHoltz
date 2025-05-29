@@ -27,11 +27,30 @@ square64ImpFP.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -t
 # MULTI-FREQ
 square64ImpFreq3Krylov.check ../runsWaveHoltz/trigHelmholtz/trigHelmholtz.cmd -g=square64.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=1 -go=dk
 #
-# Square, IMP, SUPERGRID
-square64ImpSuperGridKrylov.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -minStepsPerPeriod=20 -go=dk
+# Square, IMP, SUPERGRID **TURN OFF IMPLICI FIRST STEP: NOT WORKING YET**
+square64ImpSuperGridKrylov.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -minStepsPerPeriod=20 -takeImplicitFirstStep=0 -go=dk
 #
 # AGMRES : Augmented Gmres for deflation of WaveHoltz 
 square32ImpAGMRES.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square32.order4.ng3 -x0=0.5 -y0=0.45 -nf=1 -amp=20 -beta=10 -adjustOmega=1 -ts=implicit  -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -cfl=10000 -eigenVectorFile=../checkEigen/grids/square32O4EigsEv64.show -matlab=junk -deflateWaveHoltz=1 -numToDeflate=8 -freq=5 -go=da
-
-
+#
+# GMRES : Gmres with explicit deflation of WaveHoltz 
+square32ImpGMRES.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square32.order4.ng3 -x0=0.5 -y0=0.45 -nf=1 -amp=20 -beta=10 -adjustOmega=1 -ts=implicit  -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -cfl=10000 -eigenVectorFile=../checkEigen/grids/square32O4EigsEv64.show -matlab=junk -deflateWaveHoltz=1 -numToDeflate=8 -freq=5 -go=dk
+#
+# FPI with explicit deflation of WaveHoltz 
+square32ImpFPI.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square32.order4.ng3 -x0=0.5 -y0=0.45 -nf=1 -amp=20 -beta=10 -adjustOmega=1 -ts=implicit  -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -cfl=10000 -eigenVectorFile=../checkEigen/grids/square32O4EigsEv64.show -matlab=junk -deflateWaveHoltz=1 -numToDeflate=8 -freq=5 -go=df
+# 
+# Explicit: AGMRES : Augmented Gmres for deflation of WaveHoltz 
+square32ExpAGMRES.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square32.order4.ng3 -x0=0.5 -y0=0.45 -nf=1 -amp=20 -beta=10 -adjustOmega=1 -ts=explicit -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -cfl=.95 -eigenVectorFile=../checkEigen/grids/square32O4EigsEv64.show -matlab=junk -deflateWaveHoltz=1 -numToDeflate=8 -freq=5 -go=da
+#
+# Explicit: GMRES : Gmres with explicit deflation of WaveHoltz 
+square32ExpGMRES.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square32.order4.ng3 -x0=0.5 -y0=0.45 -nf=1 -amp=20 -beta=10 -adjustOmega=1 -ts=explicit -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -cfl=.95 -eigenVectorFile=../checkEigen/grids/square32O4EigsEv64.show -matlab=junk -deflateWaveHoltz=1 -numToDeflate=8 -freq=5 -go=dk
+#
+# Explicit: FPI with explicit deflation of WaveHoltz 
+square32ExpFPI.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square32.order4.ng3 -x0=0.5 -y0=0.45 -nf=1 -amp=20 -beta=10 -adjustOmega=1 -ts=explicit -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -cfl=.95 -eigenVectorFile=../checkEigen/grids/square32O4EigsEv64.show -matlab=junk -deflateWaveHoltz=1 -numToDeflate=8 -freq=5 -go=df
+#
+# Radiation BC with Gaussian source
+square32ImpEM2.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square32.order2 -ts=implicit -cfl=10000 -x0=0.5 -y0=0.5 -nf=1 -amp=1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=abcEM2 -implicitUpwind=0 -takeImplicitFirstStep=0 -go=dk
+#
+# Scattering from a cylinder
+diskScatImpEM2.check ../runsWaveHoltz/scattering/scat.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=50 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -takeImplicitFirstStep=0 -go=dk
 

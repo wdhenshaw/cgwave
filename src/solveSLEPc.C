@@ -73,6 +73,25 @@ static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver
 //  NOTE: This macro appears in solveSLEPc.bC and eigenModes.bC 
 // --------------------------------------------------------------------------------------
 
+
+
+// EPSMonitorSet(EPS eps,PetscErrorCode (*monitor)(EPS eps,PetscInt its,PetscInt nconv,PetscScalar *eigr,PetscScalar *eigi,PetscReal *errest,PetscInt nest,void *mctx),void *mctx,PetscErrorCode (*monitordestroy)(void**))
+
+// User defined monitor for SLEPC
+PetscErrorCode eigenWaveMonitor(EPS eps,PetscInt its,PetscInt nconv,PetscScalar *eigr,PetscScalar *eigi,PetscReal *errest,PetscInt nest,void *mctx)
+{
+    printF("\n"
+              " *************************************************************************************************\n"
+              " *****************  eigenWaveMonitor: Outer iteration=%d, Number converged=%d  *******************\n"
+              " *************************************************************************************************\n"
+              ,its,nconv);
+
+    return 0;
+}
+
+
+
+
 // =========================================================================================================
 //     MATRIX-VECTOR MULTIPLY FOR MATRIX FREE KRYLOV SOLVERS
 // 
@@ -96,6 +115,7 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
   // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
     const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
+    const int & upwind               = cgWave.dbase.get<int>("upwind");
 
     const int & computeEigenmodes = cgWave.dbase.get<int>("computeEigenmodes");
     assert( computeEigenmodes );
@@ -157,7 +177,7 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
                         {
                               iab[side] += is;  // Dirichlet BC -- ignore the boundary
                         }
-                        else if( bc==CgWave::neumann )
+                        else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
                         {
               // include boundary
                         }
@@ -197,7 +217,7 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     assert( i==iEnd );
 
 
-  // *** APPLY BOUNDARY CONDITIONS to v 
+  // *** APPLY BOUNDARY CONDITIONS to v  **************** IS THIS NEEDED ?? Doesn't advance do this ???
     Real t=0.; // should not matter for eigenvalue problem
     cgWave.applyEigenFunctionBoundaryConditions( v );
 
@@ -261,7 +281,7 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
                         {
                               iab[side] += is;  // Dirichlet BC -- ignore the boundary
                         }
-                        else if( bc==CgWave::neumann )
+                        else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
                         {
               // include boundary
                         }
@@ -344,6 +364,8 @@ solveSLEPc(int argc,char **args)
   
   
     const int & computeEigenmodes       = cgWave.dbase.get<int>("computeEigenmodes");
+    const CgWave::EigenSolverInitialConditionEnum & eigenSolverInitialCondition 
+                                                                            = cgWave.dbase.get<CgWave::EigenSolverInitialConditionEnum>("eigenSolverInitialCondition");
 
   // --- set values in CgWave:  *** COULD DO BETTER ***
 
@@ -473,7 +495,7 @@ solveSLEPc(int argc,char **args)
                     {
                           iab[side] += is;  // Dirichlet BC -- ignore the boundary
                     }
-                    else if( bc==CgWave::neumann )
+                    else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
                     {
             // include boundary
                     }
@@ -594,12 +616,47 @@ solveSLEPc(int argc,char **args)
   // Set any command line options:
     PetscCall(EPSSetFromOptions(eps));
 
+    PetscCall(EPSSetWhichEigenpairs(eps,EPS_LARGEST_MAGNITUDE));
+
+    ST st; // spectral transform
+    EPSGetST(eps,&st); 
+
     const CgWave::EigenSolverEnum & eigenSolver  = cgWave.dbase.get<CgWave::EigenSolverEnum>("eigenSolver"); 
   // -- default method is Krylov-Schur
     if( eigenSolver==CgWave::defaultEigenSolver || eigenSolver==CgWave::KrylovSchurEigenSolver )
     {
         PetscCall(EPSSetType(eps,EPSKRYLOVSCHUR));
     }
+    else if( eigenSolver==CgWave::powerEigenSolver )
+    {
+    // --- plain power method ---
+        PetscCall(EPSSetType(eps,EPSPOWER));
+
+    } 
+    else if( eigenSolver==CgWave::inverseIterationEigenSolver )
+    {
+    // -- inverse iteration -- but need to us an iterative solver to invert the shifted matrix (matric free)
+        PetscCall(EPSSetType(eps,EPSPOWER));
+        PetscCall(STSetType(st,STSINVERT));   // shift and invert
+
+        if( false )
+        {
+            PetscScalar target=1.; // *************************************************** FIX ME 
+            PetscCall( EPSSetTarget(eps,target ) );
+        }
+
+        PetscCall(EPSSetWhichEigenpairs(eps,EPS_TARGET_MAGNITUDE) );  // DO THIS ---
+
+    // PetscScalar shift=1.; 
+    // PetscCall(STSetShift(st,shift) ) ;
+
+    // printF("\n >>>>>>>> Set SLEPSc Spectral transform = shit-and-invert, target=%9.2e <<<<<<<<<<<< \n",target);
+
+    }     
+    else if( eigenSolver==CgWave::JacobiDavidsonEigenSolver )
+    {
+        PetscCall(EPSSetType(eps,EPSJD));
+    }    
     else if( eigenSolver==CgWave::ArnoldiEigenSolver )
     {
     // Arnoldi: with explicit restart and deflation.
@@ -622,7 +679,7 @@ solveSLEPc(int argc,char **args)
   // PetscCall(EPSSetType(eps,EPSSUBSPACE));
     
 
-    PetscCall(EPSSetWhichEigenpairs(eps,EPS_LARGEST_MAGNITUDE));
+  // PetscCall(EPSSetWhichEigenpairs(eps,EPS_LARGEST_MAGNITUDE));
 
     PetscInt mpd = PETSC_DEFAULT;
     int numEigenValues = numEigsToCompute;
@@ -643,230 +700,144 @@ solveSLEPc(int argc,char **args)
   // mpd = 100; // ** TEST ***
     PetscCall(EPSSetDimensions(eps,numEigenValues,ncv,mpd)); 
 
-    PetscInt maxIt = 500;   // make this an option
+  // const int & maximumNumberOfIterations = cgWaveHoltz.dbase.get<int>("maximumNumberOfIterations");
+
+    PetscInt maxIt = maximumNumberOfIterations; // 500;  
+    printF("\n !!!!!!!!!!!!!!!   solveSLEPC: set maxIt = %d !!!!!!!!!!!!!!!!\n",maxIt);
+
   // Arnoldi iterations may be scaled by the number of request eigenvalues  
   //  nev=3 : maxit=50 --> 349 matVecs
-    if( eigenSolver==CgWave::ArnoldiEigenSolver )
-        maxIt = 50;         // This is for some sort of outer iteration for Arnoldi, actually mat-vecs are 10 times or so
+  // if( eigenSolver==CgWave::ArnoldiEigenSolver )
+  //   maxIt = 50;         // This is for some sort of outer iteration for Arnoldi, actually mat-vecs are 10 times or so
 
   // PetscScalar tol=1e-12;
     PetscCall(EPSSetTolerances(eps,tol,maxIt));  
 
-    const int & initialVectorsForEigenSolver = cgWave.dbase.get<int>("initialVectorsForEigenSolver");
 
+  // Set the user defined monitor 
+  // EPSMonitorSet(EPS eps,PetscErrorCode (*monitor)(EPS eps,PetscInt its,PetscInt nconv,PetscScalar *eigr,PetscScalar *eigi,PetscReal *errest,PetscInt nest,void *mctx),void *mctx,PetscErrorCode (*monitordestroy)(void**))
+
+    EPSMonitorSet(eps,eigenWaveMonitor,NULL,NULL);
+
+  // ----------------------------------------------------
+  // -------------- INITIAL CONDITIONS ------------------
+  // ----------------------------------------------------
+    const int & initialVectorsForEigenSolver = cgWave.dbase.get<int>("initialVectorsForEigenSolver");
     const int maxInitialVectors=5;
     Vec vInit[maxInitialVectors]; 
+
     PetscInt numInitialConditions=0; 
-    bool setInitialConditions= initialVectorsForEigenSolver;
-    if( setInitialConditions )
+    bool setInitialConditions= false;
+
+    if( eigenSolverInitialCondition==CgWave::defaultEigenSolverInitialCondition )
     {
-        numInitialConditions=min(maxInitialVectors,numEigenValues);
+          printF("\n >>>> solveSLEPC : use default initial condition provided by SLEPc <<<<<<\n\n");
+    }
+    else if( eigenSolverInitialCondition==CgWave::randomEigenSolverInitialCondition ||
+                      eigenSolverInitialCondition==CgWave::sineEigenSolverInitialCondition   ||
+                      eigenSolverInitialCondition==CgWave::sumOfEigenvectorsInitialCondition )
+    {
+        if( eigenSolverInitialCondition==CgWave::randomEigenSolverInitialCondition )
+            printF("\n >>>> solveSLEPC : use random initial condition <<<<< \n\n");
+        else if( eigenSolverInitialCondition==CgWave::sineEigenSolverInitialCondition )
+            printF("\n >>>> solveSLEPC : use sine initial condition <<<<< \n\n");
+        else
+            printF("\n >>>> solveSLEPC : use sum of eigenvector solutions initial condition <<<<< \n\n");
 
-    // SLEPC MAY BE ONLY USING ONE INITIAL VECTOR ? Could depend on the method
-        numInitialConditions=1; // ** TEST 
 
-        printF("solveSLEPc: supply %d initial conditions\n",numInitialConditions);
+        setInitialConditions=true;
+        numInitialConditions=1; // we supply one initial condition -- this is all Krylov Schur seems to take
+    // initial conditions are stored here: 
+        realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
 
-        assert( numInitialConditions<maxInitialVectors ); 
-                                      
+  
+        const int ii=0; 
+        PetscCall(MatGetVecs(Amf,NULL,&vInit[ii]));  // create a Petsc vec    // *** DELETE ME *******************
 
-        realCompositeGridFunction ui(cg); // store initial conditions here 
-        ui.setOperators( operators );
+        PetscScalar *vil;
+        PetscCall(VecGetArray( vInit[ii],&vil ));  // get the local array from Petsc
+        int iStart,iEnd;
+        PetscCall(VecGetOwnershipRange(vInit[ii],&iStart,&iEnd));
 
-        const Real & c  = cgWave.dbase.get<Real>("c");
-
-        for( int ii=0; ii<numInitialConditions; ii++ )
+        int count=0; // counts points 
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
-      // --- construct initial conditiosn ----
+            MappedGrid & mg = cg[grid];
+            const IntegerArray & gid = mg.gridIndexRange();      
 
-      // Guess: 
-      //    c^2*( kx^2 + ky^2 ) = omega^2
-      // kx=ky -> 2*kx^2 = (omega/c)^2  == k^2 
-      //
-      //  (kx/k)^2 + (ky/k)^2 = 1
-      //  (kxHat)^2 + (kyHat)^2 = 1
-      //   cos(theta)^2 + sin(theta)^2 = 1 
+            OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+            OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
 
-            const Real k = omega/c; 
-      // choose theta in [0,pi/2], start at center
-            Real dTheta = (twoPi/4.)/(numInitialConditions+1.); // (Pi/2)/(num-1)
-            Real theta0 = .5*(twoPi/4.); // Pi/4 
-            Real theta;
-            if(   ii % 2 == 0 )
-                theta = theta0 + (ii/2)*dTheta;
-            else
-                theta = theta0 - ((ii+1)/2)*dTheta;
-
-      // const Real theta = (twoPi/4.)*( ii+1. )/(numInitialConditions+1.);
-
-            const Real kxHat = cos(theta);
-            const Real kyHat = sin(theta);
-
-            const Real kx = kxHat*k;
-            const Real ky = kyHat*k;
-
-
-            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-            {
-                MappedGrid & mg = cg[grid];
-                mg .update(MappedGrid::THEvertex);
-                getIndex(mg.dimension(),I1,I2,I3);
-                OV_GET_SERIAL_ARRAY( Real, mg.vertex(),xLocal);
-                OV_GET_SERIAL_ARRAY( Real,ui[grid],uiLocal);
-
-
-        // if( i==0 )
-        // {
-        //   kx = sqrt(2.)*(omega/c);
-        //   ky = kx;
-        // }
-        // else
-        // {
-        //   kx = sqrt(2.)*(omega/c) / (1.0 +ii);  // do this for now ***
-        //   ky = sqrt( SQR(omega/c) - kx*kx );
-        // }
-                Real scale=10.;  // should not matter
-                uiLocal(I1,I2,I3) = scale*sin( kx*xLocal(I1,I2,I3,0) ) * sin( ky*xLocal(I1,I2,I3,1) );
-
-        // Constant:  (will be smoothed)
-        // uiLocal(I1,I2,I3) = scale;
-            }
-            Real t=0;
-            cgWave.applyEigenFunctionBoundaryConditions( ui );
-
-      // ---- SMOOTH THE INTIAL VECTOR ---
-
-            const int & initialVectorSmooths = cgWave.dbase.get<int>("initialVectorSmooths");
-            int numSmooths= initialVectorSmooths; //  500; // what should this be ?  ************************************** MAKE AN OPTION ***********
-
-            Real omega = 4./5.; // optimal value for smoothing in 2D is omega=4/5 => smoothing rate mu = 3/5
-            if( numberOfDimensions==3 )
-                omega= 6./7.;   // Owl book p 73 -- optimal smoothing parameter in 3D,  mu=5/7 smoothing fractor
-
-      //   (.6)^10 = .00604...
-      //   (.6)^20 = 3.6 e -5 
-            for( int itsm=0; itsm<numSmooths; itsm++ )
-            {
-                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                Iv[2]=Range(0,0);
+                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
                 {
-                    MappedGrid & mg = cg[grid];
-                    getIndex(mg.gridIndexRange(),I1,I2,I3);
-                    OV_GET_SERIAL_ARRAY( Real,ui[grid],uiLocal);
-
-                    if( numberOfDimensions==2 )
+                    for( int side=0; side<=1; side++ )
                     {
-                        uiLocal(I1,I2,I3) = (1.-omega)*(uiLocal(I1,I2,I3) ) +
-                                                              (.25*omega)*(uiLocal(I1+1,I2  ,I3) + 
-                                                                                        uiLocal(I1-1,I2  ,I3) + 
-                                                                                        uiLocal(I1  ,I2+1,I3) +
-                                                                                        uiLocal(I1  ,I2-1,I3) );
-                    }
-                    else
-                    {
-                        uiLocal(I1,I2,I3) = (1.-omega)*(uiLocal(I1,I2,I3) ) +
-                                                                (omega/6.)*(uiLocal(I1+1,I2  ,I3) + 
-                                                                                        uiLocal(I1-1,I2  ,I3) + 
-                                                                                        uiLocal(I1  ,I2+1,I3) +
-                                                                                        uiLocal(I1  ,I2-1,I3) +
-                                                                                        uiLocal(I1  ,I2,I3+1) +
-                                                                                        uiLocal(I1  ,I2,I3+1)                                             
-                                                                                        );            
-                    }
-                }
-                cgWave.applyEigenFunctionBoundaryConditions( ui );
-            }
-
-            bool plotInitialVectors=false; // true;
-            if( plotInitialVectors )
-            {
-                ui.setName("initial vector",0);
-                GL_GraphicsInterface & ps = (GL_GraphicsInterface&)(*Overture::getGraphicsInterface("test"));
-                ps.erase();
-                PlotStuffParameters psp;
-                psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
-                PlotIt::contour(ps,ui,psp);
-                psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true); 
-
-            }
-
-      // --- gridFunctionToVector ---
-      // set vi = ui
-
-            PetscCall(MatGetVecs(Amf,NULL,&vInit[ii]));  // create a Petsc vec    // *** DELETE ME *******************
-
-            PetscScalar *vil;
-            PetscCall(VecGetArray( vInit[ii],&vil ));  // get the local array from Petsc
-            int iStart,iEnd;
-            PetscCall(VecGetOwnershipRange(vInit[ii],&iStart,&iEnd));
-
-            int count=0; // counts points 
-            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-            {
-                MappedGrid & mg = cg[grid];
-                const IntegerArray & gid = mg.gridIndexRange();      
-
-                OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-                OV_GET_SERIAL_ARRAY(Real,ui[grid],uiLocal);
-
-                    Iv[2]=Range(0,0);
-                    for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                    {
-                        for( int side=0; side<=1; side++ )
+                        int is = 1-2*side;
+                        iab[side]=gid(side,axis);
+                        const int bc = mg.boundaryCondition(side,axis);
+                        if( bc==CgWave::dirichlet )
                         {
-                            int is = 1-2*side;
-                            iab[side]=gid(side,axis);
-                            const int bc = mg.boundaryCondition(side,axis);
-                            if( bc==CgWave::dirichlet )
-                            {
-                                  iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                            }
-                            else if( bc==CgWave::neumann )
-                            {
-                // include boundary
-                            }
-                            else if( bc>0 )
-                            {
-                                printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                                OV_ABORT("error");
-                            }
-                            else if( bc<0 )
-                            {
-                // periodic -- include left end
-                                if( side==1 )
-                                    iab[side] += is; 
-                            }
-                            else
-                            {
-                // interpolation boundary : include end 
-                            }
+                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
                         }
-                        Iv[axis] = Range(iab[0],iab[1]);
+                        else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
+                        {
+              // include boundary
+                        }
+                        else if( bc>0 )
+                        {
+                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
+                            OV_ABORT("error");
+                        }
+                        else if( bc<0 )
+                        {
+              // periodic -- include left end
+                            if( side==1 )
+                                iab[side] += is; 
+                        }
+                        else
+                        {
+              // interpolation boundary : include end 
+                        }
                     }
+                    Iv[axis] = Range(iab[0],iab[1]);
+                }
 
-                FOR_3D(i1,i2,i3,I1,I2,I3)
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            {
+                if( maskLocal(i1,i2,i3) > 0 )
                 {
-                    if( maskLocal(i1,i2,i3) > 0 )
-                    {
-                        assert( count<iEnd );
-                        vil[count]= uiLocal(i1,i2,i3);    // y = A*x 
+                    assert( count<iEnd );
+                    vil[count]= vLocal(i1,i2,i3,0);   
 
-                        count++;
-                    }
+                    count++;
                 }
             }
-            assert( count==iEnd );
-
         }
+        assert( count==iEnd );
 
-    // Give SLEPc initial conditions: 
+    // ------- Give SLEPc initial conditions --------------
+        int numInitialConditions=1; 
+        printF("solveSLEPc: supply %d initial conditions to SLEPc\n",numInitialConditions);
         EPSSetInitialSpace(eps, numInitialConditions, vInit ); 
-    } 
 
-  // ******************************************
-  // ********** SOLVE FOR EIGENPAIRS **********
-  // ******************************************
+    }
+    else
+    {
+        
+        printF("\n >>>> solveSLEPC : UNKNOWN initial condition option = %d ??? Using default.<<<<< \n\n",(int)eigenSolverInitialCondition);
+
+    }
+
+
+  // *************************************************************************************
+  // ***************************** SOLVE FOR EIGENPAIRS **********************************
+  // *************************************************************************************
+    
     PetscCall(EPSSolve(eps));
 
+
+    printF("\n !!!!!!!!!!!!!!!   solveSLEPC: set maxIt = %d !!!!!!!!!!!!!!!!\n",maxIt);
 
   // Optional: Get some information from the solver and display it
     EPSType        type;
@@ -1000,7 +971,7 @@ solveSLEPc(int argc,char **args)
                                 {
                                       iab[side] += is;  // Dirichlet BC -- ignore the boundary
                                 }
-                                else if( bc==CgWave::neumann )
+                                else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
                                 {
                   // include boundary
                                 }
@@ -1143,7 +1114,7 @@ solveSLEPc(int argc,char **args)
             IntegerArray iperm(numEigenVectors);
             cgWave.sortArray( eigenValues, iperm );
 
-            ::display(iperm,"iperm");
+      // ::display(iperm,"iperm");
 
       // -- reorder the eigenvectors -----
             int numAssigns=0; 

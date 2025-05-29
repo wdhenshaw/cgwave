@@ -1,0 +1,336 @@
+//===============================================================================
+//
+//  Test the Augmented GMRES algorithm
+//  set testag = $HOME/Dropbox/research/cgwave/bin/testAugmentedKrylov 
+//==============================================================================
+
+
+#include "AugmentedKrylov.h"
+#include "display.h"
+
+
+// lapack routines
+#ifdef OV_USE_DOUBLE
+  #define GETRF EXTERN_C_NAME(dgetrf)
+  #define GETRS EXTERN_C_NAME(dgetrs)
+  // #define GECON EXTERN_C_NAME(dgecon)
+  // #define LANGE EXTERN_C_NAME(dlange)
+#else
+  #define GETRF EXTERN_C_NAME(sgetrf)
+  #define GETRS EXTERN_C_NAME(sgetrs)
+  // #define GETRI EXTERN_C_NAME(sgetri)
+  // #define GECON EXTERN_C_NAME(sgecon)
+  // #define LANGE EXTERN_C_NAME(slange)
+#endif
+
+extern "C"
+{
+  void GETRF( int & m, int & n, real & a, const int & lda, int & ipvt, int & info );
+
+  void GETRS( const char *trans, const int & n, const int & nrhs, const Real & a, const int & lda, int & ipiv, Real & b, const int & ldb, const int & info );
+  // void GETRI( int & n, real & a, const int & lda, const int & ipvt, real & work, const int & iwork, int & info );
+
+  // void GECON( char *norm, int & n, real & a, const int & lda, real & anorm, real & rcond, real & work, int & iwork, int & info );
+  // real LANGE( char *norm, int & m, int & n, real & a, const int & lda, real & work );
+
+  //  void GEEV( char *jobvl, char* jobvr, int & n, real & a, const int & lda,
+  //             real & wr, real & wi, real &vl, int & ldvl, real & vr, int & ldvr, real & work, int & lwork, int & info );
+
+}
+
+
+RealArray *Aptr=NULL; // set below to pointer to the matrix A 
+
+Real timeForMatVect=0.;
+
+// --------------- MATRIX-VECTOR PRODUCT ------------------
+void matVectFunction( const RealArray & x, RealArray & y )
+{
+  Real cpu0=getCPU();
+  RealArray & A = *Aptr;
+
+  const int m = A.getLength(0);
+  const int n = A.getLength(1);
+  // printF("matVec: m=%d n=%d transpose=%d\n",m,n,transpose);
+  for( int i=0; i<m; i++ )
+  {
+    Real temp=0.;
+    for( int j=0; j<n; j++ )
+      temp += A(i,j)*x(j);
+
+    y(i) = temp; 
+  }
+  timeForMatVect += getCPU()-cpu0;
+
+} 
+
+// ================================== MAIN =================================================
+int 
+main(int argc, char *argv[])
+{
+  Overture::start(argc,argv);  // initialize Overture
+
+
+  printF("Usage: testAugmentedKrylov -Nx=<i> -nit=<i> -numToDeflate=<i> -tol=<f> krylovType=<gmres|bicgstab|cg>\n");
+
+  int debug=0; 
+  int Nx=100; 
+  int maxit=50;
+  int numToDeflate=10;
+  int includeBCs = 0;
+  int initialGuess=0; // 1 = use a non-zero initial guess
+  int useFunction=0;  // 1 = use matrix free mat-vec function
+  Real tol = 1e-10;
+
+  aString krylovType = "gmres"; // or "bicgstab"
+  
+  int len=0;
+  if( argc >= 1 )
+  { 
+    for( int i=1; i<argc; i++ )
+    {
+      aString arg = argv[i];
+      if( (len=arg.matches("-debug=")) )
+      {
+        sScanF(arg(len,arg.length()-1),"%i",&debug);
+        printF("Setting debug=%i\n",debug);
+      }
+      else if( (len=arg.matches("-Nx=")) )
+      {
+        sScanF(arg(len,arg.length()-1),"%i",&Nx);
+        printF("Setting Nx=%i\n",Nx );
+      }
+      else if( (len=arg.matches("-maxit=")) )
+      {
+        sScanF(arg(len,arg.length()-1),"%i",&maxit);
+        printF("Setting maxit=%i\n",maxit );
+      }
+      else if( (len=arg.matches("-numToDeflate=")) )
+      {
+        sScanF(arg(len,arg.length()-1),"%i",&numToDeflate);
+        printF("Setting numToDeflate=%i\n",numToDeflate );
+      } 
+      else if( (len=arg.matches("-initialGuess=")) )
+      {
+        sScanF(arg(len,arg.length()-1),"%i",&initialGuess);
+        printF("Setting initialGuess=%i\n",initialGuess );
+      }
+      else if( (len=arg.matches("-includeBCs=")) )
+      {
+        sScanF(arg(len,arg.length()-1),"%i",&includeBCs);
+        printF("Setting includeBCs=%i\n",includeBCs );
+      } 
+      else if( (len=arg.matches("-useFunction=")) )
+      {
+        sScanF(arg(len,arg.length()-1),"%i",&useFunction);
+        printF("Setting useFunction=%i\n",useFunction );
+      }                       
+      else if( (len=arg.matches("-tol=")) )
+      {
+        sScanF(arg(len,arg.length()-1),"%e",&tol);
+        printF("Setting tol=%i\n",tol );
+      }   
+      else if( (len=arg.matches("-krylovType=")) )
+      {
+        krylovType=arg(len,arg.length()-1);
+        printF("Setting krylovType={%s]\n",(const char*)krylovType );
+      }                        
+      // else if( (len=arg.matches("-orderOfAccuracy=")) )
+      // {
+      //   sScanF(arg(len,arg.length()-1),"%i",&orderOfAccuracy);
+      //   printF("Setting orderOfAccuracy=%i\n",orderOfAccuracy);
+      // }      
+      else
+      {
+        printF("Unknown command line argument=[%s]\n",(const char*)arg);
+      }
+    }
+  }
+
+  printF("=================================================================================\n"
+         " ---  test the Augmented %s algorithm ---  \n"
+         "   Nx=%d, maxit=%d, numToDefalate=%d, includeBCs=%d, initialGuess=%d, useFunction=%d tol=%9.2e \n",
+          (const char*)krylovType, Nx,maxit,numToDeflate,includeBCs, initialGuess,useFunction, tol);
+
+
+
+  // eigenfunction sin( k*pi*x )
+  // eigenvalue is   -4*sin^2(k*pi*dx/2)/dx^2 
+  //   |----+----+----+---- ... ---+----|
+  //   0    1    2   3                  Nx
+  //   ia    
+  // 
+  //   dx = (bx-ax)/N
+  //   N = Nx+1
+  // 
+  Real ax=0, bx=1;
+  Real dx = (bx-ax)/Nx; 
+
+  int ia=0, ib=Nx;
+  int Ng = ib-ia+1; 
+
+  RealArray xg(Ng);
+  for( int i=ia; i<=ib; i++ )
+  {
+    xg(i) = ax + dx*(i-ia); 
+  }
+
+  int i1,i2;       // matrix includes these point
+  if( includeBCs )
+  {
+    i1=ia; i2=ib;
+  }
+  else
+  {
+    i1=ia+1; i2=ib-1; 
+  }
+  
+
+  Real beta=5; 
+  Real xe = .4; 
+  #defineMacro ue(x)   ( exp(-beta*(x-xe)*(x-xe)) )
+  #defineMacro uex(x)  ( -2.*beta*(x-.5)*ue(x) )
+  #defineMacro uexx(x) ( (-2.*beta + SQR(2.*beta*(x-xe)) )*ue(x) )
+  #defineMacro f(x)    ( -uexx(x) )
+  
+  int m=i2-i1+1; 
+  RealArray A(m,m);
+  RealArray b(m);
+  A=0.; 
+  Real dxSq = dx*dx; 
+  for( int i=0; i<m; i++ )
+  {
+    if( i-1>=0 ){ A(i,i-1)= -1./dxSq; }
+                  A(i,i  ) = +2/dxSq;
+    if( i+1<m  ){ A(i,i+1) =-1./dxSq; }
+
+    int j=i+i1; // true index
+    b(i) = f(xg(j));
+  }
+
+  if( includeBCs )
+  {
+    Real bcScale=1./dxSq; 
+    A(ia,ia)=bcScale;  A(ia,ia+1)=0.; b(ia) = bcScale*ue(ax);
+    A(ib,ib)=bcScale;  A(ib,ib-1)=0.; b(ib) = bcScale*ue(bx);
+  }
+  else
+  {
+    // adjust RHS with BC
+    b(0  ) += ue(ax)/dxSq;
+    b(m-1) += ue(bx)/dxSq; 
+  }
+
+  // ::display(transpose(A),"A (transposed for output to look like a Matrix)","%7.2f ");
+
+  Aptr = &A; // for matVectFunction above 
+
+  // ----- Discrete eigenvectors ----
+  RealArray vTrue(Nx+1,m);
+  Range Rx = Nx+1;
+  Range I(i1,i2); 
+  for( int i=0; i<m; i++ )
+  {
+    Real freq= (i+1);   //  adjust the frequency 
+    vTrue(Rx,i) = sin(freq*Pi*xg(Rx));
+  }
+
+  RealArray W;
+  if( numToDeflate>0 )
+  {
+    W.redim(m,numToDeflate);
+    Range M = m;
+    for( int j=0; j<numToDeflate; j++ )
+    {
+      W(M,j) = vTrue(I,j);
+    }
+  }
+  
+  RealArray x0(m), r0(m); 
+  if( initialGuess==0 )
+  {
+    x0 = 0;
+  }
+  else
+  {
+    x0 = ue(xg(I));
+  }
+  RealArray y(m); 
+  AugmentedKrylov::matVect( A,x0, y); 
+  r0 = b - y; 
+
+  Real resid = AugmentedKrylov::norm(r0);
+  // ::display(b,"b");
+  printF("Init: resid=%9.2e\n",resid);
+
+  AugmentedKrylov auKrylov;
+
+  if( krylovType=="gmres" )
+    auKrylov.setKrylovType( AugmentedKrylov::gmres );
+  else if( krylovType=="bicgstab" )
+    auKrylov.setKrylovType( AugmentedKrylov::biConjugateGradientStabilized );
+  else if( krylovType=="cg" )
+    auKrylov.setKrylovType( AugmentedKrylov::conjugateGradient );  
+  else
+  {
+    OV_ABORT("Unknown krylovType");
+  }
+
+  RealArray x(m); // put solution here
+
+  // ========== CALL AUGMENTED KRYLOV =========
+  Real cpu0= getCPU();
+  if( useFunction==0 )
+  {
+    // pass matrix
+    auKrylov.solve( A, b, x0, W, maxit, tol, x );
+  }
+  else
+  {
+    // Use a function to compute the matrix vector product
+    auKrylov.solve( matVectFunction, b, x0, W, maxit, tol, x );
+  }
+  Real timeToSolve=getCPU()-cpu0;
+  printF("Time to solve = %9.2e(s), timeFotMatVect=%9.2e (s)\n",timeToSolve,timeForMatVect);
+
+  if( false )
+    ::display(x,"Done: solution x","%7.3f ");
+
+  int numberOfIterations = auKrylov.getNumberOfIterations();
+  int numberOfMatrixVectorProducts = auKrylov.getNumberOfMatrixVectorProducts();
+  printF("number of %s iterations=%d, number of mat-vects=%d\n",(const char*)krylovType,numberOfIterations,numberOfMatrixVectorProducts);
+
+  const RealArray & resVect = auKrylov.getResidualVector();
+  if( false )
+    ::display(resVect, "resVect","%9.2e ");
+
+
+  // --- Check errors ----
+  IntegerArray ipvt(m);
+  int info;
+  GETRF( m, m, A(0,0), m, ipvt(0), info );
+  RealArray xTrue(m);
+  xTrue=b;
+
+  int nrhs=1; 
+  GETRS( "N", m, nrhs, A(0,0), m, ipvt(0), xTrue(0), m, info );
+
+  // ::display(xTrue,"xTrue","%7.3f ");
+
+  Real maxErr;
+
+  maxErr = max(fabs(x-xTrue));
+  printF("maxErr=%9.2e\n",maxErr);
+
+
+
+
+
+  Overture::finish();          
+
+  return(0);
+}
+
+
+
+

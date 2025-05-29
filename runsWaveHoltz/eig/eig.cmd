@@ -199,7 +199,10 @@ exit
 show file $show
 # contour
 # exit
-random initial condition
+# random initial condition
+smooth initial condition 1
+sineIC
+#
 if( $solver eq "fixedPoint" ){ $cmd="compute with fixed-point"; }elsif( $solver eq "krylov" ){ $cmd="compute with petsc"; }else{ $cmd="#" }; 
 if( $go eq "go" && $cmd ne "#" ){ $cmd .= "compute \n exit"; }
 if( $go eq "dk"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\nexit"; }

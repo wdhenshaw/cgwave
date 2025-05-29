@@ -63,6 +63,10 @@ outputHeader()
   const int & numEigsToCompute              = dbase.get<int>("numEigsToCompute"); // number of eigenpairs to compute 
   const int & numArnoldiVectors             = dbase.get<int>("numArnoldiVectors");
 
+  const int & filterTimeDerivative = dbase.get<int>("filterTimeDerivative");
+  const int & useFilterWeights      = dbase.get<int>("useFilterWeights"); 
+  const int & filterD0t             = dbase.get<int>("filterD0t"); 
+
   const int & computeTimeIntegral           = dbase.get<int>("computeTimeIntegral");
   const int & adjustOmega                   = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
   const int & adjustHelmholtzForUpwinding   = dbase.get<int>("adjustHelmholtzForUpwinding");
@@ -72,6 +76,7 @@ outputHeader()
 
   const int & deflateWaveHoltz              = dbase.get<int>("deflateWaveHoltz");
   const int & numToDeflate                  = dbase.get<int>("numToDeflate");
+  const int & deflateForcing                = dbase.get<int>("deflateForcing");
   const aString & eigenVectorFile           = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
   const int & minStepsPerPeriod             = dbase.get<int>("minStepsPerPeriod");
   const int & numberOfRitzVectors           = dbase.get<int>("numberOfRitzVectors");
@@ -218,9 +223,10 @@ outputHeader()
     if( solveHelmholtz )
     {
       fPrintF(file,"   **** solveHelmholtz=true : Solving the Helmholtz problem, adjustOmega=%d (for discrete symbol of D+tD-t) ****\n",adjustOmega);
-      fPrintF(file,"   computeTimeIntegral=%d\n",computeTimeIntegral);
+      fPrintF(file,"   computeTimeIntegral=%d, filterTimeDerivative=%d, useFilterWeights=%d, filterD0t=%d\n",
+             computeTimeIntegral,filterTimeDerivative,useFilterWeights,filterD0t);
       fPrintF(file,"   adjust Helmholtz for upwinding=%d. Minimum time-steps per period=%d.\n",adjustHelmholtzForUpwinding,minStepsPerPeriod);
-      fPrintF(file,"   deflateWaveHoltz=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,numToDeflate,
+      fPrintF(file,"   deflateWaveHoltz=%d, deflateForcing=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,deflateForcing,numToDeflate,
             (const char*)eigenVectorFile);      
     }
 
@@ -323,9 +329,9 @@ displayBoundaryConditions(FILE *file /* = stdout */)
   assert( file!=NULL );
 
   const int & numberOfBCNames = dbase.get<int>("numberOfBCNames");
-  aString *& bcNames = dbase.get<aString*>("bcNames");
-
-  // const int & useSuperGrid = parameters.dbase.get<int>("useSuperGrid");
+  aString *& bcNames          = dbase.get<aString*>("bcNames");
+  const int & useSuperGrid    = dbase.get<int>("useSuperGrid");
+  const Real & superGridWidth = dbase.get<Real>("superGridWidth"); 
 
   int maxNameLength=3;
   int grid;
@@ -334,7 +340,6 @@ displayBoundaryConditions(FILE *file /* = stdout */)
 
   char buff[80];
   sPrintF(buff," %%4i: %%%is     %%i    %%i    %%3i :",maxNameLength); // build a format string
-
 
   aString blanks="                                                                           ";
   fPrintF(file," grid   name%s side axis    boundary condition and name\n",
@@ -349,12 +354,16 @@ displayBoundaryConditions(FILE *file /* = stdout */)
       int bc=cg[grid].boundaryCondition()(side,axis);
       fPrintF(file,buff,grid,(const char *)cg[grid].getName(),side,axis,bc);
 
-      // if( bc==absorbing && useSuperGrid )
-      // {
-      //  fPrintF(file," super-grid absorbing layer.\n");
-      // }
       if( bc > 0 && bc<numberOfBCNames)
-        fPrintF(file," %s \n",(const char*)bcNames[bc]);
+      {
+        if( bc==absorbing )
+          if( useSuperGrid )
+            fPrintF(file," superGrid+EM2 (width=%4.2f)\n",superGridWidth); // special case : superGrid is ended with abcEM2
+          else
+            fPrintF(file," abcEM2\n");        // special case : superGrid is ended with abcEM2
+        else
+          fPrintF(file," %s \n",(const char*)bcNames[bc]);
+      }
       else if( bc==0 )
         fPrintF(file," %s \n","none");
       else if( bc<0 )

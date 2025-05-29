@@ -2,6 +2,38 @@ mpiexec -n 2 xterm -e gdb --args $cgWave -noplot known.cmd -g=sice4.order2 -amp=
 
 
 ****************************************************
+****** Tues Sept 24, 2024
+
+REVISIT High order for overHoltz
+
+DISK ORDER=8
+cgWave -noplot known.cmd -g=sice8.order8.ng5 -amp=4 -nTheta=3 -mr=1 -tf=1.0 -tp=0.1 -known=diskEig -upwind=0 -assignInterpNeighbours=interp -bcApproach=lcbc -orderInTime=-1 -debug=0 -cfl=.9 -meApproach=ha -go=halt
+
+cgWave:FD88 t=9.000e-01 (126 steps) dt=7.143e-03 maxErr= 5.72e-12, ||u||= 3.48e-01, cpu= 2.59e+00(s)
+cgWave:FD88 t=1.000e+00 (140 steps) dt=7.143e-03 maxErr= 5.46e-12, ||u||= 4.10e-01, cpu= 2.88e+00(s)
+
+DISK ORDER=6
+cgWave -noplot known.cmd -g=sice2.order6.ng4 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=.1 -known=diskEig -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+
+cgWave:FD66u t=1.000e-01 (4 steps) dt=2.500e-02 maxErr= 1.28e-06, ||u||= 4.43e-01, cpu= 5.42e-03(s)
+
+
+SQUARE ORDER=8
+cgWave -noplot known.cmd -g=square32.order8.ng5 -tp=0.1 -tf=1 -known=squareEig -kx=2 -ky=2 -kz=1 -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+cgWave:FD88u t=1.000e+00 (60 steps) dt=1.667e-02 maxErr= 2.60e-06, ||u||= 4.73e-01, cpu= 4.33e-01(s)
+
+SQUARE ORDER=6
+cgWave -noplot known.cmd -g=square32.order6.ng4 -tp=0.1 -tf=1 -known=squareEig -kx=2 -ky=2 -kz=1 -upwind=1 -meApproach=ha -bcApproach=lcbc -go=go
+cgWave:FD66u t=1.000e+00 (60 steps) dt=1.667e-02 maxErr= 7.49e-05, ||u||= 4.73e-01, cpu= 1.06e-01(s)
+
+
+cgWave -noplot known.cmd -g=sice8.order4.ng3 -amp=4 -nTheta=1 -mr=1 -tp=.1 -tf=10 -known=diskEig -upwind=0 -go=go
+
+cgWave:FD44 t=2.500e+00 ( 325 steps) dt=7.692e-03 maxErr= 6.58e-07, ||u||= 1.50e-01, cpu= 2.67e+01(s)
+cgWave:FD44 t=2.600e+00 ( 338 steps) dt=7.692e-03 maxErr= 5.26e-07, ||u||= 4.77e-01, cpu= 2.75e+01(s)
+
+
+****************************************************
 ****** Tues April 23, 2024
 
 START TEST PARALLEL

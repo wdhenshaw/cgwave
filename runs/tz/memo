@@ -6,6 +6,39 @@ set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDeriv
 
 
 ****************************************************
+****** Wed Oct 2, 2024
+
+$$$$ Bug found : implicit.bC  : pass uc: applyBoundaryConditions( rhs, uc, t, applyExplicitBoundaryConditions, fillImplicitBoundaryConditions ); 
+
+
+TEST RADIATION BC's
+EXACT DEGREE=(2,2)
+cgWave -noplot tz.cmd -g=square5.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.2 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -bc=a -go=go
+
+
+cgWave:FD22 t=2.000e-01 (2 steps) dt=1.000e-01 maxErr= 1.11e-15, ||u||= 3.08e+00, cpu= 1.74e-03(s)
+
+
+
+****************************************************
+****** TUes Oct 1 2024
+
+
+TEST RADIATION BC's
+
+IMP -- BAD 
+cgWave -noplot tz.cmd -g=square8.order2.hdf -tz=poly -degreeInTime=0 -degreeInSpace=0 -tf=.1 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -bc=a -go=go | more
+
+
+cgWave -noplot tz.cmd -g=square16.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.1 -tp=0.1 -ts=implicit -cfl=.95 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -bc=a -go=go
+
+
+Explicit -- exact
+cgWave -noplot tz.cmd -g=square32.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=1 -tp=0.1 -ts=explicit -cfl=.95 -dtMax=10 -orderInTime=2 -debug=3 -upwind=0 -bc=a -go=go
+
+
+
+****************************************************
 ****** Sun July 21, 2024
 
 DARK CORNER ROOM

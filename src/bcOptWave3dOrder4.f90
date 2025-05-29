@@ -120,6 +120,10 @@
    real kxBoxHelmholtz,kyBoxHelmholtz,kzBoxHelmholtz,omegaBoxHelmholtz,coswt
    ! parameters for polyPeriodic known solution
    real omegaPolyPeriodic,a0PolyPeriodic, a1PolyPeriodic, b1PolyPeriodic, c1PolyPeriodic
+   real forcex(0:11),forcey(0:11),forcez(0:11),forcep(0:11),forcef(0:11)
+   real tp,tm,x,y,z,utx,uty,utz
+   real p0,p2,c1abcem2,c2abcem2
+   integer ex,idir
    ! --- forcing options ----
    ! These must match the values in CgWave.h: 
    ! enum ForcingOptionEnum
@@ -1451,6 +1455,20 @@ real uzzzz
    c6 = c**6
    c8 = c**8
    twoPi = atan2(1.,1.)*8.; ! atan2(1,1)=pi/4
+   tp=t-dt ! previous time
+   tm=t-.5*dt ! midpoint in time
+   ex=uc
+  ! Generalized form:
+   ! u.xt = c1abcem2*u.xx + c2abcem2*( u.yy + u.zz )
+   !   Taylor: p0=1 p2=-1/2
+   !   Cheby:  p0=1.00023, p2=-.515555
+   p0=1.  
+   p2=-.5
+   ! p0=1.00023   !   Cheby on a subinterval
+   ! p2=-.515555  !   Cheby on a subinterval
+   c1abcem2=cEM2*p0
+   c2abcem2=cEM2*(p0+p2)
+   x=0; y=0; z=0; 
    if( gridType.eq.rectangular )then
      ! some macros want dr=dx for rectangular grids
      do axis=0,2
@@ -1549,9 +1567,9 @@ real uzzzz
                 write(*,'("*** bcOptWave:getReal:ERROR: unable to find omega")') 
                 stop 1133
               end if
-             if( t.le.2*dt )then
-               write(*,'(" bcOptWave:solveHelmholtz:scattering: Use adjusted omega=",1pe15.8," in place of omegaPlaneWave=",1pe15.8)') omega,omegaPlaneWave
-             end if
+             ! if( t.le.2*dt )then
+             !   write(*,'(" bcOptWave:solveHelmholtz:scattering: Use adjusted omega=",1pe15.8," in place of omegaPlaneWave=",1pe15.8)') omega,omegaPlaneWave
+             ! end if
              omegaPlaneWave = omega
           end if
           ! getIntParameter(solveHelmholtz)  
@@ -2441,6 +2459,9 @@ real uzzzz
            !    D+t (Dx ) w + A+( ... )
            ! cEM2 = c*tan(frequencyArray(0)*dt/2.)/(frequencyArraySave(0)*dt/2.);
            ca = cEM2;  ! Adjusted c 
+           ! if( t<=4.*dt )then
+           !   write(*,*) "bcOpt: assign RHS for implicit EM2: assignBCForImplicit, side,axis,cEM2=",assignBCForImplicit, side,axis,cEM2
+           ! end if
            if( gridType.eq.rectangular )then
               do i3=n3a,n3b
               do i2=n2a,n2b
@@ -2456,6 +2477,127 @@ real uzzzz
                    else
                      u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                     - .5*( .5*ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   - .5*(    ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) )                   
                    end if 
+                   if( assignTwilightZone.eq.1 )then
+                     ! CHECK ME -- added Oct 1, 2024
+                     ! macro: 
+                     if( axis==0 )then
+                         ! getForcingEM2(X,2,tm,is1,is2,forcex)
+                          if( forcingOption.eq.twilightZoneForcing )then
+                            ! Test: set to exact solution at time t:
+                            ! x=xy(i1-is1,i2,i3,0)
+                            ! y=xy(i1-is1,i2,i3,1)
+                            ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                            ! un(i1-is1,i2,i3,ey)=eyTrue
+                            ! add TZ forcing *wdh* Sept 17, 2016
+                            ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                            x=xy(i1,i2,i3,0)
+                            y=xy(i1,i2,i3,1)
+                               ! Values for forcep(ex) are currently needed at corners:
+                                 call ogDeriv(ep, 1,1,0,0,x,y,z,tp,ex,utx)
+                                 call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                                 call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                               forcep(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                               ! write(*,*) "i1,i2,i3,is1,ex,tp,utx,uxx,uyy,c1abcem2,c2abcem2,x,y,z,forcep=",i1,i2,i3,is1,ex,tp,utx,uxx,uyy,c1abcem2,c2abcem2,x,y,z,forcep(ex)
+                               ! OGDERIV(1,1,0,0,x,y,z,tp,ey,utx)
+                               ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                               ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                               ! forcep(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                               ! OGDERIV(1,1,0,0,x,y,z,tp,hz,utx)
+                               ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                               ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                               ! forcep(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+                            ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                          end if
+                          if( forcingOption.eq.twilightZoneForcing )then
+                            ! Test: set to exact solution at time t:
+                            ! x=xy(i1-is1,i2,i3,0)
+                            ! y=xy(i1-is1,i2,i3,1)
+                            ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                            ! un(i1-is1,i2,i3,ey)=eyTrue
+                            ! add TZ forcing *wdh* Sept 17, 2016
+                            ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                            x=xy(i1,i2,i3,0)
+                            y=xy(i1,i2,i3,1)
+                               ! Values for forcef(ex) are currently needed at corners:
+                                 call ogDeriv(ep, 1,1,0,0,x,y,z,t,ex,utx)
+                                 call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                                 call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                               forcef(ex) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                               ! write(*,*) "i1,i2,i3,is1,ex,t,utx,uxx,uyy,c1abcem2,c2abcem2,x,y,z,forcef=",i1,i2,i3,is1,ex,t,utx,uxx,uyy,c1abcem2,c2abcem2,x,y,z,forcef(ex)
+                               ! OGDERIV(1,1,0,0,x,y,z,t,ey,utx)
+                               ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                               ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                               ! forcef(ey) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy ) 
+                               ! OGDERIV(1,1,0,0,x,y,z,t,hz,utx)
+                               ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                               ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                               ! forcef(hz) = is1*utx - ( c1abcem2*uxx + c2abcem2*uyy )
+                            ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                          end if
+                         ! do idir=0,2
+                         do idir=0,0 ! ex only 
+                           forcex(idir)=.5*(forcep(idir)+forcef(idir))
+                         end do
+                     else
+                         ! getForcingEM2(Y,2,tm,is1,is2,forcex)
+                          if( forcingOption.eq.twilightZoneForcing )then
+                            ! Test: set to exact solution at time t:
+                            ! x=xy(i1-is1,i2,i3,0)
+                            ! y=xy(i1-is1,i2,i3,1)
+                            ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                            ! un(i1-is1,i2,i3,ey)=eyTrue
+                            ! add TZ forcing *wdh* Sept 17, 2016
+                            ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                            x=xy(i1,i2,i3,0)
+                            y=xy(i1,i2,i3,1)
+                                 call ogDeriv(ep, 1,0,1,0,x,y,z,tp,ex,uty)
+                                 call ogDeriv(ep, 0,2,0,0,x,y,z,tp,ex,uxx)
+                                 call ogDeriv(ep, 0,0,2,0,x,y,z,tp,ex,uyy)
+                               forcep(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                               ! ! Values for forcep(ey) are currently needed at corners:
+                               ! OGDERIV(1,0,1,0,x,y,z,tp,ey,uty)
+                               ! OGDERIV(0,2,0,0,x,y,z,tp,ey,uxx)
+                               ! OGDERIV(0,0,2,0,x,y,z,tp,ey,uyy)
+                               ! forcep(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                               ! OGDERIV(1,0,1,0,x,y,z,tp,hz,uty)
+                               ! OGDERIV(0,2,0,0,x,y,z,tp,hz,uxx)
+                               ! OGDERIV(0,0,2,0,x,y,z,tp,hz,uyy)
+                               ! forcep(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+                            ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                          end if
+                          if( forcingOption.eq.twilightZoneForcing )then
+                            ! Test: set to exact solution at time t:
+                            ! x=xy(i1-is1,i2,i3,0)
+                            ! y=xy(i1-is1,i2,i3,1)
+                            ! OGDERIV(0,0,0,0,x,y,z,t,ey,eyTrue)
+                            ! un(i1-is1,i2,i3,ey)=eyTrue
+                            ! add TZ forcing *wdh* Sept 17, 2016
+                            ! OGDERIV(ntd,nxd,nyd,nzd,x,y,z,t,n,ud)
+                            x=xy(i1,i2,i3,0)
+                            y=xy(i1,i2,i3,1)
+                                 call ogDeriv(ep, 1,0,1,0,x,y,z,t,ex,uty)
+                                 call ogDeriv(ep, 0,2,0,0,x,y,z,t,ex,uxx)
+                                 call ogDeriv(ep, 0,0,2,0,x,y,z,t,ex,uyy)
+                               forcef(ex) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                               ! ! Values for forcef(ey) are currently needed at corners:
+                               ! OGDERIV(1,0,1,0,x,y,z,t,ey,uty)
+                               ! OGDERIV(0,2,0,0,x,y,z,t,ey,uxx)
+                               ! OGDERIV(0,0,2,0,x,y,z,t,ey,uyy)
+                               ! forcef(ey) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx ) 
+                               ! OGDERIV(1,0,1,0,x,y,z,t,hz,uty)
+                               ! OGDERIV(0,2,0,0,x,y,z,t,hz,uxx)
+                               ! OGDERIV(0,0,2,0,x,y,z,t,hz,uyy)
+                               ! forcef(hz) = is2*uty - ( c1abcem2*uyy + c2abcem2*uxx )
+                            ! write(*,'(" Apply abcEM2: add TZ forcing t,dt,utx,uxx,uyy=",5e10.3)') t,dt,utx,uxx,uyy
+                          end if
+                         ! do idir=0,2
+                         do idir=0,0 ! ex only 
+                           forcex(idir)=.5*(forcep(idir)+forcef(idir))
+                         end do
+                     end if
+                     u(j1,j2,j3,uc) = u(j1,j2,j3,uc) - forcex(uc)
+                     ! write(*,*) "i1,i2,un(j1,j2,j3,uc),un(i1p,i2p,i3p,uc),forcex,rhs=",i1,i2,un(j1,j2,j3,uc),un(i1p,i2p,i3p,uc),forcex(uc),u(j1,j2,j3,uc)
+                   end if              
                  else
                     ! Bc for direct Helmholtz solve
                     u(j1,j2,j3,uc) = 0.
@@ -3221,7 +3363,9 @@ real uzzzz
       end if ! if bc>0 
       assignTwilightZone=twilightZone
      ! if( ( (bc(side,axis).ne.dirichlet .and. bc(side,axis).ne.exactBC .and. bc(side,axis).ne.absorbing .and. bc(side,axis).ne.abcEM2 ) !      .or. bcApproach.eq.useCompatibilityBoundaryConditions ) !      .and. bc(side,axis).gt.0 )then
-     if(  bc(side,axis).gt.0 .and. bc(side,axis).ne.exactBC )then ! *wdh* Dec 2, 2023 -- always do this at least for CBCs
+     ! *wdh* Dec 2, 2023 -- always do this at least for CBCs  
+     ! Oct 2, 2024 -- skip radiation BC's  
+     if(  bc(side,axis).gt.0 .and. bc(side,axis).ne.exactBC .and. bc(side,axis).ne.abcEM2 .and. bc(side,axis).ne.absorbing )then
        ! If the grid is too coarse then we can only extrapolate using point from n1a to n1b 
        !         E--+--+--+--+
        !           n1a       n1b
@@ -10191,7 +10335,7 @@ real uzzzz
        if( nd.eq.2 )then
          ! Turn this back on for 2D -- Nov 23, 2023
          if( t.le.3*dt .and. debug.gt.1 )then
-           write(*,'("bcOpt: Assign corner ghost")')
+           write(*,'("bcOpt: Assign corner ghost : orderOfExtrapolation=",i2)') orderOfExtrapolation
          end if
            ! ---------------------------------
            ! --- assign corners and edges: ---

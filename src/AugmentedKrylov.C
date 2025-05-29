@@ -1,0 +1,1920 @@
+// This file automatically generated from AugmentedKrylov.bC with bpp.
+#include "AugmentedKrylov.h"
+
+#include "display.h"
+
+static bool useOpt=1;  // 1 = use optimized routines for mat-vects and inner products
+
+static Real cpuForInnerProducts=0.;
+static Real cpuForLocalMatVects=0.; // cpu for local matrix vector products (not A*x)
+
+
+#define DGEQRF EXTERN_C_NAME(dgeqrf)
+#define DORGQR EXTERN_C_NAME(dorgqr)
+#define DGEMV EXTERN_C_NAME(dgemv)
+#define DDOT EXTERN_C_NAME(ddot)
+
+extern "C" 
+{
+  // QR factorization
+    void DGEQRF( const int & M,
+                              const int  &  N,
+                              const double &  A,
+                              const int  &  LDA,
+                              double &  TAU,
+                              double &  WORK,
+                              int & LWORK,
+                              int & INFO ); 
+
+  // Recover Q from QR factorization
+    void DORGQR( const int & M, const int & N, const int & K, Real & A, const int & LDA, Real & TAU, Real & WORK, int & LWORK, int & INFO );
+
+  // Matrix vector multiplication:
+  // trans = 'N' or 'T'
+    void DGEMV(  const char *trans, const int & m, const int & n, const Real & alpha, const Real & a, const int & lda, const Real & x, const int & incx, const Real & beta, Real & y, const int & incy );
+
+    Real DDOT( const int & N, const Real &  DX, const int &  INCX, const Real &  DY, const int &  INCY );
+}
+
+// ===================================================================================================
+/// \brief Constructor for the Augmented KRYLOV algorithm
+// ===================================================================================================
+AugmentedKrylov::AugmentedKrylov()
+{
+    dbase.put<int>("numberOfIterations")=0;
+    dbase.put<int>("numberOfMatrixVectorProducts")=0;
+    dbase.put<RealArray>("resVect");
+    dbase.put<int>("augmentedVectorsAreEigenvectors")=false;
+    dbase.put<RealArray>("eig");  // holds eigenvalues for augmented vectors
+    dbase.put<Real>("residual")=0.;  // holds residual from last solve
+    dbase.put<KrylovTypesEnum>("krylovType")=gmres;  // default Krylov type
+
+}
+
+// ===================================================================================================
+/// \brief Destructor for the Augmented KRYLOV algorithm
+// ===================================================================================================
+AugmentedKrylov::~AugmentedKrylov()
+{
+}
+
+// ===================================================================================================
+/// \brief Set the Krylov type: gmres, comjugateGradien, or  biConjugateGradientStabilized
+// ===================================================================================================
+int AugmentedKrylov::setKrylovType( const KrylovTypesEnum & krylovType )
+{
+    dbase.get<KrylovTypesEnum>("krylovType") = krylovType;
+    return 0;
+}
+
+// ===================================================================================================
+/// \brief  return the residual from the last solve
+// ===================================================================================================
+Real AugmentedKrylov::getResidual() const
+{
+    return dbase.get<Real>("residual");
+}
+
+
+// ===================================================================================================
+/// \brief Ssupply eigenvalues if augmented vectors are eigenvectors
+/// \param augEigs (input) : eigenvalues for the augmented vectors
+// ===================================================================================================
+// 
+int AugmentedKrylov::setAugmentedEigenvalues( const RealArray & augEigs )
+{
+    int & augmentedVectorsAreEigenvectors = dbase.get<int>("augmentedVectorsAreEigenvectors");
+    augmentedVectorsAreEigenvectors=true;
+
+    RealArray & eig = dbase.get<RealArray>("eig"); 
+    eig.redim(0);
+    eig = augEigs;
+    return 0;
+}
+
+//
+// Compute y = A*x 
+// \param transpose : 1 = compute y = A^T x
+// \param m0, n0 : if specified use this as the dimensions of A
+//
+void AugmentedKrylov::matVect(const RealArray & A, const RealArray & x, RealArray & y, int transpose /* =0 */, int m0 /* =-1 */, int n0 /* =-1 */ )
+{
+    Real cpuStart = getCPU();
+    const int m = m0==-1 ? A.getLength(0) : m0;
+    const int n = n0==-1 ? A.getLength(1) : n0;
+
+    if( useOpt )
+    {
+    //  y := alpha*A*x + beta*y,   or   y := alpha*A**T*x + beta*y
+        int lda = A.getLength(0); 
+        const char* trans = transpose==0 ? "N" : "T";
+        Real alpha=1., beta=0.;
+        int incx=1, incy=1;
+        DGEMV(  trans,  m, n, alpha, A(0,0), lda, x(0), incx, beta, y(0), incy );
+
+    }
+    else
+    {
+    // printF("matVec: m=%d n=%d transpose=%d\n",m,n,transpose);
+        if( transpose==0 )
+        {
+            for( int i=0; i<m; i++ )
+            {
+                Real temp=0.;
+                for( int j=0; j<n; j++ )
+                    temp += A(i,j)*x(j);
+
+                y(i) = temp; 
+            }
+        }
+        else
+        {
+            for( int j=0; j<n; j++ )
+            {
+                Real temp=0;
+                for( int i=0; i<m; i++ )
+                    temp += A(i,j)*x(i);
+                y(j) = temp; 
+            }    
+
+        }
+    }
+    cpuForLocalMatVects += getCPU() - cpuStart;
+
+} 
+
+
+// ============================================================================================================================================
+/// \brief Matrix-vector product using a Matrix defined by a C array of columns
+// ============================================================================================================================================
+void AugmentedKrylov::matVect(Real **pA, const RealArray & x, RealArray & y, int transpose /* =0 */, int m0 /* =-1 */, int n0 /* =-1 */ )
+{
+    Real cpuStart = getCPU();
+    const int m = m0==-1 ? y.getLength(0) : m0;
+    const int n = n0==-1 ? x.getLength(0) : n0;
+
+    Real *px = x.getDataPointer();
+    Real *py = y.getDataPointer();
+    #define xa(i) px[i]
+    #define ya(i) py[i]
+
+    #define Am(i,j) pA[j][i]
+
+    if( transpose==0 )
+    {
+        for( int i=0; i<m; i++ )
+        {
+            Real temp=0.;
+            for( int j=0; j<n; j++ )
+                temp += Am(i,j)*xa(j);
+
+            ya(i) = temp; 
+        }
+    }
+    else
+    {
+        for( int j=0; j<n; j++ )
+        {
+            Real temp=0;
+            for( int i=0; i<m; i++ )
+                temp += Am(i,j)*xa(i);
+            ya(j) = temp; 
+        }    
+
+    }
+    #undef Am
+    #undef xa
+    #undef ya
+
+}
+// void matVectMatrixFree( const RealArray & x, RealArray & y )
+// {
+//   OV_ABORT("FINISH ME");
+
+//   // const int m = x.getLength(0);
+//   // for( int i=0; i<m; i++ )
+//   // {
+//   //   Real temp=0;
+//   //   for( int j=0; j<m; j++ )
+//   //   {
+//   //     temp += A(i,j)*x(j);
+//   //   }
+//   //   y(i) = temp; 
+//   // }
+// }
+
+// Compute the 2-norm of x 
+Real AugmentedKrylov::norm( const RealArray & x )
+{
+    Real cpuStart = getCPU();
+    const int m = x.getLength(0);
+    Real temp=0.; 
+    if( true )
+    {
+        temp = DDOT( m, x(0), 1, x(0), 1 );
+    }
+    else if( useOpt )
+    {
+        const Real *px = x.getDataPointer();
+        #define xa(i) px[i]   
+
+        for( int i=0; i<m; i++ )
+            temp += SQR(xa(i));
+
+        #undef xa
+    }
+    else
+    {
+        for( int i=0; i<m; i++ )
+            temp += SQR(x(i));
+    }
+    cpuForInnerProducts += getCPU()-cpuStart;
+    return sqrt(temp);
+} 
+
+// Compute the inner product (x,y)
+Real AugmentedKrylov::innerProduct( const RealArray & x, const RealArray & y )
+{
+    Real cpuStart = getCPU();
+    const int m = x.getLength(0); 
+    Real dot=0.;
+    if( true )
+    {
+        dot = DDOT( m, x(0), 1, y(0), 1 );
+    }
+    else if( useOpt )
+    {
+        const Real *px = x.getDataPointer();
+        const Real *py = y.getDataPointer();
+        #define xa(i) px[i]
+        #define ya(i) py[i]
+        for( int i=0; i<m; i++ )
+            dot += xa(i)*ya(i);
+
+        #undef xa
+        #undef ya
+    }
+    else
+    {
+        Real *px = x.getDataPointer();
+        Real *py = y.getDataPointer();
+        for( int i=0; i<m; i++ )
+            dot += x(i)*y(i);    
+    }
+    cpuForInnerProducts += getCPU()-cpuStart;
+    return dot;
+}
+
+
+// ===================================================================================================
+/// \brief Return the number of iterations.
+// ===================================================================================================
+int AugmentedKrylov::getNumberOfIterations() const
+{
+    return dbase.get<int>("numberOfIterations");
+}
+
+// ===================================================================================================
+/// \brief Return the number of matrix vector products
+// ===================================================================================================
+int AugmentedKrylov::getNumberOfMatrixVectorProducts() const
+{
+    return dbase.get<int>("numberOfMatrixVectorProducts");
+}
+
+
+// ===================================================================================================
+/// \brief Return the vector of relative residuals
+// ===================================================================================================
+RealArray & AugmentedKrylov::getResidualVector() const
+{
+    return dbase.get<RealArray>("resVect");
+}
+
+
+
+// ===================================================================================================
+/// \brief Solve A x = b using the Augmented KRYLOV algorithm
+/// \param x (output) 
+/// \Return value: relative residual || b - A x ||/|| b ||
+// ===================================================================================================
+Real AugmentedKrylov::solve( const RealArray & A, const RealArray & b, const RealArray & x0, const RealArray & W, const int maxit, const Real tol, 
+                                                        RealArray & x )
+{
+    printF("AugmentedKrylov::solve (V1) called...\n");
+
+    const KrylovTypesEnum & krylovType = dbase.get<KrylovTypesEnum>("krylovType"); 
+    if( krylovType==conjugateGradient)
+        return solveCG( A, NULL, b, x0, W, maxit, tol, x );
+    else if( krylovType==biConjugateGradientStabilized )
+        return solveBiCGStab( A, NULL, b, x0, W, maxit, tol, x );      
+    else if( krylovType==gmres)
+        return solveGmres( A, NULL, b, x0, W, maxit, tol, x );
+    else
+    {
+        OV_ABORT("AugmentedKrylov::solve: unknown krylovType");
+    }
+    return 1.;
+}
+
+
+// use a matrix-vector multiply function
+Real AugmentedKrylov::solve( MatVectFunctionPtr matVectFunction, const RealArray & b, const RealArray & x0, const RealArray & W, const int maxit, const Real tol, RealArray & x )
+{
+    printF("AugmentedKrylov::solve (V2) called...\n");
+
+    RealArray A; 
+    const KrylovTypesEnum & krylovType = dbase.get<KrylovTypesEnum>("krylovType"); 
+    if( krylovType==conjugateGradient)
+        return solveCG( A, matVectFunction, b, x0, W, maxit, tol, x );
+    else if( krylovType==biConjugateGradientStabilized )
+    {
+        return solveBiCGStab( A, matVectFunction, b, x0, W, maxit, tol, x );      
+    }
+    else if( krylovType==gmres)
+        return solveGmres( A, matVectFunction, b, x0, W, maxit, tol, x );
+    else
+    {
+        OV_ABORT("AugmentedKrylov::solve: unknown krylovType");
+    }  
+    return 1.;
+}
+
+
+
+
+// ===================================================================================================
+/// \brief Solve A x = b using the Augmented Conjugate Gradient algorithm
+/// \param x (output) 
+/// \Return value: relative residual || b - A x ||/|| b ||
+// ===================================================================================================
+Real AugmentedKrylov::solveCG( const RealArray & A, MatVectFunctionPtr matVectFunction, const RealArray & b, const RealArray & x0, const RealArray & W, 
+                                                                    const int maxit, const Real tol, RealArray & x )
+{
+
+    if( tol>0 )
+    {
+        OV_ABORT("AugmentedKrylov::solveCG: FINISH ME -- See waveHoltz/deflatedConjugateGradient.m");
+    }
+
+  // ******** THIS IS JUST solveBiCGSTab ******
+
+    int idebug=0; // ** FIX ME**
+
+  // saveL2NormResiduals=1 : save || residual ||_2/sqrt(m)    (to matcvh other solvers)
+  //                    =0 : save || residual ||_2/|| b ||_2
+    const bool saveL2NormResiduals=1;
+
+    int & numberOfMatrixVectorProducts          = dbase.get<int>("numberOfMatrixVectorProducts");
+    const int & augmentedVectorsAreEigenvectors = dbase.get<int>("augmentedVectorsAreEigenvectors");
+
+    const int matrixIsAFunction = matVectFunction==NULL ? 0 : 1; 
+
+    const int m = b.getLength(0);
+    const int numToDeflate = W.getLength(1);
+
+    const int numAugmented = numToDeflate;
+
+    if( 1==1 )
+      printf("AugmentedKrylov::solveCG: m=%d, numAugmented=%d, matrixIsAFunction=%d, maxit=%d, tol=%9.2e\n",m,numAugmented,matrixIsAFunction,maxit,tol);
+
+  // Real resid =0.;
+
+    RealArray r(m), rTilde(m);
+
+    Real bNorm = norm(b);
+    x=x0; 
+    if( matrixIsAFunction )
+          matVectFunction( x, r ); // r = A*x
+    else
+        matVect( A, x, r );       // r = A*x
+    numberOfMatrixVectorProducts++;
+    r = b - r;   // r = b - A*x 
+
+    rTilde=r;  // arbitrary vector such that (rTilde,r) <> 0 
+
+    RealArray resv(2*maxit+1+numAugmented);
+    resv=0; 
+  // iteration : counts actual number of mat-vects 
+  //           : don't count augmented vectors if we do need to use a mat-vect
+    int iteration= 0;
+
+
+
+    int it=0;
+    Real rNorm = norm(r);
+    if( saveL2NormResiduals ){ resv(it) = rNorm/sqrt(m); }else{ resv(it) = rNorm/bNorm; }
+
+    printf(" bNorm=%g, rNorm=%10.2e, resv(0)=%10.2e\n",bNorm,rNorm,resv(it));
+
+
+    Range M=m;
+
+    RealArray eta1,xi;
+    RealArray Q,R;          // Holds Qr Factorization of A*W
+    RealArray y(m), y1(m);  // temp space
+    if( numAugmented>0 )
+    {
+    // ---- Compute a thin QR factorizaion of A*W  -----
+
+        const RealArray & eig = dbase.get<RealArray>("eig");
+        if( augmentedVectorsAreEigenvectors )
+        {
+            if( eig.getLength(0) < numAugmented )
+            {
+                printF("AUG-CG: eigenvalues have been supplied for augmented eigenvectors but there are not enough!\n"
+                              "  supplied eignvalues = %d, numberOfAugmented vectors =%d\n",eig.getLength(0),numAugmented); 
+                OV_ABORT("ERROR");
+            }
+        }
+
+        RealArray AW(m,numAugmented);  // holds A*W 
+  
+        for( int j=0; j<numAugmented; j++ )
+        {
+            if( augmentedVectorsAreEigenvectors )
+            {
+                printF("AUG-CG: Compute A*W(:,%d) ASSUMING augmented vectors are eigenvectors, eig=%10.3e, lam=1-eig=%10.3e\n",j,eig(j),1.0-eig(j));
+                
+        // **NOTE** A*w = (I-S)*w 
+                AW(M,j) = (1.0-eig(j))*W(M,j); // A*W(:,j) = (I-S)  W(:,j)  
+
+        // -- now check:
+                bool checkEigenvectorMatVect = false; // set to true to check  
+                if( checkEigenvectorMatVect )        
+                {
+                    y1 = W(M,j);
+                    if( matrixIsAFunction ) 
+                        matVectFunction( y1, y ); // y = A*y1 
+                    else
+                        matVect( A,y1, y );
+
+                    Real maxErr = max(fabs( AW(M,j) - y ))/ max(fabs(y1));
+                    printF("++AUG-CG: j=%d: max | (1-eig(j))*W(:,j) - A*W(:,j) |/|w_j|_inf = %9.2e\n",j,maxErr);
+
+                    Real lamEst1 =  sum( y/y1 )/m; 
+                    Real lamEst2 =  y(5)/y1(5);
+
+                    Real residEst1 = max(fabs( y - lamEst1*y1 ))/ max(fabs(y1));
+                    Real residEst2 = max(fabs( y - lamEst2*y1 ))/ max(fabs(y1));
+                        
+                    printF("++AUG-CG: j=%d: eig=%12.5e, lam=1-eig=%12.5e, lamEst=%12.5e or %12.5e, residEst=[%8.2e,%8.2e]\n",j,eig(j),1.-eig(j),lamEst1,lamEst2,residEst1,residEst2); 
+                    
+                }      
+            }
+            else
+            {      
+        // printF("Compute A*W(:,%d)..\n",j);
+                y1 = W(M,j);
+        // ::display(y1,"W(:,j)","%6.2f ");
+
+                printF("AUG-CG: Compute A*W(:,%d) (Augmented vectors)\n",j);
+
+                if( matrixIsAFunction ) 
+                    matVectFunction( y1, y ); // y = A*y1
+                else
+                    matVect( A,y1, y );
+
+                numberOfMatrixVectorProducts++;
+
+        // ::display(y,"A*W(:,j)","%6.2f ");
+                AW(M,j) = y;
+        // AW(M,j) = A(W(:,j));
+
+                it++; resv(it) = resv(it-1);  //  count these mat-vects as iterations
+
+            }
+
+        }
+
+    // [Vp,H] = qr(AW,0); % reduced QR factorization of A * (matrix of augmented vectors) 
+
+        Q.redim(m,numAugmented);
+        R.redim(numAugmented,numAugmented);
+
+        int lda=m, info=0;
+        RealArray tau(numAugmented);
+        int lwork= numAugmented*4; // n*nb nb = optimum block size
+        RealArray work(lwork);
+        DGEQRF( m,numAugmented,AW(0,0),lda,tau(0),work(0),lwork,info );
+        if( info<0 )
+        {
+            printF("AugmentedCG::solve: Error return from DGQRF = info=%d\n",info);
+            OV_ABORT("error");
+        }
+        for( int i=0; i<numAugmented; i++ )
+        {
+            for( int j=i; j<numAugmented; j++ )
+            {
+                R(i,j)=AW(i,j);         // Upper triangular part of AW holds "R"
+            }
+        }
+    // Eval "Q" 
+        DORGQR( m, numAugmented, numAugmented, AW(0,0), lda,tau(0),work(0),lwork,info );  // on output AW holds Q 
+        if( info<0 )
+        {
+            printF("AugmentedCG::solve: Error return from DORGQR = info=%d\n",info);
+            OV_ABORT("error");
+        } 
+        for( int j=0; j<numAugmented; j++ ) 
+        {
+            Q(M,j) = AW(M,j); 
+            ::display(Q(M,j),sPrintF("Q column j=%d",j),"%14.6e ");
+        } 
+
+
+   // eta1 = C'*r;
+   // r = r - C*eta1;   // r = (I-C C^T) r 
+   // xi = -eta1;       // accumulate U updated for x in xi 
+      eta1.redim(m);
+      xi.redim(m);
+      matVect( Q,r   ,eta1,1, m,numAugmented  );   // eta1 = Q^T r  
+      matVect( Q,eta1,xi  ,0, m,numAugmented  );   // xi = Q*eta1 = Q Q^T r 
+      r -= xi;                                     // r <- (I-Q Q^T) r 
+      xi = -eta1;
+
+    } // end if( numAugmented>0 )
+
+    RealArray p(m), s(m), v(m), eta2(m), t(m);
+    Real rho, rhoOld, alpha,beta=0.,omega=0.;
+
+  // --------------------------------------------------------
+  // ------------------ START ITERATIONS --------------------
+  // --------------------------------------------------------
+    for( int i=1; i<=maxit; i++ )
+    {
+        rho = innerProduct( rTilde,r );
+        if( rho==0. )
+        {
+            printF("AugmentedCG::breakdown occurred, rho==0 : FIX ME\n");
+            OV_ABORT("error");
+        }
+        if( i==1 )
+        {
+            p=r; 
+        }
+        else
+        {
+            beta = (rho/rhoOld)*(alpha/omega);
+            p = r + beta*(p-omega*v);
+        }
+
+    // v = Af(p);
+        if( matrixIsAFunction ) 
+            matVectFunction( p, v ); // v = A*p
+        else
+            matVect( A,p, v );  
+        numberOfMatrixVectorProducts++;
+
+        if( numAugmented>0 )
+        {
+      // eta1=C'*v; v = v - C*eta1;    % project v 
+          matVect( Q,v   ,eta1,1, m,numAugmented  );   // eta1 = Q^T v 
+          matVect( Q,eta1,y   ,0, m,numAugmented  );   // y = Q*eta1
+          v -= y;                                   // v <- (I-Q Q^T) v     
+        }
+
+        Real rTildeDotv = innerProduct(rTilde,v);
+        alpha=rho/rTildeDotv;
+        s = r-alpha*v;                       // s and y could be the same I think 
+        Real sNorm = norm(s);
+        it=it+1; 
+        if( saveL2NormResiduals ){ resv(it) = sNorm/sqrt(m); } else{ resv(it)=sNorm/bNorm; };
+
+    // printf(" it=%d: rho=%g, rTildeDotv=%g, alpha=%g, sNorm=%g\n",it,rho,rTildeDotv,alpha,sNorm );
+    // if( 1==1  ){ printF("it=%d: sNorm=%14.6e <? tol*bNorm=%10.2e, rho=%14.6e, alpha=%14.6e, beta=%14.6e, omega=%14.6e\n",it,sNorm,tol*bNorm,rho,alpha,beta,omega); }
+        if( sNorm <= tol*bNorm )
+        {
+      // converged
+            x += alpha*p; 
+            r=s;   // holds final residual -- no used ***
+            if( numAugmented>0 )
+            {
+                xi += alpha*eta1;
+            }
+            break;
+        }
+
+    // t = Af(s);
+        if( matrixIsAFunction ) 
+            matVectFunction( s, t ); // t = A*s
+        else
+            matVect( A,s, t ); 
+        numberOfMatrixVectorProducts++;     
+        if( numAugmented>0 )
+        {
+      // eta2 = C'*t; t = t - C*eta2;  % project t 
+          matVect( Q,t,eta2,1, m,numAugmented  );   // eta2 = Q^T t
+          matVect( Q,eta2,y,0, m,numAugmented  );   // y = Q*eta2
+          t = t - y;                                   // t <- (I-Q Q^T) t      
+        }
+        Real tNorm = innerProduct(t,t); 
+        omega = innerProduct(t,s)/tNorm;
+        if( numAugmented>0 )
+        {
+            xi += alpha*eta1 + omega*eta2;  // accumulate U updates for x 
+        }
+        x += alpha*p + omega*s;
+        r = s - omega*t;
+
+    // Real resid = abs(g(k+1))/sqrt(m); // do this to match other solvers @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ FIX ME @@@@@@@@@@@@@@
+        rNorm=norm(r);
+        it=it+1; 
+        if( saveL2NormResiduals ){ resv(it)=rNorm/sqrt(m); }else{ resv(it)=rNorm/bNorm; }
+        Real ratio = resv(it)/resv(it-2);
+        if( 1==1 || idebug>0 ){ printF("augmented CG: it=%3d rel-Norm=%9.2e ratio=%5.2f\n",it,resv(it),ratio); }
+
+    // if( 1==1  ){ printF("it=%d: rNorm=%10.2e <? tol*bNorm=%10.2e\n",it,rNorm,tol*bNorm); }
+        if( rNorm < tol*bNorm )
+        { // --- converged ----
+            break;
+        }
+        rhoOld=rho; 
+
+    } // end for i
+  // --------------------------------------------------------
+  // -------------------- END ITERATIONS --------------------
+  // --------------------------------------------------------
+
+    if( numAugmented>0 )
+    {
+    // ::display(x,"Before","%9.3f");
+    // x = x - U*(R\xi);
+    // y = R^{-1} xi :  upper triangular solve ----
+        for( int i=numAugmented-1; i>=0; i-- )
+        {
+            Real temp = xi(i);
+            for( int j=i+1; j<numAugmented; j++ )
+                temp -= R(i,j)*y(j); 
+            y(i) = temp/R(i,i); 
+        }   
+        matVect( W,y,y1,0, m,numAugmented  );   // y1 = W*y = W*( R\xi ) 
+        x -= y1; 
+
+    // ::display(x,"after  x = x - W*(R^{-1}*xi)","%9.3f");
+
+    }
+
+  // --- save residuals in resVect ----
+    RealArray & resVect = dbase.get<RealArray>("resVect"); 
+    int & numberOfIterations = dbase.get<int>("numberOfIterations");
+    numberOfIterations = it+1;
+    resVect.redim(numberOfIterations);
+    resVect=resv(Range(0,numberOfIterations-1));
+
+    return resv(it);   
+}
+
+
+
+// ===================================================================================================
+/// \brief Solve A x = b using the Augmented bi-Conjugate Gradient Stabilized algorithm
+/// \param x (output) 
+/// \Return value: relative residual || b - A x ||/|| b ||
+/// \Notes: 
+//   Based on Algorithm 4 from de Sturler et alia
+//     "Recycling Krylov subspaces for CFD applications and a new hybrid recycling solver", JCP 2015
+// ===================================================================================================
+Real AugmentedKrylov::solveBiCGStab( const RealArray & A, MatVectFunctionPtr matVectFunction, const RealArray & b, const RealArray & x0, const RealArray & W, 
+                                                                    const int maxit, const Real tol, RealArray & x )
+{
+    Real cpuStart=getCPU();
+    Real cpuQR=0.; 
+    Real cpuMatVects=0.;
+
+    int idebug=0; // ** FIX ME**
+
+  // saveL2NormResiduals=1 : save || residual ||_2/sqrt(m)    (to matcvh other solvers)
+  //                    =0 : save || residual ||_2/|| b ||_2
+    const bool saveL2NormResiduals=1;
+
+    int & numberOfMatrixVectorProducts          = dbase.get<int>("numberOfMatrixVectorProducts");
+    const int & augmentedVectorsAreEigenvectors = dbase.get<int>("augmentedVectorsAreEigenvectors");
+
+    const int matrixIsAFunction = matVectFunction==NULL ? 0 : 1; 
+
+    const int m = b.getLength(0);
+    const int numToDeflate = W.getLength(1);
+
+    const int numAugmented = numToDeflate;
+
+    if( 1==1 )
+      printf("AugmentedKrylov::solveBiCGStab: m=%d, numAugmented=%d, matrixIsAFunction=%d, maxit=%d, tol=%9.2e\n",m,numAugmented,matrixIsAFunction,maxit,tol);
+
+  // Real resid =0.;
+
+    RealArray r(m), rTilde(m);
+
+    Real bNorm = norm(b);
+    x=x0; 
+    Real cpu0=getCPU();
+    if( matrixIsAFunction )
+          matVectFunction( x, r ); // r = A*x
+    else
+        matVect( A, x, r );       // r = A*x
+    cpuMatVects += getCPU()-cpu0;
+    numberOfMatrixVectorProducts++;
+    r = b - r;   // r = b - A*x 
+
+    rTilde=r;  // arbitrary vector such that (rTilde,r) <> 0 
+
+    RealArray resv(2*maxit+1+numAugmented);
+    resv=0; 
+  // iteration : counts actual number of mat-vects 
+  //           : don't count augmented vectors if we do need to use a mat-vect
+    int iteration= 0;
+
+
+
+    int it=0;
+    Real rNorm = norm(r);
+    if( saveL2NormResiduals ){ resv(it) = rNorm/sqrt(m); }else{ resv(it) = rNorm/bNorm; }
+
+    printf("solveBiCGStab: bNorm=%g, rNorm=%10.2e, resv(0)=%10.2e\n",bNorm,rNorm,resv(it));
+
+
+    Range M=m;
+
+    RealArray eta1,xi;
+    RealArray Q,R;          // Holds Qr Factorization of A*W
+    RealArray y(m), y1(m);  // temp space
+    if( numAugmented>0 )
+    {
+    // ---- Compute a thin QR factorizaion of A*W  -----
+
+        const RealArray & eig = dbase.get<RealArray>("eig");
+        if( augmentedVectorsAreEigenvectors )
+        {
+            if( eig.getLength(0) < numAugmented )
+            {
+                printF("AUG-BiCGStab: eigenvalues have been supplied for augmented eigenvectors but there are not enough!\n"
+                              "  supplied eignvalues = %d, numberOfAugmented vectors =%d\n",eig.getLength(0),numAugmented); 
+                OV_ABORT("ERROR");
+            }
+        }
+
+        RealArray AW(m,numAugmented);  // holds A*W 
+        Real cpuAWstart = getCPU();
+        for( int j=0; j<numAugmented; j++ )
+        {
+            if( augmentedVectorsAreEigenvectors )
+            {
+                printF("AUG-BiCGStab: Compute A*W(:,%d) ASSUMING augmented vectors are eigenvectors, eig=%10.3e, lam=1-eig=%10.3e\n",j,eig(j),1.0-eig(j));
+                
+        // **NOTE** A*w = (I-S)*w 
+                AW(M,j) = (1.0-eig(j))*W(M,j); // A*W(:,j) = (I-S)  W(:,j)  
+
+        // -- now check:
+                bool checkEigenvectorMatVect = false; // set to true to check  
+                if( checkEigenvectorMatVect )        
+                {
+                    y1 = W(M,j);
+                    if( matrixIsAFunction ) 
+                        matVectFunction( y1, y ); // y = A*y1 
+                    else
+                        matVect( A,y1, y );
+
+                    Real maxErr = max(fabs( AW(M,j) - y ))/ max(fabs(y1));
+                    printF("++AUG-BiCGStab: j=%d: max | (1-eig(j))*W(:,j) - A*W(:,j) |/|w_j|_inf = %9.2e\n",j,maxErr);
+
+                    Real lamEst1 =  sum( y/y1 )/m; 
+                    Real lamEst2 =  y(5)/y1(5);
+
+                    Real residEst1 = max(fabs( y - lamEst1*y1 ))/ max(fabs(y1));
+                    Real residEst2 = max(fabs( y - lamEst2*y1 ))/ max(fabs(y1));
+                        
+                    printF("++AUG-BiCGStab: j=%d: eig=%12.5e, lam=1-eig=%12.5e, lamEst=%12.5e or %12.5e, residEst=[%8.2e,%8.2e]\n",j,eig(j),1.-eig(j),lamEst1,lamEst2,residEst1,residEst2); 
+                    
+                }      
+            }
+            else
+            {      
+        // printF("Compute A*W(:,%d)..\n",j);
+                y1 = W(M,j);
+        // ::display(y1,"W(:,j)","%6.2f ");
+
+                printF("AUG-BiCGStab: Compute A*W(:,%d) (Augmented vectors)\n",j);
+                Real cpu0=getCPU();
+                if( matrixIsAFunction ) 
+                    matVectFunction( y1, y ); // y = A*y1
+                else
+                    matVect( A,y1, y );
+                cpuMatVects += getCPU()-cpu0;
+
+                numberOfMatrixVectorProducts++;
+
+        // ::display(y,"A*W(:,j)","%6.2f ");
+                AW(M,j) = y;
+        // AW(M,j) = A(W(:,j));
+
+                it++; resv(it) = resv(it-1);  //  count these mat-vects as iterations
+
+            }
+
+        }
+        Real cpuAW = getCPU()-cpuAWstart;
+        if( !dbase.has_key("cpuAugmentedInitialMatVects") )
+            dbase.put<Real>("cpuAugmentedInitialMatVects");
+        dbase.get<Real>("cpuAugmentedInitialMatVects")=cpuAW;
+    // [Vp,H] = qr(AW,0); % reduced QR factorization of A * (matrix of augmented vectors) 
+
+        Q.redim(m,numAugmented);
+        R.redim(numAugmented,numAugmented);
+
+        Real *pAW = AW.getDataPointer();
+        Real *pQ  = Q.getDataPointer();
+        Real *pR  = R.getDataPointer();
+        #define AWa(i,j) pAW[(i)+m*(j)]
+        #define Qa(i,j) pQ[(i)+m*(j)]
+        #define Ra(i,j) pR[(i)+numAugmented*(j)]
+
+        int lda=m, info=0;
+        RealArray tau(numAugmented);
+        int lwork= numAugmented*4; // n*nb nb = optimum block size
+        RealArray work(lwork);
+        Real cpu0=getCPU();
+        DGEQRF( m,numAugmented,AW(0,0),lda,tau(0),work(0),lwork,info );
+        if( info<0 )
+        {
+            printF("AugmentedBiCGStab::solve: Error return from DGQRF = info=%d\n",info);
+            OV_ABORT("error");
+        }
+        for( int i=0; i<numAugmented; i++ )
+        {
+            for( int j=i; j<numAugmented; j++ )
+            {
+                Ra(i,j)=AWa(i,j);         // Upper triangular part of AW holds "R"
+            }
+        }
+    // Eval "Q" 
+        DORGQR( m, numAugmented, numAugmented, AW(0,0), lda,tau(0),work(0),lwork,info );  // on output AW holds Q 
+        if( info<0 )
+        {
+            printF("AugmentedBiCGStab::solve: Error return from DORGQR = info=%d\n",info);
+            OV_ABORT("error");
+        } 
+        for( int j=0; j<numAugmented; j++ ) 
+        {
+            if( useOpt )
+            {
+                for( int mm=0; mm<m; mm++ )
+                    Qa(mm,j) = AWa(mm,j); 
+            }
+            else
+                Q(M,j) = AW(M,j); 
+      //  ::display(Q(M,j),sPrintF("Q column j=%d",j),"%14.6e ");
+        } 
+        cpuQR = getCPU()-cpu0;
+        if( !dbase.has_key("cpuAugmentedQR") )
+            dbase.put<Real>("cpuAugmentedQR");
+        dbase.get<Real>("cpuAugmentedQR")=cpuQR;    
+
+   // eta1 = C'*r;
+   // r = r - C*eta1;   // r = (I-C C^T) r 
+   // xi = -eta1;       // accumulate U updated for x in xi 
+      eta1.redim(m);
+      xi.redim(m);
+      matVect( Q,r   ,eta1,1, m,numAugmented  );   // eta1 = Q^T r  
+      matVect( Q,eta1,xi  ,0, m,numAugmented  );   // xi = Q*eta1 = Q Q^T r 
+      r -= xi;                                     // r <- (I-Q Q^T) r 
+      xi = -eta1;
+
+    } // end if( numAugmented>0 )
+
+    RealArray p(m), s(m), v(m), eta2(m), t(m);
+    Real rho, rhoOld, alpha,beta=0.,omega=0.;
+
+    Real *pp   =   p.getDataPointer();
+    Real *pr   =   r.getDataPointer();
+    Real *ps   =   s.getDataPointer();
+    Real *pt   =   t.getDataPointer();
+    Real *pv   =   v.getDataPointer();
+    Real *py   =   y.getDataPointer();
+    Real *px   =   x.getDataPointer();
+    Real *py1  =  y1.getDataPointer();
+    Real *pxi  =  xi.getDataPointer();
+    Real *peta1=eta1.getDataPointer();
+    Real *peta2=eta2.getDataPointer();
+
+    #define ra(j) pr[j]
+    #define pa(j) pp[j]
+    #define sa(j) ps[j]
+    #define va(j) pv[j]
+    #define ta(j) pt[j]
+    #define xa(j) px[j]
+    #define ya(j) py[j]
+    #define y1a(j) py1[j]
+    #define xia(j) pxi[j]
+    #define eta1a(j) peta1[j]
+    #define eta2a(j) peta2[j]
+
+  // --------------------------------------------------------
+  // ------------------ START ITERATIONS --------------------
+  // --------------------------------------------------------
+    for( int i=1; i<=maxit; i++ )
+    {
+        rho = innerProduct( rTilde,r );
+        if( rho==0. )
+        {
+            printF("AugmentedBiCGStab::breakdown occurred, rho==0 : FIX ME\n");
+            OV_ABORT("error");
+        }
+        if( i==1 )
+        {
+            if( useOpt )
+            {
+                for( int j=0; j<m; j++ )
+                    pa(j)=ra(j);
+            }
+            else
+            {
+                p=r; 
+            }
+        }
+        else
+        {
+            beta = (rho/rhoOld)*(alpha/omega);
+            if( useOpt )
+            {
+                for( int j=0; j<m; j++ )
+                    pa(j) = ra(j) + beta*(pa(j)-omega*va(j));
+            }
+            else
+            {
+                p = r + beta*(p-omega*v);
+            }
+        }
+
+    // v = Af(p);
+        Real cpu0=getCPU();
+        if( matrixIsAFunction ) 
+            matVectFunction( p, v ); // v = A*p
+        else
+            matVect( A,p, v );  
+        cpuMatVects += getCPU()-cpu0;
+        numberOfMatrixVectorProducts++;
+
+        if( numAugmented>0 )
+        {
+      // eta1=C'*v; v = v - C*eta1;    % project v 
+            matVect( Q,v   ,eta1,1, m,numAugmented  );   // eta1 = Q^T v 
+            matVect( Q,eta1,y   ,0, m,numAugmented  );   // y = Q*eta1
+            if( useOpt )
+            {
+                for( int j=0; j<m; j++ )
+                    va(j) -= ya(j);
+            }
+            else
+            {
+                v -= y;                                      // v <- (I-Q Q^T) v   
+            }  
+        }
+
+        Real rTildeDotv = innerProduct(rTilde,v);
+        alpha=rho/rTildeDotv;
+        if( useOpt )
+        {
+            for( int j=0; j<m; j++ )
+                sa(j) = ra(j)-alpha*va(j);  
+        }
+        else
+        {
+            s = r-alpha*v;                       // s and y could be the same I think 
+        }
+        Real sNorm = norm(s);
+        it=it+1; 
+        if( saveL2NormResiduals ){ resv(it) = sNorm/sqrt(m); } else{ resv(it)=sNorm/bNorm; };
+
+    // printf(" it=%d: rho=%g, rTildeDotv=%g, alpha=%g, sNorm=%g\n",it,rho,rTildeDotv,alpha,sNorm );
+    // if( 1==1  ){ printF("it=%d: sNorm=%14.6e <? tol*bNorm=%10.2e, rho=%14.6e, alpha=%14.6e, beta=%14.6e, omega=%14.6e\n",it,sNorm,tol*bNorm,rho,alpha,beta,omega); }
+    // if( sNorm <= tol*bNorm )
+        if( resv(it) < tol )
+        {
+      // converged
+            if( useOpt )
+            {
+                for( int j=0; j<m; j++ )
+                {
+                    xa(j) += alpha*pa(j); 
+                    ra(j)=sa(j);   // holds final residual -- not used ***
+                }
+
+            }
+            else
+            {
+                x += alpha*p; 
+                r=s;   // holds final residual -- not used ***
+            }
+            if( numAugmented>0 )
+            {
+                if( useOpt )
+                {
+                    for( int j=0; j<m; j++ )
+                        xia(j) += alpha*eta1a(j);
+                }
+                else
+                {
+                    xi += alpha*eta1;
+                }        
+            }
+            break;
+        }
+
+    // t = Af(s);
+        cpu0 = getCPU();
+        if( matrixIsAFunction ) 
+            matVectFunction( s, t ); // t = A*s
+        else
+            matVect( A,s, t ); 
+        cpuMatVects += getCPU()-cpu0;
+        numberOfMatrixVectorProducts++;     
+        if( numAugmented>0 )
+        {
+      // eta2 = C'*t; t = t - C*eta2;  % project t 
+            matVect( Q,t,eta2,1, m,numAugmented  );   // eta2 = Q^T t
+            matVect( Q,eta2,y,0, m,numAugmented  );   // y = Q*eta2
+            if( useOpt )
+            {
+                for( int j=0; j<m; j++ )
+                    ta(j) -= ya(j);                                   // t <- (I-Q Q^T) t  
+            }
+            else
+            {
+                t = t - y;                                   // t <- (I-Q Q^T) t  
+            }    
+        }
+        Real tNorm = innerProduct(t,t); 
+        omega = innerProduct(t,s)/tNorm;
+        if( numAugmented>0 )
+        {
+            if( useOpt )
+            {
+                for( int j=0; j<m; j++ )
+                    xia(j) += alpha*eta1a(j) + omega*eta2a(j);  // accumulate U updates for x 
+            }
+            else
+            {
+                xi += alpha*eta1 + omega*eta2;  // accumulate U updates for x 
+            }
+        }
+        if( useOpt )
+        {
+            for( int j=0; j<m; j++ )
+            {
+                xa(j) += alpha*pa(j) + omega*sa(j);
+                ra(j) = sa(j) - omega*ta(j);
+            }
+        }
+        else
+        {
+            x += alpha*p + omega*s;
+            r = s - omega*t;
+        }    
+
+    // Real resid = abs(g(k+1))/sqrt(m); // do this to match other solvers @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ FIX ME @@@@@@@@@@@@@@
+        rNorm=norm(r);
+        it=it+1; 
+        if( saveL2NormResiduals ){ resv(it)=rNorm/sqrt(m); }else{ resv(it)=rNorm/bNorm; }
+        Real ratio = resv(it)/resv(it-2);
+        if( 1==1 || idebug>0 )
+        { 
+            printF("@@@@@ recycled BiCGStab: it=%3d rel-Norm=%9.2e ratio=%5.2f",it,resv(it),ratio); 
+            if( saveL2NormResiduals)
+                printF(" (rel-norm = || res ||_2/sqrt{m}.\n");
+            else
+                printF(" (rel-norm = || res ||_2/|| b ||_2.\n");
+        }
+
+    // if( 1==1  ){ printF("it=%d: rNorm=%10.2e <? tol*bNorm=%10.2e\n",it,rNorm,tol*bNorm); }
+    // if( rNorm < tol*bNorm )
+        if( resv(it) < tol )
+        { // --- converged ----
+            break;
+        }
+        rhoOld=rho; 
+
+    } // end for i
+  // --------------------------------------------------------
+  // -------------------- END ITERATIONS --------------------
+  // --------------------------------------------------------
+
+    if( numAugmented>0 )
+    {
+    // ::display(x,"Before","%9.3f");
+    // x = x - U*(R\xi);
+    // y = R^{-1} xi :  upper triangular solve ----
+        for( int i=numAugmented-1; i>=0; i-- )
+        {
+            Real temp = xia(i);
+            for( int j=i+1; j<numAugmented; j++ )
+                temp -= R(i,j)*ya(j); 
+            ya(i) = temp/R(i,i); 
+        }   
+        matVect( W,y,y1,0, m,numAugmented  );   // y1 = W*y = W*( R\xi ) 
+        if( useOpt )
+        {
+            for( int j=0; j<m; j++ )
+                xa(j) -= y1a(j); 
+        }
+        else
+        {
+            x -= y1; 
+        }       
+
+    // ::display(x,"after  x = x - W*(R^{-1}*xi)","%9.3f");
+
+    }
+
+    #undef ra
+    #undef pa
+    #undef sa
+    #undef va
+    #undef ta
+    #undef xa
+    #undef ya
+    #undef y1a
+    #undef xia
+    #undef eta1a
+    #undef eta2a
+    #undef AWa
+    #undef Qa
+    #undef Ra
+
+
+
+  // --- save residuals in resVect ----
+    RealArray & resVect = dbase.get<RealArray>("resVect"); 
+    int & numberOfIterations = dbase.get<int>("numberOfIterations");
+    numberOfIterations = it+1;
+    resVect.redim(numberOfIterations);
+    resVect=resv(Range(0,numberOfIterations-1));
+
+    Real cpuTotal=getCPU()-cpuStart;
+    Real cpuSum = cpuQR+cpuForInnerProducts+cpuMatVects;
+    printF("\n>>>> Augmented BiCGStab: cpu: QR=%9.2e, innerProducts=%9.2e, matVects=%9.3e, sum=%9.2e, total=%9.2e\n\n",cpuQR,cpuForInnerProducts,cpuMatVects,cpuSum,cpuTotal);
+
+    return resv(it);
+
+  // OV_ABORT("AugmentedKrylov::solveBiCGStab: FINISH ME");
+
+}
+
+
+
+// ===================================================================================================
+/// \brief Solve A x = b using the Augmented GMRES algorithm
+/// \param x (output) 
+/// \Return value: relative residual || b - A x ||/|| b ||
+// ===================================================================================================
+Real AugmentedKrylov::solveGmres( const RealArray & A, MatVectFunctionPtr matVectFunction, const RealArray & b, const RealArray & x0, const RealArray & W, 
+                                                                    const int maxit, const Real tol, RealArray & x )
+{
+
+    Real cpuStart = getCPU();
+    cpuForInnerProducts=0.;
+
+    Real cpuMatVect = 0.;  // cpu time for matVects
+    Real cpuExtra=0.;      // measures miscellaneous
+    Real cpuQR=0.;         // cpu for QR factorization
+
+  // saveL2NormResiduals=1 : save || residual ||_2/sqrt(m)    (to matcvh other solvers)
+  //                    =0 : save || residual ||_2/|| b ||_2
+    const bool saveL2NormResiduals=1;
+
+
+    const int matrixIsAFunction = matVectFunction==NULL ? 0 : 1; 
+    int & numberOfMatrixVectorProducts = dbase.get<int>("numberOfMatrixVectorProducts");
+    const int m = b.getLength(0);
+    const int numToDeflate = W.getLength(1);
+
+    const bool reOrthogonalize=false; // re-orthogonalize for harder problems -- turn off for now
+
+    printf("\n $$$$$ AugmentedKrylov::solve: m=%d, numToDeflate=%d, matrixIsAFunction=%d, maxit=%d, tol=%9.2e\n\n",m,numToDeflate,matrixIsAFunction,maxit,tol);
+
+    Real resid =0.;
+    
+    Real bNorm = norm(b);
+
+  // A*(x+x0) = b0 
+  // A*x = b0 - A*x0
+    RealArray b0(m);
+    RealArray y(m);  
+
+    Real cpu0=getCPU();
+    if( matrixIsAFunction )
+          matVectFunction( x0, y ); // y = A*x0
+    else
+        matVect( A, x0, y ); // y = A*x0
+    cpuMatVect += getCPU()-cpu0;
+    numberOfMatrixVectorProducts++;
+
+    Real *py   =   y.getDataPointer();
+    Real *pb   =   b.getDataPointer(); 
+    Real *pb0  =  b0.getDataPointer(); 
+    #define ya(j)   py[j]   
+    #define ba(j)   pb[j]   
+    #define b0a(j)  pb0[j]   
+
+    if( useOpt )
+    {
+        for( int j=0; j<m; j++ )
+            b0a(j) = ba(j) - ya(j);  // b0 = b - A*x0;
+    }
+    else
+    {
+        b0 = b - y;  // b0 = b - A*x0;
+    }
+
+  // ::display(b0,"b0","%6.2f ");
+
+    const int p = numToDeflate;
+
+    const int n = min(p+maxit+1,m); // max number of columns in V -- could do better here
+    const int np1 = n+1;
+
+    const bool useMatrixV  = false;
+    RealArray V; 
+    Real *pV   = NULL;         
+    if( useMatrixV )
+    {
+        V.redim(m,n+1);     // ********** THIS IS INEFFICIENT : storing too many columns ***********
+        pV = V.getDataPointer();
+    }
+
+  // --- Store columns of V ---
+    const bool useCompressedV=true;
+    Real **pVm = new Real* [n+1];
+    for( int j=0; j<n+1; j++ ){ pVm[j]=NULL; }
+    #define Vm(i,j) pVm[j][i]
+
+    RealArray H(n+1,n+1);
+
+    Real *pH   =   H.getDataPointer();  
+    Real *pW   =   W.getDataPointer();
+    #define Va(i,j) pV[(i)+m*(j)]
+    #define Ha(i,j) pH[(i)+(np1)*(j)]  
+    #define Wa(i,j) pW[(i)+m*(j)]
+
+    if( useOpt )
+    {
+    // for( int j=0; j<np1; j++ )
+    //   for( int i=0; i<m; i++ )
+    //     Va(i,j)=0.;
+
+    // *** IS THIS NEEDED ??? 
+        for( int j=0; j<np1; j++ )
+            for( int i=0; i<np1; i++ )
+                Ha(i,j)=0.;      
+    }
+    else
+    { 
+        H=0; 
+        V=0; 
+    }
+  
+
+    int & augmentedVectorsAreEigenvectors = dbase.get<int>("augmentedVectorsAreEigenvectors");
+  // augmentedVectorsAreEigenvectors=false;
+
+    const RealArray & eig = dbase.get<RealArray>("eig");
+    if( augmentedVectorsAreEigenvectors )
+    {
+        if( eig.getLength(0) < p )
+        {
+            printF("AUG-GMRES: eigenvalues have been supplied for augmented eigenvectors but there are not enough!\n"
+                          "  supplied eignvalues = %d, numberOfAugmented vectors =%d\n",eig.getLength(0),p); 
+            OV_ABORT("ERROR");
+        }
+    }
+
+    Range M=m;
+
+    RealArray vp1(m);
+    RealArray y1(m);  // temp space
+
+    Real *py1  =  y1.getDataPointer();  
+    Real *pvp1 = vp1.getDataPointer();  
+    #define y1a(j)  py1[j]
+    #define vp1a(j) pvp1[j]
+
+    if( useOpt )
+    {
+        for( int j=0; j<m; j++ )
+            vp1a(j)=b0a(j);
+    }
+    else
+    {
+        vp1=b0;
+    }
+
+  // augmentedVectorsAreEigenvectors=false;
+
+    if( p>0 )
+    {
+        RealArray AW(m,p);  // holds A*W 
+
+        Real *pAW  =  AW.getDataPointer();
+        #define AWa(i,j)  pAW[(i)+m*(j)]
+
+        Real cpuAWstart=getCPU();
+        for( int j=0; j<p; j++ )
+        {
+            if( augmentedVectorsAreEigenvectors )
+            {
+                printF("AUG-GMRES: Compute A*W(:,%d) ASSUMING augmented vectors are eigenvectors, eig=%10.3e, lam=1-eig=%10.3e\n",j,eig(j),1.0-eig(j));
+                
+        // **NOTE** A*w = (I-S)*w 
+                Real cpu1=getCPU();
+                if( useOpt )
+                {
+                    for( int mm=0; mm<m; mm++ )
+                        AWa(mm,j) = (1.0-eig(j))*Wa(mm,j); // A*W(:,j) = (I-S)  W(:,j) 
+                }
+                else
+                {
+                    AW(M,j) = (1.0-eig(j))*W(M,j); // A*W(:,j) = (I-S)  W(:,j)  
+                }
+                cpuExtra+=getCPU()-cpu1;
+
+
+        // -- now check:
+                bool checkEigenvectorMatVect = false; // set to true to check  
+                if( checkEigenvectorMatVect )        
+                {
+                    y1 = W(M,j);
+                    if( matrixIsAFunction ) 
+                        matVectFunction( y1, y ); // y = A*y1 
+                    else
+                        matVect( A,y1, y );
+
+                    Real maxErr = max(fabs( AW(M,j) - y ))/ max(fabs(y1));
+                    printF("++AUG-GMRES: j=%d: max | (1-eig(j))*W(:,j) - A*W(:,j) |/|w_j|_inf = %9.2e\n",j,maxErr);
+
+                    Real lamEst1 =  sum( y/y1 )/m; 
+                    Real lamEst2 =  y(5)/y1(5);
+
+                    Real residEst1 = max(fabs( y - lamEst1*y1 ))/ max(fabs(y1));
+                    Real residEst2 = max(fabs( y - lamEst2*y1 ))/ max(fabs(y1));
+                        
+                    printF("++AUG-GMRES: j=%d: eig=%12.5e, lam=1-eig=%12.5e, lamEst=%12.5e or %12.5e, residEst=[%8.2e,%8.2e]\n",j,eig(j),1.-eig(j),lamEst1,lamEst2,residEst1,residEst2); 
+                    
+                }      
+            }
+            else
+            {      
+        // ----- approximate eigenvectors ----
+
+        // printF("Compute A*W(:,%d)..\n",j);
+                if( useOpt )
+                {
+                    for( int mm=0; mm<m; mm++ )
+                      y1a(mm) = Wa(mm,j);
+                }
+                else
+                    y1 = W(M,j);
+
+        // ::display(y1,"W(:,j)","%6.2f ");
+
+                printF("AUG-GMRES: Compute A*W(:,%d) (Augmented vectors)\n",j);
+
+                cpu0=getCPU();
+                if( matrixIsAFunction ) 
+                    matVectFunction( y1, y ); // y = A*x0
+                else
+                    matVect( A,y1, y );
+                cpuMatVect += getCPU()-cpu0;
+                numberOfMatrixVectorProducts++;
+        // ::display(y,"A*W(:,j)","%6.2f ");
+                if( useOpt )
+                {
+                    for( int mm=0; mm<m; mm++ )
+                        AWa(mm,j) = ya(mm);
+                }
+                else
+                {
+                    AW(M,j) = y;
+                }
+        // AW(M,j) = A(W(:,j));
+            }
+
+        } // end for j 
+        Real cpuAW = getCPU()-cpuAWstart;
+        if( !dbase.has_key("cpuAugmentedInitialMatVects") )
+            dbase.put<Real>("cpuAugmentedInitialMatVects");
+        dbase.get<Real>("cpuAugmentedInitialMatVects")=cpuAW;
+
+    // if( augmentedVectorsAreEigenvectors )
+    //   OV_ABORT("AUG-GMRES: Stop here for now");
+
+    // printF("AugmentedKrylov::solve:Compute W = QR ...\n");
+    // ::display(W(M,Range(p)),"W","%6.2f ");
+    // ::display(AW(M,Range(p)),"AW","%6.2f ");
+
+    // [Vp,H] = qr(AW,0); % reduced QR factorization of A * (matrix of augmented vectors) 
+        int lda=m, info=0;
+        RealArray tau(p);
+        int lwork= p*4; // n*nb nb = optimum block size
+        RealArray work(lwork);
+        Real cpu1=getCPU();
+        DGEQRF( m,p,AW(0,0),lda,tau(0),work(0),lwork,info );
+
+        if( info<0 )
+        {
+            printF("AugmentedKrylov::solve: Error return from DGQRF = info=%d\n",info);
+            OV_ABORT("error");
+        }
+        for( int i=0; i<p; i++ )
+        {
+            for( int j=i; j<p; j++ )
+            {
+                Ha(i,j)=AWa(i,j);         // Upper triangular part of AW holds "R"
+            }
+        }
+    // Eval "Q" 
+        DORGQR( m, p, p, AW(0,0), lda,tau(0),work(0),lwork,info );  // on output AW holds Q 
+        cpuQR = getCPU()-cpu1;
+
+        if( !dbase.has_key("cpuAugmentedQR") )
+            dbase.put<Real>("cpuAugmentedQR");
+        dbase.get<Real>("cpuAugmentedQR")=cpuQR;    
+
+        if( info<0 )
+        {
+            printF("AugmentedKrylov::solve: Error return from DORGQR = info=%d\n",info);
+            OV_ABORT("error");
+        }  
+        for( int j=0; j<p; j++ ) 
+        {
+
+            if( useCompressedV )
+            {
+                pVm[j] = new Real [m];  // allocate a new column in V 
+                for( int mm=0; mm<m; mm++ )
+                        Vm(mm,j) = AWa(mm,j); 
+            }
+            if( useMatrixV )
+            {
+                if( useOpt )
+                {
+                    for( int mm=0; mm<m; mm++ )
+                        Va(mm,j) = AWa(mm,j); 
+                }
+                else
+                    V(M,j) = AW(M,j); 
+            }
+        } 
+
+    // ::display(H(Range(p),Range(p)),"H after A*W=Vp*H","%6.2f ");
+    // ::display(V(M,Range(p)),"Vp after A*W=Vp*H","%6.2f ");
+
+        int numOrthoSteps = reOrthogonalize ? 2 : 1;
+        for( int i=1; i<=numOrthoSteps; i++ )  // do twice for re-orthogonalization
+        {
+      //     vp1 = vp1 - Vp*(Vp'*vp1);
+
+            int transpose=1; 
+            if( useCompressedV )
+                matVect( pVm,vp1,y, transpose, m,p  );
+            if( useMatrixV )
+                matVect( V,vp1,y, transpose, m,p  );
+      /// ::display(y(Range(p))," y = V^T vp1","%6.2f ");
+            if( useCompressedV )
+                matVect( pVm,y, y1, 0, m,p  );
+            if( useMatrixV )
+                matVect( V,y, y1, 0, m,p  );
+      // ::display(y1," y1 = V*(V^T vp1)","%6.2f ");
+
+            if( useOpt )
+            {
+                for( int mm=0; mm<m; mm++ )
+                    vp1a(mm) -= y1a(mm); 
+            }
+            else
+                vp1 -= y1; 
+            
+        }
+    }
+    if( useOpt )
+    {
+        const Real vp1Norm = norm(vp1);
+        for( int mm=0; mm<m; mm++ )
+            vp1a(mm) = vp1a(mm)/vp1Norm;
+    }
+    else
+    {
+        vp1 = vp1/norm(vp1);
+    }
+
+  // ::display(vp1,"vp1 at start","%6.2f ");
+
+  // V = zeros(m,p+maxit+1);   % allocate space 
+
+  // if( p>0 )
+  //   V(:,1:p) = Vp;
+  // end
+    if( useOpt )
+    {
+        if( useCompressedV )
+        {
+            pVm[p] = new Real [m];  // allocate a new column in V 
+            for( int mm=0; mm<m; mm++ )
+                Vm(mm,p) = vp1a(mm);
+        }
+        if( useMatrixV )
+        {
+            for( int mm=0; mm<m; mm++ )
+                Va(mm,p) = vp1a(mm);  
+        }
+    }
+    else
+        V(M,p) = vp1;  
+
+  // % Q holds the products of Givens rotations
+  // Q = eye(m,p+1);
+  // Hg = H; % holds a copy of H for testing Givens
+
+    RealArray Q(n+1,n+1); // holds the products of Givens rotations
+
+    Real *pQ   =   Q.getDataPointer();
+    #define Qa(i,j) pQ[(i)+(np1)*(j)]
+
+    Q=0;
+    for( int i=0; i<p+1; i++ )
+        Qa(i,i)=1; 
+
+
+    RealArray g(n+1);
+    Real *pg   =   g.getDataPointer();
+    #define ga(j)   pg[j]
+
+    g=0; 
+    for( int k=0; k<p+1; k++ )
+    {
+        if( useOpt )
+        {
+            if( useCompressedV )
+            {
+                for( int mm=0; mm<m; mm++ )
+                    ya(mm) = Vm(mm,k); 
+            }
+            else 
+            {
+                for( int mm=0; mm<m; mm++ )
+                    ya(mm) = V(mm,k); 
+            }
+        }
+        else
+            y = V(M,k); 
+
+        ga(k) = innerProduct( y,b0  );
+  //   g(k,1) = V(:,k)' * b0; 
+    }
+
+  // ::display(g,"g at start","%6.2f ");
+
+  // ---------- Arnoldi ---------
+  // printF("AugmentedKrylov::solve: start Arnoldi iterations bNorm=%9.2e...\n",bNorm);
+
+  // RealArray & resVect = dbase.get<RealArray>("resVect");
+  // resVect.redim(maxit+1);
+  // resVect=0; 
+
+    RealArray resv(maxit+p+1);
+    resv=0; 
+    int itr=0;
+    if( saveL2NormResiduals ){ resv(itr)=norm(b0)/sqrt(m); }else{ resv(itr)=norm(b0)/bNorm; } // initial residual;
+  // resv(itr)=norm(b0)/sqrt(m); // initial residual;
+
+    if( !augmentedVectorsAreEigenvectors )
+    {
+        for( int jp=0; jp<p; jp++ )
+        {
+            itr++; resv(itr)=resv(0); // just set residuals for augmented steps to the first residual
+        }
+    }
+
+  // iteration : counts actual number of mat-vects 
+  //           : don't count augmented vectors if we do need to use a mat-vect
+  // int iteration= augmentedVectorsAreEigenvectors ? -1 : p-1;
+
+  // Real *pg   =   g.getDataPointer();
+    Real *px   =   x.getDataPointer();
+    Real *px0  =  x0.getDataPointer();
+  //  Real *py   =   y.getDataPointer();
+    py1  =  y1.getDataPointer();              // do this! pointer gets changed somewhere above
+  // Real *py1  =  y1.getDataPointer();  
+  // Real *pV   =   V.getDataPointer();
+  // Real *pH   =   H.getDataPointer();
+  // Real *pQ   =   Q.getDataPointer();
+  // Real *pW   =   W.getDataPointer();
+  // Real *pvp1 = vp1.getDataPointer();  
+    pvp1 = vp1.getDataPointer();             // do this! pointer gets changed somewhere above
+    
+  // #define ga(j)   pg[j]
+    #define xa(j)   px[j]
+    #define x0a(j)  px0[j]
+    
+  // #define y1a(j)  py1[j]
+  // #define vp1a(j) pvp1[j]
+  // #define Va(i,j) pV[(i)+m*(j)]
+  // #define Ha(i,j) pH[(i)+(np1)*(j)]
+  // #define Qa(i,j) pQ[(i)+(np1)*(j)]
+  // #define Wa(i,j) pW[(i)+m*(j)]
+
+    Real cpuIt0= getCPU();
+    Real cpuInit = getCPU()-cpuStart;
+
+  // =============== START ITERATIONS ===========
+    int it=0;
+    for( int k=p; k<p+maxit; k++ )
+    {
+
+    // printF("AugmentedKrylov::solve: Arnoldi iteration k=%d\n",k);
+    // iteration++;
+
+        if( useOpt )
+        {
+            if( useCompressedV )
+            {
+                for( int j=0; j<m; j++ )
+                    y1a(j) = Vm(j,k);
+            }
+            else
+            {
+                for( int j=0; j<m; j++ )
+                    y1a(j) = Va(j,k);
+            }
+        }
+        else 
+        {
+            y1 = V(M,k);
+        }
+        cpu0=getCPU();
+        if( matrixIsAFunction ) 
+            matVectFunction( y1, vp1 ); // vp1 = A*V(:,k)
+        else
+            matVect( A,y1, vp1 );
+        cpuMatVect += getCPU()-cpu0;
+        numberOfMatrixVectorProducts++;
+
+        for( int i=0; i<=k; i++ )
+        {
+      // H(i,k) = V(:,i)'*vkp1; 
+      // vkp1 = vkp1 -H(i,k)*V(:,i);
+            if( useOpt)
+            {
+                if( useCompressedV )
+                {
+                    for( int j=0; j<m; j++ )
+                        ya(j) = Vm(j,i);
+                }
+                else
+                {
+                    for( int j=0; j<m; j++ )
+                        ya(j) = Va(j,i);
+                }
+            }
+            else
+            {
+                y = V(M,i);
+            } 
+
+            Ha(i,k) = innerProduct( y,vp1 );
+
+      // printF("H(%d,%d)=%9.3e\n",i,k,H(i,k));
+
+            if( useOpt )
+            {
+                Real cpuStart = getCPU();
+                if( useCompressedV )
+                {
+                    for( int j=0; j<m; j++ )
+                        vp1a(j) -= Ha(i,k)*Vm(j,i);
+                }
+                else
+                {
+                    for( int j=0; j<m; j++ )
+                        vp1a(j) -= Ha(i,k)*Va(j,i);
+                }
+                cpuExtra += getCPU()-cpuStart;
+            }
+            else
+            {
+                vp1 -= H(i,k)*V(M,i);
+            }
+        }
+    // re-orthogonalization -- optional 
+        if( reOrthogonalize ) 
+        {
+            for( int i=0; i<=k; i++ )
+            {
+        //     alpha= V(:,i)' * vkp1;
+        //     vkp1 = vkp1 - alpha*V(:,i);
+        //     H(i,k)=H(i,k)+alpha;    
+                y = V(M,i); 
+                Real alpha = innerProduct( y,vp1 );
+                if( useCompressedV )
+                { 
+                    for( int mm=0; mm<m; mm++ )
+                        vp1a(mm) -= alpha*Vm(mm,i);
+                }
+                else
+                    vp1 = vp1 - alpha*V(M,i);
+
+                H(i,k)=H(i,k)+alpha;
+            } 
+        }
+
+        Ha(k+1,k) = norm(vp1);
+
+        if( fabs(H(k+1,k)) < 1e-10*bNorm )
+        {
+            printF("INFO: in AuGmres: H(k+1,k)=%9.2e *happy break down*. Solution must have converged.\n",H(k+1,k));
+      // break;
+      // OV_ABORT("FIX ME"); 
+        }
+        else
+        {
+            if( useOpt )
+            {
+                if( useCompressedV )
+                {
+                    pVm[k+1] = new Real [m];  // allocate a new column in V 
+                    for( int j=0; j<m; j++ )
+                        Vm(j,k+1) = vp1a(j)/Ha(k+1,k);  
+                }
+                if( useMatrixV )
+                {
+                    for( int j=0; j<m; j++ )
+                        Va(j,k+1) = vp1a(j)/Ha(k+1,k);  
+                }
+            }
+            else
+            {
+                V(M,k+1) = vp1/H(k+1,k);  
+            }
+        }
+
+    // printF("H(%d,%d)=%9.3e\n",k+1,k,H(k+1,k));
+    // ::display(V(M,k+1),"New column in V","%6.2f ");
+
+    //   H(1:k,k) = Q(1:k,1:k)*H(1:k,k); % Apply previous rotations to part of new column 
+        Range K(0,k);
+        if( useOpt )
+        {
+            for( int j=0; j<=k; j++ ) 
+                y1a(j) = Ha(j,k);
+        }
+        else 
+        {
+            y1(K) = H(K,k);
+        }
+
+        matVect( Q,y1,y,  0,k+1,k+1 );
+        if( useOpt )
+            for( int j=0; j<=k; j++ )
+                Ha(j,k) = ya(j); 
+        else
+            H(K,k) = y(K); 
+    // ::display(H(K,k),"New column in H","%6.2f ");
+
+        Real cpu1=getCPU();
+        Real rho = Ha(k,k);
+        Ha(k,k) = sqrt( SQR(rho) + SQR(Ha(k+1,k)) ) ;
+        Real c = rho/Ha(k,k);
+        Real s = Ha(k+1,k)/Ha(k,k);
+    // printF("c=%9.3e s=%9.3e\n",c,s);
+        Ha(k+1,k) = 0;
+        
+    // Apply Givens rotation to Q
+        if( useOpt )
+        {
+            for( int j=0; j<=k; j++ ) 
+            {
+                Qa(k+1,j) = -s*Qa(k,j);
+                Qa(k  ,j) =  c*Qa(k,j);
+            }
+        }
+        else
+        {
+            Q(k+1,K) = -s*Q(k,K);
+            Q(k  ,K) =  c*Q(k,K);
+        }
+        Qa(k+1,k+1) = c;
+        Qa(k  ,k+1) = s;
+        
+    // Apply Givens rotation to g 
+        ga(k+1) = -s*ga(k);  // this is the current 2-norm of the residual
+        ga(k  ) =  c*ga(k); 
+
+        cpuExtra+=getCPU()-cpu1;
+
+        it=k-p; // current Arnoldi iteration
+
+    //  current L2 residual is g(k+1)
+
+    // Real resid = abs(ga(k+1))/sqrt(m); // do this to match other solvers
+        Real resid = abs(ga(k+1));
+    // Real resid = abs(g(k+1))/bNorm; 
+
+    // if( iteration==p && !augmentedVectorsAreEigenvectors )
+    //   resv(Range(0,p))=resid; // just set residuals for augmented steps to the first residual
+    // else
+    //   resv(iteration)=resid; 
+
+        itr++;
+        if( saveL2NormResiduals ){ resv(itr)=resid/sqrt(m); }else{ resv(itr)=resid/bNorm; } // initial residual
+
+    // resVect(it)= resid;
+        if( itr>0 )
+        {
+            printF("AUG-GMRES: it=%3d, || r ||_2h = %8.2e, ratio=%8.2e, (matrixIsAFunction=%d)",it+1,resid,resv(itr)/resv(itr-1),matrixIsAFunction);
+            if( saveL2NormResiduals )
+                printF(" (rel-norm = || res ||_2/sqrt{m}.\n");
+            else
+                printF(" (rel-norm = || res ||_2/|| b ||_2.\n");
+        }
+    
+        if( resid < tol )
+        {
+            break; 
+        }
+
+    }
+
+    const int jp = p+it+1; // total number of iterations
+
+    Real cpuIt = getCPU()-cpuIt0; 
+
+  // printF("AGmres: jp=%d, iteration=%d\n",jp,iteration);
+  // ::display(resv,"resv (*NEW WAY*)");
+
+  // ::display(H(Range(jp),Range(jp)),"H for triangular solve","%6.2f ");
+
+  // ---- y = H(1:jp,1:jp)\g(1:jp); :  upper triangular solve ----
+    Real cpu1=getCPU();
+    for( int i=jp-1; i>=0; i-- )
+    {
+        Real temp = ga(i);
+        for( int j=i+1; j<jp; j++ )
+            temp -= Ha(i,j)*ya(j); 
+        ya(i) = temp/Ha(i,i); 
+    }
+  // ::display(y(Range(jp)),"Solution y","%6.2f ");
+
+  // x = x0 + [W , V(:,p+1:p+it) ]*y;
+
+    if( useOpt )
+    {
+        for( int i=0; i<m; i++ )
+        {  
+            Real temp=0.;
+            for( int j=0; j<p; j++ )
+                temp += Wa(i,j)*ya(j); 
+            if( useCompressedV ) 
+            {
+                for( int j=p; j<jp; j++ )
+                    temp += Vm(i,j)*ya(j);
+            }
+            if( useMatrixV )
+            {   
+                for( int j=p; j<jp; j++ )
+                    temp += Va(i,j)*ya(j);
+            }
+            xa(i) = x0a(i) + temp;
+        }
+    }
+    else
+    {
+        for( int i=0; i<m; i++ )
+        {  
+            Real temp=0.;
+            for( int j=0; j<p; j++ )
+                temp += W(i,j)*y(j);     
+            for( int j=p; j<jp; j++ )
+                temp += V(i,j)*y(j);
+
+            x(i) = x0(i) + temp;
+        }
+    }
+    cpuExtra += getCPU()-cpu1;
+  // ::display(x,"Solution x","%6.2f ");
+
+
+    int & numberOfIterations = dbase.get<int>("numberOfIterations");
+    RealArray & resVect      = dbase.get<RealArray>("resVect");
+
+    numberOfIterations = itr; // iteration+1;
+    resVect.redim(numberOfIterations);
+    resVect=resv(Range(0,numberOfIterations-1));
+
+
+    Real cpuTotal = getCPU()-cpuStart;
+    Real cpuSum = cpuMatVect + cpuQR + cpuForInnerProducts + cpuForLocalMatVects + cpuExtra;
+    printf("\n AugmentedKrylov:gmres: matVect=%9.2e(s) QR=%9.2e innerProducts=%9.2e localMatVects=%9.2e cpuExtra=%9.2e sum=%9.2e total cpu = %9.2e(s)\n",
+              cpuMatVect,cpuQR,cpuForInnerProducts,cpuForLocalMatVects,cpuExtra,cpuSum, cpuTotal);
+    printF(" cpuInit=%9.3e, cpuIt=%9.3e\n",cpuInit,cpuIt);
+
+
+    return resid;
+}
