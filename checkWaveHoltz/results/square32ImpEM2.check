@@ -1,4 +1,4 @@
-# Check file for cgWaveHoltz, grid=square32, Fri May  2 07:58:19 2025
+# Check file for cgWaveHoltz, grid=square32, Thu May 29 14:06:32 2025
 grid=square32;
 timeStepping=implicit;
 orderOfAccuracy=2;
