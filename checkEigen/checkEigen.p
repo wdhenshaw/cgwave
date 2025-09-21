@@ -353,6 +353,9 @@ foreach $cmdCommand ( @cmdFiles )
   }
 }
 if( $verbose == 0 ){ printf("\n"); }
+
+open($outfile, '>', 'checkEigen.results') or die "Cannot open checkEigen.results for writing: $!";
+
 if ( $numberOfErrors == 0 )
 {
   if( $verbose ){ printf("\n>>> clean up temp files: eigenWave.check, cgWave.out, cgWave.debug, ...\n"); }
@@ -365,16 +368,19 @@ if ( $numberOfErrors == 0 )
   printf("============== EigenWave: All $numChecks tests successful =============\n");
   printf("==============================================================\n");
 
+  print $outfile "============== EigenWave: All $numChecks tests successful =============\n";
 
-  exit 0;
 }
 else
 {
   printf("********************************************************\n");
-  print  "************ $solver: There were $numberOfErrors  ERRORS ****************\n";
+  print  "************ EigenWave: There were $numberOfErrors  ERRORS ****************\n";
   printf("********************************************************\n");
 
-  exit 1;
+  print $outfile "************ EigenWave: There were $numberOfErrors  ERRORS ****************\n";
 }
+
+close $outfile;
+exit 0;
 
 

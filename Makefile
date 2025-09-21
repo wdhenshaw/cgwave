@@ -162,15 +162,24 @@ all: $(all);
 info:; @echo "INFO: type 'make check' or 'make check-quiet' to run all regression tests\nINFO: this includes checkEigen, checkWave, checkWaveHoltz"    
 
 # ----- RUN REGRESSION TESTS ---
+# -C : change directory
 check:
 	$(MAKE) -C checkEigen
 	$(MAKE) -C checkWave
 	$(MAKE) -C checkWaveHoltz
+	@echo "Summary:"
+	@cat checkEigen/checkEigen.results
+	@cat checkWave/checkWave.results
+	@cat checkWaveHoltz/checkWaveHoltz.results
 
 check-quiet:
 	@$(MAKE) -s -C checkEigen check-quiet
 	@$(MAKE) -s -C checkWave check-quiet
 	@$(MAKE) -s -C checkWaveHoltz check-quiet
+	@echo "Summary:"
+	@cat checkEigen/checkEigen.results
+	@cat checkWave/checkWave.results
+	@cat checkWaveHoltz/checkWaveHoltz.results
 
 
 Oges = $(Overture)/Oges

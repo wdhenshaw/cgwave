@@ -358,6 +358,8 @@ foreach $cmdCommand ( @cmdFiles )
   }
 }
 if( $verbose == 0 ){ printf("\n"); }
+open($outfile, '>', 'checkWaveHoltz.results') or die "Cannot open checkWaveHoltz.results for writing: $!";
+
 if ( $numberOfErrors == 0 && $m>0 )
 {
   if( $verbose ){  printf("\n>>> clean up temp files: eigenWave.check, cgWave.out, cgWave.debug, ...\n"); }
@@ -376,8 +378,7 @@ if ( $numberOfErrors == 0 && $m>0 )
   printf("============== WaveHoltz: All $numChecks tests successful =============\n");
   printf("==============================================================\n");
 
-
-  exit 0;
+  print $outfile "============== WaveHoltz: All $numChecks tests successful =============\n";
 }
 else
 {
@@ -385,7 +386,10 @@ else
   print  "************ $solver: There were $numberOfErrors  ERRORS ****************\n";
   printf("********************************************************\n");
 
-  exit 1;
+  print $outfile "************ $solver: There were $numberOfErrors  ERRORS ****************\n";
 }
+
+close $outfile;
+exit 0;
 
 

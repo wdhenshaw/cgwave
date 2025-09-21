@@ -321,6 +321,9 @@ foreach $cmdCommand ( @cmdFiles )
   }
 }
 if( $verbose == 0 ){ printf("\n"); }
+
+open($outfile, '>', 'checkWave.results') or die "Cannot open checkWave.results for writing: $!";
+
 if ( $numberOfErrors == 0 )
 {
   if( $verbose ){  printf("\n>>> clean up temp files: cgWave.check cgWave.cmd cgWave.debug cgWave.out\n"); }
@@ -331,7 +334,8 @@ if ( $numberOfErrors == 0 )
   printf("==============================================================\n");
   printf("============== $solver: All $numChecks tests successful ===============\n");
   printf("==============================================================\n");
-  exit 0;
+
+  print $outfile "============== $solver: All $numChecks tests successful ===============\n";
 }
 else
 {
@@ -339,7 +343,8 @@ else
   print  "************ $solver: There were $numberOfErrors ERRORS out of $numChecks tests ****************\n";
   printf("********************************************************************************\n");
 
-  exit 1;
+  print $outfile "************ $solver: There were $numberOfErrors ERRORS out of $numChecks tests ****************\n";
 }
 
-
+close $outfile;
+exit 0;
