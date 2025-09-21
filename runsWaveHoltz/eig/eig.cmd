@@ -4,7 +4,7 @@
 #     cgwh eig.cmd -g=<grid-name> -x0=<f> -y0=<f> -omega=<f> -solver=[none|fixedPoint|krylov] -tol=<f> -tp=<f> ...
 #                         -kx=<f> -ky=<f> -kz=<f> -forcing=[gaussian|sine] -adjustOmega=[0|1] -maxIterations=<>
 #                          -upwind=[0|1] -imode=[0|1] -bcApproach=[cbc|lcbc|oneSided] -go=[go|og|halt]
-#                          -eigenSolver=[default|KrylovSchur|Arnoldi]
+#                          -eigenSolver=[default|KrylovSchur|Arnoldi|SI]
 #
 #   -solver=[fixedPoint|krylov] : fixed-point or Krylov 
 #   -imode=1 : do not wait in cgWave
@@ -81,10 +81,13 @@ adjust omega $adjustOmega
 number of frequencies $numberOfFrequencies
 frequencies $freq[0] $freq[1] $freq[2] $freq[3] $freq[4] $freq[5] $freq[6] $freq[7] $freq[8] $freq[9] $freq[10] $freq[11]] $freq[12]
 matlab filename: $matlab 
+if( $solveri eq "best" ){ $solveri="choose best iterative solver"; }
 # choose parameters for the direct Helmholtz solver
 direct solver parameters
-  if( $solverh ne "yale" ){ $cmd="choose best iterative solver\n $solverh"; }else{ $cmd="choose best direct solver"; }
-  $cmd
+  if( $solverh eq "best" ){ $solverh="choose best iterative solver"; }
+  if( $solverh eq "gmres" ){ $solverh = "choose best iterative solver\n generalized minimal residual"; }
+  # if( $solverh ne "yale" ){ $solverh="choose best iterative solver\n $solverh"; }else{ $solverh="choose best direct solver"; }
+  $solverh
   number of incomplete LU levels
     $iluh
   number of GMRES vectors

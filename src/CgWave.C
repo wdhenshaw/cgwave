@@ -104,8 +104,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("filterTimeDerivative")   = 0;           //  filter time-derivative for WaveHoltz
   dbase.put<int>("numCompWaveHoltz")       = 0;           //  number of components in WaveHoltz
   dbase.put<int>("filterD0t")              = 0;           // directly filter D0t instead of using integration by parts
-
-  
+  dbase.put<int>("useOptFilter")           = 0;           // use optimized filter 
 
   dbase.put<int>("deflateWaveHoltz") = 0;               //  set to 1 to turn on deflation for WaveHoltz
   dbase.put<int>("numToDeflate")     = 1;               //  number of eigenvectors to deflate
@@ -471,6 +470,11 @@ CgWave::
   if( dbase.has_key("rxOriginal") )
   {
     delete [] dbase.get<RealArray*>("rxOriginal");
+  }
+
+  if( dbase.has_key("indexVector") )
+  {
+    delete [] dbase.get<IntegerArray*>("indexVector");
   }
 
 }
@@ -1324,7 +1328,7 @@ getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerA
 }
 
 // ===================================================================================================================
-/// \brief Build options dialog for EigenWave Options.
+/// \brief Build options dialog for WaveHoltz Options.
 /// \param dialog (input) : graphics dialog to use.
 ///
 // ==================================================================================================================
@@ -1338,6 +1342,7 @@ buildWaveHoltzOptionsDialog(DialogData & dialog )
   int & computeTimeIntegral            = dbase.get<int>("computeTimeIntegral");
   int & deflateWaveHoltz               = dbase.get<int>("deflateWaveHoltz");
   int & deflateForcing                 = dbase.get<int>("deflateForcing");
+  int & useOptFilter                   = dbase.get<int>("useOptFilter");
   const real & omega                   = dbase.get<real>("omega");
 
   aString tbCommands[] = {
@@ -1345,7 +1350,8 @@ buildWaveHoltzOptionsDialog(DialogData & dialog )
                           "compute time integral",
                           "adjust Helmholtz for upwinding", 
                           "deflate WaveHoltz", 
-                          "deflate forcing",                            
+                          "deflate forcing",   
+                          "use optimized filter",                         
                             ""};
   int tbState[15];
   tbState[ 0] = solveHelmholtz;
@@ -1353,6 +1359,7 @@ buildWaveHoltzOptionsDialog(DialogData & dialog )
   tbState[ 2] = adjustHelmholtzForUpwinding;
   tbState[ 3] = deflateWaveHoltz;
   tbState[ 4] = deflateForcing;
+  tbState[ 5] = useOptFilter;
 
   int numColumns=1;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -1382,7 +1389,7 @@ buildWaveHoltzOptionsDialog(DialogData & dialog )
 }
 
 //================================================================================
-/// \brief: Look for an EigenWave option in the string "answer"
+/// \brief: Look for an WaveHoltz option in the string "answer"
 ///
 /// \param answer (input) : check this command 
 ///
@@ -1399,6 +1406,7 @@ getWaveHoltzOption(const aString & answer,
   int & computeTimeIntegral            = dbase.get<int>("computeTimeIntegral");
   int & deflateWaveHoltz               = dbase.get<int>("deflateWaveHoltz");
   int & deflateForcing                 = dbase.get<int>("deflateForcing");
+  int & useOptFilter                   = dbase.get<int>("useOptFilter");
   real & omega                         = dbase.get<real>("omega");
   RealArray & frequencyArray           = dbase.get<RealArray>("frequencyArray");
   RealArray & frequencyArraySave       = dbase.get<RealArray>("frequencyArraySave");
@@ -1428,7 +1436,11 @@ getWaveHoltzOption(const aString & answer,
   else if( dialog.getToggleValue(answer,"deflate forcing",deflateForcing) )
   {
     printF("Setting deflateForcing=%i (1=deflate forcing (remove components along deflation eigenvectors) but do not adjust iterates)\n",deflateForcing);
-  }     
+  } 
+  else if( dialog.getToggleValue(answer,"use optimized filter",useOptFilter) )
+  {
+    printF("Setting useOptFilter=%i (1=use optimized filter weights)\n",useOptFilter);
+  }        
   else if( dialog.getTextValue(answer,"omega","%e",omega) )
   {
     printF("Setting omega=%g (and frequencyArray(0))\n",omega);
@@ -1480,7 +1492,7 @@ buildEigenWaveOptionsDialog(DialogData & dialog )
   const int & numPeriods                     = dbase.get<int>("numPeriods");
   const real & omega                         = dbase.get<real>("omega");
 
-  aString eigenSolverLabel[] = {"defaultEigenSolver", "KrylovSchur", "Arnoldi", "Arpack", "fixedPoint","" };
+  aString eigenSolverLabel[] = {"defaultEigenSolver", "KrylovSchur", "Arnoldi", "Arpack", "fixedPoint","subspaceIteration","" };
   dialog.addOptionMenu("eigenSolver:", eigenSolverLabel, eigenSolverLabel, (int)eigenSolver );
 
   aString tbCommands[] = {
@@ -1643,7 +1655,8 @@ getEigenWaveOption(const aString & answer,
            answer=="KrylovSchur" || 
            answer=="Arnoldi" || answer=="arnoldi" || 
            answer=="Arpack"  || answer=="arpack"  || answer=="ARPACK" ||
-           answer=="fixedPoint" || answer=="fixPoint" || answer=="fp" )
+           answer=="fixedPoint" || answer=="fixPoint" || answer=="fp" ||
+           answer=="subspaceIteration" || answer=="SI" )
   {
     if( answer=="defaultEigenSolver" )
       eigenSolver = defaultEigenSolver;
@@ -1654,7 +1667,9 @@ getEigenWaveOption(const aString & answer,
    else if( answer=="Arpack" || answer=="arpack"  || answer=="ARPACK" )
       eigenSolver = ArpackEigenSolver;  
    else if( answer=="fixedPoint" || answer=="fp"  || answer=="fixPoint" )
-      eigenSolver = fixedPointEigenSolver;             
+      eigenSolver = fixedPointEigenSolver; 
+   else if( answer=="subspaceIteration" || answer=="SI"  )
+      eigenSolver = subspaceIterationEigenSolver;                    
     else
     {
       OV_ABORT("This case should not happen");

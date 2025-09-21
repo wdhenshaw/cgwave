@@ -183,12 +183,14 @@ linkFiles:
 buildEquationSolvers.o : $(Oges)/buildEquationSolvers.C; $(CXX) $(CCFLAGSO) -DOVERTURE_USE_PETSC -c $(Oges)/buildEquationSolvers.C
 PETScEquationSolver.o : $(Oges)/PETScEquationSolver.C; $(CXX) $(CCFLAGSO) -DOVERTURE_USE_PETSC -c $(Oges)/PETScEquationSolver.C
 
+src/PETScSolver.C: src/PETScSolver.bC; @cd src; $(BPP) PETScSolver.bC  
+
 OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/userDefinedKnownSolution.o \
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
        obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
        obj/takeFirstStep.o obj/deflation.o obj/eigenModes.o \
        obj/rjbesl.o obj/rybesl.o obj/buildSuperGrid.o obj/residual.o \
-       obj/coefficientsByDelta.o  obj/getEnergyNorm.o   
+       obj/coefficientsByDelta.o  obj/getEnergyNorm.o  obj/matrixUtilities.o obj/optFilterParameters.o
        
 # LCBC files: 
 OBJC += obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_data.o \
@@ -314,6 +316,18 @@ testPlotFiles = obj/testPlot.o  $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_
 testPlot: $(testPlotFiles) ; $(CXX) $(CCFLAGS) -o bin/testPlot $(testPlotFiles) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
 obj/testPlot.o : src/testPlot.C; $(CXX) $(CCFLAGS) -o $*.o -c $<    
 
+# ----- test (parallel) global index for PETSc and SLEPSc
+testGlobalIndexFiles = obj/testGlobalIndex.o  $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_PETSC)
+testGlobalIndex: $(testGlobalIndexFiles) ; $(CXX) $(CCFLAGS) -o bin/testGlobalIndex $(testGlobalIndexFiles) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
+obj/testGlobalIndex.o : src/testGlobalIndex.C; $(CXX) $(CCFLAGS) -o $*.o -c $<    
+
+# ----- test computation of the optimized filter parameters  -----
+testOptFilterParFiles = obj/testOptFilterPar.o  $(OBJC) $(OBJO) $(FNOBJO) $(petscSolver) $(OGES_PETSC)
+testOptFilterPar: $(testOptFilterParFiles); $(CXX) $(CCFLAGS) -o bin/testOptFilterPar $(testOptFilterParFiles) $(SLEPC_LIBS) $(PETSC_LIBS) $(LIBS)
+
+obj/testOptFilterPar.o : src/testOptFilterPar.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+obj/optFilterParameters.o : src/optFilterParameters.C; $(CXX) $(CCFLAGS) -o $*.o -c $<  
+
 
 # ----- test parser for Jeff  -----
 testParserFiles = obj/testParser.o 
@@ -413,6 +427,7 @@ src/tcmWideStencil.C: src/tcmWideStencil.bC; @cd src; $(BPP) -clean -quiet -I$(O
 
 src/takeFirstStep.C: src/takeFirstStep.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include takeFirstStep.bC
 src/residual.C: src/residual.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include residual.bC
+src/matrixUtilities.C: src/matrixUtilities.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include matrixUtilities.bC
 
 src/deflation.C: src/deflation.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include deflation.bC
 src/eigenModes.C: src/eigenModes.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include eigenModes.bC
@@ -550,6 +565,7 @@ obj/implicit.o : src/implicit.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/applyBoundaryConditions.o : src/applyBoundaryConditions.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/userDefinedKnownSolution.o : src/userDefinedKnownSolution.C src/CgWave.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/residual.o : src/residual.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<  
+obj/matrixUtilities.o : src/matrixUtilities.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<  
 obj/getEnergyNorm.o : src/getEnergyNorm.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<  
 obj/userDefinedForcing.o : src/userDefinedForcing.C src/CgWave.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/updateTimeIntegral.o : src/updateTimeIntegral.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<

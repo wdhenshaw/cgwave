@@ -40,6 +40,8 @@ getErrors( realCompositeGridFunction & u, real t )
   
   //  computeErrors = twilightZone || knownSolutionOption=="userDefinedKnownSolution";
   
+  // compute the solution norm
+  solutionNorm = maxNorm(u);
 
   if( computeErrors )
   {
@@ -120,8 +122,13 @@ getErrors( realCompositeGridFunction & u, real t )
     {
       Real maxErrFreq = maxNorm(error,freq);
       maxError = max(maxError,maxErrFreq);
-      if( numberOfFrequencies>1  )
-        printF("getErrors: t=%9.3e, freq=%3d, omega=%8.3f, maxErr=%9.3e\n",t,freq,frequencyArray(freq),maxErrFreq);
+
+      Real maxRelErr = maxErrFreq/solutionNorm;
+
+      Real l2RelErrFreq = l2Norm(error,freq)/solutionNorm;
+
+      if( 1==1 || numberOfFrequencies>1  )
+        printF("CgWave::getErrors: t=%9.3e, freq=%3d, omega=%8.3f, maxRelErr=%9.3e, l2RelErr=%9.3e\n",t,freq,frequencyArray(freq),maxErrFreq,l2RelErrFreq);
     }
     // maxError = maxNorm(error);
     // printF("getErrors: t=%9.3e, maxError=%9.3e\n",t,maxError);
@@ -132,8 +139,7 @@ getErrors( realCompositeGridFunction & u, real t )
   {
   }
   
-  // compute the solution norm
-  solutionNorm = maxNorm(u);
+
   
 
   timing(timeForGetError)+= getCPU()-cpu0;

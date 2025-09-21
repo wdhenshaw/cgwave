@@ -1210,7 +1210,7 @@ int CgWave::getErrorsInEigenmodes( Real & relErrEigenvalue, Real & relErrEigenve
     const Real eigVectorNorm = maxNorm( eigVector,freq );  // should be 1   
     if( fabs(eigVectorNorm-1.) > REAL_EPSILON*1000. )
     {
-      printF("INFO: computed eigVector does not have max-norm 1! eigVectorNorm=%9.2e. Scaling...\n",eigVectorNorm);
+      printF("INFO: computed eigVector does not have max-norm 1! eigVectorNorm=%12.5e (eigVectorNorm-1=%9.3e). Scaling...\n",eigVectorNorm,eigVectorNorm-1.);
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
       {
         MappedGrid & mg = cg[grid];
@@ -1552,7 +1552,7 @@ int CgWave::getErrorInEigenPair( const Real lambda, realCompositeGridFunction & 
   const Real eigVectorNorm = maxNorm( eigVector,component );  // should be 1   
   if( fabs(eigVectorNorm-1.) > REAL_EPSILON*1000. )
   {
-    printF("INFO: computed eigVector does not have max-norm 1! eigVectorNorm=%9.2e. Scaling...\n",eigVectorNorm);
+    printF("INFO: computed eigVector does not have max-norm 1! eigVectorNorm=%12.5e (eigVectorNorm-1=%9.3e). Scaling...\n",eigVectorNorm,eigVectorNorm-1.);
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       eigVector[grid](all,all,all,component) *= (1./eigVectorNorm); 

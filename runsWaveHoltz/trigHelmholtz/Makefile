@@ -3,6 +3,45 @@ cgwh= $(HOME)/research/cgwave/bin/cgwh
 WAHO= $(HOME)/Dropbox/AMP/waho
 
 
+#SQUARE POLLUTION ERRORS
+
+diskPollutionO4:
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square8.order4   -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG8O4Freq30.show   -go=ds >squareG8O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square16.order4  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG16O4Freq30.show  -go=ds >squareG16O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square32.order4  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG32O4Freq30.show  -go=ds >squareG32O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square64.order4  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG64O4Freq30.show  -go=ds >squareG64O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square128.order4 -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG128O4Freq30.show -go=ds >squareG128O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square256.order4 -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG256O4Freq30.show -go=ds >squareG256O4Freq30.out
+
+diskPollutionO2:
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square8.order2   -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG8O2Freq30.show   -go=ds >squareG8O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square16.order2  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG16O2Freq30.show  -go=ds >squareG16O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square32.order2  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG32O2Freq30.show  -go=ds >squareG32O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square64.order2  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG64O2req30.show   -go=ds >squareG64O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square128.order2 -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG128O2Freq30.show -go=ds >squareG128O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=square256.order2 -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=squareG256O2Freq30.show -go=ds >squareG256O2Freq30.out
+
+
+
+# DISK POLLUTION ERRORS:
+
+diskPollutionO4:
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice2.order4  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG2O4Freq30.show  -go=ds >diskG2O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice4.order4  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG4O4Freq30.show  -go=ds >diskG4O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice8.order4  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG8O4Freq30.show  -go=ds >diskG8O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice16.order4 -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG16O4Freq30.show -go=ds >diskG16O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice32.order4 -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG32O4Freq30.show -go=ds >diskG32O4Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice64.order4 -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG64O4Freq30.show -go=ds >diskG64O4Freq30.out
+
+diskPollutionO2:
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice4.order2   -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG4O2Freq30.show   -go=ds >diskG4O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice8.order2   -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG8O2Freq30.show   -go=ds >diskG8O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice16.order2  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG16O2Freq30.show  -go=ds >diskG16O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice32.order2  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG32O2Freq30.show  -go=ds >diskG32O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice64.order2  -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG64O2Freq30.show  -go=ds >diskG64O2Freq30.out
+	$(cgwh) -noplot trigHelmholtz.cmd -g=sice128.order2 -nf=1 -freq=30 -kx=3.4 -ky=3.4 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -show=diskG128O2Freq30.show -go=ds >diskG128O2Freq30.out
+
+
 # Confirmation of convergence analysis:
 # Np=4 
 # cgwh -noplot trigHelmholtz.cmd -g=square64.order4 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -omega=5.1 -kx=1.25 -ky=1.25 -ts=explicit -dtMax=.1 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -tp=1000 -maxIterations=100 -matlab=square64Freq3Np4 -go=dfk > square64Freq3Np4.out

@@ -21,11 +21,13 @@ $upwind=0; # new way
 $tp=.5; $imode=0; $adjustOmega=0; $show="trigHelmholtz.show"; 
 $solver="fixedPoint";  $kx=1; $ky=1; $kz=1; $maxIterations=100; $orderInTime=-1;  # -1 = use default
 $cfl=.9; $bc="d"; 
+# parameter for the modulated Gaussian: beta, [x0,y0,z0], k0 
+$k0=1; # parameter for the modulated Gaussian, k0<0 : k0 -> -k0/(2*pi)
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $deflateWaveHoltz=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; 
 $solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
-GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"beta=f"=>\$beta,"numPeriods=i"=>\$numPeriods,\
+GetOptions( "omega=f"=>\$omega,"x0=f"=>\$x0,"y0=f"=>\$y0,"z0=f"=>\$z0,"k0=f"=>\$k0,"beta=f"=>\$beta,"numPeriods=i"=>\$numPeriods,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,\
             "solver=s"=>\$solver,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,"adjustOmega=i"=>\$adjustOmega,"known=s"=>\$known,\
             "matlab=s"=>\$matlab,"maxIterations=i"=>\$maxIterations,"upwind=i"=>\$upwind,"bcApproach=s"=>\$bcApproach,\
@@ -156,9 +158,15 @@ solve Helmholtz 1
 adjust omega $adjustOmega
 #   --- eigenmode-like solution 
 user defined known solution...
+  $pi = atan2(1.,1.)*4.;
+  if( $k0 < 0 ){ $k0=-$k0/(2.*$pi); }
+  if( $kx < 0 ){ $kx=-$kx/(2.*$pi); }
+  if( $ky < 0 ){ $ky=-$ky/(2.*$pi); }
+  if( $kz < 0 ){ $kz=-$kz/(2.*$pi); }
   if( $known eq "boxHelmholtz"){ $cmd="box Helmholtz\n $omega $kx $ky $kz"; }
   if( $known eq "computedHelmholtz"){ $cmd="computed Helmholtz\n $omega $kx $ky $kz"; }
   if( $known eq "polyPeriodic"){ $cmd="poly periodic\n $omega $degreeInSpaceForPolyPeriodic"; }
+  if( $known eq "modulatedGaussian"){ $cmd="offset: $x0 $y0 $z0\n beta: $beta\n k0: $k0\n modulated Gaussian"; }
   $cmd
   # box helmholtz
   # $omega $kx $ky $kz
@@ -166,10 +174,9 @@ done
 $cmd="#"; 
 if( ($known eq "boxHelmholtz") || ($known eq "computedHelmholtz") ){ $cmd="helmholtzForcing\n user defined forcing...\n box Helmholtz\n exit"; }
 if( $known eq "polyPeriodic" ){ $cmd="helmholtzForcing\n user defined forcing...\n poly periodic\n exit"; }
+if( $known eq "modulatedGaussian" ){ $cmd="helmholtzForcing\n user defined forcing...\n modulated Gaussian\n exit"; }
 $cmd
-# user defined forcing...
-#   box Helmholtz
-# exit
+# 
 exit
 # --- end cgWave ---
 show file $show
@@ -181,7 +188,10 @@ contour
 exit
 $cmd="#"; 
 if( $go eq "go" ){ $cmd="compute with krylov\nexit"; }
+if( $go eq "og" ){ $cmd="open graphics"; }
 if( $go eq "direct" ){ $cmd="solve Helmholtz directly\n exit"; }
+if( $go eq "d" ){ $cmd="solve Helmholtz directly\n exit"; }
+if( $go eq "ds" ){ $cmd="solve Helmholtz directly\n save show file\n exit"; }
 if( $go eq "krylov" ){ $cmd="compute with krylov\n exit"; }
 if( $go eq "dk" ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\nexit"; }
 if( $go eq "df" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\nexit"; }

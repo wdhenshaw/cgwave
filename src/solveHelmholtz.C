@@ -276,6 +276,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
     bool helmholtzFromDirectSolverWasComputed=false;
     bool waveHoltzSolutionWasComputed=false;
+    bool errorComparedToTrueSolutionHasBeenComputed=false;
     Real cpuSolveHelmholtz=-1.;
 
     Ogshow show;  // show file for saving solutions
@@ -542,9 +543,13 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                     getIndex(mg.dimension(),I1,I2,I3);
                     OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
                     OV_GET_SERIAL_ARRAY(Real,uh[grid],uhLocal);
-
-                    uhLocal(I1,I2,I3,0) =          vLocal(I1,I2,I3,0);
-                    uhLocal(I1,I2,I3,1) = viFactor*vLocal(I1,I2,I3,1);
+                    int includeParallelGhost=1; 
+                    bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
+                    if( ok )
+                    {
+                        uhLocal(I1,I2,I3,0) =          vLocal(I1,I2,I3,0);
+                        uhLocal(I1,I2,I3,1) = viFactor*vLocal(I1,I2,I3,1);
+                    }
                 }        
             }
 
@@ -660,8 +665,9 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             const int & useFilterWeights      = cgWave.dbase.get<int>("useFilterWeights");
             const int & filterD0t             = cgWave.dbase.get<int>("filterD0t");
             const int & deflateForcing        = cgWave.dbase.get<int>("deflateForcing");
-  
-            printF(" filterTimeDerivative=%d, useFilterWeights=%d, viFactor=%g, filterD0t=%d\n",filterTimeDerivative,useFilterWeights,viFactor,filterD0t);
+            const int & useOptFilter          = cgWave.dbase.get<int>("useOptFilter");
+            printF(" filterTimeDerivative=%d, useFilterWeights=%d, viFactor=%g, filterD0t=%d, useOptFilter=%d\n",
+                      filterTimeDerivative,useFilterWeights,viFactor,filterD0t,useOptFilter);
 
             printF("    implicit solver : %s\n =====\n",(const char*)implicitSolverName);
             printF(" deflateWaveHoltz=%d, deflateForcing=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,deflateForcing,numToDeflate,
@@ -825,7 +831,9 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                             OV_GET_SERIAL_ARRAY(Real,uh[grid],uhLocal);
                             OV_GET_SERIAL_ARRAY(Real,err[grid],errLocal);
                             OV_GET_SERIAL_ARRAY(Real,uHelmholtz[grid],uHelmholtzLocal);
-                            errLocal(I1,I2,I3,R2) = uhLocal(I1,I2,I3,R2) - uHelmholtzLocal(I1,I2,I3,R2);
+                            bool ok=ParallelUtility::getLocalArrayBounds(uh[grid],uhLocal,I1,I2,I3);
+                            if( ok )
+                                errLocal(I1,I2,I3,R2) = uhLocal(I1,I2,I3,R2) - uHelmholtzLocal(I1,I2,I3,R2);
                         }
                         if( useSuperGrid && adjustErrorsForSuperGrid )
                         {
@@ -1008,23 +1016,18 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             uHelmholtz = q;
             helmholtzFromDirectSolverWasComputed=true;
 
-            if( true && numberOfFrequencies==1 )
-            {
-        // bool useAdjustedOmega=false;
-        // Real maxRes = cgWaveHoltz.residual( useAdjustedOmega );
-        // printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e, cpu=%9.2e (direct solution of Helmholtz).\n",
-        //        omega,maxRes,cpu);
-    
-                int useAdjustedOmega=0; // do not adjust for omega
-        // int useAdjustedOmega=2; // do not adjust for omega
-
-        // Fill in the forcing and boundary conditions: 
-        // cgWave.getHelmholtzForcing( fHelmholtz );
-                printF("solveHelmholtz: call residual to check the solution from the direct Helmholtz solver...\n");
-                RealArray maxResArray;
-                Real maxRes = cgWaveHoltz.residual( uHelmholtz, fHelmholtz, maxResArray, useAdjustedOmega );
-                printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e (direct Helmholtz solution)\n",omega,maxRes);
-            }
+      // --- RESIDUAL IS NOW CALLED IN THE DHS SOLVER ---
+      // if( false && numberOfFrequencies==1 )
+      // {
+      //   int useAdjustedOmega=0; // do not adjust for omega
+  
+      //   // Fill in the forcing and boundary conditions: 
+      //   // cgWave.getHelmholtzForcing( fHelmholtz );
+      //   printF("solveHelmholtz: call residual to check the solution from the direct Helmholtz solver...\n");
+      //   RealArray maxResArray;
+      //   Real maxRes = cgWaveHoltz.residual( uHelmholtz, fHelmholtz, maxResArray, useAdjustedOmega );
+      //   printF("CgWaveHoltz: omega=%9.3e, max-res=%9.3e (direct Helmholtz solution)\n",omega,maxRes);
+      // }
 
             reComputeErrors=true;
             replot=true;
@@ -1196,11 +1199,12 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             if( !filterTimeDerivative )
                 numShowComponents += numberOfFrequencies;       // save forcings
 
-            if( helmholtzFromDirectSolverWasComputed ) 
+            if( waveHoltzSolutionWasComputed && helmholtzFromDirectSolverWasComputed ) 
                     numShowComponents += numberOfComponents;     // save solution from direct Helmholtz 
 
             int saveErrors=0;
-            if( computeErrors || helmholtzFromDirectSolverWasComputed ) 
+            if( (computeErrors || helmholtzFromDirectSolverWasComputed || errorComparedToTrueSolutionHasBeenComputed )  
+                    && computeErrors ) 
             {
                 saveErrors=true;
                 numShowComponents += numberOfComponents;       // save errors, either true errors or difference with direct Helmholtz solution 
@@ -1211,11 +1215,12 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                 numShowComponents += numberOfComponents;       // save total field
             }
 
-            if( !waveHoltzSolutionWasComputed && helmholtzFromDirectSolverWasComputed )
-            {
-        // save save direct solve and forcing
-                numShowComponents = 2*numberOfComponents; 
-            }
+      // turn this off: Aug 21, 2025
+      // if( !waveHoltzSolutionWasComputed && helmholtzFromDirectSolverWasComputed )
+      // {
+      //   // save direct solve and forcing
+      //   numShowComponents = 2*numberOfComponents; 
+      // }
 
             realCompositeGridFunction q(cg,all,all,all,numShowComponents);
             q.setName("q");
@@ -1330,25 +1335,30 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
             }
 
-            if( waveHoltzSolutionWasComputed && ( saveErrors || helmholtzFromDirectSolverWasComputed )  )
+            if( ( waveHoltzSolutionWasComputed || errorComparedToTrueSolutionHasBeenComputed ) && 
+                    ( saveErrors || helmholtzFromDirectSolverWasComputed )  && computeErrors )
             { 
                 realCompositeGridFunction & error = cgWave.dbase.get<realCompositeGridFunction>("error");
 
-                if( false && !saveErrors && helmholtzFromDirectSolverWasComputed )
-                {
-          // ** IS THIS NEEDED OR IS THE ERROR COMPUTED ALREADY ???   +++ TURN OFF FOR NOW : July 16, 2023
+        // if( false && !saveErrors && helmholtzFromDirectSolverWasComputed )
+        // {
+        //   // ** IS THIS NEEDED OR IS THE ERROR COMPUTED ALREADY ???   +++ TURN OFF FOR NOW : July 16, 2023
 
-          // compute difference between WaveHoltz and Direct Helmholtz solve
-                    if( !filterTimeDerivative )
-                    {
-                        realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
-                        error = uHelmholtz - v;
-                    }
-                    else
-                    {
-                        error = uHelmholtz - uh;
-                    }
-                }
+        //   // compute difference between WaveHoltz and Direct Helmholtz solve
+        //   if( !filterTimeDerivative )
+        //   {
+        //     realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
+        //     error = uHelmholtz - v;
+        //   }
+        //   else
+        //   {
+        //     error = uHelmholtz - uh;
+        //   }
+        // }
+
+                if( false )
+                    printF("\n &&&& Saving errors in the show file ishow=%d numberOfComponents=%d numShowComponents=%d errorComparedToTrueSolutionHasBeenComputed=%d &&&& \n\n",
+                        ishow,numberOfComponents,numShowComponents, (int)errorComparedToTrueSolutionHasBeenComputed);
 
                 for( int freq=0; freq<numberOfComponents; freq++ )
                 {        
@@ -1763,9 +1773,13 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                 realCompositeGridFunction & v = cgWave.dbase.get<realCompositeGridFunction>("v");
                 Real t=0; // compute errors with t=0 in cos(omega*t)
 
+        // Errors are stored in
+        //  cgWave.dbase.get<realCompositeGridFunction>("error");
                 Real maxErr = cgWave.getErrors( v, t );
 
                 printF("cgwh: max-err =%8.2e (between WaveHoltz and known solution, all frequencies)\n",maxErr);
+
+                errorComparedToTrueSolutionHasBeenComputed=true;
 
         // if( saveCheckFile )
         // {

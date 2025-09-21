@@ -21,6 +21,8 @@
 
 static char help[] = "Solve for eigemodes usig SLEPc\n";
 
+static bool useMatrixUtilities=true; // true = use new matrix utilities (needed for parallel)
+
 
 static int iteration=0;
 
@@ -72,7 +74,6 @@ static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver
 //            
 //  NOTE: This macro appears in solveSLEPc.bC and eigenModes.bC 
 // --------------------------------------------------------------------------------------
-
 
 
 // EPSMonitorSet(EPS eps,PetscErrorCode (*monitor)(EPS eps,PetscInt its,PetscInt nconv,PetscScalar *eigr,PetscScalar *eigi,PetscReal *errest,PetscInt nest,void *mctx),void *mctx,PetscErrorCode (*monitordestroy)(void**))
@@ -150,78 +151,89 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
     int iab[2];
 
-    int i=0;
-    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    
+    if( useMatrixUtilities )
     {
-        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        cgWave.vectorToGridFunction( xl, v, iStart,iEnd );
+    }
+    else
+    {
+
+        int i=0;
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
         {
-            MappedGrid & mg = cg[grid];
-            const IntegerArray & gid = mg.gridIndexRange();
-
-            OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-
-
-      // // // getIndex(cg[grid].dimension(),I1,I2,I3);
-      // int extra=-1; // *********************************************** FIX ME
-      // getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra);
-
-                Iv[2]=Range(0,0);
-                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                {
-                    for( int side=0; side<=1; side++ )
-                    {
-                        int is = 1-2*side;
-                        iab[side]=gid(side,axis);
-                        const int bc = mg.boundaryCondition(side,axis);
-                        if( bc==CgWave::dirichlet )
-                        {
-                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                        }
-                        else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
-                        {
-              // include boundary
-                        }
-                        else if( bc>0 )
-                        {
-                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                            OV_ABORT("error");
-                        }
-                        else if( bc<0 )
-                        {
-              // periodic -- include left end
-                            if( side==1 )
-                                iab[side] += is; 
-                        }
-                        else
-                        {
-              // interpolation boundary : include end 
-                        }
-                    }
-                    Iv[axis] = Range(iab[0],iab[1]);
-                }
-
-            OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
-            FOR_3D(i1,i2,i3,I1,I2,I3)
+            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
             {
-                if( maskLocal(i1,i2,i3) > 0 )
+                MappedGrid & mg = cg[grid];
+                const IntegerArray & gid = mg.gridIndexRange();
+
+                OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+
+        // // // getIndex(cg[grid].dimension(),I1,I2,I3);
+        // int extra=-1; // *********************************************** FIX ME
+        // getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra);
+
+                    Iv[2]=Range(0,0);
+                    for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
+                    {
+                        for( int side=0; side<=1; side++ )
+                        {
+                            int is = 1-2*side;
+                            iab[side]=gid(side,axis);
+                            const int bc = mg.boundaryCondition(side,axis);
+                            if( bc==CgWave::dirichlet )
+                            {
+                                  iab[side] += is;  // Dirichlet BC -- ignore the boundary
+                            }
+                            else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
+                            {
+                // include boundary
+                            }
+                            else if( bc>0 )
+                            {
+                                printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
+                                OV_ABORT("error");
+                            }
+                            else if( bc<0 )
+                            {
+                // periodic -- include left end
+                                if( side==1 )
+                                    iab[side] += is; 
+                            }
+                            else
+                            {
+                // interpolation boundary : include end 
+                            }
+                        }
+                        Iv[axis] = Range(iab[0],iab[1]);
+                    }
+
+                OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+                FOR_3D(i1,i2,i3,I1,I2,I3)
                 {
-                    assert( i<iEnd );
+                    if( maskLocal(i1,i2,i3) > 0 )
+                    {
+                        assert( i<iEnd );
 
-                    vLocal(i1,i2,i3,freq)=xl[i]; // new way  Jan 5, 2022
+                        vLocal(i1,i2,i3,freq)=xl[i]; // new way  Jan 5, 2022
 
-                    i++;
+                        i++;
+                    }
                 }
             }
         }
+        assert( i==iEnd );
     }
-    assert( i==iEnd );
-
 
   // *** APPLY BOUNDARY CONDITIONS to v  **************** IS THIS NEEDED ?? Doesn't advance do this ???
     Real t=0.; // should not matter for eigenvalue problem
     cgWave.applyEigenFunctionBoundaryConditions( v );
 
-        
+  // Is this needed? 
+  // for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+  //   v[grid].updateGhostBoundaries();  
+
     if( false && iteration==1 )
     {
         ::display(v[0],"v (iteration 1)","%5.2f ");
@@ -255,68 +267,75 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
   // --- gridFunctionToVector ---
   // set y = v 
-    i=0;
-    for( int freq=0; freq<numberOfFrequencies; freq++ )
-    {       
-        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-        {
-            MappedGrid & mg = cg[grid];
-            const IntegerArray & gid = mg.gridIndexRange();      
-
-            OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-            OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
-
-      // int extra=-1; // *********************************************** FIX ME
-      // getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra);
-
-                Iv[2]=Range(0,0);
-                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                {
-                    for( int side=0; side<=1; side++ )
-                    {
-                        int is = 1-2*side;
-                        iab[side]=gid(side,axis);
-                        const int bc = mg.boundaryCondition(side,axis);
-                        if( bc==CgWave::dirichlet )
-                        {
-                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                        }
-                        else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
-                        {
-              // include boundary
-                        }
-                        else if( bc>0 )
-                        {
-                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                            OV_ABORT("error");
-                        }
-                        else if( bc<0 )
-                        {
-              // periodic -- include left end
-                            if( side==1 )
-                                iab[side] += is; 
-                        }
-                        else
-                        {
-              // interpolation boundary : include end 
-                        }
-                    }
-                    Iv[axis] = Range(iab[0],iab[1]);
-                }
-
-            FOR_3D(i1,i2,i3,I1,I2,I3)
+    if( useMatrixUtilities )
+    {
+        cgWave.gridFunctionToVector( vOld,yl, iStart,iEnd );
+    }
+    else
+    {  
+        int i=0;
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
+        {       
+            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
             {
-                if( maskLocal(i1,i2,i3) > 0 )
-                {
-                    assert( i<iEnd );
-                    yl[i]= vOldLocal(i1,i2,i3,freq);    // y = A*x 
+                MappedGrid & mg = cg[grid];
+                const IntegerArray & gid = mg.gridIndexRange();      
 
-                    i++;
+                OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+                OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
+
+        // int extra=-1; // *********************************************** FIX ME
+        // getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra);
+
+                    Iv[2]=Range(0,0);
+                    for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
+                    {
+                        for( int side=0; side<=1; side++ )
+                        {
+                            int is = 1-2*side;
+                            iab[side]=gid(side,axis);
+                            const int bc = mg.boundaryCondition(side,axis);
+                            if( bc==CgWave::dirichlet )
+                            {
+                                  iab[side] += is;  // Dirichlet BC -- ignore the boundary
+                            }
+                            else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
+                            {
+                // include boundary
+                            }
+                            else if( bc>0 )
+                            {
+                                printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
+                                OV_ABORT("error");
+                            }
+                            else if( bc<0 )
+                            {
+                // periodic -- include left end
+                                if( side==1 )
+                                    iab[side] += is; 
+                            }
+                            else
+                            {
+                // interpolation boundary : include end 
+                            }
+                        }
+                        Iv[axis] = Range(iab[0],iab[1]);
+                    }
+
+                FOR_3D(i1,i2,i3,I1,I2,I3)
+                {
+                    if( maskLocal(i1,i2,i3) > 0 )
+                    {
+                        assert( i<iEnd );
+                        yl[i]= vOldLocal(i1,i2,i3,freq);    // y = A*x 
+
+                        i++;
+                    }
                 }
             }
         }
+        assert( i==iEnd );
     }
-    assert( i==iEnd );
 
 
     iteration++;
@@ -467,70 +486,90 @@ solveSLEPc(int argc,char **args)
     int iab[2];
 
     int numEquations=0;
-    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    int numEquationsLocal=0;  // number of equations local to this processor 
+
+    if( useMatrixUtilities )    
     {
-        MappedGrid & mg = cg[grid];
-        const IntegerArray & gid = mg.gridIndexRange();
+        bool checkMask=true; 
+        cgWave.initializeGlobalIndexing( checkMask );
+        const int & totalActive    = cgWave.dbase.get<int>("totalActive");
+        const int & numActiveLocal = cgWave.dbase.get<int>("numActiveLocal");
 
-        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+        numEquations = totalActive;
+        numEquations *= numCompWaveHoltz;
 
-    // // getIndex(cg[grid].dimension(),I1,I2,I3);
-    // int extra=-1;  // ******** DO THIS FOR NOW --- *********** FIX ME : not true for Neumann BC
-    // getIndex(mg.gridIndexRange(),I1,I2,I3,extra);
+        numEquationsLocal = numActiveLocal*numCompWaveHoltz;
 
-    // printF("OLD: I1=[%d,%d] I2=[%d,%d] I3=[%d,%d]\n",
-    //       Iv[0].getBase(),Iv[0].getBound(),
-    //       Iv[1].getBase(),Iv[1].getBound(),
-    //       Iv[2].getBase(),Iv[2].getBound());
+        numberOfActivePoints = totalActive;
 
-            Iv[2]=Range(0,0);
-            for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-            {
-                for( int side=0; side<=1; side++ )
-                {
-                    int is = 1-2*side;
-                    iab[side]=gid(side,axis);
-                    const int bc = mg.boundaryCondition(side,axis);
-                    if( bc==CgWave::dirichlet )
-                    {
-                          iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                    }
-                    else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
-                    {
-            // include boundary
-                    }
-                    else if( bc>0 )
-                    {
-                        printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                        OV_ABORT("error");
-                    }
-                    else if( bc<0 )
-                    {
-            // periodic -- include left end
-                        if( side==1 )
-                            iab[side] += is; 
-                    }
-                    else
-                    {
-            // interpolation boundary : include end 
-                    }
-                }
-                Iv[axis] = Range(iab[0],iab[1]);
-            }
-        printF("getActivePointIndex: I1=[%d,%d] I2=[%d,%d] I3=[%d,%d]\n",
-                    Iv[0].getBase(),Iv[0].getBound(),
-                    Iv[1].getBase(),Iv[1].getBound(),
-                    Iv[2].getBase(),Iv[2].getBound());    
-
-        FOR_3D(i1,i2,i3,I1,I2,I3)
+    }
+    else
+    {
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
-            if( maskLocal(i1,i2,i3) > 0 )
+            MappedGrid & mg = cg[grid];
+            const IntegerArray & gid = mg.gridIndexRange();
+
+            OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+      // // getIndex(cg[grid].dimension(),I1,I2,I3);
+      // int extra=-1;  // ******** DO THIS FOR NOW --- *********** FIX ME : not true for Neumann BC
+      // getIndex(mg.gridIndexRange(),I1,I2,I3,extra);
+
+      // printF("OLD: I1=[%d,%d] I2=[%d,%d] I3=[%d,%d]\n",
+      //       Iv[0].getBase(),Iv[0].getBound(),
+      //       Iv[1].getBase(),Iv[1].getBound(),
+      //       Iv[2].getBase(),Iv[2].getBound());
+
+                Iv[2]=Range(0,0);
+                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
+                {
+                    for( int side=0; side<=1; side++ )
+                    {
+                        int is = 1-2*side;
+                        iab[side]=gid(side,axis);
+                        const int bc = mg.boundaryCondition(side,axis);
+                        if( bc==CgWave::dirichlet )
+                        {
+                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
+                        }
+                        else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
+                        {
+              // include boundary
+                        }
+                        else if( bc>0 )
+                        {
+                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
+                            OV_ABORT("error");
+                        }
+                        else if( bc<0 )
+                        {
+              // periodic -- include left end
+                            if( side==1 )
+                                iab[side] += is; 
+                        }
+                        else
+                        {
+              // interpolation boundary : include end 
+                        }
+                    }
+                    Iv[axis] = Range(iab[0],iab[1]);
+                }
+            printF("getActivePointIndex: I1=[%d,%d] I2=[%d,%d] I3=[%d,%d]\n",
+                        Iv[0].getBase(),Iv[0].getBound(),
+                        Iv[1].getBase(),Iv[1].getBound(),
+                        Iv[2].getBase(),Iv[2].getBound());    
+
+            FOR_3D(i1,i2,i3,I1,I2,I3)
             {
-                numEquations++;
+                if( maskLocal(i1,i2,i3) > 0 )
+                {
+                    numEquations++;
+                }
             }
         }
+        numEquations *= numberOfFrequencies;
     }
-    numEquations *= numberOfFrequencies;
 
     printF("solveSLEPC:Make a Matrix Free Shell: numEquations=%d\n",numEquations);
   // OV_ABORT("stop here for now");
@@ -539,7 +578,8 @@ solveSLEPc(int argc,char **args)
     Mat Amf;
     Mat *mycontext=&Amf;   // passed to waveHoltzMatrixVectorMultiply 
 
-    PetscCall(MatCreateShell(PETSC_COMM_WORLD, numEquations, numEquations, PETSC_DECIDE,  PETSC_DECIDE, mycontext, &Amf)); // destroy me 
+    PetscCall(MatCreateShell(PETSC_COMM_WORLD, numEquationsLocal, numEquationsLocal, numEquations, numEquations, mycontext, &Amf)); // destroy me 
+
     PetscCall(MatShellSetOperation(Amf, MATOP_MULT, (void(*)(void))eigenWaveMatrixVectorMultiply));
 
         /* 
@@ -631,8 +671,12 @@ solveSLEPc(int argc,char **args)
     {
     // --- plain power method ---
         PetscCall(EPSSetType(eps,EPSPOWER));
-
     } 
+    else if( eigenSolver==CgWave::subspaceIterationEigenSolver )
+    {
+    // --- subspace iteration (block power) ---
+        PetscCall(EPSSetType(eps,EPSSUBSPACE));
+    }   
     else if( eigenSolver==CgWave::inverseIterationEigenSolver )
     {
     // -- inverse iteration -- but need to us an iterative solver to invert the shifted matrix (matric free)
@@ -681,7 +725,7 @@ solveSLEPc(int argc,char **args)
 
   // PetscCall(EPSSetWhichEigenpairs(eps,EPS_LARGEST_MAGNITUDE));
 
-    PetscInt mpd = PETSC_DEFAULT;
+    PetscInt mpd = PETSC_DEFAULT; // max size of the sub-space
     int numEigenValues = numEigsToCompute;
     int & numArnoldiVectors = cgWave.dbase.get<int>("numArnoldiVectors");
   // PetscInt ncv = PETSC_DEFAULT; // numEigenValues*2+1; // size of column space 
@@ -703,7 +747,7 @@ solveSLEPc(int argc,char **args)
   // const int & maximumNumberOfIterations = cgWaveHoltz.dbase.get<int>("maximumNumberOfIterations");
 
     PetscInt maxIt = maximumNumberOfIterations; // 500;  
-    printF("\n !!!!!!!!!!!!!!!   solveSLEPC: set maxIt = %d !!!!!!!!!!!!!!!!\n",maxIt);
+    printF("\n !!!!!!!!!!!!!!!   solveSLEPC: set maxIt = %d numEigenValues=%d, nc=%d!!!!!!!!!!!!!!!!\n",maxIt,numEigenValues,ncv);
 
   // Arnoldi iterations may be scaled by the number of request eigenvalues  
   //  nev=3 : maxit=50 --> 349 matVecs
@@ -752,69 +796,78 @@ solveSLEPc(int argc,char **args)
 
   
         const int ii=0; 
-        PetscCall(MatGetVecs(Amf,NULL,&vInit[ii]));  // create a Petsc vec    // *** DELETE ME *******************
+    // PetscCall(MatGetVecs(Amf,NULL,&vInit[ii]));  // create a Petsc vec    // *** DELETE ME *******************
+    // For PETSc 3.6 and after use:
+        PetscCall(MatCreateVecs(Amf,NULL,&vInit[ii]));  // create a Petsc vec    // *** DELETE ME *******************
 
         PetscScalar *vil;
         PetscCall(VecGetArray( vInit[ii],&vil ));  // get the local array from Petsc
         int iStart,iEnd;
         PetscCall(VecGetOwnershipRange(vInit[ii],&iStart,&iEnd));
 
-        int count=0; // counts points 
-        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        if( useMatrixUtilities )
         {
-            MappedGrid & mg = cg[grid];
-            const IntegerArray & gid = mg.gridIndexRange();      
-
-            OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-            OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
-
-                Iv[2]=Range(0,0);
-                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                {
-                    for( int side=0; side<=1; side++ )
-                    {
-                        int is = 1-2*side;
-                        iab[side]=gid(side,axis);
-                        const int bc = mg.boundaryCondition(side,axis);
-                        if( bc==CgWave::dirichlet )
-                        {
-                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                        }
-                        else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
-                        {
-              // include boundary
-                        }
-                        else if( bc>0 )
-                        {
-                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                            OV_ABORT("error");
-                        }
-                        else if( bc<0 )
-                        {
-              // periodic -- include left end
-                            if( side==1 )
-                                iab[side] += is; 
-                        }
-                        else
-                        {
-              // interpolation boundary : include end 
-                        }
-                    }
-                    Iv[axis] = Range(iab[0],iab[1]);
-                }
-
-            FOR_3D(i1,i2,i3,I1,I2,I3)
+            cgWave.gridFunctionToVector( v,vil, iStart,iEnd );
+        }
+        else    
+        {
+            int count=0; // counts points 
+            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
             {
-                if( maskLocal(i1,i2,i3) > 0 )
-                {
-                    assert( count<iEnd );
-                    vil[count]= vLocal(i1,i2,i3,0);   
+                MappedGrid & mg = cg[grid];
+                const IntegerArray & gid = mg.gridIndexRange();      
 
-                    count++;
+                OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+                OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+
+                    Iv[2]=Range(0,0);
+                    for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
+                    {
+                        for( int side=0; side<=1; side++ )
+                        {
+                            int is = 1-2*side;
+                            iab[side]=gid(side,axis);
+                            const int bc = mg.boundaryCondition(side,axis);
+                            if( bc==CgWave::dirichlet )
+                            {
+                                  iab[side] += is;  // Dirichlet BC -- ignore the boundary
+                            }
+                            else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
+                            {
+                // include boundary
+                            }
+                            else if( bc>0 )
+                            {
+                                printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
+                                OV_ABORT("error");
+                            }
+                            else if( bc<0 )
+                            {
+                // periodic -- include left end
+                                if( side==1 )
+                                    iab[side] += is; 
+                            }
+                            else
+                            {
+                // interpolation boundary : include end 
+                            }
+                        }
+                        Iv[axis] = Range(iab[0],iab[1]);
+                    }
+
+                FOR_3D(i1,i2,i3,I1,I2,I3)
+                {
+                    if( maskLocal(i1,i2,i3) > 0 )
+                    {
+                        assert( count<iEnd );
+                        vil[count]= vLocal(i1,i2,i3,0);   
+
+                        count++;
+                    }
                 }
             }
+            assert( count==iEnd );
         }
-        assert( count==iEnd );
 
     // ------- Give SLEPc initial conditions --------------
         int numInitialConditions=1; 
@@ -864,9 +917,11 @@ solveSLEPc(int argc,char **args)
 
   // Create PETSc vectors that have the same distribution as Amf
     Vec  xr,xi;
-    PetscCall(MatGetVecs(Amf,NULL,&xr));                  // destroy me 
-    PetscCall(MatGetVecs(Amf,NULL,&xi));                  // destroy me 
-
+  // PetscCall(MatGetVecs(Amf,NULL,&xr));                  // destroy me 
+  // PetscCall(MatGetVecs(Amf,NULL,&xi));                  // destroy me 
+  // For PETSc 3.6 and after use:  
+    PetscCall(MatCreateVecs(Amf,NULL,&xr));                  // destroy me 
+    PetscCall(MatCreateVecs(Amf,NULL,&xi));                  // destroy me 
   // PetscCall(EPSPrintSolution(eps,NULL));
     PetscScalar kr, ki;
   // for( int i=0; i<nconv; i++ )
@@ -943,80 +998,87 @@ solveSLEPc(int argc,char **args)
                 const int numberOfComponents=1;
         // *new* way (from PETScSolver.bC)
 
-                int ig=0; // *** DO THIS FOR NOW **********************
-                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-                {  
-                    MappedGrid & mg = cg[grid];
-                    const IntegerArray & gid = mg.gridIndexRange();
+                if( useMatrixUtilities )
+                {
+                    cgWave.vectorToGridFunction( xrv, vOld, Istart,Iend );
+                }
+                else        
+                {
+                    int ig=0; // *** DO THIS FOR NOW **********************
+                    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                    {  
+                        MappedGrid & mg = cg[grid];
+                        const IntegerArray & gid = mg.gridIndexRange();
 
-          // realArray & ug= ucg[grid];
-          // realSerialArray uLocal; getLocalArrayWithGhostBoundaries(ug,uLocal);
-          // realSerialArray vOldLocal; getLocalArrayWithGhostBoundaries(vOld,vOldLocal);
-                    OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
-                    OV_GET_SERIAL_ARRAY(real,vOld[grid],vOldLocal);
+            // realArray & ug= ucg[grid];
+            // realSerialArray uLocal; getLocalArrayWithGhostBoundaries(ug,uLocal);
+            // realSerialArray vOldLocal; getLocalArrayWithGhostBoundaries(vOld,vOldLocal);
+                        OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+                        OV_GET_SERIAL_ARRAY(real,vOld[grid],vOldLocal);
 
 
-          // int extra=-1;  // ******** DO THIS FOR NOW --- *********** FIX ME **********
-          // getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra);   
+            // int extra=-1;  // ******** DO THIS FOR NOW --- *********** FIX ME **********
+            // getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra);   
 
-                        Iv[2]=Range(0,0);
-                        for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                        {
-                            for( int side=0; side<=1; side++ )
+                            Iv[2]=Range(0,0);
+                            for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
                             {
-                                int is = 1-2*side;
-                                iab[side]=gid(side,axis);
-                                const int bc = mg.boundaryCondition(side,axis);
-                                if( bc==CgWave::dirichlet )
+                                for( int side=0; side<=1; side++ )
                                 {
-                                      iab[side] += is;  // Dirichlet BC -- ignore the boundary
+                                    int is = 1-2*side;
+                                    iab[side]=gid(side,axis);
+                                    const int bc = mg.boundaryCondition(side,axis);
+                                    if( bc==CgWave::dirichlet )
+                                    {
+                                          iab[side] += is;  // Dirichlet BC -- ignore the boundary
+                                    }
+                                    else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
+                                    {
+                    // include boundary
+                                    }
+                                    else if( bc>0 )
+                                    {
+                                        printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
+                                        OV_ABORT("error");
+                                    }
+                                    else if( bc<0 )
+                                    {
+                    // periodic -- include left end
+                                        if( side==1 )
+                                            iab[side] += is; 
+                                    }
+                                    else
+                                    {
+                    // interpolation boundary : include end 
+                                    }
                                 }
-                                else if( bc==CgWave::neumann || bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
+                                Iv[axis] = Range(iab[0],iab[1]);
+                            }
+
+            // int ig=getGlobalIndex( n, iv, grid, myid );  // get the global index for the first point
+
+                        FOR_3D(i1,i2,i3,I1,I2,I3)
+                        {
+
+              // ******** NOTE we can probably just increment ig by 1 if we start correctly
+              // int ig=getGlobalIndex( iv, grid, myid );  // get the global index
+                            if( maskLocal(i1,i2,i3) > 0 )
+                            {
+                                if( ig>=Istart && ig<=Iend )
                                 {
-                  // include boundary
-                                }
-                                else if( bc>0 )
-                                {
-                                    printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                                    OV_ABORT("error");
-                                }
-                                else if( bc<0 )
-                                {
-                  // periodic -- include left end
-                                    if( side==1 )
-                                        iab[side] += is; 
+                                    if( false ) printf("SP:: myid=%i: i1,i2=%i,%i, ig=%i xrv[ig]=%6.4f\n",myid,i1,i2,ig,xrv[ig-Istart]);
+                                    vOldLocal(i1,i2,i3)=xrv[ig-Istart];
                                 }
                                 else
                                 {
-                  // interpolation boundary : include end 
+                                    int p=myid;
+                                    printf("SP::ERROR: myid=%i, i1,i2=%i,%i, ig=%i Istart,Iend=[%i,%i]\n", myid,i1,i2,ig,Istart,Iend);
                                 }
+                                ig++;
                             }
-                            Iv[axis] = Range(iab[0],iab[1]);
                         }
-
-          // int ig=getGlobalIndex( n, iv, grid, myid );  // get the global index for the first point
-
-                    FOR_3D(i1,i2,i3,I1,I2,I3)
-                    {
-
-            // ******** NOTE we can probably just increment ig by 1 if we start correctly
-            // int ig=getGlobalIndex( iv, grid, myid );  // get the global index
-                        if( maskLocal(i1,i2,i3) > 0 )
-                        {
-                            if( ig>=Istart && ig<=Iend )
-                            {
-                                if( false ) printf("SP:: myid=%i: i1,i2=%i,%i, ig=%i xrv[ig]=%6.4f\n",myid,i1,i2,ig,xrv[ig-Istart]);
-                                vOldLocal(i1,i2,i3)=xrv[ig-Istart];
-                            }
-                            else
-                            {
-                                int p=myid;
-                                printf("SP::ERROR: myid=%i, i1,i2=%i,%i, ig=%i Istart,Iend=[%i,%i]\n", myid,i1,i2,ig,Istart,Iend);
-                            }
-                            ig++;
-                        }
+                        
                     }
-                    
                 }
 
                 if( false ) // Is this needed for pipe? maybe not 
@@ -1041,8 +1103,11 @@ solveSLEPc(int argc,char **args)
                         OV_GET_SERIAL_ARRAY(real,ucg[grid],ucgLocal);
                         OV_GET_SERIAL_ARRAY(real,vOld[grid],vOldLocal);
 
-                        getIndex(cg[grid].dimension(),I1,I2,I3);   
-                        ucgLocal(I1,I2,I3,nComp) = vOldLocal(I1,I2,I3)*(1./vNorm);     
+                        getIndex(cg[grid].dimension(),I1,I2,I3);  
+                        int includeParallelGhost=1;
+                        bool ok=ParallelUtility::getLocalArrayBounds(vOld[grid],vOldLocal,I1,I2,I3,includeParallelGhost);
+                        if( ok )             
+                            ucgLocal(I1,I2,I3,nComp) = vOldLocal(I1,I2,I3)*(1./vNorm);     
                     }
 
 
@@ -1141,8 +1206,11 @@ solveSLEPc(int argc,char **args)
                                 {
                                     OV_GET_SERIAL_ARRAY(real,vOld[grid],uLocal);
                                     OV_GET_SERIAL_ARRAY(real,ucg[grid],vLocal);  // temp space 
-                                    getIndex(cg[grid].dimension(),I1,I2,I3);  
-                                    uLocal(I1,I2,I3,0)= vLocal(I1,I2,I3,i);
+                                    getIndex(cg[grid].dimension(),I1,I2,I3);
+                                    int includeParallelGhost=1;  
+                                    bool ok=ParallelUtility::getLocalArrayBounds(ucg[grid],vLocal,I1,I2,I3,includeParallelGhost);
+                                    if( ok )      
+                                        uLocal(I1,I2,I3,0)= vLocal(I1,I2,I3,i);
                                 }
                             numAssigns++; entrySaved=true;
                         }
@@ -1151,8 +1219,11 @@ solveSLEPc(int argc,char **args)
                             {
                                 OV_GET_SERIAL_ARRAY(real,ucg[grid],uLocal);
                                 OV_GET_SERIAL_ARRAY(real,ucg[grid],vLocal);  // temp space 
-                                getIndex(cg[grid].dimension(),I1,I2,I3);  
-                                uLocal(I1,I2,I3,j)= vLocal(I1,I2,I3,k);
+                                getIndex(cg[grid].dimension(),I1,I2,I3);
+                                int includeParallelGhost=1;  
+                                bool ok=ParallelUtility::getLocalArrayBounds(ucg[grid],vLocal,I1,I2,I3,includeParallelGhost);
+                                if( ok )      
+                                    uLocal(I1,I2,I3,j)= vLocal(I1,I2,I3,k);
                             }
                         numAssigns++;
                     }
@@ -1166,8 +1237,11 @@ solveSLEPc(int argc,char **args)
                         {
                             OV_GET_SERIAL_ARRAY(real,ucg[grid],uLocal);
                             OV_GET_SERIAL_ARRAY(real,vOld[grid],vLocal);  // temp space 
-                            getIndex(cg[grid].dimension(),I1,I2,I3);  
-                            uLocal(I1,I2,I3,j)= vLocal(I1,I2,I3,0);
+                            getIndex(cg[grid].dimension(),I1,I2,I3);
+                            int includeParallelGhost=1;  
+                            bool ok=ParallelUtility::getLocalArrayBounds(vOld[grid],vLocal,I1,I2,I3,includeParallelGhost);
+                            if( ok )      
+                                uLocal(I1,I2,I3,j)= vLocal(I1,I2,I3,0);
                         }
                     numAssigns++;
                 }

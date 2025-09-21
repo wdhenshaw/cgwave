@@ -11,6 +11,9 @@ using namespace DBase;
 
 class LcbcData;
 
+// Function declaration for arguments to timeIntegralByQuadrature
+typedef Real (*TimeFunc)( Real omega, Real lambda, Real t );
+
 class CgWave
 {
 
@@ -105,7 +108,8 @@ enum EigenSolverEnum
   fixedPointEigenSolver,
   powerEigenSolver,
   inverseIterationEigenSolver,
-  JacobiDavidsonEigenSolver
+  JacobiDavidsonEigenSolver,
+  subspaceIterationEigenSolver
 };
 
 enum EigenSolverInitialConditionEnum
@@ -157,10 +161,20 @@ int checkParameters();
 
 int correctEigenfunction();
 
+static Real coscd( Real x, Real T, Real dt );
+
+static Real coscdPrime( Real x, Real T, Real dt );
+
+Real cosFilter( int freq, Real lam );
+Real cosFilterPrime( int freq, Real lam );
+
+
 // deflate the WaveHoltz solution (or forcing)
 int deflateSolution( int deflateOption= 0 );
 
 void displayBoundaryConditions( FILE *file = stdout );
+
+Real evalBetaFunction( const Real lam, const int freq, Real dt ) const;
 
 int formImplicitTimeSteppingMatrix();
 
@@ -221,6 +235,9 @@ int getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu, bool us
 // Check if two composite grids match
 static bool compositeGridsMatch( CompositeGrid & cg, CompositeGrid & cgsf );
 
+Real idFilter( int freq, Real lam );
+Real idFilterPrime( int freq, Real lam );
+
 // inflate WaveHoltz solution
 int inflateSolution();
 
@@ -229,6 +246,7 @@ int initialize();
 
 // Initialize deflation for WaveHoltz
 int initializeDeflation();
+
 
 // Initialize local compatbility boundart conditions
 int initializeLCBC();
@@ -244,6 +262,7 @@ int interactiveUpdate();
 
 int normalizeEigenvector( int eigNumber );
 
+int optFilterParameters( const RealArray & frequencyArray, const RealArray & periodArray, const Real dt, int & Nlam, Real & muMin, Real & muMax);
 void outputHeader();
 
 // Output results (e.g. errors to the checkFile)
@@ -279,6 +298,13 @@ int setup();
 
 int setupUserDefinedForcing();
 
+static Real sincd( Real x, Real T, Real dt );
+
+static Real sincdPrime( Real x, Real T, Real dt );
+
+Real sinFilter( int freq, Real lam );
+Real sinFilterPrime( int freq, Real lam );
+
 // utility array
 static int sortArray( RealArray & eigenValues, IntegerArray & iperm );
 
@@ -291,6 +317,8 @@ int takeFirstBackwardStep( int cur, real t );
 
 int takeImplicitStep( Real t );
 
+Real timeIntegralByQuadrature( TimeFunc g, Real lambda, int freq );
+
 int updateEigenmodes();
 
 // update time-integral for Helmholtz projection
@@ -300,6 +328,11 @@ int updateUserDefinedKnownSolution();
 
 int userDefinedForcing( realArray & f, int iparam[], real rparam[] );
 
+// ---- functions for matrix free routines ----
+int getActivePointIndex( MappedGrid & mg, Index *Iv );
+int initializeGlobalIndexing( bool checkMask = true );
+int gridFunctionToVector( const realCompositeGridFunction & u, Real *v, int iStart, int iEnd );
+int vectorToGridFunction( const Real *v, realCompositeGridFunction & u, int iStart, int iEnd );
 
   enum TimingEnum
   { 

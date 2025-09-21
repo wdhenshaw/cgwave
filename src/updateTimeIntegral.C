@@ -71,7 +71,7 @@ Real mySinc( Real x )
 /// \brief Evaluate the discrete sinc function
 /// \notes See the waveHoltz paper for a derivation 
 // -------------------------------------------------------
-Real sincd( Real x, Real T, Real dt )
+Real CgWave::sincd( Real x, Real T, Real dt )
 {
   const Real epsilon=sqrt(REAL_EPSILON); //  what should this be ?
 
@@ -90,6 +90,244 @@ Real sincd( Real x, Real T, Real dt )
   return y;
 }
 
+// -------------------------------------------------------
+///
+/// Evaluate the z=x*T DERIVATIVE of the discrete sinc function that comes from the trapezoidal rule quadrature
+///
+///  sincd(x,T,dt) = sin( x*T )/( T*tan(x*dt*.5)/(.5*dt))
+///                = sin( z   )/( T*tan((z/T)*dt*.5)/(.5*dt))
+/// 
+/// Return
+///  d( sincd(x,T,dt) )/dz = (1/T)* d( sincd(x,T,dt) )/dx 
+///                        = 
+/// \notes See the waveHoltz paper for a derivation 
+// -------------------------------------------------------
+Real CgWave::sincdPrime( Real x, Real T, Real dt )
+{
+  const Real epsilon=sqrt(REAL_EPSILON); //  what should this be ?
+
+  Real z = x*T;
+  Real xdtb2= x*dt*.5;
+
+  Real y;
+  if( fabs(z)>epsilon )
+  {
+    Real tanxdt = tan(xdtb2); 
+    Real denom = T*tanxdt/(.5*dt); 
+    Real denomPrime= T*( 1+ SQR(tanxdt) );
+    y = ( ( cos(z)*T*denom - sin(z)*denomPrime )/( SQR(denom) ) )/T;
+
+  }
+  else
+  {
+    y = ( -(z*T)/3. - 2.*xdtb2*(dt*.5)/3. )/T; // Taylor series
+  }
+  return y;
+}
+
+
+
+// -------------------------------------------------------
+/// \brief Evaluate the discrete cosc function
+/// \notes See the waveHoltz paper for a derivation 
+// -------------------------------------------------------
+Real CgWave::coscd( Real x, Real T, Real dt )
+{
+  const Real epsilon=sqrt(REAL_EPSILON); //  what should this be ?
+
+  Real z = x*T;
+  Real xdtb2= x*dt*.5;
+
+  Real y;
+  if( fabs(z)>epsilon )
+  {
+     y=(1.-cos(z))/(T*tan(xdtb2)/(.5*dt));
+  }
+  else
+  {
+    y = (z/2)*( 1. - z*z/12 - SQR(xdtb2)/3.);   // Taylor series
+  }
+  return y;
+}
+
+
+// -------------------------------------------------------
+///
+/// Evaluate the z=x*T DERIVATIVE of the discrete cosc function that comes from the trapezoidal rule quadrature
+///
+///  coscd(x,T,dt) = (1-cos(x*T))/( T*tan(x*dt*.5)/(.5*dt))
+/// 
+/// Return
+///  d( coscd(x,T,dt) )/dz = (1/T)* d( coscd(x,T,dt) )/dx 
+///
+/// \notes See the waveHoltz paper for a derivation 
+// -------------------------------------------------------
+Real CgWave::coscdPrime( Real x, Real T, Real dt )
+{
+  const Real epsilon=sqrt(REAL_EPSILON); //  what should this be ?
+
+  Real z = x*T;
+  Real xdtb2= x*dt*.5;
+
+  Real y;
+  if( fabs(z)>epsilon )
+  {
+    Real tanxdt = tan(xdtb2); 
+    Real denom = T*tanxdt/(.5*dt);
+    Real denomPrime= T*( 1. + SQR(tanxdt) );       
+    y = ( ( sin(z)*T*denom - (1.-cos(z))*denomPrime )/( SQR(denom) )  )/T;
+
+  }
+  else
+  {
+    Real zSq = z*z; 
+    y =  .5 - zSq/8. - zSq*SQR( (dt/2.) )/( SQR(T) * 2.);   // Taylor series
+  }
+  return y;
+}
+
+// // Function declaration for arguments to timeIntegralByQuadrature
+// typedef Real (*TimeFunc)( Real omega, Real lambda, Real t );
+
+// -------------------------------------------------------------------
+/// \brief Evaluate the time integral of a function by quadrature
+// -------------------------------------------------------------------
+Real CgWave::timeIntegralByQuadrature( TimeFunc g, Real lambda, int freq )
+{
+  const Real & dt                          = dbase.get<Real>("dt");  
+  const RealArray & frequencyArrayAdjusted = dbase.get<RealArray>("frequencyArrayAdjusted");
+  const RealArray & sigma                  = dbase.get<RealArray>("sigma");  
+
+  // const RealArray & periodArrayAdjusted     = dbase.get<RealArray>("periodArrayAdjusted");   
+
+  const Real omega = frequencyArrayAdjusted(freq);
+  // Real T     = periodArrayAdjusted(freq);
+
+  const int Nt =sigma.getLength(0)-1; 
+  Real y=0.;
+  for( int n=0; n<=Nt; n++ )
+  {
+    Real t = n*dt; 
+    y += sigma(n,freq)*g(omega,lambda,t);
+  }
+
+  return y;
+
+}
+
+
+static Real gcc( Real omega, Real lambda, Real t ){ return cos(omega*t)*cos(lambda*t); }
+
+// Define a time filter using quadrature 
+// (for MFWH the quad rules may not be trapezoidal)
+Real CgWave::cosFilter( int freq, Real lam )
+{
+  const RealArray & periodArrayAdjusted = dbase.get<RealArray>("periodArrayAdjusted");   
+  const Real T = periodArrayAdjusted(freq);
+
+  // g = @(omega,lambda,t) cos(omega*t)*cos(lambda*t);
+
+  Real y = (2./T)*timeIntegralByQuadrature( gcc, lam,freq );
+
+  return y;
+}
+
+static Real gccp( Real omega, Real lambda, Real t ){   return -cos(omega*t)*t*sin(lambda*t); }
+// Define a time filter using quadrature 
+// (for MFWH the quad rules may not be trapezoidal)
+Real CgWave::cosFilterPrime( int freq, Real lam )
+{
+  const RealArray & periodArrayAdjusted = dbase.get<RealArray>("periodArrayAdjusted");   
+  const Real T = periodArrayAdjusted(freq);
+
+  // g = @(omega,lambda,t) cos(omega*t)*cos(lambda*t);
+  // gp = @(omega,lambda,t) -cos(omega*t)*t.*sin(lambda*t); % d(g)/d(lambda)
+
+  Real y = (2./T)*timeIntegralByQuadrature( gccp, lam,freq );
+
+  return y;
+}
+
+static Real gsc( Real omega, Real lambda, Real t ){ return sin(omega*t)*cos(lambda*t); }
+
+// Define a time filter using quadrature 
+// (for MFWH the quad rules may not be trapezoidal)
+Real CgWave::sinFilter( int freq, Real lam )
+{
+  const RealArray & periodArrayAdjusted = dbase.get<RealArray>("periodArrayAdjusted");   
+  const Real T = periodArrayAdjusted(freq);
+
+  // g = @(omega,lambda,t) sin(omega*t)*cos(lambda*t);
+
+  Real y = (2./T)*timeIntegralByQuadrature( gsc, lam,freq );
+
+  return y;
+}
+
+static Real gscp( Real omega, Real lambda, Real t ){ return -sin(omega*t)*t*sin(lambda*t); }
+// Define a time filter using quadrature 
+// (for MFWH the quad rules may not be trapezoidal)
+Real CgWave::sinFilterPrime( int freq, Real lam )
+{
+  const RealArray & periodArrayAdjusted = dbase.get<RealArray>("periodArrayAdjusted");   
+  const Real T = periodArrayAdjusted(freq);
+
+  // g = @(omega,lambda,t) sin(omega*t)*cos(lambda*t);
+  // gp = @(omega,lambda,t) -sin(omega*t)*t.*sin(lambda*t); % d(g)/d(lambda)
+
+  Real y = (2./T)*timeIntegralByQuadrature( gscp, lam,freq );
+
+  return y;
+}
+
+
+static Real gic( Real omega, Real lambda, Real t ){ return cos(lambda*t); }
+
+// Define a time filter using quadrature 
+// (for MFWH the quad rules may not be trapezoidal)
+Real CgWave::idFilter( int freq, Real lam )
+{
+  const RealArray & periodArrayAdjusted = dbase.get<RealArray>("periodArrayAdjusted");   
+  const Real T = periodArrayAdjusted(freq);
+
+  // g = @(omega,lambda,t) cos(lambda*t);
+
+  Real y = (2./T)*timeIntegralByQuadrature( gic, lam,freq );
+
+  return y;
+}
+
+static Real gicp( Real omega, Real lambda, Real t ){   return -t*sin(lambda*t); }
+
+// Define a time filter using quadrature 
+// (for MFWH the quad rules may not be trapezoidal)
+Real CgWave::idFilterPrime( int freq, Real lam )
+{
+  const RealArray & periodArrayAdjusted = dbase.get<RealArray>("periodArrayAdjusted");   
+  const Real T = periodArrayAdjusted(freq);
+
+  // g = @(omega,lambda,t) cos(lambda*t);
+  // gp = @(omega,lambda,t) -t.*sin(lambda*t); % d(g)/d(lambda)
+
+  Real y = (2./T)*timeIntegralByQuadrature( gicp, lam,freq );
+
+  return y;
+}
+
+
+// function y = cosFilterPrime( freq,lam,par )
+
+//   T = par.periodArrayAdjusted(freq);
+
+//   % g = @(omega,lambda,t) cos(omega*t)*cos(lambda*t);
+//   gp = @(omega,lambda,t) -cos(omega*t)*t.*sin(lambda*t); % d(g)/d(lambda)
+
+//   y = (2/T)*timeIntegral( gp, lam,freq,par );
+
+//   return
+// end
+
+
 // -------------------------------------------------------------------
 /// \brief Evaluate the WaveHoltz beta function (single frequency)
 // -------------------------------------------------------------------
@@ -106,7 +344,7 @@ CgWave::betaWaveHoltz( Real lambda, Real omega, Real T )
 }
 
 // -------------------------------------------------------------------------
-/// \brief Evaluate the discret WaveHoltz beta function (single frequency)
+/// \brief Evaluate the discrete WaveHoltz beta function (single frequency)
 /// \notes See the waveHoltz paper for a derivation 
 // -------------------------------------------------------------------------
 Real 
@@ -142,6 +380,8 @@ getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu,  bool useAd
   const RealArray & periodArray     = dbase.get<RealArray>("periodArray"); 
   const real & dt                   = dbase.get<real>("dt");  
   const int & computeEigenmodes     = dbase.get<int>("computeEigenmodes");
+  const int & useOptFilter          = dbase.get<int>("useOptFilter");
+
   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
 
   RealArray A;
@@ -208,22 +448,26 @@ getWaveHoltzIterationEigenvalue( RealArray & lambda, RealArray & mu,  bool useAd
       }
     }
 
-     // --- Form mu (see formulae in waho.pdf)
-     //   mu(lambda) = SUM_I beta(i)*w(i) 
-     Real muTemp=0.;
-     Real betac; 
-     for( int i=0; i<numberOfFrequencies; i++ )
-     {
-       betac = betaWaveHoltz( lam, frequencyArray(i), periodArray(i) ); // use continuous beta
-       Real beta = betaDiscreteWaveHoltz( lam, frequencyArray(i), periodArray(i), dt );
-       muTemp += w(i)*beta;
-     }
-     mu(ilam)=muTemp;
+    // --- Form mu (see formulae in waho.pdf)
+    //   mu(lambda) = SUM_I beta(i)*w(i) 
+    Real muTemp=0.;
+    Real beta,betac; 
+    for( int i=0; i<numberOfFrequencies; i++ )
+    {
+      betac = betaWaveHoltz( lam, frequencyArray(i), periodArray(i) ); // use continuous beta
+      if( useOptFilter )
+        beta = evalBetaFunction( lam, i, dt );  // opt filter
+      else
+        beta = betaDiscreteWaveHoltz( lam, frequencyArray(i), periodArray(i), dt );
 
-     // printF(">>>> ilam=%d: lam=%12.4e mu=%12.4e\n",ilam,lam,mu(ilam));
-     if( false )
-       printF("getWaveHoltzIterationEigenvalue: ilam=%3d omega=%14.7e, 2*pi/T=%14.7e lambda=%14.7e lam(adjusted)=%14.7e mu=%14.7e betac=%14.7e (dt=%12.5e)\n",
-            ilam,frequencyArray(0),2.*Pi/periodArray(0),lambda(ilam),lam,mu(ilam),betac,dt);
+      muTemp += w(i)*beta;
+    }
+    mu(ilam)=muTemp;
+
+    // printF(">>>> ilam=%d: lam=%12.4e mu=%12.4e\n",ilam,lam,mu(ilam));
+    if( false )
+      printF("getWaveHoltzIterationEigenvalue: ilam=%3d omega=%14.7e, 2*pi/T=%14.7e lambda=%14.7e lam(adjusted)=%14.7e mu=%14.7e betac=%14.7e (dt=%12.5e)\n",
+           ilam,frequencyArray(0),2.*Pi/periodArray(0),lambda(ilam),lam,mu(ilam),betac,dt);
 
   }
 
@@ -245,6 +489,8 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A, bool useAdjusted /*
   const real & dt                   = dbase.get<real>("dt");
   const int & adjustOmega           = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
   RealArray & sigma                 = dbase.get<RealArray>("sigma");  
+  const int & useOptFilter          = dbase.get<int>("useOptFilter");
+
 
   // ---- Compute the entries using quadrature rather than the exact formulae, in some cases----
   // const bool useQuadrature = adjustOmega && numberOfFrequencies>1;
@@ -259,7 +505,11 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A, bool useAdjusted /*
   {
     for( int i=0; i<numberOfFrequencies; i++ )
     {
-      if( !useQuadrature )
+      if( useOptFilter )
+      {
+        A(i,j) = evalBetaFunction( frequencyArray(j), i, dt );  // opt filter
+      }
+      else if( !useQuadrature )
       { 
         if( i==j )
           A(i,j)=1.;  
@@ -282,7 +532,6 @@ int CgWave::getMultiFrequencyWaveHoltzMatrix( RealArray & A, bool useAdjusted /*
         Real beta = betaWaveHoltz( frequencyArray(j), frequencyArray(i), periodArray(i) );
         if( debug & 2 )
           printF("getMultiFrequencyWaveHoltzMatrix: A(%d,%d)=%16.8e (exact)   =%16.8e (quadrature)  diff=%8.2e\n",i,j,beta,A(i,j),beta-A(i,j));
-
       }
 
     }
@@ -346,6 +595,7 @@ initializeTimeIntegral( Real dt )
   const int & filterTimeDerivative  = dbase.get<int>("filterTimeDerivative");
   const int & useFilterWeights      = dbase.get<int>("useFilterWeights"); 
   const int & filterD0t             = dbase.get<int>("filterD0t"); 
+  const int & useOptFilter          = dbase.get<int>("useOptFilter");
 
 
   // const int includeParallelGhost=1;
@@ -376,6 +626,14 @@ initializeTimeIntegral( Real dt )
          tFinal,periodArray(0),tFinal-periodArray(0));
 
     OV_ABORT("error");
+  }
+
+
+  if( useOptFilter )
+  {
+    int nLam =-1; // -1 = use defulat number of lambda values for least squares solution
+    Real muMin, muMax;
+    optFilterParameters( frequencyArray, periodArray, dt, nLam, muMin,muMax );
   }
 
   // if( false )
@@ -481,6 +739,9 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
   const int & filterTimeDerivative = dbase.get<int>("filterTimeDerivative");
   const int & useFilterWeights      = dbase.get<int>("useFilterWeights"); 
   const int & filterD0t             = dbase.get<int>("filterD0t"); 
+  const int & useOptFilter          = dbase.get<int>("useOptFilter");
+
+  const RealArray & filterPar = useOptFilter ? dbase.get<RealArray>("filterPar") : frequencyArray;
 
   const int includeParallelGhost=1;
 
@@ -679,9 +940,14 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
             else
             {
               const Real omegaFreq = frequencyArray(freq); 
-              const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha 
-              vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
-              // vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+              if( useOptFilter )
+                vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( filterPar(0,freq) + filterPar(1,freq)*sin(omegaFreq*t) + filterPar(2,freq)*cos(omegaFreq*t) ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+              else
+              {
+                const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha 
+                vLocal(I1,I2,I3,freq) = ( sigma(step,freq)*( cos(omegaFreq*t)-.5*alphad ) )*uLocal(I1,I2,I3);  // Trapezoidal first term (.5)
+              }
+
             }
           }
         }
@@ -744,18 +1010,26 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
             else
             {
               const Real omegaFreq = frequencyArray(freq);
-              const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha  
-              if( useOpt )
+              if( useOptFilter )
               {
-                const Real factor=( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) );
+                const Real factor=sigma(step,freq)*( filterPar(0,freq) + filterPar(1,freq)*sin(omegaFreq*t) + filterPar(2,freq)*cos(omegaFreq*t) );
                 FOR_3D(i1,i2,i3,I1,I2,I3)
                   va(i1,i2,i3,freq) += factor*ua(i1,i2,i3);
               }
               else
               {
-                vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) )*uLocal(I1,I2,I3);
+                const Real alphad = tan(omegaFreq*dt*.5)/tan(omegaFreq*dt);  // adjusted alpha  
+                if( useOpt )
+                {
+                  const Real factor=( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) );
+                  FOR_3D(i1,i2,i3,I1,I2,I3)
+                    va(i1,i2,i3,freq) += factor*ua(i1,i2,i3);
+                }
+                else
+                {
+                  vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.5*alphad ) )*uLocal(I1,I2,I3);
+                }
               }
-              // vLocal(I1,I2,I3,freq) += ( sigma(step,freq)*( cos(omegaFreq*(t))-.25 ) )*uLocal(I1,I2,I3);
             }
           }
         }
@@ -921,6 +1195,7 @@ int CgWave::getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv
 
   const int & useFilterWeights = dbase.get<int>("useFilterWeights"); 
   const int & filterD0t        = dbase.get<int>("filterD0t"); 
+  const int & useOptFilter     = dbase.get<int>("useOptFilter");
 
   getIntegrationWeights( Nt, numFreq, Tv, orderOfAccuracy,sigma );
 
@@ -959,16 +1234,8 @@ int CgWave::getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv
     filterWeights.redim(Ntfw,numCompWaveHoltz); 
     filterWeights=0.;
 
-    // Real alpha = 0.5;
-
-    // if( numFreq==1 )
-    // {
-    //   // Adjust alpha to make discrete beta function have a max value of 1: (see overHoltz paper)
-    //   // *wdh* JUly 20, 2024
-    //   alpha = tan(frequencyArray(0)*dt*.5)/tan(frequencyArray(0)*dt);  
-    //   // printF("\n *** Adjust filter constant for dt: alpha=%6.3f (usual=.5) ***\n\n",alpha);
-    //   // OV_ABORT("STOP here for now");
-    // }
+  
+    const RealArray & filterPar = useOptFilter ? dbase.get<RealArray>("filterPar") : filterWeights;
     for( int freq=0; freq<numFreq; freq++ )
     {
       const Real omega = frequencyArray(freq);
@@ -979,13 +1246,22 @@ int CgWave::getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv
       for( int n=0; n<=Nt; n++ )
       {
         Real t = n*dt;
-        filterWeights(n,freq) = sigma(n,freq)*( cos(omega*t) - .5*alphad )*(2./Tv(freq));
+        if( useOptFilter )
+          filterWeights(n,freq) = sigma(n,freq)*( filterPar(0,freq) + filterPar(1,freq)*sin(omega*t) + filterPar(2,freq)*cos(omega*t) )*(2./Tv(freq));
+        else
+          filterWeights(n,freq) = sigma(n,freq)*( cos(omega*t) - .5*alphad )*(2./Tv(freq));
       }
     }
 
     if( filterTimeDerivative )
     {
       // -- integration weights for the time derivative ---
+
+      if( useOptFilter )
+      {
+        OV_ABORT("Finish me for optimized filter");
+      }
+
       if( filterD0t )
       {
         // --------------------------------------------------------------------------------------

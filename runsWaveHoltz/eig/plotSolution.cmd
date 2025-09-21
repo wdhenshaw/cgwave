@@ -48,15 +48,15 @@ DISPLAY AXES:0 0
 # DISPLAY COLOUR BAR:0 0
 # 
 # Movie of eigenvectors:
-hardcopy format:0 ppm
-DISPLAY COLOUR BAR:0 0
-set view:0 0.00241692 0 0 1.28494 1 0 0 0 1 0 0 0 1
-$cmd="#"; 
-#  -- plot movie --
-#
-for( $i=1; $i<=$numMovie*$numRepeat; $i++ ){ $cmd .= "\n \$plotName = \"$name$i.ppm\"; \n hardcopy file name:0 \$plotName\n hardcopy save:0"; if( ($i % $numRepeat) == $numRepeat-1 ){ $cmd .= "\n next";}  }
-if( $plotMovie eq 0 ) { $cmd="#"; }
-$cmd
+# hardcopy format:0 ppm
+# DISPLAY COLOUR BAR:0 0
+# set view:0 0.00241692 0 0 1.28494 1 0 0 0 1 0 0 0 1
+# $cmd="#"; 
+# #  -- plot movie --
+# #
+# for( $i=1; $i<=$numMovie*$numRepeat; $i++ ){ $cmd .= "\n \$plotName = \"$name$i.ppm\"; \n hardcopy file name:0 \$plotName\n hardcopy save:0"; if( ($i % $numRepeat) == $numRepeat-1 ){ $cmd .= "\n next";}  }
+# if( $plotMovie eq 0 ) { $cmd="#"; }
+# $cmd
 # 
 # -- save indicated solutions
 $cmd="#"; 

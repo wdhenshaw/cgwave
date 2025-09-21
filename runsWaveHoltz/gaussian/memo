@@ -9,6 +9,1308 @@ ogen -noplot multiKnivesGrid -prefix=fourteenKnivesGrid -nke=6 -xke=-0.35 -0.25 
 set dwh = ~/Dropbox/DeflatedWaveHoltz
 set ovp2 = ~/Dropbox/overHoltzPaper/part2
 
+set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
+
+
+
+****************************************************
+****** Tues Sept 2, 2025
+
+
+RETURN TO OPTIMIZED MULTI_FREQ FILTER
+
+EXP
+$cgwh -noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -matlab=junk -show=junk.show -useOptFilter=1 -go=dk
+
+>> opt:
+CgWaveHoltz::residual: grid=0 : maxRes= 1.14e-03
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=1.755e-04.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=1.143e-03.
+solveHelmholtz: max-res=1.143e-03 (all freq, gmres, numIts=15, ave-CR= 0.20 )
+solveHelmholtz: rel-max-diff=6.25e-06 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=7.15e-05 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=7.15e-05, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+>> NO opt
+CgWaveHoltz::residual: grid=0 : maxRes= 5.67e-10
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=5.670e-10.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=5.527e-10.
+solveHelmholtz: max-res=5.670e-10 (all freq, gmres, numIts=15, ave-CR= 0.22 )
+solveHelmholtz: rel-max-diff=1.58e-12 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=4.69e-12 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=4.69e-12, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+****************************************************
+****** Fri Aug 29, 2025
+
+
+
+
+RECTANGLE 8x1 
+   freq 25 -- CLOSE TO RESONANCE
+
+comp compRates -caseName=rectangle8By1O4SpacingRatio2p0Freq25
+
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle8By1G4O4SpacingRatio2p0Freq25.show & \num{8.3}{-1} &      \\ \hline
+ rectangle8By1G8O4SpacingRatio2p0Freq25.show & \num{5.4}{-2} & 15.5 \\ \hline
+ rectangle8By1G16O4SpacingRatio2p0Freq25.show & \num{3.5}{-3} & 15.5 \\ \hline
+ rectangle8By1G32O4SpacingRatio2p0Freq25.show & \num{2.3}{-4} & 15.5 \\ \hline
+                      &     3.95      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Fri Aug 29 09:46:11 2025. }
+\end{center}
+\end{table}
+
+
+
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle8By1G4O4SpacingRatio1p5Freq25.show & \num{8.5}{-1} &      \\ \hline
+ rectangle8By1G8O4SpacingRatio1p5Freq25.show & \num{5.3}{-2} & 16.2 \\ \hline
+ rectangle8By1G16O4SpacingRatio1p5Freq25.show & \num{3.3}{-3} & 16.2 \\ \hline
+ rectangle8By1G32O4SpacingRatio1p5Freq25.show & \num{2.0}{-4} & 16.2 \\ \hline
+                      &     4.01      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Fri Aug 29 09:24:05 2025. }
+\end{center}
+\end{table
+
+
+comp compRates -caseName=rectangle8By1O4Freq25
+
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle8By1G4O4Freq25.show & \num{8.6}{-1} &      \\ \hline
+ rectangle8By1G8O4Freq25.show & \num{5.2}{-2} & 16.4 \\ \hline
+ rectangle8By1G16O4Freq25.show & \num{3.2}{-3} & 16.4 \\ \hline
+ rectangle8By1G32O4Freq25.show & \num{2.0}{-4} & 16.4 \\ \hline
+                      &     4.03      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Fri Aug 29 08:45:18 2025. }
+\end{center}
+\end{table}
+
+
+
+RECTANGLE 4x1 freq25:
+
+comp compRates -caseName=rectangle4By1O4SpacingRatio1p5Freq25
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle4By1G4O4SpacingRatio1p5Freq25.show & \num{9.7}{-2} &      \\ \hline
+ rectangle4By1G8O4SpacingRatio1p5Freq25.show & \num{7.7}{-3} & 12.6 \\ \hline
+ rectangle4By1G16O4SpacingRatio1p5Freq25.show & \num{6.1}{-4} & 12.6 \\ \hline
+ rectangle4By1G32O4SpacingRatio1p5Freq25.show & \num{4.8}{-5} & 12.6 \\ \hline
+ rectangle4By1G64O4SpacingRatio1p5Freq25.show & \num{3.8}{-6} & 12.6 \\ \hline
+                      &     3.66      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Fri Aug 29 08:23:03 2025. }
+\end{center}
+\end{table}
+
+
+comp compRates -caseName=rectangle4By1O4Freq25 -savePlots=0
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle4By1G4O4Freq25.show & \num{3.3}{-2} &      \\ \hline
+ rectangle4By1G8O4Freq25.show & \num{2.3}{-3} & 14.2 \\ \hline
+ rectangle4By1G16O4Freq25.show & \num{1.6}{-4} & 14.2 \\ \hline
+ rectangle4By1G32O4Freq25.show & \num{1.2}{-5} & 14.2 \\ \hline
+ rectangle4By1G64O4Freq25.show & \num{8.2}{-7} & 14.2 \\ \hline
+                      &     3.82      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Fri Aug 29 08:14:39 2025. }
+\end{center}
+\end{table}
+
+
+
+comp compRates -caseName=rectangle4By1O2SpacingRatio1p5Freq25
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle4By1G16O2SpacingRatio1p5Freq25.show & \num{2.2}{-1} &      \\ \hline
+ rectangle4By1G32O2SpacingRatio1p5Freq25.show & \num{5.1}{-2} &  4.3 \\ \hline
+ rectangle4By1G64O2SpacingRatio1p5Freq25.show & \num{1.2}{-2} &  4.3 \\ \hline
+ rectangle4By1G128O2SpacingRatio1p5Freq25.show & \num{2.8}{-3} &  4.3 \\ \hline
+                      &     2.10      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Fri Aug 29 07:33:07 2025. }
+\end{center}
+\end{table}
+
+
+comp compRates -caseName=rectangle4By1O2Freq25
+
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle4By1G16O2Freq25.show & \num{1.1}{-1} &      \\ \hline
+ rectangle4By1G32O2Freq25.show & \num{2.6}{-2} &  4.2 \\ \hline
+ rectangle4By1G64O2Freq25.show & \num{6.3}{-3} &  4.2 \\ \hline
+ rectangle4By1G128O2Freq25.show & \num{1.5}{-3} &  4.2 \\ \hline
+                      &     2.05      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Fri Aug 29 07:17:33 2025. }
+\end{center}
+\end{table}
+
+
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle4By1G8O2Freq25.show & \num{6.3}{-1} &      \\ \hline
+ rectangle4By1G16O2Freq25.show & \num{1.2}{-1} &  5.0 \\ \hline
+ rectangle4By1G32O2Freq25.show & \num{2.5}{-2} &  5.0 \\ \hline
+ rectangle4By1G64O2Freq25.show & \num{4.9}{-3} &  5.0 \\ \hline
+                      &     2.33      &     \\ \hline
+\end{tabular}
+
+
+
+plotStuff plotSolution.cmd -show=gaussianSquare.show -name=gaussianSquareOmega -solution=1
+
+ADD SPACING RATIO 1.5 
+
+comp compRates -caseName=rectangleO4Freq29SpacingRatio1p5
+
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle16By1G4O4SpacingRatio1p5Freq29.show & \num{36.3}{0} &      \\ \hline
+ rectangle16By1G8O4SpacingRatio1p5Freq29.show & \num{3.5}{-1} & 104.7 \\ \hline
+ rectangle16By1G16O4SpacingRatio1p5Freq29.show & \num{3.3}{-3} & 104.7 \\ \hline
+ rectangle16By1G32O4SpacingRatio1p5Freq29.show & \num{3.2}{-5} & 104.7 \\ \hline
+                      &     6.71      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Fri Aug 29 06:32:19 2025. }
+\end{center}
+\end{table}
+
+
+****************************************************
+****** Thurs Aug 28, 2025
+
+TEST POLLUTION ON HIGH ASPECT RECTANGLE WITH DIFFERENT GRID SPACINGS IN X AND Y 
+
+REQUIRES TOO MUCH MEMORY: 
+$cgwh -noplot gaussian.cmd -g=rectangle16By1SpacingRatio1Grid64.order4 -ts=implicit -cfl=10000 -x0=2.0 -y0=0.55 -nf=1 -freq=29 -amp=841 -beta=29 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -rtoli=1e-10 -atoli=1e-10 -matlab=rectangle16By1G64O4Freq29 -show=rectangle16By1G64O4Freq29.show  -krylovType=gmres -go=ds > rectangle16By1G64O4Freq29.out
+
+REQUIRES TOO MUCH MEMORY: 
+$cgwh -noplot gaussian.cmd -g=rectangle16By1SpacingRatio2Grid64.order4 -ts=implicit -cfl=10000 -x0=2.0 -y0=0.55 -nf=1 -freq=29 -amp=841 -beta=29 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -rtoli=1e-10 -atoli=1e-10 -matlab=rectangle16By1G64O4SpacingRatio2Freq29 -show=rectangle16By1G64O4SpacingRatio2Freq29.show  -krylovType=gmres -go=ds > rectangle16By1G64O4SpacingRatio2Freq29.out
+
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle16By1G4O4SpacingRatio2Freq29.show & \num{6.1}{-1} &      \\ \hline
+ rectangle16By1G8O4SpacingRatio2Freq29.show & \num{8.5}{-2} &  7.2 \\ \hline
+ rectangle16By1G16O4SpacingRatio2Freq29.show & \num{1.2}{-2} &  7.2 \\ \hline
+ rectangle16By1G32O4SpacingRatio2Freq29.show & \num{1.7}{-3} &  7.2 \\ \hline
+                      &     2.84      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Thu Aug 28 11:23:30 2025. }
+\end{center}
+\end{table}
+
+
+
+comp compRates -caseName=rectangleO4Freq29
+
+make rectangleFreq29Order4
+
+% -------------- l2 norm results -------------
+\begin{table}[hbt]\tableFont % you should set \tableFont to \footnotesize or other size
+% \newcommand{\num}[2]{#1e{#2}} % use this command to set the format of numbers in the table.
+% \newcommand{\errFormat}[1]{#1}} % use this command to set the format of the error label.
+\begin{center}
+\begin{tabular}{|l|c|c|} \hline 
+   show file         & \errFormat{uDHS0} &  r  \\ \hline
+ rectangle16By1G4O4Freq29.show & \num{3.1}{-1} &      \\ \hline
+ rectangle16By1G8O4Freq29.show & \num{2.0}{-2} & 15.4 \\ \hline
+ rectangle16By1G16O4Freq29.show & \num{1.3}{-3} & 15.4 \\ \hline
+ rectangle16By1G32O4Freq29.show & \num{8.4}{-5} & 15.4 \\ \hline
+                      &     3.95      &     \\ \hline
+\end{tabular}
+\caption{comp. L2-norm self convergence results, absolute-errors, t=0.000000e+00, Thu Aug 28 10:35:53 2025. }
+\end{center}
+\end{table}
+
+
+
+
+
+make rectangleFreq30
+
+comp compRates -caseName=rectangleO2Freq30
+
+
+
+O4
+$cgwh -noplot gaussian.cmd -g=rectangle16By1SpacingRatio1Grid8.order4 -ts=implicit -cfl=10000 -x0=2.0 -y0=0.5 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -rtoli=1e-10 -atoli=1e-10 -matlab=rectangle16By1G8O2Freq30 -show=rectangle16By1G8O2Freq30.show -krylovType=gmres -go=og
+
+O2:
+$cgwh -noplot gaussian.cmd -g=rectangle16By1SpacingRatio1Grid8.order2 -ts=implicit -cfl=10000 -x0=2.0 -y0=0.5 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -rtoli=1e-10 -atoli=1e-10 -matlab=rectangle16By1G8O2Freq30 -show=rectangle16By1G8O2Freq30.show  -krylovType=gmres -go=ds > rectangle16By1G8O2Freq30.out
+
+****************************************************
+****** Sun Aug 24, 2025
+
+START TEST MULTI_FREQ OPTIMIZED FILTER
+
+NF=1:
+IMP 
+$cgwh -noplot gaussian.cmd -g=square32.order2 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -nf=1 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -matlab=junk -show=junk.show -useOptFilter=1 -go=dk
+
+opt: 
+solveHelmholtz: max-res=9.646e-11 (gmres, numIts=14, ave-CR= 0.16 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=4.24e-14, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+no-opt
+solveHelmholtz: max-res=9.487e-10 (gmres, numIts=13, ave-CR= 0.16 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=4.35e-13, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
+
+
+
+EXP
+$cgwh -noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -matlab=junk -show=junk.show -useOptFilter=1 -go=dk
+
+>> opt:
+CgWaveHoltz::residual: grid=0 : maxRes= 1.14e-03
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=1.755e-04.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=1.143e-03.
+solveHelmholtz: max-res=1.143e-03 (all freq, gmres, numIts=15, ave-CR= 0.20 )
+solveHelmholtz: rel-max-diff=6.25e-06 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=7.15e-05 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=7.15e-05, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+>> NO opt
+CgWaveHoltz::residual: grid=0 : maxRes= 5.67e-10
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=5.670e-10.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=5.527e-10.
+solveHelmholtz: max-res=5.670e-10 (all freq, gmres, numIts=15, ave-CR= 0.22 )
+solveHelmholtz: rel-max-diff=1.58e-12 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=4.69e-12 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=4.69e-12, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+IMP 
+$cgwh -noplot gaussian.cmd -g=square32.order2 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -matlab=junk -show=junk.show -useOptFilter=1 -go=dk
+
+
++++++ NO OPT FILTER +++++
+CgWaveHoltz::residual: grid=0 : maxRes= 1.19e-10
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=1.194e-10.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=1.066e-10.
+solveHelmholtz: max-res=1.194e-10 (all freq, gmres, numIts=20, ave-CR= 0.28 )
+solveHelmholtz: rel-max-diff=3.23e-13 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.87e-13 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.87e-13, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+****************************************************
+****** Wed Aug 20, 2025
+
+STARTS TO CONVERGE: 
+cgwh -noplot gaussian.cmd -g=darkCornerRoomGride16.order2.hdf -ts=implicit -cfl=1000 -x0=0 -y0=-3.0 -nf=1 -freq=15 -amp=-400 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=8 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -eigenVectorFile=/home/henshw/runs/eig/darkCornerRoomG4O4EigsEv2048.show -deflateWaveHoltz=1 -numToDeflate=256 -matlab=darkCornerRoomG16O2Freq15 -show=darkCornerRoomG16O2Freq15.show -krylovType=gmres -go=og
+
+
+NO QUIET ALCOVES:  G8 O2 
+cgwh -noplot gaussian.cmd -g=darkCornerRoomGride8.order2.hdf -ts=implicit -cfl=1000 -x0=0 -y0=-3.0 -nf=1 -freq=15 -amp=-400 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=8 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -eigenVectorFile=/home/henshw/runs/eig/darkCornerRoomG4O4EigsEv2048.show -deflateWaveHoltz=1 -numToDeflate=256 -matlab=darkCornerRoomG8O2Freq15 -show=darkCornerRoomG8O2Freq15.show -krylovType=gmres -go=og
+
+
+cgwh -noplot gaussian.cmd -g=darkCornerRoomGride4.order2.hdf -ts=implicit -cfl=1000 -x0=0 -y0=-3.0 -nf=1 -freq=15 -amp=-400 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=8 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -eigenVectorFile=/home/henshw/runs/eig/darkCornerRoomG4O4EigsEv2048.show -deflateWaveHoltz=1 -numToDeflate=256 -matlab=darkCornerRoomG4O2Freq15 -show=darkCornerRoomG4O2Freq15.show -krylovType=gmres -go=ks
+
+cgwh -noplot gaussian.cmd -g=darkCornerRoomGride2.order2.hdf -ts=implicit -cfl=1000 -x0=0 -y0=-3.0 -nf=1 -freq=15 -amp=-400 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=8 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -eigenVectorFile=/home/henshw/runs/eig/darkCornerRoomG4O4EigsEv2048.show -deflateWaveHoltz=1 -numToDeflate=256 -matlab=darkCornerRoomG2O2Freq15 -show=darkCornerRoomG2O2Freq15.show -krylovType=gmres -go=og
+
+
+
+plotStuff plotSolution.cmd -show=darkCornerRoomG8O4Freq15.show -name=darkCornerRoomG8O4Freq15X0Ym3 -solution=1
+
+PERTRURB: 
+freq=15: 
+setsid $cgwh -noplot gaussian.cmd -g=darkCornerRoomGride8.order4.hdf -ts=implicit -cfl=1000 -x0=0 -y0=-3.0 -nf=1 -freq=14.995 -amp=-400 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=8 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -eigenVectorFile=/home/henshw/runs/eig/darkCornerRoomG8O4EigsEv1600.show -deflateWaveHoltz=1 -numToDeflate=256 -matlab=darkCornerRoomG8O4Freq14p995 -show=darkCornerRoomG8O4Freq14p995.show -krylovType=gmres -go=ks > darkCornerRoomG8O4Freq14p995.out
+
+setsid $cgwh -noplot gaussian.cmd -g=darkCornerRoomGride4.order4.hdf -ts=implicit -cfl=1000 -x0=0 -y0=-3.0 -nf=1 -freq=15.02 -amp=-400 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=8 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -eigenVectorFile=/home/henshw/runs/eig/darkCornerRoomG4O4EigsEv2048.show -deflateWaveHoltz=1 -numToDeflate=256 -matlab=darkCornerRoomG4O4Freq15p02 -show=darkCornerRoomG4O4Freq15p02.show -krylovType=gmres -go=ks > darkCornerRoomG4O4Freq15p02.out
+
+plotStuff plotSolution.cmd -show=darkCornerRoomG4O4Freq15p02.show -name=darkCornerRoomG4O4Freq15p02 -solution=1 
+
+similar to omega=15
+setsid $cgwh -noplot gaussian.cmd -g=darkCornerRoomGride4.order4.hdf -ts=implicit -cfl=1000 -x0=0 -y0=-3.0 -nf=1 -freq=14.995 -amp=-400 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=8 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -eigenVectorFile=/home/henshw/runs/eig/darkCornerRoomG4O4EigsEv2048.show -deflateWaveHoltz=1 -numToDeflate=256 -matlab=darkCornerRoomG4O4Freq14p995 -show=darkCornerRoomG4O4Freq14p995.show -krylovType=gmres -go=ks > darkCornerRoomG4O4Freq14p995.out
+
+plotStuff plotSolution.cmd -show=darkCornerRoomG4O4Freq14p995.show -name=darkCornerRoomG4O4Freq14p995 -solution=1 
+
+****************************************************
+****** Mon Aug 18, 2025
+
+REVISIT DOUBLE ELLIPSE FOR POLUUTION PAPER 
+
+freq=15: 
+setsid $cgwh -noplot gaussian.cmd -g=darkCornerRoomGride8.order4.hdf -ts=implicit -cfl=1000 -x0=0 -y0=-3.0 -nf=1 -freq=15 -amp=-400 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=8 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -eigenVectorFile=/home/henshw/runs/eig/darkCornerRoomG8O4EigsEv1600.show -deflateWaveHoltz=1 -numToDeflate=256 -matlab=darkCornerRoomG8O4Freq15 -show=darkCornerRoomG8O4Freq15.show -krylovType=gmres -go=ks > darkCornerRoomG8O4Freq15.out
+
+deflate ied=  1 eigeNumber=1668: lambda=  1.4997e+01, (multiplicity=1) beta=  9.9999e-01
+deflate ied=  2 eigeNumber=1667: lambda=  1.4995e+01, (multiplicity=1) beta=  9.9997e-01
+deflate ied=  3 eigeNumber=1666: lambda=  1.4995e+01, (multiplicity=1) beta=  9.9997e-01
+deflate ied=  4 eigeNumber=1665: lambda=  1.4994e+01, (multiplicity=1) beta=  9.9995e-01
+deflate ied=  5 eigeNumber=1669: lambda=  1.5008e+01, (multiplicity=1) beta=  9.9992e-01
+deflate ied=  6 eigeNumber=1670: lambda=  1.5008e+01, (multiplicity=1) beta=  9.9991e-01
+deflate ied=  7 eigeNumber=1664: lambda=  1.4989e+01, (multiplicity=1) beta=  9.9985e-01
+deflate ied=  8 eigeNumber=1671: lambda=  1.5014e+01, (multiplicity=1) beta=  9.9973e-01
+deflate ied=  9 eigeNumber=1672: lambda=  1.5021e+01, (multiplicity=1) beta=  9.9942e-01
+deflate ied= 10 eigeNumber=1663: lambda=  1.4974e+01, (multiplicity=1) beta=  9.9911e-01
+deflate ied= 11 eigeNumber=1662: lambda=  1.4972e+01, (multiplicity=1) beta=  9.9898e-01
+deflate ied= 12 eigeNumber=1661: lambda=  1.4969e+01, (multiplicity=1) beta=  9.9871e-01
+deflate ied= 13 eigeNumber=1660: lambda=  1.4968e+01, (multiplicity=1) beta=  9.9870e-01
+deflate ied= 14 eigeNumber=1659: lambda=  1.4968e+01, (multiplicity=1) beta=  9.9862e-01
+deflate ied= 15 eigeNumber=1658: lambda=  1.4966e+01, (multiplicity=1) beta=  9.9849e-01
+deflate ied= 16 eigeNumber=1657: lambda=  1.4965e+01, (multiplicity=1) beta=  9.9835e-01
+deflate ied= 17 eigeNumber=1673: lambda=  1.5040e+01, (multiplicity=1) beta=  9.9795e-01
+deflate ied= 18 eigeNumber=1674: lambda=  1.5042e+01, (multiplicity=1) beta=  9.9775e-01
+deflate ied= 19 eigeNumber=1656: lambda=  1.4953e+01, (multiplicity=1) beta=  9.9709e-01
+deflate ied= 20 eigeNumber=1675: lambda=  1.5052e+01, (multiplicity=1) beta=  9.9652e-01
+deflate ied= 21 eigeNumber=1676: lambda=  1.5052e+01, (multiplicity=1) beta=  9.9648e-01
+deflate ied= 22 eigeNumber=1677: lambda=  1.5056e+01, (multiplicity=1) beta=  9.9593e-01
+
+
+----- OLD: 
+
+GO BACK TO (0,-3) freq=15
+setsid $cgwh -noplot gaussian.cmd -g=darkCornerRoomGride4.order4.hdf -ts=implicit -cfl=1000 -x0=0 -y0=-3 -nf=1 -amp=-400 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=8 -freq=15 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -eigenVectorFile=/home/henshw/runs/eig/darkCornerRoomG4O4EigsEv2048.show -deflateWaveHoltz=1 -numToDeflate=256 -eigTol=1.0e-5 -matlab=darkCornerRoomFreq15Np8Nit10G4Order4Deflate256 -show=darkCornerRoomFreq15Np8Nit10NG4Order4Deflate256.show -go=dfks > darkCornerRoomFreq15Np8Nit10G4Order4Deflate256.out
+
+
+
+****************************************************
+****** Mon June 30, 2025
+
+MULTI-FREQ AND MULTIGRID:
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+NF=3 Np=2 IMP 
+
+------ ORDER=4: 
+cgwh -noplot gaussian.cmd -g=square256.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square256mg -go=k
+
+totalTime=5.013e+01;
+timeForAdvance=4.991e+01;
+numberOfMatrixVectorMultiplications=22;
+
+cp *.m $mfwh/results/
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128mg -go=k
+
+totalTime=1.438e+01;
+timeForAdvance=1.433e+01;
+numberOfMatrixVectorMultiplications=22;
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+NF=3 Np=1 IMP 
+cgwh -noplot gaussian.cmd -g=square128.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=1 -matlab=square128 -go=dfk
+
+cp square128FD24TSINf3Np1*.m $mfwh/resultscp square128FD24TSINf3Np1*.m $mfwh/results
+
+
+****************************************************
+****** Wed/Thurs/Fri Jun 11/12/13, 2025
+
+COMPARE MULTI_FREQ TO FRANCIS
+
+
+---> ADD numPeriodsArray to MATLAB FILE
+
+NF=7
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 -y0=0.45 0.55 .5 .5 .54 .45 .47 -nf=7 -freq=15 21 26 32 41 49 58 -amp=400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=200 -numPeriods=6 -matlab=square128 -go=dfk
+
+
+NF=3 Np=1 IMP 
+cp square128FD24TSINf3Np1*.m $mfwh/results
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=1 -matlab=square128 -go=dfk
+
+
+
+NF=3 Np=2 EXP
+cp square128FD24TSENf3Np2*.m $mfwh/results/
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=explicit -cfl=0.9 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128 -go=dfk
+
+
++++++++++ CHECK numPeriodsArray +++++++++++++
+NF=3 Np=2 IMP 
+cp square128FD24TSINf3Np2*.m $mfwh/results/
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128 -go=dfk
+
+cgwave: 
+freq=0: numPeriodsArray=2, periodArraySave=  2.4640e+00, ... corrected for numPeriods   2.4640e+00
+freq=1: numPeriodsArray=3, periodArraySave=  1.8663e+00, ... corrected for numPeriods   1.8663e+00
+freq=2: numPeriodsArray=5, periodArraySave=  2.0805e+00, ... corrected for numPeriods   2.0805e+00
+
+MATLAB FILE: numPeriodsArray in CgWaveHOLTZ does NOT MATCH THE ONE in cgWave
+ numPeriodsArray=[2 2 4 ]
+
+plotConvergence.m: SAYS we can do more periods!
+
+
+freq=1: omega=    5.100 (adjusted=    5.053), Tbar=    2.464, Np=2.00
+freq=2: omega=   10.100 (adjusted=    9.751), Tbar=    1.866, Np=3.00
+freq=3: omega=   15.100 (adjusted=   14.004), Tbar=    2.081, Np=5.00
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+SIMPLER EXAMPLES FOR FRANCIS:
+ORDER=4 NF=1 IMP
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=1 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128 -go=dfk
+
+ORDER=4 NF=1 EXP
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=1 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=explicit -cfl=0.9 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128 -go=dfk
+
+
+
+ORDER=2 NF=1 IMP
+cgwh -noplot gaussian.cmd -g=square128.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=1 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128 -go=dfk
+
+ORDER=2 NF=1 EXP
+cgwh -noplot gaussian.cmd -g=square128.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=1 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=explicit -cfl=0.9 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128 -go=dfk
+
+
+--- REDO - RUNS FOR MFWH paper ---
+NF=3 Np=2 EXP
+cp square128FD24TSENf3Np2*.m $mfwh/results/
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=explicit -cfl=0.9 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128 -go=dfk
+
+
+numPeriodsArray=[2 2 4 ];
+
+
+solveHelmholtz: rel-max-diff=9.18e-13 for freq0 =   5.1000e+00, |v|_max= 2.12e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=8.09e-12 for freq1 =   1.0100e+01, |v|_max= 2.20e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=9.58e-13 for freq2 =   1.5100e+01, |v|_max= 7.16e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=8.09e-12, |v|_max= 2.20e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+NF=3 Np=2 IMP 
+cp square128FD24TSINf3Np2*.m $mfwh/results/
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128 -go=dfk
+
+numPeriodsArray=[2 2 4 ];
+
+
+NF=3 Np=1 IMP 
+cp square128FD24TSINf3Np1*.m $mfwh/results
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=1 -matlab=square128 -go=dfk
+
+numPeriodsArray=[1 1 2 ];
+
+solveHelmholtz: max-res=3.201e-09 (all freq, gmres, numIts=34, ave-CR= 0.48 )
+solveHelmholtz: rel-max-diff=5.19e-12 for freq0 =   5.1000e+00, |v|_max= 2.12e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=5.45e-12 for freq1 =   1.0100e+01, |v|_max= 2.20e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=2.76e-12 for freq2 =   1.5100e+01, |v|_max= 7.16e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=5.45e-12, |v|_max= 2.20e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-15 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=1 -matlab=square128 -go=dk
+
+solveHelmholtz: rel-max-diff=7.24e-13 for freq0 =   5.1000e+00, |v|_max= 2.12e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=4.98e-12 for freq1 =   1.0100e+01, |v|_max= 2.20e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=2.59e-13 for freq2 =   1.5100e+01, |v|_max= 7.16e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=4.98e-12, |v|_max= 2.20e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+****************************************************
+****** Mon June 9, 2025
+
+TEST 3D PARALLEL WAVEHOLTZ 
+
+BOX O4: NF=2
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=box2.order4 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=200 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+-np=1,2,4
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=1.720e-09.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=2.877e-09.
+solveHelmholtz: max-res=2.877e-09 (all freq, gmres, numIts=19, ave-CR= 0.31 )
+solveHelmholtz: rel-max-diff=3.86e-12 for freq0 =   5.0000e+00, |v|_max= 4.17e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=8.86e-12 for freq1 =   1.1000e+01, |v|_max= 2.43e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=8.86e-12, |v|_max= 4.17e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+BOX O2:
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=box2.order2 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=200 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+--nf=2: DHS: freq=0 OK, freq1=: **trouble** ... increase restart and iluh ... OK 
+
+-np=2,4 OK 
+*** freq=0: omega=5, solver-max-res=1.43e-13, time for direct Helmholtz solve = 7.48e-01 (s) (iterations=24) ***
+*** freq=1: omega=11, solver-max-res=1.54e-11, time for direct Helmholtz solve = 1.66e+00 (s) (iterations=312) ***
+
+
+CgWaveHoltz::residual: grid=0 : maxRes= 2.99e-10
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=4.891e-10.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=5.562e-10.
+solveHelmholtz: max-res=5.562e-10 (all freq, gmres, numIts=22, ave-CR= 0.35 )
+solveHelmholtz: rel-max-diff=4.74e-12 for freq0 =   5.0000e+00, |v|_max= 4.32e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=9.58e-11 for freq1 =   1.1000e+01, |v|_max= 2.23e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=9.58e-11, |v|_max= 4.32e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+--nf=1: 
+-np=1, 2
+CgWaveHoltz::residual: grid=0 : maxRes= 3.37e-09
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=3.374e-09.
+solveHelmholtz: max-res=3.374e-09 (gmres, numIts=12, ave-CR= 0.17 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=9.46e-12, |v|_max= 4.32e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+COMPILE SERIAL VERSION AND RUN CHECKS:
+
+cg66:~/Dropbox/research/cgwave> make check-quiet
+1,2,3,4,
+==============================================================
+============== EigenWave: All 4 tests successful =============
+==============================================================
+1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,
+==============================================================
+============== cgWave: All 36 tests successful ===============
+==============================================================
+1,2,** DIFFERENCE FOUND at line 57 :
+lineNew=[convergenceRate=0.783;]
+lineOld=[convergenceRate=0.694;]
+** DIFFERENCE FOUND at line 61 :
+lineNew=[maxRes=3.265e+01;]
+lineOld=[maxRes=9.715e-05;]
+diff=2
+** DIFFERENCE FOUND at line 77 :
+lineNew=[convergenceRate=0.493;]
+lineOld=[convergenceRate=0.378;]
+** DIFFERENCE FOUND at line 78 :
+lineNew=[numberOfIterations=30;]
+lineOld=[numberOfIterations=21;]
+** DIFFERENCE FOUND at line 81 :
+lineNew=[maxResReal=1.11e-03;]
+lineOld=[maxResReal=1.48e-03;]
+** DIFFERENCE FOUND at line 82 :
+lineNew=[maxResImag=2.00e-03;]
+lineOld=[maxResImag=2.05e-03;]
+** DIFFERENCE FOUND at line 83 :
+lineNew=[errorBetweenWaveHoltzAndHelmholtz=1.996e-03;]
+lineOld=[errorBetweenWaveHoltzAndHelmholtz=2.780e-03;]
+diff=5
+5,6,7,8,9,10,** DIFFERENCE FOUND at line 350 :
+lineNew=[convergenceRate=0.380;]
+lineOld=[convergenceRate=0.387;]
+** DIFFERENCE FOUND at line 351 :
+lineNew=[numberOfIterations=27;]
+lineOld=[numberOfIterations=26;]
+** DIFFERENCE FOUND at line 354 :
+lineNew=[maxResReal=7.20e-13;]
+lineOld=[maxResReal=4.54e-12;]
+** DIFFERENCE FOUND at line 355 :
+lineNew=[maxResImag=1.29e-12;]
+lineOld=[maxResImag=9.30e-12;]
+** DIFFERENCE FOUND at line 356 :
+lineNew=[errorBetweenWaveHoltzAndHelmholtz=1.814e-12;]
+lineOld=[errorBetweenWaveHoltzAndHelmholtz=2.744e-12;]
+diff=5
+** DIFFERENCE FOUND at line 371 :
+lineNew=[convergenceRate=0.230;]
+lineOld=[convergenceRate=0.241;]
+** DIFFERENCE FOUND at line 372 :
+lineNew=[numberOfIterations=15;]
+lineOld=[numberOfIterations=14;]
+** DIFFERENCE FOUND at line 375 :
+lineNew=[maxResReal=1.85e-10;]
+lineOld=[maxResReal=1.12e-09;]
+** DIFFERENCE FOUND at line 376 :
+lineNew=[maxResImag=6.58e-11;]
+lineOld=[maxResImag=6.93e-10;]
+** DIFFERENCE FOUND at line 377 :
+lineNew=[errorBetweenWaveHoltzAndHelmholtz=1.632e-10;]
+lineOld=[errorBetweenWaveHoltzAndHelmholtz=1.114e-09;]
+diff=5
+
+********************************************************
+************ cgwh: There were 4  ERRORS ****************
+********************************************************
+make[1]: *** [Makefile:9: check-quiet] Error 1
+make: *** [Makefile:173: check-quiet] Error 2
+
+
+
+****************************************************
+****** Sun June 8, 2025
+
+== FIXED PETScSolver : BUG found : igLocal incorrect for numberOfComponents
+
+
+IMPLICIT TIME-STEPPING WITH EM2 ... bugs fixed in implicit.bC and solveHelmholtz.bC
+
+GDB:
+mpiexec -n 2 xterm -e gdb --args $cgwh -noplot gaussian.cmd -g=square16.order2.hdf -ts=implicit -cfl=10000 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+VALGRIND
+mpiexec -n 2 valgrind $cgwh -noplot gaussian.cmd -g=square16.order2.hdf -ts=implicit -cfl=10000 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square64.order2.hdf -ts=implicit -cfl=10000 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+**trouble** np=2 ... fixed 
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 2.67e-13, 7.87e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 2.67e-13, 7.87e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 2.68e-13, 7.87e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.67e-13, 7.87e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+CgWaveHoltz::residual: grid=0 : maxRes= 3.85e-07
+solveHelmholtz: max-residual [Re,Im]=[1.84e-07,4.38e-07] (gmres, numIts=6, ave-CR= 0.06 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.38e-09,7.24e-09],  norm [Re,Im]=[4.62e-02,1.99e-02] (between WaveHoltz and Direct Helmholtz)
+
+-np=1:
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 2.67e-13, 7.87e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 2.67e-13, 7.87e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 2.67e-13, 7.87e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.67e-13, 7.87e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+CgWaveHoltz::residual: grid=0 : maxRes= 4.38e-07
+solveHelmholtz: max-residual [Re,Im]=[1.84e-07,4.38e-07] (gmres, numIts=6, ave-CR= 0.06 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.67e-09,7.71e-09],  norm [Re,Im]=[4.62e-02,1.99e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+O4 -- OK 
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square64.order4.hdf -ts=explicit -cfl=0.9 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=5 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=d
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.20e-16, 9.60e-16] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+                                                 ghost line 2: max-res=[ 4.86e-17, 3.16e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.34e-17, 2.60e-17] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+                                                 ghost line 2: max-res=[ 4.51e-17, 4.51e-17] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 9.03e-15, 2.08e-14] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+                                                 ghost line 2: max-res=[ 2.78e-17, 3.02e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 4.09e-15, 1.43e-14] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+                                                 ghost line 2: max-res=[ 3.30e-17, 7.29e-17] (extrapolation)
+CgWaveHoltz::residual: grid=0 : maxRes= 1.14e-09
+
+
+
+GDB: This ran: 
+mpiexec -n 2 xterm -e gdb --args $cgwh -noplot gaussian.cmd -g=square64.order2.hdf -ts=explicit -cfl=0.9 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=d
+
+
+VALGRIND:
+mpirun -np 2 valgrind $cgwh -noplot gaussian.cmd -g=square64.order2.hdf -ts=explicit -cfl=0.9 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=d
+
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square64.order2.hdf -ts=explicit -cfl=0.9 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=d
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.47e-16, 3.88e-14] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.40e-16, 8.28e-16] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 3.50e-13, 3.82e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.74e-13, 8.37e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+CgWaveHoltz::residual: grid=0 : maxRes= 3.22e-08
+
+
+****************************************************
+****** Sat June 7, 2025
+
+CHECK DHS SOLVER RBCs
+
+O2: 
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square64.order2.hdf -ts=explicit -cfl=0.9 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=d
+
+
+mpiexec -n 2 xterm -e gdb --args $cgwh -noplot gaussian.cmd -g=square64.order4.hdf -ts=explicit -cfl=0.9 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=d
+
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square64.order4.hdf -ts=explicit -cfl=0.9 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=d
+
+-np=2 : hangs 
++++++ solveHelmholtzDirect: BC: FILL MATRIX BC FOR (grid,side,axis)=(0,0,0) ABSORBING/EM2, c=1.000000e+00
++++++ solveHelmholtzDirect: BC: FILL MATRIX BC FOR (grid,side,axis)=(0,0,1) ABSORBING/EM2, c=1.000000e+00
++++++ solveHelmholtzDirect: BC: FILL MATRIX BC FOR (grid,side,axis)=(0,1,1) ABSORBING/EM2, c=1.000000e+00
+
+-np=1 : OK 
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 5.36e-17, 1.68e-16] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+                                                 ghost line 2: max-res=[ 2.62e-16, 1.01e-16] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 3.54e-17, 3.67e-17] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+                                                 ghost line 2: max-res=[ 2.13e-16, 1.25e-16] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 3.05e-17, 3.59e-17] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+                                                 ghost line 2: max-res=[ 1.16e-16, 1.32e-16] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.93e-16, 3.83e-17] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+                                                 ghost line 2: max-res=[ 2.67e-16, 1.39e-16] (extrapolation)
+CgWaveHoltz::residual: grid=0 : maxRes= 9.97e-11
+
+
+
+
++++ TEST CALL RESIDUAL FROM DHS 
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order2 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+ === Direct Helmholtz Solver:
+ PETScNew, parallel=[generalized minimal residual iteration + block Jacobi preconditioner], local=[ILU(10) + reverse Cuthill-McKee ordering]
+ =====
+#### PETScSolver: problemIsSingular=0
+
+*** freq=0: omega=5, solver-max-res=2.66e-12, time for direct Helmholtz solve = 5.84e-03 (s) (iterations=30) ***
+solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. 
+solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. 
+
+ $$$$$$$$$$ solveHelmholtzDirect: set orderOfExtrapolation=3 $$$$$$$$
+#### PETScSolver: problemIsSingular=0
+
+*** freq=1: omega=11, solver-max-res=2.20e-11, time for direct Helmholtz solve = 9.88e-03 (s) (iterations=194) ***
+CgWaveHoltz::residual: grid=0 : maxRes= 7.03e-08
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=1.702e-09.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=7.029e-08.
+
+
+
+
+****************************************************
+****** Fri June 6, 2025
+
+
+>>>> TEST RBCs in parallel
+
+DHS SOLVER HANGS **CHECK ME**
+
+EXP:
+mpiexec -n 2 xterm -e gdb --args $cgwh -noplot gaussian.cmd -g=square64.order4.hdf -ts=explicit -cfl=0.9 -nf=1 -x0=.5 -y0=.5 -freq=15 -amp=-225 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=k
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square64.order4.hdf -ts=explicit -cfl=0.9 -nf=1 -x0=.5 -y0=.5 -freq=15 -amp=-225 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=k
+
+-np=2 : FIXED : add updateGHostBoundaries to matrixUtulities : vectorToGridFunction
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.15e-14, 9.82e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 2.37e-15, 4.98e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.15e-14, 9.82e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 2.37e-15, 4.98e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.14e-14, 9.82e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 3.82e-15, 4.47e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.14e-14, 9.82e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 3.82e-15, 4.47e-15] (extrapolation)
+CgWaveHoltz::residual: grid=0 : maxRes= 8.66e-10
+solveHelmholtz: max-residual [Re,Im]=[1.93e-10,1.03e-09] (gmres, numIts=13, ave-CR= 0.21 )
+
+-np=2 RESIDUALS ARE LARGE NEAR top and bottom processor boundaries 
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.05e-07, 1.17e-05] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 5.04e-15, 4.66e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 9.99e-08, 1.05e-05] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 3.11e-15, 4.29e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 6.97e-05, 5.09e-04] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 3.52e-15, 5.40e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 6.97e-05, 5.09e-04] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 3.52e-15, 5.40e-15] (extrapolation)
+CgWaveHoltz::residual: grid=0 : maxRes= 9.92e-03
+solveHelmholtz: max-residual [Re,Im]=[9.92e-04,1.00e-02] (gmres, numIts=13, ave-CR= 0.23 )
+
+-np=1
+Check residual in absorbing BC: omega=  1.500000e+01, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.15e-14, 9.82e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 3.19e-15, 4.27e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.15e-14, 9.82e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 3.19e-15, 4.27e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.14e-14, 9.82e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 4.58e-15, 2.82e-15] (extrapolation)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.14e-14, 9.82e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 1.47e-44
+                                                 ghost line 2: max-res=[ 4.58e-15, 2.82e-15] (extrapolation)
+CgWaveHoltz::residual: grid=0 : maxRes= 1.03e-09
+solveHelmholtz: max-residual [Re,Im]=[1.93e-10,1.03e-09] (gmres, numIts=13, ave-CR= 0.21 )
+
+
+---IMP 
+mpiexec -n 2 xterm -e gdb --args $cgwh -noplot gaussian.cmd -g=square64.order4.hdf -ts=implicit -cfl=1000 -nf=1 -x0=.5 -y0=.5 -freq=15 -amp=-225 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=k
+
+
+IMP: 
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square64.order4.hdf -ts=implicit -cfl=1000 -nf=1 -x0=.5 -y0=.5 -freq=15 -amp=-225 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=k
+
+Make a Matrix Free Shell: myid=1: numEquationsLocal=4830, numEquations=9522                                                                           
+CgWave::formImplicitTimeSteppingMatrix: Changing the implicit solver parameters.                                                                      ..                                                                                          
+[1]PETSC ERROR: --------------------- Error Message ----------------------------                                                                    ----------------------------------                                                                                                                  
+[1]PETSC ERROR: Object is in wrong state          
+
+
+
+
+>>> START TEST DEFLATION IN PARALLEL: Looks OK
+
+
+SIC: 
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=sice16.order4 -x0=-0.25 -y0=-0.2 -nf=1 -freq=25 -amp=625 -beta=25 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=200 -numPeriods=2 -cfl=10000 -eigenVectorFile=/home/henshw/runs/eig/sice16O4EigsEv1024.show -deflateWaveHoltz=1 -numToDeflate=32 -matlab=diskG16O4Freq25Deflate32 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -krylovType=gmres -go=dk
+
+-np=16
+Convergence rate CR=0.408, CR-perPeriod=0.639, Time to solve = 9.18e+00(s) : CgWave= 9.15e+00(s) 99.74%, advance= 9.04e+00(s) 98.51%
+CgWaveHoltz::residual: grid=0 : maxRes= 4.59e-04
+CgWaveHoltz::residual: grid=1 : maxRes= 1.25e-04
+CgWaveHoltz::residual: freq= 0, omega=  25.000, max-res=1.065e-03.
+solveHelmholtz: max-res=1.065e-03 (gmres, numIts=21, ave-CR= 0.41 deflate=64, ACR= 0.81)
+
+-np=8: 
+Convergence rate CR=0.408, CR-perPeriod=0.639, Time to solve = 1.62e+01(s) : CgWave= 1.61e+01(s) 99.80%, advance= 1.60e+01(s) 99.08%
+CgWaveHoltz::residual: grid=0 : maxRes= 5.46e-04
+CgWaveHoltz::residual: grid=1 : maxRes= 1.25e-04
+CgWaveHoltz::residual: freq= 0, omega=  25.000, max-res=1.065e-03.
+solveHelmholtz: max-res=1.065e-03 (gmres, numIts=21, ave-CR= 0.41 deflate=64, ACR= 0.81)
+
+
+-np=2
+CgWaveHoltz::residual: grid=0 : maxRes= 1.07e-03
+CgWaveHoltz::residual: grid=1 : maxRes= 1.98e-04
+CgWaveHoltz::residual: freq= 0, omega=  25.000, max-res=1.065e-03.
+solveHelmholtz: max-res=1.065e-03 (gmres, numIts=21, ave-CR= 0.41 deflate=64, ACR= 0.81)
+solveHelmholtz: rel-max-diff=1.00e+00, |v|_max= 2.25e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+-- trouble with DHS solve
+INCREASE RESTART
+  restart=500 : NO 
+  restart=2000 ILU(20) : NO 
+
+
+=== Direct Helmholtz Solver:
+ PETScNew, parallel=[generalized minimal residual iteration + block Jacobi preconditioner], local=[ILU(10) + reverse Cuthill-McKee ordering]
+ =====
+#### PETScSolver: problemIsSingular=0
+PETScEquationSolver:ERROR: Solution diverged! reason=-5 : 
+     KSP_DIVERGED_NULL                = -2,
+     KSP_DIVERGED_ITS                 = -3,
+     KSP_DIVERGED_DTOL                = -4,
+     KSP_DIVERGED_BREAKDOWN           = -5,
+
+CgWaveHoltz::residual: grid=0 : maxRes= 1.07e-03
+CgWaveHoltz::residual: grid=1 : maxRes= 3.72e-04
+CgWaveHoltz::residual: freq= 0, omega=  25.000, max-res=1.065e-03.
+solveHelmholtz: max-res=1.065e-03 (gmres, numIts=21, ave-CR= 0.41 deflate=64, ACR= 0.81)
+solveHelmholtz: rel-max-diff=1.00e+00, |v|_max= 2.25e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+ 
+---- SERIAL: (yale solvers)
+
+CgWaveHoltz::residual: grid=0 : maxRes= 1.07e-03
+CgWaveHoltz::residual: grid=1 : maxRes= 3.72e-04
+CgWaveHoltz::residual: freq= 0, omega=  25.000, max-res=1.065e-03.
+solveHelmholtz: max-res=1.065e-03 (gmres, numIts=21, ave-CR= 0.41 deflate=64, ACR= 0.81)
+solveHelmholtz: rel-max-diff=3.19e-05, |v|_max= 2.25e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+SQUARE: OK: 
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square128.order2 -x0=.65 -y0=.7 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -ts=implicit -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=10000 -numPeriods=2 -cfl=10000 -eigenVectorFile=/home/henshw/runs/eig/square128O2Ev512.show -deflateWaveHoltz=1 -numToDeflate=2 -matlab=junk -krylovType=gmres -gmresRestartLength=200 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+-np=2
+CgWaveHoltz::residual: grid=0 : maxRes= 1.10e-07
+CgWaveHoltz::residual: freq= 0, omega=  10.000, max-res=1.343e-07.
+solveHelmholtz: max-res=1.343e-07 (gmres, numIts=9, ave-CR= 0.13 deflate=3, ACR= 0.72)
+solveHelmholtz: rel-max-diff=1.14e-10, |v|_max= 2.78e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+-np=1: 
+CgWaveHoltz::residual: grid=0 : maxRes= 1.34e-07
+CgWaveHoltz::residual: freq= 0, omega=  10.000, max-res=1.342e-07.
+solveHelmholtz: max-res=1.342e-07 (gmres, numIts=9, ave-CR= 0.13 deflate=3, ACR= 0.72)
+solveHelmholtz: rel-max-diff=1.15e-10, |v|_max= 2.78e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
+BUGS FIXED with indexing (matrixUtilities)...
+
+
+CIC IMP NF=2 
+  -np=2 : OK
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -x0=1.0 -1.0 -y0=1.0 1.0 -nf=2 -freq=2 3 -amp=-100 100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+solveHelmholtz: max-res=2.923e-08 (all freq, gmres, numIts=38, ave-CR= 0.52 )
+solveHelmholtz: rel-max-diff=4.79e-10 for freq0 =   2.0000e+00, |v|_max= 7.19e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.58e-09 for freq1 =   3.0000e+00, |v|_max= 7.16e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.58e-09, |v|_max= 7.19e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+****************************************************
+****** Thurs June 5, 2025
+
+>>>>> NOTE: IN PARALLEL USE "parallel gmres"
+>>>>>> FIXED OgesParameters.C : in parallel set parallelSolverMethod in "set( SolverMethodEnum option )" <<<<<<<<<<<<<<<<
+
+
+CIC IMP NF=2 
+mpiexec -n 1 $cgwh -noplot gaussian.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -x0=1.0 -1.0 -y0=1.0 1.0 -nf=2 -freq=2 3 -amp=-100 100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+-np=1
+solveHelmholtz: max-res=2.173e-09 (all freq, gmres, numIts=38, ave-CR= 0.52 )
+solveHelmholtz: rel-max-diff=1.32e-10 for freq0 =   2.0000e+00, |v|_max= 7.19e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=8.51e-11 for freq1 =   3.0000e+00, |v|_max= 7.16e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.32e-10, |v|_max= 7.19e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+SQUARE NF=2 NP=2 : looks ok 
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order2 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+-np=4
+solveHelmholtz: max-res=7.727e-09 (all freq, gmres, numIts=20, ave-CR= 0.28 )
+solveHelmholtz: rel-max-diff=3.51e-10 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.26e-10 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.51e-10, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+-np=2
+solveHelmholtz: max-res=2.577e-09 (all freq, gmres, numIts=20, ave-CR= 0.28 )
+solveHelmholtz: rel-max-diff=1.38e-10 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.32e-10 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.38e-10, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+mpiexec -n 2 xterm -e gdb --args $cgwh -noplot gaussian.cmd -g=square32.order2 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+----------
+SERIAL:
+set cgwhs = /home/henshw/codes/cgwaveSerial/bin/cgwh
+$cgwhs -noplot gaussian.cmd -g=square32.order2 -ts=implicit -cfl=100 -x0=0.6 .5 -y0=0.6 .5 -nf=2 -freq=5 11 -amp=-100 -100 -beta=10 10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=yale -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+solveHelmholtz: max-res=3.293e-09 (all freq, gmres, numIts=19, ave-CR= 0.29 )
+solveHelmholtz: rel-max-diff=2.95e-12 for freq0 =   5.0000e+00, |v|_max= 2.14e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=6.76e+02 for freq1 =   1.1000e+01, |v|_max= 1.48e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=6.76e+02, |v|_max= 2.14e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+---------
+
+
+SQUARE IMP  NF=2 ??  SET x0,y0 
+  -np=2 trouble .. bug ... fixed
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order2 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+-np=1: 
+
+solveHelmholtz: rel-max-diff=9.14e-13 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=9.07e-11 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=9.07e-11, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+CIC IMP **OK**
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=cice2.order2 -ts=implicit -cfl=1000 -x0=1.0 -y0=1.0 -nf=1 -freq=2 -amp=-100 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+solveHelmholtz: max-res=1.379e-08 (gmres, numIts=26, ave-CR= 0.42 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=2.38e-09, |v|_max= 7.19e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+CIC EXP **OK**
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=cice2.order2 -ts=explicit -cfl=.95 -x0=1.0 -y0=1.0 -nf=1 -freq=2 -amp=-100 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+---- np=2
+CgWaveHoltz::residual: grid=0 : maxRes= 2.37e-10
+CgWaveHoltz::residual: grid=1 : maxRes= 1.38e-10
+CgWaveHoltz::residual: freq= 0, omega=   2.000, max-res=2.858e-10.
+solveHelmholtz: max-res=2.858e-10 (gmres, numIts=23, ave-CR= 0.37 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=4.44e-10, |v|_max= 7.19e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+SQUARE IMP  OK 
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order2 -ts=implicit -cfl=100 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+solveHelmholtz: max-res=5.723e-09 (gmres, numIts=13, ave-CR= 0.15 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=2.62e-11, |v|_max= 1.84e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies) 
+
+SQUARE EXP
+mpiexec -n 4 $cgwh -noplot gaussian.cmd -g=square64.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+solveHelmholtz: max-res=4.169e-10 (gmres, numIts=11, ave-CR= 0.11 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=1.58e-12, |v|_max= 1.85e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+ $solverh = "choose best iterative solver\n parallel gmres";
+
+ === Direct Helmholtz Solver:
+ PETScNew, parallel=[generalized minimal residual iteration + block Jacobi preconditioner], local=[ILU(10) + reverse Cuthill-McKee ordering]
+ =====
+
+
+
+-solverh=best: 
+ === Direct Helmholtz Solver:
+ PETScNew, parallel=[bi-conjugate gradient stabilized + block Jacobi preconditioner], local=[ILU(10) + reverse Cuthill-McKee ordering]
+
+
+=== SOLVERH=BEST  WORKS !! 
+  **SOMETHING WRONG WITH CHOOSING GMRES in PARALLEL --> serial versus parallel solver??
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=2.781e-10.
+solveHelmholtz: max-res=2.781e-10 (gmres, numIts=11, ave-CR= 0.12 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=2.63e-12, |v|_max= 1.84e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square16.order2 -ts=implicit -cfl=10000 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-16 -atolh=1.0e-16 -go=dk
+
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square16.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-16 -atolh=1.0e-16 -go=d
+
+square16: not OK 
+*** freq=0: omega=5.1, solver-max-res=4.14e-16, time for direct Helmholtz solve = 4.03e-03 (s) (iterations=20) ***
+CgWaveHoltz::residual: grid=0 : maxRes= 1.41e-04
+
+square8 : OK 
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=5.542e-13.
+CgWaveHoltz: omega=5.100e+00, max-res=5.542e-13 (direct Helmholtz solution)
+
+
+DECREASE rtolh -- same problem
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-16 -atolh=1.0e-16 -go=d
+
+*** freq=0: omega=5.1, solver-max-res=7.78e-16, time for direct Helmholtz solve = 1.05e-02 (s) (iterations=27) ***
+CgWaveHoltz::residual: grid=0 : maxRes= 1.37e-03
+
+
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=d
+
+
+****************************************************
+****** Mon June 2, 2025
+
+square32: -- np=2: SOMETHING WRONG WITH DIRECT SOLVER ?? residuals are off
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+---- -np=2 
+ === Direct Helmholtz Solver:
+ PETScNew, parallel=[bi-conjugate gradient stabilized + block Jacobi preconditioner], local=[generalized minimal residual iteration + ILU(10) + reverse Cuthill-McKee ordering]
+ =====
+#### PETScSolver: problemIsSingular=0
+
+*** freq=0: omega=5.1, solver-max-res=2.18e-12, time for direct Helmholtz solve = 1.76e-02 (s) (iterations=21) ***
+CgWaveHoltz::residual: grid=0 : maxRes= 1.37e-03
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=1.368e-03.
+solveHelmholtz: call residual to check the solution from the direct Helmholtz solver...
+CgWaveHoltz::residual: grid=0 : maxRes= 1.37e-03
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=1.368e-03.
+CgWaveHoltz: omega=5.100e+00, max-res=1.368e-03 (direct Helmholtz solution)
+cgwh: max-err =0.00e+00 (between WaveHoltz and known solution, all frequencies)
+
+
+solveHelmholtz: max-res=2.781e-10 (gmres, numIts=11, ave-CR= 0.12 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=1.15e-06, |v|_max= 1.84e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+-------------------- SMALL GRID ---- STARTS TO WORK 
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square16.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+****************************************************
+****** Sun June 1, 2025
+
+CONTINUE TEST PARALLEL
+
+VALGRIND: with a log file per processor (no debug)
+  **BUT WHY SO MANY LOG FILES **
+    TRY %n instead of %p
+
+mpirun -np 2 valgrind --log-file=myLogFile%n $cgwh -noplot gaussian.cmd -g=square16.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+Make a Matrix Free Shell: myid=0: numEquationsLocal=105, numEquations=225
+Make a Matrix Free Shell: myid=1: numEquationsLocal=120, numEquations=225
+==3295721== Invalid write of size 8
+==3295721==    at 0x301625: CgWave::gridFunctionToVector(doubleCompositeGridFunction const&, double*) (matrixUtilities.C:347)
+==3295721==    by 0x1C32C2: CgWaveHoltz::solvePETSc(int, char**) (solvePETSc.C:1355)
+==3295721==    by 0x15FBDC: CgWaveHoltz::solveHelmholtz(int, char**) (solveHelmholtz.C:483)
+==3295721==    by 0x13DE65: main (cgwh.C:183)
+==3295721==  Address 0x13efb850 is 0 bytes after a block of size 960 alloc'd
+==3295721==    at 0x484D7E3: memalign (vg_replace_malloc.c:1531)
+==3295721==    by 0x484D8FF: posix_memalign (vg_replace_malloc.c:1703)
+
+
+
+OLD valgrind example:
+mpiexec -n 1 xterm -e valgrind -q --db-attach=yes ./parallelTri
+
+
+mpiexec -n 2 xterm -e gdb --args $cgwh -noplot gaussian.cmd -g=square16.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+-------------------- SMALL GRID ---- STARTS TO WORK 
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square16.order2 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=5.1 -amp=-100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+-n=2
+CgWaveHoltz::residual: grid=0 : maxRes= 2.88e-10
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=2.876e-10.
+solveHelmholtz: max-res=2.876e-10 (gmres, numIts=11, ave-CR= 0.12 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=1.28e-05, |v|_max= 1.82e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+-np=1
+CgWaveHoltz::residual: grid=0 : maxRes= 2.87e-10
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=2.869e-10.
+solveHelmholtz: max-res=2.869e-10 (gmres, numIts=11, ave-CR= 0.12 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=5.07e-13, |v|_max= 1.82e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+mpiexec -n 2 xterm -e gdb --args $cgwh -noplot gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.6 -y0=0.6 -nf=1 -amp=-2000 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -freq=5.1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+
+SQUARE: nf=2 :
+
+mpirun -np 1 $cgwh -noplot gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -nf=2 -x0=0.6 .5 -y0=0.6 .5 -freq=5.1 11 -amp=-25 -100 -beta=10 10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+>>> NEW:
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=7.862e-10.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=1.436e-09.
+solveHelmholtz: max-res=1.436e-09 (all freq, gmres, numIts=19, ave-CR= 0.28 )
+solveHelmholtz: rel-max-diff=1.88e-10 for freq0 =   5.1000e+00, |v|_max= 4.61e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.22e-06 for freq1 =   1.1000e+01, |v|_max= 6.49e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.22e-06, |v|_max= 6.49e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+>>>> OLD
+CgWaveHoltz::residual: grid=0 : maxRes= 1.44e-09
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=7.862e-10.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=1.436e-09.
+solveHelmholtz: max-res=1.436e-09 (all freq, gmres, numIts=19, ave-CR= 0.28 )
+solveHelmholtz: rel-max-diff=1.88e-10 for freq0 =   5.1000e+00, |v|_max= 4.61e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.22e-06 for freq1 =   1.1000e+01, |v|_max= 6.49e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.22e-06, |v|_max= 6.49e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+SQUARE: nf=1 : OK for np=1
+mpirun -np 1 $cgwh -noplot gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.6 -y0=0.6 -nf=1 -amp=-2000 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -freq=5.1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+cgwh -noplot gaussian.cmd -g=square32.order4 -x0=0.6 0.4 .55 .5 .44 -y0=0.45 0.55 .5 .5 .54 -nf=2 -freq=15 21 26 32 41 -amp=200 200 400 400 400 -beta=15 19 20 21 22 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=4 -matlab=square -go=dk
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
+>>>>>>>>> 
+
+MatrixUtilities:
+Make a Matrix Free Shell: numEquations=3969
+
+
+#### PETScSolver: problemIsSingular=0
+cgWave:FD22 t=1.213e+00 ( 9 steps) dt=1.347e-01 ||u||= 5.46e+01, cpu= 8.21e-02(s)
+cgWave:FD22 t=1.347e+00 (10 steps) dt=1.347e-01 ||u||= 4.42e+01, cpu= 8.83e-02(s)
+COMPUTE b = Pi * v(0) 
+solvePETSc: RHS is b: l2-norm(b)=4.684e+02, L2h-norm(b)= 7.43e+00
+CghWaveHoltz::PETScSolver: setting gmres restart length to 500
+cgwh: src/solvePETSc.C:1555: int CgWaveHoltz::solvePETSc(int, char**): Assertion `numberOfActivePoints>0.' failed.
+
+CgWaveHoltz::residual: grid=0 : maxRes= 8.92e-07
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=8.922e-07.
+solveHelmholtz: max-res=8.922e-07 (gmres, numIts=14, ave-CR= 0.14 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=1.78e-11, |v|_max= 1.23e+02 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
+>>>>>>>>> OLD solvePETSc:
+Make a Matrix Free Shell: numEquations=3969
+solvePETSc: Set initial guess to v, max-norm(v)=0.00e+00, numberOfActivePoints=3969
+
+ ++++++++ WaveHoltz Matrix vector multiply routine: EVALUATE THE RHS
+ >>>> Call cgWave to COMPUTE the Right-hand-side to Ax=b : b = Pi * v(0) 
+
+#### PETScSolver: problemIsSingular=0
+cgWave:FD22 t=1.213e+00 ( 9 steps) dt=1.347e-01 ||u||= 5.46e+01, cpu= 8.17e-02(s)
+cgWave:FD22 t=1.347e+00 (10 steps) dt=1.347e-01 ||u||= 4.42e+01, cpu= 8.79e-02(s)
+COMPUTE b = Pi * v(0) 
+solvePETSc: RHS is b: l2-norm(b)=4.684e+02, L2h-norm(b)= 7.43e+00
+
+ &&&&&&&& advance : it=0  &&&&&&&&&&& 
+
++++++++++++++ takeFirstStepHelmholtz: TAKE IMPLICIT FIRST STEP ++++++++++++
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.347e-01 ||u||= 0.00e+00, cpu= 1.97e-07(s)
+cgWave:FD22 t=1.213e+00 ( 9 steps) dt=1.347e-01 ||u||= 5.46e+01, cpu= 5.39e-02(s)
+cgWave:FD22 t=1.347e+00 (10 steps) dt=1.347e-01 ||u||= 4.42e+01, cpu= 6.04e-02(s)
+
+ &&&&&&&& advance : it=1  &&&&&&&&&&& 
+
++++++++++++++ takeFirstStepHelmholtz: TAKE IMPLICIT FIRST STEP ++++++++++++
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.347e-01 ||u||= 3.40e-02, cpu= 1.01e-07(s)
+cgWave:FD22 t=1.213e+00 ( 9 steps) dt=1.347e-01 ||u||= 5.46e+01, cpu= 5.28e-02(s)
+cgWave:FD22 t=1.347e+00 (10 steps) dt=1.347e-01 ||u||= 4.42e+01, cpu= 5.92e-02(s)
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=0: L2h-residual= 7.43e+00, ratio= 1.00 
+
+
+CgWaveHoltz::residual: grid=0 : maxRes= 8.92e-07
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=8.922e-07.
+solveHelmholtz: max-res=8.922e-07 (gmres, numIts=14, ave-CR= 0.14 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=1.78e-11, |v|_max= 1.23e+02 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+****************************************************
+****** Thurs May 29, 2025
+
+START TEST PARALLEL
+
+TROUBLE: -np 2
+
+
+mpirun -np 2 $cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.6 -y0=0.6 -nf=1 -amp=-2000 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -freq=5.1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=100 -iluh=10 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=halt
+
+CgWaveHoltz::solvePETSc: setting tFinal = Tperiod*numPeriods = 1.232e+00 (numPeriods=1) 
+Make a Matrix Free Shell: numEquations=3969
+cgwh: src/solvePETSc.C:1343: int CgWaveHoltz::solvePETSc(int, char**): Assertion `i<iEnd' failed.
+
+
+-np 1:
+solveHelmholtz: max-res=8.922e-07 (gmres, numIts=14, ave-CR= 0.14 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=1.78e-11, |v|_max= 1.23e+02 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+mpiexec -n 2 xterm -e gdb --args $cgwh -noplot gaussian.cmd -g=square64.order4 -ts=implicit -cfl=1000 -x0=0.6 -y0=0.6 -nf=1 -amp=-2000 -beta=5 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=10 -numPeriods=1 -freq=5.1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-10 -atoli=1e-10 -orderOfExtrapolation=4 -go=og 
+
+
 
 *******************************************
 ********* Tues May 20, 2025 

@@ -25,9 +25,13 @@ square64ImpKrylov.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order
 square64ImpFP.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -freq=20 -bc=d -minStepsPerPeriod=20 -go=df
 #
 # MULTI-FREQ
-square64ImpFreq3Krylov.check ../runsWaveHoltz/trigHelmholtz/trigHelmholtz.cmd -g=square64.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=1 -go=dk
+square64ExpFreq3Krylov.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -numPeriods=4 -nf=2 -freq=7 12 -x0=.5 .55 -y0=.5 .45 -amp = 49 144 -beta=15 15 -ts=explicit -cfl=0.95 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -upwind=0 -go=dk
+# 
+square64ImpFreq3Krylov.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -x0=.5 .55 .45 -y0=.5 .45 .55 -amp = 25 144 255 -beta=15 15 15 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=0 -go=dk
+# turn this off: in-homogeneous BCs is broken 
+# square64ImpFreq3Krylov.check ../runsWaveHoltz/trigHelmholtz/trigHelmholtz.cmd -g=square64.order2 -numPeriods=4 -nf=3 -freq=5.1 12 15.5 -kx=1.75 -ky=1.75 -ts=implicit -dtMax=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-14 -tp=1000 -maxIterations=70 -cfl=1000 -upwind=1 -go=dk
 #
-# Square, IMP, SUPERGRID **TURN OFF IMPLICI FIRST STEP: NOT WORKING YET**
+# Square, IMP, SUPERGRID **TURN OFF IMPLICIT FIRST STEP: NOT WORKING YET**
 square64ImpSuperGridKrylov.check ../runsWaveHoltz/gaussian/gaussian.cmd -g=square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -minStepsPerPeriod=20 -takeImplicitFirstStep=0 -go=dk
 #
 # AGMRES : Augmented Gmres for deflation of WaveHoltz 

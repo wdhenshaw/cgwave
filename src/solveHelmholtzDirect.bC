@@ -59,19 +59,19 @@ for(i1=I1Base; i1<=I1Bound; i1++)
 // =======================================================================
 // =======================================================================
 #define setEquationNumber(m, ni,i1,i2,i3,  nj,j1,j2,j3 )\
-          equationNumber(m,i1,i2,i3)=indexToEquation( nj,j1,j2,j3)
+          equationNumberLocal(m,i1,i2,i3)=indexToEquation( nj,j1,j2,j3)
 
 // =======================================================================
 // =======================================================================
 #define setClassify(n,i1,i2,i3, type) \
-    classify(i1,i2,i3,n)=type
+    classifyLocal(i1,i2,i3,n)=type
 
 // =======================================================================
 //  Macro to zero out the matrix coefficients for equations e1,e1+1,..,e2
 // =======================================================================
 #define zeroMatrixCoefficients( coeff,e1,e2, i1,i2,i3 )\
 for( int m=CE(0,e1); m<=CE(0,e2+1)-1; m++ ) \
-  coeff(m,i1,i2,i3)=0.
+  coeffLocal(m,i1,i2,i3)=0.
 
 
 // ==========================================================================
@@ -210,6 +210,9 @@ for( int m=CE(0,e1); m<=CE(0,e2+1)-1; m++ ) \
   const int equationOffset=sparse.equationOffset;
   intArray & equationNumber = sparse.equationNumber;
   intArray & classify = sparse.classify;
+
+  OV_GET_SERIAL_ARRAY(int,equationNumber,equationNumberLocal);
+  OV_GET_SERIAL_ARRAY(int,classify,classifyLocal);  
   
   const int equationNumberBase1  =equationNumber.getBase(1);
   const int equationNumberLength1=equationNumber.getLength(1);
@@ -282,7 +285,11 @@ for( int m=CE(0,e1); m<=CE(0,e2+1)-1; m++ ) \
 
 
     // solver.set(OgesParameters::THEparallelSolverMethod,OgesParameters::gmres);
-    // solver.set(OgesParameters::THErelativeTolerance,max(tol,REAL_EPSILON*10.));
+    if( 1==0 )
+    {
+      solver.set(OgesParameters::THErelativeTolerance,REAL_EPSILON*10.);
+      solver.set(OgesParameters::THEabsoluteTolerance,REAL_EPSILON*10.);
+    }
     // solver.set(OgesParameters::THEmaximumNumberOfIterations,10000);
     // if( iluLevels>=0 )
     //   solver.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
@@ -669,8 +676,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
 
 
-  // --- DO THIS FOR NOW : **FIX ME** -----
+  const aString & knownSolutionOptionCgWave = cgWave.dbase.get<aString>("knownSolutionOption"); 
 
+  // --- DO THIS FOR NOW : **FIX ME** -----
   const int planeWave=1, gaussianPlaneWave=2, boxHelmholtz=3;
 
   Real kxBoxHelmholtz=1., kyBoxHelmholtz=1., kzBoxHelmholtz=1.;
@@ -787,7 +795,6 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
       }
 
  
-
       // -- use predefined equations : 
       constantCoeff(0,all) = SQR(omega);    
       constantCoeff(1,all) = SQR(c); 
@@ -799,8 +806,11 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
       // --- fill in boundary conditions --- 
       //  Boundary conditions will be filled in by getHelmholtzForcing, but these are not correct for numberOfFrequencies>1 
-      Index Ib1,Ib2,Ib3; 
+      // Index Ib1,Ib2,Ib3; 
       Index Ig1,Ig2,Ig3; 
+
+      Index Ibv[3], &Ib1=Ibv[0], &Ib2=Ibv[1], &Ib3=Ibv[2];
+
       IntegerArray bcLocal(2,3);
       for( int grid=0; grid<numberOfComponentGrids; grid++ )
       {
@@ -836,6 +846,14 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                   else
                     fLocal(Ib1,Ib2,Ib3,freq)= sin( kx*xLocal(Ib1,Ib2,Ib3,0) )*sin( ky*xLocal(Ib1,Ib2,Ib3,1) )*sin( kz*xLocal(Ib1,Ib2,Ib3,2) );
                 }
+                else if( knownSolutionOptionCgWave=="userDefinedKnownSolution" )
+                {
+                  // new way 
+                  Real t = 0.;
+
+                  cgWave.getUserDefinedKnownSolution( t, grid, f[grid], Ib1,Ib2,Ib3 );
+
+                }
               }
             }
             else if( bcLocal(side,axis)==CgWave::neumann )
@@ -854,6 +872,15 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
       }
 
       real time0=getCPU();
+
+      if( 1==0 )
+      {
+        f.display("f: RHS before direct Helmholtz solve","%8.1e ");  
+        // for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        // {
+        //   f[grid].updateGhostBoundaries();
+        // }        
+      }
 
       // ------- SOLVE THE HELMHOLTZ EQUATIONS -----
       if( numberOfFrequencies==1 )
@@ -1832,7 +1859,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
           for( int ghost=1; ghost<=numGhost; ghost++ )
           {
             getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
-            fcLocal(Ig1,Ig2,Ig3,R2)=0.;
+            bool ok=ParallelUtility::getLocalArrayBounds(f[grid],fLocal,Ig1,Ig2,Ig3);
+            if( ok )
+              fcLocal(Ig1,Ig2,Ig3,R2)=0.;
           }
 
         }
@@ -1882,22 +1911,25 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
     helmholtzSolverName = solver.parameters.getSolverName();
     printF("\n === Direct Helmholtz Solver (Complex) :\n %s\n =====\n",(const char*)helmholtzSolverName);    
 
+    if( 1==0 )
+      fc.display("fc: RHS before direct Helmholtz solve","%8.1e ");
 
-    // fc.display("fc: RHS before direct solve","%8.2e ");
 
     u=0.;  // initial guess for iterative solvers
     solver.solve( u,fc ); 
 
-    // OV_ABORT("Solve the complex Helmholtz : FINISH ME");
-
-    // for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-    // {
-    //   u[grid].updateGhostBoundaries();
-    // }
-
+ 
     bool checkResidual=true;
-    if( checkResidual )
+    if( 1==1 && checkResidual )
     {
+      RealArray maxRes;
+      int useAdjustedOmega=0;
+      residual( u, maxRes, useAdjustedOmega );
+    }
+    else if( checkResidual )
+    {
+      // **** OLD WAY ****
+
       realCompositeGridFunction & res = dbase.get<realCompositeGridFunction>("residual");
       Index Ib1,Ib2,Ib3;
       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )

@@ -578,9 +578,9 @@ extern "C"
       // The number of periods may have changed --- fix the un-adjusted period array: *wdh* Feb 3, 2023
       for( int freq=0; freq<numberOfFrequencies; freq++ )
       {
-        printF("freq=%d: numPeriodsArray=%d, periodArraySave=%12.4e, ",freq,numPeriodsArray(freq),periodArraySave(freq));
+        if( 1==0 ) printF("freq=%d: numPeriodsArray=%d, periodArraySave=%12.4e, ",freq,numPeriodsArray(freq),periodArraySave(freq));
         periodArraySave(freq)=(twoPi/frequencyArraySave(freq))*numPeriodsArray(freq);
-        printF("... corrected for numPeriods %12.4e\n",periodArraySave(freq));
+        if( 1==0 ) printF("... corrected for numPeriods %12.4e\n",periodArraySave(freq));
       }
       // OV_ABORT("stop here for now");
 

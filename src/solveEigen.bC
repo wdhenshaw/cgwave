@@ -228,14 +228,15 @@ int CgWaveHoltz::outputEigenTable()
   printF(" -----------------------------------------------------------------------------\n");
   printF(" ------------------------- EigenWave SUMMARY ---------------------------------\n");
   printF(" omega=%12.4e, orderOfAccuracy=%d, grid=%s\n",omega,orderOfAccuracy,(const char*)gridNameNoPrefix);
-  aString eigenSolverName = (eigenSolver==CgWave::defaultEigenSolver          ? "KrylovSchur" :
-                             eigenSolver==CgWave::KrylovSchurEigenSolver      ? "KrylovSchur" :
-                             eigenSolver==CgWave::ArnoldiEigenSolver          ? "Arnoldi" : 
-                             eigenSolver==CgWave::ArpackEigenSolver           ? "Arpack" : 
-                             eigenSolver==CgWave::fixedPointEigenSolver       ? "fixedPoint" : 
-                             eigenSolver==CgWave::powerEigenSolver            ? "power" :
-                             eigenSolver==CgWave::inverseIterationEigenSolver ? "inverseIteration" :
-                             eigenSolver==CgWave::JacobiDavidsonEigenSolver   ? "JacobiDavidson" :
+  aString eigenSolverName = (eigenSolver==CgWave::defaultEigenSolver           ? "KrylovSchur" :
+                             eigenSolver==CgWave::KrylovSchurEigenSolver       ? "KrylovSchur" :
+                             eigenSolver==CgWave::ArnoldiEigenSolver           ? "Arnoldi" : 
+                             eigenSolver==CgWave::ArpackEigenSolver            ? "Arpack" : 
+                             eigenSolver==CgWave::fixedPointEigenSolver        ? "fixedPoint" : 
+                             eigenSolver==CgWave::powerEigenSolver             ? "power" :
+                             eigenSolver==CgWave::inverseIterationEigenSolver  ? "inverseIteration" :
+                             eigenSolver==CgWave::JacobiDavidsonEigenSolver    ? "JacobiDavidson" :
+                             eigenSolver==CgWave::subspaceIterationEigenSolver ? "subspaceIteration" :
                              "unknown" );
   aString eigenSolverNameLong = eigenSolverName; 
   if( eigenSolver !=CgWave::fixedPointEigenSolver )
@@ -276,10 +277,12 @@ int CgWaveHoltz::outputEigenTable()
       printF(" implicit solver: rtol=%9.2e, atol=%9.2e\n",rtol,atol);
     } 
   }
+  const Real numTimeStepsPerEig = numberOfStepsTaken/max(Real(numEigenVectors),1.);
+
   printF(" tol=%9.2e, number of wave-solves (mat-vecs) = %d, cpu=%9.2e(s)\n",tol,numberOfMatrixVectorMultiplications,cpuSolveEigenWave);
   const Real numWaveSolvesPerEig = numberOfMatrixVectorMultiplications/max(Real(numEigenVectors),1.);
-  printF(" num eigs requested=%d, number eigs converged =%d, numArnoldiVectors=%d, wave-solves/eig=%5.1f\n",
-    numEigsToCompute,numEigenVectors,numArnoldiVectors,numWaveSolvesPerEig);
+  printF(" num eigs requested=%d, number eigs converged =%d, numArnoldiVectors=%d, wave-solves/eig=%5.1f, timeSteps/eig=%5.1f\n",
+    numEigsToCompute,numEigenVectors,numArnoldiVectors,numWaveSolvesPerEig,numTimeStepsPerEig);
   printF(" numberOfIterations=%d, iterationStartRR=%d, assignRitzFrequency=%d, numberOfRitzVectors=%d (for fixed-point)\n",
         numberOfIterations,iterationStartRR,assignRitzFrequency,numberOfRitzVectors);
   printF(" -----------------------------------------------------------------------------\n");
@@ -304,10 +307,23 @@ int CgWaveHoltz::outputEigenTable()
 
 
     bool saveErrors=false;
-    RealArray lambda(numEigenVectors), lambdaTrue(numEigenVectors), relErrEigenvalue(numEigenVectors), relErrEigenvector(numEigenVectors);
-    
+    RealArray lambda(numEigenVectors), lambdaTrue(numEigenVectors);
 
-    RealArray eigenPairResidual(numEigenVectors);
+    if( !dbase.has_key("relErrEigenvalue") )
+    {
+      dbase.put<RealArray>("relErrEigenvalue");
+      dbase.put<RealArray>("relErrEigenvector");
+      dbase.put<RealArray>("eigenPairResidual");
+
+    }
+    RealArray & relErrEigenvalue  = dbase.get<RealArray>("relErrEigenvalue");
+    RealArray & relErrEigenvector = dbase.get<RealArray>("relErrEigenvector");
+    RealArray & eigenPairResidual = dbase.get<RealArray>("eigenPairResidual");
+
+    relErrEigenvalue.redim(numEigenVectors);
+    relErrEigenvector.redim(numEigenVectors);
+    eigenPairResidual.redim(numEigenVectors);
+
     for( int ie=0; ie<numEigenVectors; ie++ ) 
     {
       res.setName(sPrintF("res%d",ie),ie);
@@ -676,24 +692,17 @@ int CgWaveHoltz::assignEigenSolverInitialCondition( bool smoothInitialCondition 
 
       vLocal=0.;
       getIndex(mg.gridIndexRange(),I1,I2,I3);
+      int includeParallelGhost=1;
+      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);      
+      if( ok )
+      {
+        if( numberOfDimensions==2 )
+          vLocal(I1,I2,I3) = scale*sin( kx*xLocal(I1,I2,I3,0) ) * sin( ky*xLocal(I1,I2,I3,1) );
+        else
+          vLocal(I1,I2,I3) = scale*sin( kx*xLocal(I1,I2,I3,0) ) * sin( ky*xLocal(I1,I2,I3,1) )* sin( kz*xLocal(I1,I2,I3,2) );
+      }
 
-      if( numberOfDimensions==2 )
-        vLocal(I1,I2,I3) = scale*sin( kx*xLocal(I1,I2,I3,0) ) * sin( ky*xLocal(I1,I2,I3,1) );
-      else
-        vLocal(I1,I2,I3) = scale*sin( kx*xLocal(I1,I2,I3,0) ) * sin( ky*xLocal(I1,I2,I3,1) )* sin( kz*xLocal(I1,I2,I3,2) );
 
-      // FOR_3D(i1,i2,i3,I1,I2,I3)
-      // {
-      //   if( maskLocal(i1,i2,i3)!=0 )
-      //   {
-      //     if( numberOfDimensions==2 )
-      //       vLocal(i1,i2,i3) = scale*sin( kx*xLocal(i1,i2,i3,0) ) * sin( ky*xLocal(i1,i2,i3,1) );
-      //     else
-      //       vLocal(i1,i2,i3) = scale*sin( kx*xLocal(i1,i2,i3,0) ) * sin( ky*xLocal(i1,i2,i3,1) )* sin( kz*xLocal(i1,i2,i3,2) );
-
-      //   }
-
-      // }
     }
 
 
@@ -732,11 +741,16 @@ int CgWaveHoltz::assignEigenSolverInitialCondition( bool smoothInitialCondition 
         OV_GET_SERIAL_ARRAY(real,uev[grid],uevLocal);
 
         getIndex(mg.dimension(),I1,I2,I3);
-        Real scale = 1./(lambda*lambda);  // does this matter ? 
-        if( ie==0 )
-          vLocal(I1,I2,I3) = uevLocal(I1,I2,I3,ie)*scale;
-        else
-          vLocal(I1,I2,I3) += uevLocal(I1,I2,I3,ie)*scale;
+        int includeParallelGhost=1;
+        bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);      
+        if( ok )  
+        {      
+          Real scale = 1./(lambda*lambda);  // does this matter ? 
+          if( ie==0 )
+            vLocal(I1,I2,I3) = uevLocal(I1,I2,I3,ie)*scale;
+          else
+            vLocal(I1,I2,I3) += uevLocal(I1,I2,I3,ie)*scale;
+        }
       }
     }
     // replot=true;      
@@ -787,25 +801,29 @@ int CgWaveHoltz::smoothEigenSolverInitialCondition()
       MappedGrid & mg = cg[grid];
       getIndex(mg.gridIndexRange(),I1,I2,I3);
       OV_GET_SERIAL_ARRAY( Real,v[grid],vLocal);
-
-      if( numberOfDimensions==2 )
-      {
-        vLocal(I1,I2,I3) = (1.-omega)*(vLocal(I1,I2,I3) ) +
-                           (.25*omega)*(vLocal(I1+1,I2  ,I3) + 
-                                        vLocal(I1-1,I2  ,I3) + 
-                                        vLocal(I1  ,I2+1,I3) +
-                                        vLocal(I1  ,I2-1,I3) );
-      }
-      else
-      {
-        vLocal(I1,I2,I3) = (1.-omega)*(vLocal(I1,I2,I3) ) +
-                            (omega/6.)*(vLocal(I1+1,I2  ,I3) + 
-                                        vLocal(I1-1,I2  ,I3) + 
-                                        vLocal(I1  ,I2+1,I3) +
-                                        vLocal(I1  ,I2-1,I3) +
-                                        vLocal(I1  ,I2,I3+1) +
-                                        vLocal(I1  ,I2,I3+1)                                             
-                                        );            
+      int includeParallelGhost=0;
+      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);      
+      if( ok )  
+      {        
+        if( numberOfDimensions==2 )
+        {
+          vLocal(I1,I2,I3) =  (1.-omega)*(vLocal(I1,I2,I3) ) +
+                             (.25*omega)*(vLocal(I1+1,I2  ,I3) + 
+                                          vLocal(I1-1,I2  ,I3) + 
+                                          vLocal(I1  ,I2+1,I3) +
+                                          vLocal(I1  ,I2-1,I3) );
+        }
+        else
+        {
+          vLocal(I1,I2,I3) =  (1.-omega)*(vLocal(I1,I2,I3) ) +
+                              (omega/6.)*(vLocal(I1+1,I2  ,I3) + 
+                                          vLocal(I1-1,I2  ,I3) + 
+                                          vLocal(I1  ,I2+1,I3) +
+                                          vLocal(I1  ,I2-1,I3) +
+                                          vLocal(I1  ,I2,I3+1) +
+                                          vLocal(I1  ,I2,I3+1)                                             
+                                          );            
+        }
       }
     }
     cgWave.applyEigenFunctionBoundaryConditions( v );
@@ -1727,7 +1745,12 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
           OV_GET_SERIAL_ARRAY(real,q[grid],qLocal);
           OV_GET_SERIAL_ARRAY(Real,eigenVector[grid],eigenVectorLocal);
           getIndex(cg[grid].dimension(),I1,I2,I3);
-          qLocal(I1,I2,I3)=eigenVectorLocal(I1,I2,I3,ie);
+          int includeParallelGhost=1;
+          bool ok=ParallelUtility::getLocalArrayBounds(q[grid],qLocal,I1,I2,I3,includeParallelGhost);      
+          if( ok )  
+          {                
+            qLocal(I1,I2,I3)=eigenVectorLocal(I1,I2,I3,ie);
+          }
         }
 
         if( ie>0 ) 

@@ -1911,6 +1911,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
       // ------------------------------
       // ----- BOUNDARY CONDITIONS ----
       // ------------------------------
+            IntegerArray bcLocal(2,3);
+            ParallelGridUtility::getLocalBoundaryConditions( mg, bcLocal );
 
             const int extrapOrder = orderOfAccuracy+1;
             const Real *extrapCoeff;
@@ -1932,6 +1934,9 @@ int CgWave::formImplicitTimeSteppingMatrix()
             {
 
                 getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+                bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
+
+                if( !ok ) continue;
 
         // // limit extrapolation width if there are not enough grid points *wdh* Dec 4, 2023
         // const int maxExtrapWidth = mg.gridIndexRange(1,axis)-mg.gridIndexRange(0,axis)+1;
@@ -1954,10 +1959,10 @@ int CgWave::formImplicitTimeSteppingMatrix()
                         mg.boundaryCondition(side,axis)==exactBC )
                 {
           // ------------ FILL DIRICHLET BC ------------
-                        if( mg.boundaryCondition(side,axis)==exactBC )
+                        if( bcLocal(side,axis)==exactBC )
                         {
                             if( debug & 1 )
-                                printF("+++++ IMPLICIT BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) EXACT BC\n",mg.boundaryCondition(side,axis),grid,side,axis);
+                                printF("+++++ IMPLICIT BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) EXACT BC\n",bcLocal(side,axis),grid,side,axis);
               // ---- exact BC ----
               // Set a Dirichlet condition on the boundary and ghost points 
                             getBoundaryIndex(mg.gridIndexRange(),side,axis,Jb1,Jb2,Jb3,numberOfGhostLines); // extended boundary index
@@ -1989,7 +1994,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
                         else
                         {
                             if( debug & 1 )
-                                printF("+++++ IMPLICIT BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) DIRICHLET/ABSORBING\n",mg.boundaryCondition(side,axis),grid,side,axis);
+                                printF("+++++ IMPLICIT BC: FILL MATRIX BC=%d FOR (grid,side,axis)=(%d,%d,%d) DIRICHLET/ABSORBING\n",bcLocal(side,axis),grid,side,axis);
                             bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
                             if( ok )
                                 {
@@ -2006,7 +2011,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
             // coeffLocal(    M,Ib1,Ib2,Ib3) = 0.0;  // zero out any existing equations
             // coeffLocal(mDiag,Ib1,Ib2,Ib3) = 1.0;          
                         const bool useCompatibility = orderOfAccuracy==4 && bcApproach==useCompatibilityBoundaryConditions;
-                        if( useCompatibility && mg.boundaryCondition(side,axis)==dirichlet)
+                        if( useCompatibility && bcLocal(side,axis)==dirichlet)
                         {
                             if( debug & 1 )
                                 printF("+++++ IMPLICIT Dirichlet BC: FILL MATRIX COMPATIBILITY BC (grid,side,axis)=(%d,%d,%d)\n",grid,side,axis);
@@ -2076,8 +2081,8 @@ int CgWave::formImplicitTimeSteppingMatrix()
                                 int axisa = (axis+dira) % numberOfDimensions;  // adjacent axis
                                 for( int sidea=0; sidea<=1; sidea++ )          // adjacent side
                                 {
-                                    if( mg.boundaryCondition(sidea,axisa)==dirichlet ||
-                                            mg.boundaryCondition(sidea,axisa)==exactBC )
+                                    if( bcLocal(sidea,axisa)==dirichlet ||
+                                            bcLocal(sidea,axisa)==exactBC )
                                     {
                     // skipCorner(sidea)=1;
                                         Ibv[axisa] = sidea== 0 ? Range(Ibv[axisa].getBase()+1,Ibv[axisa].getBound()  ) 
@@ -2174,7 +2179,7 @@ int CgWave::formImplicitTimeSteppingMatrix()
                             } // end if ok
               // OV_ABORT("finish me");
                         }
-                        else if( mg.boundaryCondition(side,axis)!=exactBC )
+                        else if( bcLocal(side,axis)!=exactBC )
                         {
               // --- EXTRAPOLATE GHOST LINES ---
                             for( int ghost=1; ghost<=numberOfGhostLines; ghost++ )
@@ -2233,9 +2238,9 @@ int CgWave::formImplicitTimeSteppingMatrix()
                                 int axisa = ( axis + dira ) % numberOfDimensions; // adjacent axis
                                 int ia = mg.gridIndexRange(0,axisa);
                                 int ib = mg.gridIndexRange(1,axisa);
-                                if( mg.boundaryCondition(0,axisa)==dirichlet ) 
+                                if( bcLocal(0,axisa)==dirichlet ) 
                                     ia++;
-                                if( mg.boundaryCondition(1,axisa)==dirichlet ) 
+                                if( bcLocal(1,axisa)==dirichlet ) 
                                     ib--;
                                 Jbv[axisa] = Range(ia,ib);
                             }

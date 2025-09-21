@@ -5,6 +5,30 @@ alias testHighDerivatives $wave/bin/testHighDerivatives
 set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDerivatives
 
 
+*******************************************
+********* Thursday May 29, 2025 
+
+
+START CHECK PARALLEL --
+
+
+mpirun -np 2 $cgWave -noplot tz.cmd -g=square16.order4.hdf -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=.5 -tp=0.1 -ts=explicit -cfl=.95 -dtMax=10 -orderInTime=4 -debug=1 -upwind=0 -bc=d -go=go
+
+cgWave:FD44 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 1.78e-15, ||u||= 4.71e+00, cpu= 3.37e-03(s)
+cgWave:FD44 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 2.22e-15, ||u||= 4.99e+00, cpu= 7.52e-03(s)
+cgWave:FD44 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 3.55e-15, ||u||= 5.31e+00, cpu= 1.16e-02(s)
+cgWave:FD44 t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 3.11e-15, ||u||= 5.69e+00, cpu= 1.56e-02(s)
+cgWave:FD44 t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 4.88e-15, ||u||= 6.15e+00, cpu= 1.94e-02(s)
+
+
+mpirun -np 2 $cgWave -noplot tz.cmd -g=square16.order2.hdf -tz=poly -degreeInTime=2 -degreeInSpace=2 -tf=.5 -tp=0.1 -ts=explicit -cfl=.95 -dtMax=10 -orderInTime=2 -debug=1 -upwind=0 -bc=d -go=go
+
+cgWave:FD22 t=1.000e-01 ( 3 steps) dt=3.333e-02 maxErr= 1.33e-15, ||u||= 2.92e+00, cpu= 1.41e-03(s)
+cgWave:FD22 t=2.000e-01 ( 6 steps) dt=3.333e-02 maxErr= 1.33e-15, ||u||= 3.08e+00, cpu= 3.61e-03(s)
+cgWave:FD22 t=3.000e-01 ( 9 steps) dt=3.333e-02 maxErr= 1.78e-15, ||u||= 3.27e+00, cpu= 5.66e-03(s)
+cgWave:FD22 t=4.000e-01 (12 steps) dt=3.333e-02 maxErr= 2.66e-15, ||u||= 3.47e+00, cpu= 7.80e-03(s)
+cgWave:FD22 t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 1.78e-15, ||u||= 3.69e+00, cpu= 9.89e-03(s)
+
 ****************************************************
 ****** Wed Oct 2, 2024
 

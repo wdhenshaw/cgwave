@@ -676,7 +676,8 @@ takeFirstStepHelmholtz( int cur, real t )
     {
       // do all points including ghost 
       getIndex(mg.dimension(),I1,I2,I3);
-      bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
+      int includeParallelGhost=1;
+      bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3,includeParallelGhost);
 
       if( solveHelmholtz )
       {
@@ -778,17 +779,20 @@ takeFirstStepHelmholtz( int cur, real t )
         MappedGrid & mg = cg[grid];
         OV_GET_SERIAL_ARRAY(Real,up[grid],upLocal);
         OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
-
-        if( filterTimeDerivative )
+        getIndex(mg.dimension(),I1,I2,I3);
+        int includeParallelGhost=1;
+        bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
+        if( ok )
         {
-          getIndex(mg.dimension(),I1,I2,I3);
-          upLocal(I1,I2,I3) = vLocal(I1,I2,I3,1)*scaleD0t; // this is really D0t W^0 
+          if( filterTimeDerivative )
+          {
+            upLocal(I1,I2,I3) = vLocal(I1,I2,I3,1)*scaleD0t; // this is really D0t W^0 
+          }
+          else
+          {
+            upLocal(I1,I2,I3) = 0.; // assume initial time derivative is zero
+          }
         }
-        else
-        {
-          upLocal(I1,I2,I3) = 0.; // assume initial time derivative is zero
-        }
-
 
       }
 
@@ -801,7 +805,7 @@ takeFirstStepHelmholtz( int cur, real t )
       OV_GET_SERIAL_ARRAY(Real,uc[grid],ucLocal);
       OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
 
-      RealArray & vg = filterTimeDerivative ? v[grid] : uc[grid];
+      RealDistributedArray & vg = filterTimeDerivative ? v[grid] : uc[grid];
       OV_GET_SERIAL_ARRAY(Real,vg,vLocal);
 
       getIndex(mg.gridIndexRange(),I1,I2,I3);
@@ -827,7 +831,8 @@ takeFirstStepHelmholtz( int cur, real t )
 
         if( filterTimeDerivative )
         {
-          printF("~~~~~~~~~~~~~~ Take EXPLICIT first step Complex case : omega=%14.6e\n",omega);
+          if( debug>2 )
+            printF("~~~~~~~~~~~~~~ Take EXPLICIT first step Complex case : omega=%14.6e\n",omega);
           unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*vLocal(I1,I2,I3,1)*scaleD0t + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
         }
         else
@@ -835,12 +840,14 @@ takeFirstStepHelmholtz( int cur, real t )
 
           if( numberOfFrequencies==1 )
           {
-            printF("~~~~~~~~~~~~~~ Take EXPLICIT first step assuming D0t U  = 0 : omega=%14.6e\n",omega);
+            if( debug>2 )
+              printF("~~~~~~~~~~~~~~ Take EXPLICIT first step assuming D0t U  = 0 : omega=%14.6e\n",omega);
             unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
           }
           else
           {  // *WDH* May 15, 2025
-            printF("~~~~~~~~~~~~~~ Take EXPLICIT first step assuming D0t U  = 0 ~~~~~~~~~~~~~\n");
+            if( debug>2 )
+              printF("~~~~~~~~~~~~~~ Take EXPLICIT first step assuming D0t U  = 0 ~~~~~~~~~~~~~\n");
             unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + (.5*dt*dt*c*c)*lap(I1,I2,I3);
             for( int freq=0; freq<numberOfFrequencies; freq++ )
             {
@@ -869,6 +876,12 @@ takeFirstStepHelmholtz( int cur, real t )
 
     bool applyExplicitBoundaryConditions=true;
     applyBoundaryConditions( u[next],u[cur], t+dt, applyExplicitBoundaryConditions );
+  }
+  else
+  {
+    // This next is needed for implicit time-stepping and eigenWave 
+    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      u[next][grid].updateGhostBoundaries();
   }
   
   // u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%6.2f ");

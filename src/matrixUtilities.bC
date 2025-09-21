@@ -1,0 +1,401 @@
+//
+// Utility routines for PETSc and SLEPSc solvers
+//
+#include "Overture.h"
+#include "display.h"
+#include "ParallelUtility.h"
+
+#include "CgWave.h"
+
+#define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
+
+#define FOR_3(i1,i2,i3,I1,I2,I3) \
+  for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  \
+  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  \
+  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  \
+
+
+// --------------------------------------------------------------------------------------
+//   Macro: return the index's for possible active points
+//            
+//  NOTE: This macro appears in solveSLEPc.bC and eigenModes.bC 
+// --------------------------------------------------------------------------------------
+int CgWave::getActivePointIndex( MappedGrid & mg, Index *Iv )
+{
+  const int & upwind                    = dbase.get<int>("upwind");
+  const int & filterTimeDerivative      = dbase.get<int>("filterTimeDerivative");
+  const int & orderOfAccuracy           = dbase.get<int>("orderOfAccuracy");
+  const int numGhost = orderOfAccuracy/2;  
+
+  int iab[2];
+  const IntegerArray & gid = mg.gridIndexRange();
+
+  Iv[2]=Range(0,0);
+  for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
+  {
+    for( int side=0; side<=1; side++ )
+    {
+      int is = 1-2*side;
+      iab[side]=gid(side,axis);
+
+      const int bc = mg.boundaryCondition(side,axis);
+
+      if( filterTimeDerivative )
+      {
+        // complex valued solution: include all points : Jan 26, 2025
+        iab[side] -= is*numGhost;
+      }
+      else if( upwind || bc==CgWave::neumann )
+      {
+        // include ghost ??
+        // iab[side] -= is;
+      }
+      else if( bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
+      {
+        // include ghost 
+        iab[side] -= is*numGhost;
+      }      
+      else if( bc==CgWave::dirichlet )
+      {
+         iab[side] += is;  // Dirichlet BC -- ignore the boundary
+
+         // iab[side] -= is*numGhost; // ************************************** TEMP ***********
+      }
+      else if( bc>0 )
+      {
+        printF("getActivePointIndex:ERROR: unknown bc=%d\n",bc);
+        OV_ABORT("error");
+      }
+      else if( bc<0 )
+      {
+        // periodic -- include left end
+        if( side==1 )
+          iab[side] += is; 
+      }
+      else
+      {
+        // interpolation boundary : include end 
+
+      }
+    }
+    Iv[axis] = Range(iab[0],iab[1]);
+  }
+
+  return 0;
+}
+
+
+// ===============================================================================================
+/// \brief Determine the active points and global indexing 
+///
+/// Global index ordering: 
+///   all points, all freqs on proc=0 first, then all points, all freqs proc=1, ...
+/// 
+///  p=0 : [ g=0, freq ] [g=1, freq ] ... [g=ng-1, freq ] , freq=0,1,...,numFreq-1
+///  p=1 : [ g=0, freq ] [g=1, freq ] ... [g=ng-1, freq ] , freq=0,1,...,numFreq-1
+///  ... 
+/// 
+// ===============================================================================================
+int CgWave::initializeGlobalIndexing( bool checkMask /* = true */ )
+{
+
+  if( !dbase.has_key("globalIndexingInitialized") )
+  {
+  	dbase.put<int>("globalIndexingInitialized") = 0;
+  }
+  int & globalIndexingInitialized = dbase.get<int>("globalIndexingInitialized");
+
+  if( globalIndexingInitialized )
+  {
+  	return 0; // already initialized
+  }
+  globalIndexingInitialized = 1; 
+
+
+  // const int myid=max(0,Communication_Manager::My_Process_Number);
+  // const int np = Communication_Manager::numberOfProcessors(); 
+
+  const int & np   = dbase.get<int>("np");   // number of processors 
+  const int & myid = dbase.get<int>("myid"); // my processor number
+
+  printf("CgWave::initializeGlobalIndexing: START np=%d, myid=%d, ...\n",np,myid );  
+
+  const int numberOfDimensions = cg.numberOfDimensions();
+  const int numberOfComponentGrids = cg.numberOfComponentGrids();  
+
+  // totalActive         = total number of active points
+  // numActiveLocal      = number of active points on this processor 
+  // numActivePerProc(p) = number active on processor p 
+  int & totalActive               = dbase.put<int>("totalActive");
+  int & numActiveLocal            = dbase.put<int>("numActiveLocal");
+  IntegerArray & numActivePerProc = dbase.put<IntegerArray>("numActivePerProc");
+  numActivePerProc.redim(np); numActivePerProc=0;
+
+
+  // -- store local/global index of each grid point in these arrays:
+  IntegerArray *&indexVector = dbase.put<IntegerArray*>("indexVector");
+  indexVector = new IntegerArray[numberOfComponentGrids]; // delete me when done
+
+  Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
+  IntegerArray numActive(numberOfComponentGrids,np);
+  numActive=0; 
+
+  for( int grid=0; grid<numberOfComponentGrids; grid++ )
+  {
+  	MappedGrid & mg = cg[grid];
+  	intArray & mask = mg.mask();
+	  OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
+
+	  // getIndex(mg.gridIndexRange(),I1,I2,I3);
+	  getActivePointIndex( mg, Iv );
+
+	  bool ok=ParallelUtility::getLocalArrayBounds(mask,maskLocal,I1,I2,I3);  
+
+	  int na=0; // counts active points
+    if( ok )
+    {
+		  IntegerArray & index = indexVector[grid];
+
+		  index.redim(maskLocal.dimension(0),maskLocal.dimension(1),maskLocal.dimension(2)); 	
+		  index=-1; // means in-active
+
+	    FOR_3D(i1,i2,i3,I1,I2,I3)
+	    {
+	    	if( !checkMask || maskLocal(i1,i2,i3)>0 )
+	    	{
+	    		index(i1,i2,i3)=na; na++;  // active points 
+	    	}
+
+	    }
+	  }
+
+    numActive(grid,myid)=na;
+
+    printf("myid=%d: grid=%d numActive=%d\n",myid,grid,numActive(grid,myid) );
+
+
+  }
+
+  // -- transfer info to all processors ---
+  // -- for now just sum entries since only 1 is nonzero -- there should be a better way
+
+  IntegerArray numActiveBuffer(numberOfComponentGrids,np); numActiveBuffer=0; // save sums here
+  int numberOfSums= numberOfComponentGrids*np;
+  ParallelUtility::getSums( numActive.getDataPointer(),numActiveBuffer.getDataPointer(),numberOfSums );
+  numActive=numActiveBuffer;
+
+  Range all;
+  for( int p=0; p<np; p++ )
+    numActivePerProc(p) = sum(numActive(all,p)); // number of active points on processor p
+
+  // numActiveLocal = sum(numActive(all,myid)); // number of active points on this processor
+  numActiveLocal = numActivePerProc(myid);      // number of active points on this processor
+
+
+  totalActive = sum(numActive);
+
+  printf("myid=%d:  numActiveLocal=%d\n",myid,numActiveLocal);
+
+  printF("Summary: totalActivePoints=%d\n Active points per processor:\n",totalActive);
+  for( int grid=0; grid<numberOfComponentGrids; grid++ )
+  {
+  	printF("grid=%d: numActive=[",grid);
+  	for( int p=0; p<np; p++ )
+  		printF("%6d,",numActive(grid,p));
+  	printF("]\n");
+  }
+  for( int p=0; p<np; p++ )
+    printF("numActivePerProc(%d) = %d\n",p,numActivePerProc(p));
+  
+
+  // ---- compute the grid offsets (for a single proc and single freq, adjustments for multiple procs and mutliple freqs are done later)----
+
+  IntegerArray gridOffset(numberOfComponentGrids); // offset to account for points in previous grids on this proc
+  for( int grid=0; grid<numberOfComponentGrids; grid++ )
+  {
+    gridOffset(grid) = 0;
+		for( int gridp=0; gridp<grid; gridp++ )
+		  gridOffset(grid) += numActive(gridp,myid); 
+
+    printf("myid=%d: grid=%d gridOffset =%d\n",myid,grid,gridOffset(grid) );
+
+  }
+
+  // -- adjust local index by gridOffset --
+  for( int grid=0; grid<numberOfComponentGrids; grid++ )
+  {
+  	MappedGrid & mg = cg[grid];
+  	intArray & mask = mg.mask();
+	  OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
+
+	  // getIndex(mg.gridIndexRange(),I1,I2,I3);
+	  getActivePointIndex( mg, Iv );
+
+	  bool ok=ParallelUtility::getLocalArrayBounds(mask,maskLocal,I1,I2,I3);  
+
+    if( ok )
+    {
+      const int offset = gridOffset(grid); 
+		  IntegerArray & index = indexVector[grid];
+
+	    FOR_3D(i1,i2,i3,I1,I2,I3)
+	    {
+	    	if( index(i1,i2,i3)>=0 )
+	    	{
+	    		index(i1,i2,i3)+=offset;
+	    	}
+
+	    }
+	  }
+  } // end for grid 
+
+
+  return 0;
+}
+
+
+
+/// ========================================================================
+///  \brief convert a vector to a grid function 
+/// ========================================================================
+int CgWave::vectorToGridFunction( const Real *v, realCompositeGridFunction & u, int iStart, int iEnd )
+{
+  const int & np   = dbase.get<int>("np");   // number of processors 
+  const int & myid = dbase.get<int>("myid"); // my processor number  
+
+  // totalActive = total number of active points
+  // numActiveLocal = number of active points on this processor 
+  const int & totalActive               = dbase.get<int>("totalActive");
+  const int & numActiveLocal            = dbase.get<int>("numActiveLocal");	  
+  const IntegerArray & numActivePerProc = dbase.get<IntegerArray>("numActivePerProc");
+  IntegerArray *&indexVector            = dbase.get<IntegerArray*>("indexVector");
+
+  Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
+
+  const int numberOfComponentGrids = cg.numberOfComponentGrids(); 
+  const int & numCompWaveHoltz     = dbase.get<int>("numCompWaveHoltz");
+  const int numEquations  = totalActive*numCompWaveHoltz;
+
+  // ------------------------------------------------------------------
+  // global index is ordered [grid,freq,proc]
+  //   [ p=0 g=[0:ng=1] f=0 ] [ p=0 g=[0:ng=1] f=1 ] ... [ p=0 g=[0:ng=1] f=nf-1 ]  : total = numActivePerProc(0)
+  //   [ p=1 g=[0:ng=1] f=0 ] [ p=1 g=[0:ng=1] f=1 ] ... [ p=1 g=[0:ng=1] f=nf-1 ]  : total = numActivePerProc(1)
+  //
+  //    
+  // offset to (myid,grid) = SUM { all previous processors, all grids}  + SUM { proc=mydi and all previous grids }
+  //----------------------------------------------------------------------
+
+  int baseOffset=0;
+  for( int p=0; p<myid; p++ ) baseOffset += numActivePerProc(p)*numCompWaveHoltz;
+
+  for( int freq=0; freq<numCompWaveHoltz; freq++ )
+  {  
+  	const int freqOffset = baseOffset + numActivePerProc(myid)*freq;
+
+	  for( int grid=0; grid<numberOfComponentGrids; grid++ )
+	  {
+	  	MappedGrid & mg = cg[grid];
+	  	intArray & mask = mg.mask();
+		  OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
+
+		  OV_GET_SERIAL_ARRAY(Real,u[grid],uLocal);	  
+
+		  // getIndex(mg.gridIndexRange(),I1,I2,I3);
+		  getActivePointIndex( mg, Iv );
+
+		  bool ok=ParallelUtility::getLocalArrayBounds(mask,maskLocal,I1,I2,I3);  
+
+	    if( ok )
+	    {
+			  IntegerArray & index = indexVector[grid];
+		    FOR_3D(i1,i2,i3,I1,I2,I3)
+		    {
+		    	if( index(i1,i2,i3)>=0 )
+		    	{
+		    		int ig = index(i1,i2,i3) + freqOffset;   // global index
+		    		if(  ig<iStart || ig>iEnd )
+            {
+              printf("vectorToGridFunction: grid=%d ig=%d, iStart=%d iEnd=%d, freq=%d freqOffset=%d\n",grid,ig,iStart,iEnd,freq,freqOffset);
+              OV_ABORT("error");
+            }
+
+	          uLocal(i1,i2,i3,freq) = v[ig-iStart];
+		    	}
+
+		    }
+		  }  
+		} // end for grid 
+  } // end for freq
+
+  for( int grid=0; grid<numberOfComponentGrids; grid++ )
+    u[grid].updateGhostBoundaries(); // needed for EM2 RBC
+
+	return 0;
+}
+
+/// ========================================================================
+///  \brief convert a grid function to a vector
+/// ========================================================================
+int CgWave::gridFunctionToVector( const realCompositeGridFunction & u, Real *v, int iStart, int iEnd )
+{
+  const int & np   = dbase.get<int>("np");   // number of processors 
+  const int & myid = dbase.get<int>("myid"); // my processor number  
+
+  // totalActive = total number of active points
+  // numActiveLocal = number of active points on this processor 
+  const int & totalActive               = dbase.get<int>("totalActive");
+  const int & numActiveLocal            = dbase.get<int>("numActiveLocal");	
+  const IntegerArray & numActivePerProc = dbase.get<IntegerArray>("numActivePerProc");  
+  IntegerArray *&indexVector            = dbase.get<IntegerArray*>("indexVector");
+  	
+  Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
+
+
+  const int numberOfComponentGrids = cg.numberOfComponentGrids(); 
+  const int & numCompWaveHoltz     = dbase.get<int>("numCompWaveHoltz");
+  const int numEquations  = totalActive*numCompWaveHoltz;
+
+  int baseOffset=0;
+  for( int p=0; p<myid; p++ ) baseOffset += numActivePerProc(p)*numCompWaveHoltz;
+
+  for( int freq=0; freq<numCompWaveHoltz; freq++ )
+  {  
+  	const int freqOffset = baseOffset + numActivePerProc(myid)*freq;  
+
+	  for( int grid=0; grid<numberOfComponentGrids; grid++ )
+	  {
+	  	MappedGrid & mg = cg[grid];
+	  	intArray & mask = mg.mask();
+		  OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
+
+		  OV_GET_SERIAL_ARRAY(Real,u[grid],uLocal);	  
+
+		  // getIndex(mg.gridIndexRange(),I1,I2,I3);
+		  getActivePointIndex( mg, Iv );
+
+		  bool ok=ParallelUtility::getLocalArrayBounds(mask,maskLocal,I1,I2,I3);  
+
+	    if( ok )
+	    {
+			  IntegerArray & index = indexVector[grid];
+		    FOR_3D(i1,i2,i3,I1,I2,I3)
+		    {
+		    	if( index(i1,i2,i3)>=0 )
+		    	{
+		    		int ig = index(i1,i2,i3) + freqOffset;   // global index
+            if(  ig<iStart || ig>iEnd )
+            {
+              printf("gridFunctionToVector: grid=%d ig=%d, iStart=%d iEnd=%d, freq=%d freqOffset=%d\n",grid,ig,iStart,iEnd,freq,freqOffset);
+              OV_ABORT("error");
+            }            
+
+	          v[ig-iStart] = uLocal(i1,i2,i3,freq);
+		    	}
+
+		    }
+		  }  
+		} // end for grid  
+  } // end for freq 
+
+	return 0;
+}

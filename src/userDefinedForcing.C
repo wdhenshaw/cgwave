@@ -297,6 +297,78 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
 
     }  
 
+    else if( option=="modulatedGaussian" )
+    {  
+        DataBase & dbu =  dbase.get<DataBase>("userDefinedKnownSolutionData");
+
+        mg.update( MappedGrid::THEvertex | MappedGrid::THEcenter );
+        OV_GET_SERIAL_ARRAY(real,mg.vertex(),xLocal );
+
+        const Real *x0v   = dbu.get<real[3]>("x0v");
+        const Real & beta = dbu.get<Real>("beta");
+        const Real & k0   = dbu.get<Real>("k0"); 
+
+        const Real & c = dbase.get<Real>("c");    
+        
+        const Real alpha = twoPi*k0;
+        const int freq=0; 
+        const Real omega = frequencyArray(freq);
+
+        if( true || t<= 2.*dt )
+            printF("\n @@@@@ userDefinedForcing: eval modulatedGaussian: omega=%g, k0=%g, beta=%g, [x0,y0,z0]=[%g,%g,%g] alpha=2*pi*k0=%g\n",
+                      omega,k0,beta,x0v[0],x0v[1],x0v[2],alpha);
+
+    // modulated 
+    //  uLocal(I1,I2,I3,0) = exp( -beta*radSq ) * cos( (twoPi*k0)*sqrt(radSq) );       
+
+    // f = c^2( Delta u ) =  c^2( u_rr + (1/r) u_rr )
+
+        Real sinca; 
+        Real amp = -fSign;
+        const Real epsr =sqrt(REAL_EPSILON);
+        if( mg.numberOfDimensions()==2 )
+        {
+            FOR_3D(i1,i2,i3,I1,I2,I3)
+            {
+                Real x= xLocal(i1,i2,i3,0)-x0v[0], y=xLocal(i1,i2,i3,1)-x0v[1];
+                  
+                Real rSq = x*x + y*y;
+                Real r = sqrt(rSq);
+
+                Real expa = exp(-beta*rSq);
+                Real cosa = cos(alpha*r);
+                Real sina = sin(alpha*r);
+
+                Real ua = expa*cosa;
+                Real ar = alpha*r;
+
+                if( ar>epsr )
+                    sinca = sina/ar;
+                else 
+                    sinca = 1. - ar*ar/6; // sinx(x) = 1 - x^2/6 + x^4/5!
+
+        // f = (c^2 Delta + omega^2) u 
+        // Delta u = u.rr + (1/r) u.r 
+                fLocal(i1,i2,i3) =amp*(
+                                                                c*c*(  (-4.*beta -alpha*alpha + 4.*beta*beta*rSq )*ua 
+                                                                            + ( 4.*alpha*beta*r )*expa*sina
+                                                                              -  alpha*alpha*sinca*expa
+                                                                        )
+                                                              + omega*omega*ua 
+                                                        ); 
+
+            } // end for
+            if( false )
+                ::display(fLocal,"fLocal (user defined forcing)","%5.2f ");
+
+        }
+        else
+        {
+            OV_ABORT("modulatedGaussian: 3D finish me");
+        }
+
+    }
+
     else
     {
         printF("CgWave::userDefinedForcing:ERROR: unknown option =[%s]\n",(const char*)option);
@@ -327,6 +399,7 @@ setupUserDefinedForcing()
         "gaussian sources",
         "box Helmholtz",
         "poly periodic",
+        "modulated Gaussian",
         "exit",
         ""
     };
@@ -461,6 +534,14 @@ setupUserDefinedForcing()
             option="boxHelmholtz";
 
         }
+        else if( answer=="modulated Gaussian" )
+        {
+            printF("--- modulated Gaussian : forcing for a manufactured solution ----\n");
+            printF("  Choose the same option as a userDefinedKnownSolution\n");
+            option="modulatedGaussian";
+
+        }
+
         else if( answer=="poly periodic" )
         {
             printF("----------------- polynomial in space and periodic in time -----------------\n");
