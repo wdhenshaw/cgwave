@@ -20,13 +20,13 @@ eigenWave.check
 # Here is a list of commands to run for tests
 #
 # Square, implicit time-stepping, order=2
-square64.check ../runsWaveHoltz/eig/eig.cmd -g=square64.order2 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=100000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=grids/square64O2EigsEv64.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=10 -numEigs=12 -eigenSolver=default -go=k
+square64.check ../runsWaveHoltz/eig/eig.cmd -g=grids/square64.order2 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=100000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=grids/square64O2EigsEv64.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=10 -numEigs=12 -eigenSolver=default -go=k
 #
 # Square, implicit, order=4
-square32.order4.check ../runsWaveHoltz/eig/eig.cmd -g=square32.order4 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -eigenVectorFile=grids/square32O4EigsEv64.show -computeEigs=1 -eigenSolver=default -minStepsPerPeriod=10 -freq=8 -numEigs=8 -numPeriods=1 -go=k
+square32.order4.check ../runsWaveHoltz/eig/eig.cmd -g=grids/square32.order4 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -eigenVectorFile=grids/square32O4EigsEv64.show -computeEigs=1 -eigenSolver=default -minStepsPerPeriod=10 -freq=8 -numEigs=8 -numPeriods=1 -go=k
 #
 # Disk, implicit time-stepping, order=4
-sice4.check ../runsWaveHoltz/eig/eig.cmd -g=sice4.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-16 -upwind=0 -imode=1 -maxIterations=30 -eigenVectorFile=grids/diskG4O2Ev128.show -computeEigs=1 -numPeriods=1 -freq=6 -numEigs=16 -eigenSolver=default -go=k
+sice4.check ../runsWaveHoltz/eig/eig.cmd -g=grids/sice4.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-16 -upwind=0 -imode=1 -maxIterations=30 -eigenVectorFile=grids/diskG4O2Ev128.show -computeEigs=1 -numPeriods=1 -freq=6 -numEigs=16 -eigenSolver=default -go=k
 #
 # Box, implicit, order=2
-box1Order2.check ../runsWaveHoltz/eig/eig.cmd -g=box1.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=grids/boxG1O2EigsEv64.show -computeEigs=1 -eigenSolver=default  -freq=8 -numEigs=16 -go=k
+box1Order2.check ../runsWaveHoltz/eig/eig.cmd -g=grids/box1.order2 -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=1 -eigenVectorFile=grids/boxG1O2EigsEv64.show -computeEigs=1 -eigenSolver=default  -freq=8 -numEigs=16 -go=k

@@ -1005,6 +1005,8 @@ int CgWave::resetTimings()
 {
    for( int i=0; i<maximumNumberOfTimings; i++ )
     timing(i) = 0.;
+
+  return 0;
 }
 
 
@@ -3328,6 +3330,7 @@ int CgWave::checkParameters()
     OV_ABORT("CgWave::checkParameters: Fix errors (or set checkParameters=0 to continue anyway)")
   }
 
+  return 0;
 
 }
 
