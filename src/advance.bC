@@ -401,250 +401,6 @@ extern "C"
 #endMacro
 
 
-// ===========================================================================
-// Macro:
-//   Adjust the time-step and frequencies/periods for WaveHoltz and EigenWave
-// ===========================================================================
-#beginMacro adjustTimeStepAndFrequenciesMacro()
-  if( true || adjustTimeStep )
-  {
-    dt = nextTimeToPlot/numPlotSteps;  
-
-    if( solveHelmholtz && adjustOmega )
-    {
-      // ---- adjust the scheme or omega to remove time-discretization errors -----
-      frequencyArraySave.redim(numberOfFrequencies);
-      frequencyArraySave = frequencyArray;  // save original values 
-
-      frequencyArrayAdjusted.redim(numberOfFrequencies);
-      periodArrayAdjusted.redim(numberOfFrequencies);
-
-      periodArraySave.redim(numberOfFrequencies);
-      periodArraySave    = periodArray;     // save original values 
-
-      dampSave = damp;
-
-      Real dts=dt, omegas=omega; 
-      if( timeSteppingMethod == implicitTimeStepping )
-      {
-        // --- adjust omega for implicit time-stepping ---
-
-        // There are at least two ways to adjust the scheme (see notes)----
-
-
-        // IMP-FIX 2 : adjust omega
-        const Real alpha2=cImp(-1,0), beta2=1.-2.*alpha2; // implicit weights
-        if( 1==1 )
-        {
-          // *new* way for general implicit weights, April 30, 2025,  See complexWaveHoltz/notes.pdf 
-          Real ct = cos(2*Pi/numPlotSteps);
-          dts = (1./frequencyArray(0))*sqrt( (1.-ct)/(alpha2*ct + beta2/2.) );
-          omegas= (2.*Pi/numPlotSteps)*1/dts;
-        }
-        else
-        {
-          dts = (1./omega)*sqrt( 2.*( 1./cos(2.*Pi/numPlotSteps) -1. ) );
-          omegas= (2.*Pi/numPlotSteps)*1/dts;
-        }
-
-        frequencyArray(0) = omegas;
-        periodArray.redim(numberOfFrequencies);
-        numPeriodsArray(0)=numPeriods; 
-        periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
-
-        // Additional frequencies are computed from ( see waho/notes.pdf )
-        // cos( omegaTilde_m *dt) = 1/( 1 + (omega_m *dt)^2/2 )
-        for( int freq=1; freq<numberOfFrequencies; freq++ )
-        {
-          Real omegaDt = frequencyArray(freq)*dts;
-          if( 1==1 )
-          { // *new* way -- check me 
-            frequencyArray(freq) = (1./dts) * acos( (1. - .5*beta2*SQR(omegaDt))/( 1. + alpha2*SQR(omegaDt) ) );
-          }
-          else
-          {
-            frequencyArray(freq) = (1./dts) * acos( 1./( 1. + SQR(omegaDt)/2. ) );
-          }
-        }        
-
-        // this next section is repeated below -- fix me 
-        periodArray.redim(numberOfFrequencies);
-        numPeriodsArray(0)=numPeriods; 
-        periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
-        // ---- fit as many periods as we can in the longest interval ----
-        for( int freq=1; freq<numberOfFrequencies; freq++ )
-        {
-         // numPeriodsArray(freq) = floor( frequencyArray(freq)/frequencyArray(0) )*numPeriodsArray(0); //  integrate over this many periods for the "T2" integral
-         // Do this - Jan 15, 2022 : fit as many smaller periods into the longest period times the number of periods
-
-         numPeriodsArray(freq) = floor( frequencyArray(freq)*numPeriodsArray(0)/frequencyArray(0) ); //  integrate over this many periods for the "T2" integral
-         periodArray(freq)=(twoPi/frequencyArray(freq))*numPeriodsArray(freq);
-
-         if( false )
-           printF("\n >>> cgWave:implicit: freq=%d : frequencyArray(freq)/frequencyArray(0) =%6.3f, numPeriodsArray(freq)=%d\n",
-                  freq,frequencyArray(freq)/frequencyArray(0),numPeriodsArray(freq));
-        }
-        
-        // Adjustment for damping with implicit time-stepping 
-        damp = dampSave*( frequencyArraySave(0)*dts )/tan(frequencyArray(0)*dts);
-
-        if( false )
-        {
-          for( int freq=0; freq<numberOfFrequencies; freq++ )
-          {
-           printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e dampAdjusted=%14.6e (implicit)\n",freq,frequencyArraySave(freq),frequencyArray(freq),damp);
-          }
-        }
-
-  
-        // if( numberOfFrequencies>1 )
-        // {
-        // OV_ABORT("FINISH ME: adjustOmega, multi-freq, implicit");
-        // }
-      }
-      else
-      {
-         // --- adjust omega for explicit time stepping ---
-         // Adjust omega for Helmholtz problems so that
-         //    4 sin^2( omegas*dt/2 )/dt^2 = omega^2
-         //    dt = Ts/N
-         //    Ts = 2*pi/omegas       : adjusted period
-         // where  N = number of steps we want to take
-
-         // dt = Ts/N = 2*pi/( omegas*N ) -> omegas*dt/2 = pi/N
-         // sin(pi/N) = omega*dt/2  
-         //  -> dt = sin(pi/N)*(2/omega)
-         //    omegas = (pi/N)*(2/dt)
-         if( numPeriods==1 )
-         {
-           dts = sin(Pi/numPlotSteps) * (2./omega);
-           omegas = (Pi/numPlotSteps) * (2./dts);
-         }
-         else
-         {
-           int numSteps = numPlotSteps; 
-           if( false ) // turn this off -- Jan 12, 2022 numPlotSteps is per period
-           {
-             // check me: Nov 3, 2022
-             numSteps = numPlotSteps/numPeriods;  // number of steps to reach T = 2*pi/omega1  (one period)IS THIS NEEDED? 
-             // assert( numSteps*numPeriods == numPlotSteps );
-             if( numSteps*numPeriods != numPlotSteps  )
-             {
-               printF("CgWave:advance:ERROR: need to adjustOmega but numSteps*numPeriods=%d  != numPlotSteps=%d, numPeriods=%d *fix me Bill*\n",
-                       numSteps*numPeriods,numPlotSteps,numPeriods);
-               OV_ABORT("error");
-             }
-           }
-
-           dts = sin(Pi/numSteps) * (2./(omega));
-           omegas = (Pi/numSteps) * (2./dts);
-         }
-
-         frequencyArray(0) = omegas;
-         for( int freq=1; freq<numberOfFrequencies; freq++ )
-         {
-           // sin( omegaTilde *dt/2) = omega*(dt/2)
-           frequencyArray(freq) = (2./dts) * asin( frequencyArray(freq)*(dts/2.) );
-         }
-
-         periodArray.redim(numberOfFrequencies);
-         numPeriodsArray(0)=numPeriods; 
-         periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
-         // ---- fit as many periods as we can in the longest interval ----
-         for( int freq=1; freq<numberOfFrequencies; freq++ )
-         {
-           // numPeriodsArray(freq) = floor( frequencyArray(freq)/frequencyArray(0) )*numPeriodsArray(0); //  integrate over this many periods for the "T2" integral
-
-           // Do this - Jan 15, 2022 : fit as many smaller periods into the longest period times the number of periods
-           numPeriodsArray(freq) = floor( frequencyArray(freq)*numPeriodsArray(0)/frequencyArray(0) ); //  integrate over this many periods for the "T2" integral
-
-           periodArray(freq)=(twoPi/frequencyArray(freq))*numPeriodsArray(freq);
-         }
-         
-         // Adjustment for damping with explicit time-stepping 
-         damp = dampSave/( cos(frequencyArray(0)*dts/2) );
-
-         for( int freq=0; freq<numberOfFrequencies; freq++ )
-         {
-           printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e\n",freq,frequencyArraySave(freq),frequencyArray(freq));
-         }
-
-      }
-      printF("\n ##### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=%18.10e (dt=%18.10e) omegaAdjusted=%14.6e (omega=%14.6e) ####\n",dts,dt,omegas,omega);
-
-      if( damp!=0. )
-        printF(" ##### CgWave: dampAdjusted=%18.10e, damp=%18.10e ####\n",damp,dampSave);
-
-      // The number of periods may have changed --- fix the un-adjusted period array: *wdh* Feb 3, 2023
-      for( int freq=0; freq<numberOfFrequencies; freq++ )
-      {
-        if( 1==0 ) printF("freq=%d: numPeriodsArray=%d, periodArraySave=%12.4e, ",freq,numPeriodsArray(freq),periodArraySave(freq));
-        periodArraySave(freq)=(twoPi/frequencyArraySave(freq))*numPeriodsArray(freq);
-        if( 1==0 ) printF("... corrected for numPeriods %12.4e\n",periodArraySave(freq));
-      }
-      // OV_ABORT("stop here for now");
-
-      frequencyArrayAdjusted = frequencyArray; 
-      periodArrayAdjusted = periodArray; 
-
-      omegaSave   = omega;    // save original omega ( omega is reset below)
-      TperiodSave = Tperiod;  // save original Tperiod ( Tperiod is reset below)
-      dtSave      = dt;
-
-      dt      = dts;
-      omega   = omegas;
-      Tperiod = (twoPi/omegas)*numPeriods;
-      tFinal  = Tperiod; 
-
-
-
-       // if( numberOfFrequencies==1 )
-       // {
-       //   frequencyArray(0)=omega; // do this for now 
-       //   periodArray(0)=twoPi/frequencyArray(0);
-       // }
-    }
-    else if( computeEigenmodes && numPeriods>1  )
-    {
-
-      dtSave = dt;
-      dt /= numPeriods;
-      numPeriodsArray(0)=numPeriods; 
-      periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
-
-      Tperiod = (twoPi/omega)*numPeriods;
-      tFinal  = Tperiod; 
-
-      printF("\n >>>>>>>>>>> CgWave : computeEigenmodes omega=%12.4e, numPeriods=%d, tFinal=%10.2e <<<<<<<<<<<<<\n",omega,numPeriods,tFinal );    
-    }    
-
-    if( it<=1 && solveHelmholtz )
-    {
-      printF("\n >>>>>>>>>>>>>>>>> CgWave:advance solve a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<\n");
-      printF(" it=%d, dt=%20.12e, omega=%20.12e,  tFinal=%20.12e\n",it,dt,omega,tFinal);
-      printF(" adjustOmega=%d, adjustHelmholtzForUpwinding=%d \n",adjustOmega,adjustHelmholtzForUpwinding);
-      for( int freq=0; freq<numberOfFrequencies; freq++ )
-      {
-        printF(" freq=%d frequency=%20.12e period=%20.12e, numberOfPeriods=%d\n",freq,frequencyArray(freq),periodArray(freq),numPeriodsArray(freq));
-      }   
-      printF(" nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e)\n",nextTimeToPlot,numPlotSteps, dt,dtMax);           
-      printF(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n");
-    }
-
-    // OV_ABORT("stop here for now");
-  }
-  if( debug & 2 )
-    printF("CgWave:advance: nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e)\n",
-           nextTimeToPlot,numPlotSteps, dt,dtMax);
-
-
-  if( (debug & 2) && solveHelmholtz )   
-    printF("CgWave::advance: c=%g, numberOfFrequencies=%d, omega=%g, Tperiod=%g, numPeriods=%d, tFinal=%g, plotOptions=%d\n",
-           c,numberOfFrequencies,omega,Tperiod,numPeriods,tFinal,plotOptions);
-
-
-#endMacro
-
 
 // ===========================================================================
 // Macro:
@@ -841,7 +597,7 @@ extern "C"
 // ===================================================
 //  Advance the solution  
 // ***OLD VERSION**
-#Include "advanceOld.h"
+// #Include "advanceOld.h"
 
 
 
@@ -1033,12 +789,6 @@ advance( int it )
   // real dtSquared = SQR(dt);
   real cSquared=c*c;
     
-  // if( false )
-  // {
-  //   Tperiod = numPeriods*twoPi/omega;
-  //   tFinal=Tperiod;
-  //   tPlot=Tperiod/10.;  // plot this often
-  // }
   
   if( !(plotOptions==noPlotting || plotOptions==plotAndWait || plotOptions==plotNoWait) )
   {
@@ -1057,62 +807,16 @@ advance( int it )
     ps.pushGUI(dialog);
   }
 
-  // estimated number of time steps: (for output)
-  // int numberOfTimeSteps=int( tFinal/dt+.5);
-
   const int maxNumberOfTimeSteps=1e10; 
-  
-  // adjust dt to reach tFinal
-  // dt = tFinal/numberOfTimeSteps;
-
-  // --- choose dt so we reach the next time to plot ---
-  Real nextTimeToPlot = min(tPlot,tFinal);
-
-  // Currenly we need to make sure that dt is constant when solving Helmholtz (for the accuracy of the time integral)
-  if( solveHelmholtz )
-      nextTimeToPlot=tFinal;
-
   // For now we do not adjust dt when using implicit time-stepping:
   // ** TURN OFF ADJUST TIME STEP *wdh* Nov 23, 2023
-  bool adjustTimeStep = FALSE; // timeSteppingMethod==explicitTimeStepping;
+  bool adjustTimeStep = FALSE; // timeSteppingMethod==explicitTimeStepping;  
+  
+  Real nextTimeToPlot;
 
-  // NOTE: dtMax is the initial time-step determined by getTimeStep
-  int numPlotSteps    =  ceil( nextTimeToPlot/dtMax );  // max number of steps 
+  // *new* way Sept 28, 2025
+  adjustTimeStepAndFrequencies( it, nextTimeToPlot );
 
-  if( solveHelmholtz && timeSteppingMethod == implicitTimeStepping )
-  { 
-    // For implicit time-stepping we must take at least 5 steps per period when we adjust omega and dt
-    // numPlotSteps = max(5*numPeriods,numPlotSteps);
-
-    const int & minStepsPerPeriod = dbase.get<int>("minStepsPerPeriod");
-
-    // Note: numPlotsSteps is per period
-    if( numberOfFrequencies==1 )
-    {
-      numPlotSteps = max(minStepsPerPeriod,numPlotSteps);
-    }
-    else
-    {
-      // we need at least 5 steps for the smallest period
-      const Real minFreq = min(frequencyArray);  // should be frequencyArray(0)
-      const Real maxFreq = max(frequencyArray);
-      const Real Tmax = twoPi/minFreq;  // longest period
-      const Real Tmin = twoPi/maxFreq;  // shortest period
-      int minSteps = ceil( minStepsPerPeriod*Tmax/Tmin ); // is this correct
-      // printF("### Tmax=%12.4e, Tmin=%12.4e, Tmax/Tmin=%12.4e, minSteps=%d\n",Tmax,Tmin,Tmax/Tmin,minSteps);
-      numPlotSteps = max(minSteps,numPlotSteps);
-    }
-
-    // printF("###(1) numPlotSteps=%d\n",numPlotSteps);
-  }
-
-
-  // --------------------------------------------------------------------------------
-  // --- Adjust the time-step and frequencies/periods for WaveHoltz and EigenWave ---
-  // --------------------------------------------------------------------------------
-  adjustTimeStepAndFrequenciesMacro(); 
-
-  dtUsed = dt; // save dt actually used
 
   int i1,i2,i3;
 

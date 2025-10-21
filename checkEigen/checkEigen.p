@@ -199,6 +199,7 @@ if( $testName ne "all" )
   @cmdFiles= ($testName);
 }
 
+printf("=================== check EigenWave ==========================\n");
 $m=-1;
 foreach $cmdCommand ( @cmdFiles )
 {
@@ -364,7 +365,7 @@ if ( $numberOfErrors == 0 )
                 "cgWaveHoltzKrylov.m", "cgWaveHoltzKrylov.tex"  ); 
   unlink(@FILENAMES) == @FILENAMES  or die "Couldn't unlink all of @FILENAMES: $!\n";  
   $numChecks=$m+1;   
-  printf("==============================================================\n");
+  # printf("==============================================================\n");
   printf("============== EigenWave: All $numChecks tests successful =============\n");
   printf("==============================================================\n");
 
@@ -373,7 +374,7 @@ if ( $numberOfErrors == 0 )
 }
 else
 {
-  printf("********************************************************\n");
+  # printf("********************************************************\n");
   print  "************ EigenWave: There were $numberOfErrors  ERRORS ****************\n";
   printf("********************************************************\n");
 

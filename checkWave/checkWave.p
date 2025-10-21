@@ -198,6 +198,7 @@ if( $testName ne "all" )
   @cmdFiles= ($testName);
 }
 
+printf("============================ check Wave ======================================\n");
 $m=-1;
 foreach $cmdCommand ( @cmdFiles )
 {
@@ -331,16 +332,16 @@ if ( $numberOfErrors == 0 )
   unlink(@FILENAMES) == @FILENAMES  or die "Couldn't unlink all of @FILENAMES: $!\n"; 
 
   $numChecks=$m+1;   
-  printf("==============================================================\n");
-  printf("============== $solver: All $numChecks tests successful ===============\n");
-  printf("==============================================================\n");
+  # printf("==============================================================\n");
+  printf("===================== $solver   : All $numChecks tests successful =====================\n");
+  printf("==============================================================================\n");
 
-  print $outfile "============== $solver: All $numChecks tests successful ===============\n";
+  print $outfile "============== $solver   : All $numChecks tests successful ============\n";
 }
 else
 {
-  printf("********************************************************************************\n");
-  print  "************ $solver: There were $numberOfErrors ERRORS out of $numChecks tests ****************\n";
+  # printf("********************************************************************************\n");
+  print  "************ $solver   : There were $numberOfErrors ERRORS out of $numChecks tests ****************\n";
   printf("********************************************************************************\n");
 
   print $outfile "************ $solver: There were $numberOfErrors ERRORS out of $numChecks tests ****************\n";

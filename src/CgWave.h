@@ -127,6 +127,9 @@ int adjustEigenWaveFrequency();
 
 int adjustSolutionForSuperGrid( realCompositeGridFunction & q, Real superGridLayerValue = 0. );
 
+// Adjust time step and frequencies for WaveHoltz
+int adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot );
+
 // advance the solution 
 int advance( int it );
 
@@ -174,7 +177,7 @@ int deflateSolution( int deflateOption= 0 );
 
 void displayBoundaryConditions( FILE *file = stdout );
 
-Real evalBetaFunction( const Real lam, const int freq, Real dt ) const;
+Real evalBetaFunction( const Real lam, const int freq, Real dt );
 
 int formImplicitTimeSteppingMatrix();
 

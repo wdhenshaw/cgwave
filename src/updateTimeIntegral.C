@@ -629,31 +629,8 @@ initializeTimeIntegral( Real dt )
   }
 
 
-  if( useOptFilter )
-  {
-    int nLam =-1; // -1 = use defulat number of lambda values for least squares solution
-    Real muMin, muMax;
-    optFilterParameters( frequencyArray, periodArray, dt, nLam, muMin,muMax );
-  }
 
-  // if( false )
-  // {
-  //   // For testing over-write the computed solution with the exact solution
-  //   const aString & knownSolutionOption = dbase.get<aString>("knownSolutionOption");
-  //   if( knownSolutionOption == "userDefinedKnownSolution" )
-  //   {
-  //     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-  //     {
-  //       MappedGrid & mg = cg[grid];
-  //       getIndex(cg[grid].dimension(),I1,I2,I3); // assign all points including ghost points.              
-  //       // -- User defined known solution ---
-  //       getUserDefinedKnownSolution( t, grid, u[grid], I1,I2,I3 );
-  //     }
-  //   }
-  // }
 
-  // const bool firstStep = stepOption==0;
-  // const bool lastStep  = stepOption==2;
 
   const int Nt = round( tFinal/dt ); // number of time-steps
 
@@ -676,17 +653,18 @@ initializeTimeIntegral( Real dt )
   }
 
   // --- Evaluate the integration weights for each of the frequencies ---
+  getIntegrationWeights( Nt, numberOfFrequencies, periodArray, orderOfQuadrature, sigma );
+
+  if( useOptFilter )
+  {
+    int nLam =-1; // -1 = use defulat number of lambda values for least squares solution
+    Real muMin, muMax;
+    optFilterParameters( frequencyArray, periodArray, dt, nLam, muMin,muMax );
+  }
+
+  // -- get the filter weights stored in the array filterWeights
   if( useFilterWeights )
     getFilterWeights( Nt, dt, numberOfFrequencies, periodArray, orderOfQuadrature, sigma, filterWeights );
-  else 
-    getIntegrationWeights( Nt, numberOfFrequencies, periodArray, orderOfQuadrature, sigma );
-
-
-  // // WHY IS THIS DONE HERE ????
-  // if( deflateWaveHoltz && useAugmentedGmres==1 )
-  // { // initialize deflation for Augmented Gmres
-  //   initializeDeflation();
-  // }
 
   initTimeIntegral=false;
 
@@ -1197,7 +1175,7 @@ int CgWave::getFilterWeights( int Nt, Real dt, int numFreq, const RealArray & Tv
   const int & filterD0t        = dbase.get<int>("filterD0t"); 
   const int & useOptFilter     = dbase.get<int>("useOptFilter");
 
-  getIntegrationWeights( Nt, numFreq, Tv, orderOfAccuracy,sigma );
+  // getIntegrationWeights( Nt, numFreq, Tv, orderOfAccuracy,sigma );
 
   if( useFilterWeights )
   {

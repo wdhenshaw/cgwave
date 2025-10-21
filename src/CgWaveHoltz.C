@@ -856,6 +856,27 @@ int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
   // printF("saveMatlab: dt=%9.3e\n",dt);
   fPrintF(matlabFile,"dt=%20.14e;\n",dt);
 
+  // ---- save optimal filter parameters ----
+  const int & useOptFilter = cgWave.dbase.get<int>("useOptFilter");
+  fPrintF(matlabFile,"useOptFilter=%d;\n",useOptFilter);
+  if( useOptFilter )
+  {
+    const int numPar=3; 
+    const RealArray & filterPar = cgWave.dbase.get<RealArray>("filterPar");
+    fPrintF(matlabFile,"%% Optimal filter parameters\n");
+    fPrintF(matlabFile,"%% filterPar=zeros(%d,%d)\n",numPar,numberOfFrequencies);
+    fPrintF(matlabFile,"filterPar=[ ...\n");
+    for( int ipar=0; ipar<numPar; ipar++ )
+    {
+      for( int freq=0; freq<numberOfFrequencies; freq++ ) 
+      {
+        fPrintF(matlabFile,"%12.6e",filterPar(ipar,freq));
+        if( freq<numberOfFrequencies-1 ) fPrintF(matlabFile,", "); else fPrintF(matlabFile,"; ...\n");
+      }
+    }
+    fPrintF(matlabFile,"];\n");
+  }  
+
   // --- Save the quadrature weights ---
   const int numTimeSteps = sigma.getLength(0);  //   Note: this count includes step 0
   // fPrintF(matlabFile,"numTimeSteps=%d;\n",numTimeSteps);
@@ -875,6 +896,7 @@ int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
     fPrintF(matlabFile,"; ");
   }
   fPrintF(matlabFile,"];\n");
+
 
 
   numPerLine=40;

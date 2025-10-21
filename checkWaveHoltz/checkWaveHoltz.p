@@ -199,6 +199,7 @@ if( $testName ne "all" )
   @cmdFiles= ($testName);
 }
 
+printf("======================= check WaveHoltz =======================\n");
 $m=-1;
 foreach $cmdCommand ( @cmdFiles )
 {
@@ -374,15 +375,15 @@ if ( $numberOfErrors == 0 && $m>0 )
   }
 
   $numChecks=$m+1;   
-  printf("==============================================================\n");
+  # printf("==============================================================\n");
   printf("============== WaveHoltz: All $numChecks tests successful =============\n");
   printf("==============================================================\n");
 
-  print $outfile "============== WaveHoltz: All $numChecks tests successful =============\n";
+  print $outfile "============== WaveHoltz: All $numChecks tests successful ============\n";
 }
 else
 {
-  printf("********************************************************\n");
+  # printf("********************************************************\n");
   print  "************ $solver: There were $numberOfErrors  ERRORS ****************\n";
   printf("********************************************************\n");
 

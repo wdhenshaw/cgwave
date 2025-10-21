@@ -199,7 +199,7 @@ OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/u
        obj/getTimeStep.o obj/getHelmholtzForcing.o obj/implicit.o obj/getInitialConditions.o obj/saveShow.o obj/getErrors.o \
        obj/takeFirstStep.o obj/deflation.o obj/eigenModes.o \
        obj/rjbesl.o obj/rybesl.o obj/buildSuperGrid.o obj/residual.o \
-       obj/coefficientsByDelta.o  obj/getEnergyNorm.o  obj/matrixUtilities.o obj/optFilterParameters.o
+       obj/coefficientsByDelta.o  obj/getEnergyNorm.o  obj/matrixUtilities.o obj/optFilterParameters.o obj/adjustTimeStepAndFrequencies.o
        
 # LCBC files: 
 OBJC += obj/initializeLCBC.o obj/LCBC.o obj/LCBC1.o obj/LCBC2.o obj/LCBC_data.o \
@@ -432,6 +432,8 @@ src/solvePETSc.C: src/solvePETSc.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)
 src/solveSLEPc.C: src/solveSLEPc.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveSLEPc.bC
 src/solveAugmentedKrylov.C: src/solveAugmentedKrylov.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include solveAugmentedKrylov.bC
 
+src/adjustTimeStepAndFrequencies.C: src/adjustTimeStepAndFrequencies.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include adjustTimeStepAndFrequencies.bC
+
 src/tcmWideStencil.C: src/tcmWideStencil.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include tcmWideStencil.bC
 
 src/takeFirstStep.C: src/takeFirstStep.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include takeFirstStep.bC
@@ -568,6 +570,8 @@ obj/outputHeader.o : src/outputHeader.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o 
 obj/printStatistics.o : src/printStatistics.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/getInitialConditions.o : src/getInitialConditions.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 obj/saveShow.o : src/saveShow.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
+
+obj/adjustTimeStepAndFrequencies.o : src/adjustTimeStepAndFrequencies.C src/CgWave.h; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 # compile these files optimized:
 obj/implicit.o : src/implicit.C src/CgWave.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<

@@ -1,0 +1,994 @@
+#include "CgWave.h"
+#include "display.h"
+
+#define FOR_3(i1,i2,i3,I1,I2,I3) for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  
+#define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
+
+
+// ==================================================================================
+/// \brief  Adjust the time-step and frequencies/periods for WaveHoltz and EigenWave
+// ==================================================================================
+int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
+{
+
+  const int & debug  = dbase.get<int>("debug");
+  FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+  FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
+
+  int & plotOptions                 = dbase.get<int>("plotOptions");
+
+  Real & c                          = dbase.get<real>("c");
+  Real & cfl                        = dbase.get<real>("cfl");
+  Real & tFinal                     = dbase.get<real>("tFinal");
+  Real & tPlot                      = dbase.get<real>("tPlot");
+  Real & dtMax                      = dbase.get<Real>("dtMax"); 
+  Real & damp                       = dbase.get<Real>("damp"); 
+  Real & dampSave                   = dbase.get<Real>("dampSave"); 
+
+  real & dt                         = dbase.get<real>("dt");
+  real & dtUsed                     = dbase.get<real>("dtUsed");  // dt actually used
+
+  real & omega                      = dbase.get<real>("omega");
+  real & Tperiod                    = dbase.get<real>("Tperiod");
+  int & numPeriods                  = dbase.get<int>("numPeriods");
+  real & omegaSave                  = dbase.get<real>("omegaSave");
+  real & TperiodSave                = dbase.get<real>("TperiodSave");  
+  real & dtSave                     = dbase.get<real>("dtSave");
+
+  const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
+  RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+  RealArray & frequencyArrayAdjusted= dbase.get<RealArray>("frequencyArrayAdjusted");
+  RealArray & periodArray           = dbase.get<RealArray>("periodArray"); 
+  RealArray & periodArrayAdjusted   = dbase.get<RealArray>("periodArrayAdjusted"); 
+  IntegerArray & numPeriodsArray    = dbase.get<IntegerArray>("numPeriodsArray");
+  RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+  RealArray & periodArraySave       = dbase.get<RealArray>("periodArraySave");     
+
+  const int & solveHelmholtz        = dbase.get<int>("solveHelmholtz"); 
+  const int & adjustOmega           = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+   const int & minStepsPerPeriod    = dbase.get<int>("minStepsPerPeriod");
+  const int & adjustHelmholtzForUpwinding = dbase.get<int>("adjustHelmholtzForUpwinding");
+
+  const int & computeEigenmodes     = dbase.get<int>("computeEigenmodes"); 
+  const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+
+  IntegerArray & gridIsImplicit     = dbase.get<IntegerArray>("gridIsImplicit");
+  const RealArray & bImp            = dbase.get<RealArray>("bImp");
+  const RealArray & cImp            = dbase.get<RealArray>("cImp");  
+  
+  // adjust dt to reach tFinal
+  // dt = tFinal/numberOfTimeSteps;
+
+  // --- choose dt so we reach the next time to plot ---
+  nextTimeToPlot = min(tPlot,tFinal);
+
+  // Currenly we need to make sure that dt is constant when solving Helmholtz (for the accuracy of the time integral)
+  if( solveHelmholtz )
+      nextTimeToPlot=tFinal;
+
+
+
+  // NOTE: dtMax is the initial time-step determined by getTimeStep
+  int numPlotSteps    =  ceil( nextTimeToPlot/dtMax );  // max number of steps 
+
+  if( solveHelmholtz )
+    numPlotSteps = max( numPlotSteps, minStepsPerPeriod*numPeriods );
+
+  int numStepsPerPeriod = numPlotSteps/numPeriods;
+
+  printF("\n >>> adjustTimeStepAndFreq: numPlotSteps=%d, numStepsPerPeriod=%d, numPeriods=%d\n\n",numPlotSteps,numStepsPerPeriod,numPeriods);
+
+  // OV_ABORT("stop here for now");
+
+  if( solveHelmholtz && timeSteppingMethod == implicitTimeStepping )
+  { 
+    if( numberOfFrequencies>1 )
+    {
+      // we need at least 5 steps for the smallest period
+      const Real minFreq = min(frequencyArray);  // should be frequencyArray(0)
+      const Real maxFreq = max(frequencyArray);
+      const Real Tmax = twoPi/minFreq;  // longest period
+      const Real Tmin = twoPi/maxFreq;  // shortest period
+
+      int minSteps = ceil( minStepsPerPeriod*Tmax/Tmin ); // is this correct?
+
+      // printF("### Tmax=%12.4e, Tmin=%12.4e, Tmax/Tmin=%12.4e, minSteps=%d\n",Tmax,Tmin,Tmax/Tmin,minSteps);
+      numStepsPerPeriod = max(minSteps,numStepsPerPeriod);
+
+      numPlotSteps = numStepsPerPeriod*numPeriods;
+    }
+
+    // printF("###(1) numPlotSteps=%d\n",numPlotSteps);
+  }
+
+
+  dt = nextTimeToPlot/numPlotSteps;  
+
+  if( solveHelmholtz && adjustOmega )
+  {
+    // ---- adjust the scheme or omega to remove time-discretization errors -----
+    frequencyArraySave.redim(numberOfFrequencies);
+    frequencyArraySave = frequencyArray;  // save original values 
+
+    frequencyArrayAdjusted.redim(numberOfFrequencies);
+    periodArrayAdjusted.redim(numberOfFrequencies);
+
+    periodArraySave.redim(numberOfFrequencies);
+    periodArraySave    = periodArray;     // save original values 
+
+    dampSave = damp;
+
+    Real dts=dt, omegas=omega; 
+    if( timeSteppingMethod == implicitTimeStepping )
+    {
+      // --- adjust omega for implicit time-stepping ---
+
+      // There are at least two ways to adjust the scheme (see notes)----
+
+
+      // IMP-FIX 2 : adjust omega
+      const Real alpha2=cImp(-1,0), beta2=1.-2.*alpha2; // implicit weights
+      if( 1==1 )
+      {
+        // *new* way for general implicit weights, April 30, 2025,  See complexWaveHoltz/notes.pdf 
+        Real ct = cos(2*Pi/numStepsPerPeriod);
+        dts = (1./frequencyArray(0))*sqrt( (1.-ct)/(alpha2*ct + beta2/2.) );
+        omegas= (2.*Pi/numStepsPerPeriod)*1/dts;
+      }
+      else
+      {
+        dts = (1./omega)*sqrt( 2.*( 1./cos(2.*Pi/numStepsPerPeriod) -1. ) );
+        omegas= (2.*Pi/numStepsPerPeriod)*1/dts;
+      }
+
+      frequencyArray(0) = omegas;
+      periodArray.redim(numberOfFrequencies);
+      numPeriodsArray(0)=numPeriods; 
+      periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
+
+      // Additional frequencies are computed from ( see waho/notes.pdf )
+      // cos( omegaTilde_m *dt) = 1/( 1 + (omega_m *dt)^2/2 )
+      for( int freq=1; freq<numberOfFrequencies; freq++ )
+      {
+        Real omegaDt = frequencyArray(freq)*dts;
+        if( 1==1 )
+        { // *new* way -- check me 
+          frequencyArray(freq) = (1./dts) * acos( (1. - .5*beta2*SQR(omegaDt))/( 1. + alpha2*SQR(omegaDt) ) );
+        }
+        else
+        {
+          frequencyArray(freq) = (1./dts) * acos( 1./( 1. + SQR(omegaDt)/2. ) );
+        }
+      }        
+
+      // this next section is repeated below -- fix me 
+      periodArray.redim(numberOfFrequencies);
+      numPeriodsArray(0)=numPeriods; 
+      periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
+      // ---- fit as many periods as we can in the longest interval ----
+      for( int freq=1; freq<numberOfFrequencies; freq++ )
+      {
+       // numPeriodsArray(freq) = floor( frequencyArray(freq)/frequencyArray(0) )*numPeriodsArray(0); //  integrate over this many periods for the "T2" integral
+       // Do this - Jan 15, 2022 : fit as many smaller periods into the longest period times the number of periods
+
+       numPeriodsArray(freq) = floor( frequencyArray(freq)*numPeriodsArray(0)/frequencyArray(0) ); //  integrate over this many periods for the "T2" integral
+       periodArray(freq)=(twoPi/frequencyArray(freq))*numPeriodsArray(freq);
+
+       if( false )
+         printF("\n >>> cgWave:implicit: freq=%d : frequencyArray(freq)/frequencyArray(0) =%6.3f, numPeriodsArray(freq)=%d\n",
+                freq,frequencyArray(freq)/frequencyArray(0),numPeriodsArray(freq));
+      }
+      
+      // Adjustment for damping with implicit time-stepping 
+      damp = dampSave*( frequencyArraySave(0)*dts )/tan(frequencyArray(0)*dts);
+
+      if( false )
+      {
+        for( int freq=0; freq<numberOfFrequencies; freq++ )
+        {
+         printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e dampAdjusted=%14.6e (implicit)\n",freq,frequencyArraySave(freq),frequencyArray(freq),damp);
+        }
+      }
+
+
+      // if( numberOfFrequencies>1 )
+      // {
+      // OV_ABORT("FINISH ME: adjustOmega, multi-freq, implicit");
+      // }
+    }
+    else
+    {
+       // --- adjust omega for explicit time stepping ---
+       // Adjust omega for Helmholtz problems so that
+       //    4 sin^2( omegas*dt/2 )/dt^2 = omega^2
+       //    dt = Ts/N
+       //    Ts = 2*pi/omegas       : adjusted period
+       // where  N = number of steps we want to take
+
+       // dt = Ts/N = 2*pi/( omegas*N ) -> omegas*dt/2 = pi/N
+       // sin(pi/N) = omega*dt/2  
+       //  -> dt = sin(pi/N)*(2/omega)
+       //    omegas = (pi/N)*(2/dt)
+
+       dts = sin(Pi/numStepsPerPeriod) * (2./omega);
+       omegas = (Pi/numStepsPerPeriod) * (2./dts);
+
+       frequencyArray(0) = omegas;
+       for( int freq=1; freq<numberOfFrequencies; freq++ )
+       {
+         // sin( omegaTilde *dt/2) = omega*(dt/2)
+         frequencyArray(freq) = (2./dts) * asin( frequencyArray(freq)*(dts/2.) );
+       }
+
+       periodArray.redim(numberOfFrequencies);
+       numPeriodsArray(0)=numPeriods; 
+       periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
+       // ---- fit as many periods as we can in the longest interval ----
+       for( int freq=1; freq<numberOfFrequencies; freq++ )
+       {
+         // numPeriodsArray(freq) = floor( frequencyArray(freq)/frequencyArray(0) )*numPeriodsArray(0); //  integrate over this many periods for the "T2" integral
+
+         // Do this - Jan 15, 2022 : fit as many smaller periods into the longest period times the number of periods
+         numPeriodsArray(freq) = floor( frequencyArray(freq)*numPeriodsArray(0)/frequencyArray(0) ); //  integrate over this many periods for the "T2" integral
+
+         periodArray(freq)=(twoPi/frequencyArray(freq))*numPeriodsArray(freq);
+       }
+       
+       // Adjustment for damping with explicit time-stepping 
+       damp = dampSave/( cos(frequencyArray(0)*dts/2) );
+
+       for( int freq=0; freq<numberOfFrequencies; freq++ )
+       {
+         printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e\n",freq,frequencyArraySave(freq),frequencyArray(freq));
+       }
+
+    }
+    printF("\n ##### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=%18.10e (dt=%18.10e) omegaAdjusted=%14.6e (omega=%14.6e) ####\n",dts,dt,omegas,omega);
+
+    if( damp!=0. )
+      printF(" ##### CgWave: dampAdjusted=%18.10e, damp=%18.10e ####\n",damp,dampSave);
+
+    // The number of periods may have changed --- fix the un-adjusted period array: *wdh* Feb 3, 2023
+    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    {
+      if( 1==0 ) printF("freq=%d: numPeriodsArray=%d, periodArraySave=%12.4e, ",freq,numPeriodsArray(freq),periodArraySave(freq));
+      periodArraySave(freq)=(twoPi/frequencyArraySave(freq))*numPeriodsArray(freq);
+      if( 1==0 ) printF("... corrected for numPeriods %12.4e\n",periodArraySave(freq));
+    }
+    // OV_ABORT("stop here for now");
+
+    frequencyArrayAdjusted = frequencyArray; 
+    periodArrayAdjusted = periodArray; 
+
+    omegaSave   = omega;    // save original omega ( omega is reset below)
+    TperiodSave = Tperiod;  // save original Tperiod ( Tperiod is reset below)
+    dtSave      = dt;
+
+    dt      = dts;
+    omega   = omegas;
+    Tperiod = (twoPi/omegas)*numPeriods;
+    tFinal  = Tperiod; 
+
+
+
+     // if( numberOfFrequencies==1 )
+     // {
+     //   frequencyArray(0)=omega; // do this for now 
+     //   periodArray(0)=twoPi/frequencyArray(0);
+     // }
+  }
+  else if( computeEigenmodes && numPeriods>1  )
+  {
+
+    dtSave = dt;
+    dt /= numPeriods;
+    numPeriodsArray(0)=numPeriods; 
+    periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
+
+    Tperiod = (twoPi/omega)*numPeriods;
+    tFinal  = Tperiod; 
+
+    printF("\n >>>>>>>>>>> CgWave : computeEigenmodes omega=%12.4e, numPeriods=%d, tFinal=%10.2e <<<<<<<<<<<<<\n",omega,numPeriods,tFinal );    
+  }    
+
+  if( it<=1 && solveHelmholtz )
+  {
+    printF("\n >>>>>>>>>>>>>>>>> CgWave:adjust dt and frequencies for a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<\n");
+    printF(" it=%d, dt=%20.12e, omega=%20.12e,  tFinal=%20.12e\n",it,dt,omega,tFinal);
+    printF(" adjustOmega=%d, adjustHelmholtzForUpwinding=%d, minStepsPerPeriod=%d \n",adjustOmega,adjustHelmholtzForUpwinding,minStepsPerPeriod);
+    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    {
+      Real realStepsPerPeriod =  periodArray(freq)/dt/numPeriodsArray(freq);
+
+      printF(" freq=%d frequency=%14.6e period=%14.6e, numberOfPeriods=%d, period*numPeriods=%14.6e, numStepsPerPeriod=%g\n",
+        freq,frequencyArray(freq),periodArray(freq)/numPeriodsArray(freq),numPeriodsArray(freq),periodArray(freq),realStepsPerPeriod);
+    }   
+    printF(" nextTimeToPlot=%9.3e, numPlotSteps=%d, numStepsPerPeriod=%d, new dt=%9.3e (dtMax=%9.3e)\n",nextTimeToPlot,numPlotSteps,numStepsPerPeriod, dt,dtMax);           
+    printF(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n");
+  }
+
+
+  if( debug & 2 )
+    printF("CgWave:advance: nextTimeToPlot=%9.3e, numPlotSteps=%d, new dt=%9.3e (dtMax=%9.3e)\n",
+           nextTimeToPlot,numPlotSteps, dt,dtMax);
+
+
+  if( (debug & 2) && solveHelmholtz )   
+    printF("CgWave::advance: c=%g, numberOfFrequencies=%d, omega=%g, Tperiod=%g, numPeriods=%d, tFinal=%g, plotOptions=%d\n",
+           c,numberOfFrequencies,omega,Tperiod,numPeriods,tFinal,plotOptions);
+
+
+
+  dtUsed = dt; // save dt actually used
+
+  return 0;
+}
+
+
+
+
+// // ================================================================================================
+// /// \brief Advance the solution 
+// /// This is the main advance routine for cgWave.
+// /// \param it (input) : iteration number when solving a Helmholtz problem.
+// // ================================================================================================
+// int CgWave::
+// advance( int it )
+// {
+//   real time0=getCPU();
+//   const int & myid = dbase.get<int>("myid");
+//   const int & np = dbase.get<int>("np");
+
+//   int & iteration = dbase.get<int>("iteration");
+//   iteration=it;
+
+//   const int & debug  = dbase.get<int>("debug");
+//   FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+//   FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
+
+//   GenericGraphicsInterface & ps = gi;
+//   PlotStuffParameters psp;
+
+//   Real & c                          = dbase.get<real>("c");
+//   Real & cfl                        = dbase.get<real>("cfl");
+//   Real & tFinal                     = dbase.get<real>("tFinal");
+//   Real & tPlot                      = dbase.get<real>("tPlot");
+//   Real & dtMax                      = dbase.get<Real>("dtMax"); 
+//   Real & damp                       = dbase.get<Real>("damp"); 
+//   Real & dampSave                   = dbase.get<Real>("dampSave"); 
+
+//   const int & upwind                = dbase.get<int>("upwind");
+//   const int & numUpwindCorrections  = dbase.get<int>("numUpwindCorrections");
+//   const int & implicitUpwind        = dbase.get<int>("implicitUpwind");
+
+//   const int & dissipationFrequency  = dbase.get<int>("dissipationFrequency");
+//   // preComputeUpwindUt : true=precompute Ut in upwind dissipation, 
+//   //                      false=compute Ut inline in Gauss-Seidel fashion  
+//   int & preComputeUpwindUt = dbase.get<int>("preComputeUpwindUt");
+
+
+//   real & dt                         = dbase.get<real>("dt");
+//   real & dtUsed                     = dbase.get<real>("dtUsed");  // dt actually used
+//   RealArray & gridCFL               = dbase.get<RealArray>("gridCFL");
+//   const int & orderOfAccuracy       = dbase.get<int>("orderOfAccuracy");
+//   const int & orderOfAccuracyInTime = dbase.get<int>("orderOfAccuracyInTime");
+//   int & interactiveMode             = dbase.get<int>("interactiveMode");
+//   int & computeErrors               = dbase.get<int>("computeErrors"); 
+
+//   int & plotOptions                 = dbase.get<int>("plotOptions");
+//   int & plotChoices                 = dbase.get<int>("plotChoices");
+//   int & plotFrequency               = dbase.get<int>("plotFrequency");
+
+//   const int & useSuperGrid          = dbase.get<int>("useSuperGrid");
+//   IntegerArray & superGrid          = dbase.get<IntegerArray>("superGrid");
+  
+//   const int & solveHelmholtz              = dbase.get<int>("solveHelmholtz");
+//   const int & computeTimeIntegral         = dbase.get<int>("computeTimeIntegral");
+//   const int & adjustOmega                 = dbase.get<int>("adjustOmega");  // 1 : choose omega from the symbol of D+t D-t 
+//   const int & adjustHelmholtzForUpwinding = dbase.get<int>("adjustHelmholtzForUpwinding");
+//   const int & deflateWaveHoltz            = dbase.get<int>("deflateWaveHoltz");
+//   const int & deflateForcing              = dbase.get<int>("deflateForcing");
+//   const int & numToDeflate                = dbase.get<int>("numToDeflate");
+//   const aString & eigenVectorFile         = dbase.get<aString>("eigenVectorFile"); //  name of file holding eigs and eigenvectors for deflation
+//   const int & computeEigenmodes           = dbase.get<int>("computeEigenmodes");
+//   const int & computeEigenmodesWithSLEPc  = dbase.get<int>("computeEigenmodesWithSLEPc");
+//   const int & filterTimeDerivative        = dbase.get<int>("filterTimeDerivative");
+//   const int & initTimeIntegral            = dbase.get<int>("initTimeIntegral");
+//   const int & filterD0t                   = dbase.get<int>("filterD0t");
+
+//   real & omega                      = dbase.get<real>("omega");
+//   real & Tperiod                    = dbase.get<real>("Tperiod");
+//   int & numPeriods                  = dbase.get<int>("numPeriods");
+//   real & omegaSave                  = dbase.get<real>("omegaSave");
+//   real & TperiodSave                = dbase.get<real>("TperiodSave");  
+//   real & dtSave                     = dbase.get<real>("dtSave");
+
+//   const int & numberOfFrequencies   = dbase.get<int>("numberOfFrequencies");
+//   RealArray & frequencyArray        = dbase.get<RealArray>("frequencyArray");
+//   RealArray & frequencyArrayAdjusted= dbase.get<RealArray>("frequencyArrayAdjusted");
+//   RealArray & periodArray           = dbase.get<RealArray>("periodArray"); 
+//   RealArray & periodArrayAdjusted   = dbase.get<RealArray>("periodArrayAdjusted"); 
+//   IntegerArray & numPeriodsArray    = dbase.get<IntegerArray>("numPeriodsArray");
+//   RealArray & frequencyArraySave    = dbase.get<RealArray>("frequencyArraySave");
+//   RealArray & periodArraySave       = dbase.get<RealArray>("periodArraySave");     
+
+//   int & addForcing                  = dbase.get<int>("addForcing");
+//   ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
+
+//   const int & useKnownSolutionForFirstStep  = dbase.get<int>("useKnownSolutionForFirstStep");
+//   const int & takeImplicitFirstStep         = dbase.get<int>("takeImplicitFirstStep");
+
+//   const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
+
+//   const ModifiedEquationApproachEnum & modifiedEquationApproach = dbase.get<ModifiedEquationApproachEnum>("modifiedEquationApproach");
+
+//   IntegerArray & gridIsImplicit     = dbase.get<IntegerArray>("gridIsImplicit");
+//   const RealArray & bImp            = dbase.get<RealArray>("bImp");
+//   const RealArray & cImp            = dbase.get<RealArray>("cImp");
+
+//   real & solutionNorm               = dbase.get<real>("solutionNorm");  // save solution norm here 
+
+//   int & current = dbase.get<int>("current"); // hold the current solution index
+
+//   realCompositeGridFunction *& u = dbase.get<realCompositeGridFunction*>("ucg");
+//   CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
+//   Interpolant *& pInterpolant = dbase.get<Interpolant*>("pInterpolant");
+//   assert( pInterpolant!=NULL );
+//   Interpolant & interpolant = *pInterpolant;
+
+//   realCompositeGridFunction & f = dbase.get<realCompositeGridFunction>("f");
+  
+//   BoundaryConditionParameters bcParams;
+  
+//   BCTypes::BCNames boundaryCondition=BCTypes::evenSymmetry; 
+//   // BCTypes::BCNames boundaryCondition=BCTypes::dirichlet;
+
+
+//   // check parameters for consistency
+//   checkParameters(); 
+
+//   Index I1,I2,I3;
+
+//   if( modifiedEquationApproach==hierarchicalModifiedEquation ||
+//       modifiedEquationApproach==stencilModifiedEquation )
+//   {
+//     // -- We compute and save the coefficients in the Laplacian for the hierachical approach --
+
+//     if( orderOfAccuracy!=orderOfAccuracyInTime )
+//     {
+//       printF("ERROR: modified equation hierachical scheme currently needs orderOfAccuracy=orderOfAccuracyInTime,\n");
+//       printF("   *but*  orderOfAccuracy=%d, orderOfAccuracyInTime=%d\n",orderOfAccuracy,orderOfAccuracyInTime);
+//       OV_ABORT("error");
+//     }
+    
+//     if( !dbase.has_key("lapCoeff") )
+//     {
+//       RealArray *& lapCoeff = dbase.put<RealArray*>("lapCoeff");
+//       lapCoeff = new RealArray[cg.numberOfComponentGrids()];           
+//       // 2D: c200, c110, c020, c100, c010
+//       // 3D: c200, c020, c002, c110, c101, c011, c100, c010, c001
+//       const int numCoeff = cg.numberOfDimensions()==2 ? 5 : 9;    
+//       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+//       {
+//         lapCoeff[grid]=NULL;
+//         const bool isRectangular = cg[grid].isRectangular();
+//         if( !isRectangular )
+//         {
+//           getIndex(cg[grid].dimension(),I1,I2,I3);
+//           lapCoeff[grid].redim(I1,I2,I3,numCoeff);
+//           lapCoeff[grid]=-1.; // this means the coefficients have not yet been set
+//         }
+//       }
+//     }
+//     if( modifiedEquationApproach==stencilModifiedEquation )
+//     {
+//       if( !dbase.has_key("stencilCoeff") )
+//       {
+//         RealArray *& stencilCoeff = dbase.put<RealArray*>("stencilCoeff");
+//         stencilCoeff = new RealArray[cg.numberOfComponentGrids()];        
+
+//         int stencilWidth = orderOfAccuracy+1;
+//         int numStencilCoeff;
+//         if( cg.numberOfDimensions()==2 )
+//           numStencilCoeff= stencilWidth*stencilWidth;
+//         else
+//           numStencilCoeff= stencilWidth*stencilWidth*stencilWidth;
+//         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+//         {
+//           stencilCoeff[grid]=NULL;
+//           const bool isRectangular = cg[grid].isRectangular();
+//           if( !isRectangular )
+//           {
+//             getIndex(cg[grid].dimension(),I1,I2,I3);
+//             stencilCoeff[grid].redim(numStencilCoeff,I1,I2,I3);
+//             stencilCoeff[grid]=-1.; // this means the coefficients have not yet been set
+//           }
+//         }        
+
+//       }
+//     }
+//   }
+//   RealArray *lapCoeff = modifiedEquationApproach==standardModifiedEquation ? NULL : dbase.get<RealArray*>("lapCoeff");
+//   RealArray *stencilCoeff = modifiedEquationApproach!=stencilModifiedEquation ? NULL : dbase.get<RealArray*>("stencilCoeff");
+
+//   real t=0.;
+//   // real dtSquared = SQR(dt);
+//   real cSquared=c*c;
+    
+//   // if( false )
+//   // {
+//   //   Tperiod = numPeriods*twoPi/omega;
+//   //   tFinal=Tperiod;
+//   //   tPlot=Tperiod/10.;  // plot this often
+//   // }
+  
+//   if( !(plotOptions==noPlotting || plotOptions==plotAndWait || plotOptions==plotNoWait) )
+//   {
+//     printF("ERROR: invalid plotOptions=%d \n",plotOptions);
+//     OV_ABORT("ERROR");
+//   }
+//   GUIState *& runTimeDialog = dbase.get<GUIState*>("runTimeDialog");
+//   if( plotOptions != noPlotting )
+//   {
+//      // ---- Build the run-time dialog if plotting is on ----
+//     if( runTimeDialog==NULL )
+//     {
+//       buildRunTimeDialog();
+//     }
+//     GUIState & dialog = *runTimeDialog;
+//     ps.pushGUI(dialog);
+//   }
+
+//   // estimated number of time steps: (for output)
+//   // int numberOfTimeSteps=int( tFinal/dt+.5);
+
+//   const int maxNumberOfTimeSteps=1e10; 
+  
+//   // adjust dt to reach tFinal
+//   // dt = tFinal/numberOfTimeSteps;
+
+//   // --- choose dt so we reach the next time to plot ---
+//   Real nextTimeToPlot = min(tPlot,tFinal);
+
+//   // Currenly we need to make sure that dt is constant when solving Helmholtz (for the accuracy of the time integral)
+//   if( solveHelmholtz )
+//       nextTimeToPlot=tFinal;
+
+//   // For now we do not adjust dt when using implicit time-stepping:
+//   // ** TURN OFF ADJUST TIME STEP *wdh* Nov 23, 2023
+//   bool adjustTimeStep = FALSE; // timeSteppingMethod==explicitTimeStepping;
+
+//   // NOTE: dtMax is the initial time-step determined by getTimeStep
+//   int numPlotSteps    =  ceil( nextTimeToPlot/dtMax );  // max number of steps 
+
+//   if( solveHelmholtz && timeSteppingMethod == implicitTimeStepping )
+//   { 
+//     // For implicit time-stepping we must take at least 5 steps per period when we adjust omega and dt
+//     // numPlotSteps = max(5*numPeriods,numPlotSteps);
+
+//     const int & minStepsPerPeriod = dbase.get<int>("minStepsPerPeriod");
+
+//     // Note: numPlotsSteps is per period
+//     if( numberOfFrequencies==1 )
+//     {
+//       numPlotSteps = max(minStepsPerPeriod,numPlotSteps);
+//     }
+//     else
+//     {
+//       // we need at least 5 steps for the smallest period
+//       const Real minFreq = min(frequencyArray);  // should be frequencyArray(0)
+//       const Real maxFreq = max(frequencyArray);
+//       const Real Tmax = twoPi/minFreq;  // longest period
+//       const Real Tmin = twoPi/maxFreq;  // shortest period
+//       int minSteps = ceil( minStepsPerPeriod*Tmax/Tmin ); // is this correct
+//       // printF("### Tmax=%12.4e, Tmin=%12.4e, Tmax/Tmin=%12.4e, minSteps=%d\n",Tmax,Tmin,Tmax/Tmin,minSteps);
+//       numPlotSteps = max(minSteps,numPlotSteps);
+//     }
+
+//     // printF("###(1) numPlotSteps=%d\n",numPlotSteps);
+//   }
+
+
+//   // --------------------------------------------------------------------------------
+//   // --- Adjust the time-step and frequencies/periods for WaveHoltz and EigenWave ---
+//   // --------------------------------------------------------------------------------
+//   adjustTimeStepAndFrequenciesMacro(); 
+
+//   dtUsed = dt; // save dt actually used
+
+//   int i1,i2,i3;
+
+//   // const bool takeForwardInitialStep=true; // false; // true; // *new* way : July 26, 2021
+
+//   int step=-1;
+//   t=0.;
+
+//   const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
+//   const int cur = 0; // current time level
+//   const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+//   const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+
+//   realCompositeGridFunction & u1 = u[cur];     // current time 
+//   realCompositeGridFunction & u2 = u[prev];    // previous time
+
+
+//   if( solveHelmholtz )
+//   {
+
+//      printF("\n &&&&&&&& advance : it=%d  &&&&&&&&&&& \n\n",it);
+//      if( it<0 )
+//      {
+//       printF("CgWave::advance: solveHelmholtz but it=%d < 0 ?\n",it);
+//       OV_ABORT("ERROR");
+//      }
+
+//     if( initTimeIntegral ) 
+//     {
+//       initializeTimeIntegral( dt ); // *new* Nov 29, 2024 
+//       if( deflateWaveHoltz )        // *wdh* Nov 29, 2024
+//       { // initialize deflation and deflate forcing 
+//         initializeDeflation();
+//       }
+//     }
+//     if( it==0 && deflateWaveHoltz && (deflateForcing || true) )
+//     {
+//       // deflate initial condition 
+//       int deflateOption=2;     // deflate solution even if deflateForcing=1
+//       deflateSolution( deflateOption );
+//       if( false )
+//       {
+//          realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v"); 
+//          psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
+//          psp.set(GI_TOP_LABEL,"advance: deflated initial condition");
+//          ps.erase();
+//          PlotIt::contour(ps,v,psp);     
+//          psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);      
+//       }
+//     }
+//   }
+
+//   // u1=0.;
+//   // u2=0.;
+//   // u[next]=0.; // initialize so there are valid values in all ghost (for WaveHoltz PETSc solver)
+
+//   // -------------------------------------------------------------
+//   // -------------- Initial Conditions : u1 = u(t=0) -------------
+//   // -------------------------------------------------------------
+//   assignInitialSolutionMacro();
+
+//   // --------------------------------------------
+//   // --------------- FIRST STEP -----------------  
+//   // --------------------------------------------
+//   if( forcingOption==helmholtzForcing )  
+//   {
+//     takeFirstStep( cur, t ); 
+//   }
+//   else
+//   {
+//     if( !useKnownSolutionForFirstStep 
+//         // *wdh* Dec 23, 2023 && ( timeSteppingMethod==explicitTimeStepping || takeImplicitFirstStep )
+//         && orderOfAccuracy < 8 ) // do this for now 
+//     { 
+//       takeFirstStep( cur, t ); 
+//     }
+//     else
+//     { // Just get solution at t=dt from IC function
+//       if( debug>0 )
+//         printF("\n $$$$$$ CgWave:advance: Take First Step using KNOWN solution $$$$$$$$\n\n");   
+
+//       getInitialConditions( next,t+dt );
+//     }
+//   }
+
+
+//   if( computeTimeIntegral )
+//   {
+//     // When solving the Helmholtz problem with CgWaveHoltz we need to evaluate an integral 
+//     //      v  = (1/(2*T)* Int_0^T [  ( cos(omega*t)-.25)*u(x,t) dt ] 
+//     updateTimeIntegral( 0, firstStep, t, dt, u[cur] );
+//   }
+
+
+  
+//   real cpua=getCPU();
+
+ 
+//   if( false && deflateForcing )
+//   {
+//      realCompositeGridFunction & f = dbase.get<realCompositeGridFunction>("f");      
+//      GenericGraphicsInterface & ps = gi;
+//      PlotStuffParameters & psp =  dbase.get<PlotStuffParameters>("psp");
+
+//      psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,false);
+//      psp.set(GI_TOP_LABEL,"ADVANCE: deflated forcing");
+//      ps.erase();
+//      PlotIt::contour(ps,f,psp);     
+//      psp.set(GI_PLOT_THE_OBJECT_AND_EXIT,true);
+//   }
+
+//   bool takeAnExtraStep=false;
+//   if( solveHelmholtz && filterTimeDerivative && filterD0t )
+//   {
+//     // -- if we filter D0t U^n then we need to take an extra step;
+//     takeAnExtraStep=true;
+//     printF("&&&&& ADD AN EXTRA STEP: tFinal=%9.3e --> tFinal=%9.3e\n\n",tFinal,tFinal+dt);
+//     tFinal=tFinal+dt; // *** CHECK ME : DOES THIS BREAK SOMETHING ???
+//   }
+
+//   // =======================================================
+//   // ================== TIME STEPS =========================
+//   // =======================================================
+//   for( int i=0; i<=maxNumberOfTimeSteps; i++ )                    // take some time steps
+//   {
+//     step++;
+
+//     const int cur = (step +numberOfTimeLevelsStored) % numberOfTimeLevelsStored; // current time level
+//     const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+//     const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
+
+//     current = cur; 
+
+//     // --- NOTE: LOOP ENDS INSIDE THIS NEXT MACRO WHEN t=tFinal of user CHOOSES finish -----
+//     plotAndOutputResults(); 
+
+//     // vOld : current guess for Helmholtz solution 
+//     realCompositeGridFunction & vOld = solveHelmholtz ?  dbase.get<realCompositeGridFunction>("vOld") : u[prev];
+
+//     if( step==0 && !takeImplicitFirstStep )
+//     {
+//       // --- first step has already been taken ----
+//        t+=dt;
+//        if( debug & 2 )
+//          printF("Skip first step since set to exact, or used time-periodic, or used Taylor series method.\n");
+//     }
+//     else
+//     { 
+
+//       // ----------------------------------------------
+//       // ---------------- take a time-step ------------
+//       // ----------------------------------------------
+//       for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+//       {
+//         if( debug & 4 ) printF("Advance grid %i, step=%i, ...\n",grid,step);
+            
+
+//         if( step==0 && takeImplicitFirstStep && !gridIsImplicit(grid) )
+//         {  // skip explicit grids, since these have been assigned in takeFirstStep
+//            continue;
+//         }
+
+//         MappedGrid & mg = cg[grid];
+        
+//         if( debug & 16 )
+//         {
+//           ::display(u[prev][grid],sPrintF("BEFORE: u=prev grid=%d t-dt=%9.3e",grid,t-dt),debugFile,"%11.3e ");
+//           ::display(u[cur ][grid],sPrintF("BEFORE: u=Cur  grid=%d t   =%9.3e",grid,t),debugFile,"%11.3e ");
+//         }
+  
+//        const int useUpwindDissipation = upwind;  
+
+//        int useImplicitUpwindDissipation=false;
+//        if( gridIsImplicit(grid) && upwind && implicitUpwind )
+//          useImplicitUpwindDissipation=true;
+  
+
+//         // -- optimized advance ---
+//         OV_GET_SERIAL_ARRAY(real,u[prev][grid],umLocal);
+//         OV_GET_SERIAL_ARRAY(real,u[cur ][grid],uLocal);
+//         OV_GET_SERIAL_ARRAY(real,u[next][grid],unLocal);
+//         OV_GET_SERIAL_ARRAY_CONDITIONAL(real,vOld[grid],vOldLocal,solveHelmholtz);
+  
+//         if( debug & 4 )
+//         {
+//           printF("advance: UPDATE SOLUTION: step=%d, t=%9.3e using [prev,cur,nex]=[%d,%d,%d]\n",step,t,prev,cur,next);
+//         }      
+  
+//         int option = 0;    // 0=advance, 1=add dissipation
+  
+//         // =================== TAKE A STEP ==========================
+//         callOptimizedAdvance();
+       
+//         if( timeSteppingMethod == explicitTimeStepping && debug & 16 )
+//         {
+//           ::display(u[next][grid],sPrintF("AFTER advOpt: uNext grid=%d t+dt=%9.3e",grid,t+dt),debugFile,"%11.3e ");
+//         }
+  
+        
+//       }  // end for grid
+  
+//       if( timeSteppingMethod == implicitTimeStepping )
+//       {
+//         // boundary conditions for implicit time-stepping are added here:
+//         takeImplicitStep( t+dt );
+
+//         if( debug & 4 )
+//         {
+//           real maxErr = getErrors( u[next], t+dt );
+//           printF("\n ++++ AFTER takeImplicitStep (before explicit BCs): t+dt=%9.3e, maxErr=%9.2e +++\n\n",t+dt,maxErr);
+//         }
+
+//         if( debug & 16 )
+//         {
+//           for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+//             ::display(u[next][grid],sPrintF("AFTER takeImplicitStep (before explicit BCs): uNext grid=%d t+dt=%9.3e",grid,t+dt),debugFile,"%11.3e ");
+//         }
+
+//       }
+  
+//       t+=dt;
+  
+//       if( debug & 4 ) printf("...done advance, now interpolate...\n");
+  
+//       // ----- apply boundary conditions ------
+//       if( true || (timeSteppingMethod != implicitTimeStepping) ) // ** TEST ********
+//       {
+//         if( debug & 1 && t <= 2.*dt )
+//           printF("Call applyBoundaryConditions : explicit BC's for step=%d, t(new)=%10.3e, dt=%10.3e\n",step,t,dt);
+
+//         bool applyExplicitBoundaryConditions=true;
+//         if( false )
+//         {
+//           applyBoundaryConditions( u[next],u[cur],t ); 
+//           printF("$$$$$$$$$$$$$$$$$$$$ TEMP $$$$$$$$$$$$$$$$$$$ TEST FOR ABC's $$$$$$$$$$$$$\n");
+//         }
+//         else if( true )
+//         {
+//           // printF(">>>>>>>>>>>>> CALL applyBoundaryConditions after implicit solve\n");
+//           // ::display(u[next][0],"u[next] before applyBC","%12.4e ");
+//           applyBoundaryConditions( u[next],u[cur],t, applyExplicitBoundaryConditions ); 
+//           // ::display(u[next][0],"u[next] after applyBC","%12.4e ");
+//           // printF("<<<<<<<<<<<< DONE CALL applyBoundaryConditions after implicit solve\n");
+//         }
+//         else
+//           printF(" advance: do NOT Apply explicitBCs after implicit solve ############################################################ TEMP \n");
+//       }
+
+//       // --------------------------------
+//       // ---- ADD upwind dissipation ----
+//       // --------------------------------
+//       addUpwindDissipation(step);  
+
+  
+//       if( debug & 16 )
+//       {
+//         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+//         {
+//           ::display(u[next][grid],sPrintF("after applyBC uNext grid=%d t=%9.3e",grid,t),debugFile,"%11.3e ");
+//         }
+//       }
+
+//      if( debug & 4 )
+//       printF("end time step=%d: t=%10.3e, dt=%10.3e\n",step,t,dt);      
+  
+//     } // end take a time-step
+
+//     if( computeTimeIntegral )
+//     {
+//       // Integral in time -- trapezoidal rule
+//       // assert( i<=(numberOfTimeSteps-1) );
+      
+//       // StepOptionEnum stepOption = i== (numberOfTimeSteps-1) ? lastStep : middleStep;
+//       StepOptionEnum stepOption = (t >tFinal-.5*dt) ? lastStep : middleStep;
+//       // printF(" computeTimeIntegral : t=%9.3e, stepOption=%d\n",t,stepOption);
+//       updateTimeIntegral( step+1, stepOption, t, dt, u[next] );
+//     }
+    
+//   } // end for i .. number of steps
+
+//   timing(timeForAdvance) += getCPU()- cpua;
+
+//   current = next; // curent solution
+
+//   // const Real tShift = takeAnExtraStep ? dt : 0;
+//   if( fabs(t-tFinal)/tFinal > dt*1e-3 )
+//   {
+//     printF("CgWave::advance:ERROR: done time-stepping but t is NOT equal to tFinal! Something is wrong.\n");
+//     printF("      t=%14.6e tFinal=%14.6e relative-diff=%9.3e\n",t,tFinal,(t-tFinal)/tFinal);
+//     OV_ABORT("FIX ME");
+//   }
+
+//   if( solveHelmholtz && adjustOmega )
+//   {
+//     // Reset adjusted omega and Tperiod
+
+//     // make this a function
+//     if( true )
+//     {
+//        resetFrequencyArrays();
+//     }
+//     else
+//     {
+//       omega   = omegaSave;
+//       Tperiod = TperiodSave;
+//       dt      = dtSave; 
+//       tFinal  = Tperiod; // reset too *wdh* Jul 25, 2021
+//       damp = dampSave;
+
+//       frequencyArray = frequencyArraySave;  // reset to original values 
+//       periodArray    = periodArraySave;     // reset to original values
+//     } 
+
+//     if( debug>2 )
+//     {
+//       printF("RESET periodArray\n");   
+//       for( int freq=0; freq<numberOfFrequencies; freq++ )
+//       {
+//         printF("freq=%d: periodArray=%12.4e\n",freq,periodArray(freq));
+//       } 
+//     }  
+//     // OV_ABORT("stop here for now");  
+//   }
+//   if( solveHelmholtz )
+//   {
+//     // correct eigenfunction for Eigenwave
+ 
+//     if( !computeEigenmodesWithSLEPc )
+//     {
+//       correctEigenfunction();
+      
+//       // adjust frequency for EigenWave 
+//       adjustEigenWaveFrequency();  
+//     }  
+//   }   
+
+
+
+//   if( false && solveHelmholtz )
+//   {
+//     // --- Zero out unused points for Kyrlov solver -- *wdh* Jan 5, 2020
+//     // The Krylov solver will measure the residual at all grid points
+//     // We st used points to zero so the residual will always be zero there
+//     // Note: for upwinding we use some unused points; thus it is important
+//     //  that we apply the boundary conditions to the initial conditions to
+//     //  restore these values.
+//     printF("cgWave:INFO zero unused points at finish.\n");
+//     realCompositeGridFunction & v = dbase.get<realCompositeGridFunction>("v");
+//     Range all; 
+//     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+//     {
+//       MappedGrid & mg = cg[grid];
+//       OV_GET_SERIAL_ARRAY(real,u[current][grid],uLocal);
+//       OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+//       OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+//       getIndex(mg.dimension(),I1,I2,I3); 
+//       FOR_3D(i1,i2,i3,I1,I2,I3)
+//       {
+//         if( maskLocal(i1,i2,i3) ==0 )
+//         {
+//           // uLocal(i1,i2,i3,all)=0.; // is this needed?
+//           // vLocal(i1,i2,i3,all)=0.; 
+//         }    
+//       }  
+//     }
+
+//   }
+
+//   // total number of steps taken:
+//   int & numberOfStepsTaken = dbase.get<int>("numberOfStepsTaken");
+//   numberOfStepsTaken += step;
+
+//   // number of steps this solve
+//   int & numberOfStepsPerSolve = dbase.get<int>("numberOfStepsPerSolve");
+//   numberOfStepsPerSolve = step;
+
+//   // -- pop run time dialog 
+//   if( plotOptions != noPlotting )
+//     ps.popGUI();
+
+//   delete runTimeDialog;
+
+//   runTimeDialog=NULL;
+  
+//   timing(totalTime) += getCPU()-time0;
+      
+//   saveSequencesToShowFile(); // June 10, 2020
+
+//   if( !solveHelmholtz )
+//     printStatistics();
+  
+//   return 0;
+// }
+
+
+

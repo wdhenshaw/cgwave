@@ -12,6 +12,219 @@ set ovp2 = ~/Dropbox/overHoltzPaper/part2
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+***************************************************
+****** Tues Sept 30, 2025
+
+Nf=10 -- remove high freq and add low freq
+Np=2
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 .52 .53 .47 .48 -y0=0.45 0.55 .5 .5 .54 .45 .47 -.46 .43 -.47 -.48  -nf=10 -freq=3 5 7 9 11 15 19 23 27 31  -amp=400 400 400 400 400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 25 26 27 28 29 30 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-11 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -matlab=square128OptFilterB -useOptFilter=1 -go=dfk
+
+Np=1
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 .52 .53 .47 .48 -y0=0.45 0.55 .5 .5 .54 .45 .47 -.46 .43 -.47 -.48  -nf=10 -freq=3 5 7 9 11 15 19 23 27 31  -amp=400 400 400 400 400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 25 26 27 28 29 30 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-11 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -matlab=square128OptFilterB -useOptFilter=1 -go=dfk
+
+
+Nf=10
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 .52 .53 .47 .48 -y0=0.45 0.55 .5 .5 .54 .45 .47 -.46 .43 -.47 -.48  -nf=10 -freq=3 7 11 15 19 23 27 31 35 39 -amp=400 400 400 400 400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 25 26 27 28 29 30 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-11 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+
+Nf=8 -- add two more 
+Np=1
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 .52 .53  -y0=0.45 0.55 .5 .5 .54 .45 .47 -.46 .43 -nf=8 -freq=3 7 11 17 25 31 36 41 -amp=400 400 400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 25 26 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-11 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+Np=2
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 .52 .53  -y0=0.45 0.55 .5 .5 .54 .45 .47 -.46 .43 -nf=8 -freq=3 7 11 17 25 31 36 41 -amp=400 400 400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 25 26 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-11 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+NF=6 case from notes:
+Np=2
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 -y0=0.45 0.55 .5 .5 .54 .45 .47 -nf=6 -freq=3 7 11 17 25 31 -amp=400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-11 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=2 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+Np=1
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 -y0=0.45 0.55 .5 .5 .54 .45 .47 -nf=6 -freq=3 7 11 17 25 31 -amp=400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-11 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+***************************************************
+****** Mon Sept 29, 2025
+
+RUN CASES FROM PAPER USING OPT-FILTER
+
+
+NF=7 : NP=2
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 -y0=0.45 0.55 .5 .5 .54 .45 .47 -nf=7 -freq=15 21 26 32 41 49 58 -amp=400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=2 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+NF=7 : NP=4
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 -y0=0.45 0.55 .5 .5 .54 .45 .47 -nf=7 -freq=15 21 26 32 41 49 58 -amp=400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=300 -numPeriods=4 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+
+
+
+NF=7 : NP=6
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 .44 .53 .44 -y0=0.45 0.55 .5 .5 .54 .45 .47 -nf=7 -freq=15 21 26 32 41 49 58 -amp=400 400 400 400 400 400 400 -beta=18 19 20 21 22 23 24 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=6 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+
+
+
+THREE FREQ TEST CASE FROM MFWH PAPERS: 
+
+Np=2
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+
+Np=1
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=1 -matlab=square128OptFilter -useOptFilter=1 -go=dfk
+
+
+
+***************************************************
+****** Sun Sept 28, 2025
+
+CHECK MATCH TO MATLAB
+
+EXP: NF=2
+cgwh -noplot gaussian.cmd -g=square32.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=2 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=explicit -cfl=0.9 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square32OptFilter -useOptFilter=1 -go=k
+
+
+
+
+IMP: NF=2
+cgwh -noplot gaussian.cmd -g=square32.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=2 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square32OptFilter -useOptFilter=1 -go=k
+
+
+ nextTimeToPlot=2.464e+00, numPlotSteps=40, numStepsPerPeriod=20, new dt=6.291e-02 (dtMax=1.000e+00)
+ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ &&&&&&&& advance : it=0  &&&&&&&&&&& 
+
+
+ #### initializeTimeIntegral: omega=4.994140711166e+00, dt=6.290556945193e-02, useFilterWeights=1 filterD0t=0 ####
+
+Entering optFilterParameters, nf=2
+omega=[  4.99,  9.35,]
+C1
+    (      0) (      1) (      2) (      3) 
+(0)  2.08e-17 -6.77e-02 -1.26e+00  1.83e-01 
+(1)  2.61e-01 -1.85e-05 -1.34e-01 -1.01e+00 
+(2)  1.00e+00 -1.16e-01  9.68e-02  1.06e-02 
+(3)  4.87e-02  1.00e+00  1.48e-01  4.72e-02 
+C2
+    (      0) (      1) (      2) (      3) 
+(0)  9.38e-17 -8.25e-02  3.97e-01  4.79e-04 
+(1) -1.19e-01  8.80e-05 -2.93e-01  2.08e-01 
+Return from least squares routine GELSY: rank=2, info=0 (rcond= 1.49e-05)
+
+
+=================================================================================
+ --- optFilterPar : compute optimized filter parameters ---  
+   numFreq=2, dt=6.291e-02, Nlam=1000, [lamMin,lamMax]=[0.000e+00,2.804e+01], 
+   muMin= -3.51e-01, muMax=  1.00000000e+00
+ Filter kernel: a0 + a1 sin(omega t)+ a2 cos(omega t)
+  omega=[  4.99,  9.35,]
+  a0(freq)=[ -2.9707e-01,  2.351891e-01];
+  a1(freq)=[  3.9643e-02,  1.164885e-01];
+  a2(freq)=[  9.4447e-01,  1.087924e+00];
+=================================================================================
+
+
+
+
+EXP:
+cgwh -noplot gaussian.cmd -g=square32.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=1 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=explicit -cfl=0.9 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square32OptFilter -useOptFilter=1 -go=k
+
+
+=================================================================================
+ --- optFilterPar : compute optimized filter parameters ---  
+   numFreq=1, dt=1.986e-02, Nlam=1000, [lamMin,lamMax]=[0.000e+00,1.531e+01], 
+   muMin= -2.68e-01, muMax=  1.00000000e+00
+ Filter kernel: a0 + a1 sin(omega t)+ a2 cos(omega t)
+  omega=[  5.10,]
+  a0(freq)=[ -3.5481e-03];
+  a1(freq)=[  7.8176e-02];
+  a2(freq)=[  1.0000e+00];
+=================================================================================
+
+
+IMP:
+cgwh -noplot gaussian.cmd -g=square32.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=1 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square32OptFilter -useOptFilter=1 -go=k
+
+=================================================================================
+ --- optFilterPar : compute optimized filter parameters ---  
+   numFreq=1, dt=1.347e-01, Nlam=1000, [lamMin,lamMax]=[0.000e+00,1.399e+01], 
+   muMin= -2.60e-01, muMax=  1.00000000e+00
+ Filter kernel: a0 + a1 sin(omega t)+ a2 cos(omega t)
+  omega=[  4.66,]
+  a0(freq)=[  2.6753e-03];
+  a1(freq)=[  6.9642e-02];
+  a2(freq)=[  1.0000e+00];
+=================================================================================
+
+****************************************************
+****** Fri Sept 26, 2025
+
+OPTIMIZED MULTI-FREQ FILTER : NOW MATCHES DHS 
+
+THREE FREQ TEST CASE FROM MFWH PAPERS: 
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128OptFilter -useOptFilter=1 -go=fk
+
+
+cp square128OptFilter* $mfwh/results
+
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=1.147e-09.
+CgWaveHoltz::residual: freq= 1, omega=  10.100, max-res=1.813e-09.
+CgWaveHoltz::residual: freq= 2, omega=  15.100, max-res=2.763e-09.
+solveHelmholtz: max-res=2.763e-09 (all freq, gmres, numIts=20, ave-CR= 0.27 )
+
+
+
+TWO FREQ:
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=2 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128OptFilter -useOptFilter=1 -go=fk
+
+
+FIRST -- SIMPLE TEST CASE 
+cgwh -noplot gaussian.cmd -g=square128.order4 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=1 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square128OptFilter -useOptFilter=1 -go=fk
+
+cp square128OptFilterFD24TSINf3Np2*.m  $mfwh/results
+
+=================================================================================
+ --- optFilterPar : compute optimized filter parameters ---  
+   numFreq=1, dt=1.347e-01, Nlam=1000, muMin= -2.60e-01, muMax=  1.00000000e+00
+ Filter kernel: a0 + a1 sin(omega t)+ a2 cos(omega t)
+  omega=[  4.66,]
+  a0(freq)=[  2.6753e-03];
+  a1(freq)=[  6.9642e-02];
+  a2(freq)=[  1.0000e+00];
+
+
+
+
+
+
+
+$cgwh -noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -matlab=junk -show=junk.show -useOptFilter=1 -go=dk
+
+CgWaveHoltz::residual: grid=0 : maxRes= 2.16e-10
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=2.157e-10.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=8.814e-11.
+solveHelmholtz: max-res=2.157e-10 (all freq, gmres, numIts=15, ave-CR= 0.20 )
+solveHelmholtz: rel-max-diff=3.93e-13 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=6.25e-13 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=6.25e-13, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+****************************************************
+****** Wed Sept 24, 2025
+
+
+RETURN TO OPTIMIZED MULTI_FREQ FILTER
+
+$cgwh -noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10 -matlab=junk -show=junk.show -useOptFilter=1 -go=dk
+
+CgWaveHoltz::residual: grid=0 : maxRes= 1.14e-03
+CgWaveHoltz::residual: freq= 0, omega=   5.000, max-res=1.755e-04.
+CgWaveHoltz::residual: freq= 1, omega=  11.000, max-res=1.143e-03.
+solveHelmholtz: max-res=1.143e-03 (all freq, gmres, numIts=15, ave-CR= 0.20 )
+solveHelmholtz: rel-max-diff=6.25e-06 for freq0 =   5.0000e+00, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=7.15e-05 for freq1 =   1.1000e+01, |v|_max= 5.34e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=7.15e-05, |v|_max= 9.84e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
 
 ****************************************************
 ****** Tues Sept 2, 2025

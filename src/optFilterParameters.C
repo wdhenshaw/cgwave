@@ -63,12 +63,12 @@ extern "C"
 #define FcosPrime(j,lambda) CgWave::cosFilterPrime( j,lambda )
 
 // here are versions that use a Trapezoidal quadrature rule
-#define Fone(j,lambda) 2*CgWave::sincd(lambda,T(j),dt)
-#define Fsin(j,lambda) ( CgWave::coscd((omega(j)-lambda),T(j),dt) + CgWave::coscd((omega(j)+lambda),T(j),dt) )
-#define Fcos(j,lambda) ( CgWave::sincd((omega(j)-lambda),T(j),dt) + CgWave::sincd((omega(j)+lambda),T(j),dt) )
-#define FonePrime(j,lambda) 2*T(j)*CgWave::sincdPrime(lambda,T(j),dt)
-#define FsinPrime(j,lambda) ( T(j)*( -CgWave::coscdPrime((omega(j)-lambda),T(j),dt) + CgWave::coscdPrime((omega(j)+lambda),T(j),dt) ) )
-#define FcosPrime(j,lambda) ( T(j)*( -CgWave::sincdPrime((omega(j)-lambda),T(j),dt) + CgWave::sincdPrime((omega(j)+lambda),T(j),dt) ) )
+// #define Fone(j,lambda) 2*CgWave::sincd(lambda,T(j),dt)
+// #define Fsin(j,lambda) ( CgWave::coscd((omega(j)-lambda),T(j),dt) + CgWave::coscd((omega(j)+lambda),T(j),dt) )
+// #define Fcos(j,lambda) ( CgWave::sincd((omega(j)-lambda),T(j),dt) + CgWave::sincd((omega(j)+lambda),T(j),dt) )
+// #define FonePrime(j,lambda) 2*T(j)*CgWave::sincdPrime(lambda,T(j),dt)
+// #define FsinPrime(j,lambda) ( T(j)*( -CgWave::coscdPrime((omega(j)-lambda),T(j),dt) + CgWave::coscdPrime((omega(j)+lambda),T(j),dt) ) )
+// #define FcosPrime(j,lambda) ( T(j)*( -CgWave::sincdPrime((omega(j)-lambda),T(j),dt) + CgWave::sincdPrime((omega(j)+lambda),T(j),dt) ) )
 
 // Choose functions so that free variables are a0 
 #define F0(j,lambda) Fsin(j,lambda)
@@ -209,7 +209,7 @@ Real coscdPrime( Real x, Real T, Real dt )
 /// \brief Evaluate the component filter function beta for a given frequency 
 ///
 // -----------------------------------------------------------------------------------------------------    
-Real CgWave::evalBetaFunction( const Real lam, const int freq, Real dt ) const
+Real CgWave::evalBetaFunction( const Real lam, const int freq, Real dt ) 
 {
 
   const RealArray & omega     = dbase.get<RealArray>("frequencyArrayAdjusted");
@@ -289,7 +289,8 @@ int CgWave::optFilterParameters( const RealArray & frequencyArray, const RealArr
     }
   }
 
-  // ::display(C1,"C1","%9.2e ");
+  ::display(C1,"C1","%9.2e ");
+  ::display(C2,"C2","%9.2e ");
   RealArray C1Factor(nf2,nf2); // holds LU factors of C1 after call below
   C1Factor=C1;  // save C1 for use below
 
@@ -512,8 +513,9 @@ int CgWave::optFilterParameters( const RealArray & frequencyArray, const RealArr
     int numFreq = nf;
     printF("=================================================================================\n"
            " --- optFilterPar : compute optimized filter parameters ---  \n"
-           "   numFreq=%d, dt=%9.3e, Nlam=%d, muMin=%10.2e, muMax=%16.8e\n",
-          numFreq,dt,Nlam,muMin,muMax );
+           "   numFreq=%d, dt=%9.3e, Nlam=%d, [lamMin,lamMax]=[%9.3e,%9.3e], \n"
+           "   muMin=%10.2e, muMax=%16.8e\n",
+          numFreq,dt,Nlam,lambdaMin,lambdaMax,  muMin,muMax );
 
     printF(" Filter kernel: a0 + a1 sin(omega t)+ a2 cos(omega t)\n");
     printF("  omega=[");
