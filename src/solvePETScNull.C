@@ -14,7 +14,7 @@ int CgWaveHoltz::
 solvePETSc(int argc,char **args)
 {
   printF("ERROR: CgWaveHoltz has not been compiled with PETSC.\n");
-  printF("Use 'setenv usePETSc on' and rebuild.\n");
+  printF("Use 'setenv PETSC_DIR <location of PETSc folder>' and rebuild.\n");
 
 
   return 0;

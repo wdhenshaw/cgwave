@@ -1,7 +1,11 @@
 #ifndef CG_WAVE_HOLTZ_H
 #define CG_WAVE_HOLTZ_H
 
+// added Oct 21, 2205
+#ifdef CGWAVE_USE_PETSC
 #include "mpi.h"
+#endif
+
 #include "Overture.h"
 #include "Oges.h"
 #include "PlotStuff.h"

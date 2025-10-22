@@ -22,7 +22,9 @@
 #include "petscksp.h"
 
 // SLEPc 
+#ifdef CGWAVE_USE_SLEPC
 #include <slepceps.h>
+#endif
 
 static char help[] = "CgWaveHoltz test of PETSc\n";
 
@@ -1084,7 +1086,11 @@ solvePETSc(int argc,char **args)
     }
     else
     {
-      SlepcInitialize(&argc,&args,(char *)0,help);
+      #ifdef CGWAVE_USE_SLEPC
+        SlepcInitialize(&argc,&args,(char *)0,help);
+      #else
+        OV_ABORT("You need SLEPc to solve for eigenvalues");
+      #endif
     }
 
     // 3.4.5 ierr = PetscOptionsGetInt(PETSC_NULL,"-m",&m,PETSC_NULL);CHKERRQ(ierr);

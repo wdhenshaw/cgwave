@@ -5,6 +5,10 @@
 # NOTE: To compile optimized:
 #   setenv COMPILE [opt|dbg]
 #
+# To use PETSc (e.g. for implicit solvers or WaveHoltz)
+#   setenv PETSC_DIR <location of PETSc>
+# To use SLEPc e.g. (to compute iegnvalues with EigenWave)
+#   setenv SLEPSC_DIR <location of SLEPc>
 
 
 include ${Overture}/make.options
@@ -13,12 +17,28 @@ include ${Overture}/make.options
 LIB_ARPACK = -Wl,-rpath,/home/henshw/software/arpack-ng/lib -L/home/henshw/software/arpack-ng/lib -larpack 
 LIB_ARPACK =
 
+# check for SLEPc 
+ifeq ($(SLEPC_DIR),)
+  useSLEPc := off
+else
+  useSLEPc := on
+endif
 
-usePETSc := on
+#check for PETSc
+ifeq ($(PETSC_DIR),)
+  usePETSc := off
+  # we cannot use SLEPc if there is no PETSc
+  useSLEPc := off
+else
+  usePETSc := on
+endif
+
+
+# usePETSc := on
 # usePETSc := off
 ifeq ($(usePETSc),on)
   usePETSc   = on
-  petscSolver = obj/solvePETSc.o obj/solveSLEPc.o
+  petscSolver = obj/solvePETSc.o 
 
   ifeq ($(OV_PARALLEL),parallel) 
     OGES_PETSC = buildEquationSolvers.o PETScSolver.o
@@ -27,16 +47,26 @@ ifeq ($(usePETSc),on)
   endif
 
   # PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/mpiuni
-  PETSC_INCLUDE = -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/petsc/mpiuni
+  PETSC_INCLUDE = -DCGWAVE_USE_PETSC
+  ifeq ($(useSLEPc),on) 
+    petscSolver += obj/solveSLEPc.o
+    PETSC_INCLUDE = -DCGWAVE_USE_SLEPC
+  endif
+  PETSC_INCLUDE += -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/petsc/mpiuni
   PETSC_LIBS = -Wl,-rpath,$(PETSC_LIB) -L$(PETSC_LIB) -lpetsc
 
-  SLEPC_INCLUDE = -I$(SLEPC_DIR) -I$(SLEPC_DIR)/$(PETSC_ARCH)/include -I$(SLEPC_DIR)/include 
+  ifeq ($(useSLEPc),on) 
+    SLEPC_INCLUDE = -I$(SLEPC_DIR) -I$(SLEPC_DIR)/$(PETSC_ARCH)/include -I$(SLEPC_DIR)/include 
 
-  SLEPC_LIBS = $(LIB_ARPACK) -Wl,-rpath,$(SLEPC_DIR)/$(PETSC_ARCH)/lib -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc
+    SLEPC_LIBS = $(LIB_ARPACK) -Wl,-rpath,$(SLEPC_DIR)/$(PETSC_ARCH)/lib -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc
+  else
+    SLEPC_INCLUDE =
+    SLEPC_LIBS = obj/solveSLEPcNull.o
+  endif
 
 else
   usePETSc   = off
-  petscSolver = obj/solvePETScNull.o
+  petscSolver = obj/solvePETScNull.o obj/solveSLEPcNull.o
 
   OGES_PETSC = 
   PETSC_INCLUDE = 
@@ -159,27 +189,54 @@ all = cgWave cgwh info
 # all = cgWave
 all: $(all);
 
-info:; @echo "INFO: type 'make check' or 'make check-quiet' to run all regression tests\nINFO: this includes checkEigen, checkWave, checkWaveHoltz"    
+info:
+	@echo "INFO: type 'make check' or 'make check-quiet' to run all regression tests\nINFO: this includes checkEigen, checkWave, checkWaveHoltz"
+	@echo "INFO: usePETSc="$(usePETSc) "useSLEPc="$(useSLEPc) " To build with PETSc: setenv PETSC_DIR <dir>, to use SLEPc: setenv SLEPSC_DIR <dir>"
 
 # ----- RUN REGRESSION TESTS ---
 # -C : change directory
-check:
-	$(MAKE) -C checkEigen
-	$(MAKE) -C checkWave
-	$(MAKE) -C checkWaveHoltz
-	@echo "Summary:"
-	@cat checkEigen/checkEigen.results
-	@cat checkWave/checkWave.results
-	@cat checkWaveHoltz/checkWaveHoltz.results
 
-check-quiet:
+checkEig:
+ifeq ($(useSLEPc),on) 
+	$(MAKE) -C checkEigen
+else
+	@echo "Skipping EigenWave tests since SLEPc is not used"
+endif
+
+checkEig-quiet:
+ifeq ($(useSLEPc),on) 
 	@$(MAKE) -s -C checkEigen check-quiet
-	@$(MAKE) -s -C checkWave check-quiet
+else
+	@echo "Skipping EigenWave tests since SLEPc is not used"
+endif
+
+checkWH:
+ifeq ($(useSLEPc),on) 
+	$(MAKE) -C checkWaveHoltz
+else
+	@echo "Skipping WaveHoltz tests since PETSc is not used"
+endif
+
+checkWH-quiet:
+ifeq ($(usePETSc),on) 
 	@$(MAKE) -s -C checkWaveHoltz check-quiet
+else
+	@echo "Skipping WaveHoltz tests since PETSc is not used"
+endif
+
+check: checkEig checkWH
+	$(MAKE) -C checkWave
 	@echo "Summary:"
 	@cat checkEigen/checkEigen.results
-	@cat checkWave/checkWave.results
 	@cat checkWaveHoltz/checkWaveHoltz.results
+	@cat checkWave/checkWave.results
+
+check-quiet: checkEig-quiet checkWH-quiet
+	@$(MAKE) -s -C checkWave check-quiet
+	@echo "Summary:"
+	@cat checkEigen/checkEigen.results
+	@cat checkWaveHoltz/checkWaveHoltz.results
+	@cat checkWave/checkWave.results
 
 
 Oges = $(Overture)/Oges
@@ -275,7 +332,6 @@ obj/cgesl1234.o : src/cgesl1234.F; $(FC) $(FFLAGSO) -I.  -DOV_USE_DOUBLE  -o $*.
 #   gfortran -O  -fPIC  -fdefault-real-8 -fdefault-double-8   -I/home/henshw/Overture.g/include -I.   -DOV_USE_DOUBLE -c cgesl1234.F  
 
 obj/tcmWideStencil.o : src/tcmWideStencil.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
-# obj/solvePETScNull.o : src/solvePETScNull.C; $(CXX) $(CCFLAGS) -o $*.o -c $<
 
 
 # ----- test quadrature formulae  -----
@@ -556,6 +612,7 @@ obj/CgWaveHoltz.o : src/CgWaveHoltz.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*
 obj/solvePETSc.o : src/solvePETSc.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/solveSLEPc.o : src/solveSLEPc.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGSO) -o $*.o -c $<
 obj/solvePETScNull.o : src/solvePETScNull.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<	
+obj/solveSLEPcNull.o : src/solveSLEPcNull.C src/CgWaveHoltz.h; $(CXX) $(CCFLAGS) -o $*.o -c $<	
 obj/solveHelmholtz.o : src/solveHelmholtz.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 obj/solveHelmholtzDirect.o : src/solveHelmholtzDirect.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  
 obj/solveEigen.o : src/solveEigen.C src/CgWaveHoltz.h src/knownSolutionMacros.h; $(CXX) $(CCFLAGS) -o $*.o -c $<  

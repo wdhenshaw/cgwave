@@ -97,7 +97,9 @@ main(int argc, char *argv[])
   Overture::turnOnMemoryChecking(true);
 
   // This macro will initialize the PETSc solver if OVERTURE_USE_PETSC is defined.
+  #ifdef CGWAVE_USE_PETSC
   INIT_PETSC_SOLVER();
+  #endif
 
   aString nameOfOGFile= "square32.order2.hdf";
 
