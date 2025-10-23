@@ -2,6 +2,9 @@
 # CgWave: Composite Grid Wave Equation Solver 
 # CgWaveHoltz: Composite Grid Helmholtz Solver using the WaveHoltz algorithm of Daniel Appelo 
 #
+# Before Making:
+#  setenv CGWAVE <the cgwave directory>
+#
 # NOTE: To compile optimized:
 #   setenv COMPILE [opt|dbg]
 #
@@ -50,9 +53,16 @@ ifeq ($(usePETSc),on)
   PETSC_INCLUDE = -DCGWAVE_USE_PETSC
   ifeq ($(useSLEPc),on) 
     petscSolver += obj/solveSLEPc.o
-    PETSC_INCLUDE = -DCGWAVE_USE_SLEPC
+    PETSC_INCLUDE += -DCGWAVE_USE_SLEPC
+  else
+    petscSolver += obj/solveSLEPcNull.o
   endif
-  PETSC_INCLUDE += -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include -I$(PETSC_DIR)/include/petsc/mpiuni
+  PETSC_INCLUDE += -I$(PETSC_DIR)/include  -I$(PETSC_DIR)/$(PETSC_ARCH)/include -DOVERTURE_USE_PETSC -I$(PETSC_LIB)/include 
+  ifeq ($(OV_PARALLEL),parallel) 
+  else
+    # serial: 
+    PETSC_INCLUDE += -I$(PETSC_DIR)/include/petsc/mpiuni
+  endif
   PETSC_LIBS = -Wl,-rpath,$(PETSC_LIB) -L$(PETSC_LIB) -lpetsc
 
   ifeq ($(useSLEPc),on) 
@@ -61,7 +71,7 @@ ifeq ($(usePETSc),on)
     SLEPC_LIBS = $(LIB_ARPACK) -Wl,-rpath,$(SLEPC_DIR)/$(PETSC_ARCH)/lib -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc
   else
     SLEPC_INCLUDE =
-    SLEPC_LIBS = obj/solveSLEPcNull.o
+    SLEPC_LIBS = 
   endif
 
 else
@@ -83,13 +93,13 @@ OPTFLAG = -O3
 # OPTFLAG = -Ofast
 
 
-CCFLAGS = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG)
+CCFLAGS = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include 
 
 # Some C++ files we compile optimized by default
 ifeq ($(COMPILE),dbg)
-  CCFLAGSO = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG) -g -w
+  CCFLAGSO = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include  -g -w
 else
-  CCFLAGSO = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include $(USE_PPP_FLAG) $(OPTFLAG)
+  CCFLAGSO = $(OV_CXX_FLAGS) -I. -I$(Overture)/include -I$(APlusPlus)/include -I$(OpenGL)/include  $(OPTFLAG)
 endif
 
 # for macos 
@@ -99,6 +109,11 @@ CCFLAGS += $(SLEPC_INCLUDE)
 CCFLAGS += $(PETSC_INCLUDE)
 CCFLAGSO += $(SLEPC_INCLUDE)
 CCFLAGSO += $(PETSC_INCLUDE)
+
+ifeq ($(OV_PARALLEL),parallel) 
+  CCFLAGS  += $(OV_PARALLEL_INCLUDE)
+  CCFLAGSO += $(OV_PARALLEL_INCLUDE)
+endif
 
 # for rtg1 which has an older compiler (Processor.h)
 CCFLAGS += -std=c++11
@@ -249,7 +264,9 @@ linkFiles:
 buildEquationSolvers.o : $(Oges)/buildEquationSolvers.C; $(CXX) $(CCFLAGSO) -DOVERTURE_USE_PETSC -c $(Oges)/buildEquationSolvers.C
 PETScEquationSolver.o : $(Oges)/PETScEquationSolver.C; $(CXX) $(CCFLAGSO) -DOVERTURE_USE_PETSC -c $(Oges)/PETScEquationSolver.C
 
-src/PETScSolver.C: src/PETScSolver.bC; @cd src; $(BPP) PETScSolver.bC  
+src/PETScSolver.C: 
+	cp $(Oges)/PETScSolver.bC src/
+	src/PETScSolver.bC; @cd src; $(BPP) PETScSolver.bC  
 
 OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/userDefinedKnownSolution.o \
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \
