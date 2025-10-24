@@ -5,6 +5,7 @@ if 0;
 # 
 # Examples:
 #  submit.p -grid=square64.order2 -tf=1 -tp=0.1 -show=gaussian.show -np=4 -timeLimit=00:05:00
+#  submit.p -grid=square256.order4.ng3 -tf=1 -tp=0.1 -x0=.55 -y0=0.55 -omega=20 -beta=20 -amp=-400 -show=gaussian.show -np=4 -timeLimit=00:05:00
 #  submit.p -grid=square128.order4.ng3 -numParGhost=3 -tf=1 -tp=0.1 -x0=.55 -y0=0.55 -omega=20 -beta=20 -amp=-400 -show=gaussian.show -np=4 -timeLimit=00:05:00
 
 printf("Submit a batch job. Usage:\n");
@@ -22,7 +23,7 @@ $debug=0;
 $show=" ";
 $x0=0.5; $y0=0.5; $z0=0.;
 $omega=10; $beta=10; $amp=-200; 
-$numParGhost=2; # set to 3 for order=4 and upwind 
+$numParGhost=-1; # -1 = use default (automatically guessed)
 
 $timeLimit = "00:05:00";  # time-limit in hh:mm:ss
 $gpus = 1;  # request this many gpus per node
