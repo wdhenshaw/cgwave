@@ -1,5 +1,37 @@
 
 
+
+*******************************************
+********* Thursday Oct 23, 2025 
+
+RUN ON the DCS cluster in parallel
+
+-- for now: run "tcsh" in the script and this will call "mod p"
+
+
+submit.p -grid=square512.order2 -tf=1 -tp=0.1 -x0=.55 -y0=0.55 -omega=20 -beta=20 -amp=-400 -show=gaussian.show -np=4 -timeLimit=00:05:00
+
+WORKS NOW: SET numParGhost=3 
+submit.p -grid=square128.order4.ng3 -numParGhost=3 -tf=1 -tp=0.1 -x0=.55 -y0=0.55 -omega=20 -beta=20 -amp=-400 -show=gaussian.show -np=4 -timeLimit=00:05:00
+
+
+
+TROUBLE: ORDER 4 -- update parallel ghost -- check that we have set enough parallel ghost in setup
+submit.p -grid=square128.order4.ng3 -tf=1 -tp=0.1 -x0=.55 -y0=0.55 -omega=20 -beta=20 -amp=-400 -show=gaussian.show -np=4 -timeLimit=00:05:00
+
+
+
+submit.p -grid=square64.order2 -tf=1 -tp=0.1 -show=gaussian.show -np=4 -timeLimit=00:05:00
+sbatch batch.sh
+
+--> WORKS
+
+TRY THIS ON CG66: .. works 
+
+mpirun -np 2 $cgWave -noplot gaussian.cmd -g=square128.order4.ng3  -tp=0.1 -tf=1 -beta=20 -x0=.55 -y0=0.55 -z0=0 -omega=20 -amp=-400 -ts=explicit -cfl=.95 -upwind=1 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -show=gaussian.show -go=go
+
+
+
 *******************************************
 ********* Thursday May 29, 2025 
 
