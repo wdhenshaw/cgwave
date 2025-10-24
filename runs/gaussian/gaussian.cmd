@@ -123,12 +123,11 @@ if( $forcing eq "sine" ){ \
 $cmd
 #
 exit
-solve
-contour
-exit
-
+# solve
+# contour
+# exit
 $cmd="#"; 
-if( $go eq "go" ){ $cmd = "solve\nmovie mode\nexit"; }
+if( $go eq "go" ){ $cmd = "solve\nexit"; }
 if( $go eq "og" ){ $cmd = "open graphics"; }
 $cmd
 

@@ -742,6 +742,23 @@ int CgWave::initialize()
   }
 
 
+  #ifdef USE_PPP
+    // In parallel - check that we have enough parallel ghost points 
+    const int numParGhost = MappedGrid::getMinimumNumberOfDistributedGhostLines(); 
+
+    assert( upwind==0 || upwind==1 );
+
+    const int numParGhostMin = orderOfAccuracy/2 + upwind;
+    printF("\n @@@@@@ cgWave: numParGhost (actual) = %d, numParGhost (minimum needed) = %d @@@@@@\n\n",numParGhost,numParGhostMin);
+    if( numParGhost < numParGhostMin )
+    {
+      printF("CgWave:ERROR: The grid was not created with enough parallel ghost points\n");
+      printF("            : Use the command line option -numParGhost=%d to set the number of parallel ghost points\n",numParGhostMin );
+      OV_ABORT("ERROR");
+    }
+
+  #endif  
+
   // else if( dialog.getToggleValue(answer,"compute energy",computeEnergy) )
   // {
   //   printF("Setting computeEnergy=%d.\n",computeEnergy);
@@ -2669,6 +2686,9 @@ int CgWave::setup()
   superGrid.redim(cg.numberOfComponentGrids());
   superGrid=0;
 
+
+
+
   timing(timeForInitialize) += getCPU()-cpu0;
 
   return 0;
@@ -3287,7 +3307,7 @@ getUpwindDissipationCoefficient( int grid, Real dtUpwind /* = -1. */, bool adjus
 
 // =============================================================================
 /// \brief : Check parameters for consistency.
-/// \notes: Add more checks here to avoid user (any my) mistakes 
+/// \notes: Add more checks here to avoid user (and my) mistakes 
 /// \notes: WDH : started Oct 3, 2024.
 // =============================================================================
 int CgWave::checkParameters()
