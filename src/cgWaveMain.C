@@ -108,7 +108,10 @@ main(int argc, char *argv[])
   int len=0;
   bool plotOption=true;  // by default we plot interactively
 
-  int numParGhost=2; // number of parallel ghost : 2 for order2, 3 for order 4
+  // number of parallel ghost (must be set BEFORE we read in the grid)
+  //   = order/2 + upwind 
+  int upwind =0;      // set to 1 for upwinding 
+  int numParGhost=-1; // -1 = guess this value from the grid name and upwind 
   
 
   if( argc > 1 )
@@ -134,7 +137,11 @@ main(int argc, char *argv[])
         sScanF(line(len,line.length()-1),"%i",&numParGhost);
         printF("Setting numParGhost=%i\n",numParGhost);
       }
-
+      else if( len=line.matches("-upwind=") )
+      {
+        sScanF(line(len,line.length()-1),"%i",&upwind);
+        printF("Setting upwind=%i\n",upwind);
+      }
       // old way
       else if( len=line.matches("-grid=") )
       {
@@ -149,6 +156,7 @@ main(int argc, char *argv[])
     }
   }
 
+  
   
 //old  PlotStuff ps(plotOption,"wave equation");
 
@@ -168,10 +176,21 @@ main(int argc, char *argv[])
 
   aString nameOfShowFile="cgWave.show";
 
-  // create and read in a CompositeGrid
+  // --- create and read in a CompositeGrid ---
   #ifdef USE_PPP
     // On Parallel machines always add at least this many ghost lines on local arrays
-    // const int numGhost=2;
+    if( numParGhost<0 )
+    {
+      // Guess how many parallel ghost points we need
+      int order = 2;
+      if(      nameOfOGFile.find("order4")!=std::string::npos ){ order=4; }
+      else if( nameOfOGFile.find("order6")!=std::string::npos ){ order=6; }
+      else if( nameOfOGFile.find("order8")!=std::string::npos ){ order=8; }
+      else{ }
+      numParGhost = order/2 + upwind;
+      printF("cgWaveMain: Guessing order=%d, upwind=%d => numParGhost = %d\n",order,upwind,numParGhost);
+
+    }
     MappedGrid::setMinimumNumberOfDistributedGhostLines(numParGhost); 
   #endif
   CompositeGrid cg;
