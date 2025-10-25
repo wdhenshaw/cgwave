@@ -17,8 +17,9 @@
 #include "CompositeGridOperators.h"
 #include "PlotStuff.h"
 #include "display.h"
-#include "ParallelOverlappingGridInterpolator.h"
+// #include "ParallelOverlappingGridInterpolator.h"
 #include "ParallelUtility.h"
+#include "ParallelGridUtility.h"
 #include "LoadBalancer.h"
 // #include "gridFunctionNorms.h"
 #include "Integrate.h"
@@ -88,6 +89,9 @@ main(int argc, char *argv[])
     aString line;
     int len=0;
     bool plotOption=true;  // by default we plot interactively
+    int upwind =0;      // set to 1 for upwinding 
+    int numParGhost=-1; // -1 = guess this value from the grid name and upwind 
+
     if( argc > 1 )
     {
         int i;
@@ -101,6 +105,16 @@ main(int argc, char *argv[])
                 nameOfOGFile=line(len,line.length()-1);
         // printf("\n$$$$ node %i : use grid=[%s]\n",myid,(const char*)nameOfOGFile);
             }
+            else if( len=line.matches("-numParGhost=") )
+            {
+                sScanF(line(len,line.length()-1),"%i",&numParGhost);
+                printF("Setting numParGhost=%i\n",numParGhost);
+            }      
+            else if( len=line.matches("-upwind=") )
+            {
+                sScanF(line(len,line.length()-1),"%i",&upwind);
+                printF("Setting upwind=%i\n",upwind);
+            }      
             else if( commandFileName == "" )
             {
                 commandFileName=line(len,line.length()-1);
@@ -126,12 +140,20 @@ main(int argc, char *argv[])
 
   // aString nameOfShowFile = "cgWaveHoltz.show";
 
-  // create and read in a CompositeGrid
-    #ifdef USE_PPP
-    // On Parallel machines always add at least this many ghost lines on local arrays
-        const int numGhost=2;
-        MappedGrid::setMinimumNumberOfDistributedGhostLines(numGhost);
-    #endif
+
+  // On Parallel machines we need to set the number of parallel ghost BEFORE reading the grid 
+    if( numParGhost<0 )
+        numParGhost=ParallelGridUtility::setNumberOfParallelGhost( nameOfOGFile, upwind );
+    else
+        ParallelGridUtility::setNumberOfParallelGhost( numParGhost );
+
+  // #ifdef USE_PPP
+  //   // On Parallel machines always add at least this many ghost lines on local arrays
+  //   const int numGhost=2;
+  //   MappedGrid::setMinimumNumberOfDistributedGhostLines(numGhost);
+  // #endif
+
+  // --- create and read in a CompositeGrid ---
     CompositeGrid cg;
     bool loadBalance=true; // turn on or off the load balancer
     getFromADataBase(cg,nameOfOGFile,loadBalance);

@@ -360,6 +360,7 @@ solveSLEPc(int argc,char **args)
 
     const int myid=max(0,Communication_Manager::My_Process_Number);
     
+    const int & debug                     = dbase.get<int>("debug");
     const int & cgWaveDebugMode           = dbase.get<int>("cgWaveDebugMode");
 
     const Real & tol                      = dbase.get<Real>("tol");
@@ -379,6 +380,10 @@ solveSLEPc(int argc,char **args)
     else 
         Tperiod=1.;
   
+
+    FILE *& debugFile  = cgWave.dbase.get<FILE*>("debugFile");
+    FILE *& pDebugFile = cgWave.dbase.get<FILE*>("pDebugFile");
+
     printF("CgWaveHoltz::solveSLEPC: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
   
   
@@ -1179,7 +1184,13 @@ solveSLEPc(int argc,char **args)
             IntegerArray iperm(numEigenVectors);
             cgWave.sortArray( eigenValues, iperm );
 
-      // ::display(iperm,"iperm");
+            if( 1==1 || debug > 0 )
+            {
+                fprintf(pDebugFile,"debug=%d\n",debug);
+                ::display(eigenValues,"sorted,eigenvalues",pDebugFile,"%20.13e ");
+                ::display(iperm,"iperm : sort eigenpairs",pDebugFile,"%3d");
+                fflush(pDebugFile);
+            }
 
       // -- reorder the eigenvectors -----
             int numAssigns=0; 

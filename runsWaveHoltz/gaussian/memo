@@ -11,6 +11,56 @@ set ovp2 = ~/Dropbox/overHoltzPaper/part2
 
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
+***************************************************
+****** Fri Oct 24, 2025
+
+RESULTS FROM DCS CLUSTER *WORKS** 
+
+-np=4: 
+
+CgWaveHoltz::residual: grid=0 : maxRes= 1.38e-07
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=1.387e-07.
+CgWaveHoltz::residual: freq= 1, omega=  10.100, max-res=6.317e-08.
+CgWaveHoltz::residual: freq= 2, omega=  15.100, max-res=4.977e-08.
+solveHelmholtz: max-res=1.387e-07 (all freq, gmres, numIts=40, ave-CR= 0.54 )
+solveHelmholtz: rel-max-diff=2.92e-09 for freq0 =   5.1000e+00, |v|_max= 2.12e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=2.45e-09 for freq1 =   1.0100e+01, |v|_max= 2.10e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.34e-10 for freq2 =   1.5100e+01, |v|_max= 7.36e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=2.92e-09, |v|_max= 2.10e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+TEST cgwh parallel -- cg66
+
+works .. but fix show file -- parallel ghost 
+
+mpirun -np 2 valgrind --log-file=gaussian.out.np%p  $cgwh -noplot gaussian.cmd -g=square64.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=1 -matlab=square128OptFilter -useOptFilter=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -show=square128OptFilter.show -go=dfks
+
+mpirun -np=2 $cgwh -noplot gaussian.cmd -g=square64.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=1 -matlab=square128OptFilter -useOptFilter=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -show=square128OptFilter.show -go=dfks
+
+-np=4
+CgWaveHoltz::residual: grid=0 : maxRes= 1.38e-07
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=1.386e-07.
+CgWaveHoltz::residual: freq= 1, omega=  10.100, max-res=6.270e-08.
+CgWaveHoltz::residual: freq= 2, omega=  15.100, max-res=4.946e-08.
+solveHelmholtz: max-res=1.386e-07 (all freq, gmres, numIts=40, ave-CR= 0.54 )
+solveHelmholtz: rel-max-diff=2.91e-09 for freq0 =   5.1000e+00, |v|_max= 2.12e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=2.45e-09 for freq1 =   1.0100e+01, |v|_max= 2.10e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=1.41e-09 for freq2 =   1.5100e+01, |v|_max= 7.36e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=2.91e-09, |v|_max= 2.10e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+-np=1:
+CgWaveHoltz::residual: grid=0 : maxRes= 2.34e-09
+CgWaveHoltz::residual: freq= 0, omega=   5.100, max-res=8.119e-10.
+CgWaveHoltz::residual: freq= 1, omega=  10.100, max-res=2.340e-09.
+CgWaveHoltz::residual: freq= 2, omega=  15.100, max-res=2.001e-09.
+solveHelmholtz: max-res=2.340e-09 (all freq, gmres, numIts=39, ave-CR= 0.52 )
+solveHelmholtz: rel-max-diff=1.06e-10 for freq0 =   5.1000e+00, |v|_max= 2.12e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=2.27e-10 for freq1 =   1.0100e+01, |v|_max= 2.10e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.53e-07 for freq2 =   1.5100e+01, |v|_max= 7.36e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.53e-07, |v|_max= 2.10e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
 
 ***************************************************
 ****** Tues Sept 30, 2025

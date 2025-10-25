@@ -10,8 +10,8 @@
 #include "CompositeGridOperators.h"
 #include "PlotStuff.h"
 #include "display.h"
-// #include "ParallelOverlappingGridInterpolator.h"
 #include "ParallelUtility.h"
+#include "ParallelGridUtility.h"
 #include "LoadBalancer.h"
 #include "gridFunctionNorms.h"
 #include "Oges.h"
@@ -177,22 +177,30 @@ main(int argc, char *argv[])
   aString nameOfShowFile="cgWave.show";
 
   // --- create and read in a CompositeGrid ---
-  #ifdef USE_PPP
-    // On Parallel machines always add at least this many ghost lines on local arrays
-    if( numParGhost<0 )
-    {
-      // Guess how many parallel ghost points we need
-      int order = 2;
-      if(      nameOfOGFile.find("order4")!=std::string::npos ){ order=4; }
-      else if( nameOfOGFile.find("order6")!=std::string::npos ){ order=6; }
-      else if( nameOfOGFile.find("order8")!=std::string::npos ){ order=8; }
-      else{ }
-      numParGhost = order/2 + upwind;
-      printF("cgWaveMain: Guessing order=%d, upwind=%d => numParGhost = %d\n",order,upwind,numParGhost);
 
-    }
-    MappedGrid::setMinimumNumberOfDistributedGhostLines(numParGhost); 
-  #endif
+  // On Parallel machines we need to set the number of parallel ghost BEFORE reading the grid 
+  if( numParGhost<0 )
+    numParGhost=ParallelGridUtility::setNumberOfParallelGhost( nameOfOGFile, upwind );
+  else
+    ParallelGridUtility::setNumberOfParallelGhost( numParGhost );
+
+  // #ifdef USE_PPP
+  //   // On Parallel machines always add at least this many ghost lines on local arrays
+  //   if( numParGhost<0 )
+  //   {
+  //     // Guess how many parallel ghost points we need
+  //     int order = 2;
+  //     if(      nameOfOGFile.find("order4")!=std::string::npos ){ order=4; }
+  //     else if( nameOfOGFile.find("order6")!=std::string::npos ){ order=6; }
+  //     else if( nameOfOGFile.find("order8")!=std::string::npos ){ order=8; }
+  //     else{ }
+  //     numParGhost = order/2 + upwind;
+  //     printF("cgWaveMain: Guessing order=%d, upwind=%d => numParGhost = %d\n",order,upwind,numParGhost);
+
+  //   }
+  //   MappedGrid::setMinimumNumberOfDistributedGhostLines(numParGhost); 
+  // #endif
+
   CompositeGrid cg;
   bool loadBalance=true; // turn on or off the load balancer
   getFromADataBase(cg,nameOfOGFile,loadBalance);

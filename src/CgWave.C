@@ -17,12 +17,15 @@
 #include "LCBC.h"
 #include "OgesParameters.h"
 
+#include <dirent.h> # for openDir
+
 #define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
 #define FOR_3(i1,i2,i3,I1,I2,I3) for( i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( i1=I1.getBase(); i1<=I1.getBound(); i1++ )  
 
 #define ForBoundary(side,axis)   for( int axis=0; axis<cg.numberOfDimensions(); axis++ ) \
                                  for( int side=0; side<=1; side++ )
+
 
 
 // ================================================================================================
@@ -41,13 +44,22 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   FILE *& pDebugFile = dbase.put<FILE*>("pDebugFile");
 
   // *** open multiple debug files for each processor ****
+
+  DIR* debugDir = opendir("debug");
+  if( debugDir==NULL )
+  {
+    printF("CgWave:ERROR: no debug directory was found. 'mkdir debug' to create a directory to hold the debug files.\n");
+    OV_ABORT("error");
+  }
+
+
   aString buff;
   #ifndef USE_PPP
-    debugFile   = fopen("cgWave.debug","w" );        // Here is the log file
+    debugFile   = fopen("debug/cgWave.debug","w" );        // Here is the serial debug file
     pDebugFile= debugFile;
   #else
-    debugFile = fopen(sPrintF(buff,"cgWaveNP%i.debug",np),"w" );  // Here is the debug file
-    pDebugFile = fopen(sPrintF(buff,"cgWaveNP%ip%i.debug",np,myid),"w");
+    debugFile  = fopen(sPrintF(buff,"debug/cgWaveNP%i.debug",np),"w" );  // Here is the debug file
+    pDebugFile = fopen(sPrintF(buff,"debug/cgWaveNP%ip%i.debug",np,myid),"w");
   #endif
 
   FILE *& logFile = dbase.put<FILE*>("logFile");
@@ -433,8 +445,13 @@ CgWave::
 ~CgWave()
 {
   fclose(dbase.get<FILE*>("debugFile"));
+  if( Communication_Manager::numberOfProcessors()>1 )
+    fclose(dbase.get<FILE*>("pDebugFile"));
+
   fclose(dbase.get<FILE*>("logFile"));
   fclose(dbase.get<FILE*>("checkFile"));
+
+
 
   delete dbase.get<OGFunction*>("tz"); 
 
@@ -3116,7 +3133,7 @@ outputResults( int current, real t )
 }
 
 // =======================================================================
-/// "Sort" the array of eigenvalues. Return the permuation array iperm.
+/// "Sort" the array of eigenvalues. Return the permutation array iperm.
 // =======================================================================
 int CgWave::
 sortArray( RealArray & eigenValues, IntegerArray & iperm )

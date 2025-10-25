@@ -11,6 +11,44 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
 *************************************
+****** Fri/SatOct 24/25, 2025
+
+TEST PARALLEL EIGENWAVE
+
+**BUG FIXED** getRayleighQuotient -- vDotLapv = ParallelUtility::getSum() 
+
+BUT NOTE: Eigenvectors 3 and 4 are returned the same
+
+mpirun -np=2 $cgwh -noplot eig.cmd -g=square128.order4 -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=200 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -show=junk.show  -orderOfExtrapolation=-1 -freq=10 -numEigs=10  -matlab=square  -solveri=best -rtoli=1e-12 -atoli=1e-12  -go=k 
+
+-np=2: 
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=4, grid=square128
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=10000.00, dt=6.283e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=630, aveItsPerImplicitSolve= 25.0
+ implict solver=PETScNew, parallel=[bi-conjugate gradient stabilized + block Jacobi preconditioner], local=[ILU(3) + reverse Cuthill-McKee ordering]
+ implicit solver: rtol= 1.00e-12, atol= 1.00e-12
+ tol= 1.00e-12, number of wave-solves (mat-vecs) = 63, cpu= 1.24e+01(s)
+ num eigs requested=10, number eigs converged =10, numArnoldiVectors=21, wave-solves/eig=  6.3, timeSteps/eig= 63.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 8.8857656735e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.52e-10
+ i=1: lamRQ = 9.9345872296e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.93e-10
+ i=2: lamRQ = 9.9345872296e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.21e-10
+ i=3: lamRQ = 1.1327172412e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.05e-10
+ i=4: lamRQ = 1.1327172412e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.57e-10
+ i=5: lamRQ = 1.2953113875e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.02e-11
+ i=6: lamRQ = 1.2953113875e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.24e-10
+ i=7: lamRQ = 1.3328647272e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.26e-10
+ i=8: lamRQ = 1.4049625279e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.61e-10
+ i=9: lamRQ = 1.4049625279e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.57e-10
+
+
+*************************************
 ****** Tues July 15, 2025
 
 TEST new option -- subspace iteration (SI)

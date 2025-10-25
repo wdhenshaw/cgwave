@@ -1411,6 +1411,9 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                 cgWave.adjustSolutionForSuperGrid( q );
             }
 
+            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                q[grid].updateGhostBoundaries();
+
             show.saveSolution( q );              // save to show file
             show.endFrame();
 

@@ -440,7 +440,7 @@ int CgWave::updateEigenmodes()
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( eNorm2 );
+                            eNorm2 = ParallelUtility::getSum( eNorm2 );
                         }  
                     assert( eNorm2>=0. );
                     eNorm2=sqrt(eNorm2);
@@ -536,7 +536,7 @@ int CgWave::updateEigenmodes()
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( xNorm2 );
+                            xNorm2 = ParallelUtility::getSum( xNorm2 );
                         }  
                     assert( xNorm2>=0. );
                     xNorm2=sqrt(xNorm2);
@@ -615,7 +615,7 @@ int CgWave::updateEigenmodes()
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( vNorm2 );
+                            vNorm2 = ParallelUtility::getSum( vNorm2 );
                         }  
                     assert( vNorm2>=0 );
                     vNorm2=sqrt(vNorm2);
@@ -697,7 +697,7 @@ int CgWave::updateEigenmodes()
                                         }
                                     }
                                 }
-                                ParallelUtility::getSum( vDotQja );
+                                vDotQja = ParallelUtility::getSum( vDotQja );
                             }  
                         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                         {
@@ -793,7 +793,7 @@ int CgWave::updateEigenmodes()
                                         }
                                     }
                                 }
-                                ParallelUtility::getSum( vDotQ );
+                                vDotQ = ParallelUtility::getSum( vDotQ );
                             }  
             // printF("House: form Q[%d]: ja=%d, vDotQ=%9.3e\n",ia,ja,vDotQ);
                         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
@@ -871,7 +871,7 @@ int CgWave::updateEigenmodes()
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( qNorm2 );
+                            qNorm2 = ParallelUtility::getSum( qNorm2 );
                         }  
                     qNorm2 = sqrt(qNorm2); 
                     printF("ia=%d: qNorm2=%9.3e  (SHOULD BE 1 NOW)\n",ia,qNorm2);  
@@ -956,7 +956,7 @@ int CgWave::updateEigenmodes()
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( vNorm2 );
+                            vNorm2 = ParallelUtility::getSum( vNorm2 );
                         }  
                     assert( vNorm2>=0 );
                     vNorm2=sqrt(vNorm2);
@@ -1035,7 +1035,7 @@ int CgWave::updateEigenmodes()
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( vNorm2 );
+                            vNorm2 = ParallelUtility::getSum( vNorm2 );
                         }  
                     assert( vNorm2>=0 );
                     vNorm2=sqrt(vNorm2);  
@@ -1112,7 +1112,7 @@ int CgWave::updateEigenmodes()
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( vNorm2 );
+                            vNorm2 = ParallelUtility::getSum( vNorm2 );
                         }  
                     assert( vNorm2>=0 );
                     vNorm2=sqrt(vNorm2);  
@@ -1209,7 +1209,7 @@ int CgWave::updateEigenmodes()
                                         }
                                     }
                                 }
-                                ParallelUtility::getSum( dotProduct );
+                                dotProduct = ParallelUtility::getSum( dotProduct );
                             }  
                         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                             Q[grid](all,all,all,ia) -= dotProduct*Q[grid](all,all,all,ja);
@@ -1286,7 +1286,7 @@ int CgWave::updateEigenmodes()
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( qNorm2 );
+                            qNorm2 = ParallelUtility::getSum( qNorm2 );
                         }  
                     if( qNorm2 > REAL_EPSILON*10. )
                         qNorm2 = sqrt(qNorm2);
@@ -1382,7 +1382,7 @@ int CgWave::updateEigenmodes()
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( dotProduct );
+                            dotProduct = ParallelUtility::getSum( dotProduct );
                         }  
                     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                         Q[grid](all,all,all,ia) -= dotProduct*Q[grid](all,all,all,ja);
@@ -1459,7 +1459,7 @@ int CgWave::updateEigenmodes()
                                 }
                             }
                         }
-                        ParallelUtility::getSum( qNorm2 );
+                        qNorm2 = ParallelUtility::getSum( qNorm2 );
                     }  
                 if( qNorm2 > REAL_EPSILON*10. )
                     qNorm2 = sqrt(qNorm2);
@@ -1551,7 +1551,7 @@ int CgWave::updateEigenmodes()
                                         }
                                     }
                                 }
-                                ParallelUtility::getSum( dotProduct );
+                                dotProduct = ParallelUtility::getSum( dotProduct );
                             }  
             // printF("Rayleigh-Ritz ( Q[%d],Q[%d] ) = %9.3e\n",ia,ja,dotProduct);
                         if( ia==ja ) 
@@ -2151,7 +2151,7 @@ int CgWave::getErrorsInEigenmodes( Real & relErrEigenvalue, Real & relErrEigenve
                                 }
                             }
                         }
-                        ParallelUtility::getSum( dotProduct );
+                        dotProduct = ParallelUtility::getSum( dotProduct );
                     }  
 
                 Real uevDot;
@@ -2225,7 +2225,7 @@ int CgWave::getErrorsInEigenmodes( Real & relErrEigenvalue, Real & relErrEigenve
                                 }
                             }
                         }
-                        ParallelUtility::getSum( uevDot );
+                        uevDot = ParallelUtility::getSum( uevDot );
                     }  
 
                 Real alpha =  dotProduct/uevDot;
@@ -2310,7 +2310,7 @@ int CgWave::getErrorsInEigenmodes( Real & relErrEigenvalue, Real & relErrEigenve
                                 }
                             }
                         }
-                        ParallelUtility::getSum( dotProduct );
+                        dotProduct = ParallelUtility::getSum( dotProduct );
                     }  
                 const Real eSign = dotProduct>0 ? -1. : +1.;
         // w = 1.*v + eSign*uev 
@@ -2456,7 +2456,7 @@ int CgWave::getErrorsInEigenmodes( Real & relErrEigenvalue, Real & relErrEigenve
                                 }
                             }
                         }
-                        ParallelUtility::getSum( b(i1) );
+                        b(i1) = ParallelUtility::getSum( b(i1) );
                     }  
 
                 for( int i2=0; i2<2; i2++ )
@@ -2532,7 +2532,7 @@ int CgWave::getErrorsInEigenmodes( Real & relErrEigenvalue, Real & relErrEigenve
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( a(i1,i2) );
+                            a(i1,i2) = ParallelUtility::getSum( a(i1,i2) );
                         }  
                 }
 
@@ -2652,7 +2652,7 @@ int CgWave::getErrorsInEigenmodes( Real & relErrEigenvalue, Real & relErrEigenve
                                 }
                             }
                         }
-                        ParallelUtility::getSum( b(i1) );
+                        b(i1) = ParallelUtility::getSum( b(i1) );
                     }  
 
                 for( int i2=0; i2<md; i2++ )
@@ -2728,7 +2728,7 @@ int CgWave::getErrorsInEigenmodes( Real & relErrEigenvalue, Real & relErrEigenve
                                     }
                                 }
                             }
-                            ParallelUtility::getSum( a(i1,i2) );
+                            a(i1,i2) = ParallelUtility::getSum( a(i1,i2) );
                         }  
                 }
 
@@ -3014,7 +3014,7 @@ int CgWave::getErrorInEigenPair( const Real lambda, realCompositeGridFunction & 
                         }
                     }
                 }
-                ParallelUtility::getSum( dotProduct );
+                dotProduct = ParallelUtility::getSum( dotProduct );
             }  
 
         Real uevDot;
@@ -3088,7 +3088,7 @@ int CgWave::getErrorInEigenPair( const Real lambda, realCompositeGridFunction & 
                         }
                     }
                 }
-                ParallelUtility::getSum( uevDot );
+                uevDot = ParallelUtility::getSum( uevDot );
             }  
 
         Real alpha =  dotProduct/uevDot;
@@ -3196,7 +3196,7 @@ int CgWave::getErrorInEigenPair( const Real lambda, realCompositeGridFunction & 
                             }
                         }
                     }
-                    ParallelUtility::getSum( b(i1) );
+                    b(i1) = ParallelUtility::getSum( b(i1) );
                 }  
 
             for( int i2=0; i2<md; i2++ )
@@ -3272,7 +3272,7 @@ int CgWave::getErrorInEigenPair( const Real lambda, realCompositeGridFunction & 
                                 }
                             }
                         }
-                        ParallelUtility::getSum( a(i1,i2) );
+                        a(i1,i2) = ParallelUtility::getSum( a(i1,i2) );
                     }  
             }
 
@@ -3372,6 +3372,9 @@ Real CgWave::getRayleighQuotient( realCompositeGridFunction & v, int component /
     Real lambda=0.;
 
     CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
+
+    FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+    FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");  
     
   // useDiscreteInnerProduct=true  : use the Integrate class to compute integrals
   //                        =false : sum over active interior points 
@@ -3495,10 +3498,29 @@ Real CgWave::getRayleighQuotient( realCompositeGridFunction & v, int component /
             }
 
         }
-        ParallelUtility::getSum(vDotLap);
-        ParallelUtility::getSum(vDotv);
+    // if( true )
+    // {
+    //   fprintf(pDebugFile,"getRQ: component=%3d: vDotLap=%20.13e vDotv=%20.13e (Before getSum)\n",component,vDotLap,vDotv);
+    // }
+
+    // if( false )
+    // {
+    //   Real sum;
+    //   MPI_Allreduce(&vDotLap, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
+    //   vDotLap=sum;
+    //   MPI_Allreduce(&vDotv,   &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
+    //   vDotv=sum;
+
+    // }
+        vDotLap=ParallelUtility::getSum(vDotLap);
+        vDotv  =ParallelUtility::getSum(vDotv);
 
         lambda = vDotLap/vDotv;  // this is really -lambda^2 .. sqrt taken below 
+
+    // if( true )
+    // {
+    //   fprintf(pDebugFile,"getRQ: component=%3d: vDotLap=%20.13e vDotv=%20.13e lamSq=%20.13e\n",component,vDotLap,vDotv,lambda);
+    // }
 
     }
     else

@@ -1753,6 +1753,9 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
           }
         }
 
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+          q[grid].updateGhostBoundaries();
+        
         if( ie>0 ) 
           show.startFrame();                       // start a new frame
         if( trueEigenPairsKnown )

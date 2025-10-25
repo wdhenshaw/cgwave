@@ -141,7 +141,7 @@ extern "C"
         }
       }
     }
-    ParallelUtility::getSum( dotProduct );
+    dotProduct = ParallelUtility::getSum( dotProduct );
 
   }  
 #endMacro 
@@ -1738,6 +1738,9 @@ Real CgWave::getRayleighQuotient( realCompositeGridFunction & v, int component /
   Real lambda=0.;
 
   CompositeGridOperators & operators = dbase.get<CompositeGridOperators>("operators");
+
+  FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+  FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");  
   
   // useDiscreteInnerProduct=true  : use the Integrate class to compute integrals
   //                        =false : sum over active interior points 
@@ -1795,10 +1798,29 @@ Real CgWave::getRayleighQuotient( realCompositeGridFunction & v, int component /
       }
 
     }
-    ParallelUtility::getSum(vDotLap);
-    ParallelUtility::getSum(vDotv);
+    // if( true )
+    // {
+    //   fprintf(pDebugFile,"getRQ: component=%3d: vDotLap=%20.13e vDotv=%20.13e (Before getSum)\n",component,vDotLap,vDotv);
+    // }
+
+    // if( false )
+    // {
+    //   Real sum;
+    //   MPI_Allreduce(&vDotLap, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
+    //   vDotLap=sum;
+    //   MPI_Allreduce(&vDotv,   &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
+    //   vDotv=sum;
+
+    // }
+    vDotLap=ParallelUtility::getSum(vDotLap);
+    vDotv  =ParallelUtility::getSum(vDotv);
 
     lambda = vDotLap/vDotv;  // this is really -lambda^2 .. sqrt taken below 
+
+    // if( true )
+    // {
+    //   fprintf(pDebugFile,"getRQ: component=%3d: vDotLap=%20.13e vDotv=%20.13e lamSq=%20.13e\n",component,vDotLap,vDotv,lambda);
+    // }
 
   }
   else
