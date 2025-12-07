@@ -243,7 +243,8 @@ int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
        }
 
     }
-    printF("\n ##### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=%18.10e (dt=%18.10e) omegaAdjusted=%14.6e (omega=%14.6e) ####\n",dts,dt,omegas,omega);
+    if( debug>1 )
+      printF("\n ##### CgWave:adjust omega and dt for Helmholtz: dtAdjusted=%18.10e (dt=%18.10e) omegaAdjusted=%14.6e (omega=%14.6e) ####\n",dts,dt,omegas,omega);
 
     if( damp!=0. )
       printF(" ##### CgWave: dampAdjusted=%18.10e, damp=%18.10e ####\n",damp,dampSave);

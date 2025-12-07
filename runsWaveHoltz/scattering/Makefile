@@ -1,10 +1,62 @@
 cgwh= $(HOME)/research/cgwave/bin/cgwh
 WAHO= $(HOME)/Dropbox/AMP/waho
+complexWaveHoltz= $(HOME)/Dropbox/complexWaveHoltz
 
 
-# ============= SCATTERING FROM A CYLINDER   =============
+
+# ============= SCATTERING FROM A CYLINDER + EM BCS  =============
+
+# disk + EM BC's : CHECK FOR NUMBER OF ITERATIONS VERSUS OMEGA 
+disk: diskG4 diskG8 diskG16 diskG32 diskG64
+
+diskG4:
+	$(cgwh) -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG4kx2 -show=diskG4kx2.show -go=dks > diskG4kx2.out
+	cp diskG4kx2FD22TSINp4gmres.m $(complexWaveHoltz)/matlab/results
 
 
+diskG8:
+	$(cgwh) -noplot scat.cmd -g=cice8.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG8kx4 -show=diskG8kx4.show -go=dks > diskG8kx4.out
+	cp diskG8kx4FD22TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+
+diskG16:
+	setsid $(cgwh) -noplot scat.cmd -g=cice16.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG16kx8 -show=diskG16kx8.show -go=dks > diskG16kx8.out
+	cp diskG16kx8FD22TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+
+diskG32:
+	setsid $(cgwh) -noplot scat.cmd -g=cice32.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG32kx16 -show=diskG32kx16.show -go=ks > diskG32kx16.out
+	cp diskG32kx16FD22TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+
+diskG64:
+	setsid $(cgwh) -noplot scat.cmd -g=cice64.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=32 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG64kx32 -show=diskG64kx32.show -go=ks > diskG64kx32.out
+	cp diskG64kx32FD22TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+
+# -- Order=4
+diskO4: diskG2O4 diskG4O4 diskG8O4 diskG16O4 diskG32O4 
+
+diskG2O4:
+	$(cgwh) -noplot scat.cmd -g=cice2.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG2kx2 -show=diskG2O4kx2.show -go=dks > diskG2O4kx2.out
+	cp diskG2kx2FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+
+
+diskG4O4:
+	$(cgwh) -noplot scat.cmd -g=cice4.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG4kx4 -show=diskG4O4kx4.show -go=dks > diskG4O4kx4.out
+	cp diskG4kx4FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+
+diskG8O4:
+	$(cgwh) -noplot scat.cmd -g=cice8.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG8kx8 -show=diskG8kx8.show -go=dks > diskG8kx8.out
+	cp diskG8kx8FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+
+
+diskG16O4:
+	setsid $(cgwh) -noplot scat.cmd -g=cice16.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG16kx16 -show=diskG16kx16.show -go=ks > diskG16kx16.out
+	cp diskG16kx16FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+
+diskG32O4:
+	setsid $(cgwh) -noplot scat.cmd -g=cice32.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=32 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG32kx32 -show=diskG32kx32.show -go=ks > diskG32kx32.out
+	cp diskG32kx32FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+
+
+# ============= SCATTERING FROM A CYLINDER  + SUPERGRID  =============
 # disk + Supergrid: 
 disksg: disk4sg disk8sg disk16sg disk32sg
 
@@ -24,23 +76,7 @@ disk32sg:
 	setsid $(cgwh) -noplot scat.cmd -g=cice32.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -debug=0 -matlab=diskG32kx16sg -show=diskG32kx16sg.show -go=ks > diskG32kx16sg.out
 	cp diskG32kx16sgKrylov.m $(WAHO)/codes
 
-disk: diskG8 diskG16 diskG32 diskG64
 
-diskG8:
-	$(cgwh) -noplot scat.cmd -g=cice8.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG8kx4 -show=diskG8kx4.show -go=dks > diskG8kx4.out
-	cp diskG8kx4Krylov.m $(WAHO)/codes
-
-diskG16:
-	setsid $(cgwh) -noplot scat.cmd -g=cice16.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG16kx8 -show=diskG16kx8.show -go=dks > diskG16kx8.out
-	cp diskG16kx8Krylov.m $(WAHO)/codes
-
-diskG32:
-	setsid $(cgwh) -noplot scat.cmd -g=cice32.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG32kx16 -show=diskG32kx16.show -go=ks > diskG32kx16.out
-	cp diskG32kx16Krylov.m $(WAHO)/codes
-
-diskG64:
-	setsid $(cgwh) -noplot scat.cmd -g=cice64.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=32 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=1000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -matlab=diskG64kx32 -show=diskG64kx32.show -go=ks > diskG64kx32.out
-	cp diskG64kx32Krylov.m $(WAHO)/codes
 
 # ============= SCATTERING FROM THREE SHAPES   =============
 

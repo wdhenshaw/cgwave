@@ -1,30 +1,35 @@
 Getting started:
 
-(1) Install Overture from the sourceforge git repo.
+(1) Install Overture from the github repo:
+    https://github.com/wdhenshaw/overtureFramework.git
 
-(2) To clone a new version of CgWave from sourceforge (replace wdhenshaw by your sourceforge account name)
+(2) Clone a version of CgWave from github 
 
-git clone ssh://wdhenshaw@git.code.sf.net/p/cgwave/code cgwave
+    git clone https://github.com/wdhenshaw/cgwave.git cgwave
 
+(3) Define the CGWAVE enviromental variable, e.g.
+    setenv CGWAVE /home/henshw/cgwave
 
-(3) Define PETSc and SLEPc enviromnental variables
+(4) If you want to use PETSc (e.g. for WaveHoltz and EigenWave) build PETSc and set the 
+    enironmental variable PETSC_DIR, for example,
 
-For example: 
-setenv PETSC_DIR /Users/henshaw/software/petsc
-setenv PETSC_ARCH darwin-opt
+    setenv PETSC_DIR /home/henshw/software/petsc
 
-setenv SLEPC_DIR /Users/henshaw/software/slepsc
+(5) If you want to compute eigenpairs (with EigenWave) you will need to build SLEPSc and then
+    set the environmental variable SLEPSC_DIR, for example
 
-(2) Build CgWave. in the cgwave directory type:
+    setenv SLEPSC_DIR /home/henshw/software/slepc
+
+(6) Build CgWave. in the cgwave directory type:
     > make
 
   This will create the executable cgwave/bin/cgWave
 
 
-(3) Run the regression tests:
+(7) Run the regression tests:
    > make check 
  of 
    > make check-quiet
 
-(4) Goto the cgwave/cmd directory to see some sample command files. 
-    The cgwave/cmd/memo file has some examples of different runs.
+(8) Goto the cgwave/runs directory to see some sample command files. 
+

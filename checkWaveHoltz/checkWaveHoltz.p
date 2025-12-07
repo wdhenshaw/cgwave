@@ -364,7 +364,7 @@ open($outfile, '>', 'checkWaveHoltz.results') or die "Cannot open checkWaveHoltz
 if ( $numberOfErrors == 0 && $m>0 )
 {
   if( $verbose ){  printf("\n>>> clean up temp files: eigenWave.check, cgWave.out, cgWave.debug, ...\n"); }
-  @FILENAMES = ("cgWaveHoltz.check", "cgWave.check", "cgWave.debug", "cgWave.out", 
+  @FILENAMES = ("cgWaveHoltz.check", "cgWave.check", "debug/cgWave.debug", "cgWave.out", 
                 "cgWaveHoltz.debug", "cgWaveHoltz.out", "cgWaveHoltz.cmd", 
                 "cgWaveHoltzFD22TSINf3Np4gmres.m", "cgWaveHoltzFD22TSINp2gmres.m", "junkFD24TSENp1agmres.m", "junkFD24TSENp1gmres.m", "junkFD24TSINp1FP.m",
                 "cgWaveHoltzFD22TSINp2FP.m", "cgWaveHoltzFD22TSINp4gmres.m", "junkFD24TSENp1FP.m", "junkFD24TSINp1agmres.m", "junkFD24TSINp1gmres.m"                

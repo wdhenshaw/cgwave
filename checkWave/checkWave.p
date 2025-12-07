@@ -328,7 +328,7 @@ open($outfile, '>', 'checkWave.results') or die "Cannot open checkWave.results f
 if ( $numberOfErrors == 0 )
 {
   if( $verbose ){  printf("\n>>> clean up temp files: cgWave.check cgWave.cmd cgWave.debug cgWave.out\n"); }
-  @FILENAMES = ("cgWave.check", "cgWave.debug", "cgWave.cmd", "cgWave.out" );
+  @FILENAMES = ("cgWave.check", "debug/cgWave.debug", "cgWave.cmd", "cgWave.out" );
   unlink(@FILENAMES) == @FILENAMES  or die "Couldn't unlink all of @FILENAMES: $!\n"; 
 
   $numChecks=$m+1;   

@@ -360,7 +360,7 @@ open($outfile, '>', 'checkEigen.results') or die "Cannot open checkEigen.results
 if ( $numberOfErrors == 0 )
 {
   if( $verbose ){ printf("\n>>> clean up temp files: eigenWave.check, cgWave.out, cgWave.debug, ...\n"); }
-  @FILENAMES = ("eigenWave.check", "cgWave.check", "cgWave.debug", "cgWave.out", 
+  @FILENAMES = ("eigenWave.check", "cgWave.check", "debug/cgWave.debug", "cgWave.out", 
                 "cgWaveHoltz.debug", "cgWaveHoltz.out", "cgWaveHoltz.cmd", 
                 "cgWaveHoltzKrylov.m", "cgWaveHoltzKrylov.tex"  ); 
   unlink(@FILENAMES) == @FILENAMES  or die "Couldn't unlink all of @FILENAMES: $!\n";  
