@@ -13,6 +13,54 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
 ***************************************************
+****** Mon Dec 8, 2025
+
+RETURN TO UPWIND AND EXPLICIT
+
+------------
+UPWIND + IMPLICIT-- BC=supergrid  residual large near boundaries
+cgwh gaussian.cmd -g=square64.order2 -ts=implicit -cfl=100 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=1 -imode=1 -maxIterations=1000
+-numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=1 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -go=halt
+
+CgWaveHoltz::residual: grid=0 : maxRes= 3.95e+00
+CgWaveHoltz::residual: freq= 0, omega=   1.000, max-res=3.946e+00.
+solveHelmholtz: max-res=3.946e+00 (gmres, numIts=185, ave-CR= 0.86 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=8.49e-05, |v|_max= 3.44e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+------
+
+UPWIND + O4 + EXPLICIT : OK -- small errors 
+cgwh -noplot gaussian.cmd -g=square128.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.5 -y0=0.5 -nf=1 -freq=20 -amp=-400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -maxIterations=200 -numPeriods=2 -filterTimeDerivative=0 -damp=0 -adjustHelmholtzForUpwinding=0 -bc=d -upwind=1 -go=og
+
+CgWaveHoltz::residual: grid=0 : maxRes= 1.58e-02
+CgWaveHoltz::residual: freq= 0, omega=  20.000, max-res=1.581e-02.
+solveHelmholtz: max-res=1.581e-02 (gmres, numIts=15, ave-CR= 0.22 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=2.91e-05, |v|_max= 3.49e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+EXPLICIT + UPWIND -- BC=D
+cgwh -noplot gaussian.cmd -g=square64.order2 -ts=explicit -cfl=0.95 -x0=0.5 -y0=0.5 -nf=1 -freq=20 -amp=-400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -maxIterations=200 -numPeriods=2 -filterTimeDerivative=0 -damp=0 -adjustHelmholtzForUpwinding=1 -bc=d -upwind=1 -go=og
+
++++++++++++++++++++++++++++++++++++++++++
++++ upwind=1 + adjust=1 + FPI : WORKS
+CgWaveHoltz::residual: grid=0 : maxRes= 1.15e-09
+CgWaveHoltz::residual: freq= 0, omega=  20.000, max-res=1.151e-09.
+solveHelmholtz: max-res=1.151e-09 (FP, numIts=120, ave-CR= 0.81 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=6.60e-10, |v|_max= 3.53e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
++++ upwind=1 + adjust=1
+solveHelmholtz: max-res=3.347e+00 (gmres, numIts=32, ave-CR= 0.46 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=3.16e-02, |v|_max= 3.61e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
++++ upwind=1
+solveHelmholtz: max-res=9.543e-01 (gmres, numIts=29, ave-CR= 0.43 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=2.35e-02, |v|_max= 3.44e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+upwind=0
+solveHelmholtz: max-res=1.339e-09 (gmres, numIts=15, ave-CR= 0.22 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=2.71e-12, |v|_max= 3.53e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+***************************************************
 ****** Sun Dec 7, 2025
 
 --- check explicit time-stepping + RADIATION BCs

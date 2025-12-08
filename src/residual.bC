@@ -144,8 +144,6 @@
     if( ires==numRes-1)
       printF("Check residual for Cartesian grid + superGrid : grid=%d\n",grid);
 
- 
-
     assert( superGrid(grid) && isRectangular );
 
     // macro to turn 4D array rxsyLocal(:,:,:,*) into 5D array RXLocal(:,:,:,m,n)
