@@ -264,9 +264,13 @@ linkFiles:
 buildEquationSolvers.o : $(Oges)/buildEquationSolvers.C; $(CXX) $(CCFLAGSO) -DOVERTURE_USE_PETSC -c $(Oges)/buildEquationSolvers.C
 PETScEquationSolver.o : $(Oges)/PETScEquationSolver.C; $(CXX) $(CCFLAGSO) -DOVERTURE_USE_PETSC -c $(Oges)/PETScEquationSolver.C
 
-src/PETScSolver.C: 
-	cp $(Oges)/PETScSolver.bC src/
-	src/PETScSolver.bC; @cd src; $(BPP) PETScSolver.bC  
+src/PETScSolver.bC:; cp $(Oges)/PETScSolver.bC src/
+src/PETScSolver.C: src/PETScSolver.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include PETScSolver.bC  
+
+
+# src/testAugmentedKrylov.C: src/testAugmentedKrylov.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include testAugmentedKrylov.bC
+# src/AugmentedKrylov.C: src/AugmentedKrylov.bC; @cd src; $(BPP) -clean -quiet -I$(Overture)/include AugmentedKrylov.bC
+
 
 OBJC = obj/CgWave.o obj/advance.o obj/plot.o obj/applyBoundaryConditions.o obj/userDefinedKnownSolution.o \
        obj/outputHeader.o obj/printStatistics.o obj/userDefinedForcing.o  obj/updateTimeIntegral.o \

@@ -112,6 +112,9 @@
 
   const int numberOfComponents=2;
 
+  int includeParallelGhost=0;
+  bool ok; 
+
   //    c^2 * Delta u + omega^2 u + sigma*omega*damp*v = f(x)
   //    c^2 * Delta v + omega^2 v - sigma*omega*damp*u = 0    
 
@@ -155,85 +158,98 @@
 
     getIndex(mg.dimension(),I1,I2,I3);
 
+    includeParallelGhost=0; 
+    ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost );    
+    
+
     const int numberOfComponents=2;
 
     Range R2 = numberOfComponents;
-    RealArray ddDeriv(I1,I2,I3,R2), dDeriv(I1,I2,I3,R2);
+    RealArray ddDeriv, dDeriv;
+    if( ok )
+    {
+      ddDeriv.redim(I1,I2,I3,R2); dDeriv.redim(I1,I2,I3,R2);
+    }
 
     int extra=0; // -1;
     getIndex(mg.indexRange(),I1,I2,I3,extra);
 
-    // --- Eval xx and x derivatives ---
-    mgop.derivative( MappedGridOperators::xxDerivative,vLocal,ddDeriv,I1,I2,I3,R2);
-    mgop.derivative( MappedGridOperators::xDerivative, vLocal, dDeriv,I1,I2,I3,R2);
+    ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost );     
 
-    if( useAbsorbingLayer(0,grid) )
+    if( ok )
     {
-      // -- scale coefficients using superGrid functions --
-      RealArray *& etaxSuperGrid = cgWave.dbase.get<RealArray*>("etaxSuperGrid" );
-      RealArray & etax = etaxSuperGrid[grid];
-      for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
+      // --- Eval xx and x derivatives ---
+      mgop.derivative( MappedGridOperators::xxDerivative,vLocal,ddDeriv,I1,I2,I3,R2);
+      mgop.derivative( MappedGridOperators::xDerivative, vLocal, dDeriv,I1,I2,I3,R2);
+
+      if( useAbsorbingLayer(0,grid) )
       {
-        ddDeriv(i1,I2,I3,R2) *= etax(i1,0);  // scale by "(r.x)^2"
-         dDeriv(i1,I2,I3,R2) *= etax(i1,1);  // scale by "r.xx"
+        // -- scale coefficients using superGrid functions --
+        RealArray *& etaxSuperGrid = cgWave.dbase.get<RealArray*>("etaxSuperGrid" );
+        RealArray & etax = etaxSuperGrid[grid];
+        for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
+        {
+          ddDeriv(i1,I2,I3,R2) *= etax(i1,0);  // scale by "(r.x)^2"
+           dDeriv(i1,I2,I3,R2) *= etax(i1,1);  // scale by "r.xx"
+        }
       }
-    }
 
-    resLocal(I1,I2,I3,R2) = cSq*( ddDeriv(I1,I2,I3,R2) + dDeriv(I1,I2,I3,R2) );    // transformed xx derivative
+      resLocal(I1,I2,I3,R2) = cSq*( ddDeriv(I1,I2,I3,R2) + dDeriv(I1,I2,I3,R2) );    // transformed xx derivative
 
-    // --- Eval yy and y derivatives ---
-    mgop.derivative( MappedGridOperators::yyDerivative,vLocal,ddDeriv,I1,I2,I3,R2);
-    mgop.derivative( MappedGridOperators::yDerivative, vLocal, dDeriv,I1,I2,I3,R2);
+      // --- Eval yy and y derivatives ---
+      mgop.derivative( MappedGridOperators::yyDerivative,vLocal,ddDeriv,I1,I2,I3,R2);
+      mgop.derivative( MappedGridOperators::yDerivative, vLocal, dDeriv,I1,I2,I3,R2);
 
-    if( useAbsorbingLayer(1,grid) )
+      if( useAbsorbingLayer(1,grid) )
+      {
+        // -- scale coefficients using superGrid functions --  
+        RealArray *& etaySuperGrid = cgWave.dbase.get<RealArray*>("etaySuperGrid" );
+        RealArray & etay = etaySuperGrid[grid];
+        for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )
+        {
+          ddDeriv(I1,i2,I3,R2) *= etay(i2,0);  
+           dDeriv(I1,i2,I3,R2) *= etay(i2,1);  
+        }
+      }
+      resLocal(I1,I2,I3,R2) += cSq*( ddDeriv(I1,I2,I3,R2) + dDeriv(I1,I2,I3,R2) );   
+
+      resLocal(I1,I2,I3,R2) += (omega*omega)*vLocal(I1,I2,I3,R2);  // omega^2 u 
+
+      if( damp!=0 )
+      { // ---- damping terms ---
+        const Real b1 =  sigma*omega*damp;
+        const Real b2 = -sigma*omega*damp;       
+        resLocal(I1,I2,I3,0) += b1*vLocal(I1,I2,I3,1);  // b1*ui in ur eqn
+        resLocal(I1,I2,I3,1) += b2*vLocal(I1,I2,I3,0);  // b2*ur in ui eqn
+      }
+
+      resLocal(I1,I2,I3,0) -= fLocal(I1,I2,I3,0); 
+
+    } 
+
+    if( upwind ) 
     {
-      // -- scale coefficients using superGrid functions --  
-      RealArray *& etaySuperGrid = cgWave.dbase.get<RealArray*>("etaySuperGrid" );
-      RealArray & etay = etaySuperGrid[grid];
-      for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )
+      getGridSpacingsMacro();
+
+      getUpwindCoefficentMacro(); 
+
+      FOR_3D(i1,i2,i3,I1,I2,I3) // loop over points on the grid
       {
-        ddDeriv(I1,i2,I3,R2) *= etay(i2,0);  
-         dDeriv(I1,i2,I3,R2) *= etay(i2,1);  
+        if( !isRectangular )
+        {
+          for( int dir=0; dir<numberOfDimensions; dir++ )
+            upwindCoefficient[dir] = betaUpwind*sqrt( SQR(RXLocal(i1,i2,i3,dir,0)) + SQR(RXLocal(i1,i2,i3,dir,1)) )/dr[dir];
+        }
+        for( int m1=-upwindHalfWidth; m1<=upwindHalfWidth; m1++ )
+        {
+          resLocal(i1,i2,i3,0) += -upwindCoefficient[0]*upwindWeights(m1)*vLocal(i1+m1,i2,i3,1);  // x direction *NOTE* MINUS 
+          resLocal(i1,i2,i3,0) += -upwindCoefficient[1]*upwindWeights(m1)*vLocal(i1,i2+m1,i3,1);  // y direction
+
+          resLocal(i1,i2,i3,1) +=  upwindCoefficient[0]*upwindWeights(m1)*vLocal(i1+m1,i2,i3,0);
+          resLocal(i1,i2,i3,1) +=  upwindCoefficient[1]*upwindWeights(m1)*vLocal(i1,i2+m1,i3,0);                
+        }
       }
-    }
-    resLocal(I1,I2,I3,R2) += cSq*( ddDeriv(I1,I2,I3,R2) + dDeriv(I1,I2,I3,R2) );   
-
-    resLocal(I1,I2,I3,R2) += (omega*omega)*vLocal(I1,I2,I3,R2);  // omega^2 u 
-
-    if( damp!=0 )
-    { // ---- damping terms ---
-      const Real b1 =  sigma*omega*damp;
-      const Real b2 = -sigma*omega*damp;       
-      resLocal(I1,I2,I3,0) += b1*vLocal(I1,I2,I3,1);  // b1*ui in ur eqn
-      resLocal(I1,I2,I3,1) += b2*vLocal(I1,I2,I3,0);  // b2*ur in ui eqn
-    }
-
-    resLocal(I1,I2,I3,0) -= fLocal(I1,I2,I3,0); 
-
-  } 
-
-  if( upwind ) 
-  {
-    getGridSpacingsMacro();
-
-    getUpwindCoefficentMacro(); 
-
-    FOR_3D(i1,i2,i3,I1,I2,I3) // loop over points on the grid
-    {
-      if( !isRectangular )
-      {
-        for( int dir=0; dir<numberOfDimensions; dir++ )
-          upwindCoefficient[dir] = betaUpwind*sqrt( SQR(RXLocal(i1,i2,i3,dir,0)) + SQR(RXLocal(i1,i2,i3,dir,1)) )/dr[dir];
-      }
-      for( int m1=-upwindHalfWidth; m1<=upwindHalfWidth; m1++ )
-      {
-        resLocal(i1,i2,i3,0) += -upwindCoefficient[0]*upwindWeights(m1)*vLocal(i1+m1,i2,i3,1);  // x direction *NOTE* MINUS 
-        resLocal(i1,i2,i3,0) += -upwindCoefficient[1]*upwindWeights(m1)*vLocal(i1,i2+m1,i3,1);  // y direction
-
-        resLocal(i1,i2,i3,1) +=  upwindCoefficient[0]*upwindWeights(m1)*vLocal(i1+m1,i2,i3,0);
-        resLocal(i1,i2,i3,1) +=  upwindCoefficient[1]*upwindWeights(m1)*vLocal(i1,i2+m1,i3,0);                
-      }
-    }
+    } // end if ok 
 
     bool checkActivePoints=false;
 
@@ -248,17 +264,24 @@
       Index I1,I2,I3;
       getIndex(mg.dimension(),I1,I2,I3);
 
+      ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost );     
+
 
       int numActive=0;
-      FOR_3D(i1,i2,i3,I1,I2,I3) // loop over points on the grid
+      if( ok )
       {
-        if( maskLocal(i1,i2,i3)==0 && classifyLocal(i1,i2,i3,0)==SparseRepForMGF::active )
+        FOR_3D(i1,i2,i3,I1,I2,I3) // loop over points on the grid
         {
-          numActive++;
-          if( ires==numRes-1)
-            printF("residual: ACTIVE point found: grid=%d, (i1,i2,i3)=(%4d,%4d,%4d) value=[%12.4e,%12.4e]\n",grid,i1,i2,i3,vLocal(i1,i2,i3,0),vLocal(i1,i2,i3,1));
+          if( maskLocal(i1,i2,i3)==0 && classifyLocal(i1,i2,i3,0)==SparseRepForMGF::active )
+          {
+            numActive++;
+            if( ires==numRes-1)
+              printF("residual: ACTIVE point found: grid=%d, (i1,i2,i3)=(%4d,%4d,%4d) value=[%12.4e,%12.4e]\n",grid,i1,i2,i3,vLocal(i1,i2,i3,0),vLocal(i1,i2,i3,1));
+          }
         }
       }
+      numActive = ParallelUtility::getSum(numActive);
+
       if( ires==numRes-1)
         printF("residual: %d ACTIVE unused points found on grid=%d\n",numActive, grid);
     }
@@ -269,6 +292,7 @@
   Range all;
   if( grid==0 )
     printF("Check residual in absorbing BC: omega=%14.6e, c=%14.6e\n",omega,c);
+ 
   ForBoundary(side,axis)
   {
      int is = 1 -2*side;
@@ -278,7 +302,9 @@
      if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
      {
        getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
-       resLocal(Ib1,Ib2,Ib3,all)=0.;
+       ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ib1,Ib2,Ib3,1);
+       if( ok )
+         resLocal(Ib1,Ib2,Ib3,all)=0.;
      }
      else if( mg.boundaryCondition(side,axis) == CgWave::absorbing ||
               mg.boundaryCondition(side,axis) == CgWave::abcEM2 )
@@ -296,8 +322,7 @@
         Real maxResBC2=0.;
         Real maxRHS   =0.;
 
-        int includeParallelGhost=0;
-        bool ok;
+
         ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ib1,Ib2,Ib3,includeParallelGhost);
         ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost);
 
@@ -367,8 +392,8 @@
             Real maxResCBC1 =0.;
             Real maxResCBC2 =0.;            
             getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,2); // ghost 2
-            int includeParallelGhost=0;
-            bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost);  
+            includeParallelGhost=0;
+            ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost);  
             if( ok )  
             {        
 
@@ -490,8 +515,8 @@
   // -- zero residual at unused points ---
   Index I1,I2,I3;
   getIndex(mg.dimension(),I1,I2,I3); 
-  int includeParallelGhost=1;
-  bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);   
+  includeParallelGhost=1;
+  ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);   
   if( ok ) 
   {
     where( maskLocal(I1,I2,I3) <=0  )   
