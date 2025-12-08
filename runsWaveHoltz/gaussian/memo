@@ -11,6 +11,53 @@ set ovp2 = ~/Dropbox/overHoltzPaper/part2
 
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
+
+***************************************************
+****** Sun Dec 7, 2025
+
+--- check explicit time-stepping + RADIATION BCs
+
+
+EXP -- works with periodic first step
+    -- works with NO periodic first step
+$cgwh -noplot gaussian.cmd -g=square64.order2.hdf -ts=explicit -cfl=0.95 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+--- NO PERIODIC FIRST STEP: 
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 5.24e-16, 2.99e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 5.19e-16, 2.99e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 5.02e-16, 2.99e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 5.32e-16, 2.99e-12] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+CgWaveHoltz::residual: grid=0 : maxRes= 1.53e-07
+solveHelmholtz: max-residual [Re,Im]=[1.17e-08,1.53e-07] (gmres, numIts=5, ave-CR= 0.04 )
+solveHelmholtz: rel-max-diff [Re,Im]=[3.52e-10,2.76e-09],  norm [Re,Im]=[4.62e-02,1.99e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+---- PERIODIC FIRST STEP:
+
++++++++++++++ takeFirstStepHelmholtz: USE periodic first step ++++++++++++
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 2.38e-16, 3.46e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 2.22e-16, 3.46e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 2.30e-16, 3.46e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.95e-16, 3.46e-13] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-46
+CgWaveHoltz::residual: grid=0 : maxRes= 1.81e-08
+solveHelmholtz: max-residual [Re,Im]=[1.07e-09,1.81e-08] (gmres, numIts=7, ave-CR= 0.08 )
+solveHelmholtz: rel-max-diff [Re,Im]=[6.64e-11,3.12e-10],  norm [Re,Im]=[4.62e-02,1.99e-02] (between WaveHoltz and Direct Helmholtz)
+
+
+IMP 
+$cgwh -noplot gaussian.cmd -g=square64.order2.hdf -ts=implicit -cfl=10000 -nf=1 -x0=.5 -y0=.5 -freq=1 -amp=-10 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=100 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -takeImplicitFirstStep=1 -filterD0t=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=dk
+
+
+solveHelmholtz: max-residual [Re,Im]=[1.34e-09,8.86e-10] (gmres, numIts=7, ave-CR= 0.07 )
+solveHelmholtz: rel-max-diff [Re,Im]=[3.94e-10,4.35e-10],  norm [Re,Im]=[4.62e-02,1.99e-02] (between WaveHoltz and Direct Helmholtz)
+
+Wrote results to the check file [cgWaveHoltz.check]
+CgWaveHoltz::saved results in matlab file=[cgWaveHoltzFD22TSINp2gmres.m]
+exit
+CgWave:printStatistics: timeForOgesSolve= 1.32e+00(s), per-step= 7.00e-03(s) (for implicit solve factor)
+
 ***************************************************
 ****** Fri Oct 24, 2025
 

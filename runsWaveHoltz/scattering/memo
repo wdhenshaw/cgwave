@@ -19,11 +19,130 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 *******************************************
 ********* Sun Dec 7, 2025
 
+PARALLEL:  USE NEW CLONE cgwavep
+
+TEST A FINE GRID G128 
+grid     name       gridIndexRange(0:1,0:2)           gridPoints        hmx      hmn   time-stepping
+   0:  square   ([ 0: 5120],[ 0: 5120],[ 0:    0])   2.62246e+07   7.81e-04 7.81e-04    implicit
+   1: Annulus   ([ 0: 4053],[ 0:   10],[ 0:    0])         44594   5.55e-04 5.50e-04    implicit
+ total number of grid points =2.62692e+07, min(hmn)=5.50e-04, max(hmn)=7.81e-04, max(hmx)=7.81e-04,  
+
+
+
+setsid /usr/bin/mpirun -n 32 $cgwh -noplot scat.cmd -g=cice128.order4 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=30 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG128kx30.show -go=ks > diskG128kx30.out
+
+
+omega=  2.26e+02, k=  2.26e+02, lambda=  2.78e-02, dx=  7.81e-04, domainSize=  4.00e+00, NLambda=144, ppw=lambda/dx= 35.6, ppw(rule-of-thumb)= 29.8 (epsr=0.01)<<<
+
+
+np=2 : ok 
+mpirun -n 4 $cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -go=k -maxIterations=5
+
+
+IMP -- PARALLEL -- OK 
+mpirun -n 16 $cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx8a.show -go=ks
+
+
+######## DONE KYRLOV ITERATIONS -- KSP residual=9.00e-11 (max-res=-1.00e+00) (tol=1.00e-10) numIts=66 #######
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 8.59e-09, 3.03e-09] (Re,Im) (scale= 3.91e-05), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.53e-08, 1.54e-08] (Re,Im) (scale= 3.91e-05), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 4.85e-09, 1.68e-09] (Re,Im) (scale= 3.91e-05), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.84e-08, 6.52e-09] (Re,Im) (scale= 3.91e-05), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 4.44e-07
+
+*
+
+
+
+mod p
+
+EXP -- HIGHER FERQ Np=1 -- NO 
+mpirun -n 4 $cgwh -noplot scat.cmd -g=cice16.order2 -ts=explicit  -cfl=0.95 -solveri=bcgs -rtoli=1e-8 -atoli=1e-8 -nf=1 -amp=1 -kx=12 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx12.show -go=ks
+
+CIC FIXED 
+mpirun -n 1 $cgwh -noplot scat.cmd -g=cicFixede8.order2 -ts=explicit  -cfl=0.95 -solveri=bcgs -rtoli=1e-8 -atoli=1e-8 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG8kx8.show -go=ks
+
+
+
+
+
+mpirun -n 4 $cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx8a.show -go=ks
+
+
+
+G16 : EXP + UPWIND --> **TROUBLE WITH UPWIND***
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=1 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx2.show -go=og -maxIterations=100 -tol=1e-15
+
+G16 IMP 
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx2.show -go=og
+
+
+G16 : EXP -- trouble **BUT NO UPWIND !!!
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx2.show -go=og -maxIterations=100 -tol=1e-15
+
+
+G8 : EXP 
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG8kx2.show -go=og -maxIterations=30
+
+CgWaveHoltz::residual: grid=0 : maxRes= 5.33e-13
+CgWaveHoltz::residual: grid=1 : maxRes= 1.37e-12
+solveHelmholtz: max-residual [Re,Im]=[1.37e-12,6.92e-13] (gmres, numIts=61, ave-CR= 0.61 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.17e-11,9.90e-12],  norm [Re,Im]=[1.09e+00,1.09e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+G4: EXP -- COARSER GRID
+    -- looks ok but residual is large near the dirichlet BC
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG4kx2.show -go=og -maxIterations=30
+
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=implicit -cfl=10000 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG4kx2.show -go=og -maIterations=30
+
+
+
+
+mpirun -n 2 $cgwh -noplot scat.cmd -g=cice64.order4 -ts=explicit -solveri=bcgs -cfl=.95 -nf=1 -amp=1 -kx=24 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G64kx24a.show -takeImplicitFirstStep=1 -matlab=scatCylO4G64kx24a -go=ks
+
+FIX ME? or is this OK: 
+@@@@@@ takeFirstStepHelmholtz: use periodic first step for filterTimeDerivative=1 frequencyArray(0)=  1.5331e+02 viFactor= 1.00e+00 @@@@@@@@ 
+
+
+
+mpirun -n 4 $cgwh -noplot scat.cmd -g=cice32.order4 -ts=explicit -solveri=bcgs -cfl=.95 -nf=1 -amp=1 -kx=14 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G32kx14a.show -takeImplicitFirstStep=1 -matlab=scatCylO4G32kx14a -go=ks 
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=19: L2h-residual= 5.88e-02, ratio= 1.00 
+
+***** DONE KSP SOLVE ******
+
 
 $cgwh -noplot scat.cmd -g=cice64.order4 -ts=explicit -solveri=bcgs -cfl=.95 -nf=1 -amp=1 -kx=24 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G64kx24a.show -takeImplicitFirstStep=1 -matlab=scatCylO4G64kx24a -go=ks
 
 
->>>>>>>> CYL SCAT <<<<<<<<<<<<<
+REDO 
+$cgwh -noplot scat.cmd -g=cice32.order4 -ts=implicit -solveri=bcgs -cfl=1000 -nf=1 -amp=1 -kx=14 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G32kx14a.show -takeImplicitFirstStep=1 -matlab=scatCylO4G32kx14a -go=ks 
+
++++++ G16: 
+REDO: kx=8, omega=50 its=65
+
+EXP -- **TROUBLE**
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx8a.show -go=dks
+
+##### SAVE KRYLOV RESIDUAL: iteration=204: L2h-residual= 3.00e-02, ratio= 1.00 
+
+
+IMP -- OK 
+cgwh -noplot scat.cmd -g=cice16.order2 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG16kx8a.show -go=dks
+
+##### SAVE KRYLOV RESIDUAL: iteration=63: L2h-residual= 1.25e-10, ratio= 0.76
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.25e-13, 5.16e-12] (Re,Im) (scale= 3.91e-05), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.57e-13, 4.76e-12] (Re,Im) (scale= 3.91e-05), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 4.47e-13, 4.20e-12] (Re,Im) (scale= 3.91e-05), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 4.47e-13, 4.20e-12] (Re,Im) (scale= 3.91e-05), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 9.81e-11
+CgWaveHoltz::residual: grid=1 : maxRes= 1.94e-11
+solveHelmholtz: max-residual [Re,Im]=[9.81e-11,9.35e-11] (gmres, numIts=65, ave-CR= 0.72 )
+solveHelmholtz: rel-max-diff [Re,Im]=[5.58e-09,1.13e-09],  norm [Re,Im]=[1.08e+00,1.08e+00] (between WaveHoltz and Direct Helmholtz)
+
+
 
 --- OLD: 
 G64 O4 kx=24 PPW=27 PPW4=27 
@@ -35,6 +154,8 @@ omega=  1.51e+02, k=  1.51e+02, lambda=  4.17e-02, dx=  1.56e-03, domainSize=  4
 setsid $cgwh -noplot scat.cmd -g=cice64.order4 -ts=implicit -solveri=bcgs -cfl=1000 -nf=1 -amp=1 -kx=24 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G64kx24.show -takeImplicitFirstStep=1 -matlab=scatCylO4G64kx24 -go=ks > scatCylO4G64kx24.out
 
 
+G32 O4 kx=14 PPW=23 PPW4=24
+setsid $cgwh -noplot scat.cmd -g=cice32.order4 -ts=implicit -solveri=bcgs -cfl=1000 -nf=1 -amp=1 -kx=14 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=scatCylO4G32kx14.show -takeImplicitFirstStep=1 -matlab=scatCylO4G32kx14 -go=ks > scatCylO4G32kx14
 
 *******************************************
 ********* Fri Dec 5, 2025

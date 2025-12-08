@@ -629,6 +629,7 @@ takeFirstStepHelmholtz( int cur, real t )
   else if( filterTimeDerivative ) 
   {
     usePeriodicFirstStep=true; // DO this for COMPLEX solutions **Sept 28, 2024 **
+    // usePeriodicFirstStep=false; // DO this for COMPLEX solutions **Dec 7, 2025 **
   }
 
   
@@ -832,7 +833,8 @@ takeFirstStepHelmholtz( int cur, real t )
         if( filterTimeDerivative )
         {
           if( debug>2 )
-            printF("~~~~~~~~~~~~~~ Take EXPLICIT first step Complex case : omega=%14.6e\n",omega);
+            printF("~~~~~~~~~~~~~~ Take EXPLICIT first step Complex case : omega=%14.6e, scaleD0t=%12.3e\n",omega,scaleD0t);
+
           unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*vLocal(I1,I2,I3,1)*scaleD0t + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
         }
         else

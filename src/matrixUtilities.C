@@ -330,6 +330,7 @@ int CgWave::vectorToGridFunction( const Real *v, realCompositeGridFunction & u, 
       	return 0;
 }
 
+
 /// ========================================================================
 ///  \brief convert a grid function to a vector
 /// ========================================================================

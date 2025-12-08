@@ -187,6 +187,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     if( useMatrixUtilities )
     {
         cgWave.vectorToGridFunction( xl, v, iStart,iEnd );
+
     }
     else
     {
