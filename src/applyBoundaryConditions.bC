@@ -164,8 +164,9 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
   //   return 0;
   // }
 
-  if( debug & 8 )
-    printF("applyBoundaryConditions at t=%9.3e\n",t);
+  if( false || debug & 8 )
+    printF("@@ applyBoundaryConditions called at t=%9.3e, applyExplicitBoundaryConditions=%d, fillImplicitBoundaryConditions=%d,\n",t,
+         applyExplicitBoundaryConditions,fillImplicitBoundaryConditions);
 
   // realCompositeGridFunction *& ucg = dbase.get<realCompositeGridFunction*>("ucg");
   // realCompositeGridFunction & u = ucg[current];

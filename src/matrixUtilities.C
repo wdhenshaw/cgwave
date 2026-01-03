@@ -22,7 +22,8 @@ int CgWave::getActivePointIndex( MappedGrid & mg, Index *Iv )
     const int & upwind                    = dbase.get<int>("upwind");
     const int & filterTimeDerivative      = dbase.get<int>("filterTimeDerivative");
     const int & orderOfAccuracy           = dbase.get<int>("orderOfAccuracy");
-    const int numGhost = orderOfAccuracy/2;  
+    int numGhost = orderOfAccuracy/2; 
+    if( upwind ) numGhost+=1; // *wdh* Dec 10, 2025 -- include extra ghost for upwind stencil
 
     int iab[2];
     const IntegerArray & gid = mg.gridIndexRange();
@@ -37,12 +38,14 @@ int CgWave::getActivePointIndex( MappedGrid & mg, Index *Iv )
 
             const int bc = mg.boundaryCondition(side,axis);
 
-            if( filterTimeDerivative )
+            if( filterTimeDerivative || 
+                    upwind )                        // Dec 14, 2025 
             {
         // complex valued solution: include all points : Jan 26, 2025
+        // Dec 14: adjustements for upwinding and Krylov solvers need to include ghost point : Dec 14, 2025
                 iab[side] -= is*numGhost;
             }
-            else if( upwind || bc==CgWave::neumann )
+            else if( bc==CgWave::neumann )
             {
         // include ghost ??
         // iab[side] -= is;

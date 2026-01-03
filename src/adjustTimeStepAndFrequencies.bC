@@ -239,7 +239,7 @@ int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
 
        for( int freq=0; freq<numberOfFrequencies; freq++ )
        {
-         printF("#### CgWave::advance: freq=%d omega=%14.6e omegaAdjusted=%14.6e\n",freq,frequencyArraySave(freq),frequencyArray(freq));
+         printF("#### CgWave::advance: freq=%d dt=%16.8e, omega=%14.6e omegaAdjusted=%14.6e\n",freq,dts,frequencyArraySave(freq),frequencyArray(freq));
        }
 
     }

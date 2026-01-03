@@ -31,6 +31,8 @@ static char help[] = "CgWaveHoltz test of PETSc\n";
 
 static bool useMatrixUtilities=true; // true = use new matrix utilities (needed for parallel)
 
+static bool applyBoundaryConditions=true; // true = call the applyBoundaryCondition routine in certain spots. *wdh* dec 10, 2025
+
 // testCase : 
 // 0 = test solving laplace equation
 // 1 = Real run
@@ -103,6 +105,51 @@ int CgWave::initializePETSc( int argc /* = 0 */, char **args  /* =NULL */ )
 //  NOTE: This macro appears in solveSLEPc.bC and eigenModes.bC 
 // --------------------------------------------------------------------------------------
 
+
+// =========================================================================================================
+//  This Monitor function is called at each iteration
+// =========================================================================================================
+//  
+static PetscErrorCode MonitorError(KSP ksp, PetscInt it, PetscReal rnorm, void *ctx)
+{
+    printF("MonitorError called at it=%d, rnorm=%9.2e\n",it,rnorm);
+
+    assert( pCgWaveHoltz!=NULL );
+    CgWaveHoltz & cgWaveHoltz = *pCgWaveHoltz; 
+    CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave"); 
+
+    const int & adjustHelmholtzForUpwinding = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding"); 
+
+  // --- AJUSTING for UPWINDING WORKS IN THE MATLAB CODE 
+    if( false && adjustHelmholtzForUpwinding )
+    {
+        RealCompositeGridFunction & vh = cgWave.dbase.get<realCompositeGridFunction>("vh");    
+
+        printF("MonitorError: get the current solution and save in the gridFunction vh...\n");
+        
+        Vec vCurrent;
+        KSPBuildSolution( ksp,NULL,&vCurrent);
+
+        Real *vCurrentLocalArray;
+        VecGetArray(vCurrent,&vCurrentLocalArray);  // get the local array from Petsc
+        int ierr, iStart, iEnd;
+        ierr = VecGetOwnershipRange( vCurrent,&iStart,&iEnd ); CHKERRQ(ierr);
+
+        cgWave.vectorToGridFunction( vCurrentLocalArray,vh, iStart,iEnd );
+
+     // do we need to apply BC's ??
+        if( false && applyBoundaryConditions )
+        {
+            const bool applyExplicitBoundaryConditions=true;
+            const bool fillImplicitBoundaryConditions=false;
+            Real t = 0.;
+            cgWave.applyBoundaryConditions( vh,vh, t, applyExplicitBoundaryConditions,fillImplicitBoundaryConditions );
+        } 
+    }
+
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
 // =========================================================================================================
 //     MATRIX-VECTOR MULTIPLY FOR MATRIX FREE KRYLOV SOLVERS
 // 
@@ -146,10 +193,12 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
   // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
 
-    const int & numCompWaveHoltz          = cgWave.dbase.get<int>("numCompWaveHoltz");
-    const int & upwind                    = cgWave.dbase.get<int>("upwind");
-    const int & filterTimeDerivative      = cgWave.dbase.get<int>("filterTimeDerivative");
-    const int & orderOfAccuracy           = cgWave.dbase.get<int>("orderOfAccuracy");
+    const int & debug                       = cgWave.dbase.get<int>("debug");
+    const int & numCompWaveHoltz            = cgWave.dbase.get<int>("numCompWaveHoltz");
+    const int & upwind                      = cgWave.dbase.get<int>("upwind");
+    const int & filterTimeDerivative        = cgWave.dbase.get<int>("filterTimeDerivative");
+    const int & adjustHelmholtzForUpwinding = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding"); 
+    const int & orderOfAccuracy             = cgWave.dbase.get<int>("orderOfAccuracy");
     const int numGhost = orderOfAccuracy/2;
 
   // const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
@@ -201,54 +250,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
                 OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
 
         // getIndex(cg[grid].dimension(),I1,I2,I3);
-                {
-                    Iv[2]=Range(0,0);
-                    for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                    {
-                        for( int side=0; side<=1; side++ )
-                        {
-                            int is = 1-2*side;
-                            iab[side]=gid(side,axis);
-                            const int bc = mg.boundaryCondition(side,axis);
-                            if( filterTimeDerivative )
-                            {
-                // complex valued solution: include all points : Jan 26, 2025
-                                iab[side] -= is*numGhost;
-                            }
-                            else if( upwind || bc==CgWave::neumann )
-                            {
-                // include ghost ??
-                // iab[side] -= is;
-                            }
-                            else if( bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
-                            {
-                // include ghost 
-                                iab[side] -= is*numGhost;
-                            }      
-                            else if( bc==CgWave::dirichlet )
-                            {
-                                  iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                 // iab[side] -= is*numGhost; // ************************************** TEMP ***********
-                            }
-                            else if( bc>0 )
-                            {
-                                printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                                OV_ABORT("error");
-                            }
-                            else if( bc<0 )
-                            {
-                // periodic -- include left end
-                                if( side==1 )
-                                    iab[side] += is; 
-                            }
-                            else
-                            {
-                // interpolation boundary : include end 
-                            }
-                        }
-                        Iv[axis] = Range(iab[0],iab[1]);
-                    }
-                }
+                cgWave.getActivePointIndex( mg, Iv );
 
                 OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
                 FOR_3D(i1,i2,i3,I1,I2,I3)
@@ -273,62 +275,64 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
   // We are just assigning "x" into "v"
     if( iteration==assignSolution )
     {    
-        const bool applyExplicitBoundaryConditions=true;
-        const bool fillImplicitBoundaryConditions=false;
-        Real t = 0.;
-        cgWave.applyBoundaryConditions( v,v, t, applyExplicitBoundaryConditions,fillImplicitBoundaryConditions ); 
-
-        const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
-        if( numberOfFrequencies>1 ) 
+        if( applyBoundaryConditions )
         {
-            Index I1,I2,I3;
-            for( int freq=1; freq<numberOfFrequencies; freq++ )
+            const bool applyExplicitBoundaryConditions=true;
+            const bool fillImplicitBoundaryConditions=false;
+            Real t = 0.;
+            cgWave.applyBoundaryConditions( v,v, t, applyExplicitBoundaryConditions,fillImplicitBoundaryConditions ); 
+
+            const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
+            if( numberOfFrequencies>1 ) 
             {
-        /// In order to use applyBoundaryConditions we need to copy to a temporary
-        // save component "freq" into component vOld(I1,I2,I2,0)
-                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                Index I1,I2,I3;
+                for( int freq=1; freq<numberOfFrequencies; freq++ )
                 {
-                    OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
-                    OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
+          /// In order to use applyBoundaryConditions we need to copy to a temporary
+          // save component "freq" into component vOld(I1,I2,I2,0)
+                    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                    {
+                        OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+                        OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
 
-                    MappedGrid & mg = cg[grid];
-                    getIndex(mg.dimension(),I1,I2,I3);
-                    const int includeParallelGhost=1;
-                    bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost); 
-                    if( ok )
-                        vOldLocal(I1,I2,I3,0) = vLocal(I1,I2,I3,freq);  // save component "freq" into component vOld(I1,I2,I2,0)
-                } 
+                        MappedGrid & mg = cg[grid];
+                        getIndex(mg.dimension(),I1,I2,I3);
+                        const int includeParallelGhost=1;
+                        bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost); 
+                        if( ok )
+                            vOldLocal(I1,I2,I3,0) = vLocal(I1,I2,I3,freq);  // save component "freq" into component vOld(I1,I2,I2,0)
+                    } 
 
-        // --- apply BC's to component freq ---
-        // printF("XXXXXXXXX solvePETSc : apply BCs to freq=%d after solve is complete XXXXXXXXX\n",freq);
+          // --- apply BC's to component freq ---
+          // printF("XXXXXXXXX solvePETSc : apply BCs to freq=%d after solve is complete XXXXXXXXX\n",freq);
 
-                cgWave.applyBoundaryConditions( vOld,vOld, t, applyExplicitBoundaryConditions,fillImplicitBoundaryConditions );
+                    cgWave.applyBoundaryConditions( vOld,vOld, t, applyExplicitBoundaryConditions,fillImplicitBoundaryConditions );
 
-        // -- copy back ---
-                for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-                {
-                    OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
-                    OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
+          // -- copy back ---
+                    for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+                    {
+                        OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+                        OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
 
-                    MappedGrid & mg = cg[grid];
-                    getIndex(mg.dimension(),I1,I2,I3);
-                    const int includeParallelGhost=1;
-                    bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost); 
-                    if( ok )          
-                        vLocal(I1,I2,I3,freq) = vOldLocal(I1,I2,I3,0);  
-                } 
+                        MappedGrid & mg = cg[grid];
+                        getIndex(mg.dimension(),I1,I2,I3);
+                        const int includeParallelGhost=1;
+                        bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost); 
+                        if( ok )          
+                            vLocal(I1,I2,I3,freq) = vOldLocal(I1,I2,I3,0);  
+                    } 
 
 
             }
+            }
         }
-
         return 0;
     }
 
 
     if( false && iteration==1 )
     {
-        ::display(v[0],"v (iteration 1)","%5.2f ");
+        ::display(v[0],"matVect: v (iteration 1)","%5.2f ");
         
     }
     
@@ -340,6 +344,34 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
     // vOld[grid] = v[grid];  // save current guess
     }
+
+    if( adjustHelmholtzForUpwinding )
+    {
+    // --- ADJUSTING for UPWINDING WORKS IN THE MATLAB CODE 
+        RealCompositeGridFunction & vh = cgWave.dbase.get<realCompositeGridFunction>("vh"); 
+        printF(" ....set the grid function vh to the current matVect input vector x. (Used to adjust for upwinding)\n");     
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+            OV_GET_SERIAL_ARRAY(Real,vh[grid],vhLocal);
+            vhLocal = vLocal;
+
+            if( false &&  debug & 1 )
+            {
+                ::display(vhLocal,sPrintF("matVect: v at start and vh iteration=%d",iteration),"%10.3e ");
+                if( iteration>2 ) 
+                    OV_ABORT("stop here for now"); // %%%%%%%%%%%%%%%%%%%%%%%%%%%%% TEMP 
+            }
+        }
+    // should we apply boundary conditions ??
+    // if( applyBoundaryConditions )
+    // {
+    //   const bool applyExplicitBoundaryConditions=true;
+    //   const bool fillImplicitBoundaryConditions=false;
+    //   Real t = 0.;
+    //   cgWave.applyBoundaryConditions( vh,vh, t, applyExplicitBoundaryConditions,fillImplicitBoundaryConditions ); 
+    // }
+    } 
 
   // *** APPLY BOUNDARY CONDITIONS to v 
   // cgWave.applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunction & un, real t,
@@ -376,7 +408,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
 
         if( false )
         {
-            ::display(bcg[0],"b: iteration 0 ","%5.2f ");
+            ::display(bcg[0],"RHS for GMRES: b: iteration 0 ","%7.4f ");
         }
 
     //compute y = Pi * x 
@@ -395,54 +427,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
           // getIndex(cg[grid].dimension(),I1,I2,I3);
                     MappedGrid & mg = cg[grid];
                     const IntegerArray & gid = mg.gridIndexRange();
-                    {
-                        Iv[2]=Range(0,0);
-                        for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                        {
-                            for( int side=0; side<=1; side++ )
-                            {
-                                int is = 1-2*side;
-                                iab[side]=gid(side,axis);
-                                const int bc = mg.boundaryCondition(side,axis);
-                                if( filterTimeDerivative )
-                                {
-                  // complex valued solution: include all points : Jan 26, 2025
-                                    iab[side] -= is*numGhost;
-                                }
-                                else if( upwind || bc==CgWave::neumann )
-                                {
-                  // include ghost ??
-                  // iab[side] -= is;
-                                }
-                                else if( bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
-                                {
-                  // include ghost 
-                                    iab[side] -= is*numGhost;
-                                }      
-                                else if( bc==CgWave::dirichlet )
-                                {
-                                      iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                   // iab[side] -= is*numGhost; // ************************************** TEMP ***********
-                                }
-                                else if( bc>0 )
-                                {
-                                    printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                                    OV_ABORT("error");
-                                }
-                                else if( bc<0 )
-                                {
-                  // periodic -- include left end
-                                    if( side==1 )
-                                        iab[side] += is; 
-                                }
-                                else
-                                {
-                  // interpolation boundary : include end 
-                                }
-                            }
-                            Iv[axis] = Range(iab[0],iab[1]);
-                        }
-                    }
+                    cgWave.getActivePointIndex( mg, Iv );
 
                     OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
 
@@ -527,54 +512,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
           //  getIndex(cg[grid].dimension(),I1,I2,I3);
                     MappedGrid & mg = cg[grid];
                     const IntegerArray & gid = mg.gridIndexRange();        
-                    {
-                        Iv[2]=Range(0,0);
-                        for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                        {
-                            for( int side=0; side<=1; side++ )
-                            {
-                                int is = 1-2*side;
-                                iab[side]=gid(side,axis);
-                                const int bc = mg.boundaryCondition(side,axis);
-                                if( filterTimeDerivative )
-                                {
-                  // complex valued solution: include all points : Jan 26, 2025
-                                    iab[side] -= is*numGhost;
-                                }
-                                else if( upwind || bc==CgWave::neumann )
-                                {
-                  // include ghost ??
-                  // iab[side] -= is;
-                                }
-                                else if( bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
-                                {
-                  // include ghost 
-                                    iab[side] -= is*numGhost;
-                                }      
-                                else if( bc==CgWave::dirichlet )
-                                {
-                                      iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                   // iab[side] -= is*numGhost; // ************************************** TEMP ***********
-                                }
-                                else if( bc>0 )
-                                {
-                                    printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                                    OV_ABORT("error");
-                                }
-                                else if( bc<0 )
-                                {
-                  // periodic -- include left end
-                                    if( side==1 )
-                                        iab[side] += is; 
-                                }
-                                else
-                                {
-                  // interpolation boundary : include end 
-                                }
-                            }
-                            Iv[axis] = Range(iab[0],iab[1]);
-                        }
-                    }
+                    cgWave.getActivePointIndex( mg, Iv );
 
                     OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
                     OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
@@ -620,7 +558,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
         kspResidual /= sqrt(numberOfActivePoints);  // make an approximate L2h norm
 
         resVector(iteration)= kspResidual;
-        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n\n",kspResidual,resVector(iteration)/resVector(max(iteration-1,0)));
+        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",kspResidual,resVector(iteration)/resVector(max(iteration-1,0)));
         
   
         if( useVariableTolerance ) // ** THIS DOES NOT SEEM TO WORK -- KRYLOV NEEDS ACCURATE Matrix-vector multiplies ***
@@ -668,13 +606,13 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiplyOld(Mat m ,Vec x, Vec y)
     if( true )
     {
         if( iteration==computeRightHandSide )
-            printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: EVALUATE THE RHS\n");
+            printF("++++++++ WaveHoltz Matrix vector multiply (OLD) routine: EVALUATE THE RHS\n");
         else if( iteration==computeResidual )
-            printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: CHECK RESIDUAL\n");
+            printF("++++++++ WaveHoltz Matrix vector multiply (OLD) routine: CHECK RESIDUAL\n");
       else if( iteration==assignSolution )
-            printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: ASSIGN THE SOLUTION\n");     
+            printF("++++++++ WaveHoltz Matrix vector multiply (OLD) routine: ASSIGN THE SOLUTION\n");     
         else
-            printF("\n ++++++++ WaveHoltz Matrix vector multiply routine: waveHoltzMatrixVectorMultiply called iteration=%d\n",iteration);
+            printF("++++++++ WaveHoltz Matrix vector multiply (OLD) routine: waveHoltzMatrixVectorMultiply called iteration=%d\n",iteration);
     }
 
 
@@ -696,7 +634,8 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiplyOld(Mat m ,Vec x, Vec y)
   // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
 
-    const int & numCompWaveHoltz          = cgWave.dbase.get<int>("numCompWaveHoltz");
+    const int & numCompWaveHoltz            = cgWave.dbase.get<int>("numCompWaveHoltz");
+    const int & adjustHelmholtzForUpwinding = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding"); 
   // const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
 
   // -- cgWave solution is stored here: 
@@ -768,11 +707,13 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiplyOld(Mat m ,Vec x, Vec y)
   // We are just assigning "x" into "v"
     if( iteration==assignSolution )
     {    
-        const bool applyExplicitBoundaryConditions=true;
-        const bool fillImplicitBoundaryConditions=false;
-        Real t = 0.;
-        cgWave.applyBoundaryConditions( v,v, t, applyExplicitBoundaryConditions,fillImplicitBoundaryConditions ); 
-
+        if( applyBoundaryConditions )
+        {
+            const bool applyExplicitBoundaryConditions=true;
+            const bool fillImplicitBoundaryConditions=false;
+            Real t = 0.;
+            cgWave.applyBoundaryConditions( v,v, t, applyExplicitBoundaryConditions,fillImplicitBoundaryConditions ); 
+        }
         return 0;
     }    
         
@@ -782,14 +723,45 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiplyOld(Mat m ,Vec x, Vec y)
         
     }
     
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // NOTE: When adjusting the solution for upwinding, vOld is used as the current guess at the solution 
+  //   But vOld is used for something else 
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
         OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
         OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
         vOldLocal = vLocal;  // save current guess
 
-    // vOld[grid] = v[grid];  // save current guess
+    // TEST: 
+    // vOldLocal=0.;
     }
+
+    if( adjustHelmholtzForUpwinding )
+    {
+    // --- ADJUSTING for UPWINDING WORKS IN THE MATLAB CODE 
+        RealCompositeGridFunction & vh = cgWave.dbase.get<realCompositeGridFunction>("vh"); 
+        printF(" ....set the grid function vh to the current matVect input vector x. (Used to adjust for upwinding)\n");     
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+            OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
+            OV_GET_SERIAL_ARRAY(Real,vh[grid],vhLocal);
+            vhLocal = vLocal;
+        }
+              
+    } 
+
+
+  // if( adjustHelmholtzForUpwinding )
+  // {
+  //   // vh : used when adjusting WaveHoltz solution for upwinding, current best guess at the solution
+  //   realCompositeGridFunction & vh = cgWave.dbase.get<realCompositeGridFunction>("vh");   
+  //   // OV_GET_SERIAL_ARRAY(Real,vh[grid],vhLocal);
+
+  //   printF("MatVecOLD: adjust for upwinding, get current solution using KSPBuildSolution\n");
+  //   Vec vTemp;
+  //   KSPBuildSolution( ksp,NULL,&vTemp);
+  // }
 
   // ----------------------------------------------------------------------
   // -- advance the wave equation for one period (or multiple periods ) ---
@@ -1010,7 +982,8 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiplyOld(Mat m ,Vec x, Vec y)
         kspResidual /= sqrt(numberOfActivePoints);  // make an approximate L2h norm
 
         resVector(iteration)= kspResidual;
-        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
+        const Real ratio = iteration==0 ? 1.0 : resVector(iteration)/resVector(iteration-1);
+        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",kspResidual,ratio);
         
     // if( iteration <= maximumNumberOfIterations )
     // {
@@ -1081,10 +1054,11 @@ solvePETSc(int argc,char **args)
     
   // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *dbase.get<CgWave*>("cgWave");
-    const int & numCompWaveHoltz          = cgWave.dbase.get<int>("numCompWaveHoltz");
-    const int & filterTimeDerivative      = cgWave.dbase.get<int>("filterTimeDerivative");
-    const int & upwind                    = cgWave.dbase.get<int>("upwind");
-    const int & orderOfAccuracy           = cgWave.dbase.get<int>("orderOfAccuracy");
+    const int & numCompWaveHoltz            = cgWave.dbase.get<int>("numCompWaveHoltz");
+    const int & filterTimeDerivative        = cgWave.dbase.get<int>("filterTimeDerivative");
+    const int & upwind                      = cgWave.dbase.get<int>("upwind");
+    const int & adjustHelmholtzForUpwinding = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding"); 
+    const int & orderOfAccuracy             = cgWave.dbase.get<int>("orderOfAccuracy");
     const int numGhost = orderOfAccuracy/2;
 
     if( omega!=0. )
@@ -1197,7 +1171,12 @@ solvePETSc(int argc,char **args)
   // *new* way useActivePoints only for CG and biCGStab : Nov 15, 2024
     bool useActivePoints=true; 
     if( upwind )
-        useActivePoints=false; 
+    {
+        useActivePoints         = true; 
+        applyBoundaryConditions = false; // TRY THIS -- DEc 10, 2025
+
+    // useMatrixUtilities = false; // *** TESTING *** Dec 9, 2025
+    }
     
     int numEquations     =0;
     int numEquationsLocal=0;  // number of equations local to this processor 
@@ -1229,54 +1208,7 @@ solvePETSc(int argc,char **args)
             MappedGrid & mg = cg[grid];
             const IntegerArray & gid = mg.gridIndexRange();      
             if( useActivePoints )
-                {
-                    Iv[2]=Range(0,0);
-                    for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                    {
-                        for( int side=0; side<=1; side++ )
-                        {
-                            int is = 1-2*side;
-                            iab[side]=gid(side,axis);
-                            const int bc = mg.boundaryCondition(side,axis);
-                            if( filterTimeDerivative )
-                            {
-                // complex valued solution: include all points : Jan 26, 2025
-                                iab[side] -= is*numGhost;
-                            }
-                            else if( upwind || bc==CgWave::neumann )
-                            {
-                // include ghost ??
-                // iab[side] -= is;
-                            }
-                            else if( bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
-                            {
-                // include ghost 
-                                iab[side] -= is*numGhost;
-                            }      
-                            else if( bc==CgWave::dirichlet )
-                            {
-                                  iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                 // iab[side] -= is*numGhost; // ************************************** TEMP ***********
-                            }
-                            else if( bc>0 )
-                            {
-                                printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                                OV_ABORT("error");
-                            }
-                            else if( bc<0 )
-                            {
-                // periodic -- include left end
-                                if( side==1 )
-                                    iab[side] += is; 
-                            }
-                            else
-                            {
-                // interpolation boundary : include end 
-                            }
-                        }
-                        Iv[axis] = Range(iab[0],iab[1]);
-                    }
-                }
+                cgWave.getActivePointIndex( mg, Iv );
             else
                 getIndex(mg.dimension(),I1,I2,I3);
 
@@ -1379,54 +1311,7 @@ solvePETSc(int argc,char **args)
                     MappedGrid & mg = cg[grid];
                     const IntegerArray & gid = mg.gridIndexRange();          
                     if( useActivePoints )
-                        {
-                            Iv[2]=Range(0,0);
-                            for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                            {
-                                for( int side=0; side<=1; side++ )
-                                {
-                                    int is = 1-2*side;
-                                    iab[side]=gid(side,axis);
-                                    const int bc = mg.boundaryCondition(side,axis);
-                                    if( filterTimeDerivative )
-                                    {
-                    // complex valued solution: include all points : Jan 26, 2025
-                                        iab[side] -= is*numGhost;
-                                    }
-                                    else if( upwind || bc==CgWave::neumann )
-                                    {
-                    // include ghost ??
-                    // iab[side] -= is;
-                                    }
-                                    else if( bc==CgWave::abcEM2  || bc==CgWave::absorbing || bc==CgWave::radiation )
-                                    {
-                    // include ghost 
-                                        iab[side] -= is*numGhost;
-                                    }      
-                                    else if( bc==CgWave::dirichlet )
-                                    {
-                                          iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                     // iab[side] -= is*numGhost; // ************************************** TEMP ***********
-                                    }
-                                    else if( bc>0 )
-                                    {
-                                        printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                                        OV_ABORT("error");
-                                    }
-                                    else if( bc<0 )
-                                    {
-                    // periodic -- include left end
-                                        if( side==1 )
-                                            iab[side] += is; 
-                                    }
-                                    else
-                                    {
-                    // interpolation boundary : include end 
-                                    }
-                                }
-                                Iv[axis] = Range(iab[0],iab[1]);
-                            }
-                        }
+                        cgWave.getActivePointIndex( mg, Iv );
                     else
                         getIndex(mg.dimension(),I1,I2,I3);
 
@@ -1456,7 +1341,24 @@ solvePETSc(int argc,char **args)
             printF("solvePETSc: Set initial guess to v, max-norm(v)=%8.2e, numberOfActivePoints=%g\n",normV,numberOfActivePoints);
         }
 
+
+    // --- AJUSTING for UPWINDING WORKS IN THE MATLAB CODE 
+    // if( adjustHelmholtzForUpwinding )
+    // {  
+    //    RealCompositeGridFunction & vh = cgWave.dbase.get<realCompositeGridFunction>("vh");    
+
+    //   printF("solvePETSc:INFO: adjustHelmholtzForUpwinding: set vh to the initial condition.\n");
+    //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    //   {
+    //      OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);      
+    //      OV_GET_SERIAL_ARRAY(Real,vh[grid],vhLocal); 
+    //      vhLocal=vLocal;     
+    //   }
+    // }
+
     } // END set initial guess 
+
+
 
   // ---- set RHS b = A*u -----
     ierr = VecSet(u,0.0);CHKERRQ(ierr);
@@ -1470,6 +1372,9 @@ solvePETSc(int argc,char **args)
     VecNorm(b,NORM_2,&bNorm);
     Real bNorm2h = bNorm/sqrt(numberOfActivePoints); 
     printF("solvePETSc: RHS is b: l2-norm(b)=%9.3e, L2h-norm(b)=%9.2e\n",bNorm,bNorm2h);
+
+
+  // OV_ABORT("Stop here for now"); // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TEMP 
 
   // *wdh* Nov 29, 2024 -- make iteration==0 be the first call
   // iteration=0; 
@@ -1591,7 +1496,13 @@ solvePETSc(int argc,char **args)
     ierr = KSPSetFromOptions(ksp); CHKERRQ(ierr);
 
     PetscBool trueFlag=PETSC_TRUE;  // the initial guess is non-zero
-    ierr = KSPSetInitialGuessNonzero(ksp,trueFlag); CHKERRQ(ierr);       
+    ierr = KSPSetInitialGuessNonzero(ksp,trueFlag); CHKERRQ(ierr);  
+
+    if( adjustHelmholtzForUpwinding )
+    {
+    // Create a monitor that is called after each iteration
+        PetscCall(KSPMonitorSet(ksp, MonitorError, NULL, NULL));   
+    }  
 
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
                                             Solve the linear system

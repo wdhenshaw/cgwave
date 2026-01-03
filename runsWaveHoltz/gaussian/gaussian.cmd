@@ -34,14 +34,14 @@ $gmresRestartLength=500; # for WaveHoltz
 $matlab="cgWaveHoltz"; $show="gaussian.show"; 
 $icshow=""; # show file for initial condition
 $cfl=.9; $bc="d"; 
-$ts="explicit"; $dtMax=1; $takeImplicitFirstStep=1;
+$ts="explicit"; $dtMax=1; $takeImplicitFirstStep=1; $takePeriodicFirstStep=0;
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $orderInTime=-1;  # -1 = use default
 $deflateWaveHoltz=0; $deflateForcing=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; 
 $eigTol=1.e-4; # eigenvalue tol for multiplicity 
 $adjustHelmholtzForUpwinding=1; # remove upwinding from Helmholtz solution
 $useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsForSuperGrid=1; $useVariableTolerance=0; 
-$solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50;  $iluh=5; $fillInRatioh=-1; # parameters for direct Helmholtz solver
+$solverh="yale"; $maxith=2000; $rtolh=1.e-12; $atolh=1.e-12; $restart=50;  $iluh=50; $fillInRatioh=-1; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; $restarti=20; $ilui=3;# parameters for implicit time-stepping solver
 $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; $orderOfExtrapolation=-1; 
 #
@@ -60,7 +60,7 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid,"eigTol=f"=>\$eigTol,\
             "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"krylovType=s"=>\$krylovType, "gmresRestartLength=i"=>\$gmresRestartLength,\
             "restarti=i"=>\$restarti,"ilui=i"=>\$ilui,"useVariableTolerance=i"=>\$useVariableTolerance,"deflateForcing=i"=>\$deflateForcing,\
-            "filterD0t=i"=>\$filterD0t,"useOptFilter=i"=>\$useOptFilter);
+            "filterD0t=i"=>\$filterD0t,"useOptFilter=i"=>\$useOptFilter,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -133,6 +133,7 @@ $ts
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
 take implicit first step $takeImplicitFirstStep
+take periodic first step $takePeriodicFirstStep
 dtMax $dtMax
 implicit weights $beta2 $beta4 $beta6 $beta8
 cfl $cfl

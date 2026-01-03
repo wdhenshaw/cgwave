@@ -274,6 +274,13 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
         uh=0.;
     }  
 
+    if( adjustHelmholtzForUpwinding )
+    {
+        realCompositeGridFunction & vh = cgWave.dbase.get<realCompositeGridFunction>("vh");
+        vh.updateToMatchGrid(cg,all,all,all,numCompWaveHoltz); // save Helmholtz solution here
+        vh=0.;
+    }
+
     bool helmholtzFromDirectSolverWasComputed=false;
     bool waveHoltzSolutionWasComputed=false;
     bool errorComparedToTrueSolutionHasBeenComputed=false;
@@ -481,7 +488,15 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                 if( useAugmentedGmres )
                     cgWaveHoltz.solveAugmentedKrylov(argc,argv);
                 else 
+                {
                     cgWaveHoltz.solvePETSc(argc,argv);
+
+                    if( false )
+                    {
+                        printF("\n $$$$$$$$$$$ TESTING : CALL KRYLOV SOLVER AGAIN $$$$$$$$$$$\n\n");
+                        cgWaveHoltz.solvePETSc(argc,argv);
+                    }
+                }
             }
 
       // {
@@ -522,18 +537,18 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                 {
                     viFactor = cgWave.dbase.get<Real>("viFactor");  // *new way* June 19, 2023
                 }
-                else if( true )
-                {
-                    viFactor = -sigma/om;  // use adjusted omega
-                }
-                else if( true || timeSteppingMethod==CgWave::implicitTimeStepping )
-                {
-                    viFactor = -sigma*dt/sin(om*dt); // adjust for D0t -- *check me*
-                }
-                else
-                {
-                    viFactor = -sigma/frequencyArray(0);        // unadjusted
-                }
+        // else if( true )
+        // {
+        //   viFactor = -sigma/om;  // use adjusted omega
+        // }
+        // else if( true || timeSteppingMethod==CgWave::implicitTimeStepping )
+        // {
+        //   viFactor = -sigma*dt/sin(om*dt); // adjust for D0t -- *check me*
+        // }
+        // else
+        // {
+        //   viFactor = -sigma/frequencyArray(0);        // unadjusted
+        // }
 
                 printF("\n ###### solveHelmholtz: Set complex solution using viFactor=%9.2e#### \n\n",viFactor);
 

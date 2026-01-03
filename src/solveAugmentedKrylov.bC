@@ -38,7 +38,7 @@ static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver
 //            
 //  NOTE: This macro appears in solveSLEPc.bC and eigenModes.bC 
 // --------------------------------------------------------------------------------------
-#beginMacro getActivePointIndex( mg, Iv )
+#beginMacro getActivePointIndexOld( mg, Iv )
 {
   const IntegerArray & gid = mg.gridIndexRange();
   int iab[2]; // for getActivePoints 
@@ -67,7 +67,7 @@ static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver
       }
       else if( bc>0 )
       {
-        printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
+        printF("cgWave.getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
         OV_ABORT("error");
       }
       else if( bc<0 )
@@ -145,7 +145,7 @@ static void matVectFunction( const RealArray & x, RealArray & y )
       OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
       OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
 
-      getActivePointIndex( mg, Iv );
+      cgWave.getActivePointIndex( mg, Iv );
 
       FOR_3D(i1,i2,i3,I1,I2,I3)
       {
@@ -221,7 +221,7 @@ static void matVectFunction( const RealArray & x, RealArray & y )
       OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
       OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
 
-      getActivePointIndex( mg, Iv );
+      cgWave.getActivePointIndex( mg, Iv );
       if( iteration==computeRightHandSide )
       {
         // The RHS "b" is just the solution with zero initial conditions
@@ -393,7 +393,7 @@ solveAugmentedKrylov(int argc,char **args)
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       MappedGrid & mg = cg[grid];
-      getActivePointIndex( mg, Iv );
+      cgWave.getActivePointIndex( mg, Iv );
 
       OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
       FOR_3D(i1,i2,i3,I1,I2,I3)
@@ -422,7 +422,7 @@ solveAugmentedKrylov(int argc,char **args)
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       MappedGrid & mg = cg[grid];
-      getActivePointIndex( mg, Iv );
+      cgWave.getActivePointIndex( mg, Iv );
 
       OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
       OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
@@ -484,7 +484,7 @@ solveAugmentedKrylov(int argc,char **args)
         OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
         OV_GET_SERIAL_ARRAY(real,uev[grid],uevLocal);
 
-        getActivePointIndex( mg, Iv );
+        cgWave.getActivePointIndex( mg, Iv );
         FOR_3D(i1,i2,i3,I1,I2,I3)
         {
           if( maskLocal(i1,i2,i3) > 0 )
@@ -573,7 +573,7 @@ solveAugmentedKrylov(int argc,char **args)
       OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
       OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
 
-      getActivePointIndex( mg, Iv );
+      cgWave.getActivePointIndex( mg, Iv );
       FOR_3D(i1,i2,i3,I1,I2,I3)
       {
         if( maskLocal(i1,i2,i3) > 0 )

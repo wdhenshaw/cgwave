@@ -1,6 +1,71 @@
 
 
 
+***************************************************
+****** Wed Dec 17, 2025
+
+
+START ADDING NEW CORNER TREATMENT EM2 ORDER FOUR
+
+
+CHANGED  EM2 ORDER 4 SIDE CONDITIONS-- 2nd ghost line done with CBC
+
+cgWave gaussian.cmd -g=square32.order4.ng3 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.2 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+upwind=1
+CFL=.95 : OK till t=10
+
+
+upwind=0
+CFL=.95 : OK till t=10
+CFL=.75 : OK till t=10
+
+
+
+cgWave gaussian.cmd -g=square32.order4.ng3 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=1 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+
+cgWave gaussian.cmd -g=square32.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.75 -upwind=0 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+cfl=.95 --> trouble at t=6
+
+cfl=0.75 Ok till t=10
+
+cfl=0.5
+abcWave: EM order 4: i1,i2=   0   0 corner residuals=  0.00E+00   1.56E-13  -1.46E-10  -2.91E-11
+abcWave: EM order 4: i1,i2=   0  32 corner residuals=  1.14E-13   7.11E-14  -3.64E-12   6.18E-11
+abcWave: EM order 4: i1,i2=  32   0 corner residuals=  9.95E-14   0.00E+00  -6.91E-11  -3.82E-11
+abcWave: EM order 4: i1,i2=  32  32 corner residuals=  5.68E-14   1.71E-13   1.82E-10   7.28E-12
+cgWave:FD24 t=1.550e+00 ( 186 steps) dt=8.333e-03 ||u||= 6.89e-01, cpu= 2.50e+01(s)
+
+
+
+
+
+
+
+***************************************************
+****** Tues DEc 16, 2025
+
+REVISIT EXPLICIT EM ORDER 4 -- MATLAB IS OK BUT USES DIFFERNT CORNER TREATMENT
+
+
+**** FIX EM2 CORNERS TO MATCH MATLAB ***
+
+upwind? CFL=0.5 Ok to t=5
+        CFL=.95 : blows up in corners at t=8
+cgWave gaussian.cmd -g=square32.order4.ng3 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=1 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+CFL=0.95 blows up in corners at t=7 
+cgWave gaussian.cmd -g=square32.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+Stable to t=10 CFL=0.5 
+cgWave gaussian.cmd -g=square32.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.5 -upwind=0 -tf=10 -tp=.01 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+
 
 *******************************************
 ********* Fri Oct 24, 2025 

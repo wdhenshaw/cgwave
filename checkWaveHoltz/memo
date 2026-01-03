@@ -1,0 +1,57 @@
+**********************************************
+************ Dec 10, 2025
+
+matrixUtilities.bC 
+  --> getActivePointSet
+  ---> increase numGhost by 1 for upwind 
+
+---> supergrid results changed for one check:
+
+../bin/cgwh -noplot ./../runsWaveHoltz/gaussian/gaussian.cmd -g=grids/square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -minStepsPerPeriod=20 -takeImplicitFirstStep=0 -go=dk 
+
+
+>>>>>  NEW:
+  residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.15e-12, 4.63e-11] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-44
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.15e-12, 4.63e-11] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-44
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.15e-12, 4.63e-11] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-44
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.15e-12, 4.63e-11] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-44
+CgWaveHoltz::residual: grid=0 : maxRes= 3.70e-02
+CgWaveHoltz::residual: INFO: Set residuals to zero in the SuperGrid layers
+solveHelmholtz: max-residual [Re,Im]=[1.48e-03,2.05e-03] (gmres, numIts=21, ave-CR= 0.38 )
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.78e-03,1.93e-03],  norm [Re,Im]=[8.06e-01,1.55e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+<<<<< OLD
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 6.00e-04, 5.18e-02] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-44
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 6.00e-04, 5.18e-02] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-44
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 6.00e-04, 5.18e-02] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-44
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 6.00e-04, 5.18e-02] (Re,Im) (scale= 2.44e-04), max|forcing(ghost)|= 6.51e-44
+CgWaveHoltz::residual: grid=0 : maxRes= 5.30e-01
+CgWaveHoltz::residual: INFO: Set residuals to zero in the SuperGrid layers
+solveHelmholtz: max-residual [Re,Im]=[1.11e-03,2.00e-03] (gmres, numIts=30, ave-CR= 0.49 )
+INFO: Set errors to zero in the SuperGrid layers
+solveHelmholtz: rel-max-diff [Re,Im]=[2.00e-03,1.55e-03],  norm [Re,Im]=[8.06e-01,1.55e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+  running:  ../bin/cgwh -noplot ./../runsWaveHoltz/gaussian/gaussian.cmd -g=grids/square64.order2 -ts=implicit -cfl=1000 -x0=0.5 -y0=0.5 -nf=1 -amp=-1000 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=1000 -numPeriods=2 -freq=20 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=1 -bc=a -implicitUpwind=0 -adjustPlotsForSuperGrid=1 -adjustErrorsForSuperGrid=1 -minStepsPerPeriod=20 -takeImplicitFirstStep=0 -go=dk >! results/square64ImpSuperGridKrylov.out
+COMPARE files: " cgWaveHoltz.check results/square64ImpSuperGridKrylov.check -tol=1e-05 "
+Header new:[# Check file for cgWaveHoltz, grid=square64, Wed Dec 10 06:29:03 2025]
+Header old:[# Check file for cgWaveHoltz, grid=square64, Mon Jun  9 11:50:08 2025]
+** DIFFERENCE FOUND at line 98 :
+lineNew=[convergenceRate=0.378;]
+lineOld=[convergenceRate=0.493;]
+** DIFFERENCE FOUND at line 99 :
+lineNew=[numberOfIterations=21;]
+lineOld=[numberOfIterations=30;]
+** DIFFERENCE FOUND at line 102 :
+lineNew=[maxResReal=1.48e-03;]
+lineOld=[maxResReal=1.11e-03;]
+** DIFFERENCE FOUND at line 103 :
+lineNew=[maxResImag=2.05e-03;]
+lineOld=[maxResImag=2.00e-03;]
+** DIFFERENCE FOUND at line 104 :
+lineNew=[errorBetweenWaveHoltzAndHelmholtz=2.780e-03;]
+lineOld=[errorBetweenWaveHoltzAndHelmholtz=1.996e-03;]
+diff=5

@@ -1,0 +1,21 @@
+# Check file for cgWaveHoltz, grid=square32, Fri Jan  2 11:10:43 2026
+grid=square32;
+timeStepping=implicit;
+orderOfAccuracy=4;
+numPeriods=1;
+numberOfFrequencies=1;
+ freq= 0, omega=   7.000, (adjusted=   6.401) T= 0.89760, Tbar= 0.89760, numPeriods=  1, Tbar(0)/T=  1.00
+numCompWaveHoltz=2;
+filterTimeDerivative=1;
+adjustOmega=1;
+useFixedPoint=0;
+useAugmentedGmres=0;
+minStepsPerPeriod=10;
+numberOfStepsPerSolve=11;
+convergenceRate=0.208;
+numberOfIterations=16;
+deflateWaveHoltz=0;
+numToDeflate=1;
+maxResReal=5.64e-12;
+maxResImag=4.69e-11;
+errorBetweenWaveHoltzAndHelmholtz=8.017e-12;

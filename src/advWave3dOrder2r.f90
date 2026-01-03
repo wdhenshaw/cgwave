@@ -2282,7 +2282,7 @@ real uzzzzzz
     ! forcing correction functions: 
     real lap2d2f,f2drme44, lap3d2f, f3drme44, f2dcme44, f3dcme44, ff
     ! real cdSosupx,cdSosupy,cdSosupz
-    real adSosup,sosupParameter, uDotFactor, adxSosup(0:2), adSosupOld
+    real adSosup,sosupParameter, uDotFactor, adxSosup(0:2)
     integer useSosupDissipation,sosupDissipationOption
     integer updateSolution,updateDissipation,computeUt
     integer ec 
@@ -2306,15 +2306,15 @@ real uzzzzzz
     real omega, coswt, damp
     integer maxFreq
     parameter( maxFreq=500 )
-    real cosFreqt(0:maxFreq), coswtAve(0:maxFreq), cosineFactor(0:maxFreq)
+    real cosFreqt(0:maxFreq), coswtAve(0:maxFreq), cosineFactor(0:maxFreq), sineFactor
     integer idv(0:2),j1,j2,j3
     integer iStencil,upwCase,upwindHalfStencilWidth,i1l,i2l,i3l, i1r,i2r,i3r
-    integer useUpwindDissipation,useImplicitUpwindDissipation,adjustOmega,solveHelmholtz
+    integer useUpwindDissipation,useImplicitUpwindDissipation,adjustOmega,solveHelmholtz,filterTimeDerivative
     integer takeImplicitFirstStep
     real upw,maxDiff,umj
     real upwindCoeff(-3:3,0:3) 
     integer useSimplifiedDissipation
-    real upwindDissipationCoefficient,dissSafetyFactor
+    real upwindDissipationCoefficient,dissSafetyFactor,viFactor
     real cn,cm,cLap,cLapSq,cf
     real ts1,ts2,ts3,ts4,ts5,ts6,tsf
     integer ok,getInt,getReal
@@ -3484,6 +3484,7 @@ real uzzzzzz
      bImp( 3)                     = rpar(15) ! beta8 (for future)
      gridCFL                      = rpar(16)
      upwindDissipationCoefficient = rpar(17)
+     viFactor                     = rpar(18) ! scale factor of imaginary part of Helmholtz solution
      c              = cc
      dy=dx(1)  ! Are these needed?
      dz=dx(2)
@@ -3508,6 +3509,7 @@ real uzzzzzz
      modifiedEquationApproach     = ipar(18)
      takeImplicitFirstStep        = ipar(19)
      useSuperGrid                 = ipar(20)
+     filterTimeDerivative         = ipar(21)
      ! new way: extract parameters from the dataBase
       ok=getReal(pdb,'damp',damp) 
       if( ok.eq.0 )then
@@ -3679,7 +3681,7 @@ real uzzzzzz
        write(*,'("advWave: t=",1pe10.3," dt=",1pe10.3," c=",1pe10.2," omega=",1pe10.3," gridCFL=",1pe10.3)') t,dt,cc,omega,gridCFL
        write(*,'("advWave: damp=",1(1pe18.10,1x))') damp
        write(*,'("advWave: gridIsImplicit=",i2," takeImplicitFirstStep=",i2)') gridIsImplicit,takeImplicitFirstStep
-       write(*,'("advWave: adjustOmega=",i2," solveHelmholtz=",i2," adjustHelmholtz=",i2)') adjustOmega,solveHelmholtz,adjustHelmholtzForUpwinding
+       write(*,'("advWave: adjustOmega=",i2," solveHelmholtz=",i2," adjustHelmholtzForUpwinding=",i2," filterTimeDerivative=",i2)') adjustOmega,solveHelmholtz,adjustHelmholtzForUpwinding,filterTimeDerivative
        if( forcingOption.eq.helmholtzForcing )then
          write(*,'("advWave: numberOfFrequencies=",i2)') numberOfFrequencies
          write(*,'("advWave: frequencyArray=",(1pe12.4,1x))') (frequencyArray(freq),freq=0,numberOfFrequencies-1)
@@ -3771,8 +3773,7 @@ real uzzzzzz
        write(*,'("         : t=",1pe10.2," dt=",1pe14.6)')t,dt
        if( useSosupDissipation==1 .or. useImplicitUpwindDissipation==1 )then
          write(*,'("  ****** useSosupDissipation *******")')
-         ! write(*,'("         : adSosupOld=",1pe12.4," upwindDissipationCoefficient=",1pe12.4," adSosupOld/(c*dt)=",1pe12.4)') adSosupOld,upwindDissipationCoefficient,adSosupOld/(cc*dt)
-         write(*,'("         : upwindDissipationCoefficient=",1pe12.4," adSosupOld/(c*dt)=",1pe12.4)') upwindDissipationCoefficient,adSosupOld/(cc*dt)
+         write(*,'("         : upwindDissipationCoefficient=",1pe12.4)') upwindDissipationCoefficient
          write(*,'("         : useSosupDissipation=",i2," sosupParameter=",1pe10.2," preComputeUpwindUt=",i2)') useSosupDissipation,sosupParameter,preComputeUpwindUt
          if( gridType==rectangular )then
             write(*,'("         : adxSosup",3(1pe14.6))') adxSosup(0),adxSosup(1), adxSosup(2)
@@ -3815,7 +3816,6 @@ real uzzzzzz
              end do
              end do
          else 
-           ! ***THIS OPTION IS UNDER DEVELOPMENT***
            ! subtract off upwinding applied to current Helmholtz solution to cancel the effect of upwinding.
            ! Periodic solution:
            !    up = vk * cos( omega * t )
@@ -3827,78 +3827,70 @@ real uzzzzzz
            if( adjustHelmholtzForUpwinding.eq.1 )then
              do freq=0,numberOfFrequencies-1
                ! NOTE: upwinding is called at the start of the step to previous times (t) (t-dt) and (t-2*dt)
-               cosineFactor(freq) = cos(frequencyArray(freq)*(t+0.*dt)) - cos(frequencyArray(freq)*(t-2.*dt))
+               cosineFactor(freq) =   cos(frequencyArray(freq)*(t+0.*dt)) - cos(frequencyArray(freq)*(t-2.*dt))
              end do
            end if
-           if( .true. )then
-             ! ----- Adjustment for upwinding in Helmholtz solves ----
+           ! ----- Adjustment for upwinding in Helmholtz solves ----
+             do i3=m3a,m3b
+             do i2=m2a,m2b
+             do i1=m1a,m1b
+             v(i1,i2,i3,0)= (un(i1,i2,i3,0)-um(i1,i2,i3,0)) 
+             do freq=0,numberOfFrequencies-1
+               v(i1,i2,i3,0) = v(i1,i2,i3,0) - vh(i1,i2,i3,freq)*cosineFactor(freq)
+             end do
+             end do
+             end do
+             end do
+           if( filterTimeDerivative.eq.1 )then
+             ! -- complex case --
+             ! The time periodic solution is 
+             !    w(x,t) = vh(:,0)*cos(omega*t) + viFactor*vh(:,1)*sin(omega*t)
+             sineFactor = ( sin(frequencyArray(0)*(t+0.*dt)) - sin(frequencyArray(0)*(t-2.*dt)) )*viFactor
                do i3=m3a,m3b
                do i2=m2a,m2b
                do i1=m1a,m1b
-               v(i1,i2,i3,0)= (un(i1,i2,i3,0)-um(i1,i2,i3,0)) 
-               do freq=0,numberOfFrequencies-1
-                 v(i1,i2,i3,0) = v(i1,i2,i3,0) - vh(i1,i2,i3,freq)*cosineFactor(freq)
+               v(i1,i2,i3,0) = v(i1,i2,i3,0) - vh(i1,i2,i3,1)*sineFactor
                end do
                end do
                end do
-               end do
-           else if( .false. )then
-             ! **TESTING : 
-             !   CHECK: u = vk * cos( omega * t )
-             ! BUT DO NOT ADD UPWINDING 
-             maxDiff=0.
-             ! beginLoops(i1,i2,i3,m1a,m1b,m2a,m2b,m3a,m3b)
-               do i3=n3a,n3b
-               do i2=n2a,n2b
-               do i1=n1a,n1b
-               v(i1,i2,i3,0)= um(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt))
-               ! write(*,'("(i1,i2)=",2i4," um=",e12.4," vh*cos=",e12.4," diff=",e8.2)') i1,i2,um(i1,i2,i3,0), vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt)),v(i1,i2,i3,0)
-               maxDiff = max(maxDiff,v(i1,i2,i3,0));
-               end do
-               end do
-               end do
-             write(*,'("advOpt: adjust upwinding: check: maxDiff(um-vh*cos)=",e10.3," (no ghost)")') maxDiff
-             maxDiff=0.
-               do i3=m3a,m3b
-               do i2=m2a,m2b
-               do i1=m1a,m1b
-               v(i1,i2,i3,0)= um(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt))
-               ! write(*,'("(i1,i2)=",2i4," um=",e12.4," vh*cos=",e12.4," diff=",e8.2)') i1,i2,um(i1,i2,i3,0), vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt)),v(i1,i2,i3,0)
-               maxDiff = max(maxDiff,v(i1,i2,i3,0));
-               end do
-               end do
-               end do
-             write(*,'("advOpt: adjust upwinding: check: maxDiff(um-vh*cos)=",e10.3," (with ghost)")') maxDiff      
-             maxDiff=0.
-             ! beginLoops(i1,i2,i3,m1a,m1b,m2a,m2b,m3a,m3b)
-               do i3=n3a,n3b
-               do i2=n2a,n2b
-               do i1=n1a,n1b
-               v(i1,i2,i3,0)= un(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t+0.*dt))
-               maxDiff = max(maxDiff,v(i1,i2,i3,0));
-               end do
-               end do
-               end do
-             write(*,'("advOpt: adjust upwinding: check: maxDiff(un-vh*cos)=",e10.3," (no ghost)")') maxDiff 
-             maxDiff=0.
-               do i3=m3a,m3b
-               do i2=m2a,m2b
-               do i1=m1a,m1b
-               v(i1,i2,i3,0)= un(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t+0.*dt))
-               maxDiff = max(maxDiff,v(i1,i2,i3,0));
-               end do
-               end do
-               end do
-             write(*,'("advOpt: adjust upwinding: check: maxDiff(un-vh*cos)=",e10.3, " (with ghost)")') maxDiff            
-               do i3=m3a,m3b
-               do i2=m2a,m2b
-               do i1=m1a,m1b
-               ! v(i1,i2,i3,0)= (un(i1,i2,i3,0)-um(i1,i2,i3,0)) - vh(i1,i2,i3,0)*cosineFactor
-               v(i1,i2,i3,0)= 0.
-               end do
-               end do
-               end do
-           end if  
+           end if
+           ! else if( .false. )then
+           !   ! **TESTING : 
+           !   !   CHECK: u = vk * cos( omega * t )
+           !   ! BUT DO NOT ADD UPWINDING 
+           !   maxDiff=0.
+           !   ! beginLoops(i1,i2,i3,m1a,m1b,m2a,m2b,m3a,m3b)
+           !   beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+           !     v(i1,i2,i3,0)= um(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt))
+           !     ! write(*,'("(i1,i2)=",2i4," um=",e12.4," vh*cos=",e12.4," diff=",e8.2)') i1,i2,um(i1,i2,i3,0), vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt)),v(i1,i2,i3,0)
+           !     maxDiff = max(maxDiff,v(i1,i2,i3,0));
+           !   endLoops()
+           !   write(*,'("advOpt: adjust upwinding: check: maxDiff(um-vh*cos)=",e10.3," (no ghost)")') maxDiff
+           !   maxDiff=0.
+           !   beginLoops(i1,i2,i3,m1a,m1b,m2a,m2b,m3a,m3b)
+           !     v(i1,i2,i3,0)= um(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt))
+           !     ! write(*,'("(i1,i2)=",2i4," um=",e12.4," vh*cos=",e12.4," diff=",e8.2)') i1,i2,um(i1,i2,i3,0), vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t-2.*dt)),v(i1,i2,i3,0)
+           !     maxDiff = max(maxDiff,v(i1,i2,i3,0));
+           !   endLoops()
+           !   write(*,'("advOpt: adjust upwinding: check: maxDiff(um-vh*cos)=",e10.3," (with ghost)")') maxDiff      
+           !   maxDiff=0.
+           !   ! beginLoops(i1,i2,i3,m1a,m1b,m2a,m2b,m3a,m3b)
+           !   beginLoops(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+           !     v(i1,i2,i3,0)= un(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t+0.*dt))
+           !     maxDiff = max(maxDiff,v(i1,i2,i3,0));
+           !   endLoops()
+           !   write(*,'("advOpt: adjust upwinding: check: maxDiff(un-vh*cos)=",e10.3," (no ghost)")') maxDiff 
+           !   maxDiff=0.
+           !   beginLoops(i1,i2,i3,m1a,m1b,m2a,m2b,m3a,m3b)
+           !     v(i1,i2,i3,0)= un(i1,i2,i3,0) - vh(i1,i2,i3,0)*cos(frequencyArray(0)*(t+0.*dt))
+           !     maxDiff = max(maxDiff,v(i1,i2,i3,0));
+           !   endLoops()
+           !   write(*,'("advOpt: adjust upwinding: check: maxDiff(un-vh*cos)=",e10.3, " (with ghost)")') maxDiff            
+           !   beginLoops(i1,i2,i3,m1a,m1b,m2a,m2b,m3a,m3b)
+           !     ! v(i1,i2,i3,0)= (un(i1,i2,i3,0)-um(i1,i2,i3,0)) - vh(i1,i2,i3,0)*cosineFactor
+           !     v(i1,i2,i3,0)= 0.
+           !   endLoops() 
+           ! end if  
          end if
      end if 
      ! write(*,'(" advWave: timeSteppingMethod=",i2)') timeSteppingMethod

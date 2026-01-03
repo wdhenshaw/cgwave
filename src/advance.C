@@ -128,6 +128,7 @@ advance( int it )
     Real & dtMax                      = dbase.get<Real>("dtMax"); 
     Real & damp                       = dbase.get<Real>("damp"); 
     Real & dampSave                   = dbase.get<Real>("dampSave"); 
+    const Real & viFactor             = dbase.get<Real>("viFactor");
 
     const int & upwind                = dbase.get<int>("upwind");
     const int & numUpwindCorrections  = dbase.get<int>("numUpwindCorrections");
@@ -209,6 +210,9 @@ advance( int it )
     Interpolant & interpolant = *pInterpolant;
 
     realCompositeGridFunction & f = dbase.get<realCompositeGridFunction>("f");
+
+  // vh : used when adjusting WaveHoltz solution for upwinding, current best guess at the solution
+    realCompositeGridFunction & vh = dbase.get<realCompositeGridFunction>("vh");
     
     BoundaryConditionParameters bcParams;
     
@@ -532,6 +536,9 @@ advance( int it )
     {
         step++;
 
+        if( debug >1 )
+            printF("\n @@@@ advance: step=%d takeImplicitFirstStep=%d @@@@@\n",step,(int)takeImplicitFirstStep);
+
         const int cur = (step +numberOfTimeLevelsStored) % numberOfTimeLevelsStored; // current time level
         const int prev= (cur-1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
         const int next= (cur+1+numberOfTimeLevelsStored) % numberOfTimeLevelsStored;
@@ -699,7 +706,8 @@ advance( int it )
                                             adjustHelmholtzForUpwinding,     // ipar[17]
                                             modifiedEquationApproach,        // ipar[18]
                                             takeFirstStepImplicit,           // ipar[19]
-                                            superGrid(grid)                  // ipar[20]
+                                            superGrid(grid),                 // ipar[20]
+                                            filterTimeDerivative             // ipar[21]
                                                                     };  //
                     real dx[3]={1.,1.,1.};
                     if( isRectangular )
@@ -724,6 +732,7 @@ advance( int it )
                     rpar[15]=bImp(3);
                     rpar[16]=gridCFL(grid)*dt;                 // gridCFL(grid) hold "c/dx"
                     rpar[17]=upwindDissipationCoefficient;
+                    rpar[18]=viFactor;
                     intArray & mask = mg.mask();
                     OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
                     int *maskptr = maskLocal.getDataPointer(); 
@@ -795,8 +804,13 @@ advance( int it )
                         }
                         real *vhptr = vptr;
                         if( solveHelmholtz )
-                        { // --- Pointer to current Helmholtz solution ----
-                            vhptr = vOldLocal.getDataPointer(); 
+                        { // --- Pointer to current Helmholtz solution : used for correcting upwind ----
+                            if( adjustHelmholtzForUpwinding ) // new Dec 9, 2025
+                            {
+                                OV_GET_SERIAL_ARRAY(real,vh[grid],vhLocal);
+                                vhptr = vhLocal.getDataPointer();
+                            }
+              // vhptr = vOldLocal.getDataPointer();  // old Dec 9, 2025
                         }
                         real *lapCoeffptr= vptr;
                         if( modifiedEquationApproach!=standardModifiedEquation && !isRectangular )
@@ -875,9 +889,10 @@ advance( int it )
                         timing(timeForDissipation) += cpu1-cpuOpt;
                     }
               
-                if( timeSteppingMethod == explicitTimeStepping && debug & 16 )
+                if( false || ( timeSteppingMethod == explicitTimeStepping && debug & 16)  )
                 {
-                    ::display(u[next][grid],sPrintF("AFTER advOpt: uNext grid=%d t+dt=%9.3e",grid,t+dt),debugFile,"%11.3e ");
+                    ::display(u[next][grid],sPrintF("AFTER advOpt: uNext (before upwind) grid=%d t+dt=%9.3e",grid,t+dt),"%11.3e ");  // %%%%%%%%%%%%%%%%%%%%% TEMP 
+                    ::display(u[next][grid],sPrintF("AFTER advOpt: uNext (before upwind) grid=%d t+dt=%9.3e",grid,t+dt),debugFile,"%11.3e ");
                 }
     
                 
@@ -1000,7 +1015,8 @@ advance( int it )
                                                             adjustHelmholtzForUpwinding,     // ipar[17]
                                                             modifiedEquationApproach,        // ipar[18]
                                                             takeFirstStepImplicit,           // ipar[19]
-                                                            superGrid(grid)                  // ipar[20]
+                                                            superGrid(grid),                 // ipar[20]
+                                                            filterTimeDerivative             // ipar[21]
                                                                                     };  //
                                     real dx[3]={1.,1.,1.};
                                     if( isRectangular )
@@ -1025,6 +1041,7 @@ advance( int it )
                                     rpar[15]=bImp(3);
                                     rpar[16]=gridCFL(grid)*dt;                 // gridCFL(grid) hold "c/dx"
                                     rpar[17]=upwindDissipationCoefficient;
+                                    rpar[18]=viFactor;
                                     intArray & mask = mg.mask();
                                     OV_GET_SERIAL_ARRAY(int,mask,maskLocal);
                                     int *maskptr = maskLocal.getDataPointer(); 
@@ -1096,8 +1113,13 @@ advance( int it )
                                         }
                                         real *vhptr = vptr;
                                         if( solveHelmholtz )
-                                        { // --- Pointer to current Helmholtz solution ----
-                                            vhptr = vOldLocal.getDataPointer(); 
+                                        { // --- Pointer to current Helmholtz solution : used for correcting upwind ----
+                                            if( adjustHelmholtzForUpwinding ) // new Dec 9, 2025
+                                            {
+                                                OV_GET_SERIAL_ARRAY(real,vh[grid],vhLocal);
+                                                vhptr = vhLocal.getDataPointer();
+                                            }
+                      // vhptr = vOldLocal.getDataPointer();  // old Dec 9, 2025
                                         }
                                         real *lapCoeffptr= vptr;
                                         if( modifiedEquationApproach!=standardModifiedEquation && !isRectangular )
@@ -1183,11 +1205,12 @@ advance( int it )
                 }
 
     
-            if( debug & 16 )
+            if( debug >1  || debug & 16 )  // %%%%%%%%%%%% TEMP 
             {
                 for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                 {
-                    ::display(u[next][grid],sPrintF("after applyBC uNext grid=%d t=%9.3e",grid,t),debugFile,"%11.3e ");
+                    ::display(u[next][grid],sPrintF("after applyBC and upwind uNext grid=%d t=%12.6e",grid,t),"%10.3e ");
+                    ::display(u[next][grid],sPrintF("after applyBC and upwind uNext grid=%d t=%12.6e",grid,t),debugFile,"%10.3e ");
                 }
             }
 

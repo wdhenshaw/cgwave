@@ -102,9 +102,9 @@
 
 
 // ===============================================================
-// Macro: fill the coefficients for upwind dissipation
+// Macro: fill the coefficients for upwindHelmholtz dissipation
 //
-// Upwind dissipation takes the form
+// UpwindHelmholtz dissipation takes the form
 //      w.tt = L w + beta * M w_t 
 //          M =  -(h^2 D+D-)^2 
 //  Setting
@@ -119,7 +119,7 @@
 // ===============================================================
 
 // =============================================================
-// Macro: initialize the upwind coefficients
+// Macro: initialize the upwindHelmholtz coefficients
 // =============================================================
 
 // ============================================================================================
@@ -153,7 +153,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
     
     const Real & damp                    = cgWave.dbase.get<Real>("damp");
     const Real & dampSave                = cgWave.dbase.get<Real>("dampSave");
-    const int & upwind                   = cgWave.dbase.get<int>("upwind");  
+    const int & upwindHelmholtz          = cgWave.dbase.get<int>("upwindHelmholtz");  
     const CgWave::TimeSteppingMethodEnum & timeSteppingMethod = cgWave.dbase.get<CgWave::TimeSteppingMethodEnum>("timeSteppingMethod");
 
     const int & numberOfFrequencies      = dbase.get<int>("numberOfFrequencies");
@@ -162,8 +162,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
     const bool solveComplex = filterTimeDerivative; 
 
 
-    printF("\n ============== DIRECT SOLVE OF THE HELMHOLTZ EQUATION =============\n");
-    printF("    c=%.4g, numberOfFrequencies=%d, orderOfAccuracy=%d, solveComplex=%d\n", c,numberOfFrequencies,orderOfAccuracy,(int)solveComplex);
+    printF("\n =================== DIRECT SOLVE OF THE HELMHOLTZ EQUATION ==================\n");
+    printF("    c=%.4g, numberOfFrequencies=%d, orderOfAccuracy=%d, solveComplex=%d, upwindHelmholtz=%d\n", 
+                  c,numberOfFrequencies,orderOfAccuracy,(int)solveComplex,upwindHelmholtz);
     for( int freq=0; freq<numberOfFrequencies; freq++ )
     {
         printF(" freq(%d) = %.6g\n",freq,frequencyArray(freq));
@@ -175,7 +176,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
         printF("%i,",superGrid(grid));
     printF("]\n");
   // ::display(superGrid,"superGrid","%2i");
-    printF(" ===================================================================\n");
+    printF(" =============================================================================\n");
 
   // ::display(frequencyArray,"frequencyArray");
 
@@ -357,7 +358,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     printF("\n $$$$$$$$$$ solveHelmholtzDirect: set orderOfExtrapolation=%d $$$$$$$$\n",orderOfExtrapolation);
                     solver.set(OgesParameters::THEorderOfExtrapolation,orderOfExtrapolation);
                 }
-                if( upwind )
+                if( upwindHelmholtz )
                 {
                     Real fillinRatio=0;
           //solver.get(OgesParameters::THEfillinRatio,fillinRatio );
@@ -546,14 +547,15 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
         Index Iv[3], &I1=Iv[0], &I2=Iv[1], &I3=Iv[2];
         Index Ibv[3], &Ib1=Ibv[0], &Ib2=Ibv[1], &Ib3=Ibv[2];
         Index Igv[3], &Ig1=Igv[0], &Ig2=Igv[1], &Ig3=Igv[2];
-        int isv[3], &is1=isv[0], &is2=isv[1], &is3=isv[2];    
-        int i1,i2,i3, j1,j2,j3, m1,m2,m3;
+        int isv[3], &is1=isv[0], &is2=isv[1], &is3=isv[2];   
+        int iv[3], &i1=iv[0], &i2=iv[1], &i3=iv[2]; 
+        int j1,j2,j3, m1,m2,m3;
 
     // make a grid function to hold the coefficients
     // assert( orderOfAccuracy==2 );
 
         int stencilWidth = orderOfAccuracy+1;
-    // if( upwind )
+    // if( upwindHelmholtz )
     //   stencilWidth +=2;
     // printF(" **** SETTING stencilWidth=%d *****\n",stencilWidth);
 
@@ -570,9 +572,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
             isAllRectangular = isAllRectangular && isRectangular;
             isAllCurvilinear  = isAllCurvilinear &&  !isRectangular;
         }   
-        if( upwind  )
+        if( upwindHelmholtz  )
         {
-      // Upwind: there are 4 extra coefficients in 2D for EACH equation
+      // UpwindHelmholtz: there are 4 extra coefficients in 2D for EACH equation
       //                    X 4
       //                    |                Cartesian: 
       //                    O                 3  O  4
@@ -582,7 +584,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
       //                    O                 1  O  2
       //                    |
       //                    X 3   
-      // Cartesian case: Store extra upwind in unused points
+      // Cartesian case: Store extra upwindHelmholtz in unused points
       // Curvilinear case: we need extra storage in the coeff array
 
 
@@ -590,7 +592,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
             {
                 int extraStencil = 3;   // we already have 1 extra for interpolation
                 stencilSize += extraStencil; 
-                printF(" **** SETTING stencilSize=%d, extraStencil=%d (for wider upwind formula) *****\n",stencilSize,extraStencil);
+                printF(" **** SETTING stencilSize=%d, extraStencil=%d (for wider upwindHelmholtz formula) *****\n",stencilSize,extraStencil);
             }
         }
 
@@ -599,7 +601,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
     // make this grid function a coefficient matrix:
     // int numberOfGhostLines= 1;
         int numberOfGhostLines=(stencilWidth-1)/2;
-        if( upwind )
+        if( upwindHelmholtz )
         {
             numberOfGhostLines += 1;   // for extrapolate an extra ghost line when upwinding
         }    
@@ -781,9 +783,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
 
 
-        Real upwindCoefficient[3]; // holds upwind-diss coeff
+        Real upwindCoefficient[3]; // holds upwindHelmholtz-diss coeff
         int upwindWidth=5;
-    // upwindWidth=3;    // ************USE LOWER ORDER UPWIND FOR NOW ********
+    // upwindWidth=3;    // ************USE LOWER ORDER UPWINDHelmholtz FOR NOW ********
         int upwindHalfWidth=(upwindWidth-1)/2;
 
         Range Ruw(-upwindHalfWidth,upwindHalfWidth);
@@ -806,15 +808,15 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
             upwindWeights( 1) =  1.;
         }   
 
-        if( upwind )
+        if( upwindHelmholtz )
         {
-      // --------- add upwind dissipation --------
+      // --------- add upwindHelmholtz dissipation --------
 
           
 
-            printF("\n ########## ADD UPWIND TO DIRECT HELMHOLTZ SOLVER Upwind-stencil=%d ####### \n\n", upwindWidth);
+            printF("\n ########## ADD UPWINDHelmholtz TO DIRECT HELMHOLTZ SOLVER UpwindHelmholtz-stencil=%d ####### \n\n", upwindWidth);
 
-      // Upwind dissipation takes the form
+      // UpwindHelmholtz dissipation takes the form
       //      w.tt = L w + beta * M w_t 
       //          M =  -(h^2 D+D-)^2 
       //  Setting
@@ -903,9 +905,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     }        
 
         // get some constants in the upwinding:
-          // Here is the upwind prefactor : 
+          // Here is the upwindHelmholtz prefactor : 
           //    In 2D: betaUpwind = (sigma*omega*c)/( sqrt(2)* 8 )
-                    const Real dtUpwind=1.;             // dt to use when computing upwind coeff
+                    const Real dtUpwind=1.;             // dt to use when computing upwindHelmholtz coeff
                     const bool adjustForTimeStep=false; // do not adjust for dt
                     Real upwindDissipationCoefficient = cgWave.getUpwindDissipationCoefficient( grid,dtUpwind,adjustForTimeStep );
                     if( true )
@@ -919,7 +921,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
           // betaUpwind =0.; // *** TEMP TEST
                     if( isRectangular )
                     {
-            // --- Here is the upwind coefficient for Cartesian grids ---
+            // --- Here is the upwindHelmholtz coefficient for Cartesian grids ---
             // const Real beta= (1./(8.*sqrt(2.)))*c;
                         upwindCoefficient[0] = betaUpwind/dx[0];  
                         upwindCoefficient[1] = betaUpwind/dx[1];
@@ -977,14 +979,14 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                   // Range MM = eq==eq1 ? M0 : M1;
                                     ForStencil(m1,m2,m3)
                                     {
-                                        if( m1!=0 && m2!=0 ) // upwind stencil is "thin"
+                                        if( m1!=0 && m2!=0 ) // upwindHelmholtz stencil is "thin"
                                             continue;
                                         int m  = M123(m1,m2,m3);        // the single-component coeff-index
                                         int mm = M123CE(m1,m2,m3,uc,eq);  // the system coeff-index 
                     // // This could be cleaned up using an index array -- do this for now 
                     // if( (m1==0 && abs(m2) > halfWidth2)  || ( m2==0 && abs(m1) >halfWidth1 ) )
                     // {
-                    //   // --- upwind stencil lies outside usual stencil ---
+                    //   // --- upwindHelmholtz stencil lies outside usual stencil ---
                     //   // Choose an index past the last normal index 
                     //   // There are 4 extra coefficients in 2D for EACH equation
                     //   //                    X 4
@@ -1009,7 +1011,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     //     mm += 4;  
                     //   else
                     //   {
-                    //     OV_ABORT("unexpected upwind stencil");
+                    //     OV_ABORT("unexpected upwindHelmholtz stencil");
                     //   }                    
                     // }
                                         if( m2==0 )
@@ -1021,9 +1023,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                         j1=i1+m1, j2=i2+m2, j3=i3+m3;   // the stencil is centred on the boundary pt (i1,i2,i3)
                                         setEquationNumber(mm, eq,i1,i2,i3,  uc,j1,j2,j3 );  // macro to set equationNumber
                                     }
-                  // add extra entries for wider upwind stencil:
+                  // add extra entries for wider upwindHelmholtz stencil:
                   //
-                  // --- upwind stencil lies outside usual stencil ---
+                  // --- upwindHelmholtz stencil lies outside usual stencil ---
                   // Choose an index past the last normal index 
                   // There are 4 extra coefficients in 2D for EACH equation
                   //                    X 4
@@ -1052,7 +1054,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1093,7 +1095,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1134,7 +1136,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1175,7 +1177,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1220,7 +1222,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1261,7 +1263,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1302,7 +1304,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1343,7 +1345,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1383,7 +1385,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                         {
                             if( maskLocal(i1,i2,i3)>0 )
                             {
-                  // eval upwind coeff for curvilinear grids 
+                  // eval upwindHelmholtz coeff for curvilinear grids 
                                     for( int dir=0; dir<numberOfDimensions; dir++ )
                                         upwindCoefficient[dir] = betaUpwind*sqrt( SQR(RXLocal(i1,i2,i3,dir,0)) + SQR(RXLocal(i1,i2,i3,dir,1)) )/dr[dir];
                                 for( int eq = eq1; eq<=eq2; eq++ )
@@ -1396,14 +1398,14 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                   // Range MM = eq==eq1 ? M0 : M1;
                                     ForStencil(m1,m2,m3)
                                     {
-                                        if( m1!=0 && m2!=0 ) // upwind stencil is "thin"
+                                        if( m1!=0 && m2!=0 ) // upwindHelmholtz stencil is "thin"
                                             continue;
                                         int m  = M123(m1,m2,m3);        // the single-component coeff-index
                                         int mm = M123CE(m1,m2,m3,uc,eq);  // the system coeff-index 
                     // // This could be cleaned up using an index array -- do this for now 
                     // if( (m1==0 && abs(m2) > halfWidth2)  || ( m2==0 && abs(m1) >halfWidth1 ) )
                     // {
-                    //   // --- upwind stencil lies outside usual stencil ---
+                    //   // --- upwindHelmholtz stencil lies outside usual stencil ---
                     //   // Choose an index past the last normal index 
                     //   // There are 4 extra coefficients in 2D for EACH equation
                     //   //                    X 4
@@ -1428,7 +1430,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     //     mm += 4;  
                     //   else
                     //   {
-                    //     OV_ABORT("unexpected upwind stencil");
+                    //     OV_ABORT("unexpected upwindHelmholtz stencil");
                     //   }                    
                     // }
                                         if( m2==0 )
@@ -1440,9 +1442,9 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                         j1=i1+m1, j2=i2+m2, j3=i3+m3;   // the stencil is centred on the boundary pt (i1,i2,i3)
                                         setEquationNumber(mm, eq,i1,i2,i3,  uc,j1,j2,j3 );  // macro to set equationNumber
                                     }
-                  // add extra entries for wider upwind stencil:
+                  // add extra entries for wider upwindHelmholtz stencil:
                   //
-                  // --- upwind stencil lies outside usual stencil ---
+                  // --- upwindHelmholtz stencil lies outside usual stencil ---
                   // Choose an index past the last normal index 
                   // There are 4 extra coefficients in 2D for EACH equation
                   //                    X 4
@@ -1471,7 +1473,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1512,7 +1514,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1553,7 +1555,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1594,7 +1596,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1639,7 +1641,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1680,7 +1682,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,-1,0,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1721,7 +1723,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1762,7 +1764,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                                 {
                                                     const int ice = eq; // interpolate this component
                                                     if( false )
-                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwind stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
+                                                        printF("solveHelmholtzDirect: EXTRAPOLATE upwindHelmholtz stencil point: grid=%d, EQ=%d, (j1,j2,j3)=(%d,%d,%d) direction=(%d,%d,%d)\n",grid,eq,j1,j2,j3,0,-1,0);
                           // turn the unused point into an active point (new option added to SparseRep, July 10, 2023)
                                                     setClassify( eq,j1,j2,j3, SparseRepForMGF::active );   
                                                     Range Me = M0 + CE(0,eq);
@@ -1799,7 +1801,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
 
             }     
-        } // end if upwind
+        } // end if upwindHelmholtz
 
     // --------------- FILL BOUNDARY CONDITIONS ----------------
 
@@ -1814,6 +1816,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
             {
                 MappedGrid & mg = cg[grid];
                 const bool isRectangular = mg.isRectangular();
+                const IntegerArray & gid = mg.gridIndexRange();
 
                 realMappedGridFunction & coeffg = coeff[grid];
                 MappedGridOperators & mgop = *coeffg.getOperators();
@@ -1920,6 +1923,8 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                 const int mDiag0 = M123CE(0,0,0,ic1,eq1);   // M123(0,0,0);              // index of diagonal entry, equation 0 
                 const int mDiag1 = M123CE(0,0,0,ic2,eq2);    // index of diagonal entry, equation 1 
 
+        // The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy
+                const bool useOneSidedXXYY = timeSteppingMethod==CgWave::explicitTimeStepping;
 
                 OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
                 ForBoundary(side,axis)
@@ -2099,27 +2104,14 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
               // end
 
 
+
               // res = -is*(unx-ucx)/dt + (.5*c)*( unxx + ucxx) + (.25*c)*( unyy + ucyy );
 
                             Range Rw(-halfWidth1,halfWidth1);
                             RealArray abcCoeffr(Rw,Rw,Rw), abcCoeffi(Rw,Rw,Rw);
                             RealArray abcCoeff2r(Rw,Rw,Rw), abcCoeff2i(Rw,Rw,Rw); // for CBC
+
                             abcCoeffr=0.; abcCoeffi=0.; abcCoeff2r=0.; abcCoeff2i=0.; 
-
-              // om = frequencyArray(freq); 
-
-              // A(ie,ie)=  c/dx^2   + par.isign*1i*om/(2*dx);
-              // A(ie,ib)= -2*c/dx^2 -c/dy^2;
-              // A(ie,je)=  c/dx^2   - par.isign*1i*om/(2*dx);
-
-              // if( dir==1 )
-              //   A(ie,eqn(ix,iy-1)) = .5*c/dy^2; 
-              //   A(ie,eqn(ix,iy+1)) = .5*c/dy^2; 
-              // else
-              //   A(ie,eqn(ix-1,iy)) = .5*c/dy^2; 
-              //   A(ie,eqn(ix+1,iy)) = .5*c/dy^2;                  
-              // end            
-
 
               // EM2: BC: 
               //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
@@ -2221,34 +2213,6 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                     abcCoeffi( 0,+1,0) =  8.*cy;
                                     abcCoeffi( 0,+2,0) =    -cy;
 
-                  // *** CBC ****
-                  // real part of equation
-                                    abcCoeff2r(-1,-1,0) =                          cxxyy;
-                                    abcCoeff2r(+1,-1,0) =                          cxxyy;
-
-                                    abcCoeff2r( 0,-2,0) =               cyyyy;
-                                    abcCoeff2r( 0,-1,0) =           -4.*cyyyy  -2.*cxxyy;
-                                    abcCoeff2r(-2, 0,0) =     cxxxx;
-                                    abcCoeff2r(-1, 0,0) = -4.*cxxxx            -2.*cxxyy;
-                                    abcCoeff2r( 0, 0,0) =  6.*cxxxx +6.*cyyyy  +4.*cxxyy;
-                                    abcCoeff2r(+1, 0,0) = -4.*cxxxx            -2.*cxxyy;
-                                    abcCoeff2r(+2, 0,0) =     cxxxx;
-                                    abcCoeff2r( 0,+1,0) =           -4.*cyyyy  -2.*cxxyy;
-                                    abcCoeff2r( 0,+2,0) =               cyyyy;
-
-                                    abcCoeff2r(-1,+1,0) =                          cxxyy;
-                                    abcCoeff2r(+1,+1,0) =                          cxxyy;
-
-                  // imaginary part of equation
-                                    abcCoeff2i( 0,-2,0) =             -cyyy;
-                                    abcCoeff2i( 0,-1,0) =           2.*cyyy;
-                                    abcCoeff2i(-2, 0,0) =    -cxxx;
-                                    abcCoeff2i(-1, 0,0) =  2.*cxxx;
-                                    abcCoeff2i(+1, 0,0) = -2.*cxxx;
-                                    abcCoeff2i(+2, 0,0) =     cxxx;
-                                    abcCoeff2i( 0,+1,0) =          -2.*cyyy;
-                                    abcCoeff2i( 0,+2,0) =              cyyy;
-
                                 } 
                                 else
                                 {
@@ -2266,9 +2230,12 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                             {
                                 ::display(abcCoeffr,"abcCoeffr");
                                 ::display(abcCoeffi,"abcCoeffi");
-                            }
+                            }              
+
                             FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
-                            {
+                            {              
+
+
                                 const int ghost=1; 
                                 int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
 
@@ -2304,15 +2271,144 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                                 }
                             } // end FOR_3D
 
+
+              // Dec 17, 2025 -- we now use CBC for explicit time-stepping (but one-sided u.xxyy)
                             bool useCBC = orderOfAccuracy==4;
-                            if( timeSteppingMethod==CgWave::explicitTimeStepping )
-                                useCBC=false;  // currently explicit EM order 4 uses extrap5
+
+              // if( timeSteppingMethod==CgWave::explicitTimeStepping )  // turn off Dec 17, 2025
+              //   useCBC=false;  // currently explicit EM order 4 uses extrap5
 
                             if( useCBC )
                             {
                 // --- FILL THE CBC ----
                                 FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                                 {
+                                    abcCoeff2r=0.; abcCoeff2i=0.; 
+
+                                    if( isRectangular )
+                                    {
+
+                                        if( orderOfAccuracy==4 )
+                                        {  
+
+                                            const Real cxx = axis==0 ? ca/(12.*dx[0]*dx[0]) : .5*ca/(12.*dx[0]*dx[0]);
+                                            const Real cyy = axis==1 ? ca/(12.*dx[1]*dx[1]) : .5*ca/(12.*dx[1]*dx[1]);
+                                            const Real cx  = axis==0 ? is1*omega/(12.*dx[0]) : 0.;                
+                                            const Real cy  = axis==1 ? is2*omega/(12.*dx[1]) : 0.;
+
+                                            Real cxxxx = axis==0 ? ca/(dx[0]*dx[0]*dx[0]*dx[0]) : 0.;
+                                            Real cyyyy = axis==1 ? ca/(dx[1]*dx[1]*dx[1]*dx[1]) : 0.;
+                                            Real cxxyy =        .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]);
+
+                                            Real cxxx  = axis==0 ? is1*omega/(2.*dx[0]*dx[0]*dx[0]) : 0.;                
+                                            Real cyyy  = axis==1 ? is2*omega/(2.*dx[1]*dx[1]*dx[1]) : 0.; 
+
+
+                      // *** CBC ****
+                      // real part of equation
+                                            if( false )
+                                            {
+                                                abcCoeff2r(-1,-1,0) =                          cxxyy;
+                                                abcCoeff2r(+1,-1,0) =                          cxxyy;
+
+                                                abcCoeff2r( 0,-2,0) =               cyyyy;
+                                                abcCoeff2r( 0,-1,0) =           -4.*cyyyy  -2.*cxxyy;
+                                                abcCoeff2r(-2, 0,0) =     cxxxx;
+                                                abcCoeff2r(-1, 0,0) = -4.*cxxxx            -2.*cxxyy;
+                                                abcCoeff2r( 0, 0,0) =  6.*cxxxx +6.*cyyyy  +4.*cxxyy;
+                                                abcCoeff2r(+1, 0,0) = -4.*cxxxx            -2.*cxxyy;
+                                                abcCoeff2r(+2, 0,0) =     cxxxx;
+                                                abcCoeff2r( 0,+1,0) =           -4.*cyyyy  -2.*cxxyy;
+                                                abcCoeff2r( 0,+2,0) =               cyyyy;
+
+                                                abcCoeff2r(-1,+1,0) =                          cxxyy;
+                                                abcCoeff2r(+1,+1,0) =                          cxxyy;
+                                            }
+                                            else
+                                            {            
+                                                abcCoeff2r(-1,-1,0) =  0.;
+                                                abcCoeff2r(+1,-1,0) =  0.;
+
+                                                abcCoeff2r( 0,-2,0) =               cyyyy;
+                                                abcCoeff2r( 0,-1,0) =           -4.*cyyyy;
+                                                abcCoeff2r(-2, 0,0) =     cxxxx;
+                                                abcCoeff2r(-1, 0,0) = -4.*cxxxx;
+                                                abcCoeff2r( 0, 0,0) =  6.*cxxxx +6.*cyyyy;
+                                                abcCoeff2r(+1, 0,0) = -4.*cxxxx;
+                                                abcCoeff2r(+2, 0,0) =     cxxxx;
+                                                abcCoeff2r( 0,+1,0) =           -4.*cyyyy;
+                                                abcCoeff2r( 0,+2,0) =               cyyyy;
+
+                                                abcCoeff2r(-1,+1,0) = 0.;
+                                                abcCoeff2r(+1,+1,0) = 0.;                 
+
+                        // -- ADD u.xxyy term 
+                                                int ksv[2], &ks1=ksv[0], &ks2=ksv[1];
+                                                ks1=0, ks2=0; // centered stencil
+                                                if( useOneSidedXXYY )
+                                                { 
+                          // The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy
+                          //           X--X--X
+                          //           |     |     G=ghost, B=boundary point (i1,i2)
+                          //     G--G--B--X--X     B,X = stencil for u.xxyy on left face 
+                          //           |     |
+                          //           X--X--X                        
+                                                    ks1=is1; ks2=is2;  // shift stencil inward from the boundary
+
+                          // check for corners and do an additional shift so only boundary and interior points are used
+                                                    int axisp1 = (axis+1) % mg.numberOfDimensions(); // adjacent axis
+                                                    for( int side2=0; side2<=1; side2++ )            // adjacent sides
+                                                    {
+                                                        if( iv[axisp1]==mg.gridIndexRange(side2,axisp1) && mg.boundaryCondition(side2,axisp1)>0 )
+                                                        {
+                                                            ksv[axisp1] = 1-2*side2;
+                              // printF("solveHelmholtzDirect: useOneSided u.xxyy (i1,i2)=%3d,%3d) (side,side2)=(%2d,%2d) (ks1,ks2)=(%2d,%2d)\n",i1,i2,side,side2,ks1,ks2);
+                                                        }
+                                                    }
+
+                                                }
+                        // printF("solveHelmholtzDirect: useOneSided u.xxyy (side,axis)=(%d,%d) (i1,i2)=%3d,%3d) (ks1,ks2)=(%2d,%2d)\n",side,axis,i1,i2,ks1,ks2);
+                                                abcCoeff2r(-1+ks1,-1+ks2,0) +=      cxxyy;
+                                                abcCoeff2r(+1+ks1,-1+ks2,0) +=      cxxyy;
+                                                abcCoeff2r( 0+ks1,-1+ks2,0) +=  -2.*cxxyy;
+                                                abcCoeff2r(-1+ks1, 0+ks2,0) +=  -2.*cxxyy;
+                                                abcCoeff2r( 0+ks1, 0+ks2,0) +=  +4.*cxxyy;
+                                                abcCoeff2r(+1+ks1, 0+ks2,0) +=  -2.*cxxyy;
+                                                abcCoeff2r( 0+ks1,+1+ks2,0) +=  -2.*cxxyy;
+                                                abcCoeff2r(-1+ks1,+1+ks2,0) +=      cxxyy;
+                                                abcCoeff2r(+1+ks1,+1+ks2,0) +=      cxxyy;
+
+                                            }
+
+                      // imaginary part of equation
+                                            abcCoeff2i( 0,-2,0) =             -cyyy;
+                                            abcCoeff2i( 0,-1,0) =           2.*cyyy;
+                                            abcCoeff2i(-2, 0,0) =    -cxxx;
+                                            abcCoeff2i(-1, 0,0) =  2.*cxxx;
+                                            abcCoeff2i(+1, 0,0) = -2.*cxxx;
+                                            abcCoeff2i(+2, 0,0) =     cxxx;
+                                            abcCoeff2i( 0,+1,0) =          -2.*cyyy;
+                                            abcCoeff2i( 0,+2,0) =              cyyy;
+
+                                        } 
+                                        else
+                                        {
+                                            printF("solveHelmholtzDirect: FINISH radiation BC EM2 for this order of accuracy = %d\n",orderOfAccuracy);
+                                            OV_ABORT("ERROR");
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                          OV_ABORT("solveHelmholtzDirect:: BC ABSORBING -- FINISH ME: curvilinear"); 
+                                    }
+
+                                    if( false )
+                                    {
+                                        ::display(abcCoeffr,"abcCoeffr");
+                                        ::display(abcCoeffi,"abcCoeffi");
+                                    }
+
                                     const int ghost=2; 
                                     int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
 
@@ -2533,7 +2629,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
       // *** CHECK that active points have a zero RHS ****
       // 
             bool checkActive=true; 
-            if( checkActive && upwind )
+            if( checkActive && upwindHelmholtz )
             {
                 SparseRepForMGF & sparse = *coeff[grid].sparse;
                 intArray & classify = sparse.classify;
@@ -2595,7 +2691,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     printF("\n $$$$$$$$$$ solveHelmholtzDirect: set orderOfExtrapolation=%d $$$$$$$$\n",orderOfExtrapolation);
                     solver.set(OgesParameters::THEorderOfExtrapolation,orderOfExtrapolation);
                 }
-                if( upwind )
+                if( upwindHelmholtz )
                 {
                     Real fillinRatio=0;
           //solver.get(OgesParameters::THEfillinRatio,fillinRatio );
@@ -2620,421 +2716,370 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
   
         bool checkResidual=true;
-        if( 1==1 && checkResidual )
+        if( checkResidual )
         {
             RealArray maxRes;
             int useAdjustedOmega=0;
             residual( u, maxRes, useAdjustedOmega );
         }
-        else if( checkResidual )
-        {
-      // **** OLD WAY ****
+    // else if( checkResidual )
+    // {
+    //   // **** OLD WAY ****
 
-            realCompositeGridFunction & res = dbase.get<realCompositeGridFunction>("residual");
-            Index Ib1,Ib2,Ib3;
-            for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
-            {
-                MappedGrid & mg = cg[grid];
-                const bool isRectangular = mg.isRectangular();
+    //   realCompositeGridFunction & res = dbase.get<realCompositeGridFunction>("residual");
+    //   Index Ib1,Ib2,Ib3;
+    //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+    //   {
+    //     MappedGrid & mg = cg[grid];
+    //     const bool isRectangular = mg.isRectangular();
 
-                MappedGridOperators & mgop = op[grid];
+    //     MappedGridOperators & mgop = op[grid];
 
-                OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+    //     OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
 
-                OV_GET_SERIAL_ARRAY(real,u[grid],uLocal);
-                OV_GET_SERIAL_ARRAY(real,fc[grid],fLocal);
-                OV_GET_SERIAL_ARRAY(real,res[grid],resLocal);
+    //     OV_GET_SERIAL_ARRAY(real,u[grid],uLocal);
+    //     OV_GET_SERIAL_ARRAY(real,fc[grid],fLocal);
+    //     OV_GET_SERIAL_ARRAY(real,res[grid],resLocal);
 
-        // OV_GET_SERIAL_ARRAY(Real,mg.inverseVertexDerivative(),rsxyLocal); // for upwinding 
+    //     // OV_GET_SERIAL_ARRAY(Real,mg.inverseVertexDerivative(),rsxyLocal); // for upwinding 
 
-                    bool useOriginalMetrics = useSuperGrid && superGrid(grid) && !isRectangular;
-          // OV_GET_SERIAL_ARRAY_CONDITIONAL(Real,mg.inverseVertexDerivative(),rsxyLocal2,!useOriginalMetrics);
-                    OV_GET_SERIAL_ARRAY_CONDITIONAL(Real,mg.inverseVertexDerivative(),rsxyLocalNew,!useOriginalMetrics);
-          // if( useSuperGrid && superGrid(grid) )
-          // {
-          //   // -- SuperGrid changes the metrics but upwinding uses the original metrics: 
-          //   RealArray *& rxOriginal = cgWave.dbase.get<RealArray*>("rxOriginal");
-          //   // rsxyLocal.reference(rxOriginal[grid]);
-          // }
-                    RealArray & rsxyLocal = useOriginalMetrics ? cgWave.dbase.get<RealArray*>("rxOriginal")[grid] : rsxyLocalNew;
+    //     getMetricsMacro();
 
-                    Real dx[3]={1.,1.,1.};
-                    Real dr[3]={1.,1.,1.};
-                    if( isRectangular )
-                    { // rectangular grid grid-spacings: 
-                        mg.getDeltaX(dx);
-                    }
-                    else
-                    {
-            // unit square grid spacings: 
-                        for( int dir=0; dir<3; dir++ )
-                            dr[dir]=mg.gridSpacing(dir);           
-                    }        
+    //     getGridSpacingsMacro();        
 
-                int extra=0; // -1;
-                getIndex(cg[grid].indexRange(),I1,I2,I3,extra); 
+    //     int extra=0; // -1;
+    //     getIndex(cg[grid].indexRange(),I1,I2,I3,extra); 
                 
-                bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3);
-                if( ok )
-                {
-                    resLocal=0.;
+    //     bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3);
+    //     if( ok )
+    //     {
+    //       resLocal=0.;
                     
-                    RealArray lap(I1,I2,I3,2);
-                    op[grid].derivative(MappedGridOperators::laplacianOperator,uLocal,lap,I1,I2,I3);
+    //       RealArray lap(I1,I2,I3,2);
+    //       op[grid].derivative(MappedGridOperators::laplacianOperator,uLocal,lap,I1,I2,I3);
 
-          // extra=-1; 
-          // extra=0; 
-          // getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra); 
+    //       // extra=-1; 
+    //       // extra=0; 
+    //       // getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra); 
 
-                    if( true && useSuperGrid )
-                    {
-                        Real lapNorm = max(fabs(lap(I1,I2,I3,all)));
-                        printF("checkResidual: grid=%d, lapNorm=%9.2e\n",grid,lapNorm);
-                    }
+    //       if( true && useSuperGrid )
+    //       {
+    //         Real lapNorm = max(fabs(lap(I1,I2,I3,all)));
+    //         printF("checkResidual: grid=%d, lapNorm=%9.2e\n",grid,lapNorm);
+    //       }
 
-                    if( !superGrid(grid)  || !isRectangular )
-                    {
-                        resLocal(I1,I2,I3,0) = cSq*lap(I1,I2,I3,0) + (omega*omega)*uLocal(I1,I2,I3,0) + (sigma*omega*damp)*uLocal(I1,I2,I3,1) - fLocal(I1,I2,I3,0); 
-                        resLocal(I1,I2,I3,1) = cSq*lap(I1,I2,I3,1) + (omega*omega)*uLocal(I1,I2,I3,1) - (sigma*omega*damp)*uLocal(I1,I2,I3,0); 
-                    }
-                    else
-                    {
-            // ----- rectangular grid + superGrid ------
-                        printF("Check residual for Cartesian grid + superGrid : grid=%d\n",grid);
+    //       if( !superGrid(grid)  || !isRectangular )
+    //       {
+    //         resLocal(I1,I2,I3,0) = cSq*lap(I1,I2,I3,0) + (omega*omega)*uLocal(I1,I2,I3,0) + (sigma*omega*damp)*uLocal(I1,I2,I3,1) - fLocal(I1,I2,I3,0); 
+    //         resLocal(I1,I2,I3,1) = cSq*lap(I1,I2,I3,1) + (omega*omega)*uLocal(I1,I2,I3,1) - (sigma*omega*damp)*uLocal(I1,I2,I3,0); 
+    //       }
+    //       else
+    //       {
+    //         // ----- rectangular grid + superGrid ------
+    //         printF("Check residual for Cartesian grid + superGrid : grid=%d\n",grid);
 
-                        assert( superGrid(grid) && isRectangular );
+    //         assert( superGrid(grid) && isRectangular );
 
-                        resLocal=0.;
+    //         resLocal=0.;
 
-            // useAbsorbingLayer(axis,grid) = 1 if this axis has a superGridLayer 
-                        IntegerArray & useAbsorbingLayer = cgWave.dbase.get<IntegerArray>("useAbsorbingLayer");
+    //         // useAbsorbingLayer(axis,grid) = 1 if this axis has a superGridLayer 
+    //         IntegerArray & useAbsorbingLayer = cgWave.dbase.get<IntegerArray>("useAbsorbingLayer");
 
-                        getIndex(mg.dimension(),I1,I2,I3);
-                        Range R2 = numberOfComponents;
-                        RealArray ddDeriv(I1,I2,I3,R2), dDeriv(I1,I2,I3,R2);
+    //         getIndex(mg.dimension(),I1,I2,I3);
+    //         Range R2 = numberOfComponents;
+    //         RealArray ddDeriv(I1,I2,I3,R2), dDeriv(I1,I2,I3,R2);
 
-                        getIndex(mg.indexRange(),I1,I2,I3,extra);
-            // --- Eval xx and x derivatives ---
-                        mgop.derivative( MappedGridOperators::xxDerivative,uLocal,ddDeriv,I1,I2,I3,R2);
-                        mgop.derivative( MappedGridOperators::xDerivative, uLocal, dDeriv,I1,I2,I3,R2);
+    //         getIndex(mg.indexRange(),I1,I2,I3,extra);
+    //         // --- Eval xx and x derivatives ---
+    //         mgop.derivative( MappedGridOperators::xxDerivative,uLocal,ddDeriv,I1,I2,I3,R2);
+    //         mgop.derivative( MappedGridOperators::xDerivative, uLocal, dDeriv,I1,I2,I3,R2);
 
-                        if( useAbsorbingLayer(0,grid) )
-                        {
-              // -- scale coefficients using superGrid functions --
-                            RealArray *& etaxSuperGrid = cgWave.dbase.get<RealArray*>("etaxSuperGrid" );
-                            RealArray & etax = etaxSuperGrid[grid];
-                            for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
-                            {
-                                ddDeriv(i1,I2,I3,R2) *= etax(i1,0);  // scale by "(r.x)^2"
-                                  dDeriv(i1,I2,I3,R2) *= etax(i1,1);  // scale by "r.xx"
-                            }
-                        }
+    //         if( useAbsorbingLayer(0,grid) )
+    //         {
+    //           // -- scale coefficients using superGrid functions --
+    //           RealArray *& etaxSuperGrid = cgWave.dbase.get<RealArray*>("etaxSuperGrid" );
+    //           RealArray & etax = etaxSuperGrid[grid];
+    //           for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
+    //           {
+    //             ddDeriv(i1,I2,I3,R2) *= etax(i1,0);  // scale by "(r.x)^2"
+    //              dDeriv(i1,I2,I3,R2) *= etax(i1,1);  // scale by "r.xx"
+    //           }
+    //         }
 
-                        resLocal(I1,I2,I3,R2) = cSq*( ddDeriv(I1,I2,I3,R2) + dDeriv(I1,I2,I3,R2) );    // transformed xx derivative
+    //         resLocal(I1,I2,I3,R2) = cSq*( ddDeriv(I1,I2,I3,R2) + dDeriv(I1,I2,I3,R2) );    // transformed xx derivative
 
-            // --- Eval yy and y derivatives ---
-                        mgop.derivative( MappedGridOperators::yyDerivative,uLocal,ddDeriv,I1,I2,I3,R2);
-                        mgop.derivative( MappedGridOperators::yDerivative, uLocal, dDeriv,I1,I2,I3,R2);
+    //         // --- Eval yy and y derivatives ---
+    //         mgop.derivative( MappedGridOperators::yyDerivative,uLocal,ddDeriv,I1,I2,I3,R2);
+    //         mgop.derivative( MappedGridOperators::yDerivative, uLocal, dDeriv,I1,I2,I3,R2);
 
-                        if( useAbsorbingLayer(1,grid) )
-                        {
-              // -- scale coefficients using superGrid functions --  
-                            RealArray *& etaySuperGrid = cgWave.dbase.get<RealArray*>("etaySuperGrid" );
-                            RealArray & etay = etaySuperGrid[grid];
-                            for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )
-                            {
-                                ddDeriv(I1,i2,I3,R2) *= etay(i2,0);  
-                                  dDeriv(I1,i2,I3,R2) *= etay(i2,1);  
-                            }
-                        }
-                        resLocal(I1,I2,I3,R2) += cSq*( ddDeriv(I1,I2,I3,R2) + dDeriv(I1,I2,I3,R2) );   
+    //         if( useAbsorbingLayer(1,grid) )
+    //         {
+    //           // -- scale coefficients using superGrid functions --  
+    //           RealArray *& etaySuperGrid = cgWave.dbase.get<RealArray*>("etaySuperGrid" );
+    //           RealArray & etay = etaySuperGrid[grid];
+    //           for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )
+    //           {
+    //             ddDeriv(I1,i2,I3,R2) *= etay(i2,0);  
+    //              dDeriv(I1,i2,I3,R2) *= etay(i2,1);  
+    //           }
+    //         }
+    //         resLocal(I1,I2,I3,R2) += cSq*( ddDeriv(I1,I2,I3,R2) + dDeriv(I1,I2,I3,R2) );   
 
-                        resLocal(I1,I2,I3,R2) += (omega*omega)*uLocal(I1,I2,I3,R2);  // omega^2 u 
+    //         resLocal(I1,I2,I3,R2) += (omega*omega)*uLocal(I1,I2,I3,R2);  // omega^2 u 
 
-                        if( damp!=0 )
-                        { // ---- damping terms ---
-                            resLocal(I1,I2,I3,0) += b1*uLocal(I1,I2,I3,1);  // b1*ui in ur eqn
-                            resLocal(I1,I2,I3,1) += b2*uLocal(I1,I2,I3,0);  // b2*ur in ui eqn
-                        }
+    //         if( damp!=0 )
+    //         { // ---- damping terms ---
+    //           resLocal(I1,I2,I3,0) += b1*uLocal(I1,I2,I3,1);  // b1*ui in ur eqn
+    //           resLocal(I1,I2,I3,1) += b2*uLocal(I1,I2,I3,0);  // b2*ur in ui eqn
+    //         }
 
-                        resLocal(I1,I2,I3,0) -= fLocal(I1,I2,I3,0); 
+    //         resLocal(I1,I2,I3,0) -= fLocal(I1,I2,I3,0); 
 
-                    } 
+    //       } 
 
-                    if( upwind ) 
-                    {
-                            Real dx[3]={1.,1.,1.};
-                            Real dr[3]={1.,1.,1.};
-                            if( isRectangular )
-                            { // rectangular grid grid-spacings: 
-                                mg.getDeltaX(dx);
-                            }
-                            else
-                            {
-                // unit square grid spacings: 
-                                for( int dir=0; dir<3; dir++ )
-                                    dr[dir]=mg.gridSpacing(dir);           
-                            }        
+    //       if( upwindHelmholtz ) 
+    //       {
+    //         getGridSpacingsMacro();
 
-              // Here is the upwind prefactor : 
-              //    In 2D: betaUpwind = (sigma*omega*c)/( sqrt(2)* 8 )
-                            const Real dtUpwind=1.;             // dt to use when computing upwind coeff
-                            const bool adjustForTimeStep=false; // do not adjust for dt
-                            Real upwindDissipationCoefficient = cgWave.getUpwindDissipationCoefficient( grid,dtUpwind,adjustForTimeStep );
-                            if( true )
-                            {
-                                Real adSosup = (c)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) );
-                                printF(">>>>>>solveHelmholtzDirect: upwindDissipationCoefficient=%g, old-way=%g, omega=%g\n",upwindDissipationCoefficient,adSosup,omega);
-                            }
-              // Real betaUpwind = (omegaSign*omega*c)/( sqrt(1.*numberOfDimensions) * pow(2.,orderOfAccuracy+1) ); // OLD
-                            Real betaUpwind = (omegaSign*omega)*upwindDissipationCoefficient;
-              // betaUpwind *= 10; // ** TEST ***
-              // betaUpwind =0.; // *** TEMP TEST
-                            if( isRectangular )
-                            {
-                // --- Here is the upwind coefficient for Cartesian grids ---
-                // const Real beta= (1./(8.*sqrt(2.)))*c;
-                                upwindCoefficient[0] = betaUpwind/dx[0];  
-                                upwindCoefficient[1] = betaUpwind/dx[1];
-                            } 
+    //         getUpwindCoefficentMacro(); 
 
-                        FOR_3D(i1,i2,i3,I1,I2,I3) // loop over points on the grid
-                        {
-                            if( !isRectangular )
-                            {
-                                for( int dir=0; dir<numberOfDimensions; dir++ )
-                                    upwindCoefficient[dir] = betaUpwind*sqrt( SQR(RXLocal(i1,i2,i3,dir,0)) + SQR(RXLocal(i1,i2,i3,dir,1)) )/dr[dir];
-                            }
-                            for( int m1=-upwindHalfWidth; m1<=upwindHalfWidth; m1++ )
-                            {
-                                resLocal(i1,i2,i3,0) += -upwindCoefficient[0]*upwindWeights(m1)*uLocal(i1+m1,i2,i3,1);  // x direction
-                                resLocal(i1,i2,i3,0) += -upwindCoefficient[1]*upwindWeights(m1)*uLocal(i1,i2+m1,i3,1);  // y direction
+    //         FOR_3D(i1,i2,i3,I1,I2,I3) // loop over points on the grid
+    //         {
+    //           if( !isRectangular )
+    //           {
+    //             for( int dir=0; dir<numberOfDimensions; dir++ )
+    //               upwindCoefficient[dir] = betaUpwind*sqrt( SQR(RXLocal(i1,i2,i3,dir,0)) + SQR(RXLocal(i1,i2,i3,dir,1)) )/dr[dir];
+    //           }
+    //           for( int m1=-upwindHalfWidth; m1<=upwindHalfWidth; m1++ )
+    //           {
+    //             resLocal(i1,i2,i3,0) += -upwindCoefficient[0]*upwindWeights(m1)*uLocal(i1+m1,i2,i3,1);  // x direction
+    //             resLocal(i1,i2,i3,0) += -upwindCoefficient[1]*upwindWeights(m1)*uLocal(i1,i2+m1,i3,1);  // y direction
 
-                                resLocal(i1,i2,i3,1) +=  upwindCoefficient[0]*upwindWeights(m1)*uLocal(i1+m1,i2,i3,0);
-                                resLocal(i1,i2,i3,1) +=  upwindCoefficient[1]*upwindWeights(m1)*uLocal(i1,i2+m1,i3,0);                
-                            }
-                        }
-                    } 
+    //             resLocal(i1,i2,i3,1) +=  upwindCoefficient[0]*upwindWeights(m1)*uLocal(i1+m1,i2,i3,0);
+    //             resLocal(i1,i2,i3,1) +=  upwindCoefficient[1]*upwindWeights(m1)*uLocal(i1,i2+m1,i3,0);                
+    //           }
+    //         }
+    //       } 
 
-                    Range all;
-                    ForBoundary(side,axis)
-                    {
-                        int is = 1 -2*side;
-            // set residual to zero on dirichlet boundaries 
-                        if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
-                        {
-                            getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+    //       Range all;
+    //       ForBoundary(side,axis)
+    //       {
+    //         int is = 1 -2*side;
+    //         // set residual to zero on dirichlet boundaries 
+    //         if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
+    //         {
+    //           getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
 
-                            bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,Ib1,Ib2,Ib3);
-                            if( ok )
-                            {
+    //           bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,Ib1,Ib2,Ib3);
+    //           if( ok )
+    //           {
 
-                                if( solveForScatteredField==0 )
-                                {
-                                  resLocal(Ib1,Ib2,Ib3,all)=0.;
-                                }
-                                else
-                                {
-                  // --- scattering from a Dirichlet BC ----
-                                    OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
-                                    if( mg.numberOfDimensions()==2 )
-                                    { 
-                                        resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
-                                        resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
-                                    }
-                                    else
-                                    {
-                                        resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
-                                        resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
-                                    }
-                                    where( maskLocal(Ib1,Ib2,Ib3)<=0 )
-                                    {
-                                        resLocal(Ib1,Ib2,Ib3,0)=0.;
-                                        resLocal(Ib1,Ib2,Ib3,1)=0.;
-                                    }
+    //             if( solveForScatteredField==0 )
+    //             {
+    //              resLocal(Ib1,Ib2,Ib3,all)=0.;
+    //             }
+    //             else
+    //             {
+    //               // --- scattering from a Dirichlet BC ----
+    //               OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
+    //               if( mg.numberOfDimensions()==2 )
+    //               { 
+    //                 resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
+    //                 resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + phi ));
+    //               }
+    //               else
+    //               {
+    //                 resLocal(Ib1,Ib2,Ib3,0) = uLocal(Ib1,Ib2,Ib3,0) - (-amp*sin( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
+    //                 resLocal(Ib1,Ib2,Ib3,1) = uLocal(Ib1,Ib2,Ib3,1) - (+amp*cos( kx*xLocal(Ib1,Ib2,Ib3,0) + ky*xLocal(Ib1,Ib2,Ib3,1) + kz*xLocal(Ib1,Ib2,Ib3,2) + phi ));
+    //               }
+    //               where( maskLocal(Ib1,Ib2,Ib3)<=0 )
+    //               {
+    //                 resLocal(Ib1,Ib2,Ib3,0)=0.;
+    //                 resLocal(Ib1,Ib2,Ib3,1)=0.;
+    //               }
 
-                                    Range R2=2;
-                                    Real maxResBC1 = max(abs(resLocal(Ib1,Ib2,Ib3,0)));
-                                    Real maxResBC2 = max(abs(resLocal(Ib1,Ib2,Ib3,1)));
+    //               Range R2=2;
+    //               Real maxResBC1 = max(abs(resLocal(Ib1,Ib2,Ib3,0)));
+    //               Real maxResBC2 = max(abs(resLocal(Ib1,Ib2,Ib3,1)));
 
-                                    printF(" Scattering Dirichlet BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e]\n",side,axis,grid,maxResBC1,maxResBC2);
-                                }
-                            }
+    //               printF(" Scattering Dirichlet BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e]\n",side,axis,grid,maxResBC1,maxResBC2);
+    //             }
+    //           }
 
-                          }
-                          else if( mg.boundaryCondition(side,axis) == CgWave::absorbing ||
-                                            mg.boundaryCondition(side,axis) == CgWave::abcEM2 )
-                          {
-                                getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
-                                getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,1);
+    //          }
+    //          else if( mg.boundaryCondition(side,axis) == CgWave::absorbing ||
+    //                   mg.boundaryCondition(side,axis) == CgWave::abcEM2 )
+    //          {
+    //             getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+    //             getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,1);
 
-                                bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,Ib1,Ib2,Ib3);
-                                ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,Ig1,Ig2,Ig3);
-                                if( ok )
-                                {
-                  // EM2: BC: 
-                  //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
-                  // => 
-                  //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
-                  //  
-                  // u = ur + i*ui : 
-                  //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
-                  //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
-                  // 
-                                    Range R2 = numberOfComponents;
-                                    RealArray ux(Ib1,Ib2,Ib3,R2), uy(Ib1,Ib2,Ib3,R2), uxx(Ib1,Ib2,Ib3,R2), uyy(Ib1,Ib2,Ib3,R2);
-                                    mgop.derivative(MappedGridOperators::xDerivative,uLocal,ux,Ib1,Ib2,Ib3,R2);
-                                    mgop.derivative(MappedGridOperators::yDerivative,uLocal,uy,Ib1,Ib2,Ib3,R2);
+    //             bool ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,Ib1,Ib2,Ib3);
+    //             ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,Ig1,Ig2,Ig3);
+    //             if( ok )
+    //             {
+    //               // EM2: BC: 
+    //               //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
+    //               // => 
+    //               //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
+    //               //  
+    //               // u = ur + i*ui : 
+    //               //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
+    //               //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
+    //               // 
+    //               Range R2 = numberOfComponents;
+    //               RealArray ux(Ib1,Ib2,Ib3,R2), uy(Ib1,Ib2,Ib3,R2), uxx(Ib1,Ib2,Ib3,R2), uyy(Ib1,Ib2,Ib3,R2);
+    //               mgop.derivative(MappedGridOperators::xDerivative,uLocal,ux,Ib1,Ib2,Ib3,R2);
+    //               mgop.derivative(MappedGridOperators::yDerivative,uLocal,uy,Ib1,Ib2,Ib3,R2);
 
-                                    mgop.derivative(MappedGridOperators::xxDerivative,uLocal,uxx,Ib1,Ib2,Ib3,R2);
-                                    mgop.derivative(MappedGridOperators::yyDerivative,uLocal,uyy,Ib1,Ib2,Ib3,R2);
+    //               mgop.derivative(MappedGridOperators::xxDerivative,uLocal,uxx,Ib1,Ib2,Ib3,R2);
+    //               mgop.derivative(MappedGridOperators::yyDerivative,uLocal,uyy,Ib1,Ib2,Ib3,R2);
 
-                                    if( axis==0 )
-                                    {
-                                        resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*ux(Ib1,Ib2,Ib3,1)) - c*( uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
-                                        resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*ux(Ib1,Ib2,Ib3,0)) - c*( uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
-                                    }
-                                    else
-                                    {
-                                        resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uy(Ib1,Ib2,Ib3,1) ) - c*( uyy(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) );
-                                        resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uy(Ib1,Ib2,Ib3,0) ) - c*( uyy(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) );
-                                    }
+    //               if( axis==0 )
+    //               {
+    //                 resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*ux(Ib1,Ib2,Ib3,1)) - c*( uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
+    //                 resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*ux(Ib1,Ib2,Ib3,0)) - c*( uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
+    //               }
+    //               else
+    //               {
+    //                 resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uy(Ib1,Ib2,Ib3,1) ) - c*( uyy(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) );
+    //                 resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uy(Ib1,Ib2,Ib3,0) ) - c*( uyy(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) );
+    //               }
 
-                                    where( maskLocal(Ib1,Ib2,Ib3)<=0 )
-                                    {
-                                        resLocal(Ig1,Ig2,Ig3,0)=0.;
-                                        resLocal(Ig1,Ig2,Ig3,1)=0.;
-                                    }
-                                    Real maxResBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
-                                    Real maxResBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));
-                                    Real maxRHS = max(abs(fLocal(Ig1,Ig2,Ig3,R2)));
+    //               where( maskLocal(Ib1,Ib2,Ib3)<=0 )
+    //               {
+    //                 resLocal(Ig1,Ig2,Ig3,0)=0.;
+    //                 resLocal(Ig1,Ig2,Ig3,1)=0.;
+    //               }
+    //               Real maxResBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
+    //               Real maxResBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));
+    //               Real maxRHS = max(abs(fLocal(Ig1,Ig2,Ig3,R2)));
 
-                  // printF(" Absorbing BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e], max|rhs|=%9.2e\n",side,axis,grid,maxResBC1,maxResBC2,maxRHS);
+    //               // printF(" Absorbing BC: (side,axis,grid)={%d,%d,%d) max-res=[%9.2e,%9.2e], max|rhs|=%9.2e\n",side,axis,grid,maxResBC1,maxResBC2,maxRHS);
 
-                  // ::display(resLocal(Ig1,Ig2,Ig3,0),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
-                  // ::display(resLocal(Ig1,Ig2,Ig3,1),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
-                                    Real maxResCBC1=0., maxResCBC2=0.;
-                                    if( orderOfAccuracy==4 )
-                                    {
-                    // check the CBC
-                                        getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,2); // ghost 2
+    //               // ::display(resLocal(Ig1,Ig2,Ig3,0),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
+    //               // ::display(resLocal(Ig1,Ig2,Ig3,1),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
+    //               Real maxResCBC1=0., maxResCBC2=0.;
+    //               if( orderOfAccuracy==4 )
+    //               {
+    //                 // check the CBC
+    //                 getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,2); // ghost 2
 
-                                        RealArray uxxyy(Ib1,Ib2,Ib3,R2);
+    //                 RealArray uxxyy(Ib1,Ib2,Ib3,R2);
 
-                                        uxxyy = ( 
-                                                                    uLocal(Ib1-1,Ib2-1,Ib3,R2)  
-                                                                  +uLocal(Ib1+1,Ib2-1,Ib3,R2)  
-                                                            -2.*uLocal(Ib1  ,Ib2-1,Ib3,R2)  
-                                                            -2.*uLocal(Ib1-1,Ib2  ,Ib3,R2) 
-                                                            +4.*uLocal(Ib1  ,Ib2  ,Ib3,R2) 
-                                                            -2.*uLocal(Ib1+1,Ib2  ,Ib3,R2) 
-                                                            -2.*uLocal(Ib1  ,Ib2+1,Ib3,R2)
-                                                                  +uLocal(Ib1-1,Ib2+1,Ib3,R2)  
-                                                                  +uLocal(Ib1+1,Ib2+1,Ib3,R2)  
-                                                        )/(dx[0]*dx[0]*dx[1]*dx[1]); 
+    //                 uxxyy = ( 
+    //                               uLocal(Ib1-1,Ib2-1,Ib3,R2)  
+    //                              +uLocal(Ib1+1,Ib2-1,Ib3,R2)  
+    //                           -2.*uLocal(Ib1  ,Ib2-1,Ib3,R2)  
+    //                           -2.*uLocal(Ib1-1,Ib2  ,Ib3,R2) 
+    //                           +4.*uLocal(Ib1  ,Ib2  ,Ib3,R2) 
+    //                           -2.*uLocal(Ib1+1,Ib2  ,Ib3,R2) 
+    //                           -2.*uLocal(Ib1  ,Ib2+1,Ib3,R2)
+    //                              +uLocal(Ib1-1,Ib2+1,Ib3,R2)  
+    //                              +uLocal(Ib1+1,Ib2+1,Ib3,R2)  
+    //                         )/(dx[0]*dx[0]*dx[1]*dx[1]); 
 
 
-                    // Real cxxxx=1., cyyyy=1., cxxyy=1.; 
-                                        if( axis==0 )
-                                        {
-                                            RealArray uxxx(Ib1,Ib2,Ib3,2);
-                                            RealArray uxxxx(Ib1,Ib2,Ib3,2);
-                                            uxxx =  (    -uLocal(Ib1-2,Ib2,Ib3,R2)  
-                                                                +2.*uLocal(Ib1-1,Ib2,Ib3,R2) 
-                                                                -2.*uLocal(Ib1+1,Ib2,Ib3,R2) 
-                                                                      +uLocal(Ib1+2,Ib2,Ib3,R2)
-                                                            )/(2.*dx[0]*dx[0]*dx[0]);
+    //                 // Real cxxxx=1., cyyyy=1., cxxyy=1.; 
+    //                 if( axis==0 )
+    //                 {
+    //                   RealArray uxxx(Ib1,Ib2,Ib3,2);
+    //                   RealArray uxxxx(Ib1,Ib2,Ib3,2);
+    //                   uxxx =  (    -uLocal(Ib1-2,Ib2,Ib3,R2)  
+    //                             +2.*uLocal(Ib1-1,Ib2,Ib3,R2) 
+    //                             -2.*uLocal(Ib1+1,Ib2,Ib3,R2) 
+    //                                +uLocal(Ib1+2,Ib2,Ib3,R2)
+    //                           )/(2.*dx[0]*dx[0]*dx[0]);
 
-                                            uxxxx = (    +uLocal(Ib1-2,Ib2,Ib3,R2)  
-                                                                -4.*uLocal(Ib1-1,Ib2,Ib3,R2) 
-                                                                +6.*uLocal(Ib1  ,Ib2,Ib3,R2) 
-                                                                -4.*uLocal(Ib1+1,Ib2,Ib3,R2) 
-                                                                      +uLocal(Ib1+2,Ib2,Ib3,R2)
-                                                            )/(dx[0]*dx[0]*dx[0]*dx[0]); 
+    //                   uxxxx = (    +uLocal(Ib1-2,Ib2,Ib3,R2)  
+    //                             -4.*uLocal(Ib1-1,Ib2,Ib3,R2) 
+    //                             +6.*uLocal(Ib1  ,Ib2,Ib3,R2) 
+    //                             -4.*uLocal(Ib1+1,Ib2,Ib3,R2) 
+    //                                +uLocal(Ib1+2,Ib2,Ib3,R2)
+    //                           )/(dx[0]*dx[0]*dx[0]*dx[0]); 
 
-                                            resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
-                                            resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
-                                        }
-                                        else
-                                        {
-                                            RealArray uyyy(Ib1,Ib2,Ib3,2);
-                                            RealArray uyyyy(Ib1,Ib2,Ib3,2); 
-                                            uyyy =  (    -uLocal(Ib1,Ib2-2,Ib3,R2)  
-                                                                +2.*uLocal(Ib1,Ib2-1,Ib3,R2) 
-                                                                -2.*uLocal(Ib1,Ib2+1,Ib3,R2) 
-                                                                      +uLocal(Ib1,Ib2+2,Ib3,R2)
-                                                            )/(2.*dx[1]*dx[1]*dx[1]);
+    //                   resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
+    //                   resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
+    //                 }
+    //                 else
+    //                 {
+    //                   RealArray uyyy(Ib1,Ib2,Ib3,2);
+    //                   RealArray uyyyy(Ib1,Ib2,Ib3,2); 
+    //                   uyyy =  (    -uLocal(Ib1,Ib2-2,Ib3,R2)  
+    //                             +2.*uLocal(Ib1,Ib2-1,Ib3,R2) 
+    //                             -2.*uLocal(Ib1,Ib2+1,Ib3,R2) 
+    //                                +uLocal(Ib1,Ib2+2,Ib3,R2)
+    //                           )/(2.*dx[1]*dx[1]*dx[1]);
 
-                                            uyyyy = (    +uLocal(Ib1,Ib2-2,Ib3,R2)  
-                                                                -4.*uLocal(Ib1,Ib2-1,Ib3,R2) 
-                                                                +6.*uLocal(Ib1,Ib2  ,Ib3,R2) 
-                                                                -4.*uLocal(Ib1,Ib2+1,Ib3,R2) 
-                                                                      +uLocal(Ib1,Ib2+2,Ib3,R2)
-                                                            )/(dx[1]*dx[1]*dx[1]*dx[1]);  
+    //                   uyyyy = (    +uLocal(Ib1,Ib2-2,Ib3,R2)  
+    //                             -4.*uLocal(Ib1,Ib2-1,Ib3,R2) 
+    //                             +6.*uLocal(Ib1,Ib2  ,Ib3,R2) 
+    //                             -4.*uLocal(Ib1,Ib2+1,Ib3,R2) 
+    //                                +uLocal(Ib1,Ib2+2,Ib3,R2)
+    //                           )/(dx[1]*dx[1]*dx[1]*dx[1]);  
 
-                                            resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
-                                            resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
-                                        }
+    //                   resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
+    //                   resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
+    //                 }
 
-                                        where( maskLocal(Ib1,Ib2,Ib3)<=0 )
-                                        {
-                                            resLocal(Ig1,Ig2,Ig3,0)=0.;
-                                            resLocal(Ig1,Ig2,Ig3,1)=0.;
-                                        }
-                                        maxResCBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
-                                        maxResCBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));
+    //                 where( maskLocal(Ib1,Ib2,Ib3)<=0 )
+    //                 {
+    //                   resLocal(Ig1,Ig2,Ig3,0)=0.;
+    //                   resLocal(Ig1,Ig2,Ig3,1)=0.;
+    //                 }
+    //                 maxResCBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
+    //                 maxResCBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));
 
-                    // ::display(resLocal(Ig1,Ig2,Ig3,0),"resLocal(Ig1,Ig2,Ig3,0)","%8.2e ");
+    //                 // ::display(resLocal(Ig1,Ig2,Ig3,0),"resLocal(Ig1,Ig2,Ig3,0)","%8.2e ");
 
-                    // printF(" Absorbing BC: (side,axis,grid)={%d,%d,%d) CBC max-res=[%9.2e,%9.2e]\n",side,axis,grid,maxResCBC1,maxResCBC2);                                       
+    //                 // printF(" Absorbing BC: (side,axis,grid)={%d,%d,%d) CBC max-res=[%9.2e,%9.2e]\n",side,axis,grid,maxResCBC1,maxResCBC2);                                       
 
 
-                                    } // end order=4
+    //               } // end order=4
 
-                                    if( orderOfAccuracy==2 )
-                                        printF(" EM RBC: (side,axis,grid)={%d,%d,%d) res: bc1[Re,Im]=[%9.2e,%9.2e], max|rhs|=%9.2e\n",side,axis,grid,maxResBC1,maxResBC2,maxRHS);
-                                    else
-                                        printF(" EM RBC: (side,axis,grid)={%d,%d,%d) res: bc1[Re,Im]==[%9.2e,%9.2e], bc2[Re,Im]=[%9.2e,%9.2e], max|rhs|=%9.2e\n",
-                                                  side,axis,grid,maxResBC1,maxResBC2,maxResCBC1,maxResCBC2,maxRHS);
-                                }
-                          }
-                    } // end for boundary
+    //               if( orderOfAccuracy==2 )
+    //                 printF(" EM RBC: (side,axis,grid)={%d,%d,%d) res: bc1[Re,Im]=[%9.2e,%9.2e], max|rhs|=%9.2e\n",side,axis,grid,maxResBC1,maxResBC2,maxRHS);
+    //               else
+    //                 printF(" EM RBC: (side,axis,grid)={%d,%d,%d) res: bc1[Re,Im]==[%9.2e,%9.2e], bc2[Re,Im]=[%9.2e,%9.2e], max|rhs|=%9.2e\n",
+    //                      side,axis,grid,maxResBC1,maxResBC2,maxResCBC1,maxResCBC2,maxRHS);
+    //             }
+    //          }
+    //       } // end for boundary
 
-          // -- zero residual at unused points ---
-                    getIndex(mg.dimension(),I1,I2,I3);
-                    ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3);
-                    if( ok )
-                    {
-                        where( maskLocal(I1,I2,I3) <=0  )   
-                        {
-                            resLocal(I1,I2,I3,0)=0.;
-                            resLocal(I1,I2,I3,1)=0.;
-                        }        
-                    }
-                } // end if ok 
+    //       // -- zero residual at unused points ---
+    //       getIndex(mg.dimension(),I1,I2,I3);
+    //       ok=ParallelUtility::getLocalArrayBounds(u[grid],uLocal,I1,I2,I3);
+    //       if( ok )
+    //       {
+    //         where( maskLocal(I1,I2,I3) <=0  )   
+    //         {
+    //           resLocal(I1,I2,I3,0)=0.;
+    //           resLocal(I1,I2,I3,1)=0.;
+    //         }        
+    //       }
+    //     } // end if ok 
 
-                if( true )
-                {
-          // ::display(resLocal,"resLocal","%7.0e ");
-                    Real maxRes = max(abs(resLocal));
-                    maxRes = ParallelUtility::getMaxValue( maxRes );
+    //     if( true )
+    //     {
+    //       // ::display(resLocal,"resLocal","%7.0e ");
+    //       Real maxRes = max(abs(resLocal));
+    //       maxRes = ParallelUtility::getMaxValue( maxRes );
 
-                    if( false && maxRes > .01 )
-                    {
-                        ::display(resLocal,"resLocal","%7.0e ");
-                    }
-                    printF("grid=%d : maxRes=%9.2e\n",grid,maxRes);
-                }     
+    //       if( false && maxRes > .01 )
+    //       {
+    //         ::display(resLocal,"resLocal","%7.0e ");
+    //       }
+    //       printF("grid=%d : maxRes=%9.2e\n",grid,maxRes);
+    //     }     
 
-            }  // end for grid
+    //   }  // end for grid
 
-            const int maskOption=1;  // maskOption=1 : check points with mask>0
-            Real urRes = maxNorm(res,0,maskOption)/(omega*omega);
-            Real uiRes = maxNorm(res,1,maskOption)/(omega*omega);
+    //   const int maskOption=1;  // maskOption=1 : check points with mask>0
+    //   Real urRes = maxNorm(res,0,maskOption)/(omega*omega);
+    //   Real uiRes = maxNorm(res,1,maskOption)/(omega*omega);
 
-            printF("\n ^^^^^^ solveHelmholtzDirect: max-rel-res [re,Im]=[%8.2e,%8.2e] ^^^^^^^^\n\n",urRes,uiRes);       
+    //   printF("\n ^^^^^^ solveHelmholtzDirect: max-rel-res [re,Im]=[%8.2e,%8.2e] ^^^^^^^^\n\n",urRes,uiRes);       
 
-        } // end check residual
+    // } // end check residual
 
         bool plotSolution = false; // true; // for debugging we plot the solution
 

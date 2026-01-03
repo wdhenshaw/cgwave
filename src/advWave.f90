@@ -221,6 +221,131 @@
 !   ORDER : 2 or 4   
 !   GRIDTYPE : rectangular or curvilinear
 ! ========================================================================================
+! #beginMacro addUpwindDissImplicitOld(DIM,ORDER,GRIDTYPE)
+
+!   if( (.false. .or. debug.gt.3) .and. t.lt.4*dt )then
+!     write(*,'(/,"advWave:addUpwindDissImplicitOld: UPWIND DISS dim=DIM order=ORDER grid=GRIDTYPE... t=",e10.2)') t
+!     if( gridType==rectangular )then
+!       write(*,'(" upwind-diss-coeff: adxSosup=",3(1pe12.4,1x))') adxSosup(0), adxSosup(1),adxSosup(2)
+!     else
+!       write(*,'(" upwind-diss-coeff: adSosup=",1pe12.4)') adSosup
+!     end if
+!   end if
+
+!   ! from formImplicitTimeSteppingMatrix
+!     ! // fourth-order dissipation for 2nd-order scheme:
+!     ! Real upwindCoeff4[4][5] = { 1.,-4.,6.,-4.,1.,
+!     !                             1.,-3.,3.,-1.,0.,   // extrap right-most point D-^3 u(2)
+!     !                             0.,-1.,3.,-3.,1.,   // extrap left -most point D+^3 u(-2)
+!     !                             0.,-1.,2.,-1.,0.
+!     !                           };
+
+!     ! // sixth-order dissipation for 4th-order scheme
+!     ! Real upwindCoeff6[4][7] = {1.,-6.,15.,-20.,15.,-6.,1.,
+!     !                            1.,-5.,10.,-10., 5.,-1.,0.,  // extrap right-most point D-^5 u(3)
+!     !                            0.,-1., 5.,-10.,10., 5.,1.,  // extrap left -most point D+^5 u(-3)
+!     !                            0.,-1., 4., -6., 4.,-1.,0.
+!     !                           };
+  
+
+!   ! -- Note: Could adjust loop bounds to avoid Dirichlet boundaries
+
+!   m=0 ! component number 
+!   ec = 0 ! component number
+  
+!   ! Compute some things needed in the loops below
+!   if( adjustHelmholtzForUpwinding.eq.1 )then
+!     do freq=0,numberOfFrequencies-1
+!       cosineFactor(freq) = cos(frequencyArray(freq)*(t+dt)) - cos(frequencyArray(freq)*(t-dt))
+!       sineFactor(freq)   = sin(frequencyArray(freq)*(t+dt)) - sin(frequencyArray(freq)*(t-dt))
+!     end do
+!   end if 
+    
+!   ! stencil width = order + 1
+!   ! upwind stencil = stencilWidth + 2 = order+1 + 2
+!   upwindHalfStencilWidth = (orderOfAccuracy+2)/2 
+
+!   beginLoopsMask(i1,i2,i3,n1a,n1b,n2a,n2b,n3a,n3b)
+
+!     #If #GRIDTYPE eq "curvilinear"
+!       ! --- Compute UPW coefficient for curvilinear grids ---
+!       #If #DIM eq "2"
+!         getSosupDissipationCoeff2d(adxSosup)
+!       #Else
+!         getSosupDissipationCoeff3d(adxSosup)
+!       #End
+!     #End
+
+!     ! --- loop over directions ---
+!     do dir=0,nd-1
+
+!       idv(0)=0; idv(1)=0; idv(2)=0
+!       idv(dir)=1 ! active direction
+
+!       ! check if left-most and right-most entries in the upwind stencil are valid 
+!       i1l = i1-upwindHalfStencilWidth*idv(0); i1r = i1+upwindHalfStencilWidth*idv(0);
+!       i2l = i2-upwindHalfStencilWidth*idv(1); i2r = i2+upwindHalfStencilWidth*idv(1);
+!       i3l = i3-upwindHalfStencilWidth*idv(2); i3r = i3+upwindHalfStencilWidth*idv(2);
+
+!       !  Note: there are at most four cases at any order, since we have order/2 layers of interpolation points 
+!       !   Example, order=2, upwind-order=4
+!       !     X---X---C---X---X           C = center point = valid discretization point
+!       !     X---X---C---X               missing right-most 
+!       !         X---C---X---X           missing left-most
+!       !         X---C---X               missing left and right-most
+
+!       upwCase=0 
+!       if( mask(i1l,i2l,i3l) .ne. 0 .and. mask(i1r,i2r,i3r) .ne. 0 ) then
+!         upwCase=0  ! centred, full-width stencil
+!       else if( mask(i1l,i2l,i3l) .ne. 0 ) then
+!         upwCase=1  ! left biased stencil
+!       else if( mask(i1r,i2r,i3r) .ne. 0 ) then
+!         upwCase=2  ! right biased stencil   
+!       else  
+!         upwCase=3  ! centred smaller stencil     
+!       end if
+
+
+
+!       upw = 0. 
+!       do iStencil=-upwindHalfStencilWidth,upwindHalfStencilWidth
+
+!         j1 = i1 + iStencil*idv(0);  j2 = i2 + iStencil*idv(1);  j3 = i3 + iStencil*idv(2)
+
+!         umj = um(j1,j2,j3,0)
+
+!         if( adjustHelmholtzForUpwinding.eq.1 )then
+!           do freq=0,numberOfFrequencies-1
+!             umj = umj + cosineFactor(freq)*vh(j1,j2,j3,freq)
+!           end do
+!         end if
+
+!         upw = upw + upwindCoeff(iStencil,upwCase)*umj
+
+!         ! upw = upw + upwindCoeff(iStencil,upwCase)*um(j1,j2,j3,ec)  ! *** CHECK ME 
+
+
+!         ! write(*,'("upw-rhs: i1,i2=",2i4," j1,j2=",2i4," upwindCoeff=",1pe9.2, " um=",1pe9.2," upw=",1pe9.2)') i1,i2,j1,j2,upwindCoeff(iStencil,upwCase),um(j1,j2,j3,ec),upw
+!       end do 
+!       ! if( abs(upw).gt.1e-10 )then
+!       !   write(*,'(">>upw-rhs: i1,i2=",2i4," upw=",1pe9.2)') i1,i2,upw
+!       ! end if 
+
+!       ! This is the coeff of um in
+!       !         + adxSosup(dir)*(UpwindStencil)( un - um )
+!       ! un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - adxSosup(dir)*upw 
+!       ! *wdh* July 3, 2023 CHANGE SIGN
+!       un(i1,i2,i3,ec) = un(i1,i2,i3,ec) + adxSosup(dir)*upw 
+
+!       ! TEST un(i1,i2,i3,ec) = un(i1,i2,i3,ec) - adxSosup(dir)*upw 
+
+!     end do ! end do fir 
+
+!   endLoopsMask()
+
+
+
+! #endMacro
 
   
 ! =========================================================================================
