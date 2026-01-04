@@ -330,18 +330,39 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
                 if( dbase.has_key("helmholtzOgesParameters") )
                 {  
-                    printf("solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. \n");
+                    printF("solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. \n");
                     OgesParameters & par = dbase.get<OgesParameters>("helmholtzOgesParameters");
                     solver.setOgesParameters(par);
+                    #ifdef USE_PPP
+                        int solverType;
+                        solver.get(OgesParameters::THEsolverType,solverType); 
+                        printF("solveHelmholtzDirect: solverType=%d, OgesParameters::yale=%d\n",solverType, (int)OgesParameters::yale);
+                        if( solverType==OgesParameters::yale )
+                        {
+                            printF("solveHelmholtzDirect: solverType=yale does not work in parallel. Setting solverType = PETSc + bi-CG-Stab\n");
+                            solverType = OgesParameters::PETScNew; // parallel
+                            solver.set(OgesParameters::THEsolverType,solverType); 
+                            solver.set(OgesParameters::THEsolverMethod,OgesParameters::biConjugateGradientStabilized);
+                            int iluLevels=50;
+                            solver.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
+                        }
+                    #endif
                 }
                 else
                 {
-                    int solverType=OgesParameters::yale; 
+                    #ifndef USE_PPP
+            // serial: by default use Yale solver
+                        int solverType=OgesParameters::yale; 
+                        solver.set(OgesParameters::THEsolverType,solverType); 
+                    #else
+                        int solverType = OgesParameters::PETScNew; // parallel
+                        solver.set(OgesParameters::THEsolverType,solverType); 
+                        solver.set(OgesParameters::THEsolverMethod,OgesParameters::biConjugateGradientStabilized);
+                        int iluLevels=50;
+                        solver.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
+                    #endif
           // solverType=OgesParameters::PETSc;
           // solverType=OgesParameters::PETScNew; // parallel
-                    solver.set(OgesParameters::THEsolverType,solverType); 
-                    if( solverType==OgesParameters::PETSc )
-                      solver.set(OgesParameters::THEsolverMethod,OgesParameters::biConjugateGradientStabilized);
           // solver.set(OgesParameters::THEparallelSolverMethod,OgesParameters::gmres);
                     if( 1==0 )
                     {
@@ -2568,18 +2589,39 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
         {
                 if( dbase.has_key("helmholtzOgesParameters") )
                 {  
-                    printf("solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. \n");
+                    printF("solveHelmholtzDirect: OgesParameters found. Changing the direct Helmholtz solver parameters. \n");
                     OgesParameters & par = dbase.get<OgesParameters>("helmholtzOgesParameters");
                     solver.setOgesParameters(par);
+                    #ifdef USE_PPP
+                        int solverType;
+                        solver.get(OgesParameters::THEsolverType,solverType); 
+                        printF("solveHelmholtzDirect: solverType=%d, OgesParameters::yale=%d\n",solverType, (int)OgesParameters::yale);
+                        if( solverType==OgesParameters::yale )
+                        {
+                            printF("solveHelmholtzDirect: solverType=yale does not work in parallel. Setting solverType = PETSc + bi-CG-Stab\n");
+                            solverType = OgesParameters::PETScNew; // parallel
+                            solver.set(OgesParameters::THEsolverType,solverType); 
+                            solver.set(OgesParameters::THEsolverMethod,OgesParameters::biConjugateGradientStabilized);
+                            int iluLevels=50;
+                            solver.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
+                        }
+                    #endif
                 }
                 else
                 {
-                    int solverType=OgesParameters::yale; 
+                    #ifndef USE_PPP
+            // serial: by default use Yale solver
+                        int solverType=OgesParameters::yale; 
+                        solver.set(OgesParameters::THEsolverType,solverType); 
+                    #else
+                        int solverType = OgesParameters::PETScNew; // parallel
+                        solver.set(OgesParameters::THEsolverType,solverType); 
+                        solver.set(OgesParameters::THEsolverMethod,OgesParameters::biConjugateGradientStabilized);
+                        int iluLevels=50;
+                        solver.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
+                    #endif
           // solverType=OgesParameters::PETSc;
           // solverType=OgesParameters::PETScNew; // parallel
-                    solver.set(OgesParameters::THEsolverType,solverType); 
-                    if( solverType==OgesParameters::PETSc )
-                      solver.set(OgesParameters::THEsolverMethod,OgesParameters::biConjugateGradientStabilized);
           // solver.set(OgesParameters::THEparallelSolverMethod,OgesParameters::gmres);
                     if( 1==0 )
                     {

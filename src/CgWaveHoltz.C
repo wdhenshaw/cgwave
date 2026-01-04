@@ -340,9 +340,27 @@ int CgWaveHoltz::interactiveUpdate()
 
     else if( answer=="direct solver parameters" )
     {
-      printf("Set the Oges parameters for the direct Helmholtz solver\n");
+      printF("Set the Oges parameters for the direct Helmholtz solver\n");
       OgesParameters & par = dbase.put<OgesParameters>("helmholtzOgesParameters");
+
       par.update( gi,cg );
+      
+      // -- this doesn't work in the way I wanted
+      //   #ifdef USE_PPP
+      //    const int iluLevels=50;
+      //    const Real rtol = REAL_EPSILON*1000.;
+      //    const Real atol = REAL_EPSILON*1000.;
+      //     printF("CgWaveHoltz: Set default direct Helmholtz solver parameters in parallel: PETSc + bi-CG-Stab, iluLevels=%d, rtol=%10.2e, atol=%10.2e\n",iluLevels,rtol,atol);
+
+      //     int solverType = OgesParameters::PETScNew; // parallel
+      //     par.set(OgesParameters::THEsolverType,solverType); 
+      //     par.set(OgesParameters::THEsolverMethod,OgesParameters::biConjugateGradientStabilized);
+      //     par.set(OgesParameters::THEnumberOfIncompleteLULevels,iluLevels);
+      //     par.set(OgesParameters::THErelativeTolerance,rtol);
+      //     par.set(OgesParameters::THEabsoluteTolerance,atol);          
+
+      //     par.update( gi,cg );
+      // #endif      
 
     }
 
