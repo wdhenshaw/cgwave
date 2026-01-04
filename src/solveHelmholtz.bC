@@ -208,6 +208,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
   Real & convergenceRate          = cgWaveHoltz.dbase.get<Real>("convergenceRate");
   Real & convergenceRatePerPeriod = cgWaveHoltz.dbase.get<Real>("convergenceRatePerPeriod");
 
+  const int & np                           = cgWave.dbase.get<int>("np");
   const int & orderOfAccuracy              = cgWave.dbase.get<int>("orderOfAccuracy");
   const int & orderOfAccuracyInTime        = cgWave.dbase.get<int>("orderOfAccuracyInTime");
   const int & upwind                       = cgWave.dbase.get<int>("upwind"); // new way
@@ -904,8 +905,8 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
       }
       else
       {
-        printF("solveHelmholtz: max-residual [Re,Im]=[%8.2e,%8.2e] (%s, numIts=%d, ave-CR=%5.2f %s)\n",maxResArray(0),maxResArray(1),
-                (const char*)schemeName,numberOfIterations,convergenceRate,(const char*)label );
+        printF("solveHelmholtz: max-residual [Re,Im]=[%8.2e,%8.2e] (%s, numIts=%d, ave-CR=%5.2f %s, cpu=%8.2e(s), np=%d)\n",maxResArray(0),maxResArray(1),
+                (const char*)schemeName,numberOfIterations,convergenceRate,(const char*)label,cpuWaveHoltz,np );
         // printF("solveHelmholtz: max-residual [Re,Im]=[%8.2e,%8.2e] (%s, numIts=%d, ave-CR=%5.2f %s)\n",maxResArray(0),maxResArray(1),
         //         (useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : (const char*)krylovType)),numberOfIterations,convergenceRate,(const char*)label );        
       }

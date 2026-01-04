@@ -2,6 +2,7 @@
 #include "CgWaveHoltz.h"
 #include "CgWave.h"
 #include "ParallelUtility.h"
+#include "ParallelGridUtility.h"
 #include "CompositeGridOperators.h"
 // #include "PlotStuff.h"
 #include "display.h"
@@ -249,6 +250,9 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
         //   // rsxyLocal.reference(rxOriginal[grid]);
         // }
                 RealArray & rsxyLocal = useOriginalMetrics ? cgWave.dbase.get<RealArray*>("rxOriginal")[grid] : rsxyLocalNew;
+
+            IntegerArray indexRangeLocal(2,3), dimensionLocal(2,3),bcLocal(2,3);
+            ParallelGridUtility::getLocalIndexBoundsAndBoundaryConditions( v[grid],indexRangeLocal,dimensionLocal,bcLocal );
 
             int extra=0; // -1;
             getIndex(cg[grid].indexRange(),I1,I2,I3,extra); 
@@ -622,18 +626,22 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                                                     i1=Ib1.getBase(); i2=Ib2.getBase(); i3=Ib3.getBase();
                                                                     iv[axisp1] = mg.gridIndexRange(side2,axisp1);
                                                                     if( axis==0 ){ ks1=is1; ks2 = 1-2*side2; }else{ ks1=1-2*side2; ks2=is2; }
-                                  // printF("residual: u.xxyy corner (i1,i2,i3)=(%3d,%3d,%3d) (side,side2)=(%d,%d) shift (ks1,ks2)=(%2d,%2d)\n",i1,i2,i3,side,side2,ks1,ks2);
-                                                                    uxxyy(i1,i2,i3,R2) = ( 
-                                                                                                vLocal(i1-1+ks1,i2-1+ks2,i3,R2)  
-                                                                                              +vLocal(i1+1+ks1,i2-1+ks2,i3,R2)  
-                                                                                        -2.*vLocal(i1  +ks1,i2-1+ks2,i3,R2)  
-                                                                                        -2.*vLocal(i1-1+ks1,i2  +ks2,i3,R2) 
-                                                                                        +4.*vLocal(i1  +ks1,i2  +ks2,i3,R2) 
-                                                                                        -2.*vLocal(i1+1+ks1,i2  +ks2,i3,R2) 
-                                                                                        -2.*vLocal(i1  +ks1,i2+1+ks2,i3,R2)
-                                                                                              +vLocal(i1-1+ks1,i2+1+ks2,i3,R2)  
-                                                                                              +vLocal(i1+1+ks1,i2+1+ks2,i3,R2)  
-                                                                                    )/(dx[0]*dx[0]*dx[1]*dx[1]); 
+                                                                    ok = iv[axisp1] == indexRangeLocal(side2,axisp1);
+                                                                    if( ok )
+                                                                    {
+                                    // printF("residual: u.xxyy corner (i1,i2,i3)=(%3d,%3d,%3d) (side,side2)=(%d,%d) shift (ks1,ks2)=(%2d,%2d)\n",i1,i2,i3,side,side2,ks1,ks2);
+                                                                        uxxyy(i1,i2,i3,R2) = ( 
+                                                                                                    vLocal(i1-1+ks1,i2-1+ks2,i3,R2)  
+                                                                                                  +vLocal(i1+1+ks1,i2-1+ks2,i3,R2)  
+                                                                                            -2.*vLocal(i1  +ks1,i2-1+ks2,i3,R2)  
+                                                                                            -2.*vLocal(i1-1+ks1,i2  +ks2,i3,R2) 
+                                                                                            +4.*vLocal(i1  +ks1,i2  +ks2,i3,R2) 
+                                                                                            -2.*vLocal(i1+1+ks1,i2  +ks2,i3,R2) 
+                                                                                            -2.*vLocal(i1  +ks1,i2+1+ks2,i3,R2)
+                                                                                                  +vLocal(i1-1+ks1,i2+1+ks2,i3,R2)  
+                                                                                                  +vLocal(i1+1+ks1,i2+1+ks2,i3,R2)  
+                                                                                        )/(dx[0]*dx[0]*dx[1]*dx[1]); 
+                                                                    }
                                                                 }                   
                                                             }
                                                         }
