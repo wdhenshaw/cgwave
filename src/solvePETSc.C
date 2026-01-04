@@ -112,6 +112,8 @@ int CgWave::initializePETSc( int argc /* = 0 */, char **args  /* =NULL */ )
 //  
 static PetscErrorCode MonitorError(KSP ksp, PetscInt it, PetscReal rnorm, void *ctx)
 {
+    PetscFunctionBegin;
+
     printF("MonitorError called at it=%d, rnorm=%9.2e\n",it,rnorm);
 
     assert( pCgWaveHoltz!=NULL );
@@ -147,7 +149,8 @@ static PetscErrorCode MonitorError(KSP ksp, PetscInt it, PetscReal rnorm, void *
         } 
     }
 
-    PetscFunctionReturn(PETSC_SUCCESS);
+  // PetscFunctionReturn(PETSC_SUCCESS);
+    PetscFunctionReturn(0); // for PETSC 3.18.2 (older version)
 }
 
 // =========================================================================================================
