@@ -367,7 +367,8 @@ if ( $numberOfErrors == 0 && $m>0 )
   @FILENAMES = ("cgWaveHoltz.check", "cgWave.check", "debug/cgWave.debug", "cgWave.out", 
                 "cgWaveHoltz.debug", "cgWaveHoltz.out", "cgWaveHoltz.cmd", 
                 "cgWaveHoltzFD22TSINf3Np4gmres.m", "cgWaveHoltzFD22TSINp2gmres.m", "junkFD24TSENp1agmres.m", "junkFD24TSENp1gmres.m", "junkFD24TSINp1FP.m",
-                "cgWaveHoltzFD22TSINp2FP.m", "cgWaveHoltzFD22TSINp4gmres.m", "junkFD24TSENp1FP.m", "junkFD24TSINp1agmres.m", "junkFD24TSINp1gmres.m"                
+                "cgWaveHoltzFD22TSINp2FP.m", "cgWaveHoltzFD22TSINp4gmres.m", "junkFD24TSENp1FP.m", "junkFD24TSINp1agmres.m", "junkFD24TSINp1gmres.m",
+                "cgWaveHoltzFD22TSENf2Np4gmres.m" , "cgWaveHoltzFD24TSENp1gmres.m", "cgWaveHoltzFD24TSENp1FP.m", "cgWaveHoltzFD24TSINp1FP.m", "cgWaveHoltzFD24TSINp1gmres.m"           
               ); 
   foreach $ufile ( @FILENAMES )
   {

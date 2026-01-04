@@ -26,10 +26,11 @@ $numberOfFrequencies=1;
 $beta2=.0; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping 
 $upwind=0; $implicitUpwind=0; 
 $tp=.5; $imode=1; 
-$filterTimeDerivative=1; $solveForScatteredField=1; $takeImplicitFirstStep=1;
+$filterTimeDerivative=1; $solveForScatteredField=1; $takeImplicitFirstStep=1; $takePeriodicFirstStep=0;
 $filterD0t=1;            # filter D0t directly instead of using IBPs
 $solver="fixedPoint";  $maxIterations=100; $adjustOmega=0; 
 $krylovType="gmres"; # [gmres|bicgstab]
+$gmresRestartLength=500; # for WaveHoltz
 $matlab="cgWaveHoltz"; $show="scat.show"; 
 $cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1; 
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
@@ -42,7 +43,7 @@ $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for impl
 $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; 
 #
 GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,\
-            "amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz,\
+            "amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz, "gmresRestartLength=i"=>\$gmresRestartLength,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,"debugOges=i"=>\$debugOges,\
             "solver=s"=>\$solver,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,\
             "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,\
@@ -55,7 +56,7 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "eigenVectorFile=s"=>\$eigenVectorFile,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"filterTimeDerivative=i"=>\$filterTimeDerivative,\
             "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"krylovType=s"=>\$krylovType,\
             "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid,"filterD0t=i"=>\$filterD0t,\
-            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep );
+            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -85,6 +86,7 @@ omega $omega
 maximum number of iterations $maxIterations 
 tol $tol 
 krylov type $krylovType
+gmres restart length $gmresRestartLength
 filter time derivative $filterTimeDerivative
 filter D0t $filterD0t
 number of periods $numPeriods
@@ -122,6 +124,7 @@ $ts
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
 take implicit first step $takeImplicitFirstStep
+take periodic first step $takePeriodicFirstStep
 dtMax $dtMax
 implicit weights $beta2 $beta4 $beta6 $beta8
 cfl $cfl

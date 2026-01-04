@@ -1231,9 +1231,10 @@ solve()
   else
     Tperiod=1;
 
-  IntegerArray & numPeriodsArray    = cgWave.dbase.get<IntegerArray>("numPeriodsArray");
-  const int & numCompWaveHoltz      = cgWave.dbase.get<int>("numCompWaveHoltz");
-  const int & filterTimeDerivative  = cgWave.dbase.get<int>("filterTimeDerivative"); 
+  IntegerArray & numPeriodsArray           = cgWave.dbase.get<IntegerArray>("numPeriodsArray");
+  const int & numCompWaveHoltz             = cgWave.dbase.get<int>("numCompWaveHoltz");
+  const int & filterTimeDerivative         = cgWave.dbase.get<int>("filterTimeDerivative");
+  const int & adjustHelmholtzForUpwinding  = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding");  
 
   printF("CgWaveHoltz::solve: setting tFinal = Tperiod*numPeriods = %9.3e (numPeriods=%d) \n",Tperiod,numPeriods);
  
@@ -1304,6 +1305,7 @@ solve()
 
   realCompositeGridFunction & v    = cgWave.dbase.get<realCompositeGridFunction>("v");
   realCompositeGridFunction & vOld = cgWave.dbase.get<realCompositeGridFunction>("vOld");
+  realCompositeGridFunction & vh   = cgWave.dbase.get<realCompositeGridFunction>("vh");
   Range all;
   vOld.updateToMatchGrid(cg,all,all,all,numCompWaveHoltz);
 
@@ -1333,6 +1335,12 @@ solve()
   for( int it=0; it<maximumNumberOfIterations; it++ ) 
   {
     vOld=v;  // save current solution 
+
+    if( adjustHelmholtzForUpwinding )
+    {
+      // Here is the current best WaveHoltz solution, used to correct for upwinding
+      vh = v;
+    }
 
     // -- advance for one period (or multiple periods ) ---
     // if( it==0 )

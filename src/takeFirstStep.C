@@ -5,6 +5,8 @@
 #include "ParallelUtility.h"
 
 
+#define FOR_3D(i1,i2,i3,I1,I2,I3) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
+
 
 //=================================================================================================
 // Macro: Add forcing to the first step update
@@ -498,6 +500,22 @@ takeFirstStep( int cur, real t )
 
 
 
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Upwind (sosup) dissipation (4th-order difference used with 2nd-order scheme) 
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Upwind (sosup) dissipation (6th-order difference used with 4th-order scheme)
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+// ===========================================================================================
+// Macro: compute the coefficients in the sosup dissipation for curvilinear grids
+// ===========================================================================================
+
+
 
 
 //=================================================================================================
@@ -519,6 +537,7 @@ takeFirstStepHelmholtz( int cur, real t )
   // const real & omega                    = dbase.get<real>("omega");
     const int & orderOfAccuracy           = dbase.get<int>("orderOfAccuracy");
     const int & orderOfAccuracyInTime     = dbase.get<int>("orderOfAccuracyInTime");
+    const int & upwind                    = dbase.get<int>("upwind"); 
 
     const int & numberOfFrequencies       = dbase.get<int>("numberOfFrequencies");
     const RealArray & frequencyArray      = dbase.get<RealArray>("frequencyArray");  
@@ -527,6 +546,7 @@ takeFirstStepHelmholtz( int cur, real t )
     const int & solveHelmholtz            = dbase.get<int>("solveHelmholtz");
     const int & filterTimeDerivative      = dbase.get<int>("filterTimeDerivative");
     const int & takeImplicitFirstStep     = dbase.get<int>("takeImplicitFirstStep");
+    const int & takePeriodicFirstStep     = dbase.get<int>("takePeriodicFirstStep");
     const int & useSuperGrid              = dbase.get<int>("useSuperGrid");
 
     ForcingOptionEnum & forcingOption = dbase.get<ForcingOptionEnum>("forcingOption");
@@ -568,8 +588,11 @@ takeFirstStepHelmholtz( int cur, real t )
     }
     else if( filterTimeDerivative ) 
     {
-        usePeriodicFirstStep=true; // DO this for COMPLEX solutions **Sept 28, 2024 **
-    // usePeriodicFirstStep=false; // DO this for COMPLEX solutions **Dec 7, 2025 **
+    // usePeriodicFirstStep= true; // DO this for COMPLEX solutions **Sept 28, 2024 **
+        usePeriodicFirstStep= takePeriodicFirstStep; // Dec 12, 2025
+
+    // if( false && upwind )
+    //   usePeriodicFirstStep=false; // DO this for COMPLEX solutions + upwind **Dec 11, 2025 **
     }
 
     
@@ -775,14 +798,54 @@ takeFirstStepHelmholtz( int cur, real t )
                     if( debug>2 )
                         printF("~~~~~~~~~~~~~~ Take EXPLICIT first step Complex case : omega=%14.6e, scaleD0t=%12.3e\n",omega,scaleD0t);
 
+          // when viFactor =1 vLocal(:,;<;<1) holds ui, not omega*ui 
                     unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + dt*vLocal(I1,I2,I3,1)*scaleD0t + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
+
+                    if( false && upwind )
+                    {
+            // Add upwind term *wdh* Dec 11, 2025
+                        Real adxSosup[3]={0.,0.,0.};
+                        
+                        const Real uDotFactor=.5;  // By default uDot is D-zero and so we scale (un-um) by .5 --> .5*(un-um)/(dt)
+
+                        const Real upwindDissipationCoefficient = getUpwindDissipationCoefficient( grid ); 
+                        const Real adSosup = upwindDissipationCoefficient; 
+            // 
+            // 
+                        const bool isRectangular = mg.isRectangular();
+                        if( isRectangular )
+                        {
+                            Real dx[3]={1.,1.,1.};
+                            mg.getDeltaX(dx);              
+                            adxSosup[0] = uDotFactor*adSosup/dx[0]; 
+                            adxSosup[1] = uDotFactor*adSosup/dx[1]; 
+                            adxSosup[2] = uDotFactor*adSosup/dx[2];     
+                        }
+
+                        if( mg.numberOfDimensions()==2 && orderOfAccuracy==2 )
+                        {
+                            FOR_3D(i1,i2,i3,I1,I2,I3)
+                            {
+                                if( !isRectangular )
+                                {
+                  // getSosupDissipationCoeff2d(adxSosup)
+                                    OV_ABORT("finish me -- add upwind to first step");
+                                }
+                                unLocal(i1,i2,i3) += (dt*scaleD0t)*((-6.*vLocal(i1,i2,i3,1)+4.*(vLocal(i1+1,i2,i3,1)+vLocal(i1-1,i2,i3,1))-(vLocal(i1+2,i2,i3,1)+vLocal(i1-2,i2,i3,1)))*adxSosup[0]+(-6.*vLocal(i1,i2,i3,1)+4.*(vLocal(i1,i2+1,i3,1)+vLocal(i1,i2-1,i3,1))-(vLocal(i1,i2+2,i3,1)+vLocal(i1,i2-2,i3,1)))*adxSosup[1]); // note factor of dt *check me*
+                            }
+                        }
+                        else
+                        {
+                            OV_ABORT("finish me -- add upwind to first step");
+                        }
+                    }
                 }
                 else
                 {
 
                     if( numberOfFrequencies==1 )
                     {
-                        if( debug>2 )
+                        if( true || debug>2 )
                             printF("~~~~~~~~~~~~~~ Take EXPLICIT first step assuming D0t U  = 0 : omega=%14.6e\n",omega);
                         unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
                     }
@@ -815,7 +878,8 @@ takeFirstStepHelmholtz( int cur, real t )
     if( !usePeriodicFirstStep && 
             timeSteppingMethod == explicitTimeStepping ) // May 2, 2025 added after implicit first step added for complex case
     {
-
+        if( true )
+            printF("~~~~~~~~~~~~~~ Apply boundary conditions after the EXPLICIT first step ~~~~~~~~~~~~~\n");
         bool applyExplicitBoundaryConditions=true;
         applyBoundaryConditions( u[next],u[cur], t+dt, applyExplicitBoundaryConditions );
     }
@@ -826,7 +890,8 @@ takeFirstStepHelmholtz( int cur, real t )
             u[next][grid].updateGhostBoundaries();
     }
     
-  // u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%6.2f ");
+    if( false )
+        u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%9.2e ");
 
 
     return 0;

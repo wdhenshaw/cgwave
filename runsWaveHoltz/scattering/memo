@@ -14,7 +14,181 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=8 
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=16 
 
+*******************************************
+********* Tues Dec 16, 2025
 
+TEST FIXES FOR UPWIND ADJUSTMENT:
+
+UPWIND + ADJUST : *WORKS* FPI AND GMRES
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -go=og
+
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 6.70e-14, 1.02e-13] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 8.61e-14, 1.84e-13] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 7.64e-14, 9.55e-14] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 7.31e-14, 9.63e-14] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 4.85e-11
+CgWaveHoltz::residual: grid=1 : maxRes= 3.64e-11
+solveHelmholtz: max-residual [Re,Im]=[4.85e-11,4.08e-11] (gmres, numIts=19, ave-CR= 0.24 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.55e-12,1.79e-12],  norm [Re,Im]=[1.03e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+*******************************************
+********* Sun Dec 14, 2025
+
+TEST UPWIND AFTER FIXES 
+
+UPWIND + ADJUST : 
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -go=og
+
+
+Check residual in absorbing BC: omega=  6.283185e+00, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 6.24e-09, 2.27e-07] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 8.18e-09, 2.78e-07] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 6.36e-09, 2.44e-07] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 6.36e-09, 2.44e-07] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 7.61e-04
+CgWaveHoltz::residual: grid=1 : maxRes= 1.95e-03
+solveHelmholtz: max-residual [Re,Im]=[1.95e-03,2.52e-05] (gmres, numIts=19, ave-CR= 0.24 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.43e-03,1.68e-03],  norm [Re,Im]=[1.03e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+*******************************************
+********* Thurs Dec 11, 2025
+
+plotStuff plotSolution.cmd -show=diskG128kx30.show -name=scatCylG128kx30 -res=2048 -field=absurTotal absuiTotal speed
+
+
+FINE GRID SCATTERING FINISHED: 
+setsid /usr/bin/mpirun -n 32 $cgwh -noplot scat.cmd -g=cice128.order4 -ts=implicit -solveri=bcgs -rtoli=1e-8 -atoli=1e-8  -cfl=1000 -nf=1 -amp=1 -kx=30 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -superGridWidth=0.15 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=0 -show=diskG128kx30.show -go=ks > diskG128kx30.out
+
+grid=/home/henshw/grids/cice128.order4.hdf
+ Convergence rate CR=0.905, CR-perPeriod=0.975, Time to solve = 2.66e+05(s) : CgWave= 2.66e+05(s) 99.98%, advance= 2.66e+05(s) 99.97%
+ max-residual=-1.00e+00 (WaveHoltz its), numberOfIterations = 204 (gmres) (maximumNumberOfIterations=500)
+ omega=  1.88e+02, k=  1.88e+02, lambda=  3.33e-02, dx=  7.81e-04, domainSize=  4.00e+00, NLambda=120, ppw=lambda/dx= 42.7, ppw(rule-of-thumb)= 28.4 (epsr=0.01)<<<
+
+
+Check residual in absorbing BC: omega=  1.884956e+02, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.85e-07, 6.36e-08] (Re,Im) (scale= 6.10e-07), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 3.91e-08, 1.26e-08] (Re,Im) (scale= 3.73e-13)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 3.87e-07, 1.35e-07] (Re,Im) (scale= 6.10e-07), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 4.75e-08, 2.30e-08] (Re,Im) (scale= 3.73e-13)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.13e-07, 3.87e-08] (Re,Im) (scale= 6.10e-07), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 2.88e-08, 1.13e-08] (Re,Im) (scale= 3.73e-13)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.12e-07, 3.85e-08] (Re,Im) (scale= 6.10e-07), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 2.40e-07, 7.54e-08] (Re,Im) (scale= 3.73e-13)
+CgWaveHoltz::residual: grid=0 : maxRes= 2.95e+00
+CgWaveHoltz::residual: grid=1 : maxRes= 2.97e-04
+solveHelmholtz: max-residual [Re,Im]=[2.98e-04,1.10e-05] (gmres, numIts=204, ave-CR= 0.90 )
+
+
+
+*******************************************
+********* Wed Dec 10, 2025
+
+SCATTERING + UPWIND
+
+FIXED getActivePoints for upwinding -- include more ghost:
+
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -go=og -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=0
+
+>>> SOLVE 2: resiuals large  and paeked near te boundaries
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.65e-06, 8.20e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.35e-06, 9.85e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 2.35e-06, 5.38e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.35e-06, 5.38e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 3.99e-03
+CgWaveHoltz::residual: grid=1 : maxRes= 2.47e-03
+solveHelmholtz: max-residual [Re,Im]=[1.66e-03,3.05e-03] (gmres, numIts=35, ave-CR= 0.46 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.00e-03,5.39e-04],  norm [Re,Im]=[1.08e+00,1.09e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+>>> SOLVE 1: resiuals large and smooth near outflow
+Check residual in absorbing BC: omega=  1.256637e+01, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 5.79e-05, 1.30e-03] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 6.64e-05, 1.43e-03] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 3.85e-05, 8.51e-04] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 3.85e-05, 8.50e-04] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.60e-01
+CgWaveHoltz::residual: grid=1 : maxRes= 2.84e-02
+solveHelmholtz: max-residual [Re,Im]=[1.60e-01,5.31e-02] (gmres, numIts=36, ave-CR= 0.46 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.24e-01,3.48e-02],  norm [Re,Im]=[1.12e+00,1.09e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+*******************************************
+********* Tues Dec 9, 2025
+
+SCATTERING + UPWIND
+
+FINER GRID: 
+cgwh -noplot scat.cmd -g=cice8.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -go=og -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=0
+
+>>> SOLVE 3 (solve 4 is similar)
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 5.30e-07, 1.19e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 6.29e-07, 1.42e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 3.45e-07, 7.95e-06] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 3.45e-07, 7.95e-06] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 2.16e-03
+CgWaveHoltz::residual: grid=1 : maxRes= 2.36e-03
+solveHelmholtz: max-residual [Re,Im]=[1.64e-03,2.36e-03] (gmres, numIts=32, ave-CR= 0.51 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.98e-04,1.51e-04],  norm [Re,Im]=[1.08e+00,1.09e+00] (between WaveHoltz and Direct Helmholtz)
+
+>>> SOLVE 2
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.65e-06, 8.20e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.35e-06, 9.85e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 2.35e-06, 5.38e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.35e-06, 5.38e-05] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 3.99e-03
+CgWaveHoltz::residual: grid=1 : maxRes= 2.47e-03
+solveHelmholtz: max-residual [Re,Im]=[1.66e-03,3.05e-03] (gmres, numIts=34, ave-CR= 0.47 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.00e-03,5.39e-04],  norm [Re,Im]=[1.08e+00,1.09e+00] (between WaveHoltz and Direct Helmholtz)
+
+>>> SOLVE 1
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 5.79e-05, 1.30e-03] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 6.64e-05, 1.43e-03] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 3.85e-05, 8.51e-04] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 3.85e-05, 8.50e-04] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 1.60e-01
+CgWaveHoltz::residual: grid=1 : maxRes= 2.84e-02
+solveHelmholtz: max-residual [Re,Im]=[1.60e-01,5.31e-02] (gmres, numIts=36, ave-CR= 0.46 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.24e-01,3.48e-02],  norm [Re,Im]=[1.12e+00,1.09e+00] (between WaveHoltz and Direct Helmholtz)
+
+>>>> FPI is faster than GMRES ??
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 6.50e-09, 2.40e-07] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 7.19e-09, 2.84e-07] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 6.35e-09, 2.57e-07] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 6.34e-09, 2.57e-07] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 2.15e-03
+CgWaveHoltz::residual: grid=1 : maxRes= 2.37e-03
+solveHelmholtz: max-residual [Re,Im]=[1.64e-03,2.37e-03] (FP, numIts=30, ave-CR= 0.38 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.50e-04,1.37e-04],  norm [Re,Im]=[1.08e+00,1.09e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+
+cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -go=og -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=0
+
+>>> GMRES -- converges but something wrong with useMatrixUtilities
+
+do not use matrix utilities : tol=1e-14
+solveHelmholtz: max-residual [Re,Im]=[1.97e-03,2.13e-03] (gmres, numIts=14, ave-CR= 0.27 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.27e-04,9.77e-05],  norm [Re,Im]=[1.03e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+use matrix utilities:
+solveHelmholtz: max-residual [Re,Im]=[3.19e-01,2.53e-01] (gmres, numIts=31, ave-CR= 0.55 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.99e-01,1.34e-01],  norm [Re,Im]=[1.19e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+>>>> FPI: not bad but adjust for upwinding not exact
+no adjust for upwinding
+solveHelmholtz: max-residual [Re,Im]=[1.97e-03,2.13e-03] (FP, numIts=21, ave-CR= 0.35 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.27e-04,9.76e-05],  norm [Re,Im]=[1.03e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+adjust for upwinding: (this should not work yet anyway)
+solveHelmholtz: max-residual [Re,Im]=[1.95e-03,2.65e-12] (FP, numIts=30, ave-CR= 0.48 )
+solveHelmholtz: rel-max-diff [Re,Im]=[2.93e-03,1.85e-03],  norm [Re,Im]=[1.03e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
 
 *******************************************
 ********* Sun Dec 7, 2025

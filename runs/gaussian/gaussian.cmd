@@ -128,7 +128,7 @@ exit
 # exit
 $cmd="#"; 
 if( $go eq "go" ){ $cmd = "solve\nexit"; }
-if( $go eq "og" ){ $cmd = "open graphics"; }
+if( $go eq "og" ){ $cmd = "solve\n contour\n exit\n open graphics"; }
 $cmd
 
 

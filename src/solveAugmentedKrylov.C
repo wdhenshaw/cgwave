@@ -94,49 +94,7 @@ static void matVectFunction( const RealArray & x, RealArray & y )
             OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
             OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
 
-            {
-                const IntegerArray & gid = mg.gridIndexRange();
-                int iab[2]; // for getActivePoints 
-                Iv[2]=Range(0,0);
-                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                {
-                    for( int side=0; side<=1; side++ )
-                    {
-                        int is = 1-2*side;
-                        iab[side]=gid(side,axis);
-                        const int bc = mg.boundaryCondition(side,axis);
-                        if( filterTimeDerivative )
-                        {
-              // complex valued solution: include all points : Jan 26, 2025
-                            iab[side] -= is*numGhost;
-                        }      
-                        else if( bc==CgWave::dirichlet )
-                        {
-                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                        }
-                        else if( bc==CgWave::neumann )
-                        {
-              // include boundary
-                        }
-                        else if( bc>0 )
-                        {
-                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                            OV_ABORT("error");
-                        }
-                        else if( bc<0 )
-                        {
-              // periodic -- include left end
-                            if( side==1 )
-                                iab[side] += is; 
-                        }
-                        else
-                        {
-              // interpolation boundary : include end 
-                        }
-                    }
-                    Iv[axis] = Range(iab[0],iab[1]);
-                }
-            }
+            cgWave.getActivePointIndex( mg, Iv );
 
             FOR_3D(i1,i2,i3,I1,I2,I3)
             {
@@ -212,49 +170,7 @@ static void matVectFunction( const RealArray & x, RealArray & y )
             OV_GET_SERIAL_ARRAY(Real,vOld[grid],vOldLocal);
             OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
 
-            {
-                const IntegerArray & gid = mg.gridIndexRange();
-                int iab[2]; // for getActivePoints 
-                Iv[2]=Range(0,0);
-                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                {
-                    for( int side=0; side<=1; side++ )
-                    {
-                        int is = 1-2*side;
-                        iab[side]=gid(side,axis);
-                        const int bc = mg.boundaryCondition(side,axis);
-                        if( filterTimeDerivative )
-                        {
-              // complex valued solution: include all points : Jan 26, 2025
-                            iab[side] -= is*numGhost;
-                        }      
-                        else if( bc==CgWave::dirichlet )
-                        {
-                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                        }
-                        else if( bc==CgWave::neumann )
-                        {
-              // include boundary
-                        }
-                        else if( bc>0 )
-                        {
-                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                            OV_ABORT("error");
-                        }
-                        else if( bc<0 )
-                        {
-              // periodic -- include left end
-                            if( side==1 )
-                                iab[side] += is; 
-                        }
-                        else
-                        {
-              // interpolation boundary : include end 
-                        }
-                    }
-                    Iv[axis] = Range(iab[0],iab[1]);
-                }
-            }
+            cgWave.getActivePointIndex( mg, Iv );
             if( iteration==computeRightHandSide )
             {
         // The RHS "b" is just the solution with zero initial conditions
@@ -426,49 +342,7 @@ solveAugmentedKrylov(int argc,char **args)
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
             MappedGrid & mg = cg[grid];
-            {
-                const IntegerArray & gid = mg.gridIndexRange();
-                int iab[2]; // for getActivePoints 
-                Iv[2]=Range(0,0);
-                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                {
-                    for( int side=0; side<=1; side++ )
-                    {
-                        int is = 1-2*side;
-                        iab[side]=gid(side,axis);
-                        const int bc = mg.boundaryCondition(side,axis);
-                        if( filterTimeDerivative )
-                        {
-              // complex valued solution: include all points : Jan 26, 2025
-                            iab[side] -= is*numGhost;
-                        }      
-                        else if( bc==CgWave::dirichlet )
-                        {
-                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                        }
-                        else if( bc==CgWave::neumann )
-                        {
-              // include boundary
-                        }
-                        else if( bc>0 )
-                        {
-                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                            OV_ABORT("error");
-                        }
-                        else if( bc<0 )
-                        {
-              // periodic -- include left end
-                            if( side==1 )
-                                iab[side] += is; 
-                        }
-                        else
-                        {
-              // interpolation boundary : include end 
-                        }
-                    }
-                    Iv[axis] = Range(iab[0],iab[1]);
-                }
-            }
+            cgWave.getActivePointIndex( mg, Iv );
 
             OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
             FOR_3D(i1,i2,i3,I1,I2,I3)
@@ -497,49 +371,7 @@ solveAugmentedKrylov(int argc,char **args)
         for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         {
             MappedGrid & mg = cg[grid];
-            {
-                const IntegerArray & gid = mg.gridIndexRange();
-                int iab[2]; // for getActivePoints 
-                Iv[2]=Range(0,0);
-                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                {
-                    for( int side=0; side<=1; side++ )
-                    {
-                        int is = 1-2*side;
-                        iab[side]=gid(side,axis);
-                        const int bc = mg.boundaryCondition(side,axis);
-                        if( filterTimeDerivative )
-                        {
-              // complex valued solution: include all points : Jan 26, 2025
-                            iab[side] -= is*numGhost;
-                        }      
-                        else if( bc==CgWave::dirichlet )
-                        {
-                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                        }
-                        else if( bc==CgWave::neumann )
-                        {
-              // include boundary
-                        }
-                        else if( bc>0 )
-                        {
-                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                            OV_ABORT("error");
-                        }
-                        else if( bc<0 )
-                        {
-              // periodic -- include left end
-                            if( side==1 )
-                                iab[side] += is; 
-                        }
-                        else
-                        {
-              // interpolation boundary : include end 
-                        }
-                    }
-                    Iv[axis] = Range(iab[0],iab[1]);
-                }
-            }
+            cgWave.getActivePointIndex( mg, Iv );
 
             OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
             OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
@@ -601,49 +433,7 @@ solveAugmentedKrylov(int argc,char **args)
                 OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
                 OV_GET_SERIAL_ARRAY(real,uev[grid],uevLocal);
 
-                {
-                    const IntegerArray & gid = mg.gridIndexRange();
-                    int iab[2]; // for getActivePoints 
-                    Iv[2]=Range(0,0);
-                    for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                    {
-                        for( int side=0; side<=1; side++ )
-                        {
-                            int is = 1-2*side;
-                            iab[side]=gid(side,axis);
-                            const int bc = mg.boundaryCondition(side,axis);
-                            if( filterTimeDerivative )
-                            {
-                // complex valued solution: include all points : Jan 26, 2025
-                                iab[side] -= is*numGhost;
-                            }      
-                            else if( bc==CgWave::dirichlet )
-                            {
-                                  iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                            }
-                            else if( bc==CgWave::neumann )
-                            {
-                // include boundary
-                            }
-                            else if( bc>0 )
-                            {
-                                printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                                OV_ABORT("error");
-                            }
-                            else if( bc<0 )
-                            {
-                // periodic -- include left end
-                                if( side==1 )
-                                    iab[side] += is; 
-                            }
-                            else
-                            {
-                // interpolation boundary : include end 
-                            }
-                        }
-                        Iv[axis] = Range(iab[0],iab[1]);
-                    }
-                }
+                cgWave.getActivePointIndex( mg, Iv );
                 FOR_3D(i1,i2,i3,I1,I2,I3)
                 {
                     if( maskLocal(i1,i2,i3) > 0 )
@@ -732,49 +522,7 @@ solveAugmentedKrylov(int argc,char **args)
             OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
             OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
 
-            {
-                const IntegerArray & gid = mg.gridIndexRange();
-                int iab[2]; // for getActivePoints 
-                Iv[2]=Range(0,0);
-                for( int axis=0; axis<mg.numberOfDimensions(); axis++ )
-                {
-                    for( int side=0; side<=1; side++ )
-                    {
-                        int is = 1-2*side;
-                        iab[side]=gid(side,axis);
-                        const int bc = mg.boundaryCondition(side,axis);
-                        if( filterTimeDerivative )
-                        {
-              // complex valued solution: include all points : Jan 26, 2025
-                            iab[side] -= is*numGhost;
-                        }      
-                        else if( bc==CgWave::dirichlet )
-                        {
-                              iab[side] += is;  // Dirichlet BC -- ignore the boundary
-                        }
-                        else if( bc==CgWave::neumann )
-                        {
-              // include boundary
-                        }
-                        else if( bc>0 )
-                        {
-                            printF("getActivePointIndex:ERROR: unknown bc=%d for grid=%d\n",bc,grid);
-                            OV_ABORT("error");
-                        }
-                        else if( bc<0 )
-                        {
-              // periodic -- include left end
-                            if( side==1 )
-                                iab[side] += is; 
-                        }
-                        else
-                        {
-              // interpolation boundary : include end 
-                        }
-                    }
-                    Iv[axis] = Range(iab[0],iab[1]);
-                }
-            }
+            cgWave.getActivePointIndex( mg, Iv );
             FOR_3D(i1,i2,i3,I1,I2,I3)
             {
                 if( maskLocal(i1,i2,i3) > 0 )

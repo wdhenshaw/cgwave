@@ -1147,7 +1147,15 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
       { // Deflate the solution by projecting out selected eigenvectors
         deflateSolution();
       }
-    }
+
+      if( debug >1  ) // %%%%%%%%%%%% TEMP 
+      {
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+          ::display(v[grid],sPrintF("updateTimeIntegral: new WaveHoiltz v at t=%12.6e",grid,t),"%10.3e ");
+        }
+      }
+    } // end if lastStep
       
   }
 

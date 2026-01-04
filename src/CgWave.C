@@ -81,6 +81,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<Real>("domainSize")=-1.;  
 
   dbase.put<int>("upwind")=0;                // use upwind dissipation
+  dbase.put<int>("upwindHelmholtz")=0;       // include upwind dissipation terms in direct Helmholtz solution
   dbase.put<int>("numUpwindCorrections")=1;  // number of upwind corrections
 
   dbase.put<Real>("ad4")=0.;   // coeff of the artificial dissipation. (*old)
@@ -142,7 +143,8 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
 
   dbase.put<TimeSteppingMethodEnum>("timeSteppingMethod")=explicitTimeStepping;
-  dbase.put<int>("takeImplicitFirstStep")=0;     // 1 = For implicit time-stepping, use an implicit first step
+  dbase.put<int>("takeImplicitFirstStep") =0;     // 1 = For implicit time-stepping, use an implicit first step
+  dbase.put<int>("takePeriodicFirstStep") =0;     // 1 = use a periodic first step for WaveHoltz
 
 
   // We have different versions of modified equation time-stepping
@@ -311,6 +313,9 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   // For the Helmholtz solution: 
   dbase.put<realCompositeGridFunction>("v");
   dbase.put<realCompositeGridFunction>("vOld");
+
+  // Current best guess at the WaveHoltz solution, used to correct for upwinding
+  dbase.put<realCompositeGridFunction>("vh");
 
   dbase.put<IntegerArray>("gridIsImplicit"); 
 
@@ -721,7 +726,16 @@ int CgWave::initialize()
     orderOfExtrapolation = orderOfAccuracy+1;
 
 
-  const int & upwind                  = dbase.get<int>("upwind");
+  int & takeImplicitFirstStep           = dbase.get<int>("takeImplicitFirstStep");
+  const TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");  
+
+  if( takeImplicitFirstStep && timeSteppingMethod != implicitTimeStepping ) // *wdh* Dec 13, 2025
+  {
+    takeImplicitFirstStep=0;
+    printF("CgWave::initialize: Setting takeImplicitFirstStep=0 since time-stepping is NOT implicit\n");
+  }
+
+  const int & upwind           = dbase.get<int>("upwind");
   // const real & ad4            = dbase.get<real>("ad4"); // coeff of the artificial dissipation.
 
   bool useUpwindDissipation = upwind;
@@ -1183,6 +1197,7 @@ getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerA
 
   int & orderOfExtrapolation = dbase.get<int>("orderOfExtrapolation"); // for BCs, -1= default = orderOfAccuracy+1  
   int & useSuperGrid         = dbase.get<int>("useSuperGrid");
+  int & upwindHelmholtz      = dbase.get<int>("upwindHelmholtz");
   Real & superGridWidth      = dbase.get<real>("superGridWidth");
 
 
@@ -1236,7 +1251,14 @@ getBoundaryConditionOption(const aString & answer, DialogData & dialog, IntegerA
   }   
   else if( dialog.getToggleValue(answer,"use superGrid",useSuperGrid) )
   {
-    printF("Setting useSuperGrid=%d (1=use superGrid absorbing layers).\n",useSuperGrid);
+    
+    if( useSuperGrid)
+    {
+      printF("Setting useSuperGrid=%d  : 1=use superGrid absorbing layers. Also setting upwindHelmholtz=1 to include upwind terms in direct Helmholtz solve.\n",useSuperGrid);
+      upwindHelmholtz=1;
+    }
+    else
+      printF("Setting useSuperGrid=%d (0=do NOT use superGrid absorbing layers).\n",useSuperGrid);
   }
   else if( dialog.getTextValue(answer,"superGrid width","%e",superGridWidth) )
   {
@@ -1758,12 +1780,14 @@ int CgWave::interactiveUpdate()
   RealArray & periodArray              = dbase.get<RealArray>("periodArray");  
 
   int & upwind                         = dbase.get<int>("upwind");
+  int & upwindHelmholtz                = dbase.get<int>("upwindHelmholtz");
   int & numUpwindCorrections           = dbase.get<int>("numUpwindCorrections");
   int & implicitUpwind                 = dbase.get<int>("implicitUpwind");
   real & ad4                           = dbase.get<real>("ad4"); // coeff of the artificial dissipation. (*old*)
   int & dissipationFrequency           = dbase.get<int>("dissipationFrequency");
   int & preComputeUpwindUt             = dbase.get<int>("preComputeUpwindUt");
   int & takeImplicitFirstStep          = dbase.get<int>("takeImplicitFirstStep");
+  int & takePeriodicFirstStep          = dbase.get<int>("takePeriodicFirstStep");
 
   int & adjustPlotsForSuperGrid        =  dbase.get<int>("adjustPlotsForSuperGrid");    // set solution to zero in any superGridLayers
   int & adjustErrorsForSuperGrid       =  dbase.get<int>("adjustErrorsForSuperGrid");  
@@ -1875,6 +1899,7 @@ int CgWave::interactiveUpdate()
   aString tbCommands[] = {
                           "save show file",
                           "upwind dissipation",
+                          "upwind Helmholtz",
                           "turn on forcing",
                           "compute errors",
                           "pre-compute upwind Ut",
@@ -1884,6 +1909,7 @@ int CgWave::interactiveUpdate()
                           "use known for first step",
                           "implicit upwind",
                           "take implicit first step",
+                          "take periodic first step",
                           "adjust plots for superGrid",
                           "adjust errors for superGrid",
                           "solve for scattered field",
@@ -2208,6 +2234,10 @@ int CgWave::interactiveUpdate()
     {
       printF("Setting upwind=%d (upwind dissipation is on or off).\n",upwind);
     }
+    else if( dialog.getToggleValue(answer,"upwind Helmholtz",upwindHelmholtz) )
+    {
+      printF("Setting upwindHelmholtz=%d (1= add upwind dissipation terms to direct Helmholtz soltuion).\n",upwindHelmholtz);
+    }    
     else if( dialog.getToggleValue(answer,"turn on forcing",addForcing) ){}//
 
     else if( dialog.getToggleValue(answer,"pre-compute upwind Ut",preComputeUpwindUt) )
@@ -2236,9 +2266,12 @@ int CgWave::interactiveUpdate()
 
     else if( dialog.getToggleValue(answer,"take implicit first step",takeImplicitFirstStep) )
     {
-      printF("Setting takeImplicitFirstStep=%i (1=take an implicit first step when implicit time-stepping\n",takeImplicitFirstStep);
+      printF("Setting takeImplicitFirstStep=%i (1=take an implicit first step when implicit time-stepping)\n",takeImplicitFirstStep);
     } 
-
+    else if( dialog.getToggleValue(answer,"take periodic first step",takePeriodicFirstStep) )
+    {
+      printF("Setting takePeriodicFirstStep=%i (1=take a periodic first step for WaveHoltz)\n",takePeriodicFirstStep);
+    } 
     else if( dialog.getToggleValue(answer,"adjust plots for superGrid",adjustPlotsForSuperGrid) )
     {
       printF("Setting adjustPlotsForSuperGrid=%i (1=do not plot solution in the superGrid layers\n",adjustPlotsForSuperGrid);
@@ -3359,6 +3392,12 @@ int CgWave::checkParameters()
   {
     printF("CgWave::checkParameters: ERROR: numberOfFrequencies>1 cannot yet be used with solveHelmholtz and filterTimeDerivative.\n");
     numErrors++;
+  }
+
+  if( takeImplicitFirstStep && timeSteppingMethod != implicitTimeStepping )
+  {
+    printF("CgWave::checkParameters: takeImplicitFirstStep BUT time-stepping is NOT implicit\n");
+    OV_ABORT("CgWave::checkParameters: Fix errors (or set checkParameters=0 to continue anyway)")
   }
 
   if( checkParameters && numErrors>0 )
