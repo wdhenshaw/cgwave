@@ -12,6 +12,78 @@ set ovp2 = ~/Dropbox/overHoltzPaper/part2
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+***************************************************
+****** Sun Jan 4, 2026 
+
+WHY IS THERE CPU FOR INTERPOLATION??
+
+RESIDUALS DO NOT EXACTLY MATCH?  **CHECK ME** --> could be round-off for a very small tol
+
+
+START TEST PARALLEL
+*BUG FIXED* residual.bC -- 
+
+Finer grid:
+mpiexec -n 16 $cgwh -noplot gaussian.cmd -g=square2048.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.55 -y0=0.55 -nf=1 -freq=200 -amp=-40000 -beta=200 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=a -upwind=1 -show=junk.show -go=og 
+
+solveHelmholtz: max-residual [Re,Im]=[8.82e-10,7.93e-10] (gmres, numIts=179, ave-CR= 0.90 , cpu=1.59e+02(s), np=16)
+solveHelmholtz: max-residual [Re,Im]=[8.82e-10,7.93e-10] (gmres, numIts=179, ave-CR= 0.90 , cpu=1.11e+02(s), np=32)
+
+WHY IS THERE CPU FOR INTERPOLATION??
+  boundary conditions...............  1.12e+01    5.55e-04    1.32e-10     8.195   1.454e+01   7.422e+00
+  interpolation.....................  1.87e+01    9.22e-04    2.20e-10    13.616   2.403e+01   1.231e+01
+
+
+finer grid: 
+mpiexec -n 4 $cgwh -noplot gaussian.cmd -g=square1024.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.5 -y0=0.5 -nf=1 -freq=100 -amp=-10000 -beta=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=a -upwind=1 -show=junk.show -go=og 
+
+Check residual in absorbing BC: omega=  1.000000e+02, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.43e-16, 3.57e-15] (Re,Im) (scale= 9.54e-07), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 4.93e-16, 3.92e-16] (Re,Im) (scaled by  9.09e-13)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 2.98e-16, 3.60e-15] (Re,Im) (scale= 9.54e-07), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 4.74e-16, 6.11e-16] (Re,Im) (scaled by  9.09e-13)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 3.25e-16, 3.61e-15] (Re,Im) (scale= 9.54e-07), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 4.91e-16, 5.16e-16] (Re,Im) (scaled by  9.09e-13)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.76e-16, 3.45e-15] (Re,Im) (scale= 9.54e-07), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 4.89e-16, 5.04e-16] (Re,Im) (scaled by  9.09e-13)
+CgWaveHoltz::residual: grid=0 : maxRes= 5.42e-08
+
+Good speedups:
+solveHelmholtz: max-residual [Re,Im]=[1.04e-11,1.86e-11] (gmres, numIts=119, ave-CR= 0.81 , cpu=1.51e+02(s), np=2)
+solveHelmholtz: max-residual [Re,Im]=[1.23e-11,1.93e-11] (gmres, numIts=119, ave-CR= 0.81 , cpu=7.82e+01(s), np=4)
+solveHelmholtz: max-residual [Re,Im]=[1.22e-11,2.47e-11] (gmres, numIts=119, ave-CR= 0.81 , cpu=4.68e+01(s), np=8)
+
+
+Higher freq -- trouble with DHS
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square128.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.5 -y0=0.5 -nf=1 -freq=40 -amp=-1600 -beta=40 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=a -upwind=1 -show=junk.show -go=og  
+
+
+solveHelmholtz: max-residual [Re,Im]=[2.76e-13,3.91e-13] (gmres, numIts=49, ave-CR= 0.59 , cpu=1.05e+00(s), np=1) 
+solveHelmholtz: max-residual [Re,Im]=[3.16e-13,3.93e-13] (gmres, numIts=49, ave-CR= 0.59 , cpu=8.81e-01(s), np=4)
+
+
+mpiexec -n 2 xterm -e gdb -ex run --args mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.5 -y0=0.5 -nf=1 -freq=7 -amp=-50 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=a -upwind=1 -show=junk.show -go=dfk
+
+
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.5 -y0=0.5 -nf=1 -freq=7 -amp=-50 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=a -upwind=1 -show=junk.show -go=og  
+
+Check residual in absorbing BC: omega=  7.000000e+00, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.14e-16, 2.91e-15] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 1.32e-26
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 1.88e-16, 2.21e-15] (Re,Im) (scaled by  9.54e-07)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.44e-16, 2.97e-15] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 1.32e-26
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 1.47e-16, 2.22e-15] (Re,Im) (scaled by  9.54e-07)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.54e-16, 2.94e-15] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 1.32e-26
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 1.50e-16, 2.18e-15] (Re,Im) (scaled by  9.54e-07)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.15e-16, 2.91e-15] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 1.32e-26
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 2.70e-16, 2.30e-15] (Re,Im) (scaled by  9.54e-07)
+CgWaveHoltz::residual: grid=0 : maxRes= 4.92e-11
+solveHelmholtz: max-residual [Re,Im]=[9.03e-13,1.53e-12] (gmres, numIts=15, ave-CR= 0.17 )
+solveHelmholtz: rel-max-diff [Re,Im]=[1.34e-12,2.19e-12],  norm [Re,Im]=[1.21e-01,1.66e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+
+dfk
+
 
 ***************************************************
 ****** Fri Jan 2, 2026  -- return from Carribean cruise
