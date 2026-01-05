@@ -14,6 +14,59 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=8 
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=16 
 
+
+***************************************************
+****** Mon Jan 5, 2026 
+
+FIX Direct Helmholtz solver for parallel and complex
+
+first test new version in serial:
+
+$cgwh -noplot scat.cmd -g=cice2.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -go=dfk
+
+NEW version:
+solveHelmholtz: max-residual [Re,Im]=[1.26e-11,1.08e-11] (gmres, numIts=24, ave-CR= 0.30 , cpu=1.87e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.24e-13,1.55e-13],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+OLD version:
+solveHelmholtz: max-residual [Re,Im]=[1.26e-11,1.08e-11] (gmres, numIts=24, ave-CR= 0.30 , cpu=1.91e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.24e-13,1.55e-13],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+***************************************************
+****** Sun Jan 4, 2026 
+
+
+START TEST PARALLEL + EXPLICIT + UPWIND
+
+TROUBLE -n 2 
+
+PARALLEL:
+gdb $cgwh 
+run -noplot scat.cmd -g=cice2.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -go=og
+
+ =================== DIRECT SOLVE OF THE HELMHOLTZ EQUATION ==================
+    c=1, numberOfFrequencies=1, orderOfAccuracy=2, solveComplex=1, upwindHelmholtz=0
+ freq(0) = 6.28319
+ useSuperGrid=0, superGrid[grid] = [0,0,]
+ =============================================================================
+testConsistency:ERROR: label=Internal_Partitioning_Type::updateGhostBoundaries :
+   myid=0, dimension d=0: parti bounds=[-2,88], local-array bounds=[-3,87] 
+   myid=0, dimension d=1: parti bounds=[-2,12], local-array bounds=[-3,11] 
+
+
+$cgwh -noplot scat.cmd -g=cice2.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -go=dfk
+
+CgWaveHoltz::residual: grid=0 : maxRes= 1.26e-11
+CgWaveHoltz::residual: grid=1 : maxRes= 6.36e-12
+solveHelmholtz: max-residual [Re,Im]=[1.26e-11,1.08e-11] (gmres, numIts=24, ave-CR= 0.30 , cpu=1.91e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.24e-13,1.55e-13],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+OK serial:
+$cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -go=dfk
+
+
 *******************************************
 ********* Tues Dec 16, 2025
 

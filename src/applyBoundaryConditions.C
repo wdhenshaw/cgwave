@@ -804,7 +804,7 @@ applyEigenFunctionBoundaryConditions( realCompositeGridFunction & u )
   // printF("Call interpolate...\n");
     real cpu0 = getCPU();
 
-  // *** Note: interpolate also does a periodic update **** 
+  // *** Note: interpolate also does a periodic update AND update parallel ghost **** 
 
     u.interpolate();
 

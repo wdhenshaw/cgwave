@@ -1068,9 +1068,51 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
     if( !useSuperGrid || isAllCurvilinear )
     {
       // we can use the standard operators
-      coeff=( cSq*op.laplacianCoefficients(eq1,urc) + a1*op.identityCoefficients(eq1,urc) + b1*op.identityCoefficients(eq1,uic)+
-              cSq*op.laplacianCoefficients(eq2,uic) + a2*op.identityCoefficients(eq2,uic) + b2*op.identityCoefficients(eq2,urc)   );
+      if( 1==0 )
+      { // trouble here in parallel -- Jan 54, 2026
+        coeff=( cSq*op.laplacianCoefficients(eq1,urc) + a1*op.identityCoefficients(eq1,urc) + b1*op.identityCoefficients(eq1,uic)+
+                cSq*op.laplacianCoefficients(eq2,uic) + a2*op.identityCoefficients(eq2,uic) + b2*op.identityCoefficients(eq2,urc)   );
+      }
+      else
+      {
+        const int numberOfComponentsForCoefficients =2;
+        Range M0 = stencilSize;  // for first equation
+        Range M1 = M0 + CE(1,1); // for second equation        
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+          MappedGrid & mg = cg[grid];
+
+          realMappedGridFunction & mgCoeff = coeff[grid];
+          MappedGridOperators & mgop       = op[grid]; 
+
+          OV_GET_SERIAL_ARRAY(Real,mgCoeff,coeffLocal);
+          OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+
+          getIndex(mg.dimension(),I1,I2,I3);
+
+          bool ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,I1,I2,I3);
+          if( ok )
+          {
+            RealArray dCoeff(M0,I1,I2,I3);
+
+            // --- Coefficients for Laplacian --
+            mgop.assignCoefficients( MappedGridOperators::laplacianOperator,dCoeff,I1,I2,I3,0,0);
+
+            coeffLocal(M0,I1,I2,I3) = cSq*( dCoeff(M0,I1,I2,I3) );  
+            coeffLocal(M1,I1,I2,I3) = cSq*( dCoeff(M0,I1,I2,I3) ); 
+
+            // ---- terms involving the identity ------
+            mgop.assignCoefficients( MappedGridOperators::identityOperator,dCoeff,I1,I2,I3,0,0);
+
+            coeffLocal(M0,I1,I2,I3) += a1*dCoeff(M0,I1,I2,I3);   // omega^2 I 
+            coeffLocal(M1,I1,I2,I3) += a2*dCoeff(M0,I1,I2,I3);   // omega^2 I 
+          }           
+
+        }      
+
+      }
     }
+
     else
     {
       // -- Some Cartesian Grids + SuperGrid
