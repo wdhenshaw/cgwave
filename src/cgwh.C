@@ -75,6 +75,9 @@ main(int argc, char *argv[])
     
     printF("Usage: `mpirun -np N cgwh [-noplot] [file.cmd] [-g=<gridName>]'\n");
     
+    printf("cgwh: myid=%d: pid=%d\n",myid,getpid());
+    fflush(0);
+
   // Use this to avoid un-necessary communication: 
     Optimization_Manager::setForceVSG_Update(Off);
 

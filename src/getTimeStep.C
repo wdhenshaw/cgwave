@@ -234,19 +234,24 @@ getTimeStep()
           #undef rxDotRx
         }
         
-        real dxMin=a11Min; 
-        real dxMax=a11Max;
-        dxMinMax(grid,0)= dxMin;
-        dxMinMax(grid,1)= dxMax;
+      } // end if ok
+      
+      real dxMin=a11Min; 
+      real dxMax=a11Max;
 
-        gridSize(grid) = dxMin;        
+      dxMin = ParallelUtility::getMinValue( dxMin ); // added Jan 5, 2026
+      dxMax = ParallelUtility::getMaxValue( dxMax ); // added Jan 5, 2026
 
-        dtGrid = (cfl/c) * dxMin;
+      dxMinMax(grid,0)= dxMin;
+      dxMinMax(grid,1)= dxMax;
 
-        gridCFL(grid)= 1./(dtGrid/cfl); // "c/dx"
+      gridSize(grid) = dxMin;        
 
-        printF("getTimeStep: grid=%d, dxMin=%9.2e, dxMax=%9.2e, gridSize=%9.2e, dt=%9.3e\n",grid,dxMin,dxMax,gridSize(grid),dtGrid);        
-      }
+      dtGrid = (cfl/c) * dxMin;
+
+      gridCFL(grid)= 1./(dtGrid/cfl); // "c/dx"
+
+      printF("getTimeStep: grid=%d, dxMin=%9.2e, dxMax=%9.2e, gridSize=%9.2e, dt=%9.3e\n",grid,dxMin,dxMax,gridSize(grid),dtGrid);        
         
     } // end curvilinear grid
 
