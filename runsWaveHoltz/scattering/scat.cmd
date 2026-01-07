@@ -38,7 +38,7 @@ $orderInTime=-1;  # -1 = use default
 $deflateWaveHoltz=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; 
 $adjustHelmholtzForUpwinding=1; # remove upwinding from Helmholtz solution
 $useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsForSuperGrid=1;
-$solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
+$solverh="yale"; $maxith=2000; $rtolh=1.e-10; $atolh=1.e-10; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
 $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; 
 #
@@ -97,6 +97,8 @@ matlab filename: $matlab
 # choose parameters for the direct Helmholtz solver
 direct solver parameters
   if( $solverh ne "yale" ){ $cmd="choose best iterative solver\n $solverh"; }else{ $cmd="choose best direct solver"; }
+  if( $solverh eq "best" ){ $solverh="choose best iterative solver"; }
+  if( $solverh eq "gmres" ){ $solverh = "choose best iterative solver\n generalized minimal residual"; }  
   $cmd
   number of incomplete LU levels
     $iluh

@@ -1,5 +1,28 @@
 
 
+***************************************************
+****** Wed Dec 17, 2025
+
+TEST PARALLEL (WaveHoltz hs problems with this grid)
+
+BUG FIXED: getTimeStep.C line 240
+
+ORDER=4, UPWIND=1: OK 
+mpiexec -n 2 $cgWave gaussian.cmd -g=cice4.order4.ng3 -beta=15 -omega=20 -amp=-500  -x0=1.25 -y0=1.25 -ts=explicit -cfl=.95 -upwind=1 -tf=10 -tp=.2 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=d -debug=1 -go=og
+
+
+
+UPWIND=1: OK
+mpiexec -n 2 $cgWave gaussian.cmd -g=cice4.order2 -beta=15 -omega=20 -amp=-500  -x0=1.25 -y0=1.25 -ts=explicit -cfl=.95 -upwind=1 -tf=10 -tp=.2 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=d -debug=1 -go=og
+
+UPWIND=0: OK 
+mpiexec -n 2 $cgWave gaussian.cmd -g=cice4.order2 -beta=15 -omega=20 -amp=-500  -x0=1.25 -y0=1.25 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.2 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=d -debug=1 -go=og
+
+upwind=0 : ok 
+
+
+
+mpiexec -n 2 $cgWave gaussian.cmd -g=cice2.order2 -beta=15 -omega=20 -amp=-500  -x0=1.25 -y0=1.25 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.2 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=d -debug=1 -go=og
 
 ***************************************************
 ****** Wed Dec 17, 2025

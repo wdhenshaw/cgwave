@@ -16,11 +16,159 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 
 
 ***************************************************
+****** Wed Jan 7, 2026 
+
+
+For now extrap interp neighbours
+mpiexec -n 6 $cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=800 -rtolh=1e-10 -atolh=1e-10 -assignInterpNeighbours=extrap -go=og
+
+
+***************************************************
+****** Tues Jan 6, 2026 
+
+=== How to attach gdb to a process: ====
+
+At this page I've found that a solution is to
+
+echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+and then, after I'm done,
+
+echo 1 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+to revert the change. I've tested this and it works. (I've not understood why this is not a permanent solution. Is the changed value restored after some timeout or after reboot or what?)
+========================
+
+
+BUGS FIXED IN op/src/AssignInterpNeighbours.C
+
+DEBUG:
+mpiexec -n 6 xterm -e gdb --args $cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=800 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+mpiexec -n 6 xterm -e gdb -ex run --args $cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=800 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+
+WORKS NOW:  np=2,3,4 *TROUBLE np=6 : hangs in assignInterpNeighbours
+mpiexec -n 6 $cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=800 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+np=6: hangs
+
+
+np=4
+solveHelmholtz: max-residual [Re,Im]=[7.43e-08,6.18e-08] (gmres, numIts=100, ave-CR= 0.83 , cpu=9.19e+00(s), np=4)
+solveHelmholtz: rel-max-diff [Re,Im]=[5.21e-09,4.91e-09],  norm [Re,Im]=[1.16e+00,1.12e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+np=3:
+solveHelmholtz: max-residual [Re,Im]=[7.43e-08,6.19e-08] (gmres, numIts=100, ave-CR= 0.83 , cpu=8.79e+00(s), np=3)
+solveHelmholtz: rel-max-diff [Re,Im]=[6.77e-09,7.65e-09],  norm [Re,Im]=[1.16e+00,1.12e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+***************************************************
 ****** Mon Jan 5, 2026 
+
+START TEST PARALLEL
+
+**BUG FIXED -- getTimeStep.C ***
 
 FIX Direct Helmholtz solver for parallel and complex
 
-first test new version in serial:
+
+CHECK BUG IN ASSIGN INTERP NEIGHBOURS:
+HANGS: np=3, np=8
+mpiexec -n 3 $cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=200 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+#### AssignInterpNeighbours::setupInterpolation:WARNING: FIX ME FOR PARALLEL #####
+
+
+
+G16: OK
+mpiexec -n 4 $cgwh -noplot scat.cmd -g=cice16.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=8 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10  -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=200 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+omega=  5.03e+01, k=  5.03e+01, lambda=  1.25e-01, dx=  6.25e-03, domainSize=  4.00e+00, NLambda=32, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 20.4 (epsr=0.01)<<<
+
+np=4:
+solveHelmholtz: max-residual [Re,Im]=[7.18e-11,6.32e-11] (gmres, numIts=197, ave-CR= 0.90 , cpu=9.72e+01(s), np=4)
+
+
+G8: 
+mpiexec -n 4 $cgwh -noplot scat.cmd -g=cice8.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10  -maxIterations=500 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=200 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+-n=8: TROUBLE
+ #### AssignInterpNeighbours::setupInterpolation:WARNING: FIX ME FOR PARALLEL #####
+
+solveHelmholtz: max-residual [Re,Im]=[1.28e-10,6.26e-11] (gmres, numIts=134, ave-CR= 0.85 , cpu=3.14e+01(s), np=4)
+
+
+
++++++++++ ORDER=4: WORKS NOW 
+mpiexec -n 4 $cgwh -noplot scat.cmd -g=cice4.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=200 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+np=4
+solveHelmholtz: max-residual [Re,Im]=[1.33e-11,8.53e-12] (gmres, numIts=79, ave-CR= 0.74 , cpu=9.00e+00(s), np=4)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.79e-09,2.85e-09],  norm [Re,Im]=[1.13e+00,1.16e+00] (between WaveHoltz and Direct Helmholtz)
+
+np=2: 
+solveHelmholtz: max-residual [Re,Im]=[1.33e-11,8.52e-12] (gmres, numIts=79, ave-CR= 0.74 , cpu=8.02e+00(s), np=2)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.50e-09,2.54e-09],  norm [Re,Im]=[1.13e+00,1.16e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+
+
+>>> np=1: OK 
+CgWaveHoltz::residual: grid=0 : maxRes= 3.46e-11
+CgWaveHoltz::residual: grid=1 : maxRes= 2.08e-12
+solveHelmholtz: max-residual [Re,Im]=[2.08e-12,1.94e-12] (gmres, numIts=89, ave-CR= 0.72 , cpu=8.69e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[1.23e-11,9.77e-12],  norm [Re,Im]=[1.13e+00,1.16e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+mpiexec -n 2 $cgwh -noplot scat.cmd -g=cice2.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=200 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+>>> np=2
+solveHelmholtz: max-residual [Re,Im]=[5.47e-12,6.06e-12] (gmres, numIts=21, ave-CR= 0.25 , cpu=4.94e+00(s), np=2)
+solveHelmholtz: rel-max-diff [Re,Im]=[1.29e-09,1.47e-09],  norm [Re,Im]=[1.03e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+>>> np=1: 
+ === Direct Helmholtz Solver (Complex) :
+ PETScNew, parallel=[generalized minimal residual iteration + block Jacobi preconditioner], local=[ILU(200) + reverse Cuthill-McKee ordering]
+ =====
+CgWaveHoltz::residual: grid=0 : maxRes= 1.44e-09
+CgWaveHoltz::residual: grid=1 : maxRes= 1.67e-11
+
+solveHelmholtz: max-residual [Re,Im]=[4.69e-12,4.77e-12] (gmres, numIts=21, ave-CR= 0.25 , cpu=3.19e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[1.85e-12,1.45e-12],  norm [Re,Im]=[1.03e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
++++++++++++++ ORDER=2 +++++++++++++
+
+G4:
+mpiexec -n 2 $cgwh -noplot scat.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+np=2:
+   DHS=OK, Krylov blows up
+
+
+G2: kx=2 : OK 
+mpiexec -n 4 $cgwh -noplot scat.cmd -g=cice2.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=400 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+G2: kx=1
+mpiexec -n 4 $cgwh -noplot scat.cmd -g=cice2.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=200 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+np=4: OK
+solveHelmholtz: max-residual [Re,Im]=[1.28e-11,1.13e-11] (gmres, numIts=24, ave-CR= 0.30 , cpu=4.49e+00(s), np=4)
+solveHelmholtz: rel-max-diff [Re,Im]=[4.37e-10,4.03e-10],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+np=2: 
+solveHelmholtz: max-residual [Re,Im]=[1.28e-11,1.14e-11] (gmres, numIts=24, ave-CR= 0.30 , cpu=4.14e+00(s), np=2)
+solveHelmholtz: rel-max-diff [Re,Im]=[7.08e-10,9.33e-10],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+np=1:
+solveHelmholtz: max-residual [Re,Im]=[1.28e-11,1.12e-11] (gmres, numIts=24, ave-CR= 0.30 , cpu=2.44e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[5.01e-12,3.88e-12],  norm [Re,Im]=[1.04e+00,1.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+
+>>>> first test new version in serial:
 
 $cgwh -noplot scat.cmd -g=cice2.order2 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13  -maxIterations=200 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -maxIterations=100 -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -go=dfk
 

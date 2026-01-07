@@ -13,6 +13,63 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
 ***************************************************
+****** Mon Jan 5, 2026 
+
+START TEST PARALLEL
+
+*** BUG FIXED : getTimeStep.C **
+
++++++++ G4 
+
+RSIS -- UPWIND=1, COMPLEX CASE : OK 
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=rsise8.order2 -ts=explicit -cfl=0.95 -x0=0.25 -y0=0.25 -nf=1 -freq=5 -amp=-25 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=d -upwind=1 -show=junk.show  -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+solveHelmholtz: max-residual [Re,Im]=[1.04e-09,6.06e-09] (gmres, numIts=56, ave-CR= 0.72 , cpu=9.82e+00(s), np=2)
+solveHelmholtz: rel-max-diff [Re,Im]=[4.55e-09,3.79e-10],  norm [Re,Im]=[7.49e-01,2.84e-10] (between WaveHoltz and Direct Helmholtz)
+
+
+SIS -- UPWIND=0 REAL CASE
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=sise8.order2 -ts=explicit -cfl=0.95 -x0=0.25 -y0=0.25 -nf=1 -freq=5 -amp=-25 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=0 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=d -upwind=0 -show=junk.show  -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+sise8:
+  np=2, 4 OK 
+sise4
+np=2: OK 
+
+
+UPWIND=0 REAL CASE ... OK NOW
+mpiexec -n 4 $cgwh -noplot gaussian.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -x0=1.25 -y0=1.25 -nf=1 -freq=5 -amp=-25 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=d -upwind=1 -show=junk.show  -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+np=2, np=4: Ok
+
+
+
+UPWIND=0 
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -x0=1.25 -y0=1.25 -nf=1 -freq=5 -amp=-25 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=d -upwind=0 -show=junk.show  -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+np=2: BAD 
+np=1: OK
+
+
+mpiexec -n 3 xterm -e gdb -ex run --args $cgwh noplot gaussian.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -x0=1.25 -y0=1.25 -nf=1 -freq=5 -amp=-25 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=d -upwind=1 -show=junk.show  -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -go=df
+
+
+mpiexec -n 4 $cgwh -noplot gaussian.cmd -g=cice4.order2 -ts=explicit -cfl=0.95 -x0=1.25 -y0=1.25 -nf=1 -freq=5 -amp=-25 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=d -upwind=1 -show=junk.show  -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+np=3: FPI hangs: ****
+
+np=2 : K=bad, FPI bad
+np=1: OK
+solveHelmholtz: max-residual [Re,Im]=[2.84e-10,3.65e-09] (gmres, numIts=181, ave-CR= 0.90 , cpu=1.42e+01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[6.72e-10,1.62e-09],  norm [Re,Im]=[2.98e-01,4.83e-10] (between WaveHoltz and Direct Helmholtz)
+
+G2
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=cice2.order2 -ts=explicit -cfl=0.95 -x0=1.25 -y0=1.25 -nf=1 -freq=5 -amp=-25 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=d -upwind=1 -show=junk.show  -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -go=og
+
+np=3: OK
+np=2: OK
+
+***************************************************
 ****** Sun Jan 4, 2026 
 
 WHY IS THERE CPU FOR INTERPOLATION?? --> update paralle ghost
@@ -72,7 +129,7 @@ solveHelmholtz: max-residual [Re,Im]=[2.76e-13,3.91e-13] (gmres, numIts=49, ave-
 solveHelmholtz: max-residual [Re,Im]=[3.16e-13,3.93e-13] (gmres, numIts=49, ave-CR= 0.59 , cpu=8.81e-01(s), np=4)
 
 
-mpiexec -n 2 xterm -e gdb -ex run --args mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.5 -y0=0.5 -nf=1 -freq=7 -amp=-50 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=a -upwind=1 -show=junk.show -go=dfk
+mpiexec -n 2 xterm -e gdb -ex run --args $cgwh -noplot gaussian.cmd -g=square32.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.5 -y0=0.5 -nf=1 -freq=7 -amp=-50 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=a -upwind=1 -show=junk.show -go=dfk
 
 
 mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=square32.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.5 -y0=0.5 -nf=1 -freq=7 -amp=-50 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-13 -maxIterations=500 -numPeriods=1 -filterTimeDerivative=1 -filterD0t=1 -damp=0 -adjustHelmholtzForUpwinding=1 -takePeriodicFirstStep=0 -bc=a -upwind=1 -show=junk.show -go=og  
@@ -1712,6 +1769,8 @@ diff=5
 ********************************************************
 make[1]: *** [Makefile:9: check-quiet] Error 1
 make: *** [Makefile:173: check-quiet] Error 2
+
+
 
 
 

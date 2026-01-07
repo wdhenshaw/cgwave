@@ -26,7 +26,7 @@ $beta2=.5; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping
 $meApproach="std"; # or "ha"
 $orderInTime=-1;  # -1 = use default
 $degreeInSpace=2; $degreeInTime=2; 
-$assignInterpNeighbours="extrap"; # by default extrap interp neighbours 
+$assignInterpNeighbours="interp"; # by default interpolate interpaltion point neighbours for upwinding
 $nBessel=1; $mTheta=1; 
 $mPhi=1; $mr=1; 
 $show=""; $flushFrequency=10; 
@@ -82,7 +82,7 @@ adjust errors for superGrid $adjustErrorsForSuperGrid
 #
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
-if( $show ne "" ){ $cmd="show file name $show\n save show file 1\n flush frequency $flushFrequency"; }else{ $cmd="#"; }
+if( $show ne "" ){ $cmd="show file name $show\n save show file 1\n flush frequency $flushFrequency"; }else{ $cmd="extrapolateInterpNeighbours"; }
 $cmd
 # 
 $cmd="#";
