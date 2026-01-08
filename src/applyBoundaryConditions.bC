@@ -77,9 +77,9 @@ void abcWave(const int&nd,
 
       if( !isAllImplicit )
       {
-        printF("Call extrapolateInterpolationNeighbours...\n");
+        if( debug & 8 ) printF("Call extrapolateInterpolationNeighbours...\n");
         u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t,bcParams);
-        printF("Done call extrapolateInterpolationNeighbours.\n");
+        if( debug & 8 ) printF("Done call extrapolateInterpolationNeighbours.\n");
       }
       else
       {
