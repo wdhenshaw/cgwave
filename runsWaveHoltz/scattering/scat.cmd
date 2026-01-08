@@ -37,8 +37,9 @@ $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $orderInTime=-1;  # -1 = use default
 $deflateWaveHoltz=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; 
 $adjustHelmholtzForUpwinding=1; # remove upwinding from Helmholtz solution
+$assignInterpNeighbours="interp"; # by default interpolate interpolation point neighbours for upwinding
 $useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsForSuperGrid=1;
-$solverh="yale"; $maxith=2000; $rtolh=1.e-10; $atolh=1.e-10; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
+$solverh="yale"; $maxith=2000; $rtolh=1.e-10; $atolh=1.e-10; $restart=50; $iluh=50; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
 $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; 
 #
@@ -56,7 +57,7 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "eigenVectorFile=s"=>\$eigenVectorFile,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"filterTimeDerivative=i"=>\$filterTimeDerivative,\
             "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"krylovType=s"=>\$krylovType,\
             "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid,"filterD0t=i"=>\$filterD0t,\
-            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep );
+            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep,"assignInterpNeighbours=s"=>\$assignInterpNeighbours );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -132,6 +133,9 @@ implicit weights $beta2 $beta4 $beta6 $beta8
 cfl $cfl
 interactiveMode $imode 
 tPlot $tp 
+#
+if( $assignInterpNeighbours eq "interp" ){ $cmd="interpolateInterpNeighbours"; }else{ $cmd="extrapolateInterpNeighbours"; }
+$cmd
 #
 debug $debug
 damp $damp

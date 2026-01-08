@@ -409,7 +409,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
   {
     // --- ADJUSTING for UPWINDING WORKS IN THE MATLAB CODE 
     RealCompositeGridFunction & vh = cgWave.dbase.get<realCompositeGridFunction>("vh"); 
-    printF(" ....set the grid function vh to the current matVect input vector x. (Used to adjust for upwinding)\n");     
+    // printF(" ....set the grid function vh to the current matVect input vector x. (Used to adjust for upwinding)\n");     
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);
@@ -801,7 +801,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiplyOld(Mat m ,Vec x, Vec y)
   {
     // --- ADJUSTING for UPWINDING WORKS IN THE MATLAB CODE 
     RealCompositeGridFunction & vh = cgWave.dbase.get<realCompositeGridFunction>("vh"); 
-    printF(" ....set the grid function vh to the current matVect input vector x. (Used to adjust for upwinding)\n");     
+    // printF(" ....set the grid function vh to the current matVect input vector x. (Used to adjust for upwinding)\n");     
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       OV_GET_SERIAL_ARRAY(Real,v[grid],vLocal);

@@ -82,7 +82,7 @@ adjust errors for superGrid $adjustErrorsForSuperGrid
 #
 if( $orderInTime > 0 ){ $cmd="orderInTime $orderInTime"; }else{ $cmd="#"; }
 $cmd
-if( $show ne "" ){ $cmd="show file name $show\n save show file 1\n flush frequency $flushFrequency"; }else{ $cmd="extrapolateInterpNeighbours"; }
+if( $show ne "" ){ $cmd="show file name $show\n save show file 1\n flush frequency $flushFrequency"; }else{ $cmd="#"; }
 $cmd
 # 
 $cmd="#";
@@ -117,7 +117,7 @@ implicit upwind $implicitUpwind
 # beta2=0 : trap, beta2=.5 = FW
 implicit weights $beta2 $beta4
 #
-if( $assignInterpNeighbours eq "interp" ){ $cmd="interpolateInterpNeighbours"; }else{ $cmd="#"; }
+if( $assignInterpNeighbours eq "interp" ){ $cmd="interpolateInterpNeighbours"; }else{ $cmd="extrapolateInterpNeighbours"; }
 $cmd
 #
 if( $known eq "boxHelmholtz" ){ $cmd="helmholtzForcing\n user defined forcing...\n box Helmholtz\n exit"; }else{ $cmd="#"; }
