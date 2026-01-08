@@ -546,9 +546,9 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                         assert( assignInterpNeighbours==extrapolateInterpNeighbours );
                         if( !isAllImplicit )
                         {
-                            printF("Call extrapolateInterpolationNeighbours...\n");
+                            if( debug & 8 ) printF("Call extrapolateInterpolationNeighbours...\n");
                             u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t,bcParams);
-                            printF("Done call extrapolateInterpolationNeighbours.\n");
+                            if( debug & 8 ) printF("Done call extrapolateInterpolationNeighbours.\n");
                         }
                         else
                         {
@@ -879,9 +879,9 @@ applyEigenFunctionBoundaryConditions( realCompositeGridFunction & u )
                 assert( assignInterpNeighbours==extrapolateInterpNeighbours );
                 if( !isAllImplicit )
                 {
-                    printF("Call extrapolateInterpolationNeighbours...\n");
+                    if( debug & 8 ) printF("Call extrapolateInterpolationNeighbours...\n");
                     u.applyBoundaryCondition(0,BCTypes::extrapolateInterpolationNeighbours,BCTypes::allBoundaries,0.,t,bcParams);
-                    printF("Done call extrapolateInterpolationNeighbours.\n");
+                    if( debug & 8 ) printF("Done call extrapolateInterpolationNeighbours.\n");
                 }
                 else
                 {
