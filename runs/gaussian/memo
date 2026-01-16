@@ -1,6 +1,63 @@
 
 
 ***************************************************
+****** Wed Jan 14, 2026
+
+CONT ON 3D ORDER 4 EM RBCs
+
+G4 UPWIND:  OK
+cgWave gaussian.cmd -g=box4.order4.ng3 -beta=20 -omega=20 -amp=-400  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=0.95 -tf=10 -tp=.5 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -upwind=1 -go=og
+
+
+
+G8 : 
+cgWave gaussian.cmd -g=box8.order4 -beta=30 -omega=30 -amp=-900  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=0.95 -upwind=0 -tf=10 -tp=.5 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+cgWave:FD24 t=9.000e+00 (1530 steps) dt=5.882e-03 ||u||= 2.24e-01, cpu= 4.74e+01(s)
+cgWave:FD24 t=9.500e+00 (1615 steps) dt=5.882e-03 ||u||= 1.75e-01, cpu= 4.95e+01(s)
+cgWave:FD24 t=1.000e+01 (1700 steps) dt=5.882e-03 ||u||= 3.51e-01, cpu= 5.14e+01(s)
+
+G4
+cgWave gaussian.cmd -g=box4.order4 -beta=20 -omega=20 -amp=-400  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=0.95 -upwind=0 -tf=10 -tp=.5 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+***************************************************
+****** Tues Jan 13, 2026
+
+START ON 3D ORDER 4 EM RBCs
+
+
+SIDES AND VERTEX's 
+
+STARTS TO WORK: 
+cgWave gaussian.cmd -g=box4.order4 -beta=20 -omega=20 -amp=-400  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=0.95 -upwind=0 -tf=10 -tp=.5 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+cgWave gaussian.cmd -g=box2.order4 -beta=15 -omega=10 -amp=-100  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=0.95 -upwind=0 -tf=10 -tp=.5 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=3 -go=og
+
+
+cgWave gaussian.cmd -g=box1.order4 -beta=15 -omega=10 -amp=-100  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=0.95 -upwind=0 -tf=10 -tp=.5 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=3 -go=og
+
+cgWave gaussian.cmd -g=box0.5.order4.ng3 -beta=15 -omega=10 -amp=-100  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=0.95 -upwind=0 -tf=10 -tp=.5 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=3 -go=og
+
+
+***************************************************
+****** Mon Jan 12, 2026
+
+START ON 3D ORDER 4 EM RBCs
+
+
+SIDES ONLY 
+
+cgWave gaussian.cmd -g=box1.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=0.95 -upwind=0 -tf=10 -tp=.5 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=3 -go=og
+
+
+abcWave: EM order 4: i1,i2,i3=   8  10  10 side residuals= -1.79E-43  -7.35E-40
+abcWave: EM order 4: i1,i2,i3=   9  10  10 side residuals= -2.14E-49   0.00E+00
+ Apply abcEM2 CARTESIAN order=4: grid,side,axis=  0  0  2 dt,c=   0.455E-01   0.100E+01
+abcWave: EM order 4: i1,i2,i3=   1   1   1 side residuals=       NaN        NaN
+abcWave: EM order 4: i1,i2,i3=   2   1   1 side residuals=       NaN        NaN
+
+
+***************************************************
 ****** Wed Dec 17, 2025
 
 TEST PARALLEL (WaveHoltz hs problems with this grid)
@@ -127,6 +184,20 @@ TRY THIS ON CG66: .. works
 
 mpirun -np 2 $cgWave -noplot gaussian.cmd -g=square128.order4.ng3  -tp=0.1 -tf=1 -beta=20 -x0=.55 -y0=0.55 -z0=0 -omega=20 -amp=-400 -ts=explicit -cfl=.95 -upwind=1 -orderInTime=-1 -bc=d -debug=0 -implicitUpwind=0 -show=gaussian.show -go=go
 
+
+*******************************************
+********* Sun Jan 11, 2026
+
+TEST NEW EM ABC edges and corners
+
+
+FIX EDGES AND CORNERS
+
+OK till t=10, cfl=0.5, cfl=.95
+cgWave gaussian.cmd -g=box4.order2 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=0.95 -upwind=0 -tf=10 -tp=.5 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
+
+
+valgrind $cgWave gaussian.cmd -g=box2.order2 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -z0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.1 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=abcEM2 -debug=1 -go=og
 
 
 *******************************************

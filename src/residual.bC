@@ -21,6 +21,7 @@
 #define ForBoundary(side,axis)   for( int axis=0; axis<cg.numberOfDimensions(); axis++ ) \
                                  for( int side=0; side<=1; side++ )
 
+#define FOR_3DN(i1,i2,i3,n,I1,I2,I3,N) for( int n=N.getBase(); n<=N.getBound(); n++ ) for( int i3=I3.getBase(); i3<=I3.getBound(); i3++ )  for( int i2=I2.getBase(); i2<=I2.getBound(); i2++ )  for( int i1=I1.getBase(); i1<=I1.getBound(); i1++ )
 
 // =============================================================
 // Macro: initialize the upwind coefficients
@@ -288,6 +289,13 @@
 
   } 
 
+ if( true )
+  {
+    // ::display(resLocal,"resLocal","%7.0e ");
+    Real maxRes = max(abs(resLocal(I1,I2,I3)));
+    printF("CgWaveHoltz::residual: grid=%d : maxRes=%9.2e (interior points)\n",grid,maxRes);
+  } 
+
   Range all;
   if( grid==0 )
     printF("Check residual in absorbing BC: omega=%14.6e, c=%14.6e\n",omega,c);
@@ -345,6 +353,8 @@
           mgop.derivative(MappedGridOperators::xxDerivative,vLocal,uxx,Ib1,Ib2,Ib3,R2);
           mgop.derivative(MappedGridOperators::yyDerivative,vLocal,uyy,Ib1,Ib2,Ib3,R2);
 
+
+
           if( axis==0 )
           {
             resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*ux(Ib1,Ib2,Ib3,1)) - c*( uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
@@ -356,6 +366,24 @@
             resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uy(Ib1,Ib2,Ib3,0) ) - c*( uyy(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) );
           }
 
+          if( numberOfDimensions==3 )
+          {
+            RealArray uz(Ib1,Ib2,Ib3,R2), uzz(Ib1,Ib2,Ib3,R2);
+            mgop.derivative(MappedGridOperators::zDerivative, vLocal,uz ,Ib1,Ib2,Ib3,R2);
+            mgop.derivative(MappedGridOperators::zzDerivative,vLocal,uzz,Ib1,Ib2,Ib3,R2);
+
+            if( axis==0 || axis==1 )
+            {
+              resLocal(Ig1,Ig2,Ig3,0) += -c*( .5*uzz(Ib1,Ib2,Ib3,0) );
+              resLocal(Ig1,Ig2,Ig3,1) += -c*( .5*uzz(Ib1,Ib2,Ib3,1) );
+            }
+            else
+            {
+              resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uz(Ib1,Ib2,Ib3,1) ) - c*( uzz(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
+              resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uz(Ib1,Ib2,Ib3,0) ) - c*( uzz(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
+            }
+          }          
+
           // -- zero residual at unused points ---
           where( maskLocal(Ib1,Ib2,Ib3) <=0  )   
           {
@@ -364,6 +392,9 @@
           } 
 
           // scale residual in CBC by this amount : estimate of condition number in BC
+
+          if( false )
+            ::display(resLocal(Ig1,Ig2,Ig3,0)*bcScale,sPrintF("resLocal(Ig1,Ig2,Ig3,0)*bcSCale on ABC ghost (side,axis)=(%d,%d)",side,axis),"%9.2e");
 
           maxResBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)))*bcScale;
           maxResBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)))*bcScale;
@@ -390,10 +421,16 @@
           {
             // *** CHECK CBC ***
 
-            // The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy
+            // -- The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy ---
+
+            // if( mg.numberOfDimensions()==3 )
+            // {
+            //   printF("residual: EM Order=4 : finish me for 3D\n");
+              
+            // }
             const bool useOneSidedXXYY = timeSteppingMethod==CgWave::explicitTimeStepping;
-            int ks1=0, ks2=0; // centered stencil
-            if( useOneSidedXXYY ){ ks1=is1; ks2=is2; } // shift stencil 
+            ks1=0, ks2=0, ks3=0; // centered stencil
+            if( useOneSidedXXYY ){ ks1=is1; ks2=is2; ks3=is3; } // shift stencil 
 
             Real maxResCBC1 =0.;
             Real maxResCBC2 =0.;            
@@ -402,57 +439,131 @@
             ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost);  
             if( ok )  
             {        
-
-              RealArray uxxyy(Ib1,Ib2,Ib3,2);
+              RealArray uxxyy(Ib1,Ib2,Ib3,2), uxxzz, uyyzz;
               Range R2(0,1);
-              uxxyy(Ib1,Ib2,Ib3,R2) = ( 
-                            vLocal(Ib1-1+ks1,Ib2-1+ks2,Ib3,R2)  
-                           +vLocal(Ib1+1+ks1,Ib2-1+ks2,Ib3,R2)  
-                        -2.*vLocal(Ib1  +ks1,Ib2-1+ks2,Ib3,R2)  
-                        -2.*vLocal(Ib1-1+ks1,Ib2  +ks2,Ib3,R2) 
-                        +4.*vLocal(Ib1  +ks1,Ib2  +ks2,Ib3,R2) 
-                        -2.*vLocal(Ib1+1+ks1,Ib2  +ks2,Ib3,R2) 
-                        -2.*vLocal(Ib1  +ks1,Ib2+1+ks2,Ib3,R2)
-                           +vLocal(Ib1-1+ks1,Ib2+1+ks2,Ib3,R2)  
-                           +vLocal(Ib1+1+ks1,Ib2+1+ks2,Ib3,R2)  
-                      )/(dx[0]*dx[0]*dx[1]*dx[1]);            
-
-              if( true && useOneSidedXXYY )
+              int i1,i2,i3;
+              if( useOneSidedXXYY )
               {
-                // check for corners and shift stencil inward
-                int iv[3], &i1=iv[0], &i2=iv[1], &i3=iv[2];
-                const int axisp1 = (axis+1) % mg.numberOfDimensions(); // adjacent axis 
-                for( int side2=0; side2<=1 ; side2++ )
+                FOR_3DN(j1,j2,j3,n,Ib1,Ib2,Ib3,R2)
                 {
-                  if( mg.boundaryCondition(side2,axisp1)>0 )
-                  {
-                    i1=Ib1.getBase(); i2=Ib2.getBase(); i3=Ib3.getBase();
-                    iv[axisp1] = mg.gridIndexRange(side2,axisp1);
-                    if( axis==0 ){ ks1=is1; ks2 = 1-2*side2; }else{ ks1=1-2*side2; ks2=is2; }
-
-                    ok = iv[axisp1] == indexRangeLocal(side2,axisp1);
-                    if( ok )
-                    {
-
-                      // printF("residual: u.xxyy corner (i1,i2,i3)=(%3d,%3d,%3d) (side,side2)=(%d,%d) shift (ks1,ks2)=(%2d,%2d)\n",i1,i2,i3,side,side2,ks1,ks2);
-
-                      uxxyy(i1,i2,i3,R2) = ( 
-                                    vLocal(i1-1+ks1,i2-1+ks2,i3,R2)  
-                                   +vLocal(i1+1+ks1,i2-1+ks2,i3,R2)  
-                                -2.*vLocal(i1  +ks1,i2-1+ks2,i3,R2)  
-                                -2.*vLocal(i1-1+ks1,i2  +ks2,i3,R2) 
-                                +4.*vLocal(i1  +ks1,i2  +ks2,i3,R2) 
-                                -2.*vLocal(i1+1+ks1,i2  +ks2,i3,R2) 
-                                -2.*vLocal(i1  +ks1,i2+1+ks2,i3,R2)
-                                   +vLocal(i1-1+ks1,i2+1+ks2,i3,R2)  
-                                   +vLocal(i1+1+ks1,i2+1+ks2,i3,R2)  
-                              )/(dx[0]*dx[0]*dx[1]*dx[1]); 
-                    }
-                  }                   
+                  i1=j1; i2=j2; i3=j3;
+                  // shift stencil to avoid ghost points 
+                  if( i1<=gid(0,0) ) i1++; 
+                  if( i1>=gid(1,0) ) i1--; 
+                  if( i2<=gid(0,1) ) i2++; 
+                  if( i2>=gid(1,1) ) i2--; 
+                  uxxyy(j1,j2,j3,n) = ( 
+                                              vLocal(i1-1,i2-1,i3,n)  
+                                             +vLocal(i1+1,i2-1,i3,n)  
+                                          -2.*vLocal(i1  ,i2-1,i3,n)  
+                                          -2.*vLocal(i1-1,i2  ,i3,n) 
+                                          +4.*vLocal(i1  ,i2  ,i3,n) 
+                                          -2.*vLocal(i1+1,i2  ,i3,n) 
+                                          -2.*vLocal(i1  ,i2+1,i3,n)
+                                             +vLocal(i1-1,i2+1,i3,n)  
+                                             +vLocal(i1+1,i2+1,i3,n)  
+                                        )/(dx[0]*dx[0]*dx[1]*dx[1]); 
                 }
-
-
               }
+              else
+              {
+                uxxyy(Ib1,Ib2,Ib3,R2) = ( 
+                              vLocal(Ib1-1,Ib2-1,Ib3,R2)  
+                             +vLocal(Ib1+1,Ib2-1,Ib3,R2)  
+                          -2.*vLocal(Ib1  ,Ib2-1,Ib3,R2)  
+                          -2.*vLocal(Ib1-1,Ib2  ,Ib3,R2) 
+                          +4.*vLocal(Ib1  ,Ib2  ,Ib3,R2) 
+                          -2.*vLocal(Ib1+1,Ib2  ,Ib3,R2) 
+                          -2.*vLocal(Ib1  ,Ib2+1,Ib3,R2)
+                             +vLocal(Ib1-1,Ib2+1,Ib3,R2)  
+                             +vLocal(Ib1+1,Ib2+1,Ib3,R2)  
+                        )/(dx[0]*dx[0]*dx[1]*dx[1]);                 
+              }
+
+              if( numberOfDimensions==3 )
+              {
+                uxxzz.redim(Ib1,Ib2,Ib3,2); 
+                uyyzz.redim(Ib1,Ib2,Ib3,2); 
+                if( useOneSidedXXYY )
+                {
+                  FOR_3DN(j1,j2,j3,n,Ib1,Ib2,Ib3,R2)
+                  {
+                    i1=j1; i2=j2; i3=j3;
+                    // shift stencil to avoid ghost points 
+                    if( i1<=gid(0,0) ) i1++; 
+                    if( i1>=gid(1,0) ) i1--; 
+                    if( i3<=gid(0,2) ) i3++; 
+                    if( i3>=gid(1,2) ) i3--; 
+                    uxxzz(j1,j2,j3,n) = ( 
+                                  vLocal(i1-1,i2,i3-1,n)  
+                                 +vLocal(i1+1,i2,i3-1,n)  
+                              -2.*vLocal(i1  ,i2,i3-1,n)  
+                              -2.*vLocal(i1-1,i2,i3  ,n) 
+                              +4.*vLocal(i1  ,i2,i3  ,n) 
+                              -2.*vLocal(i1+1,i2,i3  ,n) 
+                              -2.*vLocal(i1  ,i2,i3+1,n)
+                                 +vLocal(i1-1,i2,i3+1,n)  
+                                 +vLocal(i1+1,i2,i3+1,n)  
+                            )/(dx[0]*dx[0]*dx[2]*dx[2]);
+                  }
+                }
+                else
+                {
+                  uxxzz(Ib1,Ib2,Ib3,R2) = ( 
+                                vLocal(Ib1-1,Ib2,Ib3-1,R2)  
+                               +vLocal(Ib1+1,Ib2,Ib3-1,R2)  
+                            -2.*vLocal(Ib1  ,Ib2,Ib3-1,R2)  
+                            -2.*vLocal(Ib1-1,Ib2,Ib3  ,R2) 
+                            +4.*vLocal(Ib1  ,Ib2,Ib3  ,R2) 
+                            -2.*vLocal(Ib1+1,Ib2,Ib3  ,R2) 
+                            -2.*vLocal(Ib1  ,Ib2,Ib3+1,R2)
+                               +vLocal(Ib1-1,Ib2,Ib3+1,R2)  
+                               +vLocal(Ib1+1,Ib2,Ib3+1,R2)  
+                          )/(dx[0]*dx[0]*dx[2]*dx[2]);                      
+                }
+                if( useOneSidedXXYY )
+                {                
+                  FOR_3DN(j1,j2,j3,n,Ib1,Ib2,Ib3,R2)
+                  {
+                    i1=j1; i2=j2; i3=j3;
+                    // shift stencil to avoid ghost points 
+                    if( i2<=gid(0,1) ) i2++; 
+                    if( i2>=gid(1,1) ) i2--; 
+                    if( i3<=gid(0,2) ) i3++; 
+                    if( i3>=gid(1,2) ) i3--; 
+                    uyyzz(j1,j2,j3,n) = ( 
+                                  vLocal(i1,i2-1,i3-1,n)  
+                                 +vLocal(i1,i2+1,i3-1,n)  
+                              -2.*vLocal(i1,i2  ,i3-1,n)  
+                              -2.*vLocal(i1,i2-1,i3  ,n) 
+                              +4.*vLocal(i1,i2  ,i3  ,n) 
+                              -2.*vLocal(i1,i2+1,i3  ,n) 
+                              -2.*vLocal(i1,i2  ,i3+1,n)
+                                 +vLocal(i1,i2-1,i3+1,n)  
+                                 +vLocal(i1,i2+1,i3+1,n)  
+                            )/(dx[1]*dx[1]*dx[2]*dx[2]);   
+                  }
+                }
+                else
+                {
+                  uyyzz(Ib1,Ib2,Ib3,R2) = ( 
+                              vLocal(Ib1,Ib2-1,Ib3-1,R2)  
+                             +vLocal(Ib1,Ib2+1,Ib3-1,R2)  
+                          -2.*vLocal(Ib1,Ib2  ,Ib3-1,R2)  
+                          -2.*vLocal(Ib1,Ib2-1,Ib3  ,R2) 
+                          +4.*vLocal(Ib1,Ib2  ,Ib3  ,R2) 
+                          -2.*vLocal(Ib1,Ib2+1,Ib3  ,R2) 
+                          -2.*vLocal(Ib1,Ib2  ,Ib3+1,R2)
+                             +vLocal(Ib1,Ib2-1,Ib3+1,R2)  
+                             +vLocal(Ib1,Ib2+1,Ib3+1,R2)  
+                        )/(dx[1]*dx[1]*dx[2]*dx[2]);                     
+                }
+    
+              } // end if nd==3
+
+
+              const Real cxxyy=.5, cxxzz=.5, cyyzz=.5;
+              // const Real cxxyy=.5, cxxzz=.0, cyyzz=.0;  // ******** TEMP : TURN OFF CROSS TERMS IN EM CBC
 
               if( axis==0 )
               {
@@ -471,10 +582,18 @@
                              +vLocal(Ib1+2,Ib2,Ib3,R2)
                         )/(dx[0]*dx[0]*dx[0]*dx[0]);              
 
-                resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
-                resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
+                if( numberOfDimensions==2 )
+                {
+                  resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
+                  resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
+                }
+                else
+                {
+                  resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + cxxyy*uxxyy(Ib1,Ib2,Ib3,0)+ cxxzz*uxxzz(Ib1,Ib2,Ib3,0) );
+                  resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + cxxyy*uxxyy(Ib1,Ib2,Ib3,1)+ cxxzz*uxxzz(Ib1,Ib2,Ib3,1) );
+                }
               }
-              else
+              else if( axis==1 )
               {
                 RealArray uyyy(Ib1,Ib2,Ib3,2);
                 RealArray uyyyy(Ib1,Ib2,Ib3,2); 
@@ -489,10 +608,39 @@
                           +6.*vLocal(Ib1,Ib2  ,Ib3,R2) 
                           -4.*vLocal(Ib1,Ib2+1,Ib3,R2) 
                              +vLocal(Ib1,Ib2+2,Ib3,R2)
-                        )/(dx[1]*dx[1]*dx[1]*dx[1]);                      
+                        )/(dx[1]*dx[1]*dx[1]*dx[1]);  
 
-                resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
-                resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
+                if( numberOfDimensions==2 )
+                {
+                  resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
+                  resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
+                }
+                else
+                {
+                  resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + cxxyy*uxxyy(Ib1,Ib2,Ib3,0)+cyyzz*uyyzz(Ib1,Ib2,Ib3,0) );
+                  resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + cxxyy*uxxyy(Ib1,Ib2,Ib3,1)+cyyzz*uyyzz(Ib1,Ib2,Ib3,1) );
+                }
+              }
+              else 
+              {
+                RealArray uzzz(Ib1,Ib2,Ib3,2);
+                RealArray uzzzz(Ib1,Ib2,Ib3,2); 
+                uzzz =  (    -vLocal(Ib1,Ib2,Ib3-2,R2)  
+                          +2.*vLocal(Ib1,Ib2,Ib3-1,R2) 
+                          -2.*vLocal(Ib1,Ib2,Ib3+1,R2) 
+                             +vLocal(Ib1,Ib2,Ib3+2,R2)
+                        )/(2.*dx[2]*dx[2]*dx[2]);
+
+                uzzzz = (    +vLocal(Ib1,Ib2,Ib3-2,R2)  
+                          -4.*vLocal(Ib1,Ib2,Ib3-1,R2) 
+                          +6.*vLocal(Ib1,Ib2,Ib3  ,R2) 
+                          -4.*vLocal(Ib1,Ib2,Ib3+1,R2) 
+                             +vLocal(Ib1,Ib2,Ib3+2,R2)
+                        )/(dx[2]*dx[2]*dx[2]*dx[2]);  
+
+                resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uzzz(Ib1,Ib2,Ib3,1) ) - c*( uzzzz(Ib1,Ib2,Ib3,0) + cxxzz*uxxzz(Ib1,Ib2,Ib3,0)+cyyzz*uyyzz(Ib1,Ib2,Ib3,0) );
+                resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uzzz(Ib1,Ib2,Ib3,0) ) - c*( uzzzz(Ib1,Ib2,Ib3,1) + cxxzz*uxxzz(Ib1,Ib2,Ib3,1)+cyyzz*uyyzz(Ib1,Ib2,Ib3,1) );
+
               }
 
               // -- zero residual at unused points ---
@@ -724,7 +872,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
   Index Ibv[3], &Ib1=Ibv[0], &Ib2=Ibv[1], &Ib3=Ibv[2];
   Index Igv[3], &Ig1=Igv[0], &Ig2=Igv[1], &Ig3=Igv[2];
   int isv[3], &is1=isv[0], &is2=isv[1], &is3=isv[2];    
-
+  int ksv[3], &ks1=ksv[0], &ks2=ksv[1], &ks3=ksv[2];
 
   // If we have not adjusted omega, then final residual is with standard omega
   // If we have adjusted omega, then final residual is with the adjusted
@@ -763,6 +911,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
       const bool isRectangular = mg.isRectangular();
 
       MappedGridOperators & mgop = operators[grid];
+      const IntegerArray & gid = mg.gridIndexRange();
 
       OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
 
@@ -876,7 +1025,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
         {
           ::display(resLocal,"resLocal","%7.0e ");
         }
-        printF("CgWaveHoltz::residual: grid=%d : maxRes=%9.2e\n",grid,maxRes);
+        printF("CgWaveHoltz::residual: grid=%d : maxRes=%9.2e (all points)\n",grid,maxRes);
       }      
       // ::display(res[grid],"residual","%8.2e ");
 

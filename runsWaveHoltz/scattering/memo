@@ -16,6 +16,80 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 
 
 ***************************************************
+****** Fri Jan 16, 2026 
+
+START TEST SPHERE SCAT
+
+$cgwh -noplot scat.cmd -g=sphereInABoxe2.order2 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=5.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=sphereInABox2kx6.show -matlab=sphereInABox2kx6 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=og
+
+G1 O4 : OK 
+$cgwh -noplot scat.cmd -g=sphereInABoxe1.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=1.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=sphereInABox1.show -matlab=sphereInABox1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=og
+
+CgWaveHoltz::residual: grid=0 : maxRes= 3.06e-09 (all points)
+CgWaveHoltz::residual: grid=1 : maxRes= 1.78e+02 (interior points)
+CgWaveHoltz::residual: grid=1 : maxRes= 4.16e-10 (all points)
+CgWaveHoltz::residual: grid=2 : maxRes= 1.50e+00 (interior points)
+CgWaveHoltz::residual: grid=2 : maxRes= 4.66e-10 (all points)
+CgWaveHoltz::residual: grid=3 : maxRes= 1.50e+00 (interior points)
+CgWaveHoltz::residual: grid=3 : maxRes= 3.83e-10 (all points)
+solveHelmholtz: max-residual [Re,Im]=[4.66e-10,4.56e-10] (gmres, numIts=67, ave-CR= 0.72 , cpu=8.60e+02(s), np=1
+
+
+G1 O2 : OK 
+$cgwh -noplot scat.cmd -g=sphereInABoxe1.order2 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=1.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=sphereInABox1.show -matlab=sphereInABox1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=og
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 5.98e-13, 3.40e-12] (Re,Im) (scale= 1.00e-02), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.02e-12, 3.66e-12] (Re,Im) (scale= 1.00e-02), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 6.29e-13, 2.94e-12] (Re,Im) (scale= 1.00e-02), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 7.72e-13, 2.92e-12] (Re,Im) (scale= 1.00e-02), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 6.47e-13, 1.74e-12] (Re,Im) (scale= 1.00e-02), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 7.34e-13, 1.75e-12] (Re,Im) (scale= 1.00e-02), max|forcing(ghost)|= 0.00e+00
+CgWaveHoltz::residual: grid=0 : maxRes= 2.03e-10 (all points)
+CgWaveHoltz::residual: grid=1 : maxRes= 6.74e+02 (interior points)
+CgWaveHoltz::residual: grid=1 : maxRes= 4.20e-10 (all points)
+CgWaveHoltz::residual: grid=2 : maxRes= 1.36e+01 (interior points)
+CgWaveHoltz::residual: grid=2 : maxRes= 1.03e-10 (all points)
+CgWaveHoltz::residual: grid=3 : maxRes= 1.36e+01 (interior points)
+CgWaveHoltz::residual: grid=3 : maxRes= 9.95e-11 (all points)
+solveHelmholtz: max-residual [Re,Im]=[2.22e-10,4.20e-10] (gmres, numIts=31, ave-CR= 0.49 , cpu=1.85e+02(s), np=1)
+
+
+***************************************************
+****** Fri Jan 9, 2026 
+
+TEST NEW ASSIGN INTERP NEIGHBOURS 
+
+
+G64: SPLIT ANNULUS 
+mpiexec -n 64 $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitAnnulusGridLeftGape64.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=45.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitAnnulusScatLeftGapG64O4kx45.show -matlab=splitAnnulusScatLeftGapG64O4kx45 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks
+
+
+Split ring: OK 
+mpiexec -n 8 $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape8.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=9.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG8O4kx9.show -matlab=splitRingScatLeftGapG8O4kx9 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -go=og
+
+
+solveHelmholtz: max-residual [Re,Im]=[1.53e-05,2.01e-05] (gmres, numIts=206, ave-CR= 0.90 , cpu=3.28e+02(s), np=8)
+solveHelmholtz: rel-max-diff [Re,Im]=[1.86e-07,2.69e-07],  norm [Re,Im]=[2.27e+00,3.00e+00] (between WaveHoltz and Direct Helmholtz)
+
+
+CIC:
+
+mpiexec -n 4 $cgwh -noplot scat.cmd -g=cice4.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=junk.show -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=1000 -rtolh=1e-10 -atolh=1e-10 -assignInterpNeighbours=interp -restart=500 -go=og
+
+-assignInterpNeighbours=interp
+CgWaveHoltz::residual: grid=0 : maxRes= 2.18e-09
+CgWaveHoltz::residual: grid=1 : maxRes= 4.09e-12
+solveHelmholtz: max-residual [Re,Im]=[1.33e-11,8.53e-12] (gmres, numIts=79, ave-CR= 0.74 , cpu=9.35e+00(s), np=4)
+
+
+-assignInterpNeighbours=extrap:
+
+CgWaveHoltz::residual: grid=0 : maxRes= 2.14e-09
+CgWaveHoltz::residual: grid=1 : maxRes= 4.16e-12
+solveHelmholtz: max-residual [Re,Im]=[1.47e-11,8.53e-12] (gmres, numIts=79, ave-CR= 0.74 , cpu=8.10e+00(s), np=4)
+
+
+***************************************************
 ****** Wed Jan 7, 2026 
 
 plotStuff plotSolution.cmd -show=splitAnnulusScatLeftGapG32O4kx25.show -name=splitAnnulusScatLeftGapG32O4kx25 -field=speed -res=2048

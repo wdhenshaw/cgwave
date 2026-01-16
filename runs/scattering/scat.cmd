@@ -169,4 +169,5 @@ contour
 exit
 #
 if( $go eq "go" ){ $cmd="exit"; }else{ $cmd="#"; }
+if( $go eq "og" ){ $cmd = "solve\n contour\n exit\n open graphics"; }
 $cmd

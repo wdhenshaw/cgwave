@@ -77,7 +77,8 @@ int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
 
     int numStepsPerPeriod = numPlotSteps/numPeriods;
 
-    printF("\n >>> adjustTimeStepAndFreq: numPlotSteps=%d, numStepsPerPeriod=%d, numPeriods=%d\n\n",numPlotSteps,numStepsPerPeriod,numPeriods);
+    if( debug & 2 )
+        printF("\n >>> adjustTimeStepAndFreq: numPlotSteps=%d, numStepsPerPeriod=%d, numPeriods=%d\n\n",numPlotSteps,numStepsPerPeriod,numPeriods);
 
   // OV_ABORT("stop here for now");
 

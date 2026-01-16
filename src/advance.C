@@ -536,7 +536,7 @@ advance( int it )
     {
         step++;
 
-        if( debug >1 )
+        if( debug >4 )
             printF("\n @@@@ advance: step=%d takeImplicitFirstStep=%d @@@@@\n",step,(int)takeImplicitFirstStep);
 
         const int cur = (step +numberOfTimeLevelsStored) % numberOfTimeLevelsStored; // current time level
@@ -1205,7 +1205,7 @@ advance( int it )
                 }
 
     
-            if( debug >1  || debug & 16 )  // %%%%%%%%%%%% TEMP 
+            if( debug & 16 ) 
             {
                 for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
                 {

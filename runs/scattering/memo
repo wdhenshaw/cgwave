@@ -1,6 +1,28 @@
 
 
+***************************************************
+****** Fri Jan 16, 2026 
 
+START TEST SPHERE SCAT
+sphereInABoxGride2.order2
+
+O4 - OK to t=10
+cgWave scat.cmd -g=sphereInABoxe2.order4.ng3 -useSuperGrid=0 -superGridWidth=.2 -known=pw -ts=explicit -cfl=0.95 -bc=d -ic=zero -upwind=1 -kx=2 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=1 -go=og
+
+cgWave:FD44u t=9.900e+00 ( 990 steps) dt=1.000e-02 maxErr= 2.30e+00, ||u||= 1.34e+00, cpu= 2.32e+02(s)
+CgWave::getErrors: t=1.000e+01, freq=  0, omega=   3.000, maxRelErr=2.304e+00, l2RelErr=5.708e-01
+cgWave:FD44u t=1.000e+01 (1000 steps) dt=1.000e-02 maxErr= 2.30e+00, ||u||= 1.35e+00, cpu= 2.34e+02(s)
+
+
+
+O2 - OK 
+cgWave scat.cmd -g=sphereInABoxe2.order2 -useSuperGrid=0 -superGridWidth=.2 -known=pw -ts=explicit -cfl=0.95 -bc=d -ic=zero -upwind=1 -kx=2 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=1 -go=og
+
+cgWave:FD22u t=5.400e+00 ( 540 steps) dt=1.000e-02 maxErr= 2.15e+00, ||u||= 1.20e+00, cpu= 7.51e+01(s)
+CgWave::getErrors: t=5.500e+00, freq=  0, omega=   3.000, maxRelErr=2.167e+00, l2RelErr=6.255e-01
+cgWave:FD22u t=5.500e+00 ( 550 steps) dt=1.000e-02 maxErr= 2.17e+00, ||u||= 1.22e+00, cpu= 7.65e+01(s)
+CgWave::getErrors: t=5.600e+00, freq=  0, omega=   3.000, maxRelErr=2.161e+00, l2RelErr=6.326e-01
+cgWave:FD22u t=5.600e+00 ( 560 steps) dt=1.000e-02 maxErr= 2.16e+00, ||u||= 1.21e+00, cpu= 7.78e+01(s)
 ****************************************************
 ****** We Oct 2, 2024
 

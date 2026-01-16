@@ -13,6 +13,319 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
 ***************************************************
+****** Fri Jan 16, 2026
+
+
+TESTING RESIDUALS : TURN OFF CROSS TERMS IN EM CBC
+
+BUG FOUND -- SKIP ENDS WHEN DOING EDGES
+
+G8 
+$cgwh -noplot gaussian.cmd -g=box8.order4 -ts=explicit -cfl=0.95 -x0=0.55 0.5 -y0=.55 0.45 -z0=0.5 0.45 -nf=1 -freq=30 11 -amp=-900 -100 -beta=30 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+ >>>omega=  3.00e+01, k=  3.00e+01, lambda=  2.09e-01, dx=  1.25e-02, domainSize=  1.00e+00, NLambda=4.77465, ppw=lambda/dx= 16.8, ppw(rule-of-thumb)= 12.7 (old= 14.7) (epsr=0.01)<<<
+ solveHelmholtz: max-residual [Re,Im]=[4.41e-12,1.40e-11] (gmres, numIts=40, ave-CR= 0.57 , cpu=2.91e+01(s), np=1)
+ 
+ omega=  2.00e+01, k=  2.00e+01, lambda=  3.14e-01, dx=  1.25e-02, domainSize=  1.00e+00, NLambda=3.1831, ppw=lambda/dx= 25.1, ppw(rule-of-thumb)= 11.5 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.02e-15, 1.18e-13] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 4.33e-53
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 1.67e-16, 1.05e-14] (Re,Im) (scaled by  2.44e-08)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 7.87e-16, 1.31e-13] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 2.77e-35
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 2.36e-16, 1.24e-14] (Re,Im) (scaled by  2.44e-08)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.02e-15, 1.18e-13] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 4.33e-53
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 2.16e-16, 1.05e-14] (Re,Im) (scaled by  2.44e-08)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 7.77e-16, 1.31e-13] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 2.77e-35
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 2.85e-16, 1.24e-14] (Re,Im) (scaled by  2.44e-08)
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 8.04e-16, 1.47e-13] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 9.42e-44
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 2: max-res=[ 2.27e-16, 9.76e-15] (Re,Im) (scaled by  2.44e-08)
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 8.00e-16, 1.47e-13] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 9.42e-44
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 2.15e-16, 9.76e-15] (Re,Im) (scaled by  2.44e-08)
+CgWaveHoltz::residual: grid=0 : maxRes= 1.27e-09 (all points)
+solveHelmholtz: max-residual [Re,Im]=[2.96e-12,2.63e-11] (gmres, numIts=29, ave-CR= 0.45 , cpu=2.95e+01(s), np=1)
+
+
+
+$cgwh -noplot gaussian.cmd -g=box4.order4 -ts=explicit -cfl=0.95 -x0=0.55 0.5 -y0=.55 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+$cgwh -noplot gaussian.cmd -g=box2.order4 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 5.71e-15, 2.80e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 4.31e-15, 7.86e-14] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.81e-15, 1.80e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 4.66e-15, 1.24e-13] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 5.70e-15, 2.80e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 4.31e-15, 7.85e-14] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 4.81e-15, 1.80e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 4.67e-15, 1.24e-13] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 4.62e-15, 1.98e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 2: max-res=[ 2.52e-15, 6.89e-14] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 4.61e-15, 1.98e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 2.54e-15, 6.89e-14] (Re,Im) (scaled by  6.25e-06)
+CgWaveHoltz::residual: grid=0 : maxRes= 1.64e-10 (all points)
+solveHelmholtz: max-residual [Re,Im]=[9.38e-12,1.71e-11] (gmres, numIts=19, ave-CR= 0.30 , cpu=5.48e-01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[6.38e-12,1.86e-11],  norm [Re,Im]=[1.72e-01,1.27e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+
+TURN OFF CROSS TERMS IN EM CBC ** WORKS **
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 5.67e-15, 2.61e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 4.23e-15, 8.08e-14] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.89e-15, 1.65e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 4.74e-15, 1.08e-13] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 5.67e-15, 2.61e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 4.22e-15, 8.08e-14] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 4.91e-15, 1.65e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 4.69e-15, 1.08e-13] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 4.22e-15, 1.78e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 2: max-res=[ 2.64e-15, 6.30e-14] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 4.22e-15, 1.78e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 2.66e-15, 6.30e-14] (Re,Im) (scaled by  6.25e-06)
+CgWaveHoltz::residual: grid=0 : maxRes= 1.42e-10 (all points)
+solveHelmholtz: max-residual [Re,Im]=[8.22e-12,1.33e-11] (gmres, numIts=19, ave-CR= 0.30 , cpu=5.61e-01(s), np=1)
+
+
+***************************************************
+****** Wed Jan 14, 2026
+
+
+BUGS FOUND
+
+G2-O4 upwind=0: 
+$cgwh -noplot gaussian.cmd -g=box2.order4 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+
+bc=a
+CgWaveHoltz::residual: grid=0 : maxRes= 9.01e-03 (interior points)
+Check residual in absorbing BC: omega=  1.100000e+01, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 4.44e-06, 2.85e-06] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 1.15e-04, 9.30e-05] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 5.02e-06, 6.53e-06] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 8.85e-05, 1.40e-04] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 4.63e-07, 3.28e-06] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 1.03e-04, 8.45e-05] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.15e-06, 7.58e-06] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 9.41e-05, 1.41e-04] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 2.53e-05, 1.39e-05] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 2: max-res=[ 2.39e-03, 3.08e-03] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 2.53e-05, 1.39e-05] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 2.39e-03, 3.08e-03] (Re,Im) (scaled by  6.25e-06)
+CgWaveHoltz::residual: grid=0 : maxRes= 4.07e+00 (all points)
+solveHelmholtz: max-residual [Re,Im]=[6.26e-06,7.45e-05] (gmres, numIts=19, ave-CR= 0.31 , cpu=2.78e-01(s), np=1)
+
+
+bc=D
+CgWaveHoltz::residual: grid=0 : maxRes= 9.93e-12
+solveHelmholtz: max-residual [Re,Im]=[3.15e-12,9.93e-12] (gmres, numIts=49, ave-CR= 0.62 , cpu=4.89e-01(s), np=1)
+
+
+G1-O4 upwind=0: 
+$cgwh -noplot gaussian.cmd -g=box1.order4 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+TURN OFF CROSS TERMS -- exact 
+
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 2.42e-15, 1.07e-15] (Re,Im) (scale= 1.00e-02), max|forcing(ghost)|= 6.64e-34
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 3.98e-17, 2.27e-17] (Re,Im) (scaled by  1.00e-04)
+CgWaveHoltz::residual: grid=0 : maxRes= 1.86e-14
+
+
+NO ONESIDED:
+
+
+BC=D
+CgWaveHoltz::residual: grid=0 : maxRes= 1.58e-14
+
+
+DOUBLE CHeCK 2D AFTER CHANGES
+
+$cgwh -noplot gaussian.cmd -g=square32.order4 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.0 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+Check residual in absorbing BC: omega=  1.100000e+01, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.83e-16, 7.46e-17] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 1.14e-37
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 4.31e-16, 2.13e-16] (Re,Im) (scaled by  9.54e-07)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 2.74e-15, 1.11e-16] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 6.66e-17
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 7.33e-16, 2.94e-16] (Re,Im) (scaled by  9.54e-07)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 9.13e-16, 7.37e-17] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 1.14e-37
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 1.72e-16, 1.99e-16] (Re,Im) (scaled by  9.54e-07)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.58e-16, 9.19e-17] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 6.66e-17
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 9.53e-16, 4.39e-16] (Re,Im) (scaled by  9.54e-07)
+CgWaveHoltz::residual: grid=0 : maxRes= 8.26e-12
+
+
+***************************************************
+****** Wed Jan 14, 2026
+
+START TEST 3D ORDER 4 EM RBCs
+
+
+G1O4 upwind=0: 
+$cgwh -noplot gaussian.cmd -g=box1.order4 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+
+
+G2O4 upwind=0: 
+$cgwh -noplot gaussian.cmd -g=box2.order4 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+Check residual in absorbing BC: omega=  1.100000e+01, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 4.46e-06, 2.85e-06] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 1.14e-04, 1.36e-04] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 5.03e-06, 6.65e-06] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 3.74e-04, 2.35e-04] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 4.64e-07, 3.28e-06] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 1.14e-04, 1.27e-04] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.17e-06, 7.72e-06] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 3.74e-04, 2.35e-04] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 2.53e-05, 1.47e-05] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 2: max-res=[ 1.88e-03, 1.68e-03] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 2.53e-05, 1.47e-05] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 1.50e-03, 1.59e-03] (Re,Im) (scaled by  6.25e-06)
+CgWaveHoltz::residual: grid=0 : maxRes= 2.48e+00
+solveHelmholtz: max-residual [Re,Im]=[6.37e-06,7.58e-05] (gmres, numIts=19, ave-CR= 0.31 , cpu=5.54e-01(s), np=1)
+
+
+***************************************************
+****** Sun Jan 11, 2026
+
+CONTUNUE TEST 3D PARALLEL 
+
+FIXED ABC EM EDGES AND CORNERS
+
+ABC RESIDUALS ARE NOW ZERO
+
+FIXED DHS -- ADDED EM BCs in 3D
+
+
+$cgwh -noplot gaussian.cmd -g=box2.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=og
+
+DHS:
+*** omega=11, solver-max-res=6.05e-14, time for direct Helmholtz solve = 3.99e+01 (s) (iterations=1) ***
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 2.37e-14, 2.81e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.95e-14, 3.52e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 2.37e-14, 2.81e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 5.19e-40
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 4.95e-14, 3.52e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 1.63e-18
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 3.74e-14, 3.15e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 3.74e-14, 3.15e-13] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+CgWaveHoltz::residual: grid=0 : maxRes= 1.62e-10
+solveHelmholtz: max-residual [Re,Im]=[1.92e-11,1.62e-10] (gmres, numIts=34, ave-CR= 0.51 , cpu=6.74e-01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[9.76e-12,2.74e-11],  norm [Re,Im]=[1.87e-01,1.31e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+
+
+
+BOX:
+ABC SERIAL O2: Trouble with DHS solver
+$cgwh -noplot gaussian.cmd -g=box2.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=200 -iluh=500 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=dk
+
+
+SQUARE:
+$cgwh -noplot gaussian.cmd -g=square128.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=200 -iluh=500 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=dk
+
+Check residual in absorbing BC: omega=  1.100000e+01, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.97e-16, 1.42e-14] (Re,Im) (scale= 6.10e-05), max|forcing(ghost)|= 7.94e-35
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.90e-16, 1.91e-14] (Re,Im) (scale= 6.10e-05), max|forcing(ghost)|= 5.60e-15
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 2.04e-16, 1.42e-14] (Re,Im) (scale= 6.10e-05), max|forcing(ghost)|= 7.94e-35
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 4.58e-16, 1.90e-14] (Re,Im) (scale= 6.10e-05), max|forcing(ghost)|= 5.60e-15
+CgWaveHoltz::residual: grid=0 : maxRes= 3.23e-12
+solveHelmholtz: max-residual [Re,Im]=[2.88e-12,3.23e-12] (gmres, numIts=19, ave-CR= 0.28 , cpu=9.37e-01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.64e-12,4.42e-12],  norm [Re,Im]=[1.59e-01,3.06e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+***************************************************
+****** Sat Jan 10, 2026
+
+CONTUNUE TEST 3D PARALLEL 
+
+>>>>>>>>>>  TEST EXPLICIT TS + UPWIND
+
+ABC SERIAL O2: Trouble with DHS solver
+$cgwh -noplot gaussian.cmd -g=box4.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=200 -iluh=500 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=og
+
+** upwind=1: CHECK BC RESIDUALS: 
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.78e-04, 1.94e-04] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 6.75e-37
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.06e-04, 3.73e-04] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 2.24e-16
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.78e-04, 1.94e-04] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 6.75e-37
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 4.06e-04, 3.73e-04] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 2.24e-16
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 1.30e-03, 1.31e-03] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 1.17e-25
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 1.39e-03, 1.56e-03] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 1.17e-25
+CgWaveHoltz::residual: grid=0 : maxRes= 2.06e-02
+solveHelmholtz: max-residual [Re,Im]=[2.14e-12,2.25e-11] (gmres, numIts=20, ave-CR= 0.32 , cpu=1.75e+00(s), np=1)
+
+UPWIND=0 : CHECK BC RESIDUALS: 
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.78e-04, 1.94e-04] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 6.75e-37
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 4.06e-04, 3.73e-04] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 2.24e-16
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.78e-04, 1.94e-04] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 6.75e-37
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 4.06e-04, 3.73e-04] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 2.24e-16
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 1.30e-03, 1.31e-03] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 1.17e-25
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 1.39e-03, 1.56e-03] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 1.17e-25
+CgWaveHoltz::residual: grid=0 : maxRes= 2.06e-02
+solveHelmholtz: max-residual [Re,Im]=[8.55e-12,4.20e-11] (gmres, numIts=18, ave-CR= 0.29 , cpu=9.29e-01(s), np=1)
+
+
+
+
+$cgwh -noplot gaussian.cmd -g=box2.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=200 -iluh=500 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=og
+
+solveHelmholtz: max-residual [Re,Im]=[1.69e-11,1.61e-10] (gmres, numIts=34, ave-CR= 0.51 , cpu=4.50e-01(s), np=1)
+
+DHS:
+PETScEquationSolver:ERROR: Solution diverged! reason=-11: 
+     KSP_DIVERGED_NULL                = -2,
+     KSP_DIVERGED_ITS                 = -3,
+     KSP_DIVERGED_DTOL                = -4,
+     KSP_DIVERGED_BREAKDOWN           = -5,
+     KSP_DIVERGED_BREAKDOWN_BICG      = -6,
+     KSP_DIVERGED_NONSYMMETRIC        = -7,
+     KSP_DIVERGED_INDEFINITE_PC       = -8,
+     KSP_DIVERGED_NAN                 = -9,
+     KSP_DIVERGED_INDEFINITE_MAT      = -10
+     KSP_DIVERGED_PC_FAILED           = -11
+
+ABC: O2 **TROUBLE***
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=box2.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=200 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=og
+
+[0]PETSC ERROR: Object is in wrong state
+[0]PETSC ERROR: Matrix is missing diagonal entry 652
+
+
+
+O4: Ok 
+mpiexec -n 8 $cgwh -noplot gaussian.cmd -g=box4.order4.ng3 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=200 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=0 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=og
+
+
+solveHelmholtz: max-res=5.527e-10 (gmres, numIts=24, ave-CR= 0.40 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=5.61e-12, |v|_max= 2.31e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+O2: 
+mpiexec -n 8 $cgwh -noplot gaussian.cmd -g=box4.order2 -ts=explicit -cfl=0.95 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=200 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=0 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=og
+
+solveHelmholtz: max-res=1.438e-09 (gmres, numIts=24, ave-CR= 0.40 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=1.14e-11, |v|_max= 2.27e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+G4 : Use DHS gmres
+mpiexec -n 4 $cgwh -noplot gaussian.cmd -g=box4.order2 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=1 -freq=11 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=gmres -restart=200 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=og
+
+*** freq=0: omega=11, solver-max-res=4.52e-12, time for direct Helmholtz solve = 3.64e+01 (s) (iterations=58) ***
+
+Convergence rate CR=0.470, CR-perPeriod=0.470, Time to solve = 9.42e+00(s) : CgWave= 9.40e+00(s) 99.69%, advance= 9.37e+00(s) 99.45%
+omega=  1.10e+01, k=  1.10e+01, lambda=  5.71e-01, dx=  2.50e-02, domainSize=  1.00e+00, NLambda=1.7507, ppw=lambda/dx= 22.8, ppw(rule-of-thumb)= 42.5 (epsr=0.01)<<<
+solveHelmholtz: max-res=1.312e-08 (gmres, numIts=29, ave-CR= 0.47 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=8.76e-11, |v|_max= 2.27e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+BOX O2: IMP -- Nf=2
+mpiexec -n 2 $cgwh -noplot gaussian.cmd -g=box2.order2 -ts=implicit -cfl=100 -x0=0.6 0.5 -y0=0.6 0.45 -z0=0.5 0.45 -nf=2 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=200 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -go=og
+
+solveHelmholtz: rel-max-diff=3.79e-12 for freq0 =   5.0000e+00, |v|_max= 4.32e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=8.85e-11 for freq1 =   1.1000e+01, |v|_max= 2.23e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=8.85e-11, |v|_max= 4.32e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+***************************************************
 ****** Mon Jan 5, 2026 
 
 START TEST PARALLEL

@@ -766,7 +766,6 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
          printF("CgWave::solveHelmholtzDirect:ERROR: unknown boundaryCondition=%d for (side,axis,grid)=(%d,%d,%d)\n", mg.boundaryCondition(side,axis),side,axis,grid);
          OV_ABORT("ERROR");
        }
-
     }
 
   }  
@@ -1380,40 +1379,6 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
         
         setupVariablesForSparseMatrix(); 
                
-        // assert( coeffg.sparse!=NULL );
-
-        // SparseRepForMGF & sparse = *coeffg.sparse;
-        // const int numberOfComponentsForCoefficients = sparse.numberOfComponents;  // size of the system of equations
-        // const int numberOfGhostLines                = sparse.numberOfGhostLines;
-        // const int stencilSize                       = sparse.stencilSize;
-        // const int stencilDim=stencilSize*numberOfComponentsForCoefficients; // number of coefficients per equation
-
-      
-        // const int equationOffset      = sparse.equationOffset;
-        // IntegerArray & equationNumber = sparse.equationNumber;
-        // IntegerArray & classify       = sparse.classify;
-
-        // const int equationNumberBase1  =equationNumber.getBase(1);
-        // const int equationNumberLength1=equationNumber.getLength(1);
-        // const int equationNumberBase2  =equationNumber.getBase(2);
-        // const int equationNumberLength2=equationNumber.getLength(2);
-        // const int equationNumberBase3  =equationNumber.getBase(3);
-
-        // const int orderOfAccuracy=mgop.getOrderOfAccuracy(); assert( orderOfAccuracy==2 );
-        
-        // // stencil width's and half-width's : 
-        // // const int width = orderOfAccuracy+1;
-        // const int width = stencilWidth;
-
-        // const int halfWidth1 = (width-1)/2;
-        // const int halfWidth2 = numberOfDimensions>1 ? halfWidth1 : 0;
-        // const int halfWidth3 = numberOfDimensions>2 ? halfWidth1 : 0;
-
-
-        // Range M0 = stencilSize;  // for first equation
-        // Range M1 = M0 + CE(1,1); // for second equation
-        // Range M = coeffg.dimension(0);
-
         OV_GET_SERIAL_ARRAY(Real,coeffg,coeffLocal);
 
         getGridSpacingsMacro();      
@@ -1425,7 +1390,7 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
         const int mDiag1 = M123CE(0,0,0,ic2,eq2);    // index of diagonal entry, equation 1 
 
         // The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy
-        const bool useOneSidedXXYY = timeSteppingMethod==CgWave::explicitTimeStepping;
+        const bool useOneSidedXXYY = timeSteppingMethod==CgWave::explicitTimeStepping; // *******
 
         OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
         ForBoundary(side,axis)
@@ -1559,15 +1524,13 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
               {
                 if( orderOfAccuracy==2 ) 
                 {
-                  if( true )
+                  const Real cxx = axis==0 ? ca/(dx[0]*dx[0]) : .5*ca/(dx[0]*dx[0]);
+                  const Real cyy = axis==1 ? ca/(dx[1]*dx[1]) : .5*ca/(dx[1]*dx[1]);
+                  const Real cx  = axis==0 ? is1*omega/(2.*dx[0]) : 0.;                
+                  const Real cy  = axis==1 ? is2*omega/(2.*dx[1]) : 0.;
+
+                  if( numberOfDimensions==2 )
                   {
-                    // *new way - cleaner Jan 27, 2025
-
-                    const Real cxx = axis==0 ? ca/(dx[0]*dx[0]) : .5*ca/(dx[0]*dx[0]);
-                    const Real cyy = axis==1 ? ca/(dx[1]*dx[1]) : .5*ca/(dx[1]*dx[1]);
-                    const Real cx  = axis==0 ? is1*omega/(2.*dx[0]) : 0.;                
-                    const Real cy  = axis==1 ? is2*omega/(2.*dx[1]) : 0.;
-
                     // real part of equation
                     abcCoeffr( 0,-1,0) =         1.*cyy;
                     abcCoeffr(-1, 0,0) = 1.*cxx;
@@ -1580,71 +1543,113 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                     abcCoeffi(-1, 0,0) = -1.*cx;
                     abcCoeffi(+1, 0,0) =  1.*cx;
                     abcCoeffi( 0,+1,0) =         1.*cy;
-
                   }
                   else
-                  { // old way
-                    const Real dxa2 = dx[axis]*dx[axis];
-                    const Real dya2 = dx[axisp1]*dx[axisp1];
-                    abcCoeffr(-is1,-is2,0) = (    ca/dxa2           ); //   + 1./(2.*dx[axis]*dt);    // ghost
-                    abcCoeffr(   0,   0,0) = (-2.*ca/dxa2 - ca/dya2 );                           // boundary 
-                    abcCoeffr(+is1,+is2,0) = (    ca/dxa2           ); //   - 1./(2.*dx[axis]*dt);    // first line in
+                  {
+                    // --- THREE DIMENSIONS ---
+                    const Real czz = axis==2 ? ca/(dx[2]*dx[2]) : .5*ca/(dx[2]*dx[2]);
+                    const Real cz  = axis==2 ? is3*omega/(2.*dx[2]) : 0.;    
 
-                    abcCoeffi(-is1,-is2,0) =  + omegaSign*omega/(2.*dx[axis]);    // ghost
-                    abcCoeffi(+is1,+is2,0) =  - omegaSign*omega/(2.*dx[axis]);    // first line in
+                    // real part of equation
+                    abcCoeffr( 0, 0,-1) =                 1.*czz;
+                    abcCoeffr( 0,-1, 0) =         1.*cyy;
+                    abcCoeffr(-1, 0, 0) = 1.*cxx;
+                    abcCoeffr( 0, 0, 0) =-2.*cxx -2.*cyy -2.*czz;
+                    abcCoeffr(+1, 0, 0) = 1.*cxx;
+                    abcCoeffr( 0,+1, 0) =         1.*cyy;
+                    abcCoeffr( 0, 0,+1) =                 1.*czz;
 
-                    if( axis==0 )
-                    {
-                      abcCoeffr(0,-1,0) = ( .5*ca/(dx[1]*dx[1]) ); 
-                      abcCoeffr(0,+1,0) = ( .5*ca/(dx[1]*dx[1]) ); 
-                    }
-                    else
-                    {
-                      abcCoeffr(-1,0,0) = ( .5*ca/(dx[0]*dx[0]) ); 
-                      abcCoeffr(+1,0,0) = ( .5*ca/(dx[0]*dx[0]) );                   
-                    } 
+                    // imaginary part of equation
+                    abcCoeffi( 0, 0,-1) =                 -1.*cz;
+                    abcCoeffi( 0,-1, 0) =        -1.*cy;
+                    abcCoeffi(-1, 0, 0) = -1.*cx;
+                    abcCoeffi(+1, 0, 0) =  1.*cx;
+                    abcCoeffi( 0,+1, 0) =         1.*cy;
+                    abcCoeffi( 0, 0,+1) =                  1.*cz;
+
+
                   }
+
                 }
                 else if( orderOfAccuracy==4 )
                 {  
 
                   const Real cxx = axis==0 ? ca/(12.*dx[0]*dx[0]) : .5*ca/(12.*dx[0]*dx[0]);
                   const Real cyy = axis==1 ? ca/(12.*dx[1]*dx[1]) : .5*ca/(12.*dx[1]*dx[1]);
+                  const Real czz = axis==2 ? ca/(12.*dx[2]*dx[2]) : .5*ca/(12.*dx[2]*dx[2]);
+
                   const Real cx  = axis==0 ? is1*omega/(12.*dx[0]) : 0.;                
                   const Real cy  = axis==1 ? is2*omega/(12.*dx[1]) : 0.;
+                  const Real cz  = axis==2 ? is3*omega/(12.*dx[2]) : 0.;
 
-                  Real cxxxx = axis==0 ? ca/(dx[0]*dx[0]*dx[0]*dx[0]) : 0.;
-                  Real cyyyy = axis==1 ? ca/(dx[1]*dx[1]*dx[1]*dx[1]) : 0.;
-                  Real cxxyy =        .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]);
+                 // Real cxxxx = axis==0 ? ca/(dx[0]*dx[0]*dx[0]*dx[0]) : 0.;
+                 // Real cyyyy = axis==1 ? ca/(dx[1]*dx[1]*dx[1]*dx[1]) : 0.;
+                 // Real cxxyy =        .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]);
 
-                  Real cxxx  = axis==0 ? is1*omega/(2.*dx[0]*dx[0]*dx[0]) : 0.;                
-                  Real cyyy  = axis==1 ? is2*omega/(2.*dx[1]*dx[1]*dx[1]) : 0.; 
+                 // Real cxxx  = axis==0 ? is1*omega/(2.*dx[0]*dx[0]*dx[0]) : 0.;                
+                 // Real cyyy  = axis==1 ? is2*omega/(2.*dx[1]*dx[1]*dx[1]) : 0.; 
 
                   // cxxxx=0.; cyyyy=0.; 
                   // cxxyy=0.; // ** TEST 
 
                   // printF("solveHelmDirect: fill EM BCs order=4 (side,axis)=(%d,%d) cxxx=%g, cyyy=%g\n",side,axis,cxxx,cyyy);                 
 
-                  // real part of equation
-                  abcCoeffr( 0,-2,0) =            -cyy;
-                  abcCoeffr( 0,-1,0) =         16.*cyy;
-                  abcCoeffr(-2, 0,0) =    -cxx;
-                  abcCoeffr(-1, 0,0) = 16.*cxx;
-                  abcCoeffr( 0, 0,0) =-30.*cxx -30.*cyy;
-                  abcCoeffr(+1, 0,0) = 16.*cxx;
-                  abcCoeffr(+2, 0,0) =    -cxx;
-                  abcCoeffr( 0,+1,0) =         16.*cyy;
-                  abcCoeffr( 0,+2,0) =            -cyy;
+                  if( numberOfDimensions==2 )
+                  {
+                    // real part of equation
+                    abcCoeffr( 0,-2,0) =            -cyy;
+                    abcCoeffr( 0,-1,0) =         16.*cyy;
+                    abcCoeffr(-2, 0,0) =    -cxx;
+                    abcCoeffr(-1, 0,0) = 16.*cxx;
+                    abcCoeffr( 0, 0,0) =-30.*cxx -30.*cyy;
+                    abcCoeffr(+1, 0,0) = 16.*cxx;
+                    abcCoeffr(+2, 0,0) =    -cxx;
+                    abcCoeffr( 0,+1,0) =         16.*cyy;
+                    abcCoeffr( 0,+2,0) =            -cyy;
 
-                  // imaginary part of equation
-                  abcCoeffi( 0,-2,0) =     cy;
-                  abcCoeffi( 0,-1,0) = -8.*cy;
-                  abcCoeffi(-2, 0,0) =     cx;
-                  abcCoeffi(-1, 0,0) = -8.*cx;
-                  abcCoeffi(+1, 0,0) =  8.*cx;
-                  abcCoeffi(+2, 0,0) =    -cx;
-                  abcCoeffi( 0,+1,0) =  8.*cy;
-                  abcCoeffi( 0,+2,0) =    -cy;
+                    // imaginary part of equation
+                    abcCoeffi( 0,-2,0) =     cy;
+                    abcCoeffi( 0,-1,0) = -8.*cy;
+                    abcCoeffi(-2, 0,0) =     cx;
+                    abcCoeffi(-1, 0,0) = -8.*cx;
+                    abcCoeffi(+1, 0,0) =  8.*cx;
+                    abcCoeffi(+2, 0,0) =    -cx;
+                    abcCoeffi( 0,+1,0) =  8.*cy;
+                    abcCoeffi( 0,+2,0) =    -cy;
+                  }
+                  else
+                  {
+                    // real part of equation
+                    abcCoeffr( 0,0,-2) =                      -czz;
+                    abcCoeffr( 0,0,-1) =                   16.*czz;
+                    abcCoeffr( 0,-2,0) =            -cyy;
+                    abcCoeffr( 0,-1,0) =         16.*cyy;
+                    abcCoeffr(-2, 0,0) =    -cxx;
+                    abcCoeffr(-1, 0,0) = 16.*cxx;
+                    abcCoeffr( 0, 0,0) =-30.*cxx -30.*cyy -30.*czz;
+                    abcCoeffr(+1, 0,0) = 16.*cxx;
+                    abcCoeffr(+2, 0,0) =    -cxx;
+                    abcCoeffr( 0,+1,0) =         16.*cyy;
+                    abcCoeffr( 0,+2,0) =            -cyy;
+                    abcCoeffr( 0,0,+1) =                   16.*czz;
+                    abcCoeffr( 0,0,+2) =                      -czz;
+
+                    // imaginary part of equation
+                    abcCoeffi( 0,0,-2) =                   cz;
+                    abcCoeffi( 0,0,-1) =               -8.*cz;
+                    abcCoeffi( 0,-2,0) =            cy;
+                    abcCoeffi( 0,-1,0) =        -8.*cy;
+                    abcCoeffi(-2, 0,0) =     cx;
+                    abcCoeffi(-1, 0,0) = -8.*cx;
+                    abcCoeffi(+1, 0,0) =  8.*cx;
+                    abcCoeffi(+2, 0,0) =    -cx;
+                    abcCoeffi( 0,+1,0) =        8.*cy;
+                    abcCoeffi( 0,+2,0) =          -cy;
+                    abcCoeffi( 0,0,+1) =                8.*cz;
+                    abcCoeffi( 0,0,+2) =                  -cz;
+
+                  }
+
 
                 } 
                 else
@@ -1713,7 +1718,10 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
               if( useCBC )
               {
-                // --- FILL THE CBC ----
+                // ------------------------
+                // --- FILL THE EM CBC ----
+                // ------------------------
+
                 FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                 {
                   abcCoeff2r=0.; abcCoeff2i=0.; 
@@ -1723,41 +1731,33 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
 
                     if( orderOfAccuracy==4 )
                     {  
-
                       const Real cxx = axis==0 ? ca/(12.*dx[0]*dx[0]) : .5*ca/(12.*dx[0]*dx[0]);
                       const Real cyy = axis==1 ? ca/(12.*dx[1]*dx[1]) : .5*ca/(12.*dx[1]*dx[1]);
+                      const Real czz = axis==2 ? ca/(12.*dx[2]*dx[2]) : .5*ca/(12.*dx[2]*dx[2]);
+
                       const Real cx  = axis==0 ? is1*omega/(12.*dx[0]) : 0.;                
                       const Real cy  = axis==1 ? is2*omega/(12.*dx[1]) : 0.;
+                      const Real cz  = axis==2 ? is3*omega/(12.*dx[2]) : 0.;
 
                       Real cxxxx = axis==0 ? ca/(dx[0]*dx[0]*dx[0]*dx[0]) : 0.;
                       Real cyyyy = axis==1 ? ca/(dx[1]*dx[1]*dx[1]*dx[1]) : 0.;
-                      Real cxxyy =        .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]);
+                      Real czzzz = axis==2 ? ca/(dx[2]*dx[2]*dx[2]*dx[2]) : 0.;
+
+                      Real cxxyy = ( axis==0 || axis==1 ) ? .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]) : 0.;
+                      Real cxxzz = ( axis==0 || axis==2 ) ? .5*ca/(dx[0]*dx[0]*dx[2]*dx[2]) : 0;
+                      Real cyyzz = ( axis==1 || axis==2 ) ? .5*ca/(dx[1]*dx[1]*dx[2]*dx[2]) : 0;
 
                       Real cxxx  = axis==0 ? is1*omega/(2.*dx[0]*dx[0]*dx[0]) : 0.;                
                       Real cyyy  = axis==1 ? is2*omega/(2.*dx[1]*dx[1]*dx[1]) : 0.; 
+                      Real czzz  = axis==2 ? is3*omega/(2.*dx[2]*dx[2]*dx[2]) : 0.; 
 
+                      // *** TEMP ***
+                      // cxxyy=0.; cxxzz=0.; cyyzz=0.;
+                      // cxxzz=0.; cyyzz=0.;
 
                       // *** CBC ****
                       // real part of equation
-                      if( false )
-                      {
-                        abcCoeff2r(-1,-1,0) =                          cxxyy;
-                        abcCoeff2r(+1,-1,0) =                          cxxyy;
-
-                        abcCoeff2r( 0,-2,0) =               cyyyy;
-                        abcCoeff2r( 0,-1,0) =           -4.*cyyyy  -2.*cxxyy;
-                        abcCoeff2r(-2, 0,0) =     cxxxx;
-                        abcCoeff2r(-1, 0,0) = -4.*cxxxx            -2.*cxxyy;
-                        abcCoeff2r( 0, 0,0) =  6.*cxxxx +6.*cyyyy  +4.*cxxyy;
-                        abcCoeff2r(+1, 0,0) = -4.*cxxxx            -2.*cxxyy;
-                        abcCoeff2r(+2, 0,0) =     cxxxx;
-                        abcCoeff2r( 0,+1,0) =           -4.*cyyyy  -2.*cxxyy;
-                        abcCoeff2r( 0,+2,0) =               cyyyy;
-
-                        abcCoeff2r(-1,+1,0) =                          cxxyy;
-                        abcCoeff2r(+1,+1,0) =                          cxxyy;
-                      }
-                      else
+                      if( numberOfDimensions==2 )
                       {            
                         abcCoeff2r(-1,-1,0) =  0.;
                         abcCoeff2r(+1,-1,0) =  0.;
@@ -1811,18 +1811,130 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                         abcCoeff2r(-1+ks1,+1+ks2,0) +=      cxxyy;
                         abcCoeff2r(+1+ks1,+1+ks2,0) +=      cxxyy;
 
+
+
+                        // imaginary part of equation
+                        abcCoeff2i( 0,-2,0) =             -cyyy;
+                        abcCoeff2i( 0,-1,0) =           2.*cyyy;
+                        abcCoeff2i(-2, 0,0) =    -cxxx;
+                        abcCoeff2i(-1, 0,0) =  2.*cxxx;
+                        abcCoeff2i(+1, 0,0) = -2.*cxxx;
+                        abcCoeff2i(+2, 0,0) =     cxxx;
+                        abcCoeff2i( 0,+1,0) =          -2.*cyyy;
+                        abcCoeff2i( 0,+2,0) =              cyyy;
                       }
+                      else
+                      {
+                         // ---- 3D -----
 
-                      // imaginary part of equation
-                      abcCoeff2i( 0,-2,0) =             -cyyy;
-                      abcCoeff2i( 0,-1,0) =           2.*cyyy;
-                      abcCoeff2i(-2, 0,0) =    -cxxx;
-                      abcCoeff2i(-1, 0,0) =  2.*cxxx;
-                      abcCoeff2i(+1, 0,0) = -2.*cxxx;
-                      abcCoeff2i(+2, 0,0) =     cxxx;
-                      abcCoeff2i( 0,+1,0) =          -2.*cyyy;
-                      abcCoeff2i( 0,+2,0) =              cyyy;
+                        abcCoeff2r(-1,-1,0) =  0.;
+                        abcCoeff2r(+1,-1,0) =  0.; 
 
+                        abcCoeff2r(-1,0,-1) =  0.;
+                        abcCoeff2r(+1,0,-1) =  0.;
+
+                        abcCoeff2r(0,-1,-1) =  0.;
+                        abcCoeff2r(0,+1,-1) =  0.;
+
+                        abcCoeff2r( 0,0,-2) =                         czzzz;
+                        abcCoeff2r( 0,0,-1) =                     -4.*czzzz;
+                        abcCoeff2r( 0,-2,0) =               cyyyy;
+                        abcCoeff2r( 0,-1,0) =           -4.*cyyyy;
+                        abcCoeff2r(-2, 0,0) =     cxxxx;
+                        abcCoeff2r(-1, 0,0) = -4.*cxxxx;
+                        abcCoeff2r( 0, 0,0) =  6.*cxxxx +6.*cyyyy +6.*czzzz;
+                        abcCoeff2r(+1, 0,0) = -4.*cxxxx;
+                        abcCoeff2r(+2, 0,0) =     cxxxx;
+                        abcCoeff2r( 0,+1,0) =           -4.*cyyyy;
+                        abcCoeff2r( 0,+2,0) =               cyyyy;
+                        abcCoeff2r( 0,0,+1) =                     -4.*czzzz;
+                        abcCoeff2r( 0,0,+2) =                         czzzz;
+
+                        abcCoeff2r(-1,+1,0) = 0.;
+                        abcCoeff2r(+1,+1,0) = 0.;  
+
+                        abcCoeff2r(-1,0,+1) = 0.;
+                        abcCoeff2r(+1,0,+1) = 0.;  
+
+                        abcCoeff2r(0,-1,+1) = 0.;
+                        abcCoeff2r(0,+1,+1) = 0.;                 
+
+                        // --- ADD u.xxyy, u.xxzz, u.yyzz terms ---
+                        int ksv[3], &ks1=ksv[0], &ks2=ksv[1], &ks3=ksv[2];
+                        ks1=0, ks2=0, ks3=0; // centered stencil
+                        if( useOneSidedXXYY )
+                        { 
+                          // The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy
+                          //           X--X--X
+                          //           |     |     G=ghost, B=boundary point (i1,i2)
+                          //     G--G--B--X--X     B,X = stencil for u.xxyy on left face 
+                          //           |     |
+                          //           X--X--X                        
+                          ks1=is1; ks2=is2; ks3=is3; // shift stencil inward from the boundary
+
+                          // check for corners and do an additional shift so only boundary and interior points are used
+                          int axisp1 = (axis+1) % mg.numberOfDimensions(); // adjacent axis
+                          int axisp2 = (axis+2) % mg.numberOfDimensions(); // adjacent axis
+                          for( int side2=0; side2<=1; side2++ )            // adjacent sides
+                          {
+                            if( iv[axisp1]==mg.gridIndexRange(side2,axisp1) && mg.boundaryCondition(side2,axisp1)>0 )
+                            {
+                              ksv[axisp1] = 1-2*side2;
+                              // printF("solveHelmholtzDirect: useOneSided u.xxyy (i1,i2)=%3d,%3d) (side,side2)=(%2d,%2d) (ks1,ks2)=(%2d,%2d)\n",i1,i2,side,side2,ks1,ks2);
+                            }
+                            if( iv[axisp2]==mg.gridIndexRange(side2,axisp2) && mg.boundaryCondition(side2,axisp2)>0 )
+                            {
+                              ksv[axisp2] = 1-2*side2;
+                              // printF("solveHelmholtzDirect: useOneSided u.xxyy (i1,i2)=%3d,%3d) (side,side2)=(%2d,%2d) (ks1,ks2)=(%2d,%2d)\n",i1,i2,side,side2,ks1,ks2);
+                            }                            
+                          }
+
+                        }
+                        // printF("solveHelmholtzDirect: useOneSided u.xxyy (side,axis)=(%d,%d) (i1,i2)=%3d,%3d) (ks1,ks2)=(%2d,%2d)\n",side,axis,i1,i2,ks1,ks2);
+                        abcCoeff2r(-1+ks1,-1+ks2,0) +=      cxxyy;
+                        abcCoeff2r(+1+ks1,-1+ks2,0) +=      cxxyy;
+                        abcCoeff2r( 0+ks1,-1+ks2,0) +=  -2.*cxxyy;
+                        abcCoeff2r(-1+ks1, 0+ks2,0) +=  -2.*cxxyy;
+                        abcCoeff2r( 0+ks1, 0+ks2,0) +=  +4.*cxxyy;
+                        abcCoeff2r(+1+ks1, 0+ks2,0) +=  -2.*cxxyy;
+                        abcCoeff2r( 0+ks1,+1+ks2,0) +=  -2.*cxxyy;
+                        abcCoeff2r(-1+ks1,+1+ks2,0) +=      cxxyy;
+                        abcCoeff2r(+1+ks1,+1+ks2,0) +=      cxxyy;
+
+                        abcCoeff2r(-1+ks1,0,-1+ks3) +=      cxxzz;
+                        abcCoeff2r(+1+ks1,0,-1+ks3) +=      cxxzz;
+                        abcCoeff2r( 0+ks1,0,-1+ks3) +=  -2.*cxxzz;
+                        abcCoeff2r(-1+ks1,0, 0+ks3) +=  -2.*cxxzz;
+                        abcCoeff2r( 0+ks1,0, 0+ks3) +=  +4.*cxxzz;
+                        abcCoeff2r(+1+ks1,0, 0+ks3) +=  -2.*cxxzz;
+                        abcCoeff2r( 0+ks1,0,+1+ks3) +=  -2.*cxxzz;
+                        abcCoeff2r(-1+ks1,0,+1+ks3) +=      cxxzz;
+                        abcCoeff2r(+1+ks1,0,+1+ks3) +=      cxxzz;
+
+                        abcCoeff2r(0,-1+ks2,-1+ks3) +=      cyyzz;
+                        abcCoeff2r(0,+1+ks2,-1+ks3) +=      cyyzz;
+                        abcCoeff2r(0, 0+ks2,-1+ks3) +=  -2.*cyyzz;
+                        abcCoeff2r(0,-1+ks2, 0+ks3) +=  -2.*cyyzz;
+                        abcCoeff2r(0, 0+ks2, 0+ks3) +=  +4.*cyyzz;
+                        abcCoeff2r(0,+1+ks2, 0+ks3) +=  -2.*cyyzz;
+                        abcCoeff2r(0, 0+ks2,+1+ks3) +=  -2.*cyyzz;
+                        abcCoeff2r(0,-1+ks2,+1+ks3) +=      cyyzz;
+                        abcCoeff2r(0,+1+ks2,+1+ks3) +=      cyyzz;
+
+                        // imaginary part of equation
+                        abcCoeff2i( 0,0,-2) =                      -czzz;
+                        abcCoeff2i( 0,0,-1) =                    2.*czzz;
+                        abcCoeff2i( 0,-2,0) =             -cyyy;
+                        abcCoeff2i( 0,-1,0) =           2.*cyyy;
+                        abcCoeff2i(-2, 0,0) =    -cxxx;
+                        abcCoeff2i(-1, 0,0) =  2.*cxxx;
+                        abcCoeff2i(+1, 0,0) = -2.*cxxx;
+                        abcCoeff2i(+2, 0,0) =     cxxx;
+                        abcCoeff2i( 0,+1,0) =          -2.*cyyy;
+                        abcCoeff2i( 0,+2,0) =              cyyy;                        
+                        abcCoeff2i( 0,0,+1) =                   -2.*czzz;
+                        abcCoeff2i( 0,0,+2) =                       czzz;                        
+                      }
                     } 
                     else
                     {
@@ -2070,11 +2182,19 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
     if( 1==0 )
       fc.display("fc: RHS before direct Helmholtz solve","%8.1e ");
 
+    Real time0=getCPU();
 
     u=0.;  // initial guess for iterative solvers
     solver.solve( u,fc ); 
 
-    printF("=== Direct Helmholtz Solver: %s iterations=%d =====\n",(const char*)solver.parameters.getSolverName(),solver.getNumberOfIterations());
+
+    Real time= ParallelUtility::getMaxValue(getCPU()-time0);
+    helmholtzSolverIterations = solver.getNumberOfIterations();
+
+    printF("\n*** omega=%.5g, solver-max-res=%8.2e, time for direct Helmholtz solve = %8.2e (s) (iterations=%i) ***\n",
+             omega,solver.getMaximumResidual(),time,helmholtzSolverIterations);
+
+   // printF("=== Direct Helmholtz Solver: %s iterations=%d =====\n",(const char*)solver.parameters.getSolverName(),solver.getNumberOfIterations());
 
     bool checkResidual=true;
     if( checkResidual )
