@@ -606,7 +606,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                             maxResBC2 = ParallelUtility::getMaxValue( maxResBC2 );
                                             maxRHS    = ParallelUtility::getMaxValue( maxRHS );
                                             if( ires==numRes-1)
-                                                printF("residual: Radiation BC: (side,axis,grid)={%d,%d,%d) ghost 1: max-res=[%9.2e,%9.2e] (Re,Im) (scale=%9.2e), max|forcing(ghost)|=%9.2e\n",
+                                                printF("residual: Radiation BC: (side,axis,grid)=(%d,%d,%d) ghost 1: max-res=[%9.2e,%9.2e] (Re,Im) (scale=%9.2e), max|forcing(ghost)|=%9.2e\n",
                                                     side,axis,grid,maxResBC1,maxResBC2,bcScale,maxRHS);
                       // --- ghost line 2 ---
                                             if( orderOfAccuracy==4 )

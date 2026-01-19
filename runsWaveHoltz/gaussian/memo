@@ -13,6 +13,98 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
 ***************************************************
+****** Sat Jan 17, 2026
+
+CHECK Resiuals in parallel near intep points
+
+**BUG FOUND*** abcWave.bf90 --> buf if z-direction is distributed
+
+
+
+CHECK SQUARE: OK 
+mpiexec -n 8 $cgwh -noplot gaussian.cmd -g=square32.order4.hdf -ts=explicit -cfl=0.95 -x0=0.5 0.5 -y0=0.5 0.45 -z0=0 -nf=1 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+solveHelmholtz: max-residual [Re,Im]=[1.55e-12,5.80e-11] (gmres, numIts=11, ave-CR= 0.11 , cpu=2.19e-01(s), np=16)
+
+
+
+BIB bc=d -- OK 
+mpiexec -n 8 $cgwh -noplot gaussian.cmd -g=bibe2.order2.hdf -ts=explicit -cfl=0.95 -x0=0.05 0.5 -y0=.0 0.45 -z0=-0.5 -nf=1 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=1000 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+solveHelmholtz: max-residual [Re,Im]=[3.37e-14,7.51e-14] (gmres, numIts=19, ave-CR= 0.40 , cpu=8.74e-01(s), np=8)
+
+BOX bc=d 
+mpiexec -n 8 $cgwh -noplot gaussian.cmd -g=box2.order2.hdf -ts=explicit -cfl=0.95 -x0=0.5 0.5 -y0=0.5 0.45 -z0=0.5 -nf=1 -freq=5 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+solveHelmholtz: max-residual [Re,Im]=[1.57e-11,4.53e-11] (gmres, numIts=14, ave-CR= 0.19 , cpu=2.30e-01(s), np=8)
+
+
+BOX O4  ** TROUBLE ** BUt residuals are fine in the interior --> FIXED
+mpiexec -n 8 $cgwh -noplot gaussian.cmd -g=box2.order4.hdf -ts=explicit -cfl=0.95 -x0=0.5 0.5 -y0=0.5 0.45 -z0=0.5 -nf=1 -freq=10 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.91e-14, 1.23e-12] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 2.24e-14, 4.07e-13] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 3.91e-14, 1.23e-12] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 2.24e-14, 4.07e-13] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 3.91e-14, 1.23e-12] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 2.24e-14, 4.07e-13] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 3.91e-14, 1.23e-12] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 2.24e-14, 4.07e-13] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 3.91e-14, 1.23e-12] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 2: max-res=[ 2.24e-14, 4.07e-13] (Re,Im) (scaled by  6.25e-06)
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 3.91e-14, 1.23e-12] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 2.76e-28
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 2.24e-14, 4.07e-13] (Re,Im) (scaled by  6.25e-06)
+solveHelmholtz: max-residual [Re,Im]=[1.65e-11,3.48e-11] (gmres, numIts=15, ave-CR= 0.24 , cpu=2.20e-01(s), np=8)
+
+
+BOX  ** TROUBLE **
+mpiexec -n 8 $cgwh -noplot gaussian.cmd -g=box2.order2.hdf -ts=explicit -cfl=0.95 -x0=0.5 0.5 -y0=0.5 0.45 -z0=0.5 -nf=1 -freq=10 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+
+solveHelmholtz: max-residual [Re,Im]=[4.29e-12,4.70e-11] (gmres, numIts=16, ave-CR= 0.25 , cpu=1.40e-01(s), np=6)
+
+solveHelmholtz: max-residual [Re,Im]=[3.11e-05,7.42e-05] (gmres, numIts=18, ave-CR= 0.29 , cpu=1.65e-01(s), np=8)
+
+
+
+
+TEST BOX: -- TROUBLE -- residual np=8 --> FIXED
+
+mpiexec -n 8 $cgwh -noplot gaussian.cmd -g=bibe2.order2.hdf -ts=explicit -cfl=0.95 -x0=0.05 0.5 -y0=.0 0.45 -z0=-0.05 -nf=1 -freq=10 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.80e-14, 8.99e-13] (Re,Im) (scale= 2.38e-03), max|forcing(ghost)|=8.22e-117
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.70e-14, 5.58e-13] (Re,Im) (scale= 2.38e-03), max|forcing(ghost)|= 2.58e-96
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.77e-14, 8.90e-13] (Re,Im) (scale= 2.38e-03), max|forcing(ghost)|=2.59e-106
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.77e-14, 8.90e-13] (Re,Im) (scale= 2.38e-03), max|forcing(ghost)|=2.59e-106
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 1.70e-14, 5.58e-13] (Re,Im) (scale= 2.38e-03), max|forcing(ghost)|= 2.58e-96
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 1.80e-14, 8.99e-13] (Re,Im) (scale= 2.38e-03), max|forcing(ghost)|=8.22e-117
+solveHelmholtz: max-residual [Re,Im]=[1.20e-11,3.19e-11] (gmres, numIts=53, ave-CR= 0.66 , cpu=1.36e+00(s), np=8)
+
+
+
+UPWIND=0
+mpiexec -n 5 $cgwh -noplot gaussian.cmd -g=bibe2.order2.hdf -ts=explicit -cfl=0.95 -x0=0.05 0.5 -y0=.0 0.45 -z0=-0.5 -nf=1 -freq=10 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+
+mpiexec -n 8 $cgwh -noplot gaussian.cmd -g=bibe2.order2.hdf -ts=explicit -cfl=0.95 -x0=0.05 0.5 -y0=.0 0.45 -z0=-0.05 -nf=1 -freq=10 11 -amp=-100 -100 -beta=15 15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -imode=1 -maxIterations=100 -numPeriods=1 -bc=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=0 -adjustHelmholtzForUpwinding=1 -go=og
+
+TROUBLE: np=8 : residuals near vertex's 
+solveHelmholtz: max-residual [Re,Im]=[1.28e-05,3.26e-05] (gmres, numIts=58, ave-CR= 0.68 , cpu=1.41e+00(s), np=8)
+
+-n 5 : hangs in residual --> FIXED 
+
+
+np=8 : BUG residuals 
+solveHelmholtz: max-residual [Re,Im]=[1.28e-05,3.26e-05] (gmres, numIts=58, ave-CR= 0.68 , cpu=1.40e+00(s), np=8)
+
+solveHelmholtz: max-residual [Re,Im]=[2.39e-12,5.89e-12] (gmres, numIts=54, ave-CR= 0.66 , cpu=1.30e+00(s), np=6)
+solveHelmholtz: max-residual [Re,Im]=[2.39e-12,5.89e-12] (gmres, numIts=54, ave-CR= 0.66 , cpu=1.49e+00(s), np=5)
+solveHelmholtz: max-residual [Re,Im]=[2.39e-12,5.89e-12] (gmres, numIts=54, ave-CR= 0.66 , cpu=1.43e+00(s), np=4)
+solveHelmholtz: max-residual [Re,Im]=[2.39e-12,5.89e-12] (gmres, numIts=54, ave-CR= 0.66 , cpu=1.95e+00(s), np=2)
+solveHelmholtz: max-residual [Re,Im]=[2.39e-12,5.88e-12] (gmres, numIts=54, ave-CR= 0.66 , cpu=2.75e+00(s), np=1)
+
+***************************************************
 ****** Fri Jan 16, 2026
 
 
@@ -25,7 +117,7 @@ $cgwh -noplot gaussian.cmd -g=box8.order4 -ts=explicit -cfl=0.95 -x0=0.55 0.5 -y
 
  >>>omega=  3.00e+01, k=  3.00e+01, lambda=  2.09e-01, dx=  1.25e-02, domainSize=  1.00e+00, NLambda=4.77465, ppw=lambda/dx= 16.8, ppw(rule-of-thumb)= 12.7 (old= 14.7) (epsr=0.01)<<<
  solveHelmholtz: max-residual [Re,Im]=[4.41e-12,1.40e-11] (gmres, numIts=40, ave-CR= 0.57 , cpu=2.91e+01(s), np=1)
- 
+
  omega=  2.00e+01, k=  2.00e+01, lambda=  3.14e-01, dx=  1.25e-02, domainSize=  1.00e+00, NLambda=3.1831, ppw=lambda/dx= 25.1, ppw(rule-of-thumb)= 11.5 (epsr=0.01)<<<
 
 residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 1.02e-15, 1.18e-13] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 4.33e-53

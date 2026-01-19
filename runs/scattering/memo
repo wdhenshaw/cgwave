@@ -6,6 +6,30 @@
 START TEST SPHERE SCAT
 sphereInABoxGride2.order2
 
+
+PARALLEL:
+
+BUG FIXED -- abcWave.bf90, plot.bC
+
+
+ok: 
+mpiexec -n 8 $cgWave scat.cmd -g=sphereInABoxe2.order4.ng3 -useSuperGrid=0 -superGridWidth=.2 -known=pw -ts=explicit -cfl=0.95 -bc=d -ic=zero -upwind=1 -kx=2 -tf=10 -tp=.5 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=1 -go=og
+
+
+
+O2 - 
+mpiexec -n 2 xterm -e gdb -ex run --args $cgWave scat.cmd -g=sphereInABoxe2.order2 -useSuperGrid=0 -superGridWidth=.2 -known=pw -ts=explicit -cfl=0.95 -bc=d -ic=zero -upwind=1 -kx=2 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=1 -go=og
+
+ok: 
+mpiexec -n 8 $cgWave scat.cmd -g=sphereInABoxe2.order2 -useSuperGrid=0 -superGridWidth=.2 -known=pw -ts=explicit -cfl=0.95 -bc=d -ic=zero -upwind=1 -kx=2 -tf=10 -tp=.5 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=1 -go=og
+
+
+
+abcWave: ERROR: Not all faces at the vertex in 3D are abcEM2 -- fix me
+abcWave: ERROR: Not all faces at the vertex in 3D are abcEM2 -- fix me
+
+
+
 O4 - OK to t=10
 cgWave scat.cmd -g=sphereInABoxe2.order4.ng3 -useSuperGrid=0 -superGridWidth=.2 -known=pw -ts=explicit -cfl=0.95 -bc=d -ic=zero -upwind=1 -kx=2 -tf=10 -tp=.1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -adjustPlotsForSuperGrid=0 -adjustErrorsForSuperGrid=0 -debug=1 -go=og
 
