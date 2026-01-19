@@ -207,6 +207,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
   Real & convergenceRate          = cgWaveHoltz.dbase.get<Real>("convergenceRate");
   Real & convergenceRatePerPeriod = cgWaveHoltz.dbase.get<Real>("convergenceRatePerPeriod");
+  int & saveResidualToShowFile    = cgWaveHoltz.dbase.get<int>("saveResidualToShowFile");
 
   const int & np                           = cgWave.dbase.get<int>("np");
   const int & orderOfAccuracy              = cgWave.dbase.get<int>("orderOfAccuracy");
@@ -374,6 +375,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
                           "augmented are eigenvectors",
                           "plot filter and deflated eigs",
                           "only load deflated eigs",
+                          "save residual to show file",
                             ""};
   int tbState[10];
   tbState[0] = cgWaveDebugMode;
@@ -385,6 +387,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
   tbState[6] = augmentedVectorsAreEigenvectors;
   tbState[7] = plotFilterAndDeflatedEigenvalues;
   tbState[8] = onlyLoadDeflatedEigenVectors; 
+  tbState[9] = saveResidualToShowFile;
 
   int numColumns=1;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -604,6 +607,11 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
       }
     }          
+
+    else if( dialog.getToggleValue(answer,"save residual to show file",saveResidualToShowFile) )
+    {
+      printF("Setting saveResidualToShowFile=%d ( 1 = save the residual to the show file.)\n",saveResidualToShowFile);
+    }
 
     else if( answer=="compute with fixed-point" ||
              answer=="compute with krylov" || 
@@ -1271,6 +1279,9 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
         numShowComponents += numberOfComponents;       // save total field
       }
 
+      if( saveResidualToShowFile )
+        numShowComponents += numberOfComponents;
+
       // turn this off: Aug 21, 2025
       // if( !waveHoltzSolutionWasComputed && helmholtzFromDirectSolverWasComputed )
       // {
@@ -1457,9 +1468,29 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
         }
       }
 
+      if( saveResidualToShowFile )
+      {
+        realCompositeGridFunction & res = dbase.get<realCompositeGridFunction>("residual");
+
+        for( int freq=0; freq<numberOfComponents; freq++ )
+        {        
+          q.setName(sPrintF("res%d",freq),ishow);
+          for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+          {
+            OV_GET_SERIAL_ARRAY(Real,res[grid],resLocal);
+            OV_GET_SERIAL_ARRAY(Real,q[grid],qLocal);
+            getIndex(cg[grid].dimension(),I1,I2,I3);
+            bool ok=ParallelUtility::getLocalArrayBounds(q[grid],qLocal,I1,I2,I3);
+            if( ok )
+              qLocal(I1,I2,I3,ishow) = resLocal(I1,I2,I3,freq);  // residual
+          }
+          ishow++;
+        }
+
+      }
       if( ishow!=numShowComponents )
       {
-        printF("cgwf:ERROR: ishow=%d != numShowComponents=%d\n",ishow,numShowComponents);
+        printF("CgWaveHoltz::solveHelmholtz:ERROR: ishow=%d != numShowComponents=%d\n",ishow,numShowComponents);
       }
 
       if( adjustPlotsForSuperGrid && useSuperGrid )
@@ -1895,18 +1926,22 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
           mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
           OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
           getIndex(mg.dimension(),I1,I2,I3);
+          bool ok=ParallelUtility::getLocalArrayBounds(q[grid],qLocal,I1,I2,I3,1);
 
           // NOTE: 
           //   We have forced with sin( k.x - omega* t)
-          if( cg.numberOfDimensions()==2 )
-          {
-            qLocal(I1,I2,I3,0) += amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + phi );
-            qLocal(I1,I2,I3,1) -= amp*cos( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + phi );
-          }
-          else
-          {
-            qLocal(I1,I2,I3,0) += amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) + phi );
-            qLocal(I1,I2,I3,1) -= amp*cos( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) + phi );
+          if( ok ) 
+          {         
+            if( cg.numberOfDimensions()==2 )
+            {
+              qLocal(I1,I2,I3,0) += amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + phi );
+              qLocal(I1,I2,I3,1) -= amp*cos( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + phi );
+            }
+            else
+            {
+              qLocal(I1,I2,I3,0) += amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) + phi );
+              qLocal(I1,I2,I3,1) -= amp*cos( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) + phi );
+            }
           }
         }
       }

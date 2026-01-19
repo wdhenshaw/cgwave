@@ -1823,6 +1823,7 @@ if( mask(i1,i2,i3).gt.0 )then
 #endMacro
 
 
+
 ! ---------------------------------------------------------------------------------
 ! Macro: 
 !     ------ 3D EM CORNER ORDER 2 approximations ----
@@ -1834,100 +1835,102 @@ if( mask(i1,i2,i3).gt.0 )then
 
   bc1=boundaryCondition(side1,0)
   bc2=boundaryCondition(side2,1)
-  bc3=boundaryCondition(side2,2)
+  bc3=boundaryCondition(side3,2)
 
-  if( (bc1.ne.abcEM2 .and. bc1.ne.absorbing)  .or. (bc2.ne.abcEM2 .and. bc2.ne.absorbing) .or. (bc3.ne.abcEM2 .and. bc3.ne.absorbing) )then
-    write(*,'("abcWave: ERROR: Not all faces at the vertex in 3D are abcEM2 -- fix me")')
-    stop 662
-  end if
+  if( bc1.gt.0 .and. bc2.gt.0 .and. bc3.gt.0 )then
+    ! this is a physical vertex
+    if( (bc1.ne.abcEM2 .and. bc1.ne.absorbing)  .or. (bc2.ne.abcEM2 .and. bc2.ne.absorbing) .or. (bc3.ne.abcEM2 .and. bc3.ne.absorbing) )then
+      write(*,'("abcWave: ERROR: Not all faces at the vertex in 3D are abcEM2 -- fix me")')
+      stop 662
+    end if
 
-  is1=1-2*side1
-  is2=1-2*side2
-  is3=1-2*side3
-  if( side1.eq.0 )then
-    i1=n1a
-  else
-    i1=n1b
-  end if
-  if( side2.eq.0 )then
-    i2=n2a
-  else
-    i2=n2b
-  end if
-  if( side3.eq.0 )then
-    i3=n3a
-  else
-    i3=n3b
-  end if
+    is1=1-2*side1
+    is2=1-2*side2
+    is3=1-2*side3
+    if( side1.eq.0 )then
+      i1=n1a
+    else
+      i1=n1b
+    end if
+    if( side2.eq.0 )then
+      i2=n2a
+    else
+      i2=n2b
+    end if
+    if( side3.eq.0 )then
+      i3=n3a
+    else
+      i3=n3b
+    end if
 
-  ! --- At an CORNER in 3D there are three coupled equations ----
-  ! first evaluate residuals in equations given current (wrong) values at A, B, C 
-  getForcingEM2(X,3,tp,is1,is2,is3,forcex)
-  getForcingEM2(Y,3,tp,is1,is2,is3,forcey)
-  getForcingEM2(Z,3,tp,is1,is2,is3,forcez)        
+    ! --- At an CORNER in 3D there are three coupled equations ----
+    ! first evaluate residuals in equations given current (wrong) values at A, B, C 
+    getForcingEM2(X,3,tp,is1,is2,is3,forcex)
+    getForcingEM2(Y,3,tp,is1,is2,is3,forcey)
+    getForcingEM2(Z,3,tp,is1,is2,is3,forcez)        
 
-  f3(0) = is1*(unx23r(i1,i2,i3,ex)-ux23r(i1,i2,i3,ex))/(dt)- \
-           .5*( c1abcem2*unxx23r(i1,i2,i3,ex) + c2abcem2*(unyy23r(i1,i2,i3,ex)+unzz23r(i1,i2,i3,ex)) +\
-                c1abcem2* uxx23r(i1,i2,i3,ex) + c2abcem2*( uyy23r(i1,i2,i3,ex)+ uzz23r(i1,i2,i3,ex)) ) - forcex(ex) 
-
-  f3(1) = is2*(uny23r(i1,i2,i3,ex)-uy23r(i1,i2,i3,ex))/(dt)- \
-           .5*( c1abcem2*unyy23r(i1,i2,i3,ex) + c2abcem2*(unxx23r(i1,i2,i3,ex)+unzz23r(i1,i2,i3,ex)) +\
-                c1abcem2* uyy23r(i1,i2,i3,ex) + c2abcem2*( uxx23r(i1,i2,i3,ex)+ uzz23r(i1,i2,i3,ex)) ) - forcey(ex)
-
-  f3(2) = is3*(unz23r(i1,i2,i3,ex)-uz23r(i1,i2,i3,ex))/(dt)- \
-           .5*( c1abcem2*unzz23r(i1,i2,i3,ex) + c2abcem2*(unxx23r(i1,i2,i3,ex)+unyy23r(i1,i2,i3,ex)) +\
-                c1abcem2* uzz23r(i1,i2,i3,ex) + c2abcem2*( uxx23r(i1,i2,i3,ex)+ uyy23r(i1,i2,i3,ex)) ) - forcez(ex)
-
-  a3(0,0) = -1./(2.*dt*dx(0))  - .5*c1abcem2/(dx(0)**2)
-  a3(0,1) = -.5*c2abcem2/(dx(1)**2)
-  a3(0,2) = -.5*c2abcem2/(dx(2)**2)
-
-  a3(1,0) = -.5*c2abcem2/(dx(0)**2)
-  a3(1,1) = -1./(2.*dt*dx(1))  - .5*c1abcem2/(dx(1)**2)
-  a3(1,2) = -.5*c2abcem2/(dx(2)**2)
-
-  a3(2,0) = -.5*c2abcem2/(dx(0)**2)
-  a3(2,1) = -.5*c2abcem2/(dx(1)**2)
-  a3(2,2) = -1./(2.*dt*dx(2))  - .5*c1abcem2/(dx(2)**2)
-
-  ! subtract off the contributions from the wrong values at the ghost points:
-  q3(0) = un(i1-is1,i2    ,i3    ,ex)
-  q3(1) = un(i1    ,i2-is2,i3    ,ex)
-  q3(2) = un(i1    ,i2    ,i3-is3,ex)
-  do n=0,2
-    f3(n) = (a3(n,0)*q3(0)+a3(n,1)*q3(1)+a3(n,2)*q3(2)) - f3(n)
-  end do
-
-  numberOfEquations=3
-  call dgeco( a3(0,0), numberOfEquations, numberOfEquations, ipvt3(0),rcond,work3(0))
-  ! write(*,'(" -->  rcond=",e10.2, " q3=",3e12.2, " f3=",3e12.2)') rcond,(q3(n),n=0,2),(f3(n),n=0,2)
-
-  ! --- solve ---
-  job=0
-  call dgesl( a3(0,0), numberOfEquations, numberOfEquations, ipvt3(0), f3(0), job)
-
-  un(i1-is1,i2    ,i3    ,ex)= f3(0) 
-  un(i1    ,i2-is2,i3    ,ex)= f3(1) 
-  un(i1    ,i2    ,i3-is3,ex)= f3(2) 
-  
-  ! assign ghost point outside the corner (should not be used)
-  un(i1-is1,i2-is2,i3-is3,ex) = extrap3(un,i1,i2,i3,ex,is1,is2,is3)
-
-  if( .false. .or. (debug.gt.1 .and. t.le.3*dt) )then
-    ! -- check residual ---
     f3(0) = is1*(unx23r(i1,i2,i3,ex)-ux23r(i1,i2,i3,ex))/(dt)- \
              .5*( c1abcem2*unxx23r(i1,i2,i3,ex) + c2abcem2*(unyy23r(i1,i2,i3,ex)+unzz23r(i1,i2,i3,ex)) +\
                   c1abcem2* uxx23r(i1,i2,i3,ex) + c2abcem2*( uyy23r(i1,i2,i3,ex)+ uzz23r(i1,i2,i3,ex)) ) - forcex(ex) 
+
     f3(1) = is2*(uny23r(i1,i2,i3,ex)-uy23r(i1,i2,i3,ex))/(dt)- \
              .5*( c1abcem2*unyy23r(i1,i2,i3,ex) + c2abcem2*(unxx23r(i1,i2,i3,ex)+unzz23r(i1,i2,i3,ex)) +\
                   c1abcem2* uyy23r(i1,i2,i3,ex) + c2abcem2*( uxx23r(i1,i2,i3,ex)+ uzz23r(i1,i2,i3,ex)) ) - forcey(ex)
+
     f3(2) = is3*(unz23r(i1,i2,i3,ex)-uz23r(i1,i2,i3,ex))/(dt)- \
              .5*( c1abcem2*unzz23r(i1,i2,i3,ex) + c2abcem2*(unxx23r(i1,i2,i3,ex)+unyy23r(i1,i2,i3,ex)) +\
-                  c1abcem2* uzz23r(i1,i2,i3,ex) + c2abcem2*( uxx23r(i1,i2,i3,ex)+ uyy23r(i1,i2,i3,ex)) ) - forcez(ex)  
-    maxRes = max(abs(f3(0)),abs(f3(1)),abs(f3(2)))
-    write(*,'(" ABC EM: CORNER side1,side2,side3=",3i2," maxRes=",1pe12.2)') side1,side2,side3,maxRes
-  end if
+                  c1abcem2* uzz23r(i1,i2,i3,ex) + c2abcem2*( uxx23r(i1,i2,i3,ex)+ uyy23r(i1,i2,i3,ex)) ) - forcez(ex)
 
+    a3(0,0) = -1./(2.*dt*dx(0))  - .5*c1abcem2/(dx(0)**2)
+    a3(0,1) = -.5*c2abcem2/(dx(1)**2)
+    a3(0,2) = -.5*c2abcem2/(dx(2)**2)
+
+    a3(1,0) = -.5*c2abcem2/(dx(0)**2)
+    a3(1,1) = -1./(2.*dt*dx(1))  - .5*c1abcem2/(dx(1)**2)
+    a3(1,2) = -.5*c2abcem2/(dx(2)**2)
+
+    a3(2,0) = -.5*c2abcem2/(dx(0)**2)
+    a3(2,1) = -.5*c2abcem2/(dx(1)**2)
+    a3(2,2) = -1./(2.*dt*dx(2))  - .5*c1abcem2/(dx(2)**2)
+
+    ! subtract off the contributions from the wrong values at the ghost points:
+    q3(0) = un(i1-is1,i2    ,i3    ,ex)
+    q3(1) = un(i1    ,i2-is2,i3    ,ex)
+    q3(2) = un(i1    ,i2    ,i3-is3,ex)
+    do n=0,2
+      f3(n) = (a3(n,0)*q3(0)+a3(n,1)*q3(1)+a3(n,2)*q3(2)) - f3(n)
+    end do
+
+    numberOfEquations=3
+    call dgeco( a3(0,0), numberOfEquations, numberOfEquations, ipvt3(0),rcond,work3(0))
+    ! write(*,'(" -->  rcond=",e10.2, " q3=",3e12.2, " f3=",3e12.2)') rcond,(q3(n),n=0,2),(f3(n),n=0,2)
+
+    ! --- solve ---
+    job=0
+    call dgesl( a3(0,0), numberOfEquations, numberOfEquations, ipvt3(0), f3(0), job)
+
+    un(i1-is1,i2    ,i3    ,ex)= f3(0) 
+    un(i1    ,i2-is2,i3    ,ex)= f3(1) 
+    un(i1    ,i2    ,i3-is3,ex)= f3(2) 
+    
+    ! assign ghost point outside the corner (should not be used)
+    un(i1-is1,i2-is2,i3-is3,ex) = extrap3(un,i1,i2,i3,ex,is1,is2,is3)
+
+    if( .false. .or. (debug.gt.1 .and. t.le.3*dt) )then
+      ! -- check residual ---
+      f3(0) = is1*(unx23r(i1,i2,i3,ex)-ux23r(i1,i2,i3,ex))/(dt)- \
+               .5*( c1abcem2*unxx23r(i1,i2,i3,ex) + c2abcem2*(unyy23r(i1,i2,i3,ex)+unzz23r(i1,i2,i3,ex)) +\
+                    c1abcem2* uxx23r(i1,i2,i3,ex) + c2abcem2*( uyy23r(i1,i2,i3,ex)+ uzz23r(i1,i2,i3,ex)) ) - forcex(ex) 
+      f3(1) = is2*(uny23r(i1,i2,i3,ex)-uy23r(i1,i2,i3,ex))/(dt)- \
+               .5*( c1abcem2*unyy23r(i1,i2,i3,ex) + c2abcem2*(unxx23r(i1,i2,i3,ex)+unzz23r(i1,i2,i3,ex)) +\
+                    c1abcem2* uyy23r(i1,i2,i3,ex) + c2abcem2*( uxx23r(i1,i2,i3,ex)+ uzz23r(i1,i2,i3,ex)) ) - forcey(ex)
+      f3(2) = is3*(unz23r(i1,i2,i3,ex)-uz23r(i1,i2,i3,ex))/(dt)- \
+               .5*( c1abcem2*unzz23r(i1,i2,i3,ex) + c2abcem2*(unxx23r(i1,i2,i3,ex)+unyy23r(i1,i2,i3,ex)) +\
+                    c1abcem2* uzz23r(i1,i2,i3,ex) + c2abcem2*( uxx23r(i1,i2,i3,ex)+ uyy23r(i1,i2,i3,ex)) ) - forcez(ex)  
+      maxRes = max(abs(f3(0)),abs(f3(1)),abs(f3(2)))
+      write(*,'(" ABC EM: CORNER side1,side2,side3=",3i2," maxRes=",1pe12.2)') side1,side2,side3,maxRes
+    end if
+  end if
 #endMacro
 
 
@@ -1943,141 +1946,143 @@ if( mask(i1,i2,i3).gt.0 )then
 
   bc1=boundaryCondition(side1,0)
   bc2=boundaryCondition(side2,1)
-  bc3=boundaryCondition(side2,2)
+  bc3=boundaryCondition(side3,2)
+  if( bc1.gt.0 .and. bc2.gt.0 .and.bc3.gt.0 )then
+    ! this is a physical vertex
 
-  if( (bc1.ne.abcEM2 .and. bc1.ne.absorbing)  .or. (bc2.ne.abcEM2 .and. bc2.ne.absorbing) .or. (bc3.ne.abcEM2 .and. bc3.ne.absorbing) )then
-    write(*,'("abcWave: ERROR: Not all faces at the vertex in 3D are abcEM2 -- fix me")')
-    stop 662
-  end if
+    if( (bc1.ne.abcEM2 .and. bc1.ne.absorbing)  .or. (bc2.ne.abcEM2 .and. bc2.ne.absorbing) .or. (bc3.ne.abcEM2 .and. bc3.ne.absorbing) )then
+      write(*,'("abcWave: ERROR: Not all faces at the vertex in 3D are abcEM2 -- fix me")')
+      stop 662
+    end if
 
-  is1=1-2*side1
-  is2=1-2*side2
-  is3=1-2*side3
-  if( side1.eq.0 )then
-    i1=n1a
-  else
-    i1=n1b
-  end if
-  if( side2.eq.0 )then
-    i2=n2a
-  else
-    i2=n2b
-  end if
-  if( side3.eq.0 )then
-    i3=n3a
-  else
-    i3=n3b
-  end if
+    is1=1-2*side1
+    is2=1-2*side2
+    is3=1-2*side3
+    if( side1.eq.0 )then
+      i1=n1a
+    else
+      i1=n1b
+    end if
+    if( side2.eq.0 )then
+      i2=n2a
+    else
+      i2=n2b
+    end if
+    if( side3.eq.0 )then
+      i3=n3a
+    else
+      i3=n3b
+    end if
 
-  ! --- At an CORNER in 3D there are SIX coupled equations ----
-   
+    ! --- At an CORNER in 3D there are SIX coupled equations ----
+     
 
-  evalEMResidualsOrder43D(0,i1,i2,i3,is1,is2,is3,f6(1),f6(2))
-
-  evalEMResidualsOrder43D(1,i1,i2,i3,is1,is2,is3,f6(3),f6(4))
-
-  evalEMResidualsOrder43D(2,i1,i2,i3,is1,is2,is3,f6(5),f6(6))
-
-  !  r1 = is1*(unx43r(i1,i2,i3,ex)-ux43r(i1,i2,i3,ex))/(dt)- \
-  !          .5*( c1abcem2*unxx43r(i1,i2,i3,ex) + c2abcem2*(unyy43r(i1,i2,i3,ex)+unzz43r(i1,i2,i3,ex)) + \
-  !               c1abcem2* uxx43r(i1,i2,i3,ex) + c2abcem2*( uyy43r(i1,i2,i3,ex)+ uzz43r(i1,i2,i3,ex)) ) - forcex(ex) 
-  a6(1,1) = -8./(12.*dt*dx(0))  - .5*c1abcem2*(16.)/(12.*dx(0)**2)              ! coeff of u(-1,0,0) in f6(1)
-  a6(1,2) =  1./(12.*dt*dx(0))  - .5*c1abcem2*(-1.)/(12.*dx(0)**2)              ! coeff of u(-2,0,0) in f6(1)
-  a6(1,3) =                     - .5*c2abcem2*(16.)/(12.*dx(1)**2)              ! coeff of u(0,-1,0) in f6(1)
-  a6(1,4) =                     - .5*c2abcem2*(-1.)/(12.*dx(1)**2)              ! coeff of u(0,-2,0) in f6(1)
-  a6(1,5) =                     - .5*c2abcem2*(16.)/(12.*dx(2)**2)              ! coeff of u(0,0,-1) in f6(1)
-  a6(1,6) =                     - .5*c2abcem2*(-1.)/(12.*dx(2)**2)              ! coeff of u(0,0,-2) in f6(1)
-
-  !  r2 = is1*(unxxx-uxxx)/(dt)- \
-  !        .5*( c1abcem2*unxxxx + c2abcem2*(unxxyy+unxxzz) + \
-  !             c1abcem2* uxxxx + c2abcem2*( uxxyy+ uxxzz) ) - forcexxx(ex) 
-  a6(2,1) = (1./(dt))*(  2. )/( 2.*dx(0)**3) - c1abcem2*.5*( -4. )/( dx(0)**4)  ! coeff of u(-1,0,0) in f6(2)
-  a6(2,2) = (1./(dt))*( -1. )/( 2.*dx(0)**3) - c1abcem2*.5*(  1. )/( dx(0)**4)  ! coeff of u(-2,0,0) in f6(2)
-  a6(2,3) =                                - 0*c2abcem2*.5*( -4. )/( dx(1)**4)  ! coeff of u(0,-1,0) in f6(2)
-  a6(2,4) =                                - 0*c2abcem2*.5*(  1. )/( dx(1)**4)  ! coeff of u(0,-2,0) in f6(2)
-  a6(2,5) =                                - 0*c2abcem2*.5*( -4. )/( dx(2)**4)  ! coeff of u(0,0,-1) in f6(2)
-  a6(2,6) =                                - 0*c2abcem2*.5*(  1. )/( dx(2)**4)  ! coeff of u(0,0,-2) in f6(2)
-
-  a6(3,1) =                     - .5*c2abcem2*(16.)/(12.*dx(0)**2)              ! coeff of u(-1,0,0) in f6(3)
-  a6(3,2) =                     - .5*c2abcem2*(-1.)/(12.*dx(0)**2)              ! coeff of u(-2,0,0) in f6(3)
-  a6(3,3) = -8./(12.*dt*dx(1))  - .5*c1abcem2*(16.)/(12.*dx(1)**2)              ! coeff of u(0,-1,0) in f6(3)
-  a6(3,4) =  1./(12.*dt*dx(1))  - .5*c1abcem2*(-1.)/(12.*dx(1)**2)              ! coeff of u(0,-2,0) in f6(3)
-  a6(3,5) =                     - .5*c2abcem2*(16.)/(12.*dx(2)**2)              ! coeff of u(0,0,-1) in f6(3)
-  a6(3,6) =                     - .5*c2abcem2*(-1.)/(12.*dx(2)**2)              ! coeff of u(0,0,-2) in f6(3)
-
-  a6(4,1) =                                  - 0*c2abcem2*.5*( -4. )/( dx(0)**4)  ! coeff of u(-1,0,0) in f6(4)
-  a6(4,2) =                                  - 0*c2abcem2*.5*(  1. )/( dx(0)**4)  ! coeff of u(-2,0,0) in f6(4) 
-  a6(4,3) = (1./(dt))*(  2. )/( 2.*dx(1)**3) - c1abcem2*.5*( -4. )/( dx(1)**4)  ! coeff of u(0,-1,0) in f6(4)
-  a6(4,4) = (1./(dt))*( -1. )/( 2.*dx(1)**3) - c1abcem2*.5*(  1. )/( dx(1)**4)  ! coeff of u(0,-2,0) in f6(4)  
-  a6(4,5) =                                  - 0*c2abcem2*.5*( -4. )/( dx(2)**4)  ! coeff of u(0,0,-1) in f6(4)
-  a6(4,6) =                                  - 0*c2abcem2*.5*(  1. )/( dx(2)**4)  ! coeff of u(0,0,-2) in f6(4) 
-
-  a6(5,1) =                     - .5*c2abcem2*(16.)/(12.*dx(0)**2)              ! coeff of u(-1,0,0) in f6(5)
-  a6(5,2) =                     - .5*c2abcem2*(-1.)/(12.*dx(0)**2)              ! coeff of u(-2,0,0) in f6(5)
-  a6(5,3) =                     - .5*c2abcem2*(16.)/(12.*dx(1)**2)              ! coeff of u(0,-1,0) in f6(5)
-  a6(5,4) =                     - .5*c2abcem2*(-1.)/(12.*dx(1)**2)              ! coeff of u(0,-2,0) in f6(5)
-  a6(5,5) = -8./(12.*dt*dx(2))  - .5*c1abcem2*(16.)/(12.*dx(2)**2)              ! coeff of u(0,0,-1) in f6(5)
-  a6(5,6) =  1./(12.*dt*dx(2))  - .5*c1abcem2*(-1.)/(12.*dx(2)**2)              ! coeff of u(0,0,-2) in f6(5)
-
-  a6(6,1) =                                  - 0*c2abcem2*.5*( -4. )/( dx(0)**4)  ! coeff of u(-1,0,0) in f6(6)
-  a6(6,2) =                                  - 0*c2abcem2*.5*(  1. )/( dx(0)**4)  ! coeff of u(-2,0,0) in f6(6)  
-  a6(6,3) =                                  - 0*c2abcem2*.5*( -4. )/( dx(1)**4)  ! coeff of u(0,-1,0) in f6(6)
-  a6(6,4) =                                  - 0*c2abcem2*.5*(  1. )/( dx(1)**4)  ! coeff of u(0,-2,0) in f6(6)  
-  a6(6,5) = (1./(dt))*(  2. )/( 2.*dx(2)**3) - c1abcem2*.5*( -4. )/( dx(2)**4)  ! coeff of u(0,0,-1) in f6(6)
-  a6(6,6) = (1./(dt))*( -1. )/( 2.*dx(2)**3) - c1abcem2*.5*(  1. )/( dx(2)**4)  ! coeff of u(0,0,-2) in f6(6)  
-
-
-  ! subtract off the contributions from the wrong values at the ghost points:
-  q6(1) = un(i1-1*is1,i2      ,i3      ,ex)
-  q6(2) = un(i1-2*is1,i2      ,i3      ,ex)
-  q6(3) = un(i1      ,i2-1*is2,i3      ,ex)
-  q6(4) = un(i1      ,i2-2*is2,i3      ,ex)
-  q6(5) = un(i1      ,i2      ,i3-1*is3,ex)
-  q6(6) = un(i1      ,i2      ,i3-2*is3,ex)
-  do n=1,6
-    f6(n) = (a6(n,1)*q6(1) +a6(n,2)*q6(2) +a6(n,3)*q6(3) +a6(n,4)*q6(4) +a6(n,5)*q6(5) +a6(n,6)*q6(6) ) - f6(n)
-  end do
-
-  numberOfEquations=6
-  call dgeco( a6(1,1), numberOfEquations, numberOfEquations, ipvt6(1),rcond,work6(1))
-  ! write(*,'(" -->  i1,i2,i3=",3i3," rcond=",e10.2, " q6=",6e12.2, " f3=",6e12.2)') i1,i2,i3,rcond,(q6(n),n=1,6),(f6(n),n=1,6)
-
-  ! --- solve ---
-  job=0
-  call dgesl( a6(1,1), numberOfEquations, numberOfEquations, ipvt6(1), f6(1), job)
-
-  un(i1-1*is1,i2    ,i3    ,ex) = f6(1)
-  un(i1-2*is1,i2    ,i3    ,ex) = f6(2)
-  un(i1    ,i2-1*is2,i3    ,ex) = f6(3)
-  un(i1    ,i2-2*is2,i3    ,ex) = f6(4)
-  un(i1    ,i2    ,i3-1*is3,ex) = f6(5)
-  un(i1    ,i2    ,i3-2*is3,ex) = f6(6)
-
-  ! -- assign ghost points outside the corner ---
-  do ghost3=1,2
-  do ghost2=1,2
-  do ghost1=1,2
-    ig1 = i1-ghost1*is1
-    ig2 = i2-ghost2*is2
-    ig3 = i3-ghost3*is3
-    un(ig1,ig2,ig3,ex) = extrap5(un,ig1+is1,ig2+is2,ig3+is3,ex,is1,is2,is3)
-  end do
-  end do
-  end do
-
-  if( .false. .or. (debug.gt.1 .and. t.le.3*dt) )then
-    ! -- check residual ---
     evalEMResidualsOrder43D(0,i1,i2,i3,is1,is2,is3,f6(1),f6(2))
 
     evalEMResidualsOrder43D(1,i1,i2,i3,is1,is2,is3,f6(3),f6(4))
 
-    evalEMResidualsOrder43D(2,i1,i2,i3,is1,is2,is3,f6(5),f6(6)) 
-    maxRes = max(abs(f6(1)),abs(f6(2)),abs(f6(3)),abs(f6(4)),abs(f6(5)),abs(f6(6)))
-    if( maxRes.gt.1e-8 )then
-      write(*,'(" ABC EM: VERTEX O4 i1,i2,i3=",3i3," maxRes=",1pe12.2)') i1,i2,i3,maxRes
+    evalEMResidualsOrder43D(2,i1,i2,i3,is1,is2,is3,f6(5),f6(6))
+
+    !  r1 = is1*(unx43r(i1,i2,i3,ex)-ux43r(i1,i2,i3,ex))/(dt)- \
+    !          .5*( c1abcem2*unxx43r(i1,i2,i3,ex) + c2abcem2*(unyy43r(i1,i2,i3,ex)+unzz43r(i1,i2,i3,ex)) + \
+    !               c1abcem2* uxx43r(i1,i2,i3,ex) + c2abcem2*( uyy43r(i1,i2,i3,ex)+ uzz43r(i1,i2,i3,ex)) ) - forcex(ex) 
+    a6(1,1) = -8./(12.*dt*dx(0))  - .5*c1abcem2*(16.)/(12.*dx(0)**2)              ! coeff of u(-1,0,0) in f6(1)
+    a6(1,2) =  1./(12.*dt*dx(0))  - .5*c1abcem2*(-1.)/(12.*dx(0)**2)              ! coeff of u(-2,0,0) in f6(1)
+    a6(1,3) =                     - .5*c2abcem2*(16.)/(12.*dx(1)**2)              ! coeff of u(0,-1,0) in f6(1)
+    a6(1,4) =                     - .5*c2abcem2*(-1.)/(12.*dx(1)**2)              ! coeff of u(0,-2,0) in f6(1)
+    a6(1,5) =                     - .5*c2abcem2*(16.)/(12.*dx(2)**2)              ! coeff of u(0,0,-1) in f6(1)
+    a6(1,6) =                     - .5*c2abcem2*(-1.)/(12.*dx(2)**2)              ! coeff of u(0,0,-2) in f6(1)
+
+    !  r2 = is1*(unxxx-uxxx)/(dt)- \
+    !        .5*( c1abcem2*unxxxx + c2abcem2*(unxxyy+unxxzz) + \
+    !             c1abcem2* uxxxx + c2abcem2*( uxxyy+ uxxzz) ) - forcexxx(ex) 
+    a6(2,1) = (1./(dt))*(  2. )/( 2.*dx(0)**3) - c1abcem2*.5*( -4. )/( dx(0)**4)  ! coeff of u(-1,0,0) in f6(2)
+    a6(2,2) = (1./(dt))*( -1. )/( 2.*dx(0)**3) - c1abcem2*.5*(  1. )/( dx(0)**4)  ! coeff of u(-2,0,0) in f6(2)
+    a6(2,3) =                                - 0*c2abcem2*.5*( -4. )/( dx(1)**4)  ! coeff of u(0,-1,0) in f6(2)
+    a6(2,4) =                                - 0*c2abcem2*.5*(  1. )/( dx(1)**4)  ! coeff of u(0,-2,0) in f6(2)
+    a6(2,5) =                                - 0*c2abcem2*.5*( -4. )/( dx(2)**4)  ! coeff of u(0,0,-1) in f6(2)
+    a6(2,6) =                                - 0*c2abcem2*.5*(  1. )/( dx(2)**4)  ! coeff of u(0,0,-2) in f6(2)
+
+    a6(3,1) =                     - .5*c2abcem2*(16.)/(12.*dx(0)**2)              ! coeff of u(-1,0,0) in f6(3)
+    a6(3,2) =                     - .5*c2abcem2*(-1.)/(12.*dx(0)**2)              ! coeff of u(-2,0,0) in f6(3)
+    a6(3,3) = -8./(12.*dt*dx(1))  - .5*c1abcem2*(16.)/(12.*dx(1)**2)              ! coeff of u(0,-1,0) in f6(3)
+    a6(3,4) =  1./(12.*dt*dx(1))  - .5*c1abcem2*(-1.)/(12.*dx(1)**2)              ! coeff of u(0,-2,0) in f6(3)
+    a6(3,5) =                     - .5*c2abcem2*(16.)/(12.*dx(2)**2)              ! coeff of u(0,0,-1) in f6(3)
+    a6(3,6) =                     - .5*c2abcem2*(-1.)/(12.*dx(2)**2)              ! coeff of u(0,0,-2) in f6(3)
+
+    a6(4,1) =                                  - 0*c2abcem2*.5*( -4. )/( dx(0)**4)  ! coeff of u(-1,0,0) in f6(4)
+    a6(4,2) =                                  - 0*c2abcem2*.5*(  1. )/( dx(0)**4)  ! coeff of u(-2,0,0) in f6(4) 
+    a6(4,3) = (1./(dt))*(  2. )/( 2.*dx(1)**3) - c1abcem2*.5*( -4. )/( dx(1)**4)  ! coeff of u(0,-1,0) in f6(4)
+    a6(4,4) = (1./(dt))*( -1. )/( 2.*dx(1)**3) - c1abcem2*.5*(  1. )/( dx(1)**4)  ! coeff of u(0,-2,0) in f6(4)  
+    a6(4,5) =                                  - 0*c2abcem2*.5*( -4. )/( dx(2)**4)  ! coeff of u(0,0,-1) in f6(4)
+    a6(4,6) =                                  - 0*c2abcem2*.5*(  1. )/( dx(2)**4)  ! coeff of u(0,0,-2) in f6(4) 
+
+    a6(5,1) =                     - .5*c2abcem2*(16.)/(12.*dx(0)**2)              ! coeff of u(-1,0,0) in f6(5)
+    a6(5,2) =                     - .5*c2abcem2*(-1.)/(12.*dx(0)**2)              ! coeff of u(-2,0,0) in f6(5)
+    a6(5,3) =                     - .5*c2abcem2*(16.)/(12.*dx(1)**2)              ! coeff of u(0,-1,0) in f6(5)
+    a6(5,4) =                     - .5*c2abcem2*(-1.)/(12.*dx(1)**2)              ! coeff of u(0,-2,0) in f6(5)
+    a6(5,5) = -8./(12.*dt*dx(2))  - .5*c1abcem2*(16.)/(12.*dx(2)**2)              ! coeff of u(0,0,-1) in f6(5)
+    a6(5,6) =  1./(12.*dt*dx(2))  - .5*c1abcem2*(-1.)/(12.*dx(2)**2)              ! coeff of u(0,0,-2) in f6(5)
+
+    a6(6,1) =                                  - 0*c2abcem2*.5*( -4. )/( dx(0)**4)  ! coeff of u(-1,0,0) in f6(6)
+    a6(6,2) =                                  - 0*c2abcem2*.5*(  1. )/( dx(0)**4)  ! coeff of u(-2,0,0) in f6(6)  
+    a6(6,3) =                                  - 0*c2abcem2*.5*( -4. )/( dx(1)**4)  ! coeff of u(0,-1,0) in f6(6)
+    a6(6,4) =                                  - 0*c2abcem2*.5*(  1. )/( dx(1)**4)  ! coeff of u(0,-2,0) in f6(6)  
+    a6(6,5) = (1./(dt))*(  2. )/( 2.*dx(2)**3) - c1abcem2*.5*( -4. )/( dx(2)**4)  ! coeff of u(0,0,-1) in f6(6)
+    a6(6,6) = (1./(dt))*( -1. )/( 2.*dx(2)**3) - c1abcem2*.5*(  1. )/( dx(2)**4)  ! coeff of u(0,0,-2) in f6(6)  
+
+
+    ! subtract off the contributions from the wrong values at the ghost points:
+    q6(1) = un(i1-1*is1,i2      ,i3      ,ex)
+    q6(2) = un(i1-2*is1,i2      ,i3      ,ex)
+    q6(3) = un(i1      ,i2-1*is2,i3      ,ex)
+    q6(4) = un(i1      ,i2-2*is2,i3      ,ex)
+    q6(5) = un(i1      ,i2      ,i3-1*is3,ex)
+    q6(6) = un(i1      ,i2      ,i3-2*is3,ex)
+    do n=1,6
+      f6(n) = (a6(n,1)*q6(1) +a6(n,2)*q6(2) +a6(n,3)*q6(3) +a6(n,4)*q6(4) +a6(n,5)*q6(5) +a6(n,6)*q6(6) ) - f6(n)
+    end do
+
+    numberOfEquations=6
+    call dgeco( a6(1,1), numberOfEquations, numberOfEquations, ipvt6(1),rcond,work6(1))
+    ! write(*,'(" -->  i1,i2,i3=",3i3," rcond=",e10.2, " q6=",6e12.2, " f3=",6e12.2)') i1,i2,i3,rcond,(q6(n),n=1,6),(f6(n),n=1,6)
+
+    ! --- solve ---
+    job=0
+    call dgesl( a6(1,1), numberOfEquations, numberOfEquations, ipvt6(1), f6(1), job)
+
+    un(i1-1*is1,i2    ,i3    ,ex) = f6(1)
+    un(i1-2*is1,i2    ,i3    ,ex) = f6(2)
+    un(i1    ,i2-1*is2,i3    ,ex) = f6(3)
+    un(i1    ,i2-2*is2,i3    ,ex) = f6(4)
+    un(i1    ,i2    ,i3-1*is3,ex) = f6(5)
+    un(i1    ,i2    ,i3-2*is3,ex) = f6(6)
+
+    ! -- assign ghost points outside the corner ---
+    do ghost3=1,2
+    do ghost2=1,2
+    do ghost1=1,2
+      ig1 = i1-ghost1*is1
+      ig2 = i2-ghost2*is2
+      ig3 = i3-ghost3*is3
+      un(ig1,ig2,ig3,ex) = extrap5(un,ig1+is1,ig2+is2,ig3+is3,ex,is1,is2,is3)
+    end do
+    end do
+    end do
+
+    if( .false. .or. (debug.gt.1 .and. t.le.3*dt) )then
+      ! -- check residual ---
+      evalEMResidualsOrder43D(0,i1,i2,i3,is1,is2,is3,f6(1),f6(2))
+
+      evalEMResidualsOrder43D(1,i1,i2,i3,is1,is2,is3,f6(3),f6(4))
+
+      evalEMResidualsOrder43D(2,i1,i2,i3,is1,is2,is3,f6(5),f6(6)) 
+      maxRes = max(abs(f6(1)),abs(f6(2)),abs(f6(3)),abs(f6(4)),abs(f6(5)),abs(f6(6)))
+      if( maxRes.gt.1e-8 )then
+        write(*,'(" ABC EM: VERTEX O4 i1,i2,i3=",3i3," maxRes=",1pe12.2)') i1,i2,i3,maxRes
+      end if
     end if
   end if
-
 #endMacro
 
 

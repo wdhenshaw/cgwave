@@ -136,13 +136,17 @@ getAugmentedSolution(int current, realCompositeGridFunction & v, const real t)
       mg.update(MappedGrid::THEvertex | MappedGrid::THEcenter );
       OV_GET_SERIAL_ARRAY(Real,mg.vertex(),xLocal);
       getIndex(mg.dimension(),I1,I2,I3);
+      int includeParallelGhost=1;
+      bool ok=ParallelUtility::getLocalArrayBounds(u,uLocal,I1,I2,I3,includeParallelGhost); 
+      if( ok ) 
+      {      
 
-      Real omegat = omega*t - phi; 
-      if( numberOfDimensions==2 )
-        vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) + (fieldSign)*amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) - omegat );
-      else
-        vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) + (fieldSign)*amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) - omegat );
-
+        Real omegat = omega*t - phi; 
+        if( numberOfDimensions==2 )
+          vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) + (fieldSign)*amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) - omegat );
+        else
+          vLocal(I1,I2,I3,nScat) = uLocal(I1,I2,I3,0) + (fieldSign)*amp*sin( kx*xLocal(I1,I2,I3,0) + ky*xLocal(I1,I2,I3,1) + kz*xLocal(I1,I2,I3,2) - omegat );
+      }
     }
   }
 
