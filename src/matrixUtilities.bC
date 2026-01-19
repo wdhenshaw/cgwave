@@ -121,7 +121,7 @@ int CgWave::initializeGlobalIndexing( bool checkMask /* = true */ )
   const int & np   = dbase.get<int>("np");   // number of processors 
   const int & myid = dbase.get<int>("myid"); // my processor number
 
-  printf("CgWave::initializeGlobalIndexing: START np=%d, myid=%d, ...\n",np,myid );  
+  // printf("CgWave::initializeGlobalIndexing: START np=%d, myid=%d, ...\n",np,myid );  
 
   const int numberOfDimensions = cg.numberOfDimensions();
   const int numberOfComponentGrids = cg.numberOfComponentGrids();  
@@ -174,7 +174,7 @@ int CgWave::initializeGlobalIndexing( bool checkMask /* = true */ )
 
     numActive(grid,myid)=na;
 
-    printf("myid=%d: grid=%d numActive=%d\n",myid,grid,numActive(grid,myid) );
+    // printf("myid=%d: grid=%d numActive=%d\n",myid,grid,numActive(grid,myid) );
 
 
   }
@@ -197,19 +197,21 @@ int CgWave::initializeGlobalIndexing( bool checkMask /* = true */ )
 
   totalActive = sum(numActive);
 
-  printf("myid=%d:  numActiveLocal=%d\n",myid,numActiveLocal);
-
-  printF("Summary: totalActivePoints=%d\n Active points per processor:\n",totalActive);
-  for( int grid=0; grid<numberOfComponentGrids; grid++ )
+  if( false )
   {
-  	printF("grid=%d: numActive=[",grid);
-  	for( int p=0; p<np; p++ )
-  		printF("%6d,",numActive(grid,p));
-  	printF("]\n");
+    printf("myid=%d:  numActiveLocal=%d\n",myid,numActiveLocal);
+
+    printF("Summary: totalActivePoints=%d\n Active points per processor:\n",totalActive);
+    for( int grid=0; grid<numberOfComponentGrids; grid++ )
+    {
+    	printF("grid=%d: numActive=[",grid);
+    	for( int p=0; p<np; p++ )
+    		printF("%6d,",numActive(grid,p));
+    	printF("]\n");
+    }
+    for( int p=0; p<np; p++ )
+      printF("numActivePerProc(%d) = %d\n",p,numActivePerProc(p));
   }
-  for( int p=0; p<np; p++ )
-    printF("numActivePerProc(%d) = %d\n",p,numActivePerProc(p));
-  
 
   // ---- compute the grid offsets (for a single proc and single freq, adjustments for multiple procs and mutliple freqs are done later)----
 
@@ -220,7 +222,7 @@ int CgWave::initializeGlobalIndexing( bool checkMask /* = true */ )
 		for( int gridp=0; gridp<grid; gridp++ )
 		  gridOffset(grid) += numActive(gridp,myid); 
 
-    printf("myid=%d: grid=%d gridOffset =%d\n",myid,grid,gridOffset(grid) );
+    // printf("myid=%d: grid=%d gridOffset =%d\n",myid,grid,gridOffset(grid) );
 
   }
 

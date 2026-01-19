@@ -115,7 +115,6 @@
   const int numberOfComponents=2;
 
   int includeParallelGhost=0;
-  bool ok; 
 
   //    c^2 * Delta u + omega^2 u + sigma*omega*damp*v = f(x)
   //    c^2 * Delta v + omega^2 v - sigma*omega*damp*u = 0    
@@ -136,8 +135,11 @@
   {
     // where( maskLocal(I1,I2,I3)>0 )
     // {
-    resLocal(I1,I2,I3,0) = (c*c)*lap(I1,I2,I3,0) + (omega*omega)*vLocal(I1,I2,I3,0) + (sigma*omega*damp)*vLocal(I1,I2,I3,1) - fLocal(I1,I2,I3,freq); 
-    resLocal(I1,I2,I3,1) = (c*c)*lap(I1,I2,I3,1) + (omega*omega)*vLocal(I1,I2,I3,1) - (sigma*omega*damp)*vLocal(I1,I2,I3,0); 
+    if( ok )
+    {
+      resLocal(I1,I2,I3,0) = (c*c)*lap(I1,I2,I3,0) + (omega*omega)*vLocal(I1,I2,I3,0) + (sigma*omega*damp)*vLocal(I1,I2,I3,1) - fLocal(I1,I2,I3,freq); 
+      resLocal(I1,I2,I3,1) = (c*c)*lap(I1,I2,I3,1) + (omega*omega)*vLocal(I1,I2,I3,1) - (sigma*omega*damp)*vLocal(I1,I2,I3,0); 
+    }
     // } 
   }
   else
@@ -159,7 +161,7 @@
     getIndex(mg.dimension(),I1,I2,I3);
 
     includeParallelGhost=0; 
-    ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost );    
+    bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost );    
     
 
     const int numberOfComponents=2;
@@ -289,7 +291,7 @@
 
   } 
 
- if( true )
+  if( false )
   {
     // ::display(resLocal,"resLocal","%7.0e ");
     Real maxRes = max(abs(resLocal(I1,I2,I3)));
@@ -302,146 +304,188 @@
  
   ForBoundary(side,axis)
   {
-     int is = 1 -2*side;
-     isv[0]=0; isv[1]= 0; isv[2]=0;  // holds direction to extrapolate 
-     isv[axis]=is; 
-     // set residual to zero on dirichlet boundaries 
-     if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
-     {
-       getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
-       ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ib1,Ib2,Ib3,1);
-       if( ok )
-         resLocal(Ib1,Ib2,Ib3,all)=0.;
-     }
-     else if( mg.boundaryCondition(side,axis) == CgWave::absorbing ||
-              mg.boundaryCondition(side,axis) == CgWave::abcEM2 )
-     {
-        getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
-        getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,1);
+    int is = 1 -2*side;
+    isv[0]=0; isv[1]= 0; isv[2]=0;  // holds direction to extrapolate 
+    isv[axis]=is; 
+    // set residual to zero on dirichlet boundaries 
+    if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
+    {
+     getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+     bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ib1,Ib2,Ib3,1);
+     if( ok )
+       resLocal(Ib1,Ib2,Ib3,all)=0.;
+    }
+    else if( mg.boundaryCondition(side,axis) == CgWave::absorbing ||
+             mg.boundaryCondition(side,axis) == CgWave::abcEM2 )
+    {
+      getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+      getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,1);
 
-        // --- we scale some of the BC residuals ----
-        getGridSpacingsMacro();
+      // --- we scale some of the BC residuals ----
+      getGridSpacingsMacro();
 
-        const Real bcScale = isRectangular ? min(dx[0]*dx[0],dx[1]*dx[1]) : min(dr[0]*dr[0],dr[1]*dr[1]); 
-        const Real cbcScale = bcScale*bcScale; //  scale residual by this amount : estimate of condition number in CBC        
+      const Real bcScale = isRectangular ? min(dx[0]*dx[0],dx[1]*dx[1]) : min(dr[0]*dr[0],dr[1]*dr[1]); 
+      const Real cbcScale = bcScale*bcScale; //  scale residual by this amount : estimate of condition number in CBC        
 
-        Real maxResBC1=0.;
-        Real maxResBC2=0.;
-        Real maxRHS   =0.;
+      Real maxResBC1=0.;
+      Real maxResBC2=0.;
+      Real maxRHS   =0.;
+
+      includeParallelGhost=0;
+      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ib1,Ib2,Ib3,includeParallelGhost);
+      ok     =ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost);
+
+      if( ok ) 
+      {
+
+        // EM2: BC: 
+        //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
+        // => 
+        //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
+        //  
+        // u = ur + i*ui : 
+        //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
+        //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
+        // 
+        Range R2 = numberOfComponents;
+        RealArray ux(Ib1,Ib2,Ib3,R2), uy(Ib1,Ib2,Ib3,R2), uxx(Ib1,Ib2,Ib3,R2), uyy(Ib1,Ib2,Ib3,R2);
+        mgop.derivative(MappedGridOperators::xDerivative,vLocal,ux,Ib1,Ib2,Ib3,R2);
+        mgop.derivative(MappedGridOperators::yDerivative,vLocal,uy,Ib1,Ib2,Ib3,R2);
+
+        mgop.derivative(MappedGridOperators::xxDerivative,vLocal,uxx,Ib1,Ib2,Ib3,R2);
+        mgop.derivative(MappedGridOperators::yyDerivative,vLocal,uyy,Ib1,Ib2,Ib3,R2);
 
 
-        ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ib1,Ib2,Ib3,includeParallelGhost);
-        ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost);
 
-        if( ok ) 
+        if( axis==0 )
         {
+          resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*ux(Ib1,Ib2,Ib3,1)) - c*( uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
+          resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*ux(Ib1,Ib2,Ib3,0)) - c*( uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
+        }
+        else
+        {
+          resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uy(Ib1,Ib2,Ib3,1) ) - c*( uyy(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) );
+          resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uy(Ib1,Ib2,Ib3,0) ) - c*( uyy(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) );
+        }
 
-          // EM2: BC: 
-          //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
-          // => 
-          //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
-          //  
-          // u = ur + i*ui : 
-          //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
-          //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
-          // 
-          Range R2 = numberOfComponents;
-          RealArray ux(Ib1,Ib2,Ib3,R2), uy(Ib1,Ib2,Ib3,R2), uxx(Ib1,Ib2,Ib3,R2), uyy(Ib1,Ib2,Ib3,R2);
-          mgop.derivative(MappedGridOperators::xDerivative,vLocal,ux,Ib1,Ib2,Ib3,R2);
-          mgop.derivative(MappedGridOperators::yDerivative,vLocal,uy,Ib1,Ib2,Ib3,R2);
+        if( numberOfDimensions==3 )
+        {
+          RealArray uz(Ib1,Ib2,Ib3,R2), uzz(Ib1,Ib2,Ib3,R2);
+          mgop.derivative(MappedGridOperators::zDerivative, vLocal,uz ,Ib1,Ib2,Ib3,R2);
+          mgop.derivative(MappedGridOperators::zzDerivative,vLocal,uzz,Ib1,Ib2,Ib3,R2);
 
-          mgop.derivative(MappedGridOperators::xxDerivative,vLocal,uxx,Ib1,Ib2,Ib3,R2);
-          mgop.derivative(MappedGridOperators::yyDerivative,vLocal,uyy,Ib1,Ib2,Ib3,R2);
-
-
-
-          if( axis==0 )
+          if( axis==0 || axis==1 )
           {
-            resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*ux(Ib1,Ib2,Ib3,1)) - c*( uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
-            resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*ux(Ib1,Ib2,Ib3,0)) - c*( uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
+            resLocal(Ig1,Ig2,Ig3,0) += -c*( .5*uzz(Ib1,Ib2,Ib3,0) );
+            resLocal(Ig1,Ig2,Ig3,1) += -c*( .5*uzz(Ib1,Ib2,Ib3,1) );
           }
           else
           {
-            resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uy(Ib1,Ib2,Ib3,1) ) - c*( uyy(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) );
-            resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uy(Ib1,Ib2,Ib3,0) ) - c*( uyy(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) );
+            resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uz(Ib1,Ib2,Ib3,1) ) - c*( uzz(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
+            resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uz(Ib1,Ib2,Ib3,0) ) - c*( uzz(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
           }
+        }          
 
-          if( numberOfDimensions==3 )
-          {
-            RealArray uz(Ib1,Ib2,Ib3,R2), uzz(Ib1,Ib2,Ib3,R2);
-            mgop.derivative(MappedGridOperators::zDerivative, vLocal,uz ,Ib1,Ib2,Ib3,R2);
-            mgop.derivative(MappedGridOperators::zzDerivative,vLocal,uzz,Ib1,Ib2,Ib3,R2);
+        // -- zero residual at unused points ---
+        where( maskLocal(Ib1,Ib2,Ib3) <=0  )   
+        {
+          resLocal(Ig1,Ig2,Ig3,0)=0.;
+          resLocal(Ig1,Ig2,Ig3,1)=0.;
+        } 
 
-            if( axis==0 || axis==1 )
+        // scale residual in CBC by this amount : estimate of condition number in BC
+
+        if( false )
+          ::display(resLocal(Ig1,Ig2,Ig3,0)*bcScale,sPrintF("resLocal(Ig1,Ig2,Ig3,0)*bcSCale on ABC ghost (side,axis)=(%d,%d)",side,axis),"%9.2e");
+
+        maxResBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)))*bcScale;
+        maxResBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)))*bcScale;
+        maxRHS = max(abs(fLocal(Ig1,Ig2,Ig3)));
+      } // end if ok 
+
+      maxResBC1 = ParallelUtility::getMaxValue( maxResBC1 );
+      maxResBC2 = ParallelUtility::getMaxValue( maxResBC2 );
+      maxRHS    = ParallelUtility::getMaxValue( maxRHS );
+
+
+      if( ires==numRes-1)
+        printF("residual: Radiation BC: (side,axis,grid)={%d,%d,%d) ghost 1: max-res=[%9.2e,%9.2e] (Re,Im) (scale=%9.2e), max|forcing(ghost)|=%9.2e\n",
+          side,axis,grid,maxResBC1,maxResBC2,bcScale,maxRHS);
+
+      // --- ghost line 2 ---
+      if( orderOfAccuracy==4 )
+      {
+
+        const bool useCBC = true;   // Dec 17, 2025 -- we now use CBC for explicit time-stepping (but one-sided u.xxyy)
+        // const bool useCBC = timeSteppingMethod==CgWave::implicitTimeStepping; // currently explicit EM order 4 uses extrap5
+
+        if( useCBC)
+        {
+          // *** CHECK CBC ***
+
+          // -- The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy ---
+
+          // if( mg.numberOfDimensions()==3 )
+          // {
+          //   printF("residual: EM Order=4 : finish me for 3D\n");
+            
+          // }
+          const bool useOneSidedXXYY = timeSteppingMethod==CgWave::explicitTimeStepping;
+          ks1=0, ks2=0, ks3=0; // centered stencil
+          if( useOneSidedXXYY ){ ks1=is1; ks2=is2; ks3=is3; } // shift stencil 
+
+          Real maxResCBC1 =0.;
+          Real maxResCBC2 =0.;            
+          getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,2); // ghost 2
+          includeParallelGhost=0;
+          bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost);  
+          if( ok )  
+          {        
+            RealArray uxxyy(Ib1,Ib2,Ib3,2), uxxzz, uyyzz;
+            Range R2(0,1);
+            int i1,i2,i3;
+            if( useOneSidedXXYY )
             {
-              resLocal(Ig1,Ig2,Ig3,0) += -c*( .5*uzz(Ib1,Ib2,Ib3,0) );
-              resLocal(Ig1,Ig2,Ig3,1) += -c*( .5*uzz(Ib1,Ib2,Ib3,1) );
+              FOR_3DN(j1,j2,j3,n,Ib1,Ib2,Ib3,R2)
+              {
+                i1=j1; i2=j2; i3=j3;
+                // shift stencil to avoid ghost points 
+                if( i1<=gid(0,0) ) i1++; 
+                if( i1>=gid(1,0) ) i1--; 
+                if( i2<=gid(0,1) ) i2++; 
+                if( i2>=gid(1,1) ) i2--; 
+                uxxyy(j1,j2,j3,n) = ( 
+                                            vLocal(i1-1,i2-1,i3,n)  
+                                           +vLocal(i1+1,i2-1,i3,n)  
+                                        -2.*vLocal(i1  ,i2-1,i3,n)  
+                                        -2.*vLocal(i1-1,i2  ,i3,n) 
+                                        +4.*vLocal(i1  ,i2  ,i3,n) 
+                                        -2.*vLocal(i1+1,i2  ,i3,n) 
+                                        -2.*vLocal(i1  ,i2+1,i3,n)
+                                           +vLocal(i1-1,i2+1,i3,n)  
+                                           +vLocal(i1+1,i2+1,i3,n)  
+                                      )/(dx[0]*dx[0]*dx[1]*dx[1]); 
+              }
             }
             else
             {
-              resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uz(Ib1,Ib2,Ib3,1) ) - c*( uzz(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
-              resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uz(Ib1,Ib2,Ib3,0) ) - c*( uzz(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
+              uxxyy(Ib1,Ib2,Ib3,R2) = ( 
+                            vLocal(Ib1-1,Ib2-1,Ib3,R2)  
+                           +vLocal(Ib1+1,Ib2-1,Ib3,R2)  
+                        -2.*vLocal(Ib1  ,Ib2-1,Ib3,R2)  
+                        -2.*vLocal(Ib1-1,Ib2  ,Ib3,R2) 
+                        +4.*vLocal(Ib1  ,Ib2  ,Ib3,R2) 
+                        -2.*vLocal(Ib1+1,Ib2  ,Ib3,R2) 
+                        -2.*vLocal(Ib1  ,Ib2+1,Ib3,R2)
+                           +vLocal(Ib1-1,Ib2+1,Ib3,R2)  
+                           +vLocal(Ib1+1,Ib2+1,Ib3,R2)  
+                      )/(dx[0]*dx[0]*dx[1]*dx[1]);                 
             }
-          }          
 
-          // -- zero residual at unused points ---
-          where( maskLocal(Ib1,Ib2,Ib3) <=0  )   
-          {
-            resLocal(Ig1,Ig2,Ig3,0)=0.;
-            resLocal(Ig1,Ig2,Ig3,1)=0.;
-          } 
-
-          // scale residual in CBC by this amount : estimate of condition number in BC
-
-          if( false )
-            ::display(resLocal(Ig1,Ig2,Ig3,0)*bcScale,sPrintF("resLocal(Ig1,Ig2,Ig3,0)*bcSCale on ABC ghost (side,axis)=(%d,%d)",side,axis),"%9.2e");
-
-          maxResBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)))*bcScale;
-          maxResBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)))*bcScale;
-          maxRHS = max(abs(fLocal(Ig1,Ig2,Ig3)));
-        } // end if ok 
-
-        maxResBC1 = ParallelUtility::getMaxValue( maxResBC1 );
-        maxResBC2 = ParallelUtility::getMaxValue( maxResBC2 );
-        maxRHS    = ParallelUtility::getMaxValue( maxRHS );
-
-
-        if( ires==numRes-1)
-          printF("residual: Radiation BC: (side,axis,grid)={%d,%d,%d) ghost 1: max-res=[%9.2e,%9.2e] (Re,Im) (scale=%9.2e), max|forcing(ghost)|=%9.2e\n",
-            side,axis,grid,maxResBC1,maxResBC2,bcScale,maxRHS);
-
-        // --- ghost line 2 ---
-        if( orderOfAccuracy==4 )
-        {
-  
-          const bool useCBC = true;   // Dec 17, 2025 -- we now use CBC for explicit time-stepping (but one-sided u.xxyy)
-          // const bool useCBC = timeSteppingMethod==CgWave::implicitTimeStepping; // currently explicit EM order 4 uses extrap5
-
-          if( useCBC)
-          {
-            // *** CHECK CBC ***
-
-            // -- The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy ---
-
-            // if( mg.numberOfDimensions()==3 )
-            // {
-            //   printF("residual: EM Order=4 : finish me for 3D\n");
-              
-            // }
-            const bool useOneSidedXXYY = timeSteppingMethod==CgWave::explicitTimeStepping;
-            ks1=0, ks2=0, ks3=0; // centered stencil
-            if( useOneSidedXXYY ){ ks1=is1; ks2=is2; ks3=is3; } // shift stencil 
-
-            Real maxResCBC1 =0.;
-            Real maxResCBC2 =0.;            
-            getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,2); // ghost 2
-            includeParallelGhost=0;
-            ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost);  
-            if( ok )  
-            {        
-              RealArray uxxyy(Ib1,Ib2,Ib3,2), uxxzz, uyyzz;
-              Range R2(0,1);
-              int i1,i2,i3;
+            if( numberOfDimensions==3 )
+            {
+              uxxzz.redim(Ib1,Ib2,Ib3,2); 
+              uyyzz.redim(Ib1,Ib2,Ib3,2); 
               if( useOneSidedXXYY )
               {
                 FOR_3DN(j1,j2,j3,n,Ib1,Ib2,Ib3,R2)
@@ -450,257 +494,211 @@
                   // shift stencil to avoid ghost points 
                   if( i1<=gid(0,0) ) i1++; 
                   if( i1>=gid(1,0) ) i1--; 
-                  if( i2<=gid(0,1) ) i2++; 
-                  if( i2>=gid(1,1) ) i2--; 
-                  uxxyy(j1,j2,j3,n) = ( 
-                                              vLocal(i1-1,i2-1,i3,n)  
-                                             +vLocal(i1+1,i2-1,i3,n)  
-                                          -2.*vLocal(i1  ,i2-1,i3,n)  
-                                          -2.*vLocal(i1-1,i2  ,i3,n) 
-                                          +4.*vLocal(i1  ,i2  ,i3,n) 
-                                          -2.*vLocal(i1+1,i2  ,i3,n) 
-                                          -2.*vLocal(i1  ,i2+1,i3,n)
-                                             +vLocal(i1-1,i2+1,i3,n)  
-                                             +vLocal(i1+1,i2+1,i3,n)  
-                                        )/(dx[0]*dx[0]*dx[1]*dx[1]); 
+                  if( i3<=gid(0,2) ) i3++; 
+                  if( i3>=gid(1,2) ) i3--; 
+                  uxxzz(j1,j2,j3,n) = ( 
+                                vLocal(i1-1,i2,i3-1,n)  
+                               +vLocal(i1+1,i2,i3-1,n)  
+                            -2.*vLocal(i1  ,i2,i3-1,n)  
+                            -2.*vLocal(i1-1,i2,i3  ,n) 
+                            +4.*vLocal(i1  ,i2,i3  ,n) 
+                            -2.*vLocal(i1+1,i2,i3  ,n) 
+                            -2.*vLocal(i1  ,i2,i3+1,n)
+                               +vLocal(i1-1,i2,i3+1,n)  
+                               +vLocal(i1+1,i2,i3+1,n)  
+                          )/(dx[0]*dx[0]*dx[2]*dx[2]);
                 }
               }
               else
               {
-                uxxyy(Ib1,Ib2,Ib3,R2) = ( 
-                              vLocal(Ib1-1,Ib2-1,Ib3,R2)  
-                             +vLocal(Ib1+1,Ib2-1,Ib3,R2)  
-                          -2.*vLocal(Ib1  ,Ib2-1,Ib3,R2)  
-                          -2.*vLocal(Ib1-1,Ib2  ,Ib3,R2) 
-                          +4.*vLocal(Ib1  ,Ib2  ,Ib3,R2) 
-                          -2.*vLocal(Ib1+1,Ib2  ,Ib3,R2) 
-                          -2.*vLocal(Ib1  ,Ib2+1,Ib3,R2)
-                             +vLocal(Ib1-1,Ib2+1,Ib3,R2)  
-                             +vLocal(Ib1+1,Ib2+1,Ib3,R2)  
-                        )/(dx[0]*dx[0]*dx[1]*dx[1]);                 
+                uxxzz(Ib1,Ib2,Ib3,R2) = ( 
+                              vLocal(Ib1-1,Ib2,Ib3-1,R2)  
+                             +vLocal(Ib1+1,Ib2,Ib3-1,R2)  
+                          -2.*vLocal(Ib1  ,Ib2,Ib3-1,R2)  
+                          -2.*vLocal(Ib1-1,Ib2,Ib3  ,R2) 
+                          +4.*vLocal(Ib1  ,Ib2,Ib3  ,R2) 
+                          -2.*vLocal(Ib1+1,Ib2,Ib3  ,R2) 
+                          -2.*vLocal(Ib1  ,Ib2,Ib3+1,R2)
+                             +vLocal(Ib1-1,Ib2,Ib3+1,R2)  
+                             +vLocal(Ib1+1,Ib2,Ib3+1,R2)  
+                        )/(dx[0]*dx[0]*dx[2]*dx[2]);                      
               }
-
-              if( numberOfDimensions==3 )
-              {
-                uxxzz.redim(Ib1,Ib2,Ib3,2); 
-                uyyzz.redim(Ib1,Ib2,Ib3,2); 
-                if( useOneSidedXXYY )
+              if( useOneSidedXXYY )
+              {                
+                FOR_3DN(j1,j2,j3,n,Ib1,Ib2,Ib3,R2)
                 {
-                  FOR_3DN(j1,j2,j3,n,Ib1,Ib2,Ib3,R2)
-                  {
-                    i1=j1; i2=j2; i3=j3;
-                    // shift stencil to avoid ghost points 
-                    if( i1<=gid(0,0) ) i1++; 
-                    if( i1>=gid(1,0) ) i1--; 
-                    if( i3<=gid(0,2) ) i3++; 
-                    if( i3>=gid(1,2) ) i3--; 
-                    uxxzz(j1,j2,j3,n) = ( 
-                                  vLocal(i1-1,i2,i3-1,n)  
-                                 +vLocal(i1+1,i2,i3-1,n)  
-                              -2.*vLocal(i1  ,i2,i3-1,n)  
-                              -2.*vLocal(i1-1,i2,i3  ,n) 
-                              +4.*vLocal(i1  ,i2,i3  ,n) 
-                              -2.*vLocal(i1+1,i2,i3  ,n) 
-                              -2.*vLocal(i1  ,i2,i3+1,n)
-                                 +vLocal(i1-1,i2,i3+1,n)  
-                                 +vLocal(i1+1,i2,i3+1,n)  
-                            )/(dx[0]*dx[0]*dx[2]*dx[2]);
-                  }
-                }
-                else
-                {
-                  uxxzz(Ib1,Ib2,Ib3,R2) = ( 
-                                vLocal(Ib1-1,Ib2,Ib3-1,R2)  
-                               +vLocal(Ib1+1,Ib2,Ib3-1,R2)  
-                            -2.*vLocal(Ib1  ,Ib2,Ib3-1,R2)  
-                            -2.*vLocal(Ib1-1,Ib2,Ib3  ,R2) 
-                            +4.*vLocal(Ib1  ,Ib2,Ib3  ,R2) 
-                            -2.*vLocal(Ib1+1,Ib2,Ib3  ,R2) 
-                            -2.*vLocal(Ib1  ,Ib2,Ib3+1,R2)
-                               +vLocal(Ib1-1,Ib2,Ib3+1,R2)  
-                               +vLocal(Ib1+1,Ib2,Ib3+1,R2)  
-                          )/(dx[0]*dx[0]*dx[2]*dx[2]);                      
-                }
-                if( useOneSidedXXYY )
-                {                
-                  FOR_3DN(j1,j2,j3,n,Ib1,Ib2,Ib3,R2)
-                  {
-                    i1=j1; i2=j2; i3=j3;
-                    // shift stencil to avoid ghost points 
-                    if( i2<=gid(0,1) ) i2++; 
-                    if( i2>=gid(1,1) ) i2--; 
-                    if( i3<=gid(0,2) ) i3++; 
-                    if( i3>=gid(1,2) ) i3--; 
-                    uyyzz(j1,j2,j3,n) = ( 
-                                  vLocal(i1,i2-1,i3-1,n)  
-                                 +vLocal(i1,i2+1,i3-1,n)  
-                              -2.*vLocal(i1,i2  ,i3-1,n)  
-                              -2.*vLocal(i1,i2-1,i3  ,n) 
-                              +4.*vLocal(i1,i2  ,i3  ,n) 
-                              -2.*vLocal(i1,i2+1,i3  ,n) 
-                              -2.*vLocal(i1,i2  ,i3+1,n)
-                                 +vLocal(i1,i2-1,i3+1,n)  
-                                 +vLocal(i1,i2+1,i3+1,n)  
-                            )/(dx[1]*dx[1]*dx[2]*dx[2]);   
-                  }
-                }
-                else
-                {
-                  uyyzz(Ib1,Ib2,Ib3,R2) = ( 
-                              vLocal(Ib1,Ib2-1,Ib3-1,R2)  
-                             +vLocal(Ib1,Ib2+1,Ib3-1,R2)  
-                          -2.*vLocal(Ib1,Ib2  ,Ib3-1,R2)  
-                          -2.*vLocal(Ib1,Ib2-1,Ib3  ,R2) 
-                          +4.*vLocal(Ib1,Ib2  ,Ib3  ,R2) 
-                          -2.*vLocal(Ib1,Ib2+1,Ib3  ,R2) 
-                          -2.*vLocal(Ib1,Ib2  ,Ib3+1,R2)
-                             +vLocal(Ib1,Ib2-1,Ib3+1,R2)  
-                             +vLocal(Ib1,Ib2+1,Ib3+1,R2)  
-                        )/(dx[1]*dx[1]*dx[2]*dx[2]);                     
-                }
-    
-              } // end if nd==3
-
-
-              const Real cxxyy=.5, cxxzz=.5, cyyzz=.5;
-              // const Real cxxyy=.5, cxxzz=.0, cyyzz=.0;  // ******** TEMP : TURN OFF CROSS TERMS IN EM CBC
-
-              if( axis==0 )
-              {
-                RealArray uxxx(Ib1,Ib2,Ib3,2);
-                RealArray uxxxx(Ib1,Ib2,Ib3,2);
-                uxxx =  (    -vLocal(Ib1-2,Ib2,Ib3,R2)  
-                          +2.*vLocal(Ib1-1,Ib2,Ib3,R2) 
-                          -2.*vLocal(Ib1+1,Ib2,Ib3,R2) 
-                             +vLocal(Ib1+2,Ib2,Ib3,R2)
-                        )/(2.*dx[0]*dx[0]*dx[0]);
-
-                uxxxx = (    +vLocal(Ib1-2,Ib2,Ib3,R2)  
-                          -4.*vLocal(Ib1-1,Ib2,Ib3,R2) 
-                          +6.*vLocal(Ib1  ,Ib2,Ib3,R2) 
-                          -4.*vLocal(Ib1+1,Ib2,Ib3,R2) 
-                             +vLocal(Ib1+2,Ib2,Ib3,R2)
-                        )/(dx[0]*dx[0]*dx[0]*dx[0]);              
-
-                if( numberOfDimensions==2 )
-                {
-                  resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
-                  resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
-                }
-                else
-                {
-                  resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + cxxyy*uxxyy(Ib1,Ib2,Ib3,0)+ cxxzz*uxxzz(Ib1,Ib2,Ib3,0) );
-                  resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + cxxyy*uxxyy(Ib1,Ib2,Ib3,1)+ cxxzz*uxxzz(Ib1,Ib2,Ib3,1) );
+                  i1=j1; i2=j2; i3=j3;
+                  // shift stencil to avoid ghost points 
+                  if( i2<=gid(0,1) ) i2++; 
+                  if( i2>=gid(1,1) ) i2--; 
+                  if( i3<=gid(0,2) ) i3++; 
+                  if( i3>=gid(1,2) ) i3--; 
+                  uyyzz(j1,j2,j3,n) = ( 
+                                vLocal(i1,i2-1,i3-1,n)  
+                               +vLocal(i1,i2+1,i3-1,n)  
+                            -2.*vLocal(i1,i2  ,i3-1,n)  
+                            -2.*vLocal(i1,i2-1,i3  ,n) 
+                            +4.*vLocal(i1,i2  ,i3  ,n) 
+                            -2.*vLocal(i1,i2+1,i3  ,n) 
+                            -2.*vLocal(i1,i2  ,i3+1,n)
+                               +vLocal(i1,i2-1,i3+1,n)  
+                               +vLocal(i1,i2+1,i3+1,n)  
+                          )/(dx[1]*dx[1]*dx[2]*dx[2]);   
                 }
               }
-              else if( axis==1 )
+              else
               {
-                RealArray uyyy(Ib1,Ib2,Ib3,2);
-                RealArray uyyyy(Ib1,Ib2,Ib3,2); 
-                uyyy =  (    -vLocal(Ib1,Ib2-2,Ib3,R2)  
-                          +2.*vLocal(Ib1,Ib2-1,Ib3,R2) 
-                          -2.*vLocal(Ib1,Ib2+1,Ib3,R2) 
-                             +vLocal(Ib1,Ib2+2,Ib3,R2)
-                        )/(2.*dx[1]*dx[1]*dx[1]);
-
-                uyyyy = (    +vLocal(Ib1,Ib2-2,Ib3,R2)  
-                          -4.*vLocal(Ib1,Ib2-1,Ib3,R2) 
-                          +6.*vLocal(Ib1,Ib2  ,Ib3,R2) 
-                          -4.*vLocal(Ib1,Ib2+1,Ib3,R2) 
-                             +vLocal(Ib1,Ib2+2,Ib3,R2)
-                        )/(dx[1]*dx[1]*dx[1]*dx[1]);  
-
-                if( numberOfDimensions==2 )
-                {
-                  resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
-                  resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
-                }
-                else
-                {
-                  resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + cxxyy*uxxyy(Ib1,Ib2,Ib3,0)+cyyzz*uyyzz(Ib1,Ib2,Ib3,0) );
-                  resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + cxxyy*uxxyy(Ib1,Ib2,Ib3,1)+cyyzz*uyyzz(Ib1,Ib2,Ib3,1) );
-                }
+                uyyzz(Ib1,Ib2,Ib3,R2) = ( 
+                            vLocal(Ib1,Ib2-1,Ib3-1,R2)  
+                           +vLocal(Ib1,Ib2+1,Ib3-1,R2)  
+                        -2.*vLocal(Ib1,Ib2  ,Ib3-1,R2)  
+                        -2.*vLocal(Ib1,Ib2-1,Ib3  ,R2) 
+                        +4.*vLocal(Ib1,Ib2  ,Ib3  ,R2) 
+                        -2.*vLocal(Ib1,Ib2+1,Ib3  ,R2) 
+                        -2.*vLocal(Ib1,Ib2  ,Ib3+1,R2)
+                           +vLocal(Ib1,Ib2-1,Ib3+1,R2)  
+                           +vLocal(Ib1,Ib2+1,Ib3+1,R2)  
+                      )/(dx[1]*dx[1]*dx[2]*dx[2]);                     
               }
-              else 
+  
+            } // end if nd==3
+
+
+            const Real cxxyy=.5, cxxzz=.5, cyyzz=.5;
+            // const Real cxxyy=.5, cxxzz=.0, cyyzz=.0;  // ******** TEMP : TURN OFF CROSS TERMS IN EM CBC
+
+            if( axis==0 )
+            {
+              RealArray uxxx(Ib1,Ib2,Ib3,2);
+              RealArray uxxxx(Ib1,Ib2,Ib3,2);
+              uxxx =  (    -vLocal(Ib1-2,Ib2,Ib3,R2)  
+                        +2.*vLocal(Ib1-1,Ib2,Ib3,R2) 
+                        -2.*vLocal(Ib1+1,Ib2,Ib3,R2) 
+                           +vLocal(Ib1+2,Ib2,Ib3,R2)
+                      )/(2.*dx[0]*dx[0]*dx[0]);
+
+              uxxxx = (    +vLocal(Ib1-2,Ib2,Ib3,R2)  
+                        -4.*vLocal(Ib1-1,Ib2,Ib3,R2) 
+                        +6.*vLocal(Ib1  ,Ib2,Ib3,R2) 
+                        -4.*vLocal(Ib1+1,Ib2,Ib3,R2) 
+                           +vLocal(Ib1+2,Ib2,Ib3,R2)
+                      )/(dx[0]*dx[0]*dx[0]*dx[0]);              
+
+              if( numberOfDimensions==2 )
               {
-                RealArray uzzz(Ib1,Ib2,Ib3,2);
-                RealArray uzzzz(Ib1,Ib2,Ib3,2); 
-                uzzz =  (    -vLocal(Ib1,Ib2,Ib3-2,R2)  
-                          +2.*vLocal(Ib1,Ib2,Ib3-1,R2) 
-                          -2.*vLocal(Ib1,Ib2,Ib3+1,R2) 
-                             +vLocal(Ib1,Ib2,Ib3+2,R2)
-                        )/(2.*dx[2]*dx[2]*dx[2]);
-
-                uzzzz = (    +vLocal(Ib1,Ib2,Ib3-2,R2)  
-                          -4.*vLocal(Ib1,Ib2,Ib3-1,R2) 
-                          +6.*vLocal(Ib1,Ib2,Ib3  ,R2) 
-                          -4.*vLocal(Ib1,Ib2,Ib3+1,R2) 
-                             +vLocal(Ib1,Ib2,Ib3+2,R2)
-                        )/(dx[2]*dx[2]*dx[2]*dx[2]);  
-
-                resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uzzz(Ib1,Ib2,Ib3,1) ) - c*( uzzzz(Ib1,Ib2,Ib3,0) + cxxzz*uxxzz(Ib1,Ib2,Ib3,0)+cyyzz*uyyzz(Ib1,Ib2,Ib3,0) );
-                resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uzzz(Ib1,Ib2,Ib3,0) ) - c*( uzzzz(Ib1,Ib2,Ib3,1) + cxxzz*uxxzz(Ib1,Ib2,Ib3,1)+cyyzz*uyyzz(Ib1,Ib2,Ib3,1) );
-
+                resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
+                resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
               }
-
-              // -- zero residual at unused points ---
-              where( maskLocal(Ib1,Ib2,Ib3) <=0  )   
+              else
               {
-                resLocal(Ig1,Ig2,Ig3,0)=0.;
-                resLocal(Ig1,Ig2,Ig3,1)=0.;
-              } 
+                resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,1)) - c*( uxxxx(Ib1,Ib2,Ib3,0) + cxxyy*uxxyy(Ib1,Ib2,Ib3,0)+ cxxzz*uxxzz(Ib1,Ib2,Ib3,0) );
+                resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*uxxx(Ib1,Ib2,Ib3,0)) - c*( uxxxx(Ib1,Ib2,Ib3,1) + cxxyy*uxxyy(Ib1,Ib2,Ib3,1)+ cxxzz*uxxzz(Ib1,Ib2,Ib3,1) );
+              }
+            }
+            else if( axis==1 )
+            {
+              RealArray uyyy(Ib1,Ib2,Ib3,2);
+              RealArray uyyyy(Ib1,Ib2,Ib3,2); 
+              uyyy =  (    -vLocal(Ib1,Ib2-2,Ib3,R2)  
+                        +2.*vLocal(Ib1,Ib2-1,Ib3,R2) 
+                        -2.*vLocal(Ib1,Ib2+1,Ib3,R2) 
+                           +vLocal(Ib1,Ib2+2,Ib3,R2)
+                      )/(2.*dx[1]*dx[1]*dx[1]);
 
-              
-              maxResCBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)))*cbcScale;
-              maxResCBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)))*cbcScale;
+              uyyyy = (    +vLocal(Ib1,Ib2-2,Ib3,R2)  
+                        -4.*vLocal(Ib1,Ib2-1,Ib3,R2) 
+                        +6.*vLocal(Ib1,Ib2  ,Ib3,R2) 
+                        -4.*vLocal(Ib1,Ib2+1,Ib3,R2) 
+                           +vLocal(Ib1,Ib2+2,Ib3,R2)
+                      )/(dx[1]*dx[1]*dx[1]*dx[1]);  
+
+              if( numberOfDimensions==2 )
+              {
+                resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + .5*uxxyy(Ib1,Ib2,Ib3,0) );
+                resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + .5*uxxyy(Ib1,Ib2,Ib3,1) );
+              }
+              else
+              {
+                resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,1) ) - c*( uyyyy(Ib1,Ib2,Ib3,0) + cxxyy*uxxyy(Ib1,Ib2,Ib3,0)+cyyzz*uyyzz(Ib1,Ib2,Ib3,0) );
+                resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uyyy(Ib1,Ib2,Ib3,0) ) - c*( uyyyy(Ib1,Ib2,Ib3,1) + cxxyy*uxxyy(Ib1,Ib2,Ib3,1)+cyyzz*uyyzz(Ib1,Ib2,Ib3,1) );
+              }
+            }
+            else 
+            {
+              RealArray uzzz(Ib1,Ib2,Ib3,2);
+              RealArray uzzzz(Ib1,Ib2,Ib3,2); 
+              uzzz =  (    -vLocal(Ib1,Ib2,Ib3-2,R2)  
+                        +2.*vLocal(Ib1,Ib2,Ib3-1,R2) 
+                        -2.*vLocal(Ib1,Ib2,Ib3+1,R2) 
+                           +vLocal(Ib1,Ib2,Ib3+2,R2)
+                      )/(2.*dx[2]*dx[2]*dx[2]);
+
+              uzzzz = (    +vLocal(Ib1,Ib2,Ib3-2,R2)  
+                        -4.*vLocal(Ib1,Ib2,Ib3-1,R2) 
+                        +6.*vLocal(Ib1,Ib2,Ib3  ,R2) 
+                        -4.*vLocal(Ib1,Ib2,Ib3+1,R2) 
+                           +vLocal(Ib1,Ib2,Ib3+2,R2)
+                      )/(dx[2]*dx[2]*dx[2]*dx[2]);  
+
+              resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uzzz(Ib1,Ib2,Ib3,1) ) - c*( uzzzz(Ib1,Ib2,Ib3,0) + cxxzz*uxxzz(Ib1,Ib2,Ib3,0)+cyyzz*uyyzz(Ib1,Ib2,Ib3,0) );
+              resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uzzz(Ib1,Ib2,Ib3,0) ) - c*( uzzzz(Ib1,Ib2,Ib3,1) + cxxzz*uxxzz(Ib1,Ib2,Ib3,1)+cyyzz*uyyzz(Ib1,Ib2,Ib3,1) );
 
             }
 
-            maxResCBC1 = ParallelUtility::getMaxValue( maxResCBC1 );
-            maxResCBC2 = ParallelUtility::getMaxValue( maxResCBC2 );
-            if( ires==numRes-1)
-              printF("residual: Radiation BC: (side,axis,grid)={%d,%d,%d) ghost 2: max-res=[%9.2e,%9.2e] (Re,Im) (scaled by %9.2e)\n",
-                     side,axis,grid,maxResCBC1,maxResCBC2,cbcScale);
+            // -- zero residual at unused points ---
+            where( maskLocal(Ib1,Ib2,Ib3) <=0  )   
+            {
+              resLocal(Ig1,Ig2,Ig3,0)=0.;
+              resLocal(Ig1,Ig2,Ig3,1)=0.;
+            } 
 
+            
+            maxResCBC1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)))*cbcScale;
+            maxResCBC2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)))*cbcScale;
 
+          } // end if ok 
 
-
-          }
-          else // check extrapolation
-          {
-            // ghost line 2 is extrapolated for order 4 for explicit time-stepping
-            Real maxResExtrap1 = 0.;
-            Real maxResExtrap2 = 0.;            
-            getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,2); // ghost 2
-            int includeParallelGhost=0;
-            bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost); 
-            if( ok ) 
-            {           
-              for( int m=0; m<=1; m++ ) // real and iamg parts
-              {
-                resLocal(Ig1,Ig2,Ig3,m) =     vLocal(Ig1+0*is1,Ig2+0*is2,Ig3,m)
-                                          -5.*vLocal(Ig1+1*is1,Ig2+1*is2,Ig3,m)
-                                         +10.*vLocal(Ig1+2*is1,Ig2+2*is2,Ig3,m)
-                                         -10.*vLocal(Ig1+3*is1,Ig2+3*is2,Ig3,m)
-                                          +5.*vLocal(Ig1+4*is1,Ig2+4*is2,Ig3,m)
-                                            - vLocal(Ig1+5*is1,Ig2+5*is2,Ig3,m);
-              }
-              maxResExtrap1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
-              maxResExtrap2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));
-            }
-            maxResExtrap1 = ParallelUtility::getMaxValue( maxResExtrap1 );
-            maxResExtrap2 = ParallelUtility::getMaxValue( maxResExtrap2 );
-            if( ires==numRes-1)
-              printF("                                                 ghost line 2: max-res=[%9.2e,%9.2e] (extrapolation)\n",maxResExtrap1,maxResExtrap2);
-          }
+          maxResCBC1 = ParallelUtility::getMaxValue( maxResCBC1 );
+          maxResCBC2 = ParallelUtility::getMaxValue( maxResCBC2 );
+          if( ires==numRes-1)
+            printF("residual: Radiation BC: (side,axis,grid)={%d,%d,%d) ghost 2: max-res=[%9.2e,%9.2e] (Re,Im) (scaled by %9.2e)\n",
+                   side,axis,grid,maxResCBC1,maxResCBC2,cbcScale);
 
         }
+        else // check extrapolation
+        {
+          // ghost line 2 is extrapolated for order 4 for explicit time-stepping
+          Real maxResExtrap1 = 0.;
+          Real maxResExtrap2 = 0.;            
+          getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,2); // ghost 2
+          int includeParallelGhost=0;
+          bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost); 
+          if( ok ) 
+          {           
+            for( int m=0; m<=1; m++ ) // real and iamg parts
+            {
+              resLocal(Ig1,Ig2,Ig3,m) =     vLocal(Ig1+0*is1,Ig2+0*is2,Ig3,m)
+                                        -5.*vLocal(Ig1+1*is1,Ig2+1*is2,Ig3,m)
+                                       +10.*vLocal(Ig1+2*is1,Ig2+2*is2,Ig3,m)
+                                       -10.*vLocal(Ig1+3*is1,Ig2+3*is2,Ig3,m)
+                                        +5.*vLocal(Ig1+4*is1,Ig2+4*is2,Ig3,m)
+                                          - vLocal(Ig1+5*is1,Ig2+5*is2,Ig3,m);
+            }
+            maxResExtrap1 = max(abs(resLocal(Ig1,Ig2,Ig3,0)));
+            maxResExtrap2 = max(abs(resLocal(Ig1,Ig2,Ig3,1)));
+          }
+          maxResExtrap1 = ParallelUtility::getMaxValue( maxResExtrap1 );
+          maxResExtrap2 = ParallelUtility::getMaxValue( maxResExtrap2 );
+          if( ires==numRes-1)
+            printF("                                                 ghost line 2: max-res=[%9.2e,%9.2e] (extrapolation)\n",maxResExtrap1,maxResExtrap2);
+        }
 
+      }
 
         // ::display(resLocal(Ig1,Ig2,Ig3,0),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
         // ::display(resLocal(Ig1,Ig2,Ig3,1),"resLocal(Ig1,Ig2,Ig3,0)","%8.1e ");
 
-     }
+    }
   } // end for boundary  
 
   // -- zero residual at unused points ---
@@ -904,7 +902,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
 
   for( int ires=0; ires<numRes; ires++ )
   {
-    
+    RealArray lap; 
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
     {
       MappedGrid & mg = cg[grid];
@@ -927,31 +925,34 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
       ParallelGridUtility::getLocalIndexBoundsAndBoundaryConditions( v[grid],indexRangeLocal,dimensionLocal,bcLocal );
 
       int extra=0; // -1;
-      getIndex(cg[grid].indexRange(),I1,I2,I3,extra); 
+      getIndex(cg[grid].gridIndexRange(),I1,I2,I3,extra); 
       
-      int includeParallelGhost=0; 
-      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost );
+      resLocal=0.;
+
+      bool includeParallelGhost=0; 
+      bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost );      
       if( ok )
       {
-        resLocal=0.;
-        
-        RealArray lap(I1,I2,I3,numCompWaveHoltz);
+        lap.redim(I1,I2,I3,numCompWaveHoltz); // include parallel ghost in lap
         operators[grid].derivative(MappedGridOperators::laplacianOperator,vLocal,lap,I1,I2,I3);
+      }
 
-        for( int freq=0; freq<numberOfFrequencies; freq++ )
+      for( int freq=0; freq<numberOfFrequencies; freq++ )
+      {
+        // Real om = omega;
+        Real om = frequencyArray(freq);
+        if( computeResidualWithAdjustedOmega[ires] )
         {
-          // Real om = omega;
-          Real om = frequencyArray(freq);
-          if( computeResidualWithAdjustedOmega[ires] )
-          {
-            // --- Compute the residual using omegas (from discrete symbol) ---
-            if( grid==0 && debug & 1 )
-              printF("CgWaveHoltz::residual: compute residual with adjusted omegas=%20.12e\n",omegas);
-            om = omegas;
-          }
+          // --- Compute the residual using omegas (from discrete symbol) ---
+          if( grid==0 && debug & 1 )
+            printF("CgWaveHoltz::residual: compute residual with adjusted omegas=%20.12e\n",omegas);
+          om = omegas;
+        }
 
           // --- Compute the residual ---
-          if( computeEigenmodes )
+        if( computeEigenmodes )
+        {
+          if( ok )
           {
             FOR_3D(i1,i2,i3,I1,I2,I3)
             {
@@ -962,53 +963,57 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
               }
             }
           }
-          else
+        }
+        else
+        {
+          if( filterTimeDerivative==0 )
           {
-            if( filterTimeDerivative==0 )
+            // -- residual in real case ---
+            if( ok )
             {
-              // -- residual in real case ---
               where( maskLocal(I1,I2,I3)>0 )
               {
                 resLocal(I1,I2,I3,freq) = (c*c)*lap(I1,I2,I3,freq) + (om*om)*vLocal(I1,I2,I3,freq) - fLocal(I1,I2,I3,freq); 
               }
-              Range all;
-              ForBoundary(side,axis)
-              {
-                 // set residual to zero on dirichlet boundaries 
-                 if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
-                 {
-                   getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
-                   bool okb=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
-                   if( okb )
-                   {
-                      // check size of the forcing on the boundary
-                      FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
-                      {
-                        if( maskLocal(i1,i2,i3)>0 )
-                        {
-                          for( int freq=0; freq<numberOfFrequencies; freq++ )
-                            maxBoundaryForce = max( maxBoundaryForce, fLocal(i1,i2,i3,freq) );
-                        }
-                      }
-
-                     resLocal(Ib1,Ib2,Ib3,all)=0.;
-                   }
-                 }
-              }              
-
             }
-            else
+            Range all;
+            ForBoundary(side,axis)
             {
-              // --- residual for complex solution ---
-              getComplexResidualMacro();
-
-            }
+              // set residual to zero on dirichlet boundaries 
+              if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
+              {
+               getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+               bool okb=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
+               if( okb )
+               {
+                  // check size of the forcing on the boundary
+                  FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
+                  {
+                    if( maskLocal(i1,i2,i3)>0 )
+                    {
+                      for( int freq=0; freq<numberOfFrequencies; freq++ )
+                        maxBoundaryForce = max( maxBoundaryForce, fLocal(i1,i2,i3,freq) );
+                    }
+                  }
+                 resLocal(Ib1,Ib2,Ib3,all)=0.;
+               }
+              }
+            }         
           }
+          else
+          {
+            // --- residual for complex solution ---
+            // (paralle communication here)
+            getComplexResidualMacro();
+
+          }
+
         }
       }
 
       getIndex(mg.dimension(),I1,I2,I3);
-      ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,I1,I2,I3);
+      includeParallelGhost=1;
+      ok=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,I1,I2,I3,includeParallelGhost);
       if( ok )
       {
         where( maskLocal(I1,I2,I3) <=0  )   
@@ -1017,7 +1022,8 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
             resLocal(I1,I2,I3,ic)=0.;
         } 
       }
-      if( true )
+
+      if( false )
       {
         // ::display(resLocal,"resLocal","%7.0e ");
         Real maxRes = max(abs(resLocal(I1,I2,I3)));
@@ -1029,10 +1035,10 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
       }      
       // ::display(res[grid],"residual","%8.2e ");
 
+      res[grid].periodicUpdate();
       res[grid].updateGhostBoundaries();
 
     } // end for grid
-
 
     
 
@@ -1041,6 +1047,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
       printF("CgWaveHoltz::residual: INFO: Set residuals to zero in the SuperGrid layers\n");
       cgWave.adjustSolutionForSuperGrid( res );      
     }
+
     const int maskOption=1;  // maskOption=1 : check points with mask>0
     for( int freq=0; freq<numberOfFrequencies; freq++ )
     {

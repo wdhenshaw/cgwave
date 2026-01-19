@@ -80,6 +80,8 @@ CgWaveHoltz( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn),
   dbase.put<int>("saveMatabFile")=1;     // save matlab file with residuals etc.
   dbase.put<aString>("matlabFileName")="cgWaveHoltz";  // name of matlab file holding residuals etc. is by default cgWaveHoltz.m
 
+  dbase.put<int>("saveResidualToShowFile")=0;  // 1 = save the residual to the show file
+
   // dbase.put<realCompositeGridFunction>("vOld");
   dbase.put<realCompositeGridFunction>("residual");
   dbase.put<Real>("numberOfActivePoints")=0.;         // hold number of active points on the grid for scaling L2 norms
