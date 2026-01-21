@@ -561,7 +561,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
         kspResidual /= sqrt(numberOfActivePoints);  // make an approximate L2h norm
 
         resVector(iteration)= kspResidual;
-        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",kspResidual,resVector(iteration)/resVector(max(iteration-1,0)));
+        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",iteration,kspResidual,resVector(iteration)/resVector(max(iteration-1,0)));
         
   
         if( useVariableTolerance ) // ** THIS DOES NOT SEEM TO WORK -- KRYLOV NEEDS ACCURATE Matrix-vector multiplies ***
@@ -986,19 +986,8 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiplyOld(Mat m ,Vec x, Vec y)
 
         resVector(iteration)= kspResidual;
         const Real ratio = iteration==0 ? 1.0 : resVector(iteration)/resVector(iteration-1);
-        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",kspResidual,ratio);
+        printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",iteration,kspResidual,ratio);
         
-    // if( iteration <= maximumNumberOfIterations )
-    // {
-    //   resVector(iteration)= kspResidual;
-    //   printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
-    // }
-    // else
-    // {
-    //    printF("\n ##### KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e (NOT SAVED since iteration=%d > maximumNumberOfIterations=%d)\n\n",
-    //     kspResidual,iteration,maximumNumberOfIterations);
-    // }
-
         if( useVariableTolerance ) // ** THIS DOESNT SEEM TO WORK -- KRYLOV NEEDS ACCURATE Matrix-vector multiplies ***
         {
             const CgWave::TimeSteppingMethodEnum & timeSteppingMethod = cgWave.dbase.get<CgWave::TimeSteppingMethodEnum>("timeSteppingMethod");
