@@ -16,7 +16,180 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 
 
 ***************************************************
+****** Wed Jan 21, 2026
+
+cg66
+mpiexec -n 8 $cgwh -noplot scat.cmd -g=cice4.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=cicG4scatkx4.show -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=1000 -rtolh=1e-10 -atolh=1e-10 -assignInterpNeighbours=extrap -restart=500 -go=ks
+
+
+solveHelmholtz: max-residual [Re,Im]=[1.47e-11,8.53e-12] (gmres, numIts=79, ave-CR= 0.74 , cpu=7.70e+00(s), np=8)
+
+
+>>>>>>> TEST CGPC: About twice as fast as cg66
+
+G16 : 36M pts Running on cgpc
+setsid mpiexec -n 64 --use-hwthread-cpus $cgwh -noplot scat.cmd -g=flatTorusGridAlongXe16.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=9 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=flattenedTorusG16O4kx9.show -matlab=flattenedTorusG16O4kx9 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks > flattenedTorusG16O4kx9.out
+
+cgWave:FD24u t=1.779e+00 (1169 steps) dt=1.522e-03 ||u||= 3.96e+00, cpu= 6.74e+01(s)
+
+
+
+***************************************************
+****** Tues Jan 20, 2026 
+
+TEST RUN ON DCS 
+
+
+SUBMITTED: 
+G64 kx=24
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=128 -nodes=8 -timeLimit=2:00:00 $cgwh -noplot scat.cmd -g=cice64.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=24 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=diskG64kx24.show -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=1000 -rtolh=1e-10 -atolh=1e-10 -assignInterpNeighbours=extrap -restart=4000 -gmresRestartLength=4000  -go=ks
+
+SOMETHING IS WRONG: 
+ ##### SAVE KRYLOV RESIDUAL: iteration=1958922875: L2h-residual= 1.00e+00, ratio= 0.00 
+
+residuals are large: ??
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 7.29e-09, 1.97e-06] (Re,Im) (scale= 2.44e-06), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 1.84e-10, 3.99e-08] (Re,Im) (scaled by  5.96e-12)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.09e-08, 1.50e-06] (Re,Im) (scale= 2.44e-06), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 5.83e-10, 6.10e-08] (Re,Im) (scaled by  5.96e-12)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 8.20e-09, 2.02e-06] (Re,Im) (scale= 2.44e-06), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 2.69e-10, 6.00e-08] (Re,Im) (scaled by  5.96e-12)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 8.18e-09, 1.96e-06] (Re,Im) (scale= 2.44e-06), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 2.68e-10, 6.00e-08] (Re,Im) (scaled by  5.96e-12)
+solveHelmholtz: max-residual [Re,Im]=[2.79e-01,2.42e-01] (gmres, numIts=1002, ave-CR= 0.99 , cpu=1.64e+03(s), np=128)
+
+
+
+CICe4 OK 
+makeBatch.p -batchFile=batch.sh -solverName=cgwh $cgwh -noplot scat.cmd -g=cice4.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=cicG4scatkx4.show -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=1000 -rtolh=1e-10 -atolh=1e-10 -assignInterpNeighbours=extrap -restart=500 -go=ks
+
+DCS
+
+##### SAVE KRYLOV RESIDUAL: iteration=1877112758: L2h-residual= 5.94e-01, ratio= 0.00
+
+solveHelmholtz: max-residual [Re,Im]=[1.47e-11,8.53e-12] (gmres, numIts=79, ave-CR= 0.74 , cpu=2.19e+01(s), np=4)
+
+
+cg66
+mpiexec -n 4 $cgwh -noplot scat.cmd -g=cice4.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11  -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=cicG4scatkx4.show -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=1000 -rtolh=1e-10 -atolh=1e-10 -assignInterpNeighbours=extrap -restart=500 -go=ks
+
+solveHelmholtz: max-residual [Re,Im]=[1.47e-11,8.53e-12] (gmres, numIts=79, ave-CR= 0.74 , cpu=8.14e+00(s), np=4)
+
+
+>>>>>>> TEST CGPC: About twice as fast as cg66
+
+G16 : 36M pts Running on cgpc
+setsid mpiexec -n 64 --use-hwthread-cpus $cgwh -noplot scat.cmd -g=flatTorusGridAlongXe16.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=9 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=flattenedTorusG16O4kx9.show -matlab=flattenedTorusG16O4kx9 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks > flattenedTorusG16O4kx9.out
+
+cgWave:FD24u t=1.779e+00 (1169 steps) dt=1.522e-03 ||u||= 3.96e+00, cpu= 6.74e+01(s)
+
+
+mpiexec -n 8 $cgwh -noplot scat.cmd -g=flatTorusGridAlongXe4.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=flattenedTorusG4O4kx3.show -matlab=flattenedTorusG4O4kx3 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks
+
+cgpc: ABOUT TWICE AS FAST 
+solveHelmholtz: max-residual [Re,Im]=[7.01e-10,7.11e-10] (gmres, numIts=94, ave-CR= 0.79 , cpu=4.90e+02(s), np=8)
+
+cg66:
+solveHelmholtz: max-residual [Re,Im]=[6.39e-10,7.06e-10] (gmres, numIts=94, ave-CR= 0.79 , cpu=1.07e+03(s), np=8)
+<<<<<<<<<<<<<<<<<
+
+
+Flattened torus -- ring 
+
+plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG8O4kx5 -name=flattenedTorusG8O4kx5View2 -view=2 -field=absurTotal absuiTotal uTotalNorm
+
+plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG8O4kx5 -field=absurTotal absuiTotal uTotalNorm
+
+plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG4O4kx3 -field=absurTotal absuiTotal uTotalNorm
+
+G8 O4 kx=5 4.9M pts
+setsid mpiexec -n 32 $cgwh -noplot scat.cmd -g=flatTorusGridAlongXe8.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=flattenedTorusG8O4kx5.show -matlab=flattenedTorusG8O4kx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks > flattenedTorusG8O4kx5.out
+
+omega=  3.14e+01, k=  3.14e+01, lambda=  2.00e-01, dx=  1.25e-02, domainSize=  2.00e+00, NLambda=10, ppw=lambda/dx= 16.0, ppw(rule-of-thumb)= 15.3 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[2.93e-09,2.70e-09] (gmres, numIts=262, ave-CR= 0.92 , cpu=6.35e+03(s), np=32)
+
+
+G4 O4 kx=3 OK 
+mpiexec -n 8 $cgwh -noplot scat.cmd -g=flatTorusGridAlongXe4.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=flattenedTorusG4O4kx3.show -matlab=flattenedTorusG4O4kx3 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks > flattenedTorusG4O4kx3.out
+
+ omega=  1.88e+01, k=  1.88e+01, lambda=  3.33e-01, dx=  2.50e-02, domainSize=  2.00e+00, NLambda=6, ppw=lambda/dx= 13.3, ppw(rule-of-thumb)= 13.4 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 2: max-res=[ 5.38e-12, 4.62e-12] (Re,Im) (scaled by  3.91e-07)
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 4.34e-12, 5.85e-12] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 4.91e-12, 5.39e-12] (Re,Im) (scaled by  3.91e-07)
+solveHelmholtz: max-residual [Re,Im]=[6.39e-10,7.06e-10] (gmres, numIts=94, ave-CR= 0.79 , cpu=1.07e+03(s), np=8)
+
+
+mpiexec -n 2 $cgwh -noplot scat.cmd -g=flatTorusGridALongXe2.order2 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=flattenedTorusG2O2kx1.show -matlab=flattenedTorusG2O2kx1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks > flattenedTorusG2O2kx1.out
+
+ omega=  6.28e+00, k=  6.28e+00, lambda=  1.00e+00, dx=  5.00e-02, domainSize=  2.00e+00, NLambda=2, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 45.5 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 2.06e-12, 2.89e-12] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 2.40e-12, 2.51e-12] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 0.00e+00
+solveHelmholtz: max-residual [Re,Im]=[2.89e-09,2.11e-09] (gmres, numIts=11, ave-CR= 0.13 , cpu=6.65e+01(s), np=2)
+
+***************************************************
 ****** Mon Jan 19, 2026 
+
+TRY PILL IN A BOX:
+
+plotStuff plotPillBoxSolution.cmd -show=pillInABoxG8O4kx5 -field=absurTotal absuiTotal uTotalNorm
+plotStuff plotPillBoxSolution.cmd -show=pillInABoxG4O4kx3 -field=absurTotal absuiTotal uTotalNorm
+
+TROUBLE RUNNING WITH 64 Processors ??? --> bNorm = nan
+
+
+
+G8 O4  -- residuals large?
+setsid mpiexec -n 32 $cgwh -noplot scat.cmd -g=pillInABoxGridAngle90e8.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=pillInABoxG8O4kx5.show -matlab=pillInABoxG8O4kx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks > pillInABoxG8O4kx5.out
+
+omega=  3.14e+01, k=  3.14e+01, lambda=  2.00e-01, dx=  1.25e-02, domainSize=  2.00e+00, NLambda=10, ppw=lambda/dx= 16.0, ppw(rule-of-thumb)= 15.3 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 4.52e-12, 2.00e-10] (Re,Im) (scale= 1.56e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 4.78e-12, 1.52e-10] (Re,Im) (scaled by  2.44e-08)
+solveHelmholtz: max-residual [Re,Im]=[2.75e-02,1.64e-02] (gmres, numIts=39, ave-CR= 0.56 , cpu=2.01e+03(s), np=32)
+
+
+
+G4 O4 
+mpiexec -n 16 $cgwh -noplot scat.cmd -g=pillInABoxGridAngle90e4.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=pillInABoxG4O4kx3.show -matlab=pillInABoxG4O4kx3 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks
+
+omega=  1.88e+01, k=  1.88e+01, lambda=  3.33e-01, dx=  2.50e-02, domainSize=  2.00e+00, NLambda=6, ppw=lambda/dx= 13.3, ppw(rule-of-thumb)= 13.4 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 1.88e-12, 3.12e-12] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 2: max-res=[ 2.38e-12, 2.54e-12] (Re,Im) (scaled by  3.91e-07)
+solveHelmholtz: max-residual [Re,Im]=[1.99e-09,1.32e-09] (gmres, numIts=20, ave-CR= 0.33 , cpu=2.90e+02(s), np=16)
+
+
+G4 O2 : 0.6M pts
+mpiexec -n 8 $cgwh -noplot scat.cmd -g=pillInABoxGridAngle90e4.order2.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=1.5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=pillInABoxG2.show -matlab=pillInABoxG2 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 7.54e-12, 8.63e-12] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 6.53e-12, 9.07e-12] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 2.40e-12, 4.82e-12] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 2.33e-12, 5.20e-12] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 2.63e-12, 5.04e-12] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 2.11e-12, 5.04e-12] (Re,Im) (scale= 6.25e-04), max|forcing(ghost)|= 0.00e+00
+solveHelmholtz: max-residual [Re,Im]=[2.29e-09,4.36e-09] (gmres, numIts=9, ave-CR= 0.11 , cpu=1.34e+02(s), np=8)
+
+
+omega=  9.42e+00, k=  9.42e+00, lambda=  6.67e-01, dx=  2.50e-02, domainSize=  2.00e+00, NLambda=3, ppw=lambda/dx= 26.7, ppw(rule-of-thumb)= 55.7 (epsr=0.01)<<<
+
+-- BACUP INTERP HERE: 
+G2 : interior residuals are a too BIG 
+mpiexec -n 8 $cgwh -noplot scat.cmd -g=pillInABoxGridAngle90e2.order2.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=1 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=pillInABoxG2.show -matlab=pillInABoxG2 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=og
+
+-np=8
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.85e-12, 1.98e-11] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.88e-12, 2.04e-11] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.17e-12, 1.99e-11] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.35e-12, 2.22e-11] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,2,0) ghost 1: max-res=[ 1.16e-12, 2.10e-11] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,2,0) ghost 1: max-res=[ 1.09e-12, 2.11e-11] (Re,Im) (scale= 2.50e-03), max|forcing(ghost)|= 0.00e+00
+solveHelmholtz: max-residual [Re,Im]=[3.88e-04,6.91e-04] (gmres, numIts=9, ave-CR= 0.10 , cpu=8.97e+01(s), np=8)
+
+
+
 
 CONT TEST SPHERE SCAT AFTER BUG FIXES
 
