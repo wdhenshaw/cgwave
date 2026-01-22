@@ -67,8 +67,9 @@ void abcWave(const int&nd,
 
       if( debug & 8 )
         printf("++++ CgWave::applyBC: interpolate Interpolation Neighbours at t=%9.3e\n",t);
-     
+
       interpNeighbours.assignInterpolationNeighbours( u, C, pExact, t  );
+ 
       // printF("Done call assignInterpolationNeighbours.\n");
     }
     else

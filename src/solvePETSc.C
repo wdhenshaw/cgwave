@@ -1189,7 +1189,10 @@ solvePETSc(int argc,char **args)
 
         numEquationsLocal = numActiveLocal*numCompWaveHoltz;
 
-        numberOfActivePoints = totalActive;
+        numberOfActivePoints = numEquations; // totalActive;
+
+    // numberOfActivePoints = ParallelUtility::getSum(numberOfActivePoints);
+        printF("solvePETSc: useMatrixUtilities: numberOfActivePoints=%g\n",numberOfActivePoints);
 
     }
     else
@@ -1210,7 +1213,8 @@ solvePETSc(int argc,char **args)
         numEquationsLocal = numEquations;
     }
 
-    printf("Make a Matrix Free Shell: myid=%d: numEquationsLocal=%d, numEquations=%d\n",myid, numEquationsLocal, numEquations);
+    if( debug >1 )
+        printf("Make a Matrix Free Shell: myid=%d: numEquationsLocal=%d, numEquations=%d\n",myid, numEquationsLocal, numEquations);
 
     
   // PetscErrorCode MatCreateShell(MPI_Comm comm, PetscInt m, PetscInt n, PetscInt M, PetscInt N, void *ctx, Mat *A)
@@ -1290,6 +1294,33 @@ solvePETSc(int argc,char **args)
         if( useMatrixUtilities )
         {
             cgWave.gridFunctionToVector( v,xl, iStart,iEnd );
+
+      // -- new 
+      // numberOfActivePoints = 0.; // count active points for scaling norm.
+      // for( int freq=0; freq<numCompWaveHoltz; freq++ )
+      // {
+      //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      //   {
+      //     MappedGrid & mg = cg[grid];
+      //     const IntegerArray & gid = mg.gridIndexRange();          
+      //     if( useActivePoints )
+      //       cgWave.getActivePointIndex( mg, Iv );
+      //     else
+      //       getIndex(mg.dimension(),I1,I2,I3);
+                    
+      //     OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+      //     bool ok = ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,I1,I2,I3,0); 
+      //     if( ok )
+      //     {
+      //       FOR_3D(i1,i2,i3,I1,I2,I3)
+      //       {
+      //         if( maskLocal(i1,i2,i3) !=0 )
+      //           numberOfActivePoints = numberOfActivePoints+1.;
+      //       }
+      //     }
+      //   }
+      // }
+      // numberOfActivePoints = ParallelUtility::getSum(numberOfActivePoints);      
         }
         else
         {
@@ -1353,6 +1384,8 @@ solvePETSc(int argc,char **args)
 
 
   // ---- set RHS b = A*u -----
+    printF("solvePETSc: set RHS b = A*u, numberOfActivePoints=%g\n",numberOfActivePoints);
+
     ierr = VecSet(u,0.0);CHKERRQ(ierr);
 
   // This next call to MatMult will eventually call CgWave with initial condition u=0
@@ -1363,7 +1396,7 @@ solvePETSc(int argc,char **args)
 
     VecNorm(b,NORM_2,&bNorm);
     Real bNorm2h = bNorm/sqrt(numberOfActivePoints); 
-    printF("solvePETSc: RHS is b: l2-norm(b)=%9.3e, L2h-norm(b)=%9.2e\n",bNorm,bNorm2h);
+    printF("solvePETSc: RHS is b: l2-norm(b)=%9.3e, L2h-norm(b)=%9.2e (numberOfActivePoints=%g)\n",bNorm,bNorm2h,numberOfActivePoints);
 
 
   // OV_ABORT("Stop here for now"); // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TEMP 
