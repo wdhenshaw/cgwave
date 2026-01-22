@@ -618,7 +618,7 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     kspResidual /= sqrt(numberOfActivePoints);  // make an approximate L2h norm
 
     resVector(iteration)= kspResidual;
-    printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",kspResidual,resVector(iteration)/resVector(max(iteration-1,0)));
+    printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",iteration,kspResidual,resVector(iteration)/resVector(max(iteration-1,0)));
     
  
     if( useVariableTolerance ) // ** THIS DOES NOT SEEM TO WORK -- KRYLOV NEEDS ACCURATE Matrix-vector multiplies ***
@@ -1043,19 +1043,8 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiplyOld(Mat m ,Vec x, Vec y)
 
     resVector(iteration)= kspResidual;
     const Real ratio = iteration==0 ? 1.0 : resVector(iteration)/resVector(iteration-1);
-    printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",kspResidual,ratio);
+    printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e, ratio=%5.2f \n",iteration,kspResidual,ratio);
     
-    // if( iteration <= maximumNumberOfIterations )
-    // {
-    //   resVector(iteration)= kspResidual;
-    //   printF("\n ##### SAVE KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e \n\n",kspResidual);
-    // }
-    // else
-    // {
-    //    printF("\n ##### KRYLOV RESIDUAL: iteration=%d: L2h-residual=%9.2e (NOT SAVED since iteration=%d > maximumNumberOfIterations=%d)\n\n",
-    //     kspResidual,iteration,maximumNumberOfIterations);
-    // }
-
     if( useVariableTolerance ) // ** THIS DOESNT SEEM TO WORK -- KRYLOV NEEDS ACCURATE Matrix-vector multiplies ***
     {
       const CgWave::TimeSteppingMethodEnum & timeSteppingMethod = cgWave.dbase.get<CgWave::TimeSteppingMethodEnum>("timeSteppingMethod");
@@ -1257,7 +1246,10 @@ solvePETSc(int argc,char **args)
 
     numEquationsLocal = numActiveLocal*numCompWaveHoltz;
 
-    numberOfActivePoints = totalActive;
+    numberOfActivePoints = numEquations; // totalActive;
+
+    // numberOfActivePoints = ParallelUtility::getSum(numberOfActivePoints);
+    printF("solvePETSc: useMatrixUtilities: numberOfActivePoints=%g\n",numberOfActivePoints);
 
   }
   else
@@ -1278,7 +1270,8 @@ solvePETSc(int argc,char **args)
     numEquationsLocal = numEquations;
   }
 
-  printf("Make a Matrix Free Shell: myid=%d: numEquationsLocal=%d, numEquations=%d\n",myid, numEquationsLocal, numEquations);
+  if( debug >1 )
+    printf("Make a Matrix Free Shell: myid=%d: numEquationsLocal=%d, numEquations=%d\n",myid, numEquationsLocal, numEquations);
 
   
   // PetscErrorCode MatCreateShell(MPI_Comm comm, PetscInt m, PetscInt n, PetscInt M, PetscInt N, void *ctx, Mat *A)
@@ -1358,6 +1351,33 @@ solvePETSc(int argc,char **args)
     if( useMatrixUtilities )
     {
       cgWave.gridFunctionToVector( v,xl, iStart,iEnd );
+
+      // -- new 
+      // numberOfActivePoints = 0.; // count active points for scaling norm.
+      // for( int freq=0; freq<numCompWaveHoltz; freq++ )
+      // {
+      //   for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+      //   {
+      //     MappedGrid & mg = cg[grid];
+      //     const IntegerArray & gid = mg.gridIndexRange();          
+      //     if( useActivePoints )
+      //       cgWave.getActivePointIndex( mg, Iv );
+      //     else
+      //       getIndex(mg.dimension(),I1,I2,I3);
+          
+      //     OV_GET_SERIAL_ARRAY(int,mg.mask(),maskLocal);
+      //     bool ok = ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,I1,I2,I3,0); 
+      //     if( ok )
+      //     {
+      //       FOR_3D(i1,i2,i3,I1,I2,I3)
+      //       {
+      //         if( maskLocal(i1,i2,i3) !=0 )
+      //           numberOfActivePoints = numberOfActivePoints+1.;
+      //       }
+      //     }
+      //   }
+      // }
+      // numberOfActivePoints = ParallelUtility::getSum(numberOfActivePoints);      
     }
     else
     {
@@ -1421,6 +1441,8 @@ solvePETSc(int argc,char **args)
 
 
   // ---- set RHS b = A*u -----
+  printF("solvePETSc: set RHS b = A*u, numberOfActivePoints=%g\n",numberOfActivePoints);
+
   ierr = VecSet(u,0.0);CHKERRQ(ierr);
 
   // This next call to MatMult will eventually call CgWave with initial condition u=0
@@ -1431,7 +1453,7 @@ solvePETSc(int argc,char **args)
 
   VecNorm(b,NORM_2,&bNorm);
   Real bNorm2h = bNorm/sqrt(numberOfActivePoints); 
-  printF("solvePETSc: RHS is b: l2-norm(b)=%9.3e, L2h-norm(b)=%9.2e\n",bNorm,bNorm2h);
+  printF("solvePETSc: RHS is b: l2-norm(b)=%9.3e, L2h-norm(b)=%9.2e (numberOfActivePoints=%g)\n",bNorm,bNorm2h,numberOfActivePoints);
 
 
   // OV_ABORT("Stop here for now"); // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TEMP 

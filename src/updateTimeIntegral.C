@@ -1032,6 +1032,74 @@ updateTimeIntegral( int step, StepOptionEnum stepOption, Real t, Real dt, realCo
       //   applyBoundaryConditions( v,v, t, applyExplicitBoundaryConditions );
       // }
 
+      if( true )
+      {
+        // --- ZERO OUT UNUSED POINTS ---
+        // Added Jan 21, 2026 for big problems in 3D and parallel
+        const int & upwind = dbase.get<int>("upwind");
+        for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
+        {
+          // const IntegerArray & dim = cg[grid].dimension();
+
+
+          OV_GET_SERIAL_ARRAY(int,cg[grid].mask(),maskLocal);
+          OV_GET_SERIAL_ARRAY(real,v[grid],vLocal);
+
+          getIndex(cg[grid].dimension(),I1,I2,I3);
+          int includeParallelGhost=1;
+          bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3,includeParallelGhost);
+          if( ok )
+          {
+            if( upwind )
+            {
+              // With upwinding we must also keep neighbours of interpolation points
+              // 
+              // We could instead zero out all mask==0 and then assign interp neighbours 
+              const int n1a=vLocal.getBase(0), n1b=vLocal.getBound(0);
+              const int n2a=vLocal.getBase(1), n2b=vLocal.getBound(1);
+              const int n3a=vLocal.getBase(2), n3b=vLocal.getBound(2);              
+              FOR_3D(i1,i2,i3,I1,I2,I3)
+              {       
+                int m1a=max(n1a,i1-1), m1b=min(n1b,i1+1);
+                int m2a=max(n2a,i2-1), m2b=min(n2b,i2+1);
+                int m3a=max(n3a,i3-1), m3b=min(n3b,i3+1);
+                bool unused=true;
+                for( int j3=m3a; j3<=m3b && unused; j3++ )
+                for( int j2=m2a; j2<=m2b && unused; j2++ )
+                for( int j1=m1a; j1<=m1b && unused; j1++ )
+                {
+                  if( maskLocal(j1,j2,j3)!=0 )
+                    unused=false;
+                }
+                if( unused )
+                {
+                  for( int freq=0; freq<numCompWaveHoltz; freq++ )
+                    vLocal(i1,i2,i3,freq)=0.;
+                }
+              }
+            }
+            else
+            {
+              FOR_3D(i1,i2,i3,I1,I2,I3)
+              {       
+                if( maskLocal(i1,i2,i3)==0 )
+                {
+                  for( int freq=0; freq<numCompWaveHoltz; freq++ )
+                    vLocal(i1,i2,i3,freq)=0.;
+                }
+              }
+            }
+          }
+
+        }   
+      }
+
+      if( false )
+      {
+        Real vNorm = maxNorm(v);
+        printF("CgWave::updateTimeIntegral: lastStep: step=%d, maxNorm(v)=%9.2e\n",step,vNorm);
+      }
+
       if( false && filterTimeDerivative )
       {
         // ** testing ***
