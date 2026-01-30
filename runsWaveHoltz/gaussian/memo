@@ -12,6 +12,90 @@ set ovp2 = ~/Dropbox/overHoltzPaper/part2
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+*************************************
+****** Thurs Jan 29, 2026
+
+OK: np=2, np=4
+mpirun -np=4 $cgwh -noplot gaussian.cmd -g=square16.order2 -x0=0.6 0.4 .55 .5 -y0=0.45 0.55 .5 .5 -nf=3 -freq=5.1 10.1 15.1 -amp=25 100 225 -beta=15 15 15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=1 -matlab=square128OptFilter -useOptFilter=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=best -restart=2000 -iluh=20 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -show=none -go=dfks
+
+olveHelmholtz: max-res=5.457e-09 (all freq, gmres, numIts=42, ave-CR= 0.58 , cpu=5.51e-01(s), np=2)
+solveHelmholtz: rel-max-diff=3.28e-10 for freq0 =   5.1000e+00, |v|_max= 2.11e-01 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=7.00e-11 for freq1 =   1.0100e+01, |v|_max= 1.25e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=6.15e-11 for freq2 =   1.5100e+01, |v|_max= 1.96e+00 (between WaveHoltz and Direct Helmholtz solution)
+solveHelmholtz: rel-max-diff=3.28e-10, |v|_max= 1.96e+00 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+CHECK WAVEHOLTZ with this grid
+EIGENWAVE: TROUBLE: np=2 
+mpiexec -n 2 $cgwh -noplot eig.cmd -g=square16.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=square -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=square16Ev4.show -freq=4 -numEigs=4 -upwind=0 -go=ks
+
+
+***************************************************
+****** Mon Jan 26, 2026
+
+PARALLEL and Deflation
+
+---- DISK
+G32 O4:
+mpiexec -n 1 $cgwh -noplot gaussian.cmd -g=sice32.order4.ng3 -x0=.35 -y0=.45 -nf=1 -freq=30 -amp=-900 -beta=30 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/eig/diskG32O4Ev1024.show -deflateWaveHoltz=1 -numToDeflate=36 -matlab=junk -gmresRestartLength=200 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks
+
+ omega=  3.00e+01, k=  3.00e+01, lambda=  2.09e-01, dx=  3.13e-03, domainSize=  2.00e+00, NLambda=9.54929, ppw=lambda/dx= 67.0, ppw(rule-of-thumb)= 15.1 (epsr=0.01)<<<
+solveHelmholtz: max-res=3.041e-04 (gmres, numIts=51, ave-CR= 0.70 deflate=71, ACR= 0.96, cpu=5.11e+01(s), np=1)
+solveHelmholtz: max-res=3.041e-04 (gmres, numIts=51, ave-CR= 0.70 deflate=71, ACR= 0.96, cpu=3.30e+01(s), np=2)
+solveHelmholtz: max-res=3.041e-04 (gmres, numIts=51, ave-CR= 0.70 deflate=71, ACR= 0.96, cpu=2.19e+01(s), np=4)
+
+G16 O4:
+mpiexec -n 1 $cgwh -noplot gaussian.cmd -g=sice16.order4.ng3 -x0=.35 -y0=.45 -nf=1 -freq=15 -amp=-225 -beta=15 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/eig/diskG16O4Ev512.show -deflateWaveHoltz=1 -numToDeflate=20 -matlab=junk  -gmresRestartLength=200 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks
+
+
+omega=  1.50e+01, k=  1.50e+01, lambda=  4.19e-01, dx=  6.25e-03, domainSize=  2.00e+00, NLambda=4.77464, ppw=lambda/dx= 67.0, ppw(rule-of-thumb)= 12.7 (epsr=0.01)<<<
+solveHelmholtz: max-res=3.447e-04 (gmres, numIts=23, ave-CR= 0.44 deflate=39, ACR= 0.79, cpu=7.27e+00(s), np=1)
+solveHelmholtz: max-res=3.447e-04 (gmres, numIts=23, ave-CR= 0.44 deflate=39, ACR= 0.79, cpu=6.04e+00(s), np=2)
+
+G8 O4:
+mpiexec -n 1 $cgwh -noplot gaussian.cmd -g=sice8.order4.ng3 -x0=.35 -y0=.45 -nf=1 -freq=10 -amp=-100 -beta=10 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/eig/diskG8O4Ev1024.show -deflateWaveHoltz=1 -numToDeflate=8 -matlab=junk  -gmresRestartLength=200 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks
+
+solveHelmholtz: max-res=4.698e-04 (gmres, numIts=21, ave-CR= 0.39 deflate=15, ACR= 0.84, cpu=2.40e+00(s), np=1)
+solveHelmholtz: max-res=4.698e-04 (gmres, numIts=21, ave-CR= 0.39 deflate=15, ACR= 0.84, cpu=2.61e+00(s), np=2)
+
+G8 O2
+mpiexec -n 1 $cgwh -noplot gaussian.cmd -g=sice8.order2 -x0=.35 -y0=.45 -nf=1 -freq=10 -amp=-100 -beta=10 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/eig/diskG8O2Ev64.show -deflateWaveHoltz=1 -numToDeflate=8 -matlab=junk  -gmresRestartLength=200 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks
+
+deflate: 
+ ###### CgWave::initDeflation: reading Integrate object from the show file with precomputed integration weights...
+ ###### CgWave::initDeflation: Integrate object WAS found in the show file.
+
+
+solveHelmholtz: max-res=2.803e-03 (gmres, numIts=23, ave-CR= 0.43 deflate=14, ACR= 0.85, cpu=1.63e+00(s), np=1)
+solveHelmholtz: max-res=2.803e-03 (gmres, numIts=23, ave-CR= 0.43 deflate=14, ACR= 0.85, cpu=2.27e+00(s), np=2)
+solveHelmholtz: max-res=2.803e-03 (gmres, numIts=23, ave-CR= 0.43 deflate=14, ACR= 0.85, cpu=2.34e+00(s), np=4)
+
+NO DEFLATE: DIFFERENT np DO NOT MATCH??!
+mpiexec -n 1 $cgwh -noplot gaussian.cmd -g=sice8.order2 -x0=.35 -y0=.45 -nf=1 -freq=10 -amp=-100 -beta=10 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/eig/diskG8O2Ev64.show -deflateWaveHoltz=0 -numToDeflate=8 -matlab=junk  -gmresRestartLength=200 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks
+
+
+no-deflate
+>>>omega=  1.00e+01, k=  1.00e+01, lambda=  6.28e-01, dx=  1.25e-02, domainSize=  2.00e+00, NLambda=3.1831, ppw=lambda/dx= 50.3, ppw(rule-of-thumb)= 57.4 (old= 56.0) (epsr=0.01)<<<
+solveHelmholtz: max-res=9.518e-06 (gmres, numIts=83, ave-CR= 0.79 , ACR=-1.00, cpu=5.48e+00(s), np=1)
+solveHelmholtz: max-res=1.180e-05 (gmres, numIts=78, ave-CR= 0.77 , ACR=-1.00, cpu=6.97e+00(s), np=2)
+solveHelmholtz: max-res=2.604e-06 (gmres, numIts=72, ave-CR= 0.76 , ACR=-1.00, cpu=6.84e+00(s), np=4)
+
+
+--- SIXTEEN KNIVES
+mpiexec -n 1 $cgwh -noplot gaussian.cmd -g=sixteenKnivesGride32.order2.hdf -ts=explicit -cfl=0.95 -x0=0.0 -y0=0.3 -nf=1 -freq=80 -amp=6400 -beta=80 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=500 -numPeriods=2 -bc=d -implicitUpwind=0 -minStepsPerPeriod=10  -eigenVectorFile=/home/henshw/runs/eig/sixteenKnivesGride32O2EV512.show -deflateWaveHoltz=1 -numToDeflate=16 -rtoli=1e-10 -atoli=1e-10 -matlab=sixteenKnivesGride64O2Freq80 -show=sixteenKnivesGrid64O2Freq80p.show -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks
+
+NEW: troubke
+solveHelmholtz: max-res=1.710e+03 (gmres, numIts=33, ave-CR= 0.57 deflate=26, ACR= 0.92)
+
+
+OLD - IMP 
+omega=  8.00e+01, k=  8.00e+01, lambda=  7.85e-02, dx=  1.56e-03, domainSize=  1.00e+00, NLambda=12.7324, ppw=lambda/dx=  50, ppw(rule-of-thumb)= 112 (epsr=0.01)<<<
+solveHelmholtz: max-res=1.130e-08 (agmres, numIts=93, ave-CR= 0.76 , ACR=-1.00)
+solveHelmholtz: rel-max-diff=2.15e-11, |v|_max= 7.22e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+
 ***************************************************
 ****** Sat Jan 17, 2026
 

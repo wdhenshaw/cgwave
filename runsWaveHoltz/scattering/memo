@@ -16,10 +16,132 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 
 
 ***************************************************
-****** Thus Jan 22, 2026
+****** Fri Jan 23, 2026
+
+Rotated pill box
+
+plotStuff plotPillBoxSolution.cmd -show=pillInABoxG16O4Angle45kx5 -name=pillInABoxG16O4Angle45kx9 -field=absurTotal absuiTotal uTotalNorm
+plotStuff plotPillBoxSolution.cmd -show=pillInABoxG8O4Angle45kx5 -field=absurTotal absuiTotal uTotalNorm
+plotStuff plotPillBoxSolution.cmd -show=pillInABoxG4O4Angle45kx3 -field=absurTotal absuiTotal uTotalNorm
+
+G16: kx=9 34M pts submitted DCS wrong show file name first time
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=128 -nodes=8 -timeLimit=4:00:00 $cgwh -noplot scat.cmd -g=pillInABoxGridAngle45e16.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=9 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=pillInABoxG16O4Angle45kx9.show -matlab=pillInABoxG16O4Angle45kx9 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks
+
+>>>omega=  5.65e+01, k=  5.65e+01, lambda=  1.11e-01, dx=  6.25e-03, domainSize=  2.00e+00, NLambda=18, ppw=lambda/dx= 17.8, ppw(rule-of-thumb)= 17.7 (old= 20.5) (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[1.40e-08,1.25e-08] (gmres, numIts=13, ave-CR= 0.20 , cpu=3.38e+03(s), np=128)
+
+
+G8 kx=5
+setsid mpiexec -n 64 $cgwh -noplot scat.cmd -g=pillInABoxGridAngle45e8.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=pillInABoxG8O4Angle45kx5.show -matlab=pillInABoxG8O4Angle45kx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks > pillInABoxG8O4Angle45kx5.out
+
+>>>omega=  3.14e+01, k=  3.14e+01, lambda=  2.00e-01, dx=  1.25e-02, domainSize=  2.00e+00, NLambda=10, ppw=lambda/dx= 16.0, ppw(rule-of-thumb)= 15.3 (old= 17.7) (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[3.51e-09,3.14e-09] (gmres, numIts=11, ave-CR= 0.15 , cpu=9.28e+02(s), np=64)
+
+
+G4 kx=3
+mpiexec -n 64 $cgwh -noplot scat.cmd -g=pillInABoxGridAngle45e4.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=3 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=pillInABoxG4O4Angle45kx3.show -matlab=pillInABoxG4O4Angle45kx3 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks
+
+omega=  1.88e+01, k=  1.88e+01, lambda=  3.33e-01, dx=  2.50e-02, domainSize=  2.00e+00, NLambda=6, ppw=lambda/dx= 13.3, ppw(rule-of-thumb)= 13.4 (epsr=0.01)<<<
+
+solveHelmholtz: max-residual [Re,Im]=[2.82e-09,2.89e-09] (gmres, numIts=10, ave-CR= 0.12 , cpu=2.85e+02(s), np=64)
+
+***************************************************
+****** Thurs Jan 22, 2026
+
+MORE TEST RUNS ON DCS DEFAULT TIME LIMIY IS 6 HOURS
+
+Make a third view option for the gold rinf
 
 
 
+GOLD RING: 
+mpirun -np 8 $plotStuffx plotFlattenedTorusSolution.cmd -show=flattenedTorusG32O4kx16 -name=flattenedTorusG32O4kx16 -res=2048 -emin=0 -emax=6 -field=absurTotal absuiTotal uTotalNorm
+
+mpirun -np 8 $plotStuffx plotFlattenedTorusSolution.cmd -show=flattenedTorusG32O4kx16 -name=flattenedTorusG32O4kx16WireFrame -plotWireFrame=1 -cf=64 -res=2048 -emin=0 -emax=6 -field=absurTotal absuiTotal uTotalNorm
+
+TEST plotStuff parallel ... abs(ur) are funny
+mpirun -np 8 $plotStuffx plotFlattenedTorusSolution.cmd -show=flattenedTorusG4O4kx3.show -view=1 -field=absurTotal absuiTotal uTotalNorm
+
+plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG16O4kx9 -name=flattenedTorusG16O4kx9View2 -view=2 -field=absurTotal absuiTotal uTotalNorm
+plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG16O4kx9 -name=flattenedTorusG16O4kx9View1 -view=1 -field=absurTotal absuiTotal uTotalNorm
+
+plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG16O4kx9 -name=flattenedTorusG16O4kx9WireFrame -plotWireFrame=1 -cf=32 -res=2048 -field=absurTotal absuiTotal uTotalNorm
+
+G32: kx=16 -- 276 M pts  SUBMITTED .. reached time limit, ... reduce tol=1e-8 OK 
+  - COPIED FILES TO cg66 runs/waveHoltz/scattering/flattenedTorus/..
+   G32 total    points: discretization=248858375, interpolation=3785824, all=276669011, unused=24024812
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=512 -nodes=32 -timeLimit=6:00:00 $cgwh -noplot scat.cmd -g=flatTorusGridAlongXe32.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=flattenedTorusG32O4kx16.show -matlab=flattenedTorusG32O4kx16 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks 
+
+tol=1e-8: 
+omega=  1.01e+02, k=  1.01e+02, lambda=  6.25e-02, dx=  3.13e-03, domainSize=  2.00e+00, NLambda=32, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 20.4 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[1.02e-08,1.12e-08] (gmres, numIts=95, ave-CR= 0.84 , cpu=1.92e+04(s), np=512)
+
+             -------------------CgWave Summary----------------- 
+                       Fri Jan 23 11:59:59 2026
+               Grid:   /gpfs/u/home/PCM2/PCM2hnsh/scratch/grids/flatTorusGridAlongXe32.order4.ng3.hdf 
+  ==== final time= 1.00e+00, numberOfStepsTaken =   127361, grids=2, gridpts =2.74896e+08, interp pts=3785824, processors=512, clock=0.00 GHz ==== 
+  ==== memory per-proc: [min=1577.69,ave=1597.9,max=1623.5](Mb), max-recorded=0 (Mb), total=818125 (Mb)
+ applyBoundaryConditions called 254625 times
+   Timings:         (ave-sec/proc:)   seconds    sec/step   sec/step/pt     %     [max-s/proc] [min-s/proc]
+total time..........................  1.92e+04    1.50e-01    5.47e-10   100.000   1.915e+04   1.915e+04
+setup and initialize................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+initialize BCs......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+initial conditions..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+advance.............................  1.91e+04    1.50e-01    5.47e-10    99.929   1.914e+04   1.914e+04
+  advance rectangular grids.........  6.24e+02    4.90e-03    1.78e-11     3.257   1.792e+03   5.229e+02
+  advance curvilinear grids.........  3.39e+02    2.66e-03    9.68e-12     1.770   8.504e+02   8.079e+00
+    implicit solve..................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add dissipation...................  1.17e+03    9.20e-03    3.35e-11     6.121   1.629e+03   6.826e+02
+  boundary conditions...............  7.11e+03    5.59e-02    2.03e-10    37.145   8.808e+03   5.734e+03
+  interpolation.....................  9.04e+03    7.10e-02    2.58e-10    47.184   1.105e+04   6.472e+03
+  update ghost (parallel)...........  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  add forcing.......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+    user known solution.............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  time integral.....................  8.49e+02    6.66e-03    2.42e-11     4.431   1.004e+03   7.160e+02
+  deflation.........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  get errors........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+  plotting..........................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+output results......................  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+waiting (not counted)...............  0.00e+00    0.00e+00    0.00e+00     0.000   0.000e+00   0.000e+00
+--------------------------------------------------------------------------------------------------------
+
+
+tol=1e-10 Ran out of time: 
+-np=512 -nodes=32
+ ##### SAVE KRYLOV RESIDUAL: iteration=117: L2h-residual= 4.67e-09, ratio= 0.97 
+
+
+G16 : 36M points  -- 1 hour 
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=128 -nodes=8 -timeLimit=4:00:00 $cgwh -noplot scat.cmd -g=flatTorusGridAlongXe16.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=9 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=flattenedTorusG16O4kx9.show -matlab=flattenedTorusG16O4kx9 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks 
+
+ >>>omega=  5.65e+01, k=  5.65e+01, lambda=  1.11e-01, dx=  6.25e-03, domainSize=  2.00e+00, NLambda=18, ppw=lambda/dx= 17.8, ppw(rule-of-thumb)= 17.7 (old= 20.5) (epsr=0.01)<<<
+
+solveHelmholtz: max-residual [Re,Im]=[2.95e-09,2.92e-09] (gmres, numIts=55, ave-CR= 0.67 , cpu=3.53e+03(s), np=128)
+
+==== final time= 1.78e+00, numberOfStepsTaken =    66633, grids=2, gridpts =3.59656e+07, interp pts=977272, processors=128, clock=0.00 GHz ==== 
+
+
+G8 O4 kx=5 4.9M pts
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=128 -nodes=8 -timeLimit=2:00:00 $cgwh -noplot scat.cmd -g=flatTorusGridAlongXe8.order4.ng3 -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=flattenedTorusG8O4kx5.show -matlab=flattenedTorusG8O4kx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -go=ks 
+
+plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG8O4kx5 -name=flattenedTorusG8O4kx5View2 -view=2 -field=absurTotal absuiTotal uTotalNorm
+
+DCS 
+omega=  3.14e+01, k=  3.14e+01, lambda=  2.00e-01, dx=  1.25e-02, domainSize=  2.00e+00, NLambda=10, ppw=lambda/dx= 16.0, ppw(rule-of-thumb)= 15.3 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[9.43e-10,9.16e-10] (gmres, numIts=24, ave-CR= 0.41 , cpu=5.15e+02(s), np=128)
+
+cg66:
+omega=  3.14e+01, k=  3.14e+01, lambda=  2.00e-01, dx=  1.25e-02, domainSize=  2.00e+00, NLambda=10, ppw=lambda/dx= 16.0, ppw(rule-of-thumb)= 15.3 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[2.93e-09,2.70e-09] (gmres, numIts=262, ave-CR= 0.92 , cpu=6.35e+03(s), np=32)
+
+
+
+WORKS: 
+G64 kx=24
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=128 -nodes=8 -timeLimit=1:00:00 $cgwh -noplot scat.cmd -g=cice64.order4.ng3 -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=24 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-11 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0  -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -debug=0 -show=diskG64kx24.show -upwind=1 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -solverh=gmres -iluh=1000 -rtolh=1e-10 -atolh=1e-10 -assignInterpNeighbours=interp -restart=4000 -gmresRestartLength=4000  -go=ks
+
+WORKS: 146s
+solveHelmholtz: max-residual [Re,Im]=[1.56e-10,1.57e-10] (gmres, numIts=149, ave-CR= 0.86 , cpu=1.46e+02(s), np=128)
 
 ***************************************************
 ****** Wed Jan 21, 2026

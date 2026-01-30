@@ -3,16 +3,20 @@
 #  plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG8O4kx5 -field=absurTotal absuiTotal uTotalNorm
 #  plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG8O4kx5 -name=flattenedTorusG8O4kx5View2 -view=2 -field=absurTotal absuiTotal uTotalNorm
 #
+#  plotStuff plotFlattenedTorusSolution.cmd -show=flattenedTorusG8O4kx5 -name=flattenedTorusG8O4kx5WireFrame -plotWireFrame=1 -cf=8 -field=absurTotal absuiTotal uTotalNorm
+#
 $show="flattenedTorusG4O4kx3"; $solution="-1"; $name=""; 
 @field = (); 
 $emin=0; $emax=-1; $numFreq=1; $clines=0; 
 $tSave=1; $numPerTime=2; $numToSave=5; # save solution at these time intervals
 $res=1024; # hardcopy resolution
 $view=1;   # default view 
+$plotWireFrame=0; $cf=4; # plot wire frame grid lines at a coarsen factor of $cf
 # get command line arguments
 GetOptions( "show=s"=>\$show, "name=s"=>\$name, "solution=i"=>\$solution,"tSave=f"=>\$tSave,\
       "numPerTime=i"=>\$numPerTime, "numToSave=i"=>\$numToSave,"numFreq=i"=>\$numFreq,"clines=i"=>\$clines,\
-      "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"field=s{1,}"=>\@field,"res=i"=>\$res,"view=i"=>\$view );
+      "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"field=s{1,}"=>\@field,"res=i"=>\$res,"view=i"=>\$view,\
+      "plotWireFrame=i"=>\$plotWireFrame, "cf=i"=>\$cf );
 #
 if( $name eq "" ){ $name=$show; }
 if( $field[0] eq "" ){ @field=( "ur", "ui", "urTotal", "uiTotal" ); }
@@ -27,9 +31,9 @@ derived types
     urTotal 
     uiTotal 
   done
-  specify velocity components
-    2 3 0
-  speed  
+#  specify velocity components
+#    2 3 0
+#  speed  
   # 2-norm of [urTotal,uiTotal]
   twoNorm
    uTotalNorm
@@ -41,7 +45,13 @@ grid
   toggle grid 0 0
   grid colour 1 BRASS
   plot block boundaries 0
-  plot grid lines 0
+  if( $plotWireFrame eq 1 ){ $cmd="plot shaded surfaces (3D) 0\n coarsening factor $cf"; }else{ $cmd="plot grid lines 0"; }
+  $cmd 
+#  plot grid lines 0
+#
+# plot grid lines 1
+#  plot shaded surfaces (3D) 0
+#  coarsening factor 4
  exit this menu
 #
 plot:$field[0]
@@ -54,8 +64,6 @@ contour
   # coarsening factor 1 (<0 : adaptive)
   # vertical scale factor 0.
   if( $emax > $emin ){ $cmd="min max $emin $emax"; }else{ $cmd="#"; }
-  # $cmd
-  # plot:$field[1]
   $cmd
   plot:$field[0]
 exit

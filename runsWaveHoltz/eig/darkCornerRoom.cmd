@@ -50,6 +50,7 @@ $prefix="darkCornerRoomGrid";
 $order=2; $factor=1; $interp="i"; # default values
 $orderOfAccuracy = "second order"; $ng=2; $interpType = "implicit for all grids";
 $name=""; $xa=0; $xb=8.5; $ya=-2.; $yb=2.; $ml=0; 
+$numGhost=-1;  # if this value is set, then use this number of ghost points
 #
 $w=.5; 
 $a1=2; $b1=1.;              # ellipse 1 semi-axes
@@ -61,7 +62,7 @@ $x2=$a1; $y2=0;     # centre of ellipse 2
 # 
 # get command line arguments
 GetOptions( "order=i"=>\$order,"factor=f"=> \$factor,"xa=f"=> \$xa,"xb=f"=> \$xb,"ya=f"=> \$ya,"yb=f"=> \$yb,\
-            "interp=s"=> \$interp,"ml=i"=>\$ml,"name=s"=> \$name);
+            "interp=s"=> \$interp,"ml=i"=>\$ml,"numGhost=i"=>\$numGhost,"name=s"=> \$name);
 # 
 if( $order eq 4 ){ $orderOfAccuracy="fourth order"; $ng=3; }\
 elsif( $order eq 6 ){ $orderOfAccuracy="sixth order"; $ng=4; }\
@@ -69,6 +70,8 @@ elsif( $order eq 8 ){ $orderOfAccuracy="eighth order"; $ng=6; }
 if( $interp eq "e" ){ $interpType = "explicit for all grids"; }
 # 
 $suffix = ".order$order"; 
+if( $numGhost ne -1 ){ $ng = $numGhost; } # overide number of ghost
+if( $numGhost ne -1 ){ $suffix .= ".ng$numGhost"; } 
 if( $ml ne 0 ){ $suffix .= ".ml$ml"; }
 if( $name eq "" ){$name = $prefix . "$interp$factor" . $suffix . ".hdf";}
 # 
