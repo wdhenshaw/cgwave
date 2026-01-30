@@ -1,6 +1,7 @@
 #
 # plotStuff plotPillBoxGrid.cmd -grid=/home/henshw/grids/pillInABoxGridAngle90e4.order2.hdf -name=pillBoxGrid4
 # plotStuff plotPillBoxGrid.cmd -grid=/home/henshw/grids/flatTorusGridALongXe4.order2.hdf -name=flatTorusG4
+# plotStuff plotPillBoxGrid.cmd -grid=/home/henshw/grids/pillInABoxGridAngle45e4.order2.hdf -name=pillBoxG4Angle45
 #
 $grid=""; $name=""; 
 GetOptions( "grid=s"=>\$grid,"name=s"=>\$name );

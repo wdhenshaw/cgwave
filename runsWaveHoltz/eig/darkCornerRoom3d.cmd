@@ -44,6 +44,7 @@ $prefix="darkCornerRoom3dGrid";
 $order=2; $factor=1; $interp="i"; # default values
 $orderOfAccuracy = "second order"; $ng=2; $interpType = "implicit for all grids";
 $name=""; $xa=0; $xb=8.5; $ya=-2.; $yb=2.; $ml=0; 
+$numGhost=-1;  # if this value is set, then use this number of ghost points
 #
 $w=.5; 
 $a1=2; $b1=1.;              # ellipse 1 semi-axes
@@ -53,16 +54,21 @@ $h=$b2 - sqrt($b2*$b2-$a2*$a2); # ellipse 1 is centered at the foci of ellipse 2
 $x1=0; $y1=$b2-$h;  # center of ellipse 1
 $x2=$a1; $y2=0;     # centre of ellipse 2
 # 
+$angle=0.; $rotationAxis=2; $xShift=0.; $yShift=0.; $zShift=0.; 
+#
 # get command line arguments
 GetOptions( "order=i"=>\$order,"factor=f"=> \$factor,"xa=f"=> \$xa,"xb=f"=> \$xb,"ya=f"=> \$ya,"yb=f"=> \$yb,\
-            "interp=s"=> \$interp,"ml=i"=>\$ml,"name=s"=> \$name);
+            "interp=s"=> \$interp,"ml=i"=>\$ml,"numGhost=i"=>\$numGhost,"name=s"=> \$name);
 # 
 if( $order eq 4 ){ $orderOfAccuracy="fourth order"; $ng=3; }\
 elsif( $order eq 6 ){ $orderOfAccuracy="sixth order"; $ng=4; }\
 elsif( $order eq 8 ){ $orderOfAccuracy="eighth order"; $ng=6; }
 if( $interp eq "e" ){ $interpType = "explicit for all grids"; }
 # 
-$suffix = ".order$order"; 
+$suffix = ".order$order";
+if( $numGhost ne -1 ){ $ng = $numGhost; }# overide number of ghost
+if( $numGhost ne -1 ){ $suffix .= ".ng$numGhost"; }  
+$numGhost=$ng; # for convert to nurbs
 if( $ml ne 0 ){ $suffix .= ".ml$ml"; }
 if( $name eq "" ){$name = $prefix . "$interp$factor" . $suffix . ".hdf";}
 # 
@@ -415,6 +421,35 @@ exit
     mappingName
       outerEllipsoid
     exit
+# Define a subroutine to convert a Mapping to a Nurbs Mapping
+sub convertToNurbs\
+{ local($old,$new,$angle,$rotationAxis,$xShift,$yShift,$zShift)=@_; \
+  $cmds = "nurbs \n" . \
+   "interpolate from mapping with options\n" . \
+   " $old \n" . \
+   " parameterize by index (uniform)\n" . \
+   " number of ghost points to include\n $numGhost\n" . \
+   " choose degree\n" . \
+   "  3 \n" . \
+   " # number of points to interpolate\n" . \
+   " #  11 21 5 \n" . \
+   "done\n" . \
+   "rotate \n" . \
+   " $angle $rotationAxis \n" . \
+   " 0.5 0. 0.\n" . \
+   "shift\n" . \
+   " $xShift $yShift $zShift\n" . \
+   "mappingName\n" . \
+   " $new\n" . \
+   "exit"; \
+}
+#
+convertToNurbs(polarVolumePatch,polarVolumePatchNurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift);
+$cmds    
+convertToNurbs(outerEllipsoid,outerEllipsoidNurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift);
+$cmds    
+convertToNurbs(innerEllipsoid1,innerEllipsoid1Nurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift);
+$cmds    
 #
 #  background grid 
   box
@@ -442,9 +477,9 @@ exit
 #
 generate an overlapping grid
   backGround
-  innerEllipsoid1
-  polarVolumePatch
-  outerEllipsoid
+  innerEllipsoid1Nurbs
+  polarVolumePatchNurbs
+  outerEllipsoidNurbs
   topCyl
   done choosing mappings
   change parameters

@@ -42,11 +42,12 @@ $useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsFo
 $solverh="yale"; $maxith=2000; $rtolh=1.e-10; $atolh=1.e-10; $restart=50; $iluh=50; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
 $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; 
+$saveResidual=0; # 1 = save residual to the show file
 #
 GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,\
             "amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz, "gmresRestartLength=i"=>\$gmresRestartLength,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,"debugOges=i"=>\$debugOges,\
-            "solver=s"=>\$solver,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,\
+            "solver=s"=>\$solver,"maxIterations=i"=>\$maxIterations,"matlab=s"=>\$matlab,"saveResidual=i"=>\$saveResidual,\
             "go=s"=>\$go,"forcing=s"=>\$forcing,"bc=s"=>\$bc,"ts=s"=>\$ts,"orderInTime=i"=>\$orderInTime,\
             "dtMax=f"=>\$dtMax,"adjustOmega=i"=>\$adjustOmega,"amp=f{1,}"=>\@amp,"show=s"=>\$show,"debug=i"=>\$debug,\
             "bcApproach=s"=>\$bcApproach,"upwind=i"=>\$upwind,"beta2=f"=>\$beta2,"beta4=f"=>\$beta4,"beta6=f"=>\$beta6,"implicitUpwind=i"=>\$implicitUpwind,\
@@ -211,6 +212,7 @@ done
 exit
 # --- end cgWave setup  ---
 show file $show
+save residual to show file $saveResidual
 contour
 exit
 if( $solver eq "fixedPoint" ){ $cmd="compute with fixed-point"; }elsif( $solver eq "krylov" ){ $cmd="compute with petsc"; }else{ $cmd="#" }; 
