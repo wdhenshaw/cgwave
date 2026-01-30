@@ -3487,16 +3487,17 @@ Real CgWave::getRayleighQuotient( realCompositeGridFunction & v, int component /
                     Iv[axis] = Range(iab[0],iab[1]);
                 }
             bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,I1,I2,I3);
-
-            FOR_3D(i1,i2,i3,I1,I2,I3)
+            if( ok ) 
             {
-                if( maskLocal(i1,i2,i3) > 0 )
-                {    
-                    vDotLap += vLocal(i1,i2,i3,component)*lapLocal(i1,i2,i3);
-                    vDotv   += vLocal(i1,i2,i3,component)*vLocal(i1,i2,i3,component);
+                FOR_3D(i1,i2,i3,I1,I2,I3)
+                {
+                    if( maskLocal(i1,i2,i3) > 0 )
+                    {    
+                        vDotLap += vLocal(i1,i2,i3,component)*lapLocal(i1,i2,i3);
+                        vDotv   += vLocal(i1,i2,i3,component)*vLocal(i1,i2,i3,component);
+                    }
                 }
             }
-
         }
     // if( true )
     // {

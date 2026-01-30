@@ -769,11 +769,18 @@ takeFirstStepHelmholtz( int cur, real t )
             OV_GET_SERIAL_ARRAY(Real,uc[grid],ucLocal);
             OV_GET_SERIAL_ARRAY(Real,f[grid],fLocal);
 
+            if( computeEigenmodes )
+                fLocal=0.; // *wdh* Jan 29, 2026
+
             RealDistributedArray & vg = filterTimeDerivative ? v[grid] : uc[grid];
             OV_GET_SERIAL_ARRAY(Real,vg,vLocal);
 
             getIndex(mg.gridIndexRange(),I1,I2,I3);
             bool ok=ParallelUtility::getLocalArrayBounds(un[grid],unLocal,I1,I2,I3);
+
+            if( false )
+                ::display(f[grid],"f for take first step","%9.2e ");
+
             if( ok )
             {
             
@@ -845,7 +852,7 @@ takeFirstStepHelmholtz( int cur, real t )
 
                     if( numberOfFrequencies==1 )
                     {
-                        if( true || debug>2 )
+                        if( debug>2 )
                             printF("~~~~~~~~~~~~~~ Take EXPLICIT first step assuming D0t U  = 0 : omega=%14.6e\n",omega);
                         unLocal(I1,I2,I3)  = ucLocal(I1,I2,I3) + (.5*dt*dt*c*c)*lap(I1,I2,I3) + (.5*dt*dt *cos(omega*t)*fSign)*fLocal(I1,I2,I3);
                     }
@@ -891,7 +898,7 @@ takeFirstStepHelmholtz( int cur, real t )
     }
     
     if( false )
-        u[next].display(sPrintF("u[next] after first step, t=%9.3e",t+dt),"%9.2e ");
+        u[next].display(sPrintF("takeFirstStepHelmholtz: u[next] after first step, t=%9.3e",t+dt),"%9.2e ");
 
 
     return 0;

@@ -160,6 +160,7 @@ int CgWaveHoltz::outputEigenTable()
 
     FILE *output = fopen((const char*)eigenWaveLatexTableName,"w" );     // Save some tex output here 
 
+    const int & np                           = cgWave.dbase.get<int>("np");
     const int & orderOfAccuracy              = cgWave.dbase.get<int>("orderOfAccuracy");
     const int & numberOfRitzVectors          = cgWave.dbase.get<int>("numberOfRitzVectors");
     const int & initialVectorsForEigenSolver = cgWave.dbase.get<int>("initialVectorsForEigenSolver");
@@ -227,7 +228,7 @@ int CgWaveHoltz::outputEigenTable()
     printF("\n");
     printF(" -----------------------------------------------------------------------------\n");
     printF(" ------------------------- EigenWave SUMMARY ---------------------------------\n");
-    printF(" omega=%12.4e, orderOfAccuracy=%d, grid=%s\n",omega,orderOfAccuracy,(const char*)gridNameNoPrefix);
+    printF(" omega=%12.4e, orderOfAccuracy=%d, grid=%s, np=%d\n",omega,orderOfAccuracy,(const char*)gridNameNoPrefix,np);
     aString eigenSolverName = (eigenSolver==CgWave::defaultEigenSolver           ? "KrylovSchur" :
                                                           eigenSolver==CgWave::KrylovSchurEigenSolver       ? "KrylovSchur" :
                                                           eigenSolver==CgWave::ArnoldiEigenSolver           ? "Arnoldi" : 
@@ -279,7 +280,7 @@ int CgWaveHoltz::outputEigenTable()
     }
     const Real numTimeStepsPerEig = numberOfStepsTaken/max(Real(numEigenVectors),1.);
 
-    printF(" tol=%9.2e, number of wave-solves (mat-vecs) = %d, cpu=%9.2e(s)\n",tol,numberOfMatrixVectorMultiplications,cpuSolveEigenWave);
+    printF(" tol=%9.2e, number of wave-solves (mat-vecs) = %d, cpu=%9.2e(s), np=%d\n",tol,numberOfMatrixVectorMultiplications,cpuSolveEigenWave,np);
     const Real numWaveSolvesPerEig = numberOfMatrixVectorMultiplications/max(Real(numEigenVectors),1.);
     printF(" num eigs requested=%d, number eigs converged =%d, numArnoldiVectors=%d, wave-solves/eig=%5.1f, timeSteps/eig=%5.1f\n",
         numEigsToCompute,numEigenVectors,numArnoldiVectors,numWaveSolvesPerEig,numTimeStepsPerEig);

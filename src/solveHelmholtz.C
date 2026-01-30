@@ -750,17 +750,17 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             {
                 if( numberOfFrequencies==1 )
                 {
-                    printF("solveHelmholtz: max-res=%9.3e (%s, numIts=%d, ave-CR=%5.2f %s, ACR=%5.2f)\n",
+                    printF("solveHelmholtz: max-res=%9.3e (%s, numIts=%d, ave-CR=%5.2f %s, ACR=%5.2f, cpu=%8.2e(s), np=%d)\n",
                         maxRes,(const char*)schemeName,numberOfIterations,
-                        convergenceRate,(const char*)label,waveHoltzAsymptoticConvergenceRate);
+                        convergenceRate,(const char*)label,waveHoltzAsymptoticConvergenceRate,cpuWaveHoltz,np);
           // printF("solveHelmholtz: max-res=%9.3e (%s, numIts=%d, ave-CR=%5.2f %s, ACR=%5.2f)\n",
           //   maxRes,(useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : (const char*)krylovType)),numberOfIterations,
           //   convergenceRate,(const char*)label,waveHoltzAsymptoticConvergenceRate);          
                 }
 
                 else
-                    printF("solveHelmholtz: max-res=%9.3e (all freq, %s, numIts=%d, ave-CR=%5.2f %s)\n",
-                          maxRes,(const char*)schemeName,numberOfIterations,convergenceRate,(const char*)label );
+                    printF("solveHelmholtz: max-res=%9.3e (all freq, %s, numIts=%d, ave-CR=%5.2f %s, cpu=%8.2e(s), np=%d)\n",
+                          maxRes,(const char*)schemeName,numberOfIterations,convergenceRate,(const char*)label,cpuWaveHoltz,np );
             }
             else
             {
