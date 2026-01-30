@@ -572,7 +572,8 @@ takeFirstStepHelmholtz( int cur, real t )
     {
         usePeriodicFirstStep=false;
         fSign=0; // there is no forcing when computing eigenmodes.
-        printF("+++++++++++++ takeFirstStepHelmholtz: do NOT use periodic first step ++++++++++++\n");
+        if( debug & 1 )
+            printF("+++++++++++++ takeFirstStepHelmholtz: do NOT use periodic first step ++++++++++++\n");
     }
 
 
@@ -584,7 +585,8 @@ takeFirstStepHelmholtz( int cur, real t )
     if( timeSteppingMethod == implicitTimeStepping && takeImplicitFirstStep )
     {
         usePeriodicFirstStep=false; // added April 29, 2025 -- we can do explicit/implicit first steps now
-        printF("+++++++++++++ takeFirstStepHelmholtz: TAKE IMPLICIT FIRST STEP ++++++++++++\n");
+        if( debug & 1 )
+            printF("+++++++++++++ takeFirstStepHelmholtz: TAKE IMPLICIT FIRST STEP ++++++++++++\n");
     }
     else if( filterTimeDerivative ) 
     {
@@ -604,7 +606,7 @@ takeFirstStepHelmholtz( int cur, real t )
 
     }
 
-    if( usePeriodicFirstStep )
+    if( usePeriodicFirstStep && debug & 1 )
       printF("+++++++++++++ takeFirstStepHelmholtz: USE periodic first step ++++++++++++\n");
 
     const int & numberOfTimeLevelsStored = dbase.get<int>("numberOfTimeLevelsStored");    
@@ -885,7 +887,7 @@ takeFirstStepHelmholtz( int cur, real t )
     if( !usePeriodicFirstStep && 
             timeSteppingMethod == explicitTimeStepping ) // May 2, 2025 added after implicit first step added for complex case
     {
-        if( true )
+        if( debug & 2 )
             printF("~~~~~~~~~~~~~~ Apply boundary conditions after the EXPLICIT first step ~~~~~~~~~~~~~\n");
         bool applyExplicitBoundaryConditions=true;
         applyBoundaryConditions( u[next],u[cur], t+dt, applyExplicitBoundaryConditions );

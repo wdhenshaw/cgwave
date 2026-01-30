@@ -827,7 +827,10 @@ int CgWaveHoltz::smoothEigenSolverInitialCondition()
                 }
             }
         }
+
+    // **FIX ME: -- should be able to call regular applyBoundaryConditions:
         cgWave.applyEigenFunctionBoundaryConditions( v );
+        
     }
 
 

@@ -1601,7 +1601,8 @@ solvePETSc(int argc,char **args)
     ierr = KSPGetPC( ksp, &pc);    CHKERRQ(ierr);
     PCType  pcTypeName;
     PCGetType( pc, &pcTypeName );
-    printf(" @@@@ INFO from PETSc: kspType=[%s], pcType=[%s]\n",kspTypeName,pcTypeName);
+
+    printF(" @@@@ INFO from PETSc: kspType=[%s], pcType=[%s]\n",kspTypeName,pcTypeName);
 
     /*
           Free work space.  All PETSc objects should be destroyed when they
