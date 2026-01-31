@@ -1,17 +1,17 @@
 #
 # 
-#   plotStuff plotFlatTorus.cmd -show=flatTorusG8Freq20Ev256 -cf=6 -field=abs -sol=2 
+#   plotStuff plotFlatTorus.cmd -show=flatTorusG8Freq20Ev256 -cf=6 -field=abs -res=2048 -sol=2 273 279
 #
 #  NOTE: if $cf >0 then plot a wire frame, other-wise plot a brass surface 
 #
-$show="pipeG2O2ImpEig.show"; $name=""; $field="phi"; $cf=-1; 
+$show="pipeG2O2ImpEig.show"; $name=""; $field="phi"; $cf=-1; $res=1024; 
 $emin=0; $emax=-1; $numFreq=1; $clines=1; 
 $cs=0; 
 $numToSave=1; # save this many components
 @sol= ();  # this must be null for GetOptions to work, defaults are given below
 # get command line arguments
 GetOptions( "show=s"=>\$show, "name=s"=>\$name,"cs=f"=>\$cs,"clines=i"=>\$clines,\
-      "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"cf=i"=>\$cf,"sol=i{1,}"=>\@sol );
+      "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"cf=i"=>\$cf,"res=i"=>\$res,"sol=i{1,}"=>\@sol );
 #
 if( $name eq "" ){ $name=$show; }
 #
@@ -20,7 +20,9 @@ $show
 if( $field eq "abs" ){ $cmd="derived types\n absoluteValue\n phi  (off)\n done\n exit\n plot:absphi"; }else{ $cmd="#" }
 $cmd
 DISPLAY AXES:0 0
-solution $sol[0]
+solution:$sol[0]
+# printf("sol[0]=$sol[0]\n");
+# pause
 #
 contour 
   contour lines 0
@@ -36,6 +38,8 @@ exit
 #
 set view:0 -0.121224 0 0 0.82236 0.766044 0.219846 -0.604023 0 0.939693 0.34202 0.642788 -0.262003 0.719846
 pause
+if( $res ne 1024 ){ $cmd="hardcopy vertical resolution:0 $res\n hardcopy horizontal resolution:0 $res\n line width scale factor:0 3"; }else{ $cmd="#"; }
+$cmd
 # 
 $cmd="#"; 
 for( $i=0; $i<=$#sol; $i++ ){ $cmd .= "\n solution:$sol[$i]\n \$plotName = $name . \"$field$sol[$i].ps\"; \n hardcopy file name:0 \$plotName\n hardcopy save:0"; }

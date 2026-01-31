@@ -1,16 +1,16 @@
 #
-# usage: ogen [noplot] darkCornerRoom3d -factor=<num> -order=[2/4/6/8] -interp=[e/i]
+# usage: ogen [noplot] darkCornerHalfRoom3d -factor=<num> -order=[2/4/6/8] -interp=[e/i]
 # 
 # examples:
-#     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=1
-#     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=2 
-#     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=2 -ml=2
-#     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=4
-#     ogen -noplot darkCornerRoom3d -interp=e -order=2 -factor=6
+#     ogen -noplot darkCornerHalfRoom3d -interp=e -order=2 -factor=1
+#     ogen -noplot darkCornerHalfRoom3d -interp=e -order=2 -factor=2 
+#     ogen -noplot darkCornerHalfRoom3d -interp=e -order=2 -factor=2 -ml=2
+#     ogen -noplot darkCornerHalfRoom3d -interp=e -order=2 -factor=4
+#     ogen -noplot darkCornerHalfRoom3d -interp=e -order=2 -factor=6
 # 
-#     ogen -noplot darkCornerRoom3d -interp=e -order=4 -factor=1
-#     ogen -noplot darkCornerRoom3d -interp=e -order=4 -factor=2
-#     ogen -noplot darkCornerRoom3d -interp=e -order=4 -factor=4
+#     ogen -noplot darkCornerHalfRoom3d -interp=e -order=4 -factor=1
+#     ogen -noplot darkCornerHalfRoom3d -interp=e -order=4 -factor=2
+#     ogen -noplot darkCornerHalfRoom3d -interp=e -order=4 -factor=4
 # 
 #  ==============================================================
 #   Geometry for un-illumination problem (from Daniel Appelo)
@@ -28,19 +28,11 @@
 #       |                               |
 #       | bc8          O                |bc6
 #       |                               |
-#       |                               |
-#       |                               |
-#       |             bc7               |
-#       |         /-----------\         |
-#       |        |             |        |
-#       |        +-+         +-+        |
-#        \         |bc4   bc3|         / 
-#         ---------+         +---------
-#
+#       +-------------------------------+
 #
 # ==================================================================
 #
-$prefix="darkCornerRoom3dGrid"; 
+$prefix="darkCornerHalfRoom3dGrid"; 
 $order=2; $factor=1; $interp="i"; # default values
 $orderOfAccuracy = "second order"; $ng=2; $interpType = "implicit for all grids";
 $name=""; $xa=0; $xb=8.5; $ya=-2.; $yb=2.; $ml=0; 
@@ -387,22 +379,21 @@ $direction="backward";
 $bc    = "3 2 6 0 0 0";
 $share = "3 2 0 0 0 0"; 
 include $ENV{CGWAVE}/runsWaveHoltz/eig/buildVolumeGrid.h
-# # Keep top half 
-# reparameterize
-#   restrict parameter space
-#   exit
-#   set corners
-#     .5 1. 0. 1. 0 .1
-#   mappingName
-#    outerEllipseTop
-# exit
+# Keep top half 
+reparameterize
+  restrict parameter space
+  exit
+  set corners
+    .5 1. 0. 1. 0 .1
+  mappingName
+   outerEllipseTop
+exit
 #
 #  Outer body of revolution
 #
  body of revolution
     revolve which mapping?
-    # outerEllipseTop
-    outerEllipse
+    outerEllipseTop
     tangent of line to revolve about
     0 1 0
     choose a point on the line to revolve about
@@ -424,7 +415,7 @@ include $ENV{CGWAVE}/runsWaveHoltz/eig/buildVolumeGrid.h
     exit
 # Define a subroutine to convert a Mapping to a Nurbs Mapping
 sub convertToNurbs\
-{ local($old,$new,$angle,$rotationAxis,$xShift,$yShift,$zShift,$xScale,$yScale,$zScale)=@_; \
+{ local($old,$new,$angle,$rotationAxis,$xShift,$yShift,$zShift)=@_; \
   $cmds = "nurbs \n" . \
    "interpolate from mapping with options\n" . \
    " $old \n" . \
@@ -440,36 +431,23 @@ sub convertToNurbs\
    " 0.5 0. 0.\n" . \
    "shift\n" . \
    " $xShift $yShift $zShift\n" . \
-   "scale \n" . \
-   " $xScale $yScale $zScale\n" . \
    "mappingName\n" . \
    " $new\n" . \
    "exit"; \
 }
 #
-$xScale=1; $yScale=1; $zScale=1;
-convertToNurbs(polarVolumePatch,polarVolumePatch1Nurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift,$xScale,$yScale,$zScale);
+convertToNurbs(polarVolumePatch,polarVolumePatchNurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift);
 $cmds    
-convertToNurbs(outerEllipsoid,outerEllipsoidNurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift,$xScale,$yScale,$zScale);
+convertToNurbs(outerEllipsoid,outerEllipsoidNurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift);
 $cmds    
-convertToNurbs(innerEllipsoid1,innerEllipsoid1Nurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift,$xScale,$yScale,$zScale);
-$cmds   
-#
-# -- flip to bottom --
-$xScale=1; $yScale=-1;
-$xShift=0; $yShift=0; $zShift=0; 
-convertToNurbs(innerEllipsoid1,innerEllipsoid2Nurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift,$xScale,$yScale,$zScale);
-$cmds
-convertToNurbs(polarVolumePatch,polarVolumePatch2Nurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift,$xScale,$yScale,$zScale);
-$cmds
-convertToNurbs(topCyl,botCyl,$angle,$rotationAxis,$xShift,$yShift,$zShift,$xScale,$yScale,$zScale);
-$cmds 
+convertToNurbs(innerEllipsoid1,innerEllipsoid1Nurbs,$angle,$rotationAxis,$xShift,$yShift,$zShift);
+$cmds    
 #
 #  background grid 
   box
     # $xa=-3; $xb=3; $ya=3; $yb=$b2; $za=-3; $zb=3; 
     $xa=-($x2+$a2); $xb=-$xa; 
-    $ya=-$b2; $yb=$b2; 
+    $ya=0; $yb=$b2; 
     $za=$xa; $zb=$xb; 
     set corners
       $xa $xb $ya $yb $za $zb
@@ -480,12 +458,10 @@ $cmds
     $nx $ny  $nz  
     boundary conditions
       # 9 10 5 6 11 12
-      # 0 0 3 0 0 0 
-      0 0 0 0 0 0 
+      0 0 3 0 0 0 
     share
       #  0 0 0 6 0 0
-      # 0 0 3 0 0 0
-      0 0 0 0 0 0
+      0 0 3 0 0 0
     mappingName
       backGround
     exit
@@ -494,14 +470,9 @@ exit
 generate an overlapping grid
   backGround
   innerEllipsoid1Nurbs
-  polarVolumePatch1Nurbs
+  polarVolumePatchNurbs
   outerEllipsoidNurbs
   topCyl
-  #
-  innerEllipsoid2Nurbs
-  polarVolumePatch2Nurbs
-  botCyl
-  #
   done choosing mappings
   change parameters
     # choose implicit or explicit interpolation
@@ -520,7 +491,7 @@ exit
 #
 save an overlapping grid
 $name
-darkCornerRoom3d
+darkCornerHalfRoom3d
 exit    
   
 open graphics
@@ -719,5 +690,5 @@ exit
 #
 save an overlapping grid
 $name
-darkCornerRoom3d
+darkCornerHalfRoom3d
 exit    

@@ -6,6 +6,19 @@ set testHighDerivatives = /home/henshw/Dropbox/research/cgwave/bin/testHighDeriv
 
 
 *******************************************
+********* Fri Jan 30, 2026
+
+CHECK NEUMANN ORDER 4
+
+Looks OK: 
+$cgWave -noplot tz.cmd -g=square16.order4.hdf -tz=poly -degreeInTime=4 -degreeInSpace=4 -tf=.5 -tp=0.1 -ts=explicit -cfl=.95 -dtMax=10 -orderInTime=4 -debug=1 -upwind=0 -bc=d -bc3=n -go=go
+
+CgWave::getErrors: t=5.000e-01, freq=  0, omega=  30.100, maxRelErr=4.885e-15, l2RelErr=1.898e-16
+cgWave:FD44 t=5.000e-01 (15 steps) dt=3.333e-02 maxErr= 4.88e-15, ||u||= 6.15e+00, cpu= 1.69e-02(s)
+
+
+
+*******************************************
 ********* Thursday May 29, 2025 
 
 

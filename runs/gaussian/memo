@@ -1,5 +1,14 @@
 
 
+*******************************************
+********* Fri Jan 30, 2026
+
+CHECK NEUMANN ORDER 4
+
+Order=4 Neumann : Blows up!! **FIX ME**
+cgWave gaussian.cmd -g=square128.order4.ng3 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.2 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=d -bc3=n -debug=1 -go=og
+
+
 ***************************************************
 ****** Wed Jan 14, 2026
 

@@ -26,6 +26,8 @@ static bool useMatrixUtilities=true; // true = use new matrix utilities (needed 
 
 static int iteration=0;
 
+// static bool applyBoundaryConditions=false;
+
 static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver 
   
 
@@ -226,9 +228,11 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
         assert( i==iEnd );
     }
 
-  // *** APPLY BOUNDARY CONDITIONS to v  **************** IS THIS NEEDED ?? Doesn't advance do this ???
-    Real t=0.; // should not matter for eigenvalue problem
-    cgWave.applyEigenFunctionBoundaryConditions( v );
+    if( false ) // do NOT applyBoundaryConditions -- Jan 30, 206
+    {
+        Real t=0.; // should not matter for eigenvalue problem
+        cgWave.applyEigenFunctionBoundaryConditions( v );
+    }
 
   // Is this needed? 
   // for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )

@@ -1,4 +1,58 @@
 #
+#   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2Freq3p5Ev128 -field=abs -sol=130 135 137 
+#   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O4Freq3Ev128 -field=abs -sol=130 135 137 
+#
+$show="darkCornerRoom3dG1O2Freq3p5Ev128"; $name=""; $field="phi"; $cf=2; 
+$emin=0; $emax=-1; $numFreq=1; $clines=0; 
+$cs=0; 
+$numToSave=1; # save this many components
+@sol= ();  # this must be null for GetOptions to work, defaults are given below
+# get command line arguments
+GetOptions( "show=s"=>\$show, "name=s"=>\$name,"cs=f"=>\$cs,"clines=i"=>\$clines,\
+      "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"cf=i"=>\$cf,"sol=i{1,}"=>\@sol );
+#
+if( $name eq "" ){ $name=$show;}
+#
+$show
+#
+if( $field eq "abs" ){ $cmd="derived types\n absoluteValue\n phi  (off)\n done\n exit\n plot:absphi"; }else{ $cmd="#" }
+$cmd
+#
+DISPLAY AXES:0 0
+solution:$sol[0]
+#
+contour
+  delete contour plane 1
+  # # Add plane near "center-line" (bottom)
+  # add contour plane  0.00000e+00  1.00000e+00  0.00000e+00  .5  .01  0 
+  # # contour plane near middle
+  # add contour plane  0.00000e+00  1.00000e+00  0.00000e+00 0 2.5 0.
+  contour lines $clines
+  plot the grid
+    plot block boundaries 0
+    toggle grid 3 0
+    plot grid lines 0
+    toggle boundary 1 1 4 0
+    toggle boundary 0 1 0 0
+    toggle boundary 1 1 7 0
+    grid colour 1 BRASS
+    grid colour 2 BRASS
+    grid colour 4 BRASS
+    grid colour 5 BRASS
+    grid colour 6 BRASS
+    grid colour 7 BRASS
+  exit
+  set view:0 -0.085374 -0.0213348 0 1.23033 1 0 0 0 1 0 0 0 1
+exit
+pause
+# 
+$cmd="#"; 
+for( $i=0; $i<=$#sol; $i++ ){ $cmd .= "\n solution:$sol[$i]\n \$plotName = $name . \"$field$sol[$i].ps\"; \n hardcopy file name:0 \$plotName\n hardcopy save:0"; }
+$cmd
+
+
+
+# ----- OLD: TOP HALF 
 # 
 #   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2EigsFreq8.show -name=darkCornerRoom3dG1O2EigsFreq8 -sol=2
 #   plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG1O2Eigs.show -name=darkCornerRoom3dG1O2Eigs -sol=144 149
@@ -47,6 +101,7 @@ pause
 $cmd="#"; 
 for( $i=0; $i<=$#sol; $i++ ){ $cmd .= "\n solution:$sol[$i]\n \$plotName = $name . \"$field$sol[$i].ps\"; \n hardcopy file name:0 \$plotName\n hardcopy save:0"; }
 $cmd
+
 
   pick to delete contour planes
   # pipe: 
