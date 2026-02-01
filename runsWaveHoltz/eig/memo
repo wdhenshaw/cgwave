@@ -10,16 +10,83 @@
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+*************************************
+****** Sun Feb 1, 2026
+
+
+>>> CGPC: 
+G4 O4 Np=12 freq=9 11M pts 
+setsid mpiexec -n 32 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride4.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=2000 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=9 -numEigs=256 -eigenSolver=default -show=darkCornerRoom3dG2O4Freq9Ev256uw.show -matlab=darkCornerRoom3dG2O4Freq9Ev256 -upwind=1 -go=ks > darkCornerRoom3dG2O4Freq9Ev256uw.out
+
+
+
+cgpc run: 
+plotStuff plotDarkCornerRoom3d.cmd -show=darkCornerRoom3dG2O4Freq5Ev256uw -name=darkCornerRoom3dG2O4Freq5Ev256 -field=abs -sol=290 291 293 294 299 302 
+
+from cgpc: 
+scp darkCornerRoom3dG2O4Freq5Ev256abs*.pdf henshw@cg66.math.rpi.edu:/home/henshw/Dropbox/parallelWaveHoltz/fig
+
+lambda
+307 5.1872
+304
+302 5.1862 **
+299 5.1785 **
+296 5.1778
+294 **
+293 **
+291 **
+290 
+
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  5.0000e+00, orderOfAccuracy=4, grid=darkCornerRoom3dGride2, np=32
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.95, dt=2.331e-03, minStepsPerPeriod=10, Np=6, numberOfStepsPerSolve=3234, 
+  totalTimeStepsStaken=3321318, aveItsPerImplicitSolve=  0.0
+ tol= 1.00e-10, number of wave-solves (mat-vecs) = 1027, cpu= 7.80e+04(s), np=32
+ num eigs requested=256, number eigs converged =307, numArnoldiVectors=513, wave-solves/eig=  3.3, timeSteps/eig=10818.6
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 4.8138082691e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.91e-04
+ i=1: lamRQ = 4.8138085414e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.83e-04
+ i=2: lamRQ = 4.8155405987e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.63e-04
+ i=3: lamRQ = 4.8155417101e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.92e-04
+ i=4: lamRQ = 4.8174540082e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.27e-03
+ i=5: lamRQ = 4.8174542191e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.27e-03
+ i=6: lamRQ = 4.8206649931e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.91e-04
+ i=7: lamRQ = 4.8220332552e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.47e-04
+...
+
+ i=302: lamRQ = 5.1861897515e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.06e-03
+ i=303: lamRQ = 5.1866675536e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.57e-04
+ i=304: lamRQ = 5.1866676684e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.57e-04
+ i=305: lamRQ = 5.1871256471e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.81e-04
+ i=306: lamRQ = 5.1871560334e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.43e-04
 
 *************************************
 ****** Sat Jan 31, 2026
 
-G2 O4 Np=6 freq=4
-setsid mpirun -np 32 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride2.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=1000 -numPeriods=6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=4 -numEigs=128 -eigenSolver=default -show=darkCornerRoom3dG2O4Freq4Ev128uw.show -matlab=darkCornerRoom3dG2O4Freq4Ev128 -upwind=1 -go=ks > darkCornerRoom3dG2O4Freq4Ev128uw.out
+ADD PPW TO OUTPUT
 
+$cgwh -noplot eig.cmd -g=sice4.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG4O2Ev8.show -freq=4 -numEigs=8 -upwind=0 -go=ks
+
+ omega=4.00e+00, k=4.00e+00, lambda=1.57e+00, dx=2.50e-02, domainSize=2.00e+00, NLambda=1.27324, ppw=lambda/dx= 62.8, ppw(rule-of-thumb)= 36.3 (epsr=0.01)<<<
+
+
+>>> CGPC: 
+G2 O4 Np=6 freq=5 11M pts 
+setsid mpiexec -n 32 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride2.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=2000 -numPeriods=6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=5 -numEigs=256 -eigenSolver=default -show=darkCornerRoom3dG2O4Freq5Ev256uw.show -matlab=darkCornerRoom3dG2O4Freq5Ev256 -upwind=1 -go=ks > darkCornerRoom3dG2O4Freq5Ev256uw.out
+
+n=32
+cgWave:FD24u t=7.540e+00 (3234 steps) dt=2.331e-03 ||u||= 3.50e-04, cpu= 7.67e+01(s)
+
+n=16
+cgWave:FD24u t=7.540e+00 (3234 steps) dt=2.331e-03 ||u||= 1.91e-03, cpu= 1.00e+02(s)
 
 TRY UPWIND: OK 
-setsid mpirun -np 16 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride1.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=1000 -numPeriods=4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=3 -numEigs=128 -eigenSolver=default -show=darkCornerRoom3dG1O4Freq3Ev128uw.show -matlab=darkCornerRoom3dG1O4Freq3Ev128 -upwind=1 -go=ks > darkCornerRoom3dG1O4Freq3Ev128uw.out
+setsid mpiexec -n 16 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride1.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=1000 -numPeriods=4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=3 -numEigs=128 -eigenSolver=default -show=darkCornerRoom3dG1O4Freq3Ev128uw.show -matlab=darkCornerRoom3dG1O4Freq3Ev128 -upwind=1 -go=ks > darkCornerRoom3dG1O4Freq3Ev128uw.out
 
 cgWave:FD24u t=8.378e+00 (1436 steps) dt=5.834e-03 ||u||= 2.80e-03, cpu= 2.52e+01(s)
 

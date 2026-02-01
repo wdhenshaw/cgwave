@@ -225,6 +225,13 @@ int CgWaveHoltz::outputEigenTable()
   // int iteration=-1;
   // int nev=-1, nconv=-1;
 
+  // -- Compute points-per-wavelength --- 
+  const Real epsr=1e-2; // relative error tolerance
+  Real & ppw            = dbase.get<Real>("ppw");            // holds actual points per wavelength
+  Real & ppwRuleOfThumb = dbase.get<Real>("ppwRuleOfThumb"); // holds rule-of-thumb points per wavelength
+  Real dx, domainSize, NLambda, kWaveNumber, lambdaWaveLength;
+  getPointsPerWaveLength( omega, epsr, ppw, ppwRuleOfThumb, domainSize, NLambda, dx, kWaveNumber, lambdaWaveLength );
+
   printF("\n");
   printF(" -----------------------------------------------------------------------------\n");
   printF(" ------------------------- EigenWave SUMMARY ---------------------------------\n");
@@ -278,6 +285,10 @@ int CgWaveHoltz::outputEigenTable()
       printF(" implicit solver: rtol=%9.2e, atol=%9.2e\n",rtol,atol);
     } 
   }
+
+  printF(" omega=%8.2e, k=%8.2e, lambda=%8.2e, dx=%8.2e, domainSize=%8.2e, NLambda=%g, ppw=lambda/dx=%5.1f, ppw(rule-of-thumb)=%5.1f (epsr=%g)\n",
+        kWaveNumber,omega,lambdaWaveLength,dx,domainSize,NLambda,ppw,ppwRuleOfThumb,epsr); 
+
   const Real numTimeStepsPerEig = numberOfStepsTaken/max(Real(numEigenVectors),1.);
 
   printF(" tol=%9.2e, number of wave-solves (mat-vecs) = %d, cpu=%9.2e(s), np=%d\n",tol,numberOfMatrixVectorMultiplications,cpuSolveEigenWave,np);
@@ -1341,6 +1352,13 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
 
     else if( answer=="compute" )
     {
+      // ----- Compute points-per-wavelength for info about this grid ------ 
+      const Real epsr=1e-2; // relative error tolerance
+      Real & ppw            = dbase.get<Real>("ppw");            // holds actual points per wavelength
+      Real & ppwRuleOfThumb = dbase.get<Real>("ppwRuleOfThumb"); // holds rule-of-thumb points per wavelength
+      Real dx, domainSize, NLambda, kWaveNumber, lambdaWaveLength;
+      getPointsPerWaveLength( omega, epsr, ppw, ppwRuleOfThumb, domainSize, NLambda, dx, kWaveNumber, lambdaWaveLength );
+
       const bool useFixedPoint =  eigenSolver==CgWave::fixedPointEigenSolver;
 
       const int & computeEigenmodes     = cgWave.dbase.get<int>("computeEigenmodes");

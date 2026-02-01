@@ -6,6 +6,7 @@
 #include "ParallelUtility.h"
 #include "LoadBalancer.h"
 #include "gridFunctionNorms.h"
+#include "GridStatistics.h"
 #include <sstream>
 
 #include "CgWave.h"
@@ -1504,3 +1505,75 @@ int CgWaveHoltz::saveCheckFile( int checkFileCounter, Real maxErr, Real solution
   return 0;
 }
 
+
+static Real factorial( int n )
+{
+  Real val=1.;
+  for( int k=2; k<=n; k++ )
+  {
+    val*=k;
+  }
+  return val;
+}
+
+static Real nChooseK( int n, int k )
+{
+  Real val;
+
+  val = factorial(n)/( factorial(k) * factorial(n-k) );
+  return val;
+}
+
+// =========================================================================
+/// \brief Compute estimated actual and rule-of-thumb points-per-wave-length 
+/// \param omega (input) : frequency
+/// \param epsr (input) : relative error tolerance (e.g. 1e-2)
+/// \param ppw (output) : estimated PPW 
+/// \param ppwRuleOfThumb (output) : rule-of-thumb PPW
+/// \param domainSize (output) 
+/// \param Nlambda (output) : domain size in wave-lengths
+/// \param dx (output) : grid spacing used in computing the PPW
+/// \param kWaveNumber (output) 
+/// \param lambdaWaveLength (output)
+// =========================================================================
+int CgWaveHoltz::
+getPointsPerWaveLength( const Real omega, const Real epsr, 
+                        Real & ppw, Real & ppwRuleOfThumb, Real & domainSize, Real & NLambda, Real & dx, Real & kWaveNumber, Real &lambdaWaveLength )
+{
+  CgWaveHoltz & cgWaveHoltz = *this;
+  CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
+
+  const int & orderOfAccuracy = cgWave.dbase.get<int>("orderOfAccuracy");
+  const Real & c              = cgWave.dbase.get<real>("c");
+
+  // -- Compute points-per-wavelength --- 
+  RealArray & dxMinMax = cgWave.dbase.get<RealArray>("dxMinMax");
+  kWaveNumber = omega/c;     // k = omega/c
+  lambdaWaveLength = twoPi/kWaveNumber;   // lambda = 2*pi/k
+  const int gridBackGround=0; 
+  dx = dxMinMax(gridBackGround,0);        // grid spacing from backGround grid (hopefully)
+  // Real & ppw            = dbase.get<Real>("ppw");            // holds actual points per wavelength
+  // Real & ppwRuleOfThumb = dbase.get<Real>("ppwRuleOfThumb"); // holds rule-of-thumb points per wavelength
+  ppw = lambdaWaveLength/dx;        // PPW = lambda/dx 
+
+  Real xMin[3],xMax[3];
+  GridStatistics::getGridCoordinateBounds(cg,xMin,xMax);
+  domainSize=0.;
+  for( int axis=0; axis<cg.numberOfDimensions(); axis++ )
+    domainSize = max(domainSize,xMax[axis]-xMin[axis]);
+  NLambda = domainSize/lambdaWaveLength; // size of domain in wavelengths
+  // const Real epsr=1e-2; // relative error tolerance
+  //  bp = 2/( (mu+1)^2 *nchoosek(2*mu+2,mu+1) );
+  const int mu = orderOfAccuracy/2; 
+  Real bp = 2./( (mu+1)*(mu+1) * nChooseK(2*mu+2,mu+1) );
+  ppwRuleOfThumb = 2.*Pi*pow( Pi*bp* NLambda/epsr,1./orderOfAccuracy); 
+  // Real ppwRuleOfThumbOld = Pi*pow( NLambda/epsr,1./orderOfAccuracy); // ** FIX ME
+  printF("\n"
+         "------------------------------------------------------------------------------------------------------------------------------------------------------\n"
+         " getPointsPerWaveLength:\n"
+         " omega=%8.2e k=%8.2e lambda=%8.2e dx=%8.2e domainSize=%8.2e NLambda=%g ppw=lambda/dx=%5.1f ppw(rule-of-thumb)=%5.1f (epsr=%g)\n"
+         "------------------------------------------------------------------------------------------------------------------------------------------------------\n"
+         ,omega,kWaveNumber,lambdaWaveLength,dx,domainSize,NLambda,ppw,ppwRuleOfThumb,epsr);
+
+  return 0; 
+}

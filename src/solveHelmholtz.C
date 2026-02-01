@@ -28,30 +28,29 @@
 // ============================================================================================
 
 
-static Real factorial( int n )
-{
-    Real val=1.;
-    for( int k=2; k<=n; k++ )
-    {
-        val*=k;
-    }
-    return val;
-}
+// static Real factorial( int n )
+// {
+//   Real val=1.;
+//   for( int k=2; k<=n; k++ )
+//   {
+//     val*=k;
+//   }
+//   return val;
+// }
 
-static Real nChooseK( int n, int k )
-{
-    Real val;
+// static Real nChooseK( int n, int k )
+// {
+//   Real val;
 
-    val = factorial(n)/( factorial(k) * factorial(n-k) );
-    return val;
-}
+//   val = factorial(n)/( factorial(k) * factorial(n-k) );
+//   return val;
+// }
 
 // ============================================================================================
 /// \brief Solve the Helmholtz equation using WaveHoltz
 // ============================================================================================
 int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 {
-
 
     CgWaveHoltz & cgWaveHoltz = *this;
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
@@ -610,29 +609,35 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             const Real cpuAdvance = timing(CgWave::timeForAdvance);
 
       // -- Compute points-per-wavelength --- 
-            RealArray & dxMinMax = cgWave.dbase.get<RealArray>("dxMinMax");
-            Real  kWaveNumber = frequencyArray(0)/c;     // k = omega/c
-            Real lambdaWaveLength = twoPi/kWaveNumber;   // lambda = 2*pi/k
-            const int gridBackGround=0; 
-            Real dx = dxMinMax(gridBackGround,0);        // grid spacing from backGround grid (hopefully)
+            const Real epsr=1e-2; // relative error tolerance
             Real & ppw            = dbase.get<Real>("ppw");            // holds actual points per wavelength
             Real & ppwRuleOfThumb = dbase.get<Real>("ppwRuleOfThumb"); // holds rule-of-thumb points per wavelength
-            ppw = lambdaWaveLength/dx;        // PPW = lambda/dx 
+            Real dx, domainSize, NLambda, kWaveNumber, lambdaWaveLength;
+            getPointsPerWaveLength( frequencyArray(0), epsr, ppw, ppwRuleOfThumb, domainSize, NLambda, dx, kWaveNumber, lambdaWaveLength );
 
-            Real xMin[3],xMax[3];
-            GridStatistics::getGridCoordinateBounds(cg,xMin,xMax);
-            Real domainSize=0.;
-            for( int axis=0; axis<cg.numberOfDimensions(); axis++ )
-                domainSize = max(domainSize,xMax[axis]-xMin[axis]);
-            const Real NLambda = domainSize/lambdaWaveLength; // size of domain in wavelengths
-            const Real epsr=1e-2; // relative error tolerance
-      //  bp = 2/( (mu+1)^2 *nchoosek(2*mu+2,mu+1) );
-            const int mu = orderOfAccuracy/2; 
-            Real bp = 2./( (mu+1)*(mu+1) * nChooseK(2*mu+2,mu+1) );
-            ppwRuleOfThumb = 2.*Pi*pow( Pi*bp* NLambda/epsr,1./orderOfAccuracy); 
-            Real ppwRuleOfThumbOld = Pi*pow( NLambda/epsr,1./orderOfAccuracy); // ** FIX ME
-            printF("\n >>>omega=%10.2e, k=%10.2e, lambda=%10.2e, dx=%10.2e, domainSize=%10.2e, NLambda=%g, ppw=lambda/dx=%5.1f, ppw(rule-of-thumb)=%5.1f (old=%5.1f) (epsr=%g)<<<\n\n",
-                  kWaveNumber,frequencyArray(0),lambdaWaveLength,dx,domainSize,NLambda,ppw,ppwRuleOfThumb,ppwRuleOfThumbOld,epsr);
+      // RealArray & dxMinMax = cgWave.dbase.get<RealArray>("dxMinMax");
+      // Real  kWaveNumber = frequencyArray(0)/c;     // k = omega/c
+      // Real lambdaWaveLength = twoPi/kWaveNumber;   // lambda = 2*pi/k
+      // const int gridBackGround=0; 
+      // Real dx = dxMinMax(gridBackGround,0);        // grid spacing from backGround grid (hopefully)
+      // Real & ppw            = dbase.get<Real>("ppw");            // holds actual points per wavelength
+      // Real & ppwRuleOfThumb = dbase.get<Real>("ppwRuleOfThumb"); // holds rule-of-thumb points per wavelength
+      // ppw = lambdaWaveLength/dx;        // PPW = lambda/dx 
+
+      // Real xMin[3],xMax[3];
+      // GridStatistics::getGridCoordinateBounds(cg,xMin,xMax);
+      // Real domainSize=0.;
+      // for( int axis=0; axis<cg.numberOfDimensions(); axis++ )
+      //   domainSize = max(domainSize,xMax[axis]-xMin[axis]);
+      // const Real NLambda = domainSize/lambdaWaveLength; // size of domain in wavelengths
+      // const Real epsr=1e-2; // relative error tolerance
+      // //  bp = 2/( (mu+1)^2 *nchoosek(2*mu+2,mu+1) );
+      // const int mu = orderOfAccuracy/2; 
+      // Real bp = 2./( (mu+1)*(mu+1) * nChooseK(2*mu+2,mu+1) );
+      // ppwRuleOfThumb = 2.*Pi*pow( Pi*bp* NLambda/epsr,1./orderOfAccuracy); 
+      // Real ppwRuleOfThumbOld = Pi*pow( NLambda/epsr,1./orderOfAccuracy); // ** FIX ME
+      // printF("\n >>>omega=%10.2e, k=%10.2e, lambda=%10.2e, dx=%10.2e, domainSize=%10.2e, NLambda=%g, ppw=lambda/dx=%5.1f, ppw(rule-of-thumb)=%5.1f (old=%5.1f) (epsr=%g)<<<\n\n",
+      //    kWaveNumber,frequencyArray(0),lambdaWaveLength,dx,domainSize,NLambda,ppw,ppwRuleOfThumb,ppwRuleOfThumbOld,epsr);
 
             printF("\n------------------------ CgWaveHoltz SUMMARY ------------------------------------\n");
             if( filterTimeDerivative==0 )
@@ -648,7 +653,7 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
             printF(" max-residual=%8.2e (WaveHoltz its), numberOfIterations = %d (%s) (maximumNumberOfIterations=%d)\n",
                               maxResidual,numberOfIterations,(useFixedPoint? "FP" : (useAugmentedGmres ? "Augmented-GMRES" : (const char*)krylovType)  ),maximumNumberOfIterations);
             
-            printF(" omega=%10.2e, k=%10.2e, lambda=%10.2e, dx=%10.2e, domainSize=%10.2e, NLambda=%g, ppw=lambda/dx=%5.1f, ppw(rule-of-thumb)=%5.1f (epsr=%g)<<<\n\n",
+            printF(" omega=%8.2e, k=%8.2e, lambda=%8.2e, dx=%8.2e, domainSize=%8.2e, NLambda=%g, ppw=lambda/dx=%5.1f, ppw(rule-of-thumb)=%5.1f (epsr=%g)<<<\n\n",
                 kWaveNumber,frequencyArray(0),lambdaWaveLength,dx,domainSize,NLambda,ppw,ppwRuleOfThumb,epsr);      
             printF(" numberOfFrequencies= %d, adjustOmega=%d, adjustHelmholtzForUpwinding=%d\n",
                         numberOfFrequencies,adjustOmega,adjustHelmholtzForUpwinding);

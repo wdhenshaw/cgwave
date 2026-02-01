@@ -38,6 +38,9 @@ CgWaveHoltz(CompositeGrid & cg, GenericGraphicsInterface & gi);
 
 int assignEigenSolverInitialCondition( bool smoothInitialCondition );
 
+int getPointsPerWaveLength( const Real omega, const Real epsr, 
+                            Real & ppw, Real & ppwRuleOfThumb, Real & domainSize, Real & NLambda, Real & dx, Real & kWaveNumber, Real &lambdaWaveLength  );
+
 // Initialize time-step and forcing 
 int initialize();
 
