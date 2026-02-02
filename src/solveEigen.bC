@@ -286,6 +286,13 @@ int CgWaveHoltz::outputEigenTable()
     } 
   }
 
+  const bool & readCheckPointFile            = cgWave.dbase.get<bool>("readCheckPointFile"); 
+  const bool & saveCheckPointFile            = cgWave.dbase.get<bool>("saveCheckPointFile"); 
+  const aString & readCheckPointFileName     = cgWave.dbase.get<aString>("readCheckPointFileName"); // name of the show file for reading
+  const aString & saveCheckPointFileName     = cgWave.dbase.get<aString>("saveCheckPointFileName"); // name of the show file for saving
+  printF(" readCheckPointFile=%d, readCheckPointFileName=[%s], writeCheckPointFile=%d, writeCheckPointFileName=[%s]\n",
+         (int)readCheckPointFile,(const char*)readCheckPointFileName,saveCheckPointFile,(const char*)saveCheckPointFileName );
+
   printF(" omega=%8.2e, k=%8.2e, lambda=%8.2e, dx=%8.2e, domainSize=%8.2e, NLambda=%g, ppw=lambda/dx=%5.1f, ppw(rule-of-thumb)=%5.1f (epsr=%g)\n",
         kWaveNumber,omega,lambdaWaveLength,dx,domainSize,NLambda,ppw,ppwRuleOfThumb,epsr); 
 

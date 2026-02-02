@@ -26,6 +26,8 @@ static bool useMatrixUtilities=true; // true = use new matrix utilities (needed 
 
 static int iteration=0;
 
+static int iterationOffset=0; // for check point files
+
 // static bool applyBoundaryConditions=false;
 
 static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver 
@@ -118,7 +120,9 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
   // here is the CgWave solver for the time dependent wave equation
     CgWave & cgWave = *cgWaveHoltz.dbase.get<CgWave*>("cgWave");
     const int & numberOfFrequencies = cgWave.dbase.get<int>("numberOfFrequencies");
-    const int & upwind               = cgWave.dbase.get<int>("upwind");
+    const int & upwind              = cgWave.dbase.get<int>("upwind");
+    bool & readCheckPointFile       = cgWave.dbase.get<bool>("readCheckPointFile");
+    const bool & saveCheckPointFile = cgWave.dbase.get<bool>("saveCheckPointFile");
 
     const int & computeEigenmodes = cgWave.dbase.get<int>("computeEigenmodes");
     assert( computeEigenmodes );
@@ -256,13 +260,41 @@ extern PetscErrorCode eigenWaveMatrixVectorMultiply(Mat m ,Vec x, Vec y)
   // ----------------------------------------------------------------------
   // -- advance the wave equation for one period (or multiple periods ) ---
   // ----------------------------------------------------------------------
-    cgWave.advance( iteration );
+    bool checkPointFileWasRead=false;
+    
+    if( readCheckPointFile )
+    {
+    // -- Here we read in a solution from the check point file instead of calling advance ---
+
+        checkPointFileWasRead=cgWave.readCheckPoint( iteration+1, v );
+
+        iterationOffset=iteration;  // the first call to advance should use iteration=0, here is the offset 
+
+        if( !checkPointFileWasRead )
+            readCheckPointFile=false; // we are done
+
+    }
+
+    if( !checkPointFileWasRead )
+    {
+    // -------------------------------------------------------------------
+    // ----------- ADVANCE : THIS IS THE MATRIX VECTOR MULTIPLY ----------
+    // -------------------------------------------------------------------
+
+        cgWave.advance( iteration-iterationOffset );
+    }
 
 
   // Set A v^n = v^{n+1}
     for( int grid=0; grid<cg.numberOfComponentGrids(); grid++ )
         vOld[grid] = v[grid]; 
 
+    if( saveCheckPointFile )
+    {
+    // save the current solution in the check point file
+        int solution=iteration+1;
+        cgWave.saveCheckPoint( solution,vOld );
+    }
   // // should we interpolate vOld?
   // if( false ) //  Jan 5, 2022 : change to false : FIXES SIC
   // {
@@ -375,6 +407,7 @@ solveSLEPc(int argc,char **args)
     const int & maximumNumberOfIterations = dbase.get<int>("maximumNumberOfIterations");
     Real & numberOfActivePoints           = dbase.get<Real>("numberOfActivePoints");
 
+
     const int numberOfDimensions = cg.numberOfDimensions();
     
   // here is the CgWave solver for the time dependent wave equation
@@ -438,6 +471,9 @@ solveSLEPc(int argc,char **args)
     
     int & plotOptions = cgWave.dbase.get<int>("plotOptions");
     plotOptions= CgWave::noPlotting; // turn of plotting in cgWave  
+
+    bool & readCheckPointFile       = cgWave.dbase.get<bool>("readCheckPointFile");
+    bool readCheckPointFileSave     = readCheckPointFile;
 
     if( cgWaveDebugMode )
         plotOptions= CgWave::plotAndWait;  
@@ -1346,6 +1382,7 @@ solveSLEPc(int argc,char **args)
 
     computeEigenmodesWithSLEPc=0; // reset 
     adjustHelmholtzForUpwinding = adjustHelmholtzForUpwindingSave; // reset
+    readCheckPointFile = readCheckPointFileSave; // reset
 
   // *** DESTROY STUFF ****
     PetscCall(EPSDestroy(&eps));

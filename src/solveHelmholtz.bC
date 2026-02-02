@@ -848,6 +848,14 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
            filterTimeDerivative,useFilterWeights,viFactor,filterD0t,useOptFilter);
 
       printF("    implicit solver : %s\n =====\n",(const char*)implicitSolverName);
+
+      const bool & readCheckPointFile            = cgWave.dbase.get<bool>("readCheckPointFile"); 
+      const bool & saveCheckPointFile            = cgWave.dbase.get<bool>("saveCheckPointFile"); 
+      const aString & readCheckPointFileName     = cgWave.dbase.get<aString>("readCheckPointFileName"); // name of the show file for reading
+      const aString & saveCheckPointFileName     = cgWave.dbase.get<aString>("saveCheckPointFileName"); // name of the show file for saving
+      printF(" readCheckPointFile=%d, readCheckPointFileName=[%s], writeCheckPointFile=%d, writeCheckPointFileName=[%s]\n",
+             readCheckPointFile,(const char*)readCheckPointFileName,saveCheckPointFile,(const char*)saveCheckPointFileName );
+
       printF(" deflateWaveHoltz=%d, deflateForcing=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,deflateForcing,numToDeflate,
           (const char*)eigenVectorFile);
       if( waveHoltzAsymptoticConvergenceRate>0 )

@@ -10,13 +10,184 @@
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+>>> CGPC:  --> too much memory!!
+G4 O4 Np=12 freq=9 G4=83M pts 
+setsid mpiexec -n 32 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride4.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=2000 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=9 -numEigs=512 -eigenSolver=default -show=darkCornerRoom3dG4O4Freq9Ev512.show -matlab=darkCornerRoom3dG4O4Freq9Ev512 -upwind=1 -go=ks > darkCornerRoom3dG4O4Freq9Ev512.out
+
+
+setsid mpiexec -n 64 --use-hwthread-cpus $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride4.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=2000 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=9 -numEigs=512 -eigenSolver=default -show=darkCornerRoom3dG4O4Freq9Ev512.show -matlab=darkCornerRoom3dG4O4Freq9Ev512 -upwind=1 -go=ks > darkCornerRoom3dG4O4Freq9Ev512.out
+
+
+
+*************************************
+****** Mon Feb , 2026
+
+
+CONTINUE ON CHECK POINT FILE
+
+
+(1) SQUARE SAVE CHECK POINT: 
+$cgwh -noplot eig.cmd -g=square128.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=4 -numEigs=4 -upwind=0 -saveCheckPointFile=1 -flushFrequency=10 -go=k
+
+ omega=4.00e+00, k=4.00e+00, lambda=1.57e+00, dx=7.81e-03, domainSize=1.00e+00, NLambda=0.63662, ppw=lambda/dx=201.1, ppw(rule-of-thumb)= 25.7 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 42, cpu= 1.78e+00(s), np=1
+ num eigs requested=4, number eigs converged =5, numArnoldiVectors=9, wave-solves/eig=  8.4, timeSteps/eig=2520.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 4.4427714240e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.24e-12
+ i=1: lamRQ = 7.0242152609e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.46e-12
+ i=2: lamRQ = 7.0242152609e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.35e-12
+ i=3: lamRQ = 8.8848737829e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.31e-12
+ i=4: lamRQ = 1.1325052169e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.20e-12
+
+
+(2) remove some check point sub-files: 
+rm checkPoint.show3
+rm checkPoint.show4
+
+(3) read check point: 
+$cgwh -noplot eig.cmd -g=square128.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=4 -numEigs=4 -upwind=0 -readCheckPointFile=1 -flushFrequency=10 -go=k
+
+
+
+
 *************************************
 ****** Sun Feb 1, 2026
 
 
+START ON CHECK POINT FILE
+
+**BUG FIXED** when reading a solution from the show file use a temporary CompositeGrid.
+
+(1) SQUARE SAVE CHECK POINT: 
+$cgwh -noplot eig.cmd -g=square128.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=4 -numEigs=4 -upwind=0 -saveCheckPointFile=1 -flushFrequency=10 -go=k
+
+ omega=4.00e+00, k=4.00e+00, lambda=1.57e+00, dx=7.81e-03, domainSize=1.00e+00, NLambda=0.63662, ppw=lambda/dx=201.1, ppw(rule-of-thumb)= 25.7 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 42, cpu= 1.78e+00(s), np=1
+ num eigs requested=4, number eigs converged =5, numArnoldiVectors=9, wave-solves/eig=  8.4, timeSteps/eig=2520.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 4.4427714240e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.24e-12
+ i=1: lamRQ = 7.0242152609e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.46e-12
+ i=2: lamRQ = 7.0242152609e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.35e-12
+ i=3: lamRQ = 8.8848737829e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.31e-12
+ i=4: lamRQ = 1.1325052169e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.20e-12
+
+
+(2) remove some check point sub-files: 
+rm checkPoint.show3
+rm checkPoint.show4
+
+(3) read check point: 
+$cgwh -noplot eig.cmd -g=square128.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=4 -numEigs=4 -upwind=0 -readCheckPointFile=1 -flushFrequency=10 -go=k
+
+
+ omega=4.00e+00, k=4.00e+00, lambda=1.57e+00, dx=7.81e-03, domainSize=1.00e+00, NLambda=0.63662, ppw=lambda/dx=201.1, ppw(rule-of-thumb)= 25.7 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 42, cpu= 5.06e-01(s), np=1
+ num eigs requested=4, number eigs converged =5, numArnoldiVectors=9, wave-solves/eig=  8.4, timeSteps/eig=720.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 4.4427714240e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.24e-12
+ i=1: lamRQ = 7.0242152609e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.46e-12
+ i=2: lamRQ = 7.0242152609e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.35e-12
+ i=3: lamRQ = 8.8848737829e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.31e-12
+ i=4: lamRQ = 1.1325052169e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.20e-12
+
+
+
+
+
+SQUARE READ CHECK POINT
+$cgwh -noplot eig.cmd -g=square32.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=4 -numEigs=4 -upwind=0 -readCheckPointFile=1 -go=k
+
+
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  4.0000e+00, orderOfAccuracy=2, grid=square32, np=1
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.95, dt=2.094e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=75, 
+  totalTimeStepsStaken=150, aveItsPerImplicitSolve=  0.0
+ omega=4.00e+00, k=4.00e+00, lambda=1.57e+00, dx=3.12e-02, domainSize=1.00e+00, NLambda=0.63662, ppw=lambda/dx= 50.3, ppw(rule-of-thumb)= 25.7 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 25, cpu= 4.43e-02(s), np=1
+ num eigs requested=4, number eigs converged =5, numArnoldiVectors=9, wave-solves/eig=  5.0, timeSteps/eig= 30.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 4.4410989125e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.64e-13
+ i=1: lamRQ = 7.0152281153e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.57e-14
+ i=2: lamRQ = 7.0152281153e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.15e-14
+ i=3: lamRQ = 8.8714988287e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.65e-14
+ i=4: lamRQ = 1.1293269595e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.67e-14
+
+
+
+SQUARE SAVE CHECK POINT: 
+$cgwh -noplot eig.cmd -g=square32.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=4 -numEigs=4 -upwind=0 -saveCheckPointFile=1 -go=k
+
+
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  4.0000e+00, orderOfAccuracy=2, grid=square32, np=1
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.95, dt=2.094e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=75, 
+  totalTimeStepsStaken=1875, aveItsPerImplicitSolve=  0.0
+ omega=4.00e+00, k=4.00e+00, lambda=1.57e+00, dx=3.12e-02, domainSize=1.00e+00, NLambda=0.63662, ppw=lambda/dx= 50.3, ppw(rule-of-thumb)= 25.7 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 25, cpu= 1.95e-01(s), np=1
+ num eigs requested=4, number eigs converged =5, numArnoldiVectors=9, wave-solves/eig=  5.0, timeSteps/eig=375.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 4.4410989125e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.64e-13
+ i=1: lamRQ = 7.0152281153e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.57e-14
+ i=2: lamRQ = 7.0152281153e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.15e-14
+ i=3: lamRQ = 8.8714988287e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.65e-14
+ i=4: lamRQ = 1.1293269595e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.67e-14
+
+
+READ CHECK POINT
+$cgwh -noplot eig.cmd -g=sice4.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG4O2Ev8.show -freq=4 -numEigs=8 -upwind=0 -readCheckPointFile=1 -go=ks
+
+
+SAVE CHECK POINT: 
+$cgwh -noplot eig.cmd -g=sice4.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG4O2Ev8.show -freq=4 -numEigs=8 -upwind=0 -saveCheckPointFile=1 -go=ks
+
+
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  4.0000e+00, orderOfAccuracy=2, grid=sice4, np=1
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.95, dt=1.603e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=98, 
+  totalTimeStepsStaken=6370, aveItsPerImplicitSolve=  0.0
+ omega=4.00e+00, k=4.00e+00, lambda=1.57e+00, dx=2.50e-02, domainSize=2.00e+00, NLambda=1.27324, ppw=lambda/dx= 62.8, ppw(rule-of-thumb)= 36.3 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 65, cpu= 1.12e+00(s), np=1
+ num eigs requested=8, number eigs converged =8, numArnoldiVectors=17, wave-solves/eig=  8.1, timeSteps/eig=796.2
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 2.4045431659e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.88e-12
+ i=1: lamRQ = 3.8305671460e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.30e-13
+ i=2: lamRQ = 3.8305671460e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.90e-13
+ i=3: lamRQ = 5.1324986653e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.61e-13
+ i=4: lamRQ = 5.1332801461e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.49e-13
+ i=5: lamRQ = 5.5166749647e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.70e-13
+ i=6: lamRQ = 7.0085968112e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.01e-13
+ i=7: lamRQ = 7.0085968112e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.00e-13
+
+
+
+
+
 >>> CGPC: 
 G4 O4 Np=12 freq=9 11M pts 
-setsid mpiexec -n 32 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride4.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=2000 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=9 -numEigs=256 -eigenSolver=default -show=darkCornerRoom3dG2O4Freq9Ev256uw.show -matlab=darkCornerRoom3dG2O4Freq9Ev256 -upwind=1 -go=ks > darkCornerRoom3dG2O4Freq9Ev256uw.out
+setsid mpiexec -n 64 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride4.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=2000 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=9 -numEigs=512 -eigenSolver=default -show=darkCornerRoom3dG4O4Freq9Ev512.show -matlab=darkCornerRoom3dG4O4Freq9Ev512 -upwind=1 -go=ks > darkCornerRoom3dG4O4Freq9Ev512.out
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=9.00e+00 k=9.00e+00 lambda=6.98e-01 dx=2.50e-02 domainSize=1.20e+01 NLambda=17.1887 ppw=lambda/dx= 27.9 ppw(rule-of-thumb)= 17.5 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 

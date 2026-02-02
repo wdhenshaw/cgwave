@@ -174,7 +174,7 @@ main(int argc, char *argv[])
 
   int orderOfAccuracy=4;  // **** need two ghost lines in parallel ****
 
-  aString nameOfShowFile="cgWave.show";
+  // aString nameOfShowFile="cgWave.show";
 
   // --- create and read in a CompositeGrid ---
 

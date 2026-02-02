@@ -4,7 +4,9 @@
 #     cgwh eig.cmd -g=<grid-name> -x0=<f> -y0=<f> -omega=<f> -solver=[none|fixedPoint|krylov] -tol=<f> -tp=<f> ...
 #                         -kx=<f> -ky=<f> -kz=<f> -forcing=[gaussian|sine] -adjustOmega=[0|1] -maxIterations=<>
 #                          -upwind=[0|1] -imode=[0|1] -bcApproach=[cbc|lcbc|oneSided] -go=[go|og|halt]
-#                          -eigenSolver=[default|KrylovSchur|Arnoldi|SI]
+#                          -eigenSolver=[default|KrylovSchur|Arnoldi|SI] 
+#                          -readCheckPointFile=[0|1] 
+#                          -saveCheckPointFile=[0|1]
 #
 #   -solver=[fixedPoint|krylov] : fixed-point or Krylov 
 #   -imode=1 : do not wait in cgWave
@@ -40,6 +42,9 @@ $eigTol=1.e-5;  # tolerance for detecting multiple eigs
 $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; $orderOfExtrapolation=-1;
 $adjustHelmholtzForUpwinding=0; # remove upwinding from Helmholtz solution -- this doesn't work for EigenWave 
 $smoothInitialConditions=1;
+$readCheckPointFile=0; $saveCheckPointFile=0; $flushFrequency=100;
+$readCheckPointFileName="checkPointFile.show"; 
+$saveCheckPointFileName="checkPointFile.show"; 
 #
 $solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
@@ -56,10 +61,11 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "deflateWaveHoltz=i"=>\$deflateWaveHoltz,"numToDeflate=i"=>\$numToDeflate,"computeEigs=i"=>\$computeEigs,"numArnoldi=i"=>\$numArnoldi,\
             "eigenVectorFile=s"=>\$eigenVectorFile,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"numRitz=i"=>\$numRitz,\
             "assignRitzFrequency=i"=>\$assignRitzFrequency,"numEigs=i"=>\$numEigs,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,\
-            "eigenSolver=s"=>\$eigenSolver,"setInitialVectors=i"=>\$setInitialVectors,"eigTol=f"=>\$eigTol,\
+            "eigenSolver=s"=>\$eigenSolver,"setInitialVectors=i"=>\$setInitialVectors,"eigTol=f"=>\$eigTol,"flushFrequency=i"=>\$flushFrequency,\
             "useAccurateInnerProduct=i"=>\$useAccurateInnerProduct,"takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,\
-            "smoothInitialConditions=i"=>\$smoothInitialConditions,\
-            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"orderOfExtrapolation=i"=>\$orderOfExtrapolation );
+            "smoothInitialConditions=i"=>\$smoothInitialConditions,"readCheckPointFile=i"=>\$readCheckPointFile,"saveCheckPointFile=i"=>\$saveCheckPointFile,\
+            "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"orderOfExtrapolation=i"=>\$orderOfExtrapolation,\
+            "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -166,6 +172,12 @@ initial vectors for eigenSolver $setInitialVectors
 use accurate inner product $useAccurateInnerProduct
 #
 eig multiplicity tol $eigTol
+#
+read check point file $readCheckPointFile
+save check point file $saveCheckPointFile
+read check point file name $readCheckPointFileName
+save check point file name $saveCheckPointFileName
+flush frequency $flushFrequency
 #
 compute errors 0
 # pause

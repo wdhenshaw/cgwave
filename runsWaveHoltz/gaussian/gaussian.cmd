@@ -43,7 +43,10 @@ $adjustHelmholtzForUpwinding=1; # remove upwinding from Helmholtz solution
 $useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsForSuperGrid=1; $useVariableTolerance=0; 
 $solverh="yale"; $maxith=2000; $rtolh=1.e-12; $atolh=1.e-12; $restart=50;  $iluh=50; $fillInRatioh=-1; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; $restarti=20; $ilui=3;# parameters for implicit time-stepping solver
-$bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; $orderOfExtrapolation=-1; 
+$bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; $orderOfExtrapolation=-1;
+$readCheckPointFile=0; $saveCheckPointFile=0; $flushFrequency=10;
+$readCheckPointFileName="checkPointFile.show"; 
+$saveCheckPointFileName="checkPointFile.show";  
 #
 GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,"debugOges=i"=>\$debugOges,\
@@ -60,7 +63,9 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid,"eigTol=f"=>\$eigTol,\
             "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"krylovType=s"=>\$krylovType, "gmresRestartLength=i"=>\$gmresRestartLength,\
             "restarti=i"=>\$restarti,"ilui=i"=>\$ilui,"useVariableTolerance=i"=>\$useVariableTolerance,"deflateForcing=i"=>\$deflateForcing,\
-            "filterD0t=i"=>\$filterD0t,"useOptFilter=i"=>\$useOptFilter,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep );
+            "filterD0t=i"=>\$filterD0t,"useOptFilter=i"=>\$useOptFilter,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep,\
+            "readCheckPointFile=i"=>\$readCheckPointFile,"saveCheckPointFile=i"=>\$saveCheckPointFile,"flushFrequency=i"=>\$flushFrequency,\
+            "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -184,6 +189,12 @@ eig multiplicity tol $eigTol
 min steps per period $minStepsPerPeriod
 #
 use optimized filter $useOptFilter
+#
+read check point file $readCheckPointFile
+save check point file $saveCheckPointFile
+read check point file name $readCheckPointFileName
+save check point file name $saveCheckPointFileName
+flush frequency $flushFrequency
 #
 #
 if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }

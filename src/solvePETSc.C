@@ -37,7 +37,10 @@ static bool applyBoundaryConditions=true; // true = call the applyBoundaryCondit
 // 0 = test solving laplace equation
 // 1 = Real run
 static int testCase =1; 
-static int iteration=0;
+static int iteration=0;       
+
+static int iterationOffset=0; // for check point files
+static int checkPointCounter=0; 
 
 static CgWaveHoltz *pCgWaveHoltz; // pointer to the CgWaveHoltz solver 
   
@@ -201,6 +204,8 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
     const int & upwind                      = cgWave.dbase.get<int>("upwind");
     const int & filterTimeDerivative        = cgWave.dbase.get<int>("filterTimeDerivative");
     const int & adjustHelmholtzForUpwinding = cgWave.dbase.get<int>("adjustHelmholtzForUpwinding"); 
+    bool & readCheckPointFile               = cgWave.dbase.get<bool>("readCheckPointFile");
+    const bool & saveCheckPointFile         = cgWave.dbase.get<bool>("saveCheckPointFile");  
     const int & orderOfAccuracy             = cgWave.dbase.get<int>("orderOfAccuracy");
     const int numGhost = orderOfAccuracy/2;
 
@@ -381,19 +386,47 @@ extern PetscErrorCode waveHoltzMatrixVectorMultiply(Mat m ,Vec x, Vec y)
   //                        bool applyExplicitBoundaryConditions /* = false */,
   //                        bool fillImplicitBoundaryConditions  /* = false */ )
 
-  // ----------------------------------------------------------------------
-  // -- advance the wave equation for one period (or multiple periods ) ---
-  // ----------------------------------------------------------------------
-  // printF("\n\n###### solvePETSc - call advance, iteration=%d, initializeTimeStepping=%d\n\n",iteration, initializeTimeStepping);
-    int it = iteration+1;
-    if( iteration==computeRightHandSide || iteration==-1 )
-        it=0; // it =0 means this is the start of a new WaveHoltz solve so deflate the RHS
-    else if( iteration==computeResidual )
-        it=1; 
-    cgWave.advance( it );
-
-  // cgWave.advance( iteration );
+    bool checkPointFileWasRead=false;
     
+    if( readCheckPointFile )
+    {
+    // -- Here we read in a solution from the check point file instead of calling advance ---
+
+        checkPointCounter++;
+        checkPointFileWasRead=cgWave.readCheckPoint( checkPointCounter, v );
+
+
+        iterationOffset=iteration;  // the first call to advance should use iteration=0, here is the offset 
+
+        if( !checkPointFileWasRead )
+            readCheckPointFile=false; // we are done
+
+    }
+
+    if( !checkPointFileWasRead )
+    {
+    // ----------------------------------------------------------------------
+    // -- advance the wave equation for one period (or multiple periods ) ---
+    // ----------------------------------------------------------------------
+    // printF("\n\n###### solvePETSc - call advance, iteration=%d, initializeTimeStepping=%d\n\n",iteration, initializeTimeStepping);
+
+        int it = iteration+1;
+        if( iteration==computeRightHandSide || iteration==-1 )
+            it=0; // it =0 means this is the start of a new WaveHoltz solve so deflate the RHS
+        else if( iteration==computeResidual )
+            it=1; 
+
+
+        cgWave.advance( it-iterationOffset );
+
+    }
+    
+    if( saveCheckPointFile )
+    {
+    // save the current solution in the check point file
+        int solution=iteration+1; // not currently used I don't think 
+        cgWave.saveCheckPoint( solution,v );
+    }  
 
     if( iteration==computeRightHandSide )
     {
@@ -1053,6 +1086,9 @@ solvePETSc(int argc,char **args)
     const int & orderOfAccuracy             = cgWave.dbase.get<int>("orderOfAccuracy");
     const int numGhost = orderOfAccuracy/2;
 
+    bool & readCheckPointFile               = cgWave.dbase.get<bool>("readCheckPointFile");
+    bool readCheckPointFileSave             = readCheckPointFile;
+
     if( omega!=0. )
         Tperiod=numPeriods*twoPi/omega; 
     else 
@@ -1643,5 +1679,8 @@ solvePETSc(int argc,char **args)
 
   // *** DO NOT CALL PetscFinalize HERE -- must be done at very end 
 //  ierr = PetscFinalize();
+
+    readCheckPointFile          = readCheckPointFileSave; // reset
+
     return 0;
 }

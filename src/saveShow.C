@@ -183,3 +183,112 @@ saveSequencesToShowFile()
   
   return 0;
 }
+
+
+#include "ShowFileReader.h"
+
+// =================================================================================================
+/// \brief read a solution from a check point file (used for WaveHoltz and EigenWave)
+/// \param solution (input) : solution to read, 1,2,3,...
+/// \Return value: 
+///      1=requested solution was read in, 
+///      0=requested solution is not in the file, or we are not reading the check point file.
+// =================================================================================================
+int CgWave::readCheckPoint( int solution, RealCompositeGridFunction & v )
+{
+  const bool & readCheckPointFile = dbase.get<bool>("readCheckPointFile"); 
+
+  if( !readCheckPointFile )
+    return 0;
+
+
+  if( !dbase.has_key("checkPointShowFileReader") )
+  {
+    ShowFileReader *& showFilePointer = dbase.put<ShowFileReader*>("checkPointShowFileReader");
+
+    showFilePointer = new ShowFileReader;  // DELETE ME 
+    assert( showFilePointer !=NULL );
+
+    ShowFileReader & showFileReader = *showFilePointer;  
+
+    aString & nameOfCheckPointFile = dbase.get<aString>("readCheckPointFileName"); // name of the check point file
+
+    printF("Open the check point file=[%s]\n",(const char*)nameOfCheckPointFile);
+
+    showFileReader.open(nameOfCheckPointFile);
+
+    int & numCheckPointSolutions = dbase.put<int>("numCheckPointSolutions");
+
+    int numFrames          = showFileReader.getNumberOfFrames();
+    numCheckPointSolutions = showFileReader.getNumberOfSolutions();
+
+    printF("Open the old check point file=[%s], There are %d solutions and %d frames\n",
+         (const char*)nameOfCheckPointFile, numCheckPointSolutions,numFrames);
+  }
+
+  const int & numCheckPointSolutions = dbase.get<int>("numCheckPointSolutions");
+  if( solution>numCheckPointSolutions )
+    return 0;
+
+  ShowFileReader & showFileReader = *dbase.get<ShowFileReader*>("checkPointShowFileReader");
+
+  printF("readCheckPointFile: reading solution=%d\n",solution);
+
+  CompositeGrid cgs;
+  showFileReader.getASolution(solution,cgs,v);
+
+  v.updateToMatchGrid(cg);
+
+
+  return 1;
+
+
+  // FINISH ME -- close file when done
+  // showFileReader.close();
+
+
+  return 0;
+}
+
+
+// =================================================================================================
+/// \brief save a solution to the check point file (used for WaveHoltz and EigenWave)
+/// \param solution (input): not currently used
+// =================================================================================================
+int CgWave::saveCheckPoint( int solution, RealCompositeGridFunction & v )
+{
+  const bool & saveCheckPointFile = dbase.get<bool>("saveCheckPointFile"); 
+
+  if( !saveCheckPointFile )
+    return 0;
+
+  printF("saveCheckPointFile: solution=%d\n",solution);
+
+  Ogshow *& pCheckPointFile = dbase.get<Ogshow*>("checkPointFile"); 
+  assert( pCheckPointFile !=NULL );
+
+  Ogshow & checkPointFile = *pCheckPointFile;
+
+  checkPointFile.startFrame();
+
+  // -- save plot titles --
+  char buffer[80]; 
+  aString showFileTitle[5];
+
+  aString methodName = getMethodName();  // FD22, or FD24s etc.
+  char buff[80];
+  showFileTitle[0]=sPrintF(buffer,"CgWave %s",(const char *)methodName);
+  showFileTitle[1]="";  // marks end of titles
+
+  for( int i=0; showFileTitle[i]!=""; i++ )
+    checkPointFile.saveComment(i,showFileTitle[i]);
+
+  v.setName("u");  
+  v.setName("u",0);  
+  checkPointFile.saveSolution( v,"u" );  // save the grid function
+
+
+  checkPointFile.endFrame();
+
+  return 0;
+}

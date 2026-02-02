@@ -146,6 +146,7 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("takeImplicitFirstStep") =0;     // 1 = For implicit time-stepping, use an implicit first step
   dbase.put<int>("takePeriodicFirstStep") =0;     // 1 = use a periodic first step for WaveHoltz
 
+  dbase.put<aString>("implicitSolverName")="unknown";
 
   // We have different versions of modified equation time-stepping
   //   0 = standard
@@ -279,6 +280,8 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   RealArray & periodArraySave    = dbase.put<RealArray>("periodArraySave");
   periodArraySave.redim(numberOfFrequencies);   periodArraySave=0.;
 
+  RealArray & sigma              = dbase.put<RealArray>("sigma");
+
   dbase.put<Real>("damp")                = 0.;          //  coefficient of linear damping
   dbase.put<Real>("dampSave")            = 0.;          //  saved value when adjusting
   
@@ -386,6 +389,14 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
 
   dbase.put<Real>("timeForOgesSolve") = 0;  // record Oges time for implicit solve
 
+  // -- check point files and variables ---
+  dbase.put<Ogshow*>("checkPointFile")         = NULL;
+  dbase.put<bool>("saveCheckPointFile")        = false; 
+  dbase.put<aString>("saveCheckPointFileName") = "checkPointSave.show"; // name of the checkPoint show file to save
+
+  dbase.put<bool>("readCheckPointFile")        = false; 
+  dbase.put<aString>("readCheckPointFileName") = "checkPointRead.show"; // name of the checkPoint show file to read
+
   // enum TimingEnum
   // { 
   //   totalTime=0,
@@ -473,6 +484,9 @@ CgWave::
 
   Ogshow *& showFile = dbase.get<Ogshow*>("showFile");
   delete showFile;  
+
+  Ogshow *& checkPointFile = dbase.get<Ogshow*>("checkPointFile");
+  delete checkPointFile;  
 
   if( dbase.has_key("LCBC") )
   {
@@ -1022,6 +1036,18 @@ int CgWave::initialize()
     bool useStreamMode=true;  // show files will be saved compressed
     showFile = new Ogshow( nameOfShowFile,".",useStreamMode );   
     showFile->setFlushFrequency( flushFrequency ); // save this many solutions per sub-showFile
+  }
+
+  const bool & saveCheckPointFile = dbase.get<bool>("saveCheckPointFile"); 
+  if( saveCheckPointFile )
+  {
+    aString & saveCheckPointFileName = dbase.get<aString>("saveCheckPointFileName"); // name of the check point file
+    int & flushFrequency             = dbase.get<int>("flushFrequency");             // number of solutions per check point file 
+    Ogshow *& checkPointFile         = dbase.get<Ogshow*>("checkPointFile");
+
+    bool useStreamMode=true;  // show files will be saved compressed
+    checkPointFile = new Ogshow( saveCheckPointFileName,".",useStreamMode );   
+    checkPointFile->setFlushFrequency( flushFrequency ); // save this many solutions per sub-showFile
   }
 
   // -- compute the time-step ---
@@ -1815,6 +1841,11 @@ int CgWave::interactiveUpdate()
   int & flushFrequency                 = dbase.get<int>("flushFrequency");     // number of solutions per show file  
   int & numberOfSequences              = dbase.get<int>("numberOfSequences");
 
+  bool & readCheckPointFile            = dbase.get<bool>("readCheckPointFile"); 
+  bool & saveCheckPointFile            = dbase.get<bool>("saveCheckPointFile"); 
+  aString & readCheckPointFileName     = dbase.get<aString>("readCheckPointFileName"); // name of the show file for reading
+  aString & saveCheckPointFileName     = dbase.get<aString>("saveCheckPointFileName"); // name of the show file for saving
+
   real & omegaSOR                      = dbase.get<real>("omegaSOR");
 
   TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
@@ -1917,6 +1948,7 @@ int CgWave::interactiveUpdate()
                           "compute energy",
                           "save max errors",
                           "check parameters",
+                          "save check point file",
                             ""};
   int tbState[20];
   tbState[ 0] = saveShowFile;
@@ -1936,6 +1968,8 @@ int CgWave::interactiveUpdate()
   tbState[13] = computeEnergy;
   tbState[14] = saveMaxErrors;
   tbState[15] = checkParameters;
+  tbState[16] = readCheckPointFile;
+  tbState[17] = saveCheckPointFile;
 
   int numColumns=2;
   dialog.setToggleButtons(tbCommands, tbCommands, tbState, numColumns); 
@@ -2000,6 +2034,12 @@ int CgWave::interactiveUpdate()
 
   textCommands[nt] = "numUpwindCorrections";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%i",numUpwindCorrections);  nt++; 
+
+  textCommands[nt] = "read check point file name";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%s",(const char*)readCheckPointFileName);  nt++;  
+
+  textCommands[nt] = "save check point file name";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%s",(const char*)saveCheckPointFileName);  nt++;  
 
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -2100,6 +2140,15 @@ int CgWave::interactiveUpdate()
       printF("Setting nameOfShowFile=%s\n",(const char*)nameOfShowFile);
     }
 
+    else if( dialog.getTextValue(answer,"read check point file name","%s",readCheckPointFileName) )
+    {
+      printF("Setting readCheckPointFileName=%s\n",(const char*)readCheckPointFileName);
+    }
+
+    else if( dialog.getTextValue(answer,"save check point file name","%s",saveCheckPointFileName) )
+    {
+      printF("Setting saveCheckPointFileName=%s\n",(const char*)saveCheckPointFileName);
+    }
     else if( dialog.getTextValue(answer,"debug","%i",debug) )
     {
       printF("Setting debug=%i\n",debug);
@@ -2200,6 +2249,15 @@ int CgWave::interactiveUpdate()
     else if( dialog.getToggleValue(answer,"save show file",saveShowFile) )
     {
       printF("Setting saveShowFile=%d\n",saveShowFile);
+    }
+
+    else if( dialog.getToggleValue(answer,"read check point file",readCheckPointFile) )
+    {
+      printF("Setting readCheckPointFile=%d\n",readCheckPointFile);
+    }
+    else if( dialog.getToggleValue(answer,"save check point file",saveCheckPointFile) )
+    {
+      printF("Setting saveCheckPointFile=%d\n",saveCheckPointFile);
     }
 
     else if( dialog.getToggleValue(answer,"compute errors",computeErrors) )

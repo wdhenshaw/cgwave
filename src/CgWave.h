@@ -288,6 +288,10 @@ int resetTimings();
 // Re-initialize deflation (if the number of vectors to deflate has changed, for example)
 int reinitializeDeflation();
 
+int readCheckPoint( int solution, RealCompositeGridFunction & v );
+
+int saveCheckPoint( int solution, RealCompositeGridFunction & v );
+
 int saveSequenceInfo( real t0, RealArray & sequenceData );
 
 int saveSequencesToShowFile();

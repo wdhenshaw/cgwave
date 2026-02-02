@@ -676,13 +676,16 @@ int CgWaveHoltz::outputMatlabFile( const aString & matlabFileName )
   fPrintF(matlabFile,"];\n");  
 
   fPrintF(matlabFile,"periodArrayAdjusted=[");
-  for( int freq=0; freq<numberOfFrequencies; freq++ )
+  if( periodArrayAdjusted.getLength(0)>=numberOfFrequencies )
   {
-    if( adjustOmega )
-      fPrintF(matlabFile,"%14.6e ",periodArrayAdjusted(freq));
-    else
-      fPrintF(matlabFile,"%14.6e ",periodArray(freq));
-    if( (freq % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+    for( int freq=0; freq<numberOfFrequencies; freq++ )
+    {
+      if( adjustOmega )
+        fPrintF(matlabFile,"%14.6e ",periodArrayAdjusted(freq));
+      else
+        fPrintF(matlabFile,"%14.6e ",periodArray(freq));
+      if( (freq % numPerLine)==numPerLine-1 ) fPrintF(matlabFile,"...\n");
+    }
   }
   fPrintF(matlabFile,"];\n"); 
 

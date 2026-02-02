@@ -343,7 +343,7 @@ int CgWave::plotFilter( RealArray & eigenValues )
 // ==============================================================================================
 int CgWave::initializeDeflation()
 {
-  bool & deflationInitialized = dbase.get<bool>("deflationInitialized"); //  set too true if deflation has been initialized
+  bool & deflationInitialized = dbase.get<bool>("deflationInitialized"); //  set to true if deflation has been initialized
   if( deflationInitialized )
     return 0;
 
@@ -1336,13 +1336,22 @@ inflateSolution()
   const bool useOpt=true;  // use optimized loops
 
   const int & deflateWaveHoltz             = dbase.get<int>("deflateWaveHoltz");
+  const bool & deflationInitialized        = dbase.get<bool>("deflationInitialized"); 
   const int & numToDeflate                 = dbase.get<int>("numToDeflate");
-  const IntegerArray & eigNumbersToDeflate = dbase.get<IntegerArray>("eigNumbersToDeflate");
-  const int & onlyLoadDeflatedEigenVectors = dbase.get<int>("onlyLoadDeflatedEigenVectors");
-  const int & debug                        = dbase.get<int>("debug");
 
   if( deflateWaveHoltz==0 || numToDeflate<=0 )
     return 0;
+
+  if( !deflationInitialized )
+  {
+    printF("\n CgWave::inflateSolution:WARNING: deflation has not been initialized! Could be running from a check point file(?) Will initialized deflation...\n\n");
+    initializeDeflation();
+    // OV_ABORT("ERROR");
+  }
+
+  const IntegerArray & eigNumbersToDeflate = dbase.get<IntegerArray>("eigNumbersToDeflate");
+  const int & onlyLoadDeflatedEigenVectors = dbase.get<int>("onlyLoadDeflatedEigenVectors");
+  const int & debug                        = dbase.get<int>("debug");
 
   // if( true )
   // {

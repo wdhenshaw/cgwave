@@ -212,10 +212,11 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
   real cpu0 = getCPU();
   if( !fillImplicitBoundaryConditions )
   {
-    // printF("applyBC: Call interpolate...\n");
     // *** Note: interpolate also does a periodic update **** 
 
+    // printF("applyBC: Call interpolate...\n");
     u.interpolate();
+    // printF("applyBC: ... done call interpolate.\n");
   }
 
   real cpu1 = getCPU();
@@ -670,7 +671,9 @@ applyEigenFunctionBoundaryConditions( realCompositeGridFunction & u )
 
   // *** Note: interpolate also does a periodic update AND update parallel ghost **** 
 
+  //printF("applyEigenBC: Call interpolate...\n");
   u.interpolate();
+  //printF("applyEigenBC: ... done call interpolate.\n");
 
   real cpu1 = getCPU();
   timing(timeForInterpolate)+= cpu1-cpu0;

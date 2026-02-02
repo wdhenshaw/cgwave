@@ -636,10 +636,11 @@ initializeTimeIntegral( Real dt )
 
   // sigma(0:Nt,0:numFreq-1) : integration weights
   if( !dbase.has_key("sigma") )
-  {
     dbase.put<RealArray>("sigma");         // holds integration weights
+  
+  if( !dbase.has_key("filterWeights") )
     dbase.put<RealArray>("filterWeights"); // holds *new* integration weights
-  }
+
   RealArray & sigma = dbase.get<RealArray>("sigma");  
   RealArray & filterWeights = dbase.get<RealArray>("filterWeights");  
 
