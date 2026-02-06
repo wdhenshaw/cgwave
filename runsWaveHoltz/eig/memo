@@ -10,6 +10,111 @@
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+*************************************
+****** Fri Feb 6, 2026
+
+Plotting 
+
+darkCornerRoomG2O2EigsEv64.show
+
+plotStuff plotSolution.cmd -show=darkCornerRoomG4O4Eig11.show -name=darkCornerRoomG4O4Eig11 -field=abs -sol=10 11
+
+
+cgwh -noplot eig.cmd -g=darkCornerRoomGride4.order4.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=6 -eigenVectorFile=darkCornerRoomG4O4EigsEv1500.show -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=11 -numEigs=256 -eigenSolver=default -matlab=darkCornerRoomG4O4Eigs -show=darkCornerRoomG4O4Eig11.show -go=ks
+
+----------- RUN ON CCI  -------------------------------
+
+G128: 
+G64: 50M
+G32: 12M pts 
+G16: 3.3M 
+
+G16: FINISH ME 
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=16 -nodes=1 -timeLimit=6:00:00 $cgwh -noplot eig.cmd -g=darkCornerRoomGride16.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=30 -numEigs=512 -eigenSolver=default -matlab=darkCornerRoomG16O4Freq30Ev512 -show=darkCornerRoomG16O4Freq30Ev512.show -saveCheckPointFile=0 -saveCheckPointFileName=dcrCheckPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=dcrCheckPointFile1.show -go=ks
+
+
+Penrose room G8 : running... check-point 
+omega=20 PPW=25 PPW4=21
+omega=20 Upwind Np=8 tol=1e-10 save Check-Point 
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=4 -nodes=1 -timeLimit=6:00:00 $cgwh -noplot eig.cmd -g=darkCornerRoomGride8.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=60 -numPeriods=8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=20 -numEigs=256 -eigenSolver=default -matlab=darkCornerRoomG8O4Freq20Ev256 -show=darkCornerRoomG8O4Freq20Ev256.show -saveCheckPointFile=1 -saveCheckPointFileName=dcrCheckPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=dcrCheckPointFile1.show -go=ks
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=2.00e+01 k=2.00e+01 lambda=3.14e-01 dx=1.25e-02 domainSize=1.20e+01 NLambda=38.1972 ppw=lambda/dx= 25.1 ppw(rule-of-thumb)= 21.4 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+cgWave:FD24u t=0.000e+00 (   0 steps) dt=6.656e-04 ||u||= 9.22e-03, cpu= 3.46e-07(s)
+cgWave:FD24u t=2.513e+00 (3776 steps) dt=6.656e-04 ||u||= 6.00e-03, cpu= 4.37e+01(s)
+saveCheckPointFile: solution=1
+
+
+
+Perose: G8
+omega=8 : PPW =63 PPW4=17 
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=4 -nodes=1 -timeLimit=4:00:00 $cgwh -noplot eig.cmd -g=darkCornerRoomGride8.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=8 -numEigs=256 -eigenSolver=default -matlab=darkCornerRoomG8O4Freq8Ev256 -show=darkCornerRoomG8O4Freq8Ev256.show -saveCheckPointFile=0 -saveCheckPointFileName=dcrCheckPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=dcrCheckPointFile1.show -go=ks
+
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  8.0000e+00, orderOfAccuracy=4, grid=darkCornerRoomGride8, np=4
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.95, dt=1.331e-03, minStepsPerPeriod=10, Np=4, numberOfStepsPerSolve=2360, 
+  totalTimeStepsStaken=1939920, aveItsPerImplicitSolve=  0.0
+ readCheckPointFile=0, readCheckPointFileName=[checkPointFile.show], writeCheckPointFile=0, writeCheckPointFileName=[checkPointFile.show]
+ omega=8.00e+00, k=8.00e+00, lambda=7.85e-01, dx=1.25e-02, domainSize=1.20e+01, NLambda=15.2789, ppw=lambda/dx= 62.8, ppw(rule-of-thumb)= 17.0 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 822, cpu= 5.80e+03(s), np=4
+ num eigs requested=256, number eigs converged =362, numArnoldiVectors=513, wave-solves/eig=  2.3, timeSteps/eig=5358.9
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 4.7735056514e-01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.09e-07
+ i=1: lamRQ = 7.2686464307e-01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.58e-07
+ i=2: lamRQ = 6.2940352771e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.87e-07
+ i=3: lamRQ = 6.2993263060e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.01e-06
+ i=4: lamRQ = 6.3191558949e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.28e-07
+ i=5: lamRQ = 6.3219904711e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.47e-08
+ i=6: lamRQ = 6.3230477990e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.12e-07
+ i=7: lamRQ = 6.3241418842e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.10e-09
+ i=8: lamRQ = 6.3336160384e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.89e-07
+
+
+
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=4 -nodes=1 -timeLimit=4:00:00  $cgwh -noplot eig.cmd -g=sice8.order4.ng3  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4O2Freq10 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG8O4Ev128.show -freq=10 -numEigs=128 -upwind=0 -go=ks
+
+------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=4, grid=sice8, np=4
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.95, dt=7.060e-03, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=89, 
+  totalTimeStepsStaken=29993, aveItsPerImplicitSolve=  0.0
+ readCheckPointFile=0, readCheckPointFileName=[checkPointFile.show], writeCheckPointFile=0, writeCheckPointFileName=[checkPointFile.show]
+ omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=1.25e-02, domainSize=2.00e+00, NLambda=3.18308, ppw=lambda/dx= 50.3, ppw(rule-of-thumb)= 11.5 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 337, cpu= 4.55e+01(s), np=4
+ num eigs requested=128, number eigs converged =131, numArnoldiVectors=257, wave-solves/eig=  2.6, timeSteps/eig=229.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 2.4048255522e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.25e-11
+ i=1: lamRQ = 3.8317059177e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.93e-12
+ i=2: lamRQ = 3.8317059177e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.70e-12
+ i=3: lamRQ = 5.5200778089e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.81e-12
+ i=4: lamRQ = 6.3801612032e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.00e-12
+ i=5: lamRQ = 6.3801612064e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.61e-12
+
+
+DCS: OLD --> worked 
+makeBatch.p -batchFile=batch.sh -solverName=cgwh $cgwh noplot eig.cmd -g=square128.order4 -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=200 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -show=squareEigs.show -orderOfExtrapolation=-1 -freq=10 -numEigs=10  -matlab=square  -solveri=best -rtoli=1e-12 -atoli=1e-12  -go=ks 
+
+Why no clock speed?
+==== final time= 6.28e-01, numberOfStepsTaken =      630, grids=1, gridpts =16641, interp pts=0, processors=4, clock=0.00 GHz ==== 
+
+
+
+
+mpiexec -n 32 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride4.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=2000 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=15 -numEigs=512 -eigenSolver=default -show=darkCornerRoom3dG4O4Freq15Ev512.show -matlab=darkCornerRoom3dG4O4Freq15Ev512 -upwind=1 -go=ks
+
+
+
 >>> CGPC:  --> too much memory!!
 G4 O4 Np=12 freq=9 G4=83M pts 
 setsid mpiexec -n 32 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride4.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=2000 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=9 -numEigs=512 -eigenSolver=default -show=darkCornerRoom3dG4O4Freq9Ev512.show -matlab=darkCornerRoom3dG4O4Freq9Ev512 -upwind=1 -go=ks > darkCornerRoom3dG4O4Freq9Ev512.out
@@ -17,10 +122,149 @@ setsid mpiexec -n 32 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride4.order4.ng3.
 
 setsid mpiexec -n 64 --use-hwthread-cpus $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride4.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=2000 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=9 -numEigs=512 -eigenSolver=default -show=darkCornerRoom3dG4O4Freq9Ev512.show -matlab=darkCornerRoom3dG4O4Freq9Ev512 -upwind=1 -go=ks > darkCornerRoom3dG4O4Freq9Ev512.out
 
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=9.00e+00 k=9.00e+00 lambda=6.98e-01 dx=2.50e-02 domainSize=1.20e+01 NLambda=17.1887 ppw=lambda/dx= 27.9 ppw(rule-of-thumb)= 17.5 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
 
+G2 running ok
+mpiexec -n 16 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride2.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=1000 -numPeriods=4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=3 -numEigs=128 -eigenSolver=default -show=darkCornerRoom3dG2O4Freq3Ev128uw.show -matlab=darkCornerRoom3dG2O4Freq3Ev128 -upwind=1 -go=ks 
+
+cgWave:FD24u t=0.000e+00 (   0 steps) dt=3.496e-03 ||u||= 1.05e-03, cpu= 8.80e-07(s)
+cgWave:FD24u t=8.378e+00 (2396 steps) dt=3.496e-03 ||u||= 7.88e-04, cpu= 1.62e+02(s)
+
+
+G1 runninf ok 
+mpiexec -n 16 $cgwh -noplot eig.cmd -g=darkCornerRoom3dGride1.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=1000 -numPeriods=4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=3 -numEigs=128 -eigenSolver=default -show=darkCornerRoom3dG1O4Freq3Ev128uw.show -matlab=darkCornerRoom3dG1O4Freq3Ev128 -upwind=1 -go=ks 
+
+
+
+
+
+SPHERE: UPWIND freq=10, Np=4, Nev=64
+mpirun -np=8 $cgwh -noplot eig.cmd -g=spheree2.order4.ng3.hdf  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=300 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=4 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=10 -numEigs=64 -upwind=1 -saveCheckPointFile=0 -flushFrequency=10 -go=k
+
+
+
+SPHERE: freq=10, Np=4, Nev=64
+mpirun -np=8 $cgwh -noplot eig.cmd -g=spheree2.order4.ng3.hdf  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=300 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=4 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=10 -numEigs=64 -upwind=0 -saveCheckPointFile=0 -flushFrequency=10 -go=k
+
+cgWave:FD24 t=0.000e+00 (  0 steps) dt=2.805e-03 ||u||= 4.08e-02, cpu= 1.22e-07(s)
+cgWave:FD24 t=2.513e+00 (896 steps) dt=2.805e-03 ||u||= 2.42e-02, cpu= 1.51e+00(s)
+
+------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=4, grid=spheree2, np=8
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.95, dt=2.805e-03, minStepsPerPeriod=10, Np=4, numberOfStepsPerSolve=896, 
+  totalTimeStepsStaken=232960, aveItsPerImplicitSolve=  0.0
+ readCheckPointFile=0, readCheckPointFileName=[checkPointFile.show], writeCheckPointFile=0, writeCheckPointFileName=[checkPointFile.show]
+ omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=5.00e-02, domainSize=2.00e+00, NLambda=3.18169, ppw=lambda/dx= 12.6, ppw(rule-of-thumb)= 11.5 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 260, cpu= 3.96e+02(s), np=8
+ num eigs requested=64, number eigs converged =73, numArnoldiVectors=129, wave-solves/eig=  3.6, timeSteps/eig=3191.2
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 8.1827273881e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.11e-13
+ i=1: lamRQ = 8.1827366698e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.60e-13
+ i=2: lamRQ = 8.1827694201e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.59e-13
+ i=3: lamRQ = 8.1827887225e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.69e-13
+ i=4: lamRQ = 8.1827938976e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.04e-08
+ i=5: lamRQ = 8.1827938976e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.04e-08
+ i=6: lamRQ = 8.1828219967e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.47e-13
+ i=7: lamRQ = 8.1828371230e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.88e-09
+ i=8: lamRQ = 8.1828371230e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.88e-09
+ i=9: lamRQ = 9.0952448388e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.68e-13
+ i=10: lamRQ = 9.0953094241e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.88e-13
+ i=11: lamRQ = 9.0956256947e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.31e-13
+ i=12: lamRQ = 9.0956580152e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.05e-09
+ i=13: lamRQ = 9.0956580152e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.05e-09
+ i=14: lamRQ = 9.3559556411e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.43e-09
+ i=15: lamRQ = 9.3559556411e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.43e-09
+ i=16: lamRQ = 9.3561111811e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.45e-13
+ i=17: lamRQ = 9.3561535432e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.57e-13
+ i=18: lamRQ = 9.3561855324e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.20e-07
+ i=19: lamRQ = 9.3561855324e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.20e-07
+ i=20: lamRQ = 9.3562629821e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.46e-13
+ i=21: lamRQ = 9.3562631625e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.81e-13
+ i=22: lamRQ = 9.3562650074e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.30e-13
+ i=23: lamRQ = 9.3562829172e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.34e-08
+ i=24: lamRQ = 9.3562829172e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.34e-08
+ i=25: lamRQ = 9.4255161724e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.09e-14
+ i=26: lamRQ = 1.0417594443e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.59e-10
+ i=27: lamRQ = 1.0417594443e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.59e-10
+ i=28: lamRQ = 1.0417613092e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.98e-14
+ i=29: lamRQ = 1.0417936221e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.60e-14
+ i=30: lamRQ = 1.0417944723e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.03e-10
+ i=31: lamRQ = 1.0417944723e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.03e-10
+ i=32: lamRQ = 1.0418440033e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.66e-14
+ i=33: lamRQ = 1.0512606416e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.37e-14
+ i=34: lamRQ = 1.0512615673e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.71e-14
+ i=35: lamRQ = 1.0513154793e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.92e-14
+ i=36: lamRQ = 1.0513154801e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.73e-07
+ i=37: lamRQ = 1.0513154801e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.73e-07
+ i=38: lamRQ = 1.0513202278e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.26e-13
+ i=39: lamRQ = 1.0513321890e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.11e-08
+ i=40: lamRQ = 1.0513321890e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.11e-08
+ i=41: lamRQ = 1.0513406765e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.75e-08
+ i=42: lamRQ = 1.0513406765e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.75e-08
+ i=43: lamRQ = 1.0513447331e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.19e-14
+ i=44: lamRQ = 1.0513515187e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.58e-14
+ i=45: lamRQ = 1.0513528561e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.16e-13
+ i=46: lamRQ = 1.0905207757e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.07e-11
+ i=47: lamRQ = 1.0905207757e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.07e-11
+ i=48: lamRQ = 1.0905385234e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.33e-13
+ i=49: lamRQ = 1.1655791190e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.65e-09
+ i=50: lamRQ = 1.1655791190e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.65e-09
+ i=51: lamRQ = 1.1656948943e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.69e-07
+ i=52: lamRQ = 1.1656948943e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.69e-07
+ i=53: lamRQ = 1.1657063631e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.18e-13
+ i=54: lamRQ = 1.1657154293e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.99e-14
+ i=55: lamRQ = 1.1657175356e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.09e-13
+ i=56: lamRQ = 1.1657214389e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.22e-13
+ i=57: lamRQ = 1.1657481534e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.51e-13
+ i=58: lamRQ = 1.1657615721e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.97e-08
+ i=59: lamRQ = 1.1657615721e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.97e-08
+ i=60: lamRQ = 1.1657719708e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.06e-13
+ i=61: lamRQ = 1.1657735835e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.94e-13
+ i=62: lamRQ = 1.1657759641e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.40e-07
+ i=63: lamRQ = 1.1657759641e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.40e-07
+ i=64: lamRQ = 1.1705189072e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.23e-13
+ i=65: lamRQ = 1.1705427811e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.56e-13
+ i=66: lamRQ = 1.1705452698e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.64e-09
+ i=67: lamRQ = 1.1705452698e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.64e-09
+ i=68: lamRQ = 1.1705705526e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.27e-13
+ i=69: lamRQ = 1.1705843557e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.37e-13
+ i=70: lamRQ = 1.1706316088e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.78e-13
+ i=71: lamRQ = 1.1706348301e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.24e-10
+ i=72: lamRQ = 1.1706348301e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.24e-10
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=1.00e+01 k=1.00e+01 lambda=6.28e-01 dx=5.00e-02 domainSize=2.00e+00 NLambda=3.18169 ppw=lambda/dx= 12.6 ppw(rule-of-thumb)= 11.5 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+omega=4.00e+00, k=4.00e+00, lambda=1.57e+00, dx=5.00e-02, domainSize=2.00e+00, NLambda=1.27268, ppw=lambda/dx= 31.4, ppw(rule-of-thumb)=  9.1 (epsr=0.01)
+
+ i=0: lamRQ = 3.1415882107e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.03e-12
+ i=1: lamRQ = 4.4933979904e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.98e-10
+ i=2: lamRQ = 4.4933979904e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.98e-10
+ i=3: lamRQ = 4.4933982612e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.29e-13
+
+
+BOX: OK 
+mpirun -np=2 $cgwh -noplot eig.cmd -g=box2.order4.ng3  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=4 -numEigs=4 -upwind=0 -saveCheckPointFile=0 -flushFrequency=10 -go=k
+
+
+
+OK: 
+mpirun -np=2 $cgwh -noplot eig.cmd -g=square128.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=mone -freq=4 -numEigs=4 -upwind=0 -saveCheckPointFile=1 -flushFrequency=10 -go=k
 
 *************************************
-****** Mon Feb , 2026
+****** Mon Feb 2, 2026
 
 
 CONTINUE ON CHECK POINT FILE

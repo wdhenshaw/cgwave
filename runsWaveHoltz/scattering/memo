@@ -16,6 +16,26 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 
 
 ***************************************************
+****** Fri Feb 6, 2026
+
+---- CCI --
+
+SPLIT-RING RESONATOR
+
+ogen -noplot $wave/grids/splitRingGrid -prefix=splitRingGridLeftGap -angle=180 -interp=e -order=4 -numGhost=3 -factor=8
+
+
+G32: cg66:
+mpiexec -n 64 $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape32.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=25.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG32O4kx25.show -matlab=splitRingScatLeftGapG32O4kx25 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -go=ks
+
+np=16: G32
+omega=  1.57e+02, k=  1.57e+02, lambda=  4.00e-02, dx=  1.56e-03, domainSize=  2.50e+00, NLambda=62.5, ppw=lambda/dx= 25.6, ppw(rule-of-thumb)= 24.1 (epsr=0.01)<<<
+
+solveHelmholtz: max-residual [Re,Im]=[7.38e-05,8.99e-05] (gmres, numIts=593, ave-CR= 0.96 , cpu=2.99e+03(s), np=64)
+
+
+
+***************************************************
 ****** Fri Jan 23, 2026
 
 Rotated pill box
