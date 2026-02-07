@@ -43,6 +43,9 @@ $solverh="yale"; $maxith=2000; $rtolh=1.e-10; $atolh=1.e-10; $restart=50; $iluh=
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
 $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; 
 $saveResidual=0; # 1 = save residual to the show file
+$readCheckPointFile=0; $saveCheckPointFile=0; $flushFrequency=10;
+$readCheckPointFileName="checkPointFile.show"; 
+$saveCheckPointFileName="checkPointFile.show"; 
 #
 GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,\
             "amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz, "gmresRestartLength=i"=>\$gmresRestartLength,\
@@ -58,7 +61,9 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "eigenVectorFile=s"=>\$eigenVectorFile,"minStepsPerPeriod=i"=>\$minStepsPerPeriod,"filterTimeDerivative=i"=>\$filterTimeDerivative,\
             "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"krylovType=s"=>\$krylovType,\
             "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid,"filterD0t=i"=>\$filterD0t,\
-            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep,"assignInterpNeighbours=s"=>\$assignInterpNeighbours );
+            "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep,"assignInterpNeighbours=s"=>\$assignInterpNeighbours,\
+            "readCheckPointFile=i"=>\$readCheckPointFile,"saveCheckPointFile=i"=>\$saveCheckPointFile,\
+            "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -179,6 +184,12 @@ number to deflate $numToDeflate
 eigenVectorFile $eigenVectorFile
 min steps per period $minStepsPerPeriod
 # pause
+#
+read check point file $readCheckPointFile
+save check point file $saveCheckPointFile
+read check point file name $readCheckPointFileName
+save check point file name $saveCheckPointFileName
+flush frequency $flushFrequency
 #
 #
 if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }
