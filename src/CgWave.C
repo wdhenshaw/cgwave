@@ -387,6 +387,8 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<RealArray>("timeSequence");
   dbase.put<RealArray>("sequence");
 
+  dbase.put<int>("maximumNumberOfParallelSubFiles") = 8; // when writing show files from many processors
+
   dbase.put<Real>("timeForOgesSolve") = 0;  // record Oges time for implicit solve
 
   // -- check point files and variables ---
@@ -1846,6 +1848,8 @@ int CgWave::interactiveUpdate()
   aString & readCheckPointFileName     = dbase.get<aString>("readCheckPointFileName"); // name of the show file for reading
   aString & saveCheckPointFileName     = dbase.get<aString>("saveCheckPointFileName"); // name of the show file for saving
 
+  int & maximumNumberOfParallelSubFiles= dbase.get<int>("maximumNumberOfParallelSubFiles");
+
   real & omegaSOR                      = dbase.get<real>("omegaSOR");
 
   TimeSteppingMethodEnum & timeSteppingMethod = dbase.get<TimeSteppingMethodEnum>("timeSteppingMethod");
@@ -2026,7 +2030,7 @@ int CgWave::interactiveUpdate()
   textCommands[nt] = "dtMax";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g",dtMax);  nt++; 
 
- textCommands[nt] = "damp";  textLabels[nt]=textCommands[nt];
+  textCommands[nt] = "damp";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%g",damp);  nt++;   
 
   textCommands[nt] = "implicit weights";  textLabels[nt]=textCommands[nt];
@@ -2040,6 +2044,11 @@ int CgWave::interactiveUpdate()
 
   textCommands[nt] = "save check point file name";  textLabels[nt]=textCommands[nt];
   sPrintF(textStrings[nt], "%s",(const char*)saveCheckPointFileName);  nt++;  
+
+  textCommands[nt] = "maximum number of parallel subfiles";  textLabels[nt]=textCommands[nt];
+  sPrintF(textStrings[nt], "%d",maximumNumberOfParallelSubFiles);  nt++;  
+
+  
 
   // null strings terminal list
   textCommands[nt]="";   textLabels[nt]="";   textStrings[nt]="";  assert( nt<numberOfTextStrings );
@@ -2112,6 +2121,25 @@ int CgWave::interactiveUpdate()
       }
       
     }
+
+    else if( len=answer.matches("maximum number of parallel subfiles") )
+    {
+      if( true )
+      {
+        printF("WARNING: The option 'maximum number of parallel sub-files' will only apply to a show file\n"
+               "         that is subsequently opened, not to an already opened show file.\n");
+      }
+      const int np = Communication_Manager::numberOfProcessors();
+      int maxFiles=np;
+      sScanF(answer(len,answer.length()-1),"%i",&maxFiles);
+      printF("maximum number of parallel sub-files =%i\n",maxFiles);
+      dialog.setTextLabel("maximum number of parallel sub-files",sPrintF(line,"%i",maxFiles));
+
+      GenericDataBase::setMaximumNumberOfFilesForWriting(maxFiles);
+
+      maximumNumberOfParallelSubFiles=maxFiles;
+    }
+
     else if( answer=="user defined forcing..." )
     {
       setupUserDefinedForcing();

@@ -31,6 +31,8 @@ G64: 10M pts
 
 >>>>>>>>> CCI G128
 
+plotStuff plotSolution.cmd -show=splitRingScatLeftGapG128O4kx70.show -name=splitRingScatLeftGapG128O4kx70 -field=speed absurTotal absuiTotal -res=4096
+
 RUNNING....
 makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=512 -nodes=32 -timeLimit=6:00:00 $cgwh -noplot scat.cmd -g=splitRingGridLeftGape128.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=70.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=20000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG128O4kx70.show -matlab=splitRingScatLeftGapG128O4kx70 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -restart=1000 -gmresRestartLength=20000 -saveCheckPointFile=1 -saveCheckPointFileName=dcrCheckPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=dcrCheckPointFile1.show -go=ks
 
@@ -41,6 +43,10 @@ cgWave:FD24u t=2.287e-01 (1169 steps) dt=1.956e-04 ||u||= 2.87e+00, cpu= 1.23e+0
 >> first run got to here: 
  ##### SAVE KRYLOV RESIDUAL: iteration=737: L2h-residual= 2.73e-09, ratio= 0.99 
 MonitorError called at it=738, rnorm= 2.47e-05
+
+>> 2nd run finished:
+omega=4.40e+02, k=4.40e+02, lambda=1.43e-02, dx=3.91e-04, domainSize=2.50e+00, NLambda=175, ppw=lambda/dx= 36.6, ppw(rule-of-thumb)= 31.2 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[6.09e-05,3.92e-05] (gmres, numIts=833, ave-CR= 0.98 , cpu=1.67e+04(s), np=512)
 
 
 >>>>>>>>>> CCI G64 <<<<<<<<<<

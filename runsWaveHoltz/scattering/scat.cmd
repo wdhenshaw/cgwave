@@ -46,6 +46,7 @@ $saveResidual=0; # 1 = save residual to the show file
 $readCheckPointFile=0; $saveCheckPointFile=0; $flushFrequency=10;
 $readCheckPointFileName="checkPointFile.show"; 
 $saveCheckPointFileName="checkPointFile.show"; 
+$maxParallelSubFiles=8; 
 #
 GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,\
             "amp=f"=>\$amp,"kx=f"=>\$kx,"ky=f"=>\$ky,"kz=f"=>\$kz, "gmresRestartLength=i"=>\$gmresRestartLength,\
@@ -63,7 +64,8 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "adjustPlotsForSuperGrid=i"=>\$adjustPlotsForSuperGrid,"adjustErrorsForSuperGrid=i"=>\$adjustErrorsForSuperGrid,"filterD0t=i"=>\$filterD0t,\
             "takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep,"assignInterpNeighbours=s"=>\$assignInterpNeighbours,\
             "readCheckPointFile=i"=>\$readCheckPointFile,"saveCheckPointFile=i"=>\$saveCheckPointFile,\
-            "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName );
+            "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName,\
+            "maxParallelSubFiles=i"=>\$maxParallelSubFiles );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -190,6 +192,8 @@ save check point file $saveCheckPointFile
 read check point file name $readCheckPointFileName
 save check point file name $saveCheckPointFileName
 flush frequency $flushFrequency
+#
+maximum number of parallel subfiles $maxParallelSubFiles
 #
 #
 if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }

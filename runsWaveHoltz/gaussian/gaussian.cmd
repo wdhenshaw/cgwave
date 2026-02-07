@@ -47,6 +47,7 @@ $bc1=""; $bc2=""; $bc3=""; $bc4=""; $bc5=""; $bc6=""; $orderOfExtrapolation=-1;
 $readCheckPointFile=0; $saveCheckPointFile=0; $flushFrequency=10;
 $readCheckPointFileName="checkPointFile.show"; 
 $saveCheckPointFileName="checkPointFile.show";  
+$maxParallelSubFiles=8; 
 #
 GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,"debugOges=i"=>\$debugOges,\
@@ -65,7 +66,8 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "restarti=i"=>\$restarti,"ilui=i"=>\$ilui,"useVariableTolerance=i"=>\$useVariableTolerance,"deflateForcing=i"=>\$deflateForcing,\
             "filterD0t=i"=>\$filterD0t,"useOptFilter=i"=>\$useOptFilter,"takePeriodicFirstStep=i"=>\$takePeriodicFirstStep,\
             "readCheckPointFile=i"=>\$readCheckPointFile,"saveCheckPointFile=i"=>\$saveCheckPointFile,"flushFrequency=i"=>\$flushFrequency,\
-            "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName );
+            "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName,\
+            "maxParallelSubFiles=i"=>\$maxParallelSubFiles );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -195,6 +197,8 @@ save check point file $saveCheckPointFile
 read check point file name $readCheckPointFileName
 save check point file name $saveCheckPointFileName
 flush frequency $flushFrequency
+#
+maximum number of parallel subfiles $maxParallelSubFiles
 #
 #
 if( $ts eq "implicit" ){ $cmd="include $ENV{CGWAVE}/runs/include/implicitOptions.h"; }else{ $cmd="#"; }

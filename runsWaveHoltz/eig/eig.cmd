@@ -48,6 +48,7 @@ $saveCheckPointFileName="checkPointFile.show";
 #
 $solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
+$maxParallelSubFiles=8; 
 #
 GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,\
             "omegaSOR=f"=>\$omegaSOR,"tol=f"=>\$tol,"cfl=f"=>\$cfl,"tp=f"=>\$tp,"iMode=i"=>\$imode,\
@@ -65,7 +66,8 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "useAccurateInnerProduct=i"=>\$useAccurateInnerProduct,"takeImplicitFirstStep=i"=>\$takeImplicitFirstStep,\
             "smoothInitialConditions=i"=>\$smoothInitialConditions,"readCheckPointFile=i"=>\$readCheckPointFile,"saveCheckPointFile=i"=>\$saveCheckPointFile,\
             "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"orderOfExtrapolation=i"=>\$orderOfExtrapolation,\
-            "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName );
+            "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName,\
+            "maxParallelSubFiles=i"=>\$maxParallelSubFiles );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -178,6 +180,8 @@ save check point file $saveCheckPointFile
 read check point file name $readCheckPointFileName
 save check point file name $saveCheckPointFileName
 flush frequency $flushFrequency
+#
+maximum number of parallel subfiles $maxParallelSubFiles
 #
 compute errors 0
 # pause

@@ -482,10 +482,7 @@ solveSLEPc(int argc,char **args)
   // Mat            A;        /* linear system matrix */
   //  KSP            ksp;     /* linear solver context */
 
-  // PetscRandom    rctx;     /* random number generator context */
-  // PetscReal      norm;     /* norm of solution error */
-
-  // PetscInt       i,j,Ii,J,Istart,Iend,m = 8,n = 7,its;
+   // PetscInt       i,j,Ii,J,Istart,Iend,m = 8,n = 7,its;
     PetscInt       i,j,Istart,Iend,its;
 
     PetscErrorCode ierr;
@@ -1380,9 +1377,9 @@ solveSLEPc(int argc,char **args)
 
 
 
-    computeEigenmodesWithSLEPc=0; // reset 
+    computeEigenmodesWithSLEPc  = 0; // reset 
     adjustHelmholtzForUpwinding = adjustHelmholtzForUpwindingSave; // reset
-    readCheckPointFile = readCheckPointFileSave; // reset
+    readCheckPointFile          = readCheckPointFileSave; // reset
 
   // *** DESTROY STUFF ****
     PetscCall(EPSDestroy(&eps));

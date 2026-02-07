@@ -11,6 +11,30 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
 *************************************
+****** Sat Feb 7, 2026
+
+
+Penrose room G8 : running... check-point ... restart ...
+omega=20 PPW=25 PPW4=21
+omega=20 Upwind Np=8 tol=1e-10 save Check-Point 
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=4 -nodes=1 -timeLimit=6:00:00 $cgwh -noplot eig.cmd -g=darkCornerRoomGride8.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=60 -numPeriods=8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=20 -numEigs=256 -eigenSolver=default -matlab=darkCornerRoomG8O4Freq20Ev256 -show=darkCornerRoomG8O4Freq20Ev256.show -saveCheckPointFile=1 -saveCheckPointFileName=dcrCheckPointFile3.show -readCheckPointFile=1 -readCheckPointFileName=dcrCheckPointFile2.show -go=ks
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=2.00e+01 k=2.00e+01 lambda=3.14e-01 dx=1.25e-02 domainSize=1.20e+01 NLambda=38.1972 ppw=lambda/dx= 25.1 ppw(rule-of-thumb)= 21.4 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+>>> First run got to:
+ ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=721 +++
+
+>>> second run: 
+++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=1259 +++
+
+>>> RETART
+
+
+
+*************************************
 ****** Fri Feb 6, 2026
 
 Plotting 
