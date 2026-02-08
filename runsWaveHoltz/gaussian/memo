@@ -12,7 +12,41 @@ set ovp2 = ~/Dropbox/overHoltzPaper/part2
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+*************************************
+****** Sun Feb 8, 2026
 
+
+PUT A GAUSSIAN SOURCE IN THE SPLIT RING RESONATOR 
+
+plotStuff plotComplexSolution.cmd -show=splitRingG16O4Freq90 -solution=1 -field=absur absui speed
+plotStuff plotComplexSolution.cmd -show=splitRingG8O4Freq50 -solution=1 -field=absur absui speed
+
+
+G16 -- needs more iterations, also increase Np 
+$cgwh -noplot gaussian.cmd -g=splitRingGridLeftGapOffsete16.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=90 -amp=-8100 -beta=90 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=4 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=splitRingG16O4Freq90.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=1000: L2h-residual= 5.39e-06, ratio= 0.99 
+
+solveHelmholtz: max-residual [Re,Im]=[4.45e-05,6.06e-05] (gmres, numIts=1001, ave-CR= 0.99 , cpu=1.53e+03(s), np=1)
+
+
+G8 -- redo with offset grid (shifted right)
+$cgwh -noplot gaussian.cmd -g=splitRingGridLeftGapOffsete8.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=50 -amp=-2500 -beta=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=1000 -numPeriods=1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=splitRingG8O4Freq50.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks
+
+solveHelmholtz: max-residual [Re,Im]=[2.03e-05,3.11e-06] (gmres, numIts=455, ave-CR= 0.96 , cpu=2.75e+02(s), np=1)
+
+
+
+$cgwh -noplot gaussian.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape4.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=30 -amp=-900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=1000 -numPeriods=1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=og
+
+ omega=3.00e+01, k=3.00e+01, lambda=2.09e-01, dx=1.25e-02, domainSize=2.50e+00, NLambda=11.9366, ppw=lambda/dx= 16.8, ppw(rule-of-thumb)= 16.0 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[4.80e-06,3.12e-06] (gmres, numIts=100, ave-CR= 0.91 , cpu=2.59e+01(s), np=1)
+
+
+$cgwh -noplot gaussian.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape4.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=9 -amp=-100 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=100 -numPeriods=1 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=junk.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=og
+
+solveHelmholtz: max-residual [Re,Im]=[5.13e-05,7.42e-07] (gmres, numIts=29, ave-CR= 0.45 , cpu=2.41e+01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[3.50e-07,1.93e-07],  norm [Re,Im]=[4.54e-01,1.02e-02] (between WaveHoltz and Direct Helmholtz)
 
 *************************************
 ****** Mon Feb 2, 2026

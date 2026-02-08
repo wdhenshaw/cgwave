@@ -18,6 +18,33 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 ***************************************************
 ****** Fri/Sat Feb 6-7, 2026
 
+>>>>>>>>> CCI G256
+
+plotStuff plotSolution.cmd -show=splitRingScatLeftGapG128O4kx70.show -name=splitRingScatLeftGapG128O4kx70 -field=speed absurTotal absuiTotal -res=4096
+
+G256 kx=130 RUNNING....
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=1024 -nodes=64 -timeLimit=6:00:00 $cgwh -noplot scat.cmd -g=splitRingGridLeftGape256.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=130.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=20000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG256O4kx130.show -matlab=splitRingScatLeftGapG256O4kx130 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -restart=1000 -gmresRestartLength=20000 -saveCheckPointFile=1 -saveCheckPointFileName=dcrCheckPointFile2.show -readCheckPointFile=1 -readCheckPointFileName=dcrCheckPointFile1.show -go=ks
+
+grid     name          gridIndexRange(0:1,0:2)           gridPoints        hmx      hmn   time-stepping
+   0: backGround   ([ 0:12800],[ 0:12800],[ 0:    0])   1.63866e+08   1.95e-04 1.95e-04    explicit
+   1: splitRing1   ([ 0:32768],[ 0:    7],[ 0:    0])        262152   1.42e-04 1.18e-04    explicit
+ total number of grid points =1.64128e+08, min(hmn)=1.18e-04, max(hmn)=1.95e-04, max(hmx)=1.95e-04,  
+
+cgWave:FD24u t=1.231e-01 (1265 steps) dt=9.735e-05 ||u||= 2.84e+00, cpu= 3.51e+01(s)
+
+>>> run 1 : got to:
+ ##### SAVE KRYLOV RESIDUAL: iteration=148: L2h-residual= 6.52e-04, ratio= 0.99 
+MonitorError called at it=149, rnorm= 1.17e+01
+
+
+
+
+TEST max-parallel-sub-files
+
+Split ring: 
+mpiexec -n 16 $cgwh -noplot scat.cmd -g=/home/henshw/runs/cgwave/grids/splitRingGridLeftGape8.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=3.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG8O4kx3.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=ks
+
+
 ---- CCI --
 
 SPLIT-RING RESONATOR
