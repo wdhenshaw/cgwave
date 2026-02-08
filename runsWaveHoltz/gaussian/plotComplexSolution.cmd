@@ -11,6 +11,7 @@ GetOptions( "show=s"=>\$show, "name=s"=>\$name, "solution=i"=>\$solution,"tSave=
       "numPerTime=i"=>\$numPerTime, "numToSave=i"=>\$numToSave,"numFreq=i"=>\$numFreq,"clines=i"=>\$clines,\
       "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"field=s{1,}"=>\@field,"res=i"=>\$res );
 #
+if( $name eq "plot" ){ $name=$show; }
 if( $field[0] eq "" ){ @field=( "ur", "ui", "urTotal", "uiTotal" ); }
 # 
 $show
