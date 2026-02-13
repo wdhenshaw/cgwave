@@ -11,10 +11,225 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
 *************************************
+****** Fri Feb 13, 2026
+
+SUBMIT MULTIPLE JOBS FOR RESTARTS:
+
+sbatch --dependency=afternotok:$jobid 
+
+------- THIS SEEMS TO WORK ----
+set jobid = `sbatch --parsable batch1.sh`
+
+set jobid2 = `sbatch --parsable --dependency=afternotok:$jobid batch2.sh`
+
+set jobid2 = `sbatch --parsable --dependency=afterany:$jobid batch2.sh`
+
+
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+           3913300       el8    cgwhg PCM2hnsh PD       0:00      4 (Priority)
+           3925038       el8      ew1 PCM2hnsh PD       0:00      1 (Dependency)
+           3925036       el8      ew1 PCM2hnsh PD       0:00      1 (Priority)
+
+# show dependencies in squeue output:
+squeue -u $USER -o "%.8A %.4C %.10m %.20E"
+
+   JOBID CPUS MIN_MEMORY           DEPENDENCY
+ 3913300   64          0               (null)
+ 3925036    2          0               (null)
+ 3925038    2          0 afterany:3925036(unf
+
+---- submitRestarts.sh -------------
+#!/bin/bash -xe
+#
+# Submit multiple jobs for restarts
+#
+
+
+# first job - no dependencies
+jid1=$(sbatch batch1.sh)
+
+# This job waits til the previous finishes
+jid2=$(sbatch  --dependency=afterany:$jid1 batch2.sh)
+
+# show dependencies in squeue output:
+squeue -u $USER -o "%.8A %.4C %.10m %.20E"
+# -----------------------------------------------
+
+RUN 1 
+makeBatch.p -batchFile=batch1.sh -solverName=ew1 -np=2 -nodes=1 -timeLimit=0:00:10 -errFile=batch1.err -logFile=batch1.log $cgwh -noplot eig.cmd -g=sice8.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG4O2Ev64a.show -freq=12 -numEigs=64 -upwind=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -go=ks
+
+RUN 2 -- RESTART
+makeBatch.p -batchFile=batch2.sh -solverName=ew1 -np=2 -nodes=1 -timeLimit=0:01:00 -errFile=batch2.err -logFile=batch2.log $cgwh -noplot eig.cmd -g=sice8.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG8O2E642b.show -freq=12 -numEigs=64 -upwind=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile2.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile1.show -go=ks
+
+
+
+*************************************
+****** Tues Feb 7, 2026
+
+
+Penrose room G16 : 
+
+G16: omega=30 PPW=33.5 PPW4=23 
+G8 : omega=20 PPW=25 PPW4=21
+
+makeBatch.p -batchFile=batch.sh -solverName=cgwhe -np=32 -nodes=2 -timeLimit=6:00:00 $cgwh -noplot eig.cmd -g=darkCornerRoomGride16.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-8 -upwind=1 -imode=1 -maxIterations=6000 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=30 -numEigs=256 -eigenSolver=default -matlab=darkCornerRoomG16O4Freq30Ev256 -show=darkCornerRoomG16O4Freq30Ev256.show -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -go=ks
+
+-numEigs=256 : OK
+
+15 min per iteration .. TOO LONG 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=3.00e+01 k=3.00e+01 lambda=2.09e-01 dx=6.25e-03 domainSize=1.20e+01 NLambda=57.2958 ppw=lambda/dx= 33.5 ppw(rule-of-thumb)= 23.6 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+cgWave:FD24u t=0.000e+00 (    0 steps) dt=2.314e-04 ||u||= 2.44e-03, cpu= 4.54e-07(s)
+cgWave:FD24u t=2.513e+00 (10860 steps) dt=2.314e-04 ||u||= 2.05e-03, cpu= 9.04e+02(s)
+
+-numEigs=1024 
+[5]PETSC ERROR: --------------------- Error Message --------------------------------------------------------------
+[5]PETSC ERROR: No support for this operation for this object type
+[5]PETSC ERROR: Product of two integers 2050 2536353 overflow, either you have an invalidly large integer error in your code or you must ./configure PETSc with --with-64-bit-indices for the case you are running
+
+
+*************************************
+****** Mon Feb 9 7, 2026
+
+--dependency=singleton
+
+test cg66:
+ mpirun -np=4 $cgwh -noplot eig.cmd -g=sice8.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG8O2Ev32.show -freq=4 -numEigs=32 -upwind=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -go=ks
+
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 112, cpu= 2.39e+01(s), np=4
+
+
+TEST: 
+
+makeBatch.p -batchFile=batch1.sh -solverName=ew1 -np=2 -nodes=1 -timeLimit=0:00:10  $cgwh -noplot eig.cmd -g=sice8.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG4O2Ev32.show -freq=4 -numEigs=32 -upwind=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -go=ks
+
+makeBatch.p -batchFile=batch2.sh -solverName=ew1 -np=2 -nodes=1 -timeLimit=0:01:00  $cgwh -noplot eig.cmd -g=sice8.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG8O2Ev32.show -freq=4 -numEigs=32 -upwind=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile2.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile1.show -go=ks
+
+--------
+
+
+---- submitRestarts.sh -------------
+#!/bin/bash -xe
+#
+# Submit multiple jobs for restarts
+#
+
+
+# first job - no dependencies
+jid1=$(sbatch batch1.sh)
+
+# This job waits til the previous finishes
+jid2=$(sbatch  --dependency=afterany:$jid1 batch2.sh)
+
+# show dependencies in squeue output:
+squeue -u $USER -o "%.8A %.4C %.10m %.20E"
+# -----------------------------------------------
+
+
+********* SEE HERE ON HOW TO SETUP A SEQUENCE OF RESTART RUNS: *********
+
+>> EVEN BETTER:
+https://hpc.nih.gov/docs/job_dependencies.html
+
+#! /bin/bash
+
+# first job - no dependencies
+jid1=$(sbatch  --mem=12g --cpus-per-task=4 job1.sh)
+
+# multiple jobs can depend on a single job
+jid2=$(sbatch  --dependency=afterany:$jid1 --mem=20g job2.sh)
+jid3=$(sbatch  --dependency=afterany:$jid1 --mem=20g job3.sh)
+
+# a single job can depend on multiple jobs
+jid4=$(sbatch  --dependency=afterany:$jid2:$jid3 job4.sh)
+
+# swarm can use dependencies
+jid5=$(swarm --dependency=afterany:$jid4 -t 4 -g 4 -f job5.sh)
+
+# a single job can depend on an array job
+# it will start executing when all arrayjobs have finished
+jid6=$(sbatch --dependency=afterany:$jid5 job6.sh)
+
+# a single job can depend on all jobs by the same user with the same name
+jid7=$(sbatch --dependency=afterany:$jid6 --job-name=dtest job7.sh)
+jid8=$(sbatch --dependency=afterany:$jid6 --job-name=dtest job8.sh)
+sbatch --dependency=singleton --job-name=dtest job9.sh
+
+
+# show dependencies in squeue output:
+squeue -u $USER -o "%.8A %.4C %.10m %.20E"
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+https://hpc-community.unige.ch/t/tutorial-how-to-automatically-restart-a-slurm-job-after-time-limit/517
+
+-----------------------------------------------
+#!/bin/sh
+
+#SBATCH --time=15:00
+#SBATCH --partition=debug-EL7
+#SBATCH --job-name=test-restart
+#SBATCH --dependency=singleton
+
+
+OUTPUT=res
+
+# if the result file doesn't exist, we create it.
+if [ ! -f $OUTPUT ]
+then
+   touch $OUTPUT
+fi
+
+# we do the job: write one line to the result file!
+srun echo "I'm job $SLURM_JOB_ID" >> $OUTPUT
+
+# we check if the full job is finished
+# we say that once the result file contains three lines, it's the case.
+NB_LINES=$(wc -l < $OUTPUT)
+if [ $NB_LINES -eq 3 ]
+then
+   echo "Job finished, cancel the remaining."
+   scancel --jobname $SLURM_JOB_NAME
+   exit
+fi
+--------------------------------------------
+
+[sagon@login2 restart] $ for i in {1..10} ; do sbatch run.sh $i; done
+Submitted batch job 21584187
+Submitted batch job 21584188
+Submitted batch job 21584189
+Submitted batch job 21584190
+Submitted batch job 21584191
+Submitted batch job 21584192
+Submitted batch job 21584194
+Submitted batch job 21584198
+Submitted batch job 21584200
+Submitted batch job 21584201
+[sagon@login2 restart] $ ls -la
+total 3
+drwxr-xr-x  2 sagon unige   5 Oct 22 11:19 .
+drwxr-xr-x 17 sagon unige  20 Oct 22 09:00 ..
+-rw-r--r--  1 sagon unige  51 Oct 22 11:19 res
+-rw-r--r--  1 sagon unige 595 Oct 22 11:15 run.sh
+-rw-r--r--  1 sagon unige   0 Oct 22 11:19 slurm-21584187.out
+-rw-r--r--  1 sagon unige   0 Oct 22 11:19 slurm-21584188.out
+-rw-r--r--  1 sagon unige  36 Oct 22 11:19 slurm-21584189.out
+[sagon@login2 restart] $ cat res 
+I'm job 21584187
+I'm job 21584188
+I'm job 21584189
+[sagon@login2 restart]
+
+
+*************************************
 ****** Sat Feb 7, 2026
 
 
-Penrose room G8 : running... check-point ... restart ...
+Penrose room G8 : running... check-point ... restart ... DONE
 omega=20 PPW=25 PPW4=21
 omega=20 Upwind Np=8 tol=1e-10 save Check-Point 
 makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=4 -nodes=1 -timeLimit=6:00:00 $cgwh -noplot eig.cmd -g=darkCornerRoomGride8.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -imode=1 -maxIterations=60 -numPeriods=8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=20 -numEigs=256 -eigenSolver=default -matlab=darkCornerRoomG8O4Freq20Ev256 -show=darkCornerRoomG8O4Freq20Ev256.show -saveCheckPointFile=1 -saveCheckPointFileName=dcrCheckPointFile3.show -readCheckPointFile=1 -readCheckPointFileName=dcrCheckPointFile2.show -go=ks
@@ -30,7 +245,19 @@ makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=4 -nodes=1 -timeLimit=6:00:
 >>> second run: 
 ++++++++ EigenWave Matrix vector multiply routine: eigenWaveMatrixVectorMultiply called iteration=1259 +++
 
->>> RETART
+>>> RESTART
+
+
+*************************************
+****** Mon Feb 9, 2026
+
+G128: 
+G64: 50M
+G32: 12M pts 
+G16: 3.3M 
+
+G16: freq=30 Np=12
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=16 -nodes=1 -timeLimit=6:00:00 $cgwh -noplot eig.cmd -g=darkCornerRoomGride16.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=12 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=30 -numEigs=512 -eigenSolver=default -matlab=darkCornerRoomG16O4Freq30Ev512 -show=darkCornerRoomG16O4Freq30Ev512.show -saveCheckPointFile=1 -saveCheckPointFileName=dcrCheckPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=dcrCheckPointFile1.show -go=ks
 
 
 
@@ -54,7 +281,7 @@ G32: 12M pts
 G16: 3.3M 
 
 G16: FINISH ME 
-makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=16 -nodes=1 -timeLimit=6:00:00 $cgwh -noplot eig.cmd -g=darkCornerRoomGride16.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=30 -numEigs=512 -eigenSolver=default -matlab=darkCornerRoomG16O4Freq30Ev512 -show=darkCornerRoomG16O4Freq30Ev512.show -saveCheckPointFile=0 -saveCheckPointFileName=dcrCheckPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=dcrCheckPointFile1.show -go=ks
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=16 -nodes=1 -timeLimit=6:00:00 $cgwh -noplot eig.cmd -g=darkCornerRoomGride16.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=60 -numPeriods=8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -freq=30 -numEigs=512 -eigenSolver=default -matlab=darkCornerRoomG16O4Freq30Ev512 -show=darkCornerRoomG16O4Freq30Ev512.show -saveCheckPointFile=0 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -go=ks
 
 
 Penrose room G8 : running... check-point 
@@ -70,6 +297,26 @@ makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=4 -nodes=1 -timeLimit=6:00:
 cgWave:FD24u t=0.000e+00 (   0 steps) dt=6.656e-04 ||u||= 9.22e-03, cpu= 3.46e-07(s)
 cgWave:FD24u t=2.513e+00 (3776 steps) dt=6.656e-04 ||u||= 6.00e-03, cpu= 4.37e+01(s)
 saveCheckPointFile: solution=1
+
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  2.0000e+01, orderOfAccuracy=4, grid=darkCornerRoomGride8, np=4
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.95, dt=6.656e-04, minStepsPerPeriod=10, Np=8, numberOfStepsPerSolve=3776, 
+  totalTimeStepsStaken=290752, aveItsPerImplicitSolve=  0.0
+ readCheckPointFile=1, readCheckPointFileName=[dcrCheckPointFile2.show], writeCheckPointFile=1, writeCheckPointFileName=[dcrCheckPointFile3.show]
+ omega=2.00e+01, k=2.00e+01, lambda=3.14e-01, dx=1.25e-02, domainSize=1.20e+01, NLambda=38.1972, ppw=lambda/dx= 25.1, ppw(rule-of-thumb)= 21.4 (epsr=0.01)
+ tol= 1.00e-10, number of wave-solves (mat-vecs) = 1277, cpu= 2.91e+03(s), np=4
+ num eigs requested=256, number eigs converged =272, numArnoldiVectors=513, wave-solves/eig=  4.7, timeSteps/eig=1068.9
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 1.9563396221e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.87e-04
+ i=1: lamRQ = 1.9564613240e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.69e-04
+ i=2: lamRQ = 1.9569555472e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.43e-04
+ i=3: lamRQ = 1.9570008891e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.97e-03
+ i=4: lamRQ = 1.9571460246e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.34e-04
+ i=5: lamRQ = 1.9571563192e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.60e-04
 
 
 

@@ -27,6 +27,9 @@ printf("makeBatch.p -batchFile=<script-name> -solverName=<s> -np=<i> -nodes=<i> 
 $solverName = "cgWave";
 $batchFile = "batch.sh";
 
+$logFile   = "";  # empty string means use the default name 
+$errFile   = "";  # empty string means use the default name 
+
 
 $timeLimit = "00:05:00";  # time-limit in hh:mm:ss
 $gpus = 1;  # request this many gpus per node
@@ -45,6 +48,8 @@ foreach $arg ( @ARGV )
   elsif( $arg =~ /-nodes=(.*)/ ){ $nodes=$1; }  
   elsif( $arg =~ /-gpus=(.*)/ ){ $gpus=$1; }   
   elsif( $arg =~ /-timeLimit=(.*)/ ){ $timeLimit=$1;}   
+  elsif( $arg =~ /-logFile=(.*)/ ){ $logFile=$1; }   
+  elsif( $arg =~ /-errFile=(.*)/ ){ $errFile=$1; }   
   else
   {
     # add the arg to the main command line 
@@ -59,8 +64,8 @@ $jobName = $solverName;
 printf("Setting: solverName=$solverName, np=$np, nodes=$nodes, timeLimit=$timeLimit, gpus=$gpus (gpus per node)\n");
 printf("cmd=[$cmd]\n");
 
-$logFile = "output/$jobName" . "Grid$grid" . "Np$np.log";
-$errFile = "output/$jobName" . ".err";
+if( $logFile eq "" ){ $logFile = "output/$jobName" . "Grid$grid" . "Np$np.log"; }else{ $logFile = "output/$logFile"; }
+if( $errFile eq "" ){ $errFile = "output/$jobName" . ".err"; }else{ $errFile = "output/$errFile"; }
 
 open($outfile, '>', $batchFile) or die "Cannot open $batchFile for writing: $!";
 

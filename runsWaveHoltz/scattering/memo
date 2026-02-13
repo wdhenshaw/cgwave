@@ -15,6 +15,9 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=16 
 
 
+
+
+
 ***************************************************
 ****** Fri/Sat Feb 6-7, 2026
 
@@ -23,7 +26,7 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 plotStuff plotSolution.cmd -show=splitRingScatLeftGapG128O4kx70.show -name=splitRingScatLeftGapG128O4kx70 -field=speed absurTotal absuiTotal -res=4096
 
 G256 kx=130 RUNNING....
-makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=1024 -nodes=64 -timeLimit=6:00:00 $cgwh -noplot scat.cmd -g=splitRingGridLeftGape256.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=130.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=20000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG256O4kx130.show -matlab=splitRingScatLeftGapG256O4kx130 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -restart=1000 -gmresRestartLength=20000 -saveCheckPointFile=1 -saveCheckPointFileName=dcrCheckPointFile2.show -readCheckPointFile=1 -readCheckPointFileName=dcrCheckPointFile1.show -go=ks
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=1024 -nodes=64 -timeLimit=6:00:00 $cgwh -noplot scat.cmd -g=splitRingGridLeftGape256.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=130.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=20000 -numPeriods=16 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=splitRingScatLeftGapG256O4kx130.show -matlab=splitRingScatLeftGapG256O4kx130 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=extrap -restart=1000 -gmresRestartLength=20000 -saveCheckPointFile=1 -saveCheckPointFileName=dcrCheckPointFile1.show -readCheckPointFile=1 -readCheckPointFileName=dcrCheckPointFile2.show -go=ks
 
 grid     name          gridIndexRange(0:1,0:2)           gridPoints        hmx      hmn   time-stepping
    0: backGround   ([ 0:12800],[ 0:12800],[ 0:    0])   1.63866e+08   1.95e-04 1.95e-04    explicit
@@ -36,6 +39,10 @@ cgWave:FD24u t=1.231e-01 (1265 steps) dt=9.735e-05 ||u||= 2.84e+00, cpu= 3.51e+0
  ##### SAVE KRYLOV RESIDUAL: iteration=148: L2h-residual= 6.52e-04, ratio= 0.99 
 MonitorError called at it=149, rnorm= 1.17e+01
 
+>>> run 2 got to 
+saveCheckPointFile: solution=551
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=550: L2h-residual= 6.80e-05, ratio= 0.99 
 
 
 

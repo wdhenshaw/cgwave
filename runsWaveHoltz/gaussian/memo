@@ -12,24 +12,367 @@ set ovp2 = ~/Dropbox/overHoltzPaper/part2
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+
+*************************************
+****** Fri Feb 13, 2026
+
+MORE MG PARALLEL TESTS TESTS 
+
+------------ DISK 128 6.7M pts : approx break even IMPLICIT VERSUS EXPLICIT for freq=10-------
+
+ORDER=2 IMP:
+mpirun -np 16 $cgwh -noplot gaussian.cmd -g=sice128.order2.ml5 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -show=diskG128Freq10.show -gmresRestartLength=500 -go=ks
+
+
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.84e-01, cpu= 1.09e+01(s)
+
+  ==== implicit: ave-iterations per solve =   7.0 (number of implicit solves=590)
+
+solveHelmholtz: max-res=3.463e-07 (gmres, numIts=57, ave-CR= 0.66 , ACR=-1.00, cpu=6.76e+02(s), np=16)
+
+
+
+
+ORDER=2: EXP + UPWIND -->
+mpirun -np 16 $cgwh -noplot gaussian.cmd -g=sice128.order2.ml5 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=1 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -gmresRestartLength=500 -go=k
+
+cgWave:FD22u t=6.283e-01 (1212 steps) dt=5.184e-04 ||u||= 1.69e-01, cpu= 1.05e+01(s)
+
+
+
+------------ DISK 64 1.6M pts : break even IMPLICIT VERSUS EXPLICIT for freq=10-------
+ORDER=2 IMP:
+mpirun -np 8 $cgwh -noplot gaussian.cmd -g=sice64.order2.ml5 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -gmresRestartLength=500 -go=k
+
+np=8
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.84e-01, cpu= 3.45e+00(s)
+
+np=4:
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.82e-01, cpu= 5.35e+00(s)
+
+
+ORDER=2: EXP + UPWIND -->
+mpirun -np 8 $cgwh -noplot gaussian.cmd -g=sice64.order2.ml5 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=1 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -gmresRestartLength=500 -go=k
+
+np=8
+cgWave:FD22u t=6.283e-01 (614 steps) dt=1.023e-03 ||u||= 1.70e-01, cpu= 2.70e+00(s)
+
+np=4
+cgWave:FD22u t=6.283e-01 (614 steps) dt=1.023e-03 ||u||= 1.68e-01, cpu= 4.20e+00(s)
+
+
+------------ DISK 32 -------
+ORDER=2 IMP:
+mpirun -np 4 $cgwh -noplot gaussian.cmd -g=sice32.order2.ml4 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -gmresRestartLength=500 -go=k
+
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.87e-01, cpu= 1.62e+00(s)
+
+solveHelmholtz: max-res=2.675e-08 (gmres, numIts=57, ave-CR= 0.66 , ACR=-1.00, cpu=9.70e+01(s), np=4)
+
+
+ORDER=2: EXP + UPWIND -->
+mpirun -np 4 $cgwh -noplot gaussian.cmd -g=sice32.order2.ml4 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=1 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -gmresRestartLength=500 -go=k
+
+solveHelmholtz: max-res=1.849e-08 (gmres, numIts=47, ave-CR= 0.61 , ACR=-1.00, cpu=4.04e+01(s), np=4)
+
+----------- DISK 8 -------
+ORDER=2 IMP:
+mpirun -np 4 $cgwh -noplot gaussian.cmd -g=sice8.order2.ml3 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=box16 -numParGhost=2 -gmresRestartLength=500 -go=k
+
+-rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12
+solveHelmholtz: max-res=1.353e-07 (gmres, numIts=62, ave-CR= 0.68 , ACR=-1.00, cpu=3.29e+01(s), np=4)
+
+-rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14
+solveHelmholtz: max-res=5.397e-09 (gmres, numIts=62, ave-CR= 0.68 , ACR=-1.00, cpu=4.09e+01(s), np=4)
+
+ORDER=2: EXP + UPWIND --> FASTER
+
+mpirun -np 4 $cgwh -noplot gaussian.cmd -g=sice8.order2.ml3 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=1 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=box16 -numParGhost=2 -gmresRestartLength=500 -go=k
+
+solveHelmholtz: max-res=6.069e-08 (gmres, numIts=51, ave-CR= 0.63 , ACR=-1.00, cpu=4.88e+00(s), np=4)
+
+
+*************************************
+****** Thurs Feb 12, 2026
+
+>>>>>>>>>>>>>>> MULTIGRID <<<<<<<<
+ YALE CBC --> NO 
+$cgwh -noplot gaussian.cmd -g=square64.order4 -x0=0.6 -y0=0.45 -z0=.5 -nf=1 -freq=11 -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=yale -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=box16 -bc=d -bcApproach=cbc -go=dk
+
+solveHelmholtz: max-res=1.686e-04 (gmres, numIts=17, ave-CR= 0.26 , ACR=-1.00, cpu=3.14e-01(s), np=1)
+solveHelmholtz: rel-max-diff=2.01e-05, |v|_max= 1.65e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+CBC 2D -- NO --> bigger residuals near the boundary
+$cgwh -noplot gaussian.cmd -g=square64.order4 -x0=0.6 -y0=0.45 -z0=.5 -nf=1 -freq=11 -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=box16 -bc=d -bcApproach=cbc -go=dk
+
+solveHelmholtz: max-res=1.774e-03 (gmres, numIts=17, ave-CR= 0.26 , ACR=-1.00, cpu=1.72e+00(s), np=1)
+solveHelmholtz: rel-max-diff=1.05e-04, |v|_max= 1.65e-01 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+
+
+TRY CBC  -- #D not finished
+$cgwh -noplot gaussian.cmd -g=box2.order4 -x0=0.6 -y0=0.45 -z0=.5 -nf=1 -freq=11 -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=box16 -bc=d -bcApproach=cbc -go=dk
+ EdgeBC: finish me for forcing option
+STOP 3333
+
+CHECK RESIDUAL SERIAL: 
+$cgwh -noplot gaussian.cmd -g=box2.order4 -x0=0.6 -y0=0.45 -z0=.5 -nf=1 -freq=11 -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=box16 -bc=d -go=dk
+
+solveHelmholtz: max-res=2.219e-02 (gmres, numIts=19, ave-CR= 0.33 , ACR=-1.00, cpu=4.81e+00(s), np=1)
+solveHelmholtz: rel-max-diff=1.84e-02, |v|_max= 6.38e-02 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+solveHelmholtz: rel-max-diff=1.84e-02, |v|_max= 6.38e-02 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+O2: 
+$cgwh -noplot gaussian.cmd -g=box2.order2 -x0=0.6 -y0=0.45 -z0=.5 -nf=1 -freq=11 -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=box16 -go=dk
+
+solveHelmholtz: max-res=3.655e-09 (gmres, numIts=17, ave-CR= 0.31 , ACR=-1.00, cpu=2.03e+00(s), np=1)
+solveHelmholtz: rel-max-diff=6.67e-11, |v|_max= 5.91e-02 (between WaveHoltz and Direct Helmholtz solution, all frequencies)
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>> GAUSSIAN SOURCE SPLIT RING <<<<<<<<<<<<<<<<
+SplitRing:
+G128: 41 M pts
+G64 : 10 M pts
+
+TODO: 
+plotStuff plotComplexSolution.cmd -show=splitRingG128O4Freq500 -solution=1 -field=absur absui speed  (CCI)
+
+RESTART 2: In queue ... 
+makeBatch.p -batchFile=batch.sh -solverName=cgwhg -np=64 -nodes=4 -timeLimit=6:00:00 $cgwh -noplot gaussian.cmd -g=splitRingGridLeftGapOffsete128.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=500 -amp=-250000 -beta=500 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=100000 -numPeriods=12 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=splitRingG128O4Freq500.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=5000 -gmresRestartLength=5000 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile2.show -go=ks
+
+
+RESTART 1: In queue ... done
+makeBatch.p -batchFile=batch.sh -solverName=cgwhg -np=64 -nodes=4 -timeLimit=6:00:00 $cgwh -noplot gaussian.cmd -g=splitRingGridLeftGapOffsete128.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=500 -amp=-250000 -beta=500 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=100000 -numPeriods=12 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=splitRingG128O4Freq500.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=5000 -gmresRestartLength=5000 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile2.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile1.show -go=ks
+
+Restart 1:
+ ##### SAVE KRYLOV RESIDUAL: iteration=1227: L2h-residual= 1.49e-10, ratio= 0.99 
+MonitorError called at it=1228, rnorm= 1.35e-06
+
+
+START: .. DONE
+makeBatch.p -batchFile=batch.sh -solverName=cgwhg -np=64 -nodes=4 -timeLimit=6:00:00 $cgwh -noplot gaussian.cmd -g=splitRingGridLeftGapOffsete128.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=500 -amp=-250000 -beta=500 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=100000 -numPeriods=12 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=splitRingG128O4Freq500.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=5000 -gmresRestartLength=5000 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -go=ks
+
+Run 1 go to:
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=550: L2h-residual= 7.23e-05, ratio= 1.00 
+MonitorError called at it=551, rnorm= 6.56e-01
+
+
+
+
+*************************************
+****** Wed Feb 11, 2026
+
+CONT TEST PARALLEL IMPLICIT WITH OGMG
+
+MULTIGRID BOUNDARY CONDITIONS AT ORDER 4 may be different
+
+
+ORDER=2
+mpirun -np 4 $cgwh -noplot gaussian.cmd -g=box8.order2 -x0=0.6 -y0=0.45 -z0=.5 -nf=1 -freq=11 -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=box16 -go=k
+
+
+solveHelmholtz: max-res=8.006e-08 (gmres, numIts=15, ave-CR= 0.36 , ACR=-1.00, cpu=4.24e+01(s), np=4)
+>>>>>>>>>>>>>>>>> BOX16 ORDER 2
+
+
+*************************************
+****** Tues Feb 10, 2026
+
+START TEST PARALLEL IMPLICIT WITH OGMG
+
+MULTIGRID BOUNDARY CONDITIONS AT ORDER 4 may be different
+
+
+
+>>>>>>>>>>>>>>>>> BOX16 ORDER 4  4M pts 
+
+
+--- EXPLICIT TS:
+mpirun -np 8 $cgwh -noplot gaussian.cmd -g=box16.order4 -x0=0.6 -y0=0.45 -z0=.5 -nf=1 -freq=11 -amp=25 -beta=15 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-11 -solveri=multigrid -rtoli=1e-8 -atoli=1e-8 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=box16 -go=k
+
+WHY IS THIS RESIDUAL SMALLER??
+
+-tol=1e-11
+solveHelmholtz: max-res=9.856e-09 (gmres, numIts=14, ave-CR= 0.27 , ACR=-1.00, cpu=4.64e+01(s), np=8)
+
+-tol=1e-10
+cgWave:FD24 t=1.142e+00 (384 steps) dt=2.975e-03 ||u||= 4.70e-02, cpu= 2.84e+00(s)
+solveHelmholtz: max-res=7.496e-08 (gmres, numIts=13, ave-CR= 0.31 , ACR=-1.00, cpu=4.37e+01(s), np=8)
+
+
+---BCGS:
+mpirun -np 16 $cgwh -noplot gaussian.cmd -g=box16.order4 -x0=0.6 -y0=0.45 -z0=.5 -nf=1 -freq=11 -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=best -rtoli=1e-12 -atoli=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=box16 -go=k
+
+
+-np=16:
+==== implicit: ave-iterations per solve =  50.0 (number of implicit solves=340)
+solveHelmholtz: max-res=8.891e-08 (gmres, numIts=15, ave-CR= 0.36 , ACR=-1.00, cpu=2.72e+03(s), np=16)
+
+
+cgWave:FD24 t=1.249e+00 (20 steps) dt=6.247e-02 ||u||= 4.75e-02, cpu= 3.07e+02(s)
+
+---- MULTIGRID: 
+mpirun -np 8 $cgwh -noplot gaussian.cmd -g=box16.order4 -x0=0.6 -y0=0.45 -z0=.5 -nf=1 -freq=11 -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=box16 -go=k
+
+CHECK RESIDUAL ******
+
+-rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-14 -atolcg=1e-14 
+
+CgWaveHoltz::residual: freq= 0, omega=  11.000, max-res=5.030e-05.
+solveHelmholtz: max-res=5.030e-05 (gmres, numIts=15, ave-CR= 0.36 , ACR=-1.00, cpu=2.27e+02(s), np=8)
+
+
+-rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12
+solveHelmholtz: max-res=5.030e-05 (gmres, numIts=15, ave-CR= 0.36 , ACR=-1.00, cpu=1.88e+02(s), np=8)
+
+-rtoli=1e-9 -atoli=1e-9 
+ ==== implicit: ave-iterations per solve =   6.6 (number of implicit solves=340)
+
+solveHelmholtz: max-res=5.030e-05 (gmres, numIts=15, ave-CR= 0.36 , ACR=-1.00, cpu=1.70e+02(s), np=8)
+
+-rtoli=1e-8 -atoli=1e-8 
+cgWave:FD24 t=1.249e+00 (20 steps) dt=6.247e-02 ||u||= 1.82e-02, cpu= 9.07e+00(s)
+ ==== implicit: ave-iterations per solve =   5.8 (number of implicit solves=340)
+solveHelmholtz: max-res=5.040e-05 (gmres, numIts=15, ave-CR= 0.36 , ACR=-1.00, cpu=1.52e+02(s), np=8)
+
+
+>>>>>>>>>>>>>>>>> SQUARE 1024 ORDER 4
+
+EXP-TS np=4: CPU=74.5
+MG:    np=4  CPU=76.6
+BCGS   np=4  CPU=1250
+
+COMPARE : EXPLICIT TS -- ABOUT THE SAME AS MG 
+mpirun -np 8 $cgwh -noplot gaussian.cmd -g=square1024.order4 -x0=0.6 -y0=0.45 -nf=1 -freq=5.1  -amp=25 -beta=15 -adjustOmega=1 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtoli=1e-8 -atoli=1e-8 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square1024mg -go=k
+
+np=8:
+cgWave:FD24 t=2.464e+00 (4338 steps) dt=5.680e-04 ||u||= 2.33e-01, cpu= 4.75e+00(s)
+solveHelmholtz: max-res=4.647e-07 (gmres, numIts=7, ave-CR= 0.08 , ACR=-1.00, cpu=4.30e+01(s), np=8)
+
+np=4:
+cgWave:FD24 t=2.464e+00 (4338 steps) dt=5.680e-04 ||u||= 2.32e-01, cpu= 8.24e+00(s)
+solveHelmholtz: max-res=4.727e-07 (gmres, numIts=7, ave-CR= 0.08 , ACR=-1.00, cpu=7.45e+01(s), np=4)
+
+
+--- BCGS: FIX itoli, rtoli
+mpirun -np 4 $cgwh -noplot gaussian.cmd -g=square1024.order4 -x0=0.6 -y0=0.45 -nf=1 -freq=5.1  -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=best -rtoli=1e-12 -atoli=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square1024mg -go=k
+
+-rtoli=1e-12 -atoli=1e-12 **GOOF max-res: 
+solveHelmholtz: max-res=7.218e-07 (gmres, numIts=8, ave-CR= 0.11 , ACR=-1.00, cpu=1.25e+03(s), np=4)
+==== implicit: ave-iterations per solve = 172.1 (number of implicit solves=200)
+
+
+-rtoli=1e-10 -atoli=1e-10 .. 
+ ==== implicit: ave-iterations per solve = 139.9 (number of implicit solves=200)
+solveHelmholtz: max-res=1.340e-04 (gmres, numIts=8, ave-CR= 0.11 , ACR=-1.00, cpu=1.01e+03(s), np=4)
+
+
+cgWave:FD24 t=2.425e+00 (18 steps) dt=1.347e-01 ||u||= 2.44e-01, cpu= 9.19e+01(s)
+
+
+-rtoli=1e-8 -atoli=1e-8 
+solveHelmholtz: max-res=4.408e-03 (gmres, numIts=8, ave-CR= 0.11 , ACR=-1.00, cpu=8.60e+02(s), np=4)
+
+
+---- MULTIGRID: INCREASE rtoli ??
+   NEED TO SET COARSE GRID TOL SMALLER THAT rtoli !!
+
+
+mpirun -np 8 $cgwh -noplot gaussian.cmd -g=square1024.order4 -x0=0.6 -y0=0.45 -nf=1 -freq=5.1  -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtoli=1e-8 -atoli=1e-8 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square1024mg -go=k
+
+
+ ==== implicit: ave-iterations per solve =   4.0 (number of implicit solves=200)
+
+np=8: 
+ cgWave:FD24 t=2.695e+00 (20 steps) dt=1.347e-01 ||u||= 2.15e-01, cpu= 4.50e+00(s) 
+solveHelmholtz: max-res=5.845e-07 (gmres, numIts=8, ave-CR= 0.11 , ACR=-1.00, cpu=4.48e+01(s), np=8) 
+
+solveHelmholtz: max-res=1.085e-06 (gmres, numIts=8, ave-CR= 0.11 , ACR=-1.00, cpu=7.66e+01(s), np=4)
+
+solveHelmholtz: max-res=1.605e-05 (gmres, numIts=8, ave-CR= 0.11 , ACR=-1.00, cpu=1.67e+02(s), np=2)
+
+tol=1e-12:
+solveHelmholtz: max-res=3.952e-06 (gmres, numIts=9, ave-CR= 0.09 , ACR=-1.00, cpu=1.18e+02(s), np=1)
+
+NEED TO SET COARSE GRID TOL SMALLER THAN rtoli
+****Ogmg::solve:WARNING: No convergence in 15 iterations defect=2.04e-08 ****
+****Ogmg::solve:WARNING: No convergence in 15 iterations defect=1.25e-08 ****
+
+>>>>>>>>>>>>>>>>> SQUARE 256 ORDER 4
+--- BCGS:
+mpirun -np 2 $cgwh -noplot gaussian.cmd -g=square256.order4 -x0=0.6 -y0=0.45 -nf=1 -freq=5.1  -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=best -rtoli=1e-10 -atoli=1e-10 -mgCoarseGridSolver=bcgs -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square256mg -go=k
+
+implicit solver : PETScNew, parallel=[bi-conjugate gradient stabilized + block Jacobi preconditioner], local=[ILU(3) + reverse Cuthill-McKee ordering]
+
+solveHelmholtz: max-res=2.027e-06 (gmres, numIts=9, ave-CR= 0.09 , ACR=-1.00, cpu=2.25e+01(s), np=4)
+solveHelmholtz: max-res=6.979e-09 (gmres, numIts=9, ave-CR= 0.09 , ACR=-1.00, cpu=4.99e+01(s), np=1)
+
+
+---- MULTIGRID: 
+mpirun -np 1 $cgwh -noplot gaussian.cmd -g=square256.order4 -x0=0.6 -y0=0.45 -nf=1 -freq=5.1  -amp=25 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-12 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -mgCoarseGridSolver=bcgs -upwind=0 -imode=1 -maxIterations=50 -numPeriods=2 -matlab=square256mg -go=k
+
+PARALLEL
+ cgWave:FD24 t=2.695e+00 (20 steps) dt=1.347e-01 ||u||= 2.12e-01, cpu= 8.82e-01(s)
+ ==== implicit: ave-iterations per solve =   7.9 (number of implicit solves=220)
+
+solveHelmholtz: max-res=1.318e-06 (gmres, numIts=9, ave-CR= 0.09 , ACR=-1.00, cpu=8.84e+00(s), np=2)
+solveHelmholtz: max-res=1.319e-06 (gmres, numIts=9, ave-CR= 0.09 , ACR=-1.00, cpu=6.58e+00(s), np=1)
+
+
+SERIAL
+solveHelmholtz: max-res=1.318e-06 (gmres, numIts=9, ave-CR= 0.09 , ACR=-1.00, cpu=7.43e+00(s), np=1)
+
+
+
+
+
+
 *************************************
 ****** Sun Feb 8, 2026
 
 
 PUT A GAUSSIAN SOURCE IN THE SPLIT RING RESONATOR 
 
+SplitRing:
+G128: 41 M pts
+G64 : 10 M pts
 
-plotStuff plotComplexSolution.cmd -show=splitRingG64O4Freq160 -solution=1 -field=absur absui speed
+TODO: 
+plotStuff plotComplexSolution.cmd -show=splitRingG128O4Freq500 -solution=1 -field=absur absui speed  (CCI)
+
+plotStuff plotComplexSolution.cmd -show=splitRingG64O4Freq300 -solution=1 -field=absur absui speed -res=2048
 plotStuff plotComplexSolution.cmd -show=splitRingG32O4Freq160 -solution=1 -field=absur absui speed
 plotStuff plotComplexSolution.cmd -show=splitRingG16O4Freq90 -solution=1 -field=absur absui speed
 
 plotStuff plotComplexSolution.cmd -show=splitRingG8O4Freq50 -solution=1 -field=absur absui speed
 
+CCI : G128 freq=500
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=64 -nodes=4 -timeLimit=6:00:00 $cgwh -noplot gaussian.cmd -g=splitRingGridLeftGapOffsete128.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=500 -amp=-250000 -beta=500 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=100000 -numPeriods=12 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=splitRingG128O4Freq500.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=2000 -gmresRestartLength=5000 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile2.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile1.show -go=ks
 
-G64
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=5.00e+02 k=5.00e+02 lambda=1.26e-02 dx=3.91e-04 domainSize=2.50e+00 NLambda=198.944 ppw=lambda/dx= 32.2 ppw(rule-of-thumb)= 32.3 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+cgWave:FD24u t=1.509e-01 (769 steps) dt=1.963e-04 ||u||= 3.12e-01, cpu= 3.23e+01(s)
+
+>> run 1 got to
+ ##### SAVE KRYLOV RESIDUAL: iteration=565: L2h-residual= 7.39e-05, ratio= 1.00 
+MonitorError called at it=565, rnorm= 6.71e-01
+
+>> run 2 got to
+   ##### SAVE KRYLOV RESIDUAL: iteration=1209: L2h-residual= 7.09e-06, ratio= 1.00 
+MonitorError called at it=1208, rnorm= 6.43e-02
+
+
+
+G64 freq=300
 setsid mpirun -np 32 $cgwh -noplot gaussian.cmd -g=splitRingGridLeftGapOffsete64.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=300 -amp=-90000 -beta=300 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=12 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=splitRingG64O4Freq300.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks > splitRingG64O4Freq300.out
 
-
+ omega=3.00e+02, k=3.00e+02, lambda=2.09e-02, dx=7.81e-04, domainSize=2.50e+00, NLambda=119.366, ppw=lambda/dx= 26.8, ppw(rule-of-thumb)= 28.4 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[2.96e-06,2.13e-06] (gmres, numIts=760, ave-CR= 0.98 , cpu=1.50e+04(s), np=32)
 
 G32
 mpirun -np 16 $cgwh -noplot gaussian.cmd -g=splitRingGridLeftGapOffsete32.order4.ng3.hdf -ts=explicit -cfl=0.95 -x0=0 -y0=0 -z0=0 -nf=1 -freq=160 -amp=-25600 -beta=160 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=8 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -implicitUpwind=0 -minStepsPerPeriod=10  -matlab=junk -show=splitRingG32O4Freq160.show -solveri=best -rtoli=1e-12 -atoli=1e-12 -solverh=yale -restart=500 -iluh=200 -maxith=10000 -rtolh=1.0e-12 -atolh=1.0e-12 -filterTimeDerivative=1 -filterD0t=1 -upwind=1 -adjustHelmholtzForUpwinding=1 -go=ks

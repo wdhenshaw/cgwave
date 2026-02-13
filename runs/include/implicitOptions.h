@@ -6,6 +6,7 @@
 if( $ts eq "" ){ $ts="implicit"; }
 if( $implicitUpwind eq "" ){ $implicitUpwind=0; }
 if( $solveri eq "" ){ $solveri="yale"; }
+if( $mgCoarseGridSolver eq "" ){ $mgCoarseGridSolver="yale"; }
 if( $ilui eq "" ){ $ilui="3"; }# ilu levels for implicit solver 
 if( $restarti eq "" ){ $restarti="20"; }# number of GMRES restart vectors for implicit solver 
 if( $orderCoarse eq "" ){ $orderCoarse=2; } # order of coarse grid solves for MG
@@ -16,6 +17,8 @@ if( $beta6 eq "" ){ $beta6=0; }
 if( $beta8 eq "" ){ $beta8=0; }
 if( $rtoli eq "" ){ $rtoli=1.e-8; }
 if( $atoli eq "" ){ $atoli=1.e-8; }
+if( $rtolcg eq "" ){ $rtolcg=1.e-10; } # for the coarse grid solve
+if( $atolcg eq "" ){ $atolcg=1.e-10; } # for the coarse grid solve
 if( $maxiti eq "" ){ $maxiti=50000; }
 if( $mgMaxIts eq "" ){ $mgMaxIts=15; } # max MG iterations
 if( $debugmg eq "" ){ $debugmg=0; }
@@ -72,14 +75,24 @@ implicit solver parameters
     # pause 
     # Coarse level solver:  
     Oges parameters
-      choose best direct solver
+      if( $mgCoarseGridSolver eq "gmres" || $mgCoarseGridSolver eq "bcgs" || $mgCoarseGridSolver eq "bi-conjugate gradient stabilized" ){ $cmdmg="PETSc"; }else{ $cmdmg="#"; }
+      $cmdmg   
+      # printf("mgCoarseGridSolver=[$mgCoarseGridSolver] cmdmg = [$cmdmg]\n");
+      # PETSc
+      if( $mgCoarseGridSolver ne "yale" ){ $cmdmg="choose best iterative solver\n $mgCoarseGridSolver"; }else{ $cmdmg="choose best direct solver"; }
+      $cmdmg    
+      # printf("cmdmg = $cmdmg\n");
+      # pause 
+      # choose best direct solver
       # choose best iterative solver
+      #
+      # NOTE: coarse grid solver tolerances may need to be smaller than the find grid ones
       relative tolerance
-        $rtoli
-        # 1.e-10
+        # $rtoli
+        $rtolcg
       absolute tolerance
-        $atoli
-        # 1.e-10
+        # $atoli
+        $atolcg
       number of incomplete LU levels
        3
       # debug
