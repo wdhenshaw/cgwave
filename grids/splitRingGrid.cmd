@@ -77,7 +77,6 @@ $mapName="splitRingGridBase";
 # convert to Nurbs for parallel
 #
 # Define a subroutine to convert a Mapping to a Nurbs Mapping
-# Define a subroutine to convert a Mapping to a Nurbs Mapping
 sub convertToNurbs\
 { local($old,$new,$angle,$rotationAxis,$xShift,$yShift,$zShift)=@_; \
   $cmds = "nurbs \n" . \

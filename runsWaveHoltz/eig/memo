@@ -17,11 +17,14 @@ SUBMIT MULTIPLE JOBS FOR RESTARTS:
 
 sbatch --dependency=afternotok:$jobid 
 
-------- THIS SEEMS TO WORK ----
+------- THIS WORKS ----
 set jobid = `sbatch --parsable batch1.sh`
 
 set jobid2 = `sbatch --parsable --dependency=afternotok:$jobid batch2.sh`
 
+
+
+OR: 
 set jobid2 = `sbatch --parsable --dependency=afterany:$jobid batch2.sh`
 
 
@@ -56,10 +59,10 @@ squeue -u $USER -o "%.8A %.4C %.10m %.20E"
 # -----------------------------------------------
 
 RUN 1 
-makeBatch.p -batchFile=batch1.sh -solverName=ew1 -np=2 -nodes=1 -timeLimit=0:00:10 -errFile=batch1.err -logFile=batch1.log $cgwh -noplot eig.cmd -g=sice8.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG4O2Ev64a.show -freq=12 -numEigs=64 -upwind=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -go=ks
+makeBatch.p -batchFile=batch1.sh -solverName=ew1 -np=2 -nodes=1 -timeLimit=0:00:10 -errFile=batch1.err -logFile=batch1.log $cgwh -noplot eig.cmd -g=sice16.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG16O2Ev64a.show -freq=20 -numEigs=64 -upwind=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -go=ks
 
 RUN 2 -- RESTART
-makeBatch.p -batchFile=batch2.sh -solverName=ew1 -np=2 -nodes=1 -timeLimit=0:01:00 -errFile=batch2.err -logFile=batch2.log $cgwh -noplot eig.cmd -g=sice8.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG8O2E642b.show -freq=12 -numEigs=64 -upwind=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile2.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile1.show -go=ks
+makeBatch.p -batchFile=batch2.sh -solverName=ew1 -np=2 -nodes=1 -timeLimit=0:05:00 -errFile=batch2.err -logFile=batch2.log $cgwh -noplot eig.cmd -g=sice16.order2  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG8 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG16O2E642b.show -freq=20 -numEigs=64 -upwind=1 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile2.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile1.show -go=ks
 
 
 

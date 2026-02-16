@@ -16,6 +16,9 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 *************************************
 ****** Fri Feb 13, 2026
 
+TODO: 
+plotStuff plotComplexSolution.cmd -show=splitRingG128O4Freq500 -solution=1 -field=absur absui speed -res=4096 (CCI)
+
 MORE MG PARALLEL TESTS TESTS 
 
 ------------ DISK 128 6.7M pts : approx break even IMPLICIT VERSUS EXPLICIT for freq=10-------

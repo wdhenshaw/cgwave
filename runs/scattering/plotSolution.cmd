@@ -43,6 +43,7 @@ GetOptions( "show=s"=>\$show, "name=s"=>\$name, "solution=i"=>\$solution,"tSave=
 #
 $show
 #
+if( $name eq "plot" ){ $name=$show; }
 #
 derived types
 absoluteValue

@@ -15,8 +15,94 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=16 
 
 
+***************************************************
+****** Mon Feb 16, 2026
+
+CONTINUE on RODS
+
+plotStuff plotSolution.cmd -show=multiRodsTwoLayerG32Freq30 -field=speed absurTotal absuiTotal -res=4096
+
+DONE:  
+G32 - 7M pts - 14 rods
+setsid mpirun -np=16 $cgwh -noplot scat.cmd -g=multiRodTwoLayerGride32.order4.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=30.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=multiRodsTwoLayerG32Freq30.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=yale -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=ks > multiRodsTwoLayerG32Freq30.out
+
+omega=1.88e+02, k=1.88e+02, lambda=3.33e-02, dx=1.56e-03, domainSize=4.00e+00, NLambda=120, ppw=lambda/dx= 21.3, ppw(rule-of-thumb)= 28.4 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[8.24e-05,6.43e-05] (gmres, numIts=991, ave-CR= 0.98 , cpu=6.59e+03(s), np=16)
 
 
+ROTATING RODS:
+
+plotStuff plotSolution.cmd -show=multiThinRodRotatingG16Freq16 -field=speed absurTotal absuiTotal
+plotStuff plotSolution.cmd -show=multiRodRotatingG16Freq16 -field=speed absurTotal absuiTotal
+
+Thinner: 
+mpirun -np=4 $cgwh -noplot scat.cmd -g=multiThinRodRotatinge16.order4.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=multiThinRodRotatingG16Freq16.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=yale -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=ks
+
+
+mpirun -np=4 $cgwh -noplot scat.cmd -g=multiRodRotatinge16.order4.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=multiRodRotatingG16Freq16.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=yale -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=ks
+
+omega=1.01e+02, k=1.01e+02, lambda=6.25e-02, dx=3.13e-03, domainSize=4.00e+00, NLambda=64, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 24.3 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[8.69e-04,7.76e-04] (gmres, numIts=218, ave-CR= 0.91 , cpu=2.05e+02(s), np=4)
+
+
+***************************************************
+****** Sun Feb 15 14, 2026
+
+START on RODS
+
+plotStuff plotSolution.cmd -show=multipleRodsG32Freq30 -field=speed absurTotal absuiTotal
+
+plotStuff plotSolution.cmd -show=multipleRodsG16Freq16 -name=multiple17RodsG16O4Freq16 -field=speed absurTotal absuiTotal
+
+plotStuff plotSolution.cmd -show=multipleRodsG8Freq9 -field=speed absurTotal absuiTotal
+plotStuff plotSolution.cmd -show=multipleRods.show -name=multipleRods -field=speed absurTotal absuiTotal
+
+
+G32
+$cgwh -noplot scat.cmd -g=multipleRodsGride32.order4.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=30.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=multipleRodsG32Freq30.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=yale -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=ks
+
+
+
+G16 two rods : ok, 14 rods: 
+mpirun -np=4 $cgwh -noplot scat.cmd -g=multipleRodsGride16.order4.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=multipleRodsG16Freq16.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=yale -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=ks
+
+14 rods:
+cgWave:FD24u t=1.265e-01 (79 steps) dt=1.601e-03 ||u||= 1.45e+00, cpu= 3.28e+00(s)
+omega=1.01e+02, k=1.01e+02, lambda=6.25e-02, dx=3.13e-03, domainSize=4.00e+00, NLambda=64, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 24.3 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[4.33e-04,7.44e-04] (gmres, numIts=358, ave-CR= 0.94 , cpu=1.68e+03(s), np=1)
+solveHelmholtz: max-residual [Re,Im]=[4.33e-04,7.44e-04] (gmres, numIts=358, ave-CR= 0.94 , cpu=5.33e+02(s), np=4)
+
+
+G8
+$cgwh -noplot scat.cmd -g=multipleRodsGride8.order4.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=9.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=multipleRodsG8Freq9.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=yale -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=ks
+
+
+G4
+$cgwh -noplot scat.cmd -g=multipleRodsGride4.order4.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=5.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=multipleRods.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=yale -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=ks
+
+
+
+***************************************************
+****** Sat Feb 14, 2026
+
+
+HOLES: 
+
+Order=4
+$cgwh -noplot scat.cmd -g=holeCollectionGridN3M5e4.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=3.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=holeCollection.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=yale -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=og
+
+ omega=1.88e+01, k=1.88e+01, lambda=3.33e-01, dx=2.50e-02, domainSize=4.00e+00, NLambda=12, ppw=lambda/dx= 13.3, ppw(rule-of-thumb)= 16.0 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[7.84e-05,2.55e-05] (gmres, numIts=86, ave-CR= 0.77 , cpu=3.90e+01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[3.19e-06,1.19e-05],  norm [Re,Im]=[1.70e+00,1.51e+00] (between WaveHoltz and Direct Helmholtz) 
+
+Order=2 very under-resolved
+$cgwh -noplot scat.cmd -g=holeCollectionGridN3M5e4.order2.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=3.0 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=2000 -numPeriods=2 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=holeCollection.show -matlab=junk -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=yale -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=1000 -gmresRestartLength=2000 -maxParallelSubFiles=4 -go=og
+
+
+ omega=1.88e+01, k=1.88e+01, lambda=3.33e-01, dx=2.50e-02, domainSize=4.00e+00, NLambda=12, ppw=lambda/dx= 13.3, ppw(rule-of-thumb)=111.4 (epsr=0.01)<<<
+
+solveHelmholtz: max-residual [Re,Im]=[2.18e-10,1.91e-10] (gmres, numIts=123, ave-CR= 0.84 , cpu=4.03e+01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[9.50e-10,8.52e-10],  norm [Re,Im]=[1.73e+00,1.59e+00] (between WaveHoltz and Direct Helmholtz)
 
 ***************************************************
 ****** Fri/Sat Feb 6-7, 2026

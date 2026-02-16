@@ -20,6 +20,7 @@ GetOptions( "show=s"=>\$show, "name=s"=>\$name, "solution=i"=>\$solution,"tSave=
       "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"field=s{1,}"=>\@field,"res=i"=>\$res );
 #
 if( $field[0] eq "" ){ @field=( "ur", "ui", "urTotal", "uiTotal" ); }
+if( $name eq "plot" ){ $name = $show; }
 # 
 $show
 #
