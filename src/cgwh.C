@@ -73,7 +73,7 @@ main(int argc, char *argv[])
     const int myid=Communication_Manager::My_Process_Number;
     const int np = Communication_Manager::numberOfProcessors();
     
-    printF("Usage: `mpirun -np N cgwh [-noplot] [file.cmd] [-g=<gridName>]'\n");
+    printF("Usage: `mpirun -np N cgwh [-noplot] [file.cmd] [-g=<gridName>] [-numParGhost=<i>]'\n");
     
     printf("cgwh: myid=%d: pid=%d\n",myid,getpid());
     fflush(0);

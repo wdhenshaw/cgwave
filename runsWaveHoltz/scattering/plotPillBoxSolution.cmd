@@ -3,13 +3,14 @@
 #
 $show="pillInABoxG4O4kx3.show"; $solution="-1"; $name=""; 
 @field = (); 
+$view=1; 
 $emin=0; $emax=-1; $numFreq=1; $clines=0; 
 $tSave=1; $numPerTime=2; $numToSave=5; # save solution at these time intervals
 $res=1024; # hardcopy resolution
 # get command line arguments
 GetOptions( "show=s"=>\$show, "name=s"=>\$name, "solution=i"=>\$solution,"tSave=f"=>\$tSave,\
       "numPerTime=i"=>\$numPerTime, "numToSave=i"=>\$numToSave,"numFreq=i"=>\$numFreq,"clines=i"=>\$clines,\
-      "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"field=s{1,}"=>\@field,"res=i"=>\$res );
+      "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"field=s{1,}"=>\@field,"res=i"=>\$res,"view=i"=>\$view );
 #
 if( $name eq "" ){ $name=$show; }
 if( $field[0] eq "" ){ @field=( "ur", "ui", "urTotal", "uiTotal" ); }
@@ -38,6 +39,13 @@ grid
   toggle grid 0 0
   grid colour 1 BRASS
   grid colour 2 BRASS
+  grid colour 3 BRASS
+  grid colour 4 BRASS
+  grid colour 5 BRASS
+  grid colour 6 BRASS
+  grid colour 7 BRASS
+  grid colour 8 BRASS
+  grid colour 9 BRASS
   plot block boundaries 0
   plot grid lines 0
  exit this menu
@@ -59,7 +67,9 @@ contour
 exit
 DISPLAY AXES:0 0
 # pill box:
-set view:0 -0.121224 -0.00755287 0 0.8275 0.766044 0.321394 -0.55667 0 0.866025 0.5 0.642788 -0.383022 0.663414
+$cmd="set view:0 -0.121224 -0.00755287 0 0.8275 0.766044 0.321394 -0.55667 0 0.866025 0.5 0.642788 -0.383022 0.663414";
+if( $view eq 2 ){ $cmd="set view:0 -0.0667473 0.00633437 0 1.14867 0.984808 0.0301537 -0.17101 0 0.984808 0.173648 0.173648 -0.17101 0.969846"; }
+$cmd
 # set view:0 -0.0904635 -0.0127153 0 0.98307 0.984808 0.0301537 -0.17101 0 0.984808 0.173648 0.173648 -0.17101 0.969846
 pause
 if( $res ne 1024 ){ $cmd="hardcopy vertical resolution:0 $res\n hardcopy horizontal resolution:0 $res\n line width scale factor:0 3"; }else{ $cmd="#"; }
