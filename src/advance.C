@@ -566,15 +566,15 @@ advance( int it )
                 if( computeErrors && !solveHelmholtz )
                 {
                     real maxErr = getErrors( u[cur], t );
-                    sPrintF(myFormat,"cgWave:FD%i%i%s t=%%9.3e (%%%ii steps) dt=%%9.3e maxErr=%%9.2e, ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,(const char*)upwindChar,numDigits);
-                    printF(myFormat,t,step,dt,maxErr,solutionNorm,cpuTime);
+                    sPrintF(myFormat,"cgWave:FD%i%i%s t=%%9.3e (%%%ii steps) dt=%%9.3e maxErr=%%9.2e, ||u||=%%9.2e, cpu=%%9.2e(s) np=%d\n",orderOfAccuracyInTime,orderOfAccuracy,(const char*)upwindChar,numDigits);
+                    printF(myFormat,t,step,dt,maxErr,solutionNorm,cpuTime,np);
                 }
                 else
                 {
           // compute the solution norm
                     solutionNorm = maxNorm(u[cur]);
-                    sPrintF(myFormat,"cgWave:FD%i%i%s t=%%9.3e (%%%ii steps) dt=%%9.3e ||u||=%%9.2e, cpu=%%9.2e(s)\n",orderOfAccuracyInTime,orderOfAccuracy,(const char*)upwindChar,numDigits);
-                    printF(myFormat,t,step,dt,solutionNorm,cpuTime);
+                    sPrintF(myFormat,"cgWave:FD%i%i%s t=%%9.3e (%%%ii steps) dt=%%9.3e ||u||=%%9.2e, cpu=%%9.2e(s) np=%d\n",orderOfAccuracyInTime,orderOfAccuracy,(const char*)upwindChar,numDigits);
+                    printF(myFormat,t,step,dt,solutionNorm,cpuTime,np);
                 }
         // output results (e.g. print errors to the check file)
                 outputResults( cur, t );

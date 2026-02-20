@@ -12,6 +12,96 @@ set ovp2 = ~/Dropbox/overHoltzPaper/part2
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+*************************************
+****** Thurs Feb 19, 2026
+
+RETURN to multigrid
+
+====== NEW: USE rtolmg and $atolmg for MG ======
+
+TEST:
+mpirun -np 2 $cgwh -noplot gaussian.cmd -g=sice16.order2.ml4 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -gmresRestartLength=500 -go=k
+
+
+tolmg=1e-10 -atolmg=1e-10
+solveHelmholtz: max-res=9.374e-08 (gmres, numIts=57, ave-CR= 0.72 , ACR=-1.00, cpu=5.46e+01(s), np=2)
+
+ -rtolmg=1e-5 -atolmg=1e-5 
+solveHelmholtz: max-res=2.100e-04 (gmres, numIts=69, ave-CR= 0.76 , ACR=-1.00, cpu=3.88e+01(s), np=2)
+
+COMPARE MG TO BICGSTAB 
+
+
+--G128: 6.7 M pts
+>>>> MG
+mpirun -np 8 $cgwh -noplot gaussian.cmd -g=sice128.order2.ml5 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -show=junk.show -gmresRestartLength=500 -go=k
+
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.85e-01, cpu= 2.02e+01(s)
+==== implicit: ave-iterations per solve =   7.0 (number of implicit solves=550)
+
+solveHelmholtz: max-res=5.698e-07 (gmres, numIts=53, ave-CR= 0.70 , ACR=-1.00, cpu=1.14e+03(s), np=8)
+solveHelmholtz: max-res=5.682e-07 (gmres, numIts=53, ave-CR= 0.70 , ACR=-1.00, cpu=6.28e+02(s), np=16)
+solveHelmholtz: max-res=5.805e-07 (gmres, numIts=53, ave-CR= 0.70 , ACR=-1.00, cpu=3.55e+02(s), np=32)
+
+>>> BI-CG_STAB
+mpirun -np 16 $cgwh -noplot gaussian.cmd -g=sice128.order2.ml5 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=best -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -show=junk.show -gmresRestartLength=500 -go=k
+
+
+solveHelmholtz: max-res=6.054e-05 (gmres, numIts=53, ave-CR= 0.70 , ACR=-1.00, cpu=4.94e+03(s), np=16)
+ ==== implicit: ave-iterations per solve = 227.5 (number of implicit solves=550)
+
+
+---G64 = 1.7M pts
+
+
+ORDER=2 IMP MG: 
+mpirun -np 8 $cgwh -noplot gaussian.cmd -g=sice64.order2.ml5 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -show=junk.show -gmresRestartLength=500 -go=k
+
+
+-rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12
+
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.84e-01, cpu= 7.69e+00(s)  np=4 
+ ==== implicit: ave-iterations per solve =   7.3 (number of implicit solves=550)
+
+
+solveHelmholtz: max-res=1.592e-06 (gmres, numIts=53, ave-CR= 0.71 , ACR=-1.00, cpu=3.82e+02(s), np=4)
+solveHelmholtz: max-res=1.674e-06 (gmres, numIts=53, ave-CR= 0.71 , ACR=-1.00, cpu=2.33e+02(s), np=8)
+
+-rtoli=1e-8 -atoli=1e-8 -rtolcg=1e-10 -atolcg=1e-10 .. too big
+solveHelmholtz: max-res=3.444e-05 (gmres, numIts=53, ave-CR= 0.71 , ACR=-1.00, cpu=1.54e+02(s), np=8)
+
+
+>>>> BI-CG_STAB -- DECREASE TOL FROM MG
+mpirun -np 4 $cgwh -noplot gaussian.cmd -g=sice64.order2.ml5 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=best -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -show=junk.show -gmresRestartLength=500 -go=k
+
+
+PETScNew, parallel=[bi-conjugate gradient stabilized + block Jacobi preconditioner], local=[ILU(3) + reverse Cuthill-McKee ordering]
+
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.84e-01, cpu= 3.37e+01(s)
+
+solveHelmholtz: max-res=1.038e-06 (gmres, numIts=53, ave-CR= 0.71 , ACR=-1.00, cpu=1.88e+03(s), np=4)
+
+ ==== implicit: ave-iterations per solve = 116.6 (number of implicit solves=550)
+
+
+>>>>>>>>>>
+
+MG: 92s BCGS=225s
+mpirun -np 4 $cgwh -noplot gaussian.cmd -g=sice32.order2.ml4 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtoli=1e-10 -atoli=1e-10 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -gmresRestartLength=500 -go=k
+
+omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=3.05e-03, domainSize=2.00e+00, NLambda=3.1831, ppw=lambda/dx=205.7, ppw(rule-of-thumb)= 57.4 (epsr=0.01)<<<
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.86e-01, cpu= 1.69e+00(s)
+solveHelmholtz: max-res=6.438e-07 (gmres, numIts=53, ave-CR= 0.72 , ACR=-1.00, cpu=9.23e+01(s), np=4)
+
+BI-CG-STAB
+mpirun -np 4 $cgwh -noplot gaussian.cmd -g=sice32.order2.ml4 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=best -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -gmresRestartLength=500 -go=k
+
+-rtoli=1e-12 -atoli=1e-12
+solveHelmholtz: max-res=8.026e-07 (gmres, numIts=53, ave-CR= 0.72 , ACR=-1.00, cpu=2.25e+02(s), np=4)
+
+-rtoli=1e-10 -atoli=1e-10 
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.86e-01, cpu= 3.62e+00(s)
+solveHelmholtz: max-res=1.303e-04 (gmres, numIts=54, ave-CR= 0.70 , ACR=-1.00, cpu=2.04e+02(s), np=4)
 
 *************************************
 ****** Fri Feb 13, 2026

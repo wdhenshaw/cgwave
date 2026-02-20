@@ -15,8 +15,10 @@ if( $beta2 eq "" ){ $beta2=0.5; }
 if( $beta4 eq "" ){ $beta4=0; }
 if( $beta6 eq "" ){ $beta6=0; }
 if( $beta8 eq "" ){ $beta8=0; }
-if( $rtoli eq "" ){ $rtoli=1.e-8; }
-if( $atoli eq "" ){ $atoli=1.e-8; }
+if( $rtoli eq "" ){ $rtoli=1.e-8; }    # old way to set mg tol
+if( $atoli eq "" ){ $atoli=1.e-8; }    # old way to set mg tol
+if( $rtolmg eq "" ){ $rtolmg=$rtoli; } # New way to set mg tol
+if( $atolmg eq "" ){ $atolmg=$atoli; } # New way to set mg tol
 if( $rtolcg eq "" ){ $rtolcg=1.e-10; } # for the coarse grid solve
 if( $atolcg eq "" ){ $atolcg=1.e-10; } # for the coarse grid solve
 if( $maxiti eq "" ){ $maxiti=50000; }
@@ -55,8 +57,8 @@ implicit solver parameters
  # 
   multigrid parameters
     choose good parameters: 1
-    residual tolerance $rtoli
-    absolute tolerance $atoli
+    residual tolerance $rtolmg
+    absolute tolerance $atolmg
     # 
     order of coarse level solves: $orderCoarse
     maximum number of iterations
@@ -88,10 +90,8 @@ implicit solver parameters
       #
       # NOTE: coarse grid solver tolerances may need to be smaller than the find grid ones
       relative tolerance
-        # $rtoli
         $rtolcg
       absolute tolerance
-        # $atoli
         $atolcg
       number of incomplete LU levels
        3

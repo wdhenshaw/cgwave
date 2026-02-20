@@ -14,6 +14,18 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=8 
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=16 
 
+-------- SLURM ADD DEPENDENCY -------
+set jobid2 = `sbatch --parsable batch2.sh`
+set jobid3 = `sbatch --parsable --dependency=afternotok:$jobid2  batch3.sh`
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+CCI: G32: *** TO-DO ***
+makeBatch.p -batchFile=batch3pb.sh -solverName=cgwh3pb -np=256 -nodes=16 -timeLimit=6:00:00 -errFile=threePillBoxRun1.err -logFile=threePillBoxRun1.log $cgwh -noplot scat.cmd -g=threePillBoxesAngle45e32.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=threePillBoxesG32O4kx16.show -matlab=threePillBoxeskx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile3pb1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile3pb1.show -go=ks
+
+
 
 ***************************************************
 ****** Mon Feb 16, 2026
