@@ -12,10 +12,112 @@ set ovp2 = ~/Dropbox/overHoltzPaper/part2
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+
+
+*************************************
+****** Sat Feb 21, 2026
+
+3D PIPE
+
+plotStuff plotSolution3d.cmd -show=pipeG8 -solution=1
+
+G32: 40M 
+G16: 5.9 M
+G8: 0.86 M pts
+
+G8 O4 higher freq: REDUCE TOL -- slow convergence 
+setsid mpirun -np=16 $cgwh -noplot gaussian.cmd -g=pipeze8.order4.ng3.ml3 -x0=0.05 -y0=-0.05 -z0=.55 -nf=1 -freq=20 -amp=400 -beta=20 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-8 -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20  -imode=1 -maxIterations=5000 -numPeriods=1 -matlab=disk -numParGhost=4 -show=pipeG8.show -gmresRestartLength=5000 -upwind=0 -adjustHelmholtzForUpwinding=0 -go=ks > pipeG8Freq20.out 
+
+tol=1e-8 
+ omega=2.00e+01, k=2.00e+01, lambda=3.14e-01, dx=1.20e-02, domainSize=1.00e+00, NLambda=3.1831, ppw=lambda/dx= 26.3, ppw(rule-of-thumb)= 11.5 (epsr=0.01)<<<
+ olveHelmholtz: max-res=7.161e-02 (gmres, numIts=166, ave-CR= 0.92 , ACR=-1.00, cpu=1.75e+03(s), np=16)
+
+
+tol=1e-10: 
+ ##### SAVE KRYLOV RESIDUAL: iteration=1928: L2h-residual= 5.58e-10, ratio= 1.00 
+
+G8 O4
+mpirun -np=16 $cgwh -noplot gaussian.cmd -g=pipeze8.order4.ng3.ml3 -x0=0.05 -y0=-0.05 -z0=.5 -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20  -imode=1 -maxIterations=5000 -numPeriods=1 -matlab=disk -numParGhost=4 -show=pipeG8.show -gmresRestartLength=5000 -upwind=0 -adjustHelmholtzForUpwinding=0  -go=ks
+
+cgWave:FD24 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.59e-01, cpu= 4.94e+01(s) np=4
+cgWave:FD24 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.55e-01, cpu= 2.87e+01(s) np=8
+cgWave:FD24 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.56e-01, cpu= 1.73e+01(s) np=16
+
+omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=1.20e-02, domainSize=1.00e+00, NLambda=1.59155, ppw=lambda/dx= 52.6, ppw(rule-of-thumb)=  9.6 (epsr=0.01)<<<
+solveHelmholtz: max-res=1.193e-03 (gmres, numIts=23, ave-CR= 0.49 , ACR=-1.00, cpu=4.49e+02(s), np=16)
+==== implicit: ave-iterations per solve =   8.0 (number of implicit solves=250)
+
+G4 O4
+mpirun -np=1 $cgwh -noplot gaussian.cmd -g=pipeze4.order4.ng3.ml2 -x0=0.05 -y0=-0.05 -z0=.5 -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20  -imode=1 -maxIterations=5000 -numPeriods=1 -matlab=disk -numParGhost=4 -show=pipe.show -gmresRestartLength=5000 -upwind=0 -adjustHelmholtzForUpwinding=0  -go=ks
+
+Ogmg:INFO: Setting additional Dirichlet BC to extrapolation since equationToSolve!=OgesParameters::laplaceEquation
+Ogmg:INFO: Setting additional Neumann BC to extrapolation (l=0), eqn2 (l>0) since equationToSolve!=OgesParameters::laplaceEquation
+
+
+cgWave:FD24 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.58e-01, cpu= 1.17e+01(s) np=1
+cgWave:FD24 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.57e-01, cpu= 7.30e+00(s) np=2
+omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=2.28e-02, domainSize=1.00e+00, NLambda=1.59155, ppw=lambda/dx= 27.5, ppw(rule-of-thumb)=  9.6 (epsr=0.01)<<<
+solveHelmholtz: max-res=9.108e-03 (gmres, numIts=23, ave-CR= 0.50 , ACR=-1.00, cpu=1.90e+02(s), np=2)
+
+==== implicit: ave-iterations per solve =   7.0 (number of implicit solves=250)
+
+
+G2: ORDER=4
+mpirun -np=1 $cgwh -noplot gaussian.cmd -g=pipeze2.order4.ng3.ml1 -x0=0.05 -y0=-0.05 -z0=.5 -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20  -imode=1 -maxIterations=5000 -numPeriods=1 -matlab=disk -numParGhost=4 -show=junk.show -gmresRestartLength=5000 -upwind=0 -adjustHelmholtzForUpwinding=0  -go=og
+
+omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=4.58e-02, domainSize=1.00e+00, NLambda=1.59155, ppw=lambda/dx= 13.7, ppw(rule-of-thumb)=  9.6 (epsr=0.01)<<<
+solveHelmholtz: max-res=9.309e-02 (gmres, numIts=30, ave-CR= 0.54 , ACR=-1.00, cpu=4.00e+01(s), np=1)
+
+
+ORDER=2
+mpirun -np=1 $cgwh -noplot gaussian.cmd -g=pipeze2.order2.ml1 -x0=0.05 -y0=-0.05 -z0=.5 -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20  -imode=1 -maxIterations=5000 -numPeriods=1 -matlab=disk -numParGhost=4 -show=junk.show -gmresRestartLength=5000 -upwind=0 -adjustHelmholtzForUpwinding=0  -go=og
+
+omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=5.00e-02, domainSize=1.00e+00, NLambda=1.59155, ppw=lambda/dx= 12.6, ppw(rule-of-thumb)= 40.6 (epsr=0.01)<<<
+solveHelmholtz: max-res=1.280e-06 (gmres, numIts=35, ave-CR= 0.61 , ACR=-1.00, cpu=1.63e+01(s), np=1)
+
+ ==== implicit: ave-iterations per solve =   7.8 (number of implicit solves=370)
+
+
 *************************************
 ****** Thurs Feb 19, 2026
 
 RETURN to multigrid
+
+========== BOX =========
+
+>>> MG G32 : 33M pts
+mpirun -np=16 $cgwh -noplot gaussian.cmd -g=box32.order2 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -show=junk.show -gmresRestartLength=500 -go=k
+
+
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 3.28e-03, cpu= 2.44e+01(s) np=16
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 3.28e-03, cpu= 1.69e+01(s) np=32
+
+BCGS: 
+mpirun -np=32 $cgwh -noplot gaussian.cmd -g=box32.order2 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=best -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -show=junk.show -gmresRestartLength=500 -go=k
+
+
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 6.34e-03, cpu= 3.47e+02(s) np=16
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 3.28e-03, cpu= 2.14e+02(s) np=32
+
+>>> MG 
+
+
+mpirun -np=16 $cgwh -noplot gaussian.cmd -g=box16.order2 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -show=junk.show -gmresRestartLength=500 -go=k
+
+
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.04e-02, cpu= 1.36e+01(s) np=2
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.04e-02, cpu= 7.37e+00(s) np=4
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.04e-02, cpu= 4.10e+00(s) np=8
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 4.83e-03, cpu= 2.78e+00(s) np=16
+
+>>> BICGS: G16 
+
+mpirun -np=2 $cgwh -noplot gaussian.cmd -g=box16.order2 -x0=0.05 -y0=-0.1 -z0=0. -nf=1 -freq=10 -amp=100 -beta=15 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -solveri=best -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -upwind=0 -imode=1 -maxIterations=500 -numPeriods=1 -matlab=disk -numParGhost=2 -show=junk.show -gmresRestartLength=500 -go=k
+
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.96e-02, cpu= 1.20e+02(s) np=2
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.96e-02, cpu= 6.64e+01(s) np=4
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 1.04e-02, cpu= 3.87e+01(s) np=8
+cgWave:FD22 t=6.871e-01 (10 steps) dt=6.871e-02 ||u||= 7.24e-03, cpu= 2.06e+01(s) np=16
 
 ====== NEW: USE rtolmg and $atolmg for MG ======
 

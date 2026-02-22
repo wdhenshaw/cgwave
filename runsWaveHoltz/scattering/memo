@@ -22,9 +22,48 @@ set jobid3 = `sbatch --parsable --dependency=afternotok:$jobid2  batch3.sh`
 
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-CCI: G32: *** TO-DO ***
+CCI: G32:
+
+RESTART 3:  reduce tol to 1e-8
+makeBatch.p -batchFile=batch3pb3.sh -solverName=cgwh3pb -np=256 -nodes=16 -timeLimit=6:00:00 -errFile=threePillBoxRun3.err -logFile=threePillBoxRun3.log $cgwh -noplot scat.cmd -g=threePillBoxesAngle45e32.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=1 -maxIterations=4000 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=threePillBoxesG32O4kx16.show -matlab=threePillBoxeskx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile3pb2.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile3pb1.show -go=ks
+
+
+
+RESTART 2: 
+makeBatch.p -batchFile=batch3pb3.sh -solverName=cgwh3pb -np=256 -nodes=16 -timeLimit=6:00:00 -errFile=threePillBoxRun2.err -logFile=threePillBoxRun2.log $cgwh -noplot scat.cmd -g=threePillBoxesAngle45e32.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=threePillBoxesG32O4kx16.show -matlab=threePillBoxeskx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile3pb1.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile3pb2.show -go=ks
+
+set jobid3 = `sbatch --parsable --dependency=afternotok:$jobid2 batch3pb3.sh`
+
+##### SAVE KRYLOV RESIDUAL: iteration=66: L2h-residual= 6.29e-07, ratio= 0.86 
+MonitorError called at it=67, rnorm= 1.44e-02
+
+
+
+RESTART 1:
+makeBatch.p -batchFile=batch3pb2.sh -solverName=cgwh3pb -np=256 -nodes=16 -timeLimit=6:00:00 -errFile=threePillBoxRun2.err -logFile=threePillBoxRun2.log $cgwh -noplot scat.cmd -g=threePillBoxesAngle45e32.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=threePillBoxesG32O4kx16.show -matlab=threePillBoxeskx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile3pb2.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile3pb1.show -go=ks
+
+set jobid2 = `sbatch --parsable batch3pb2.sh`
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=45: L2h-residual= 2.60e-05, ratio= 0.86 
+MonitorError called at it=46, rnorm= 6.01e-01
+
+
+RUN1:
 makeBatch.p -batchFile=batch3pb.sh -solverName=cgwh3pb -np=256 -nodes=16 -timeLimit=6:00:00 -errFile=threePillBoxRun1.err -logFile=threePillBoxRun1.log $cgwh -noplot scat.cmd -g=threePillBoxesAngle45e32.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=1 -maxIterations=4000 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=threePillBoxesG32O4kx16.show -matlab=threePillBoxeskx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile3pb1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile3pb1.show -go=ks
 
+RUN 1 :
+
+ ##### SAVE KRYLOV RESIDUAL: iteration=31: L2h-residual= 2.04e-04, ratio= 0.88 
+MonitorError called at it=32, rnorm= 4.72e+00
+
+
+***************************************************
+****** Fri Feb 20, 2026
+
+>>>>>>>>>> CONTINUE on RODS
+
+CCI run finished: 
+plotStuff plotSolution.cmd -show=multiRodsTwoLayerG64Freq50 -field=speed absurTotal absuiTotal -res=4096
 
 
 ***************************************************
@@ -70,6 +109,7 @@ solveHelmholtz: max-residual [Re,Im]=[6.17e-05,7.06e-05] (gmres, numIts=12, ave-
 
 >>>>>>>>>> CONTINUE on RODS
 
+plotStuff plotSolution.cmd -show=multiRodsTwoLayerG32Freq30 -field=speed absurTotal absuiTotal -res=4096
 plotStuff plotSolution.cmd -show=multiRodsTwoLayerG32Freq30 -field=speed absurTotal absuiTotal -res=4096
 
 CCI: G64: 27M pts 

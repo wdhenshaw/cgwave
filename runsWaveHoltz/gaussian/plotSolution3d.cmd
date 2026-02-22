@@ -10,6 +10,7 @@ GetOptions( "show=s"=>\$show, "name=s"=>\$name, "solution=i"=>\$solution,"tSave=
       "field=s"=>\$field,"emin=f"=>\$emin,"emax=f"=>\$emax,"cf=i"=>\$cf,"res=i"=>\$res, "comp=s"=>\$comp );
 #
 $show
+if( $name eq "plot" ){ $name = $show; }
 #
 if( $comp eq "absv" ){ $cmd="derived types\n absoluteValue\n v0  (off)\n done\n exit"; }else{ $cmd="#" }
 $cmd

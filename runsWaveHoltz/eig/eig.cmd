@@ -48,6 +48,8 @@ $saveCheckPointFileName="checkPointFile.show";
 #
 $solverh="yale"; $maxith=2000; $rtolh=1.e-6; $atolh=1.e-5; $restart=50; $iluh=5; # parameters for direct Helmholtz solver
 $solveri="yale"; $maxiti=2000; $rtoli=1.e-6; $atoli=1.e-5; # parameters for implicit time-stepping solver
+$rtolmg=1.e-10; $atolmg=1.e-10; # for multigrid 
+$mgCoarseGridSolver="yale"; $mgMaxIts=15; $rtolcg=1e-10; $atolcg=1e-10; # used in implicitOptions.h , bcgs = bi-cg-stab
 $maxParallelSubFiles=8; 
 #
 GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z0,"beta=f{1,}"=>\@beta,"numPeriods=i"=>\$numPeriods,\
@@ -67,7 +69,8 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "smoothInitialConditions=i"=>\$smoothInitialConditions,"readCheckPointFile=i"=>\$readCheckPointFile,"saveCheckPointFile=i"=>\$saveCheckPointFile,\
             "bc1=s"=>\$bc1,"bc2=s"=>\$bc2,"bc3=s"=>\$bc3,"bc4=s"=>\$bc4,"bc5=s"=>\$bc5,"bc6=s"=>\$bc6,"orderOfExtrapolation=i"=>\$orderOfExtrapolation,\
             "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName,\
-            "maxParallelSubFiles=i"=>\$maxParallelSubFiles );
+            "maxParallelSubFiles=i"=>\$maxParallelSubFiles, "mgCoarseGridSolver=s"=>\$mgCoarseGridSolver,"mgMaxIts=i"=>\$mgMaxIts,\
+            "rtolmg=f"=>\$rtolmg,"atolmg=f"=>\$atolmg, "rtolcg=f"=>\$rtolcg,"atolcg=f"=>\$atolcg    );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }

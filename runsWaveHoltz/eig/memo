@@ -9,6 +9,246 @@
 
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
+*************************************
+****** Sun Feb 22, 2026
+
+PARALLEL
+
+mpirun -np=1 $cgwh -noplot eig.cmd -g=sice16.order2.ml4 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=6 -numEigs=16 -numParGhost=2 -go=k
+
+
+DISK YALE: 
+cgwh -noplot eig.cmd -g=sice16.order2.ml4 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12  -freq=6 -numEigs=16 -go=k
+
+Yale:
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 87, cpu= 1.01e+01(s), np=1
+num eigs requested=16, number eigs converged =17, numArnoldiVectors=33, wave-solves/eig=  5.1, timeSteps/eig= 51.2
+
+MG:
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 87, cpu= 7.27e+01(s), np=1
+ num eigs requested=16, number eigs converged =17, numArnoldiVectors=33, wave-solves/eig=  5.1, timeSteps/eig= 51.2
+
+*************************************
+****** Sat Feb 21, 2026
+
+TEST IMPLICIT WITH MG 
+
+VALGRIND: 
+ DISK -- MG -- OK 
+cgwh -noplot eig.cmd -g=sice16.order2.ml4 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12  -freq=6 -numEigs=16 -go=k
+
+
+cgWave:FD22 t=0.000e+00 ( 0 steps) dt=1.047e-01 ||u||= 1.15e-02, cpu= 1.00e-06(s) np=-1471221728
+
+
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  6.0000e+00, orderOfAccuracy=2, grid=sice16, np=1
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=1000.00, dt=1.047e-01, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=870, aveItsPerImplicitSolve=  7.1
+ implict solver=multigrid, solver=[iterative solver + ]
+ implicit solver: rtol= 1.00e-12, atol= 1.00e-12
+ readCheckPointFile=0, readCheckPointFileName=[checkPointFile.show], writeCheckPointFile=0, writeCheckPointFileName=[checkPointFile.show]
+ omega=6.00e+00, k=6.00e+00, lambda=1.05e+00, dx=5.96e-03, domainSize=2.00e+00, NLambda=1.90986, ppw=lambda/dx=175.6, ppw(rule-of-thumb)= 44.4 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 87, cpu= 7.27e+01(s), np=1
+ num eigs requested=16, number eigs converged =17, numArnoldiVectors=33, wave-solves/eig=  5.1, timeSteps/eig= 51.2
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 5.1354462595e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.59e-08
+ i=1: lamRQ = 5.1354938006e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.23e-08
+ i=2: lamRQ = 5.5198898464e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.32e-08
+ i=3: lamRQ = 6.3798696625e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.83e-09
+ i=4: lamRQ = 6.3798696625e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.96e-09
+ i=5: lamRQ = 7.0151988191e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.32e-09
+ i=6: lamRQ = 7.0151988191e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.62e-09
+ i=7: lamRQ = 7.5878498065e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.23e-08
+ i=8: lamRQ = 7.5878524153e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.71e-09
+ i=9: lamRQ = 8.4164704619e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.34e-09
+ i=10: lamRQ = 8.4166754064e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.70e-09
+ i=11: lamRQ = 8.6529954698e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.50e-09
+ i=12: lamRQ = 8.7707264209e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.50e-09
+ i=13: lamRQ = 8.7707264209e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.02e-08
+
+
+
+mG : OK 
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  6.0000e+00, orderOfAccuracy=2, grid=sice16, np=1
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=1000.00, dt=1.047e-01, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=780, aveItsPerImplicitSolve=  7.1
+ implict solver=multigrid, solver=[iterative solver + ]
+ implicit solver: rtol= 1.00e-12, atol= 1.00e-12
+ readCheckPointFile=0, readCheckPointFileName=[checkPointFile.show], writeCheckPointFile=0, writeCheckPointFileName=[checkPointFile.show]
+ omega=6.00e+00, k=6.00e+00, lambda=1.05e+00, dx=5.96e-03, domainSize=2.00e+00, NLambda=1.90986, ppw=lambda/dx=175.6, ppw(rule-of-thumb)= 44.4 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 78, cpu= 5.74e+01(s), np=1
+ num eigs requested=16, number eigs converged =16, numArnoldiVectors=33, wave-solves/eig=  4.9, timeSteps/eig= 48.8
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 3.8316428795e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.04e-08
+ i=1: lamRQ = 3.8316428795e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.07e-08
+ i=2: lamRQ = 5.1354462595e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.10e-08
+ i=3: lamRQ = 5.1354938006e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.98e-09
+ i=4: lamRQ = 5.5198898464e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.44e-09
+ i=5: lamRQ = 6.3798696624e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.29e-09
+ i=6: lamRQ = 6.3798696625e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.23e-09
+ i=7: lamRQ = 7.0151988191e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.57e-09
+ i=8: lamRQ = 7.0151988191e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.53e-09
+ i=9: lamRQ = 7.5878498065e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.71e-09
+ i=10: lamRQ = 7.5878524153e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.44e-09
+ i=11: lamRQ = 8.4164704619e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.43e-09
+
+
+
+
+>>> implicit first step : a few more mat-vects
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  6.0000e+00, orderOfAccuracy=2, grid=sice16
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=1000.00, dt=1.047e-01, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=970, aveItsPerImplicitSolve=  8.3
+ implict solver=multigrid, solver=[iterative solver + ]
+ implicit solver: rtol= 1.00e-12, atol= 1.00e-12
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 97, cpu= 8.27e+01(s)
+ num eigs requested=16, number eigs converged =16
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 5.1354462595e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.34e-10
+ i=1: lamRQ = 5.1354938006e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.31e-11
+ i=2: lamRQ = 5.5198898464e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.96e-10
+ i=3: lamRQ = 6.3798696625e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.47e-10
+
+
+
+++++++++ 
+TS=IMP THIS IS OK 
+$cgwh -noplot eig.cmd -g=square128.order4 -nf=1 -adjustOmega=0 -ts=implicit -cfl=10000 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=200 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -show=junk.show  -orderOfExtrapolation=-1 -freq=10 -numEigs=10  -matlab=square  -solveri=best -rtoli=1e-12 -atoli=1e-12  -go=k 
+
+-----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=4, grid=square128, np=1
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=10000.00, dt=6.283e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=610, aveItsPerImplicitSolve=  7.9
+ implict solver=PETSc, solver=[bi-conjugate gradient stabilized + ILU(3) + reverse Cuthill-McKee ordering]
+ implicit solver: rtol= 1.00e-12, atol= 1.00e-12
+ readCheckPointFile=0, readCheckPointFileName=[checkPointFile.show], writeCheckPointFile=0, writeCheckPointFileName=[checkPointFile.show]
+ omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=7.81e-03, domainSize=1.00e+00, NLambda=1.59155, ppw=lambda/dx= 80.4, ppw(rule-of-thumb)=  9.6 (epsr=0.01)
+ tol= 1.00e-12, number of wave-solves (mat-vecs) = 61, cpu= 9.33e+00(s), np=1
+ num eigs requested=10, number eigs converged =10, numArnoldiVectors=21, wave-solves/eig=  6.1, timeSteps/eig= 61.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 8.8857656735e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.97e-11
+ i=1: lamRQ = 9.9345872296e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.20e-12
+ i=2: lamRQ = 9.9345872296e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.97e-12
+ i=3: lamRQ = 1.1327172412e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.24e-11
+ i=4: lamRQ = 1.1327172412e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.24e-11
+ i=5: lamRQ = 1.2953113875e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.04e-12
+ i=6: lamRQ = 1.2953113875e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.35e-12
+
+++++ OLD 
+
+-np=2: 
+ -----------------------------------------------------------------------------
+ ------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=4, grid=square128
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = implicit, cfl=10000.00, dt=6.283e-02, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=10, 
+  totalTimeStepsStaken=630, aveItsPerImplicitSolve= 25.0
+ implict solver=PETScNew, parallel=[bi-conjugate gradient stabilized + block Jacobi preconditioner], local=[ILU(3) + reverse Cuthill-McKee ordering]
+ implicit solver: rtol= 1.00e-12, atol= 1.00e-12
+ tol= 1.00e-12, number of wave-solves (mat-vecs) = 63, cpu= 1.24e+01(s)
+ num eigs requested=10, number eigs converged =10, numArnoldiVectors=21, wave-solves/eig=  6.3, timeSteps/eig= 63.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 8.8857656735e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  5.52e-10
+ i=1: lamRQ = 9.9345872296e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.93e-10
+ i=2: lamRQ = 9.9345872296e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.21e-10
+ i=3: lamRQ = 1.1327172412e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.05e-10
+ i=4: lamRQ = 1.1327172412e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.57e-10
+ i=5: lamRQ = 1.2953113875e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.02e-11
+ i=6: lamRQ = 1.2953113875e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.24e-10
+ i=7: lamRQ = 1.3328647272e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.26e-10
+ i=8: lamRQ = 1.4049625279e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.61e-10
+ i=9: lamRQ = 1.4049625279e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.57e-10
+
+
+
+
+
+
+pipeze4.order4.ng3.ml2
+
+mpirun -np=1 $cgwh -noplot eig.cmd -g=sice8.order2  -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -eigenSolver=default -show=diskG8O2Ev32.show -freq=4 -numEigs=32 -upwind=0 -saveCheckPointFile=0 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -numParGhost=2 -go=ks
+
+
+
+SERIAL: IMP 
+$cgwh -noplot eig.cmd -g=sice8.order2  -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=30 -matlab=diskG4 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -eigenSolver=default -show=diskG8O2Ev32.show -freq=4 -numEigs=32 -upwind=0 -saveCheckPointFile=0 -saveCheckPointFileName=checkPointFile1.show -readCheckPointFile=0 -readCheckPointFileName=checkPointFile1.show -go=ks
+
+
+num eigs requested=32, number eigs converged =11, numArnoldiVectors=65, wave-solves/eig= 79.6, timeSteps/eig=796.4
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 2.4047571310e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.31e-11
+ i=1: lamRQ = 3.8314295073e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.57e-10
+ i=2: lamRQ = 3.8314295073e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.57e-10
+ i=3: lamRQ = 5.1348481146e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.25e-12
+ i=4: lamRQ = 5.1350641243e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.21e-12
+ i=5: lamRQ = 5.5192529647e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.20e-13
+ i=6: lamRQ = 6.3788841973e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.31e-08
+ i=7: lamRQ = 6.3788841973e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.31e-08
+ i=8: lamRQ = 7.0138915621e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.21e-09
+ i=9: lamRQ = 7.0138915621e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.21e-09
+ i=10: lamRQ = 2.6177465534e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.17e-09
+
+
+
+
+IMP: TROUBLE?? Np=1 uses a lot of iterations
+$cgwh -noplot eig.cmd -g=sice8.order4.ng3  -nf=1 -adjustOmega=0 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4O2Freq10 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=2 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG8O4Ev128.show -freq=10 -numEigs=128 -upwind=0 -go=ks
+
+EXP
+$cgwh -noplot eig.cmd -g=sice8.order4.ng3  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4O2Freq10 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG8O4Ev128.show -freq=10 -numEigs=128 -upwind=0 -go=ks
+
+
+
+---- OLD 
+makeBatch.p -batchFile=batch.sh -solverName=cgwh -np=4 -nodes=1 -timeLimit=4:00:00  $cgwh -noplot eig.cmd -g=sice8.order4.ng3  -nf=1 -adjustOmega=0 -ts=explicit -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -imode=1 -maxIterations=30 -matlab=diskG4O2Freq10 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -solveri=best -rtoli=1e-12 -atoli=1e-12 -eigenSolver=default -show=diskG8O4Ev128.show -freq=10 -numEigs=128 -upwind=0 -go=ks
+
+------------------------- EigenWave SUMMARY ---------------------------------
+ omega=  1.0000e+01, orderOfAccuracy=4, grid=sice8, np=4
+ eigenSolver = KrylovSchur (SLEPc solver)
+ Provide initial vector(s) for eigenSolver = 1, eigenValueTolForMultiplicity=1e-05
+ Use accurate inner product = 0.
+ Time stepping = explicit, cfl=  0.95, dt=7.060e-03, minStepsPerPeriod=10, Np=1, numberOfStepsPerSolve=89, 
+  totalTimeStepsStaken=29993, aveItsPerImplicitSolve=  0.0
+ readCheckPointFile=0, readCheckPointFileName=[checkPointFile.show], writeCheckPointFile=0, writeCheckPointFileName=[checkPointFile.show]
+ omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=1.25e-02, domainSize=2.00e+00, NLambda=3.18308, ppw=lambda/dx= 50.3, ppw(rule-of-thumb)= 11.5 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 337, cpu= 4.55e+01(s), np=4
+ num eigs requested=128, number eigs converged =131, numArnoldiVectors=257, wave-solves/eig=  2.6, timeSteps/eig=229.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 2.4048255522e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.25e-11
+ i=1: lamRQ = 3.8317059177e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.93e-12
+ i=2: lamRQ = 3.8317059177e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.70e-12
+ i=3: lamRQ = 5.5200778089e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.81e-12
+ i=4: lamRQ = 6.3801612032e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.00e-12
+ i=5: lamRQ = 6.3801612064e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.61e-12
+
 
 *************************************
 ****** Fri Feb 13, 2026
