@@ -222,6 +222,7 @@ int CgWaveHoltz::outputEigenTable()
     const int & numEigsToCompute                    = cgWave.dbase.get<int>("numEigsToCompute");
     const int & numArnoldiVectors                   = cgWave.dbase.get<int>("numArnoldiVectors");
     const Real & eigenValueTolForMultiplicity       = cgWave.dbase.get<Real>("eigenValueTolForMultiplicity");
+
   // int iteration=-1;
   // int nev=-1, nconv=-1;
 
@@ -426,7 +427,7 @@ int CgWaveHoltz::outputEigenTable()
                 Real lamRQ = eigenValues(ie);
         // eigenPairResidual(ie) = cgWave.getEigenPairResidual( lamRQ, eigenVector, ie );
 
-                printF(" i=%d: lamRQ = %16.10e,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 = %9.2e\n",ie,lamRQ,eigenPairResidual(ie));
+                printF(" i=%5d: lamRQ = %16.10e,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 = %9.2e\n",ie,lamRQ,eigenPairResidual(ie));
             }
         }
 
@@ -1292,7 +1293,7 @@ int CgWaveHoltz::solveEigen(int argc,char **argv)
             periodArray                = Tperiod;
             dbase.get<real>("Tperiod") = Tperiod;
 
-            printF("*** SETTING tFinal = %9.3e\n",tFinal);   
+            printF("*** SETTING tFinal = %9.3e (numPeriods=%d)\n",tFinal,numPeriods);   
 
             cgWave.initialize();
         }

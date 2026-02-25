@@ -37,7 +37,7 @@ $cfl=.9; $bc="d";
 $ts="explicit"; $dtMax=1; $takeImplicitFirstStep=1; $takePeriodicFirstStep=0;
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
 $orderInTime=-1;  # -1 = use default
-$deflateWaveHoltz=0; $deflateForcing=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; 
+$deflateWaveHoltz=0; $deflateForcing=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; $augmentedVectorsAreEigenvectors=1;
 $eigTol=1.e-4; # eigenvalue tol for multiplicity 
 $adjustHelmholtzForUpwinding=1; # remove upwinding from Helmholtz solution
 $useSuperGrid=0; $superGridWidth=.2; $adjustPlotsForSuperGrid=1; $adjustErrorsForSuperGrid=1; $useVariableTolerance=0; 
@@ -70,7 +70,7 @@ GetOptions( "omega=f"=>\$omega,"x0=f{1,}"=>\@x0,"y0=f{1,}"=>\@y0,"z0=f{1,}"=>\@z
             "readCheckPointFile=i"=>\$readCheckPointFile,"saveCheckPointFile=i"=>\$saveCheckPointFile,"flushFrequency=i"=>\$flushFrequency,\
             "readCheckPointFileName=s"=>\$readCheckPointFileName,"saveCheckPointFileName=s"=>\$saveCheckPointFileName,\
             "maxParallelSubFiles=i"=>\$maxParallelSubFiles, "mgCoarseGridSolver=s"=>\$mgCoarseGridSolver,"mgMaxIts=i"=>\$mgMaxIts,\
-            "rtolmg=f"=>\$rtolmg,"atolmg=f"=>\$atolmg, "rtolcg=f"=>\$rtolcg,"atolcg=f"=>\$atolcg );
+            "rtolmg=f"=>\$rtolmg,"atolmg=f"=>\$atolmg, "rtolcg=f"=>\$rtolcg,"atolcg=f"=>\$atolcg,"augmentedVectorsAreEigenvectors=i"=>\$augmentedVectorsAreEigenvectors );
 # 
 if( $bc eq "d" ){ $bc="dirichlet"; }
 if( $bc eq "n" ){ $bc="neumann"; }
@@ -189,6 +189,7 @@ deflate forcing $deflateForcing
 number to deflate $numToDeflate
 eigenVectorFile $eigenVectorFile
 eig multiplicity tol $eigTol
+#
 # printf("eigTol=$eigTol\n");
 # pause
 min steps per period $minStepsPerPeriod
@@ -241,6 +242,11 @@ exit
 show file $show
 contour
 exit
+#
+# --- CgWaveHoltz runtime Parameters ---
+#
+augmented are eigenvectors $augmentedVectorsAreEigenvectors
+#
 $initialCondition = "zero initial condition";
 if( $icshow ne "" ){ $cmd = "initial condition show file $icshow"; $initialCondition="show file initial condition"; }else{ $cmd="#"; }
 $cmd

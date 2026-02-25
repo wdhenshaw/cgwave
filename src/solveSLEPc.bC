@@ -452,6 +452,10 @@ solveSLEPc(int argc,char **args)
   int & computeEigenmodesWithSLEPc = cgWave.dbase.get<int>("computeEigenmodesWithSLEPc");
   computeEigenmodesWithSLEPc = 1; // tell cgWave we are solving with SLEPc
 
+
+  const int & filterTimeDerivative = cgWave.dbase.get<int>("filterTimeDerivative");
+  const int complexProblem = filterTimeDerivative;
+
   // Save "residuals" by iteration: 
   // resVector(it) = norm( v^{n+1} - v^n )
   // RealArray & resVector = cgWave.dbase.get<RealArray>("resVector");
@@ -930,6 +934,11 @@ solveSLEPc(int argc,char **args)
   {
     // eig.redim(2,numEigenVectors);
 
+    // complexEigFound = 0  : this is not a complex eig
+    //                 = 1  : first vector in a complex eig
+    //                 = 2  : second vector in a complex eig
+    int complexEigFound=0; 
+
     for( int i=0; i<numEigenVectors; i++ ) 
     {
 
@@ -938,7 +947,12 @@ solveSLEPc(int argc,char **args)
       // eig(0,i) = kr;
       // eig(1,i) = ki;
 
-      printF("WaveHoltz eigenvalue beta %d : k=%18.14e + %18.14e I \n",i,kr,ki);
+
+
+      printF("WaveHoltz eigenvalue beta %5d : k=%19.14e %+19.14e I",i,kr,ki);
+      if( ki!=0 && !complexProblem )
+        printF(" **complex eig**");
+      printF("\n");
 
       // ierr = EPSGetEigenvector(eps,i,xr,xi);CHKERRQ(ierr);
 
@@ -953,19 +967,44 @@ solveSLEPc(int argc,char **args)
         const int nComp = i;            // fill in this component
 
 
-        PetscScalar *xrv;
+        PetscScalar *xrv, *xiv;
         VecGetArray(xr,&xrv);  // get the local array from Petsc
         PetscCall(VecGetOwnershipRange(xr,&Istart,&Iend));
 
-        // FOR NOW -- FIRST SAVE in vOld so we cn apply BC's .. then copy to ucg
+        if( ki!=0 || complexProblem )
+        {
+          if( complexEigFound==2 )
+           complexEigFound=0;  // reset -- this must be a new complex eig 
+          
+          complexEigFound++;
+          assert( complexEigFound<=2 );
+
+          VecGetArray(xi,&xiv); // get 
+        }
+        else
+        {
+          complexEigFound=0; 
+        }              
+
+        // FOR NOW -- FIRST SAVE in vOld so we can apply BC's .. then copy to ucg
         vOld=0.;
 
         const int numberOfComponents=1;
         // *new* way (from PETScSolver.bC)
 
+        // NOTE: Seet eigSolvers/computeEigenvalues.bC to see how to treat a complex problem
+
+        if( complexProblem )
+        {
+          OV_ABORT("Finish me Bill!");
+        }
+
         if( useMatrixUtilities )
         {
-          cgWave.vectorToGridFunction( xrv, vOld, Istart,Iend );
+          if( complexEigFound<=1 )
+            cgWave.vectorToGridFunction( xrv, vOld, Istart,Iend );  // use real part of eigenvector 
+          else
+            cgWave.vectorToGridFunction( xiv, vOld, Istart,Iend );  // use imaginary part of eigenvector 
         }
         else        
         {

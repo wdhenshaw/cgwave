@@ -19,13 +19,29 @@ set jobid2 = `sbatch --parsable batch2.sh`
 set jobid3 = `sbatch --parsable --dependency=afternotok:$jobid2  batch3.sh`
 
 
+***************************************************
+****** Mon Feb 23, 2026
+
 
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 CCI: G32:
 
+G32: 347M 
+
+
+MOVE FILES TO CG66 since too big to plot in serial
+
+mpirun -np=4 $plotStuffx plotPillBoxSolution.cmd -show=threePillBoxesG32O4kx16 -name=threePillBoxesG32O4kx16View3 -view=3 -field=absurTotal absuiTotal uTotalNorm -res=2048
+mpirun -np=4 $plotStuffx plotPillBoxSolution.cmd -show=threePillBoxesG32O4kx16 -view=2 -field=absurTotal absuiTotal uTotalNorm -res=2048
+
+
+
 RESTART 3:  reduce tol to 1e-8
 makeBatch.p -batchFile=batch3pb3.sh -solverName=cgwh3pb -np=256 -nodes=16 -timeLimit=6:00:00 -errFile=threePillBoxRun3.err -logFile=threePillBoxRun3.log $cgwh -noplot scat.cmd -g=threePillBoxesAngle45e32.order4.ng3.hdf -ts=explicit -beta2=.25 -cfl=0.95 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-8 -upwind=1 -maxIterations=4000 -numPeriods=8 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -bc5=a -bc6=a -debug=0 -eigenVectorFile=none -show=threePillBoxesG32O4kx16.show -matlab=threePillBoxeskx5 -adjustHelmholtzForUpwinding=1 -filterD0t=1 -assignInterpNeighbours=interp -solverh=gmres -iluh=500 -rtolh=1e-10 -atolh=1e-10 -restart=4000 -gmresRestartLength=4000 -saveCheckPointFile=1 -saveCheckPointFileName=checkPointFile3pb2.show -readCheckPointFile=1 -readCheckPointFileName=checkPointFile3pb1.show -go=ks
+
+omega=1.01e+02, k=1.01e+02, lambda=6.25e-02, dx=3.13e-03, domainSize=2.50e+00, NLambda=40, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 21.6 (epsr=0.01)<<<
+solveHelmholtz: max-residual [Re,Im]=[3.18e-05,3.51e-05] (gmres, numIts=89, ave-CR= 0.83 , cpu=1.88e+04(s), np=256)
 
 
 

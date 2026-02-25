@@ -13,6 +13,77 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
 
+*************************************
+****** Tues Feb 24, 2026
+
+REMOVED INVALID EIGS FROM EIG FILE AFTER ORTHOGONALIZATION:
+
+BUGS FIXED... genEigs : orthogonalize
+
+
+--> AGMRES: WORKS NOW 
+cgwh -noplot gaussian.cmd -g=sice16.order4.ml4 -x0=.35 -y0=.45 -nf=1 -freq=20 -amp=-400 -beta=20 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/waveHoltz/eig/diskG16Ev64o.show -deflateWaveHoltz=1 -numToDeflate=20 -matlab=junk  -gmresRestartLength=500 -upwind=0 -krylovType=gmres -augmentedVectorsAreEigenvectors=1 -go=as
+
+**NEW** WORKS
+solveHelmholtz: max-res=6.926e-09 (agmres, numIts=61, ave-CR= 0.67 deflate=37, ACR= 0.95, cpu=2.82e+01(s), np=1)
+
+solveHelmholtz: max-res=4.092e-01 (agmres, numIts=61, ave-CR= 0.67 deflate=38, ACR= 0.95, cpu=2.76e+01(s), np=1)
+
+--> FIXED genEigs : orthogonalize
+--> better but still not as good as genEigs
+  ---> residual looks like missing double eigenvector !
+cgwh -noplot gaussian.cmd -g=sice16.order4.ml4 -x0=.35 -y0=.45 -nf=1 -freq=20 -amp=-400 -beta=20 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/waveHoltz/eig/diskG16Ev64o.show -deflateWaveHoltz=1 -numToDeflate=20 -matlab=junk  -gmresRestartLength=500 -upwind=0  -go=ks
+
+NEW:
+solveHelmholtz: max-res=6.406e-04 (gmres, numIts=48, ave-CR= 0.67 deflate=37, ACR= 0.95, cpu=2.24e+01(s), np=1)
+
+
+CgWaveHoltz::residual: freq= 0, omega=  20.000, max-res=2.189e-01.
+solveHelmholtz: max-res=2.189e-01 (gmres, numIts=48, ave-CR= 0.67 deflate=38, ACR= 0.95, cpu=2.16e+01(s), np=1)
+
+*************************************
+****** Sun Feb 22, 2026
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>
+START TEST USE EIGENWAVE FOR DEFLATION
+
+
+AUGMENTED GMRES: STILL TROUBLE
+-krylovType=gmres -go=das
+cgwh -noplot gaussian.cmd -g=sice16.order4.ml4 -x0=.35 -y0=.45 -nf=1 -freq=20 -amp=-400 -beta=20 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/waveHoltz/eig/diskG16Ev64o.show -deflateWaveHoltz=1 -numToDeflate=20 -matlab=junk  -gmresRestartLength=500 -upwind=0 -krylovType=gmres -augmentedVectorsAreEigenvectors=0 -go=as
+
+WORKS: 
+   augmented are eigenvectors 0
+
+CgWaveHoltz::residual: freq= 0, omega=  20.000, max-res=2.545e-08.
+solveHelmholtz: max-res=2.545e-08 (agmres, numIts=100, ave-CR= 0.78 deflate=38, ACR= 0.95, cpu=4.09e+01(s), np=1)
+
+
+AUG-GMRES: Compute A*W(:,0) ASSUMING augmented vectors are eigenvectors, eig= 1.000e+00, lam=1-eig= 3.511e-07
+AUG-GMRES: Compute A*W(:,1) ASSUMING augmented vectors are eigenvectors, eig= 1.000e+00, lam=1-eig= 3.511e-07
+
+
+CgWaveHoltz::residual: freq= 0, omega=  20.000, max-res=3.148e+03.
+solveHelmholtz: max-res=3.148e+03 (agmres, numIts=62, ave-CR= 0.67 deflate=38, ACR= 0.95, cpu=2.82e+01(s), np=1)
+
+
+USE eigepairs from genEigs: **WORKS**
+cgwh -noplot gaussian.cmd -g=sice16.order4.ml4 -x0=.35 -y0=.45 -nf=1 -freq=20 -amp=-400 -beta=20 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/eig/diskG16O4Ev256.show -deflateWaveHoltz=1 -numToDeflate=20 -matlab=junk  -gmresRestartLength=500 -upwind=0  -go=ks
+
+
+solveHelmholtz: max-res=6.833e-04 (gmres, numIts=46, ave-CR= 0.66 deflate=38, ACR= 0.95, cpu=2.14e+01(s), np=1)
+
+
+
+cgwh -noplot gaussian.cmd -g=sice16.order4.ml4 -x0=.35 -y0=.45 -nf=1 -freq=20 -amp=-400 -beta=20 -adjustOmega=1 -ts=implicit -cfl=1000 -orderInTime=2 -solver=none -tol=1e-10 -imode=1 -maxIterations=10000 -numPeriods=1  -eigenVectorFile=/home/henshw/runs/waveHoltz/eig/diskG16Ev64o.show -deflateWaveHoltz=1 -numToDeflate=20 -matlab=junk  -gmresRestartLength=500 -upwind=0  -go=ks
+
+WITH DEFLATION:  ** WHY IS MAX RES SO BIG ?? RESIDUAL IS HIGHLY OSCIALLATORY 
+
+omega=2.00e+01, k=2.00e+01, lambda=3.14e-01, dx=5.96e-03, domainSize=2.00e+00, NLambda=6.3662, ppw=lambda/dx= 52.7, ppw(rule-of-thumb)= 13.6 (epsr=0.01)<<<
+solveHel
+mholtz: max-res=2.607e+01 (gmres, numIts=48, ave-CR= 0.67 deflate=38, ACR= 0.95, cpu=2.26e+01(s), np=1)
+
 
 *************************************
 ****** Sat Feb 21, 2026

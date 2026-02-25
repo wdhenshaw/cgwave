@@ -693,6 +693,10 @@ int CgWaveHoltz::solveHelmholtz(int argc,char **argv)
 
             printF(" deflateWaveHoltz=%d, deflateForcing=%d, numToDeflate=%d, eigenVectorFile=[%s]\n",deflateWaveHoltz,deflateForcing,numToDeflate,
                     (const char*)eigenVectorFile);
+
+            const int & augmentedVectorsAreEigenvectors = cgWave.dbase.get<int>("augmentedVectorsAreEigenvectors");
+            printF(" augmentedVectorsAreEigenvectors=%d (when using Augmented Krylov methods)\n",augmentedVectorsAreEigenvectors);
+
             if( waveHoltzAsymptoticConvergenceRate>0 )
                 printF(" Estimated asymptotic convergence rate=%6.3f.\n",waveHoltzAsymptoticConvergenceRate);
 

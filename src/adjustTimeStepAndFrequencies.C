@@ -65,7 +65,7 @@ int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
 
   // Currenly we need to make sure that dt is constant when solving Helmholtz (for the accuracy of the time integral)
     if( solveHelmholtz )
-            nextTimeToPlot=tFinal;
+        nextTimeToPlot=tFinal;
 
 
 
@@ -77,8 +77,9 @@ int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
 
     int numStepsPerPeriod = numPlotSteps/numPeriods;
 
-    if( debug & 2 )
-        printF("\n >>> adjustTimeStepAndFreq: numPlotSteps=%d, numStepsPerPeriod=%d, numPeriods=%d\n\n",numPlotSteps,numStepsPerPeriod,numPeriods);
+    if( true || debug & 2 )
+        printF("\n >>> adjustTimeStepAndFreq: numPlotSteps=%d, numStepsPerPeriod=%d, numPeriods=%d (solveHelmHelmholtz=%d, numberOfFrequencies=%d)\n\n",
+            numPlotSteps,numStepsPerPeriod,numPeriods,(int)solveHelmholtz,numberOfFrequencies);
 
   // OV_ABORT("stop here for now");
 
@@ -284,7 +285,7 @@ int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
     {
 
         dtSave = dt;
-        dt /= numPeriods;
+    // ** dt /= numPeriods; // TURN OFF **Feb 25, 2026 ****
         numPeriodsArray(0)=numPeriods; 
         periodArray(0)=(twoPi/frequencyArray(0))*numPeriodsArray(0);
 
@@ -297,7 +298,7 @@ int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
     if( it<=1 && solveHelmholtz )
     {
         printF("\n >>>>>>>>>>>>>>>>> CgWave:adjust dt and frequencies for a Helmholtz Problem <<<<<<<<<<<<<<<<<<<<<<<\n");
-        printF(" it=%d, dt=%20.12e, omega=%20.12e,  tFinal=%20.12e\n",it,dt,omega,tFinal);
+        printF(" it=%d, dt=%20.12e, omega=%20.12e,  tFinal=%20.12e, tFinal/dt=%9.3e\n",it,dt,omega,tFinal,tFinal/dt);
         printF(" adjustOmega=%d, adjustHelmholtzForUpwinding=%d, minStepsPerPeriod=%d \n",adjustOmega,adjustHelmholtzForUpwinding,minStepsPerPeriod);
         for( int freq=0; freq<numberOfFrequencies; freq++ )
         {

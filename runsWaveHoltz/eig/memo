@@ -9,12 +9,348 @@
 
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
+
+*************************************
+****** Wed Feb 25, 2026
+
+**BUG FIXED***
+  adjustTimeStepAndFreq : comment out line 287 : dt /= numPeriods
+
+FINER GRID CASE:
+
+G32: 400K pts
+
+DISK G32 omega=90 (mode from eigenwave)
+TS=E 
+ $cgwh -noplot eig.cmd -g=sice32.order4.ng3 -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -imode=1 -maxIterations=3000 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=16 -eigenSolver=default -show=diskG32O4Freq90Ev128.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=90 -numEigs=128 -numParGhost=2 -show=diskG8Ev16.show -go=ks
+
+PARALLEL?
+
+
+
+
+ $cgwh -noplot eig.cmd -g=sice8.order4 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=8 -eigenSolver=default -show=junk.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=15 -numEigs=16 -numParGhost=2 -show=diskG8Ev16.show -go=ks
+
+Np=8
+cgWave:FD24 t=3.351e+00 (80 steps) dt=4.189e-02 ||u||= 1.46e-02, cpu= 4.46e-01(s) np=1
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 65, cpu= 2.98e+01(s), np=1
+ num eigs requested=16, number eigs converged =16, numArnoldiVectors=33, wave-solves/eig=  4.1, timeSteps/eig=325.0
+
+
+Np=4 --> 40 steps!
+ cgWave:FD24 t=1.676e+00 (40 steps) dt=4.189e-02 ||u||= 1.79e-02, cpu= 2.23e-01(s) np=1
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 99, cpu= 2.30e+01(s), np=1
+ num eigs requested=16, number eigs converged =16, numArnoldiVectors=33, wave-solves/eig=  6.2, timeSteps/eig=247.5
+
+*************************************
+****** Tues Feb 24, 2026
+
+>>>>>>>> FIX solveSLEPc.bC TO TREAT A COMPLEX EIG <<<<<<<<<
+
+ORDER=4 HIGHER-FREQ
+(1)
+$cgwh -noplot eig.cmd -g=sice16.order4.ml4 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=4 -eigenSolver=default -show=junk.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=20 -numEigs=64 -numParGhost=2 -show=diskG16Ev64.show -go=ks
+
+cgWave:FD24 t=1.257e+00 (160 steps) dt=7.854e-03 ||u||= 8.73e-03, cpu= 4.97e+00(s) np=1
+
+
+$genEigs -noplot orthogonalize.cmd -g=sice16.order4.ml4 -evFile=diskG16Ev64.show -show=diskG16Ev64o.show -go=go
+
+
+======= ORDER=4 SIMPLER CASE THAT GOES BAD ====
+  *** WHY SO MANY STEPS FOR Np=4 --> 160 steps ???
+(1)
+$cgwh -noplot eig.cmd -g=sice8.order4 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=4 -eigenSolver=default -show=junk.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=15 -numEigs=16 -numParGhost=2 -show=diskG8Ev16.show -go=ks
+
+WaveHoltz eigenvalue beta     0 : k=9.90271677568278e-01 +0.00000000000000e+00 I
+WaveHoltz eigenvalue beta     1 : k=9.70483222245194e-01 +3.10851214555088e-10 I **complex eig**
+WaveHoltz eigenvalue beta     2 : k=9.70483222245194e-01 -3.10851214555088e-10 I **complex eig**
+WaveHoltz eigenvalue beta     3 : k=9.64438483912563e-01 +0.00000000000000e+00 I
+WaveHoltz eigenvalue beta     4 : k=9.64429775091297e-01 +0.00000000000000e+00 I
+WaveHoltz eigenvalue beta     5 : k=8.85567392323768e-01 +6.24658022529964e-09 I **complex eig**
+WaveHoltz eigenvalue beta     6 : k=8.85567392323768e-01 -6.24658022529964e-09 I **complex eig**
+WaveHoltz eigenvalue beta     7 : k=8.43573299787919e-01 +0.00000000000000e+00 I
+WaveHoltz eigenvalue beta     8 : k=8.43573148867081e-01 +0.00000000000000e+00 I
+WaveHoltz eigenvalue beta     9 : k=8.33819124397983e-01 +1.34705718799613e-10 I **complex eig**
+WaveHoltz eigenvalue beta    10 : k=8.33819124397983e-01 -1.34705718799613e-10 I **complex eig**
+WaveHoltz eigenvalue beta    11 : k=7.89370062389686e-01 +0.00000000000000e+00 I
+WaveHoltz eigenvalue beta    12 : k=7.89369981160844e-01 +0.00000000000000e+00 I
+WaveHoltz eigenvalue beta    13 : k=6.32543781601900e-01 +0.00000000000000e+00 I
+WaveHoltz eigenvalue beta    14 : k=6.32543772464683e-01 +0.00000000000000e+00 I
+WaveHoltz eigenvalue beta    15 : k=5.03906876085870e-01 +2.33399182865452e-11 I **complex eig**
+WaveHoltz eigenvalue beta    16 : k=5.03906876085870e-01 -2.33399182865452e-11 I **complex eig**
+
+
+(2)
+$genEigs -noplot orthogonalize.cmd -g=sice8.order4 -evFile=diskG8Ev16.show -show=diskG8Ev16o.show -go=go
+
+AFTER FIX: 
+ ie=   0  eig=[  2.0657e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 4.74e-13 resbcMax= 0.00e+00
+ ie=   1  eig=[  2.0657e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 3.82e-11 resbcMax= 0.00e+00
+ ie=   2  eig=[  2.0954e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 4.31e-13 resbcMax= 0.00e+00
+ ie=   3  eig=[  2.0954e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 3.17e-09 resbcMax= 0.00e+00
+ ie=   4  eig=[  2.1892e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 5.02e-13 resbcMax= 0.00e+00
+ ie=   5  eig=[  2.1892e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 4.59e-12 resbcMax= 0.00e+00
+ ie=   6  eig=[  2.1967e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 2.54e-10 resbcMax= 0.00e+00
+ ie=   7  eig=[  2.1967e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 2.54e-10 resbcMax= 0.00e+00
+ ie=   8  eig=[  2.2293e+02,  0.0000e+00], mult=1, max-norm res || Au - lambda u ||/lambda = 4.84e-13 resbcMax= 0.00e+00
+ ie=   9  eig=[  2.4304e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 2.55e-09 resbcMax= 0.00e+00
+ ie=  10  eig=[  2.4304e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 2.55e-09 resbcMax= 0.00e+00
+ ie=  11  eig=[  2.4649e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 5.17e-11 resbcMax= 0.00e+00
+ ie=  12  eig=[  2.4649e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 5.17e-11 resbcMax= 0.00e+00
+ ie=  13  eig=[  2.5721e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 3.29e-13 resbcMax= 0.00e+00
+ ie=  14  eig=[  2.5721e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 9.65e-10 resbcMax= 0.00e+00
+ ie=  15  eig=[  2.6320e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 7.21e-12 resbcMax= 0.00e+00
+ ie=  16  eig=[  2.6320e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 7.18e-12 resbcMax= 0.00e+00
+
+
+
+BEFORE FIX:
+>>>> genEigs:: After orthogonalize, compute residuals || Au - lambda u ||/lambda ....
+ ie=   0  eig=[  2.0657e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 4.74e-13 resbcMax= 0.00e+00
+ ie=   1  eig=[  2.0657e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 3.82e-11 resbcMax= 0.00e+00
+ ie=   2  eig=[  2.0954e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 4.31e-13 resbcMax= 0.00e+00
+ ie=   3  eig=[  2.0954e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 3.17e-09 resbcMax= 0.00e+00
+ ie=   4  eig=[  2.1892e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 5.02e-13 resbcMax= 0.00e+00
+ ie=   5  eig=[  2.1892e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 4.59e-12 resbcMax= 0.00e+00
+ ie=   6  eig=[  2.1967e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 2.54e-10 resbcMax= 0.00e+00
+ ie=   7  eig=[  2.1967e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 4.89e+00 resbcMax= 0.00e+00 ******** 
+ ie=   8  eig=[  2.2293e+02,  0.0000e+00], mult=1, max-norm res || Au - lambda u ||/lambda = 4.84e-13 resbcMax= 0.00e+00
+ ie=   9  eig=[  2.4304e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 2.55e-09 resbcMax= 0.00e+00
+ ie=  10  eig=[  2.4304e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 3.15e+01 resbcMax= 0.00e+00 ******** 
+ ie=  11  eig=[  2.4649e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 5.17e-11 resbcMax= 0.00e+00
+ ie=  12  eig=[  2.4649e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 5.31e+00 resbcMax= 0.00e+00 ******** 
+ ie=  13  eig=[  2.5721e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 3.29e-13 resbcMax= 0.00e+00
+ ie=  14  eig=[  2.5721e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 9.65e-10 resbcMax= 0.00e+00
+ ie=  15  eig=[  2.6320e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 7.21e-12 resbcMax= 0.00e+00
+ ie=  16  eig=[  2.6320e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 6.00e+00 resbcMax= 0.00e+00 ******** 
+
+
+
+
+SIMPLER TEST: THIS SEEMS OK
+$cgwh -noplot eig.cmd -g=sice4.order4.ng3 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=4 -eigenSolver=default -show=junk.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=10 -numEigs=16 -numParGhost=2 -show=diskG4Ev16.show -go=ks
+
+
+$genEigs -noplot orthogonalize.cmd -g=sice4.order4.ng3 -evFile=diskG4Ev16.show -show=diskG4Ev16o.show -go=go
+
+***------- AFTER ORTHOGONALIZE -----
+ ie=   0: eig=(7.08493433e+01,0.00000000e+00) multi= 2 eigStartIndex=   0
+ ie=   1: eig=(7.08498430e+01,0.00000000e+00) multi= 2 eigStartIndex=   0
+ ie=   2: eig=(9.52765037e+01,0.00000000e+00) multi= 2 eigStartIndex=   2
+ ie=   3: eig=(9.52765087e+01,0.00000000e+00) multi= 2 eigStartIndex=   2
+ ie=   4: eig=(9.87245481e+01,0.00000000e+00) multi= 2 eigStartIndex=   4
+ ie=   5: eig=(9.87245610e+01,0.00000000e+00) multi= 2 eigStartIndex=   4
+ ie=   6: eig=(1.03498333e+02,0.00000000e+00) multi= 2 eigStartIndex=   6
+ ie=   7: eig=(1.03498339e+02,0.00000000e+00) multi= 2 eigStartIndex=   6
+ ie=   8: eig=(1.22425388e+02,0.00000000e+00) multi= 2 eigStartIndex=   8
+ ie=   9: eig=(1.22425397e+02,0.00000000e+00) multi= 2 eigStartIndex=   8
+ ie=  10: eig=(1.22904226e+02,0.00000000e+00) multi= 2 eigStartIndex=  10
+ ie=  11: eig=(1.22904246e+02,0.00000000e+00) multi= 2 eigStartIndex=  10
+ ie=  12: eig=(1.35016389e+02,0.00000000e+00) multi= 1 eigStartIndex=  12
+ ie=  13: eig=(1.35019664e+02,0.00000000e+00) multi= 1 eigStartIndex=  13
+ ie=  14: eig=(1.39037519e+02,0.00000000e+00) multi= 1 eigStartIndex=  14
+ ie=  15: eig=(1.49446779e+02,0.00000000e+00) multi= 2 eigStartIndex=  15
+ ie=  16: eig=(1.49446791e+02,0.00000000e+00) multi= 2 eigStartIndex=  15
+
+
+
+
+
+REMOVE invalid eigenpairs from show file after ORTHOGONALIZE
+
+$genEigs -noplot orthogonalize.cmd -g=sice16.order4.ml4 -evFile=diskG16Ev64.show -show=diskG16Ev64o.show -go=go
+
+EIG-START-INDEX IS WRONG ??
+
+i=   0, j=   1  (phi[i],phi[j]) = -4.13e-01,  lam[i]=  2.464954e+02 lam[j]=  2.464954e+02 mult(i)=2 mult(j)=2 eigStartIndex(i)=0 eigStartIndex(j)=0 eigDist/eigNorm= 1.50e-14
+   .... made phi[1] orthogonal to phi[0]  : new inner-product = -9.61e-16
+i=   1, j=   2  (phi[i],phi[j]) = -8.54e-12  eigStartIndex(j)=2 (orthogonal)
+i=   2, j=   3  (phi[i],phi[j]) =  4.80e-07,  lam[i]=  2.572101e+02 lam[j]=  2.572101e+02 mult(i)=2 mult(j)=2 eigStartIndex(i)=2 eigStartIndex(j)=2 eigDist/eigNorm= 5.97e-10
+   .... made phi[3] orthogonal to phi[2]  : new inner-product =  4.09e-18
+i=   3, j=   4  (phi[i],phi[j]) =  2.49e-11  eigStartIndex(j)=4 (orthogonal)
+i=   4, j=   5  (phi[i],phi[j]) = -5.69e-02,  lam[i]=  2.632007e+02 lam[j]=  2.632007e+02 mult(i)=2 mult(j)=2 eigStartIndex(i)=4 eigStartIndex(j)=4 eigDist/eigNorm= 1.19e-14
+   .... made phi[5] orthogonal to phi[4]  : new inner-product = -1.20e-15
+i=   5, j=   6  (phi[i],phi[j]) =  5.00e-07  eigDist/eigNorm= 3.07e-02  ... assuming this is orthogonal enough. Increasing tol for orthogonality to epsOrthog= 7.50e-07
+i=   5, j=   6  (phi[i],phi[j]) =  5.00e-07  eigStartIndex(j)=6 (orthogonal)
+i=   6, j=   7  (phi[i],phi[j]) = -4.34e-03,  lam[i]=  2.712815e+02 lam[j]=  2.712815e+02 mult(i)=2 mult(j)=2 eigStartIndex(i)=6 eigStartIndex(j)=6 eigDist/eigNorm= 2.60e-14
+   .... made phi[7] orthogonal to phi[6]  : new inner-product = -3.11e-17
+i=   7, j=   8  (phi[i],phi[j]) =  3.88e-12  eigStartIndex(j)=8 (orthogonal)
+i=   8, j=   9  (phi[i],phi[j]) =  1.16e-07  eigStartIndex(j)=9 (orthogonal)
+i=   9, j=  10  (phi[i],phi[j]) =  5.64e-11  eigStartIndex(j)=10 (orthogonal)
+i=  10, j=  11  (phi[i],phi[j]) = -1.26e-07  eigStartIndex(j)=11 (orthogonal)
+i=  11, j=  12  (phi[i],phi[j]) =  1.52e-13  eigStartIndex(j)=12 (orthogonal)
+i=  12, j=  13  (phi[i],phi[j]) =  3.11e-10  eigStartIndex(j)=13 (orthogonal)
+i=  13, j=  14  (phi[i],phi[j]) = -5.02e-14  eigStartIndex(j)=14 (orthogonal)
+i=  14, j=  15  (phi[i],phi[j]) = -1.71e-11  eigStartIndex(j)=15 (orthogonal)
+i=  15, j=  16  (phi[i],phi[j]) =  1.97e-01,  lam[i]=  3.344354e+02 lam[j]=  3.344354e+02 mult(i)=2 mult(j)=2 eigStartIndex(i)=15 eigStartIndex(j)=15 eigDist/eigNorm= 2.72e-15
+   .... made phi[16] orthogonal to phi[15]  : new inner-product = -8.24e-16
+i=  16, j=  17  (phi[i],phi[j]) =  2.02e-11  eigStartIndex(j)=17 (orthogonal)
+i=  17, j=  18  (phi[i],phi[j]) = -1.18e-07  eigStartIndex(j)=18 (orthogonal)
+i=  18, j=  19  (phi[i],phi[j]) = -4.52e-13  eigStartIndex(j)=19 (orthogonal)
+
+
+
+***------- AFTER ORTHOGONALIZE -----
+ ie=   0: eig=(2.46495353e+02,0.00000000e+00) multi= 2 eigStartIndex=   0
+ ie=   1: eig=(2.46495353e+02,0.00000000e+00) multi= 2 eigStartIndex=   0
+ ie=   2: eig=(2.57210070e+02,0.00000000e+00) multi= 2 eigStartIndex=   2
+ ie=   3: eig=(2.57210071e+02,0.00000000e+00) multi= 2 eigStartIndex=   2
+ ie=   4: eig=(2.63200716e+02,0.00000000e+00) multi= 2 eigStartIndex=   4
+ ie=   5: eig=(2.63200716e+02,0.00000000e+00) multi= 2 eigStartIndex=   4
+ ie=   6: eig=(2.71281503e+02,0.00000000e+00) multi= 2 eigStartIndex=   6
+ ie=   7: eig=(2.71281503e+02,0.00000000e+00) multi= 2 eigStartIndex=   6
+ ie=   8: eig=(2.78831376e+02,0.00000000e+00) multi= 2 eigStartIndex=   8
+ ie=   9: eig=(2.78831378e+02,0.00000000e+00) multi= 2 eigStartIndex=   9
+ ie=  10: eig=(2.89129700e+02,0.00000000e+00) multi= 2 eigStartIndex=  10
+ ie=  11: eig=(2.89129700e+02,0.00000000e+00) multi= 2 eigStartIndex=  11
+ ie=  12: eig=(3.22554781e+02,0.00000000e+00) multi= 2 eigStartIndex=  12
+ ie=  13: eig=(3.22554940e+02,0.00000000e+00) multi= 2 eigStartIndex=  13
+ ie=  14: eig=(3.26563087e+02,0.00000000e+00) multi= 1 eigStartIndex=  14
+ ie=  15: eig=(3.34435402e+02,0.00000000e+00) multi= 2 eigStartIndex=  15
+ ie=  16: eig=(3.34435402e+02,0.00000000e+00) multi= 2 eigStartIndex=  15
+ ie=  17: eig=(3.39792284e+02,0.00000000e+00) multi= 2 eigStartIndex=  17
+ ie=  18: eig=(3.39792285e+02,0.00000000e+00) multi= 2 eigStartIndex=  18
+ ie=  19: eig=(3.57209558e+02,0.00000000e+00) multi= 2 eigStartIndex=  19
+ ie=  20: eig=(3.57209561e+02,0.00000000e+00) multi= 2 eigStartIndex=  20
+ ie=  21: eig=(3.60245126e+02,0.00000000e+00) multi= 2 eigStartIndex=  21
+
+
+------- INITIAL EIGENPAIRS -----
+ ie=  40: eig=(4.33760512e+02,0.00000000e+00) multi= 2 eigStartIndex=  40
+ ie=  41: eig=(4.44582688e+02,0.00000000e+00) multi= 2 eigStartIndex=  41
+ ie=  42: eig=(4.44582690e+02,0.00000000e+00) multi= 2 eigStartIndex=  42
+ ie=  43: eig=(4.45926675e+02,0.00000000e+00) multi= 2 eigStartIndex=  43
+ ie=  44: eig=(4.45927090e+02,0.00000000e+00) multi= 2 eigStartIndex=  44
+ ie=  45: eig=(4.49932827e+02,0.00000000e+00) multi= 1 eigStartIndex=  45
+ ie=  46: eig=(4.68355518e+02,0.00000000e+00) multi= 2 eigStartIndex=  46
+ ie=  47: eig=(4.68355518e+02,0.00000000e+00) multi= 2 eigStartIndex=  46
+ ie=  48: eig=(4.82075817e+02,0.00000000e+00) multi= 2 eigStartIndex=  48 **
+ ie=  49: eig=(4.82075817e+02,0.00000000e+00) multi= 2 eigStartIndex=  48
+ ie=  50: eig=(4.86068703e+02,0.00000000e+00) multi= 2 eigStartIndex=  50
+ ie=  51: eig=(4.86068703e+02,0.00000000e+00) multi= 2 eigStartIndex=  51
+ ie=  52: eig=(4.91618575e+02,0.00000000e+00) multi= 2 eigStartIndex=  52
+ ie=  53: eig=(4.91618575e+02,0.00000000e+00) multi= 2 eigStartIndex=  52
+ ie=  54: eig=(4.93629711e+02,0.00000000e+00) multi= 2 eigStartIndex=  54
+
+
+------- VALID EIGENPAIRS (saved to the show file)-----
+
+ ie=  40: eig=(4.337605e+02,0.000000e+00) multi= 2 eigStartIndex=  40
+ ie=  41: eig=(4.445827e+02,0.000000e+00) multi= 2 eigStartIndex=  41
+ ie=  42: eig=(4.445827e+02,0.000000e+00) multi= 2 eigStartIndex=  42
+ ie=  43: eig=(4.459267e+02,0.000000e+00) multi= 2 eigStartIndex=  43
+ ie=  44: eig=(4.459271e+02,0.000000e+00) multi= 2 eigStartIndex=  44
+ ie=  45: eig=(4.499328e+02,0.000000e+00) multi= 1 eigStartIndex=  45
+ ie=  46: eig=(4.683555e+02,0.000000e+00) multi= 2 eigStartIndex=  46
+ ie=  47: eig=(4.683555e+02,0.000000e+00) multi= 2 eigStartIndex=  46
+ ie=  48: eig=(4.820758e+02,0.000000e+00) multi= 1 eigStartIndex=  48 **
+ ie=  49: eig=(4.860687e+02,0.000000e+00) multi= 2 eigStartIndex=  49
+ ie=  50: eig=(4.860687e+02,0.000000e+00) multi= 2 eigStartIndex=  50
+ ie=  51: eig=(4.916186e+02,0.000000e+00) multi= 1 eigStartIndex=  51
+ ie=  52: eig=(4.936297e+02,0.000000e+00) multi= 2 eigStartIndex=  52
+ ie=  53: eig=(4.936297e+02,0.000000e+00) multi= 2 eigStartIndex=  52
+ ie=  54: eig=(5.343381e+02,0.000000e+00) multi= 2 eigStartIndex=  54
+
+
+*************************************
+****** Mon Feb 23, 2026
+
+SOMETHING IS WRONG WITH THE ORTHOGONALIZATION HERE -- eigSolver works ok
+
+
+TROUBLE in diskG16Ev64.show
+   plot 49 and 50 : the same !!
+
+$genEigs -noplot orthogonalize.cmd -g=sice16.order4.ml4 -evFile=diskG16Ev64.show -show=diskG16Ev64o.show -go=go
+
+
+i=  44, j=  45  (phi[i],phi[j]) =  6.16e-14  eigStartIndex(j)=45 (orthogonal)
+i=  45, j=  46  (phi[i],phi[j]) = -2.41e-11  eigStartIndex(j)=46 (orthogonal)
+i=  46, j=  47  (phi[i],phi[j]) = -1.32e-01,  lam[i]=  4.683555e+02 lam[j]=  4.683555e+02 mult(i)=2 mult(j)=2 eigStartIndex(i)=46 eigStartIndex(j)=46 eigDist/eigNorm= 4.37e-14
+   .... made phi[47] orthogonal to phi[46]  : new inner-product =  5.66e-16
+i=  47, j=  48  (phi[i],phi[j]) =  3.20e-08  eigStartIndex(j)=48 (orthogonal)
+i=  48, j=  49  (phi[i],phi[j]) =  1.00e+00,  lam[i]=  4.820758e+02 lam[j]=  4.820758e+02 mult(i)=2 mult(j)=2 eigStartIndex(i)=48 eigStartIndex(j)=48 eigDist/eigNorm= 0.00e+00
+##### WARNING: Norm is very small after Gram Schmidt eNorm= 1.55e-15 ##########
+   .... made phi[49] orthogonal to phi[48]  : new inner-product = -1.00e+00
+i=  49, j=  50  (phi[i],phi[j]) =  5.36e-11  eigStartIndex(j)=50 (orthogonal)
+i=  50, j=  51  (phi[i],phi[j]) = -5.19e-07  eigStartIndex(j)=50 (orthogonal)
+i=  51, j=  52  (phi[i],phi[j]) = -1.88e-11  eigStartIndex(j)=52 (orthogonal)
+i=  52, j=  53  (phi[i],phi[j]) =  1.00e+00,  lam[i]=  4.916186e+02 lam[j]=  4.916186e+02 mult(i)=2 mult(j)=2 eigStartIndex(i)=52 eigStartIndex(j)=52 eigDist/eigNorm= 0.00e+00
+##### WARNING: Norm is very small after Gram Schmidt eNorm= 1.38e-14 ##########
+   .... made phi[53] orthogonal to phi[52]  : new inner-product = -1.00e+00
+
+
+
+
+ ie=  45  eig=[  4.4993e+02,  0.0000e+00], mult=1, max-norm res || Au - lambda u ||/lambda = 1.64e-12 resbcMax= 0.00e+00
+ ie=  46  eig=[  4.6836e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 9.32e-13 resbcMax= 0.00e+00
+ ie=  47  eig=[  4.6836e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.22e-12 resbcMax= 0.00e+00
+ ie=  48  eig=[  4.8208e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 9.18e-13 resbcMax= 0.00e+00
+ ie=  49  eig=[  4.8208e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 3.05e+01 resbcMax= 0.00e+00 *** 
+ ie=  50  eig=[  4.8607e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.27e-12 resbcMax= 0.00e+00
+ ie=  51  eig=[  4.8607e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.17e-12 resbcMax= 0.00e+00
+ ie=  52  eig=[  4.9162e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.28e-12 resbcMax= 0.00e+00
+ ie=  53  eig=[  4.9162e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 4.17e+00 resbcMax= 0.00e+00 *** 
+ ie=  54  eig=[  4.9363e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.52e-12 resbcMax= 0.00e+00
+ ie=  55  eig=[  4.9363e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.29e-12 resbcMax= 0.00e+00
+ ie=  56  eig=[  5.3434e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.66e-12 resbcMax= 0.00e+00
+ ie=  57  eig=[  5.3434e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.38e-12 resbcMax= 0.00e+00
+ ie=  58  eig=[  5.4088e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.41e-12 resbcMax= 0.00e+00
+
+
+
+
+
 *************************************
 ****** Sun Feb 22, 2026
 
-PARALLEL
+>>>>>>>>>>>>>>>>>>>>>>>>
+START TEST USE EIGENWAVE FOR DEFLATION
 
+ORDER=4 HIGHER-FREQ
+(1)
+$cgwh -noplot eig.cmd -g=sice16.order4.ml4 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=4 -eigenSolver=default -show=junk.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=20 -numEigs=64 -numParGhost=2 -show=diskG16Ev64.show -go=ks
+
+$genEigs -noplot orthogonalize.cmd -g=sice16.order4.ml4 -evFile=diskG16Ev64.show -show=diskG16Ev64o.show -go=go
+
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 213, cpu= 1.15e+03(s), np=1
+ num eigs requested=64, number eigs converged =77, numArnoldiVectors=129, wave-solves/eig=  2.8, timeSteps/eig=442.6
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 1.5700170464e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.24e-12
+ i=1: lamRQ = 1.5700170464e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.45e-12
+ i=2: lamRQ = 1.6037770122e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.59e-12
+ i=3: lamRQ = 1.6037770126e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.44e-12
+ i=4: lamRQ = 1.6223461907e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.13e-12
+ i=5: lamRQ = 1.6223461907e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.65e-12
+ i=6: lamRQ = 1.6470625460e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.38e-12
+<<<<<<<<<<<<<<<<<<
+
+
+
+PARALLEL
 mpirun -np=1 $cgwh -noplot eig.cmd -g=sice16.order2.ml4 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=junk.show -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=6 -numEigs=16 -numParGhost=2 -go=k
+
+omega=6.00e+00 k=6.00e+00 lambda=1.05e+00 dx=5.96e-03 domainSize=2.00e+00 NLambda=1.90986 ppw=lambda/dx=175.6 ppw(rule-of-thumb)= 44.4 (epsr=0.01)
+
+
+np=2:
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 87, cpu= 9.62e+01(s), np=2
+ num eigs requested=16, number eigs converged =17, numArnoldiVectors=33, wave-solves/eig=  5.1, timeSteps/eig= 51.2
+
+np=1
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 87, cpu= 7.45e+01(s), np=1
+ num eigs requested=16, number eigs converged =17, numArnoldiVectors=33, wave-solves/eig=  5.1, timeSteps/eig= 51.2
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=0: lamRQ = 5.1354462595e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.44e-09
+ i=1: lamRQ = 5.1354938006e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.04e-08
+ i=2: lamRQ = 5.5198898464e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.02e-09
+ i=3: lamRQ = 6.3798696625e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.47e-09
+ i=4: lamRQ = 6.3798696625e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.20e-09
 
 
 DISK YALE: 
