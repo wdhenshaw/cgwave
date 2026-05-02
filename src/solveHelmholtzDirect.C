@@ -125,9 +125,23 @@
 // ============================================================================================
 // ============================================================================================
 
+
+
 // ============================================================================================
 /// With superGrid there are two sets of metrics  
 // ============================================================================================
+
+
+// ============================================================================================
+///   FILL the EM radiation boundary conditions
+// ============================================================================================
+// =================  END fill EM RBCs ========================
+
+
+// ============================================================================================
+///   FILL the EM radiation boundary conditions
+// ============================================================================================
+// =================  END fill Complex Neumanns ========================
 
 // ============================================================================================
 /// \brief Form and solve the Helmholtz equation using a direct or iterative solver.
@@ -2028,640 +2042,1094 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                         {
               // ------------ FILL NEUMANN BC ------------
 
-                            printF("+++++ solveHelmholtzDirect BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) NEUMANN\n",grid,side,axis);
-                            OV_ABORT("FINISH ME");
-
-                            mg.update(MappedGrid::THEvertexBoundaryNormal);
-                            OV_GET_VERTEX_BOUNDARY_NORMAL(mg,side,axis,normal); 
-
-                            realSerialArray xCoeff(M0,Ib1,Ib2,Ib3), yCoeff(M0,Ib1,Ib2,Ib3), zCoeff; 
-                            mgop.assignCoefficients(MappedGridOperators::xDerivative ,xCoeff, Ib1,Ib2,Ib3,0,0);
-                            mgop.assignCoefficients(MappedGridOperators::yDerivative ,yCoeff, Ib1,Ib2,Ib3,0,0);
-                            if( numberOfDimensions==3 )
-                            {
-                                zCoeff.redim(M0,Ib1,Ib2,Ib3);
-                                mgop.assignCoefficients(MappedGridOperators::zDerivative ,zCoeff, Ib1,Ib2,Ib3,0,0);
-                            }
-
-                            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
-                            {
-                                    
-                                int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
-
-                // Specify that this a "real" equation on the first ghost line: 
-                // (A "real" equation has a possible non-zero right-hand-side)
-                                setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
-
-                                ForStencil(m1,m2,m3)
+                                printF("+++++ solveHelmholtzDirect: BC: FILL (grid,side,axis)=(%d,%d,%d) MATRIX COMPLEX NEUANN BC \n",grid,side,axis);
+                                Range Rw(-halfWidth1,halfWidth1);
+                                RealArray nCoeffr(Rw,Rw,Rw);
+                                RealArray nCoeff2r(Rw,Rw,Rw); // for CBC
+                                nCoeffr=0.; nCoeff2r=0.;
+                // Unit normal on a Cartesian grid:
+                                Real an1 = -is1;
+                                Real an2 = -is2;
+                                Real an3 = -is3;
+                                if( isRectangular )
                                 {
-                                    int m  = M123(m1,m2,m3);        // the single-component coeff-index
-                                    
-                                    coeffLocal(m,i1m,i2m,i3m) = normal(i1,i2,i3,0)*xCoeff(m,i1,i2,i3) + normal(i1,i2,i3,1)*yCoeff(m,i1,i2,i3);
+                                    if( orderOfAccuracy==2 ) 
+                                    {
+                                        const Real cx  = an1/(2.*dx[0]);                
+                                        const Real cy  = an2/(2.*dx[1]);
+                                        if( numberOfDimensions==2 )
+                                        {
+                                            nCoeffr( 0,-1,0) =        -1.*cy;
+                                            nCoeffr(-1, 0,0) = -1.*cx;
+                                            nCoeffr(+1, 0,0) =  1.*cx;
+                                            nCoeffr( 0,+1,0) =         1.*cy;
+                                        }
+                                        else
+                                        {
+                      // --- THREE DIMENSIONS ---
+                                            const Real cz  = an3/(2.*dx[2]);    
+                                            nCoeffr( 0, 0,-1) =                 -1.*cz;
+                                            nCoeffr( 0,-1, 0) =        -1.*cy;
+                                            nCoeffr(-1, 0, 0) = -1.*cx;
+                                            nCoeffr(+1, 0, 0) =  1.*cx;
+                                            nCoeffr( 0,+1, 0) =         1.*cy;
+                                            nCoeffr( 0, 0,+1) =                  1.*cz;
+                                        }
+                                    }
+                                    else if( orderOfAccuracy==4 )
+                                    {  
+                                        const Real cx  = an1/(12.*dx[0]);                
+                                        const Real cy  = an2/(12.*dx[1]);
+                                        const Real cz  = an3/(12.*dx[2]);
+                                        if( numberOfDimensions==2 )
+                                        {
+                                            nCoeffr( 0,-2,0) =     cy;
+                                            nCoeffr( 0,-1,0) = -8.*cy;
+                                            nCoeffr(-2, 0,0) =     cx;
+                                            nCoeffr(-1, 0,0) = -8.*cx;
+                                            nCoeffr(+1, 0,0) =  8.*cx;
+                                            nCoeffr(+2, 0,0) =    -cx;
+                                            nCoeffr( 0,+1,0) =  8.*cy;
+                                            nCoeffr( 0,+2,0) =    -cy;
+                                        }
+                                        else
+                                        {
+                                            nCoeffr( 0,0,-2) =                   cz;
+                                            nCoeffr( 0,0,-1) =               -8.*cz;
+                                            nCoeffr( 0,-2,0) =            cy;
+                                            nCoeffr( 0,-1,0) =        -8.*cy;
+                                            nCoeffr(-2, 0,0) =     cx;
+                                            nCoeffr(-1, 0,0) = -8.*cx;
+                                            nCoeffr(+1, 0,0) =  8.*cx;
+                                            nCoeffr(+2, 0,0) =    -cx;
+                                            nCoeffr( 0,+1,0) =        8.*cy;
+                                            nCoeffr( 0,+2,0) =          -cy;
+                                            nCoeffr( 0,0,+1) =                8.*cz;
+                                            nCoeffr( 0,0,+2) =                  -cz;
+                                        }
+                                    } 
+                                    else
+                                    {
+                                        printF("solveHelmholtzDirect: FINISH COMPLEX NEUMANN BCfor this order of accuracy = %d\n",orderOfAccuracy);
+                                        OV_ABORT("ERROR");
+                                    }
+                                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                    {              
+                                        const int ghost=1; 
+                                        int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                    // Specify that this a "real" equation on the first ghost line: 
+                    // (A "real" equation has a possible non-zero right-hand-side)
+                                        setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                                        setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                                        ForStencil(m1,m2,m3)
+                                        {
+                      // -- Equation 1 : Real part 
+                                            int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
+                                            coeffLocal(mr,i1m,i2m,i3m) = nCoeffr(m1,m2,m3);
+                                            int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
+                                            setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
+                      // -- Equation 2 : imaginary part: 
+                                            int mi  = M123CE(m1,m2,m3,ic2,eq2);                            // equation 2, component 2
+                                            coeffLocal(mi,i1m,i2m,i3m) =  nCoeffr(m1,m2,m3);
+                                            setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
+                                        }
+                                    } // end FOR_3D
+                                }
+                                else
+                                {
+                  //  -- COMPLEX NEUMANN BC -- curvilinear ---
+                                    mg.update(MappedGrid::THEvertexBoundaryNormal);
+                                    OV_GET_VERTEX_BOUNDARY_NORMAL(mg,side,axis,normal); 
+                                    realSerialArray xCoeff(M0,Ib1,Ib2,Ib3), yCoeff(M0,Ib1,Ib2,Ib3), zCoeff; 
+                                    mgop.assignCoefficients(MappedGridOperators::xDerivative ,xCoeff, Ib1,Ib2,Ib3,0,0);
+                                    mgop.assignCoefficients(MappedGridOperators::yDerivative ,yCoeff, Ib1,Ib2,Ib3,0,0);
                                     if( numberOfDimensions==3 )
-                                        coeffLocal(m,i1m,i2m,i3m) += normal(i1,i2,i3,2)*zCoeff(m,i1,i2,i3);
-
-                  // Specify that the above coeff value is the coefficient of component ic at the grid point (j1,j2,j3).
-                                    int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
-                                    setEquationNumber(m, e,i1m,i2m,i3m,  ic,j1,j2,j3 );      // macro to set equationNumber
-                                }
-
-                            } // end FOR_3D
-
-              // fill ghost 2 with extrapolation
-                            for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
-                            {
-                                {
-                                    assert( ok );
-                                    getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
-                                    bool okg =ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ig1,Ig2,Ig3);
-                                    coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0; // zero all coeff to start
-                                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                                     {
-                                        int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
-                    // --- fill in the coefficients of the extrapolation formula ---
-                                        for( int me=0; me<=extrapOrder; me++ )
+                                        zCoeff.redim(M0,Ib1,Ib2,Ib3);
+                                        mgop.assignCoefficients(MappedGridOperators::zDerivative ,zCoeff, Ib1,Ib2,Ib3,0,0);
+                                    }
+                                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                    {              
+                                        ForStencil(m1,m2,m3)
                                         {
-                                            int m0 = me + M0.getBase(); 
-                                            coeffLocal(m0,i1m,i2m,i3m) = extrapCoeff[me];
-                                            int j1=i1m + me*is1, j2=i2m + me*is2, j3=i3m + me*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
-                                            setEquationNumber(m0, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );      // macro to set equationNumber
+                                            int m0 = M123(m1,m2,m3);
+                                            nCoeffr(m1,m2,m3) = normal(i1,i2,i3,0)*xCoeff(m0,i1,i2,i3) 
+                                                                                  +normal(i1,i2,i3,1)*yCoeff(m0,i1,i2,i3);
+                                            if( numberOfDimensions==3 )
+                                            {
+                                                  nCoeffr(m1,m2,m3) += normal(i1,i2,i3,2)*zCoeff(m0,i1,i2,i3);
+                                            }
+                                        }
+                                        const int ghost=1; 
+                                        int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                    // Specify that this a "real" equation on the first ghost line: 
+                    // (A "real" equation has a possible non-zero right-hand-side)
+                                        setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                                        setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                                        ForStencil(m1,m2,m3)
+                                        {
+                      // -- Equation 1 : Real part 
+                                            int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
+                                            coeffLocal(mr,i1m,i2m,i3m) = nCoeffr(m1,m2,m3);
+                                            int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
+                                            setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
+                      // -- Equation 2 : imaginary part: 
+                                            int mi  = M123CE(m1,m2,m3,ic2,eq2);                            // equation 2, component 2
+                                            coeffLocal(mi,i1m,i2m,i3m) =  nCoeffr(m1,m2,m3);
+                                            setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
                                         }
                                     } // end FOR_3D
                                 }
+                                bool useCBC = orderOfAccuracy==4;
+                                if( useCBC )
                                 {
-                                    assert( ok );
-                                    getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
-                                    bool okg =ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ig1,Ig2,Ig3);
-                                    coeffLocal(M1,Ig1,Ig2,Ig3) = 0.0; // zero all coeff to start
-                                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                  // -----------------------------
+                  // --- FILL THE Neumann CBC ----
+                  // -----------------------------
+                  //  CBC: D_n( c^2 Delta u + omega^2 u ) = 0 
+                  // => 
+                  //  CBC: D_n( Delta(u) ) = 0 
+                                    if( isRectangular )
                                     {
-                                        int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
-                    // --- fill in the coefficients of the extrapolation formula ---
-                                        for( int me=0; me<=extrapOrder; me++ )
+                                        FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                                         {
-                                            int m0 = me + M1.getBase(); 
-                                            coeffLocal(m0,i1m,i2m,i3m) = extrapCoeff[me];
-                                            int j1=i1m + me*is1, j2=i2m + me*is2, j3=i3m + me*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
-                                            setEquationNumber(m0, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );      // macro to set equationNumber
+                                            nCoeff2r=0.; 
+                                            if( orderOfAccuracy==4 )
+                                            {  
+                                                Real cxxx  = an1/(2.*dx[0]*dx[0]*dx[0]);                
+                                                Real cyyy  = an2/(2.*dx[1]*dx[1]*dx[1]); 
+                                                Real czzz  = an3/(2.*dx[2]*dx[2]*dx[2]); 
+                        // real part of equation
+                                                if( numberOfDimensions==2 )
+                                                {            
+                                                    nCoeff2r( 0,-2,0) =             -cyyy;
+                                                    nCoeff2r( 0,-1,0) =           2.*cyyy;
+                                                    nCoeff2r(-2, 0,0) =    -cxxx;
+                                                    nCoeff2r(-1, 0,0) =  2.*cxxx;
+                                                    nCoeff2r(+1, 0,0) = -2.*cxxx;
+                                                    nCoeff2r(+2, 0,0) =     cxxx;
+                                                    nCoeff2r( 0,+1,0) =          -2.*cyyy;
+                                                    nCoeff2r( 0,+2,0) =              cyyy;
+                                                }
+                                                else
+                                                {
+                          // ---- 3D -----
+                                                    nCoeff2r( 0,0,-2) =                      -czzz;
+                                                    nCoeff2r( 0,0,-1) =                    2.*czzz;
+                                                    nCoeff2r( 0,-2,0) =             -cyyy;
+                                                    nCoeff2r( 0,-1,0) =           2.*cyyy;
+                                                    nCoeff2r(-2, 0,0) =    -cxxx;
+                                                    nCoeff2r(-1, 0,0) =  2.*cxxx;
+                                                    nCoeff2r(+1, 0,0) = -2.*cxxx;
+                                                    nCoeff2r(+2, 0,0) =     cxxx;
+                                                    nCoeff2r( 0,+1,0) =          -2.*cyyy;
+                                                    nCoeff2r( 0,+2,0) =              cyyy;                        
+                                                    nCoeff2r( 0,0,+1) =                   -2.*czzz;
+                                                    nCoeff2r( 0,0,+2) =                       czzz;                        
+                                                }
+                                            } 
+                                            else
+                                            {
+                                                printF("solveHelmholtzDirect: FINISH COMPLEX NEUMANN CBC for this order of accuracy = %d\n",orderOfAccuracy);
+                                                OV_ABORT("ERROR");
+                                            }
+                                            const int ghost=2; 
+                                            int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                      // Specify that this a "real" equation on the second ghost line: 
+                      // (A "real" equation has a possible non-zero right-hand-side)
+                                            setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
+                                            setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
+                                            ForStencil(m1,m2,m3)
+                                            {
+                        // -- Equation 1 : Real part 
+                                                int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
+                                                coeffLocal(mr,i1m,i2m,i3m) = nCoeff2r(m1,m2,m3);
+                                                int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
+                                                setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
+                        // -- Equation 2 : imaginary part: 
+                                                int mi  = M123CE(m1,m2,m3,ic2,eq2);                        // equation 2, component 2
+                                                coeffLocal(mi,i1m,i2m,i3m) =  nCoeff2r(m1,m2,m3);
+                                                setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
+                                            }
+                                        } // end FOR_3D
+                                    }
+                                    else
+                                    {
+                    // ----- COMPLEX NEUMANN CURVILINEAR CBC ----
+                    // NOTE: >>>>>>> THIS MATCHES CODE IN implicit.bC <<<<<<<<<
+                    // -------------------------------------------------
+                    //  CBC: D_n( c^2 Delta u + omega^2 u ) = 0 
+                    // => 
+                    //  CBC: D_n( Delta(u) ) = 0 
+                    //
+                    // n1*D_x( u_xx+u_yy+u_zz ) + n2*D_y( u_xx+u_yy+u_zz ) + n3*D_z( u_xx+u_yy+u_zz )
+                    // ------------------------------------
+                                        Real dr[3]={1.,1.,1.};
+                                        mg.update(MappedGrid::THEinverseVertexDerivative );
+                    // unit square grid spacings: 
+                                        for( int dir=0; dir<3; dir++ )
+                                        {
+                                            dr[dir]=mg.gridSpacing(dir);   
                                         }
-                                    } // end FOR_3D
-                                }
-                            } // end for ghost
+                                        mg.update(MappedGrid::THEvertexBoundaryNormal);
+                                        OV_GET_VERTEX_BOUNDARY_NORMAL(mg,side,axis,normal);       
+                                        OV_GET_SERIAL_ARRAY(Real,mg.inverseVertexDerivative(),rxLocal);
+                    // macro to make the rxLocal array look 5-dimensional 
+                                        #define DD(i1,i2,i3,m1,m2) rxLocal(i1,i2,i3,(m1)+numberOfDimensions*(m2))     
+                    // ----- COMPUTE DERIVATIVES OF METRICS -----
+                                        Range Rd2=numberOfDimensions*numberOfDimensions;
+                                        RealArray ddx(Ib1,Ib2,Ib3,Rd2), ddy(Ib1,Ib2,Ib3,Rd2);
+                                        mgop.derivative( MappedGridOperators::xDerivative,rxLocal,ddx,Ib1,Ib2,Ib3,Rd2);            
+                                        mgop.derivative( MappedGridOperators::yDerivative,rxLocal,ddy,Ib1,Ib2,Ib3,Rd2);
+                                        RealArray ddxx(Ib1,Ib2,Ib3,Rd2), ddxy(Ib1,Ib2,Ib3,Rd2), ddyy(Ib1,Ib2,Ib3,Rd2);    
+                                        mgop.derivative( MappedGridOperators::xxDerivative,rxLocal,ddxx,Ib1,Ib2,Ib3,Rd2);            
+                                        mgop.derivative( MappedGridOperators::xyDerivative,rxLocal,ddxy,Ib1,Ib2,Ib3,Rd2);            
+                                        mgop.derivative( MappedGridOperators::yyDerivative,rxLocal,ddyy,Ib1,Ib2,Ib3,Rd2);             
+                                        #define DDX(i1,i2,i3,m1,m2) ddx(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                        #define DDY(i1,i2,i3,m1,m2) ddy(i1,i2,i3,(m1)+numberOfDimensions*(m2)) 
+                                        #define DDXX(i1,i2,i3,m1,m2) ddxx(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                        #define DDXY(i1,i2,i3,m1,m2) ddxy(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                        #define DDYY(i1,i2,i3,m1,m2) ddyy(i1,i2,i3,(m1)+numberOfDimensions*(m2)) 
+                    // Define stencils for parametric derivatives 
+                                        Range R5 = Range(-2,2);
+                                        RealArray rrrCoeff(R5), sssCoeff(R5);
+                                        rrrCoeff=0.; sssCoeff=0.;
+                    // D0(D+D-) stencil 
+                                        rrrCoeff(-2) = -1./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff(-2) = -1./(2.*dr[1]*dr[1]*dr[1]);
+                                        rrrCoeff(-1) = +2./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff(-1) = +2./(2.*dr[1]*dr[1]*dr[1]);
+                                        rrrCoeff( 0) =  0.;                         sssCoeff( 0) =  0.;    
+                                        rrrCoeff( 1) = -2./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff( 1) = -2./(2.*dr[1]*dr[1]*dr[1]);
+                                        rrrCoeff( 2) =  1./(2.*dr[0]*dr[0]*dr[0]);  sssCoeff( 2) =  1./(2.*dr[1]*dr[1]*dr[1]);
+                                        RealArray rrCoeff(R5), ssCoeff(R5);
+                                        rrCoeff=0.; ssCoeff=0.;
+                    // D+D-
+                                        rrCoeff(-1) = 1./(dr[0]*dr[0]); ssCoeff(-1) = 1./(dr[1]*dr[1]); 
+                                        rrCoeff( 0) =-2./(dr[0]*dr[0]); ssCoeff( 0) =-2./(dr[1]*dr[1]); 
+                                        rrCoeff( 1) = 1./(dr[0]*dr[0]); ssCoeff( 1) = 1./(dr[1]*dr[1]); 
+                                        RealArray rCoeff(R5), sCoeff(R5);
+                                        rCoeff=0.; sCoeff=0.;
+                    // Dz stencil 
+                                        rCoeff(-1) = -1./(2.*dr[0]); sCoeff(-1) = -1./(2.*dr[1]); 
+                                        rCoeff( 0) =  0.;            sCoeff( 0) =  0.;
+                                        rCoeff( 1) =  1./(2.*dr[0]); sCoeff( 1) =  1./(2.*dr[1]); 
+                    // Identity stencil 
+                                        RealArray iCoeff(R5);
+                                        iCoeff=0.;
+                                        iCoeff(0)=1.; 
+                                        if( numberOfDimensions==2 )
+                                        {      
+                                            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                            {
+                                                if( maskLocal(i1,i2,i3)>0 )
+                                                {
+                                                    Real rx    =    DD(i1,i2,i3,0,0);
+                                                    Real ry    =    DD(i1,i2,i3,0,1);
+                                                    Real rxx   =   DDX(i1,i2,i3,0,0);
+                                                    Real rxy   =   DDY(i1,i2,i3,0,0);
+                                                    Real ryy   =   DDY(i1,i2,i3,0,1);  // ry.y
+                                                    Real rxxx  =  DDXX(i1,i2,i3,0,0);
+                                                    Real rxxy  =  DDXY(i1,i2,i3,0,0);  // rx.xy
+                                                    Real rxyy  =  DDYY(i1,i2,i3,0,0);  // rx.yy
+                                                    Real ryyy  =  DDYY(i1,i2,i3,0,1);  // ry.yy
+                          // Real rxxxx = DDXXX(i1,i2,i3,0,0);  // rx.xxx
+                          // Real rxxyy = DDXYY(i1,i2,i3,0,1);  // ry.xyy
+                          // Real ryyyy = DDYYY(i1,i2,i3,0,1);  // ry.yyy   
+                                                    Real sx    =    DD(i1,i2,i3,1,0);
+                                                    Real sy    =    DD(i1,i2,i3,1,1);
+                                                    Real sxx   =   DDX(i1,i2,i3,1,0);
+                                                    Real sxy   =   DDY(i1,i2,i3,1,0);
+                                                    Real syy   =   DDY(i1,i2,i3,1,1);  
+                                                    Real sxxx  =  DDXX(i1,i2,i3,1,0);
+                                                    Real sxxy  =  DDXY(i1,i2,i3,1,0);
+                                                    Real sxyy  =  DDYY(i1,i2,i3,1,0);  // sx.yy
+                                                    Real syyy  =  DDYY(i1,i2,i3,1,1);  
+                          // Real sxxxx = DDXXX(i1,i2,i3,1,0);  // sx.xxx
+                          // Real sxxyy = DDXYY(i1,i2,i3,1,1);  // sy.xyy
+                          // Real syyyy = DDYYY(i1,i2,i3,1,1);  // sy.yyy             
+                                                    const Real an1 =  normal(i1,i2,i3,0);
+                                                    const Real an2 =  normal(i1,i2,i3,1);
+                          // ---- COEFFICIENTS OF 2D n.Grad( LAPLACIAN ) : from laplacianCoefficients.mpl ----
+                                                    Real urrr = an1 * (pow(rx, 0.3e1) + ry * ry * rx) + an2 * (ry * rx * rx + pow(ry, 0.3e1));
+                                                    Real urrs = an1 * (3 * rx * rx * sx + ry * (sy * rx + ry * sx) + sy * ry * rx) + an2 * (sy * rx * rx + 2 * ry * sx * rx + 3 * ry * ry * sy);
+                                                    Real urss = an1 * (3 * rx * sx * sx + ry * sx * sy + sy * (sy * rx + ry * sx)) + an2 * (2 * sy * sx * rx + ry * sx * sx + 3 * ry * sy * sy);
+                                                    Real usss = an1 * (pow(sx, 0.3e1) + sx * sy * sy) + an2 * (sy * sx * sx + pow(sy, 0.3e1));
+                                                    Real urr = an1 * (3 * rx * rxx + ryy * rx + 2 * ry * rxy) + an2 * (2 * rxy * rx + ry * rxx + 3 * ry * ryy);
+                                                    Real urs = an1 * (3 * sxx * rx + syy * rx + 3 * sx * rxx + 2 * sy * rxy + 2 * ry * sxy + ryy * sx) + an2 * (2 * sxy * rx + sy * rxx + 2 * sx * rxy + ry * sxx + 3 * syy * ry + 3 * sy * ryy);
+                                                    Real uss = an1 * (3 * sx * sxx + sx * syy + 2 * sxy * sy) + an2 * (2 * sx * sxy + sxx * sy + 3 * sy * syy);
+                                                    Real ur = an1 * (rxxx + rxyy) + an2 * (rxxy + ryyy);
+                                                    Real us = an1 * (sxxx + sxyy) + an2 * (sxxy + syyy);
+                                                    const int ghost=2; 
+                                                    int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                          // Specify that this a "real" equation on the second ghost line: 
+                          // (A "real" equation has a possible non-zero right-hand-side)
+                                                    setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
+                                                    setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
+                                                    ForStencil(m1,m2,m3)
+                                                    {
+                                                        Real coeffm  = cSq*(  urrr * rrrCoeff(m1)*   iCoeff(m2)
+                                                                                                + urrs *  rrCoeff(m1)*   sCoeff(m2)
+                                                                                                + urss *   rCoeff(m1)*  ssCoeff(m2)
+                                                                                                + usss *   iCoeff(m1)* sssCoeff(m2)
+                                                                                                + urr  *  rrCoeff(m1)*   iCoeff(m2)
+                                                                                                + urs  *   rCoeff(m1)*   sCoeff(m2)
+                                                                                                + uss  *   iCoeff(m1)*  ssCoeff(m2)
+                                                                                                + ur   *   rCoeff(m1)*   iCoeff(m2)
+                                                                                                + us   *   iCoeff(m1)*   sCoeff(m2)
+                                                                                                ); 
+                            // -- Equation 1 : Real part 
+                                                        int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
+                                                        coeffLocal(mr,i1m,i2m,i3m) = coeffm;
+                                                        int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
+                                                        setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
+                            // -- Equation 2 : imaginary part: 
+                                                        int mi  = M123CE(m1,m2,m3,ic2,eq2);                        // equation 2, component 2
+                                                        coeffLocal(mi,i1m,i2m,i3m) =  coeffm;
+                                                        setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
+                                                    }
+                                                } // end if mask
+                                            } // end FOR_3D
+                                        }
+                                        else
+                                        {
+                      // --- COMPLEX NEUMANN CBC - CURVLINEAR --THREE DIMENSIONS -----
+                                            RealArray rxza(I1,I2,I3,Rd2);
+                                            mgop.derivative( MappedGridOperators::zDerivative,rxLocal,rxza,I1,I2,I3,Rd2);            
+                                            #define DDZ(i1,i2,i3,m1,m2) rxza(i1,i2,i3,(m1)+numberOfDimensions*(m2))
+                                            const int extra=1; 
+                                            RealArray ddxz(I1,I2,I3,Rd2), ddyz(I1,I2,I3,Rd2), ddzz(I1,I2,I3,Rd2);         
+                                            mgop.derivative( MappedGridOperators::xzDerivative,rxLocal,ddxz,I1,I2,I3,Rd2);            
+                                            mgop.derivative( MappedGridOperators::yzDerivative,rxLocal,ddyz,I1,I2,I3,Rd2);            
+                                            mgop.derivative( MappedGridOperators::zzDerivative,rxLocal,ddzz,I1,I2,I3,Rd2);             
+                                            #define DDXZ(i1,i2,i3,m1,m2) ddxz(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                            #define DDYZ(i1,i2,i3,m1,m2) ddyz(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                                            #define DDZZ(i1,i2,i3,m1,m2) ddzz(i1,i2,i3,(m1)+numberOfDimensions*(m2))  
+                      // RealArray ddxxx(I1,I2,I3,Rd2), ddxyy(I1,I2,I3,Rd2), ddyyy(I1,I2,I3,Rd2);
+                      // RealArray ddxzz(I1,I2,I3,Rd2), ddzzz(I1,I2,I3,Rd2), ddyzz(I1,I2,I3,Rd2);
+                                            RealArray tttCoeff(R5);
+                                            tttCoeff=0.; 
+                      // D0(D+D-) stencil 
+                                            tttCoeff(-2) = -1./(2.*dr[2]*dr[2]*dr[2]); 
+                                            tttCoeff(-1) = +2./(2.*dr[2]*dr[2]*dr[2]); 
+                                            tttCoeff( 0) =  0.;                        
+                                            tttCoeff( 1) = -2./(2.*dr[2]*dr[2]*dr[2]); 
+                                            tttCoeff( 2) =  1./(2.*dr[2]*dr[2]*dr[2]); 
+                                            RealArray ttCoeff(R5);
+                                            ttCoeff=0.;
+                      // D+D-
+                                            ttCoeff(-1) = 1./(dr[2]*dr[2]);
+                                            ttCoeff( 0) =-2./(dr[2]*dr[2]);
+                                            ttCoeff( 1) = 1./(dr[2]*dr[2]);
+                                            RealArray tCoeff(R5);
+                                            tCoeff=0.; 
+                      // Dz stencil 
+                                            tCoeff(-1) = -1./(2.*dr[2]);
+                                            tCoeff( 0) =  0.;           
+                                            tCoeff( 1) =  1./(2.*dr[2]);  
+                                            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                            {
+                                                if( maskLocal(i1,i2,i3)>0 )
+                                                {
+                          // declareMetricDerivatives3d(r,0)
+                          // declareMetricDerivatives3d(s,1)
+                          // declareMetricDerivatives3d(t,2)
+                                                    const Real an1 = normal(i1,i2,i3,0);
+                                                    const Real an2 = normal(i1,i2,i3,1);
+                                                    const Real an3 = normal(i1,i2,i3,2);
+                                                    Real rx     =     DD(i1,i2,i3,0,0);
+                                                    Real ry     =     DD(i1,i2,i3,0,1);
+                                                    Real rz     =     DD(i1,i2,i3,0,2);
+                                                    Real rxx    =    DDX(i1,i2,i3,0,0);
+                                                    Real rxy    =    DDX(i1,i2,i3,0,1);  // .xy 
+                                                    Real rxz    =    DDX(i1,i2,i3,0,2);  // .xz
+                                                    Real ryy    =    DDY(i1,i2,i3,0,1);  // .yy
+                                                    Real ryz    =    DDY(i1,i2,i3,0,2);  // .yz                 
+                                                    Real rzz    =    DDZ(i1,i2,i3,0,2);  // .zz
+                                                    Real rxxx   =   DDXX(i1,i2,i3,0,0);  // .xxx
+                                                    Real rxxy   =   DDXX(i1,i2,i3,0,1);  // .xxy
+                                                    Real rxyy   =   DDYY(i1,i2,i3,0,0);  // .xyy
+                                                    Real ryyy   =   DDYY(i1,i2,i3,0,1);  // .yyy
+                                                    Real rxxz   =   DDXX(i1,i2,i3,0,2);  // .xxz
+                                                    Real rxzz   =   DDZZ(i1,i2,i3,0,1);  // .xzz
+                                                    Real rzzz   =   DDZZ(i1,i2,i3,0,2);  // .zzz
+                                                    Real ryyz   =   DDYY(i1,i2,i3,0,2);  // .yyz
+                                                    Real ryzz   =   DDZZ(i1,i2,i3,0,1);  // .yzz
+                          // Real rxxxx  =  DDXXX(i1,i2,i3,0,0);  // .xxxx
+                          // Real rxxyy  =  DDXYY(i1,i2,i3,0,0);  // .xxyy
+                          // Real ryyyy  =  DDYYY(i1,i2,i3,0,1);  // .yyy
+                          // Real rxxzz  =  DDXZZ(i1,i2,i3,0,0);  // .xxzz
+                          // Real rzzzz  =  DDZZZ(i1,i2,i3,0,2);  // .zzzz
+                          // Real ryyzz  =  DDYZZ(i1,i2,i3,0,1);  // .yyzz                        
+                                                    Real sx     =     DD(i1,i2,i3,1,0);
+                                                    Real sy     =     DD(i1,i2,i3,1,1);
+                                                    Real sz     =     DD(i1,i2,i3,1,2);
+                                                    Real sxx    =    DDX(i1,i2,i3,1,0);
+                                                    Real sxy    =    DDX(i1,i2,i3,1,1);  // .xy 
+                                                    Real sxz    =    DDX(i1,i2,i3,1,2);  // .xz
+                                                    Real syy    =    DDY(i1,i2,i3,1,1);  // .yy
+                                                    Real syz    =    DDY(i1,i2,i3,1,2);  // .yz                 
+                                                    Real szz    =    DDZ(i1,i2,i3,1,2);  // .zz
+                                                    Real sxxx   =   DDXX(i1,i2,i3,1,0);  // .xxx
+                                                    Real sxxy   =   DDXX(i1,i2,i3,1,1);  // .xxy
+                                                    Real sxyy   =   DDYY(i1,i2,i3,1,0);  // .xyy
+                                                    Real syyy   =   DDYY(i1,i2,i3,1,1);  // .yyy
+                                                    Real sxxz   =   DDXX(i1,i2,i3,1,2);  // .xxz
+                                                    Real sxzz   =   DDZZ(i1,i2,i3,1,1);  // .xzz
+                                                    Real szzz   =   DDZZ(i1,i2,i3,1,2);  // .zzz
+                                                    Real syyz   =   DDYY(i1,i2,i3,1,2);  // .yyz
+                                                    Real syzz   =   DDZZ(i1,i2,i3,1,1);  // .yzz
+                          // Real sxxxx  =  DDXXX(i1,i2,i3,1,0);  // .xxxx
+                          // Real sxxyy  =  DDXYY(i1,i2,i3,1,0);  // .xxyy
+                          // Real syyyy  =  DDYYY(i1,i2,i3,1,1);  // .yyy
+                          // Real sxxzz  =  DDXZZ(i1,i2,i3,1,0);  // .xxzz
+                          // Real szzzz  =  DDZZZ(i1,i2,i3,1,2);  // .zzzz
+                          // Real syyzz  =  DDYZZ(i1,i2,i3,1,1);  // .yyzz                        
+                                                    Real tx     =     DD(i1,i2,i3,2,0);
+                                                    Real ty     =     DD(i1,i2,i3,2,1);
+                                                    Real tz     =     DD(i1,i2,i3,2,2);
+                                                    Real txx    =    DDX(i1,i2,i3,2,0);
+                                                    Real txy    =    DDX(i1,i2,i3,2,1);  // .xy 
+                                                    Real txz    =    DDX(i1,i2,i3,2,2);  // .xz
+                                                    Real tyy    =    DDY(i1,i2,i3,2,1);  // .yy
+                                                    Real tyz    =    DDY(i1,i2,i3,2,2);  // .yz                 
+                                                    Real tzz    =    DDZ(i1,i2,i3,2,2);  // .zz
+                                                    Real txxx   =   DDXX(i1,i2,i3,2,0);  // .xxx
+                                                    Real txxy   =   DDXX(i1,i2,i3,2,1);  // .xxy
+                                                    Real txyy   =   DDYY(i1,i2,i3,2,0);  // .xyy
+                                                    Real tyyy   =   DDYY(i1,i2,i3,2,1);  // .yyy
+                                                    Real txxz   =   DDXX(i1,i2,i3,2,2);  // .xxz
+                                                    Real txzz   =   DDZZ(i1,i2,i3,2,1);  // .xzz
+                                                    Real tzzz   =   DDZZ(i1,i2,i3,2,2);  // .zzz
+                                                    Real tyyz   =   DDYY(i1,i2,i3,2,2);  // .yyz
+                                                    Real tyzz   =   DDZZ(i1,i2,i3,2,1);  // .yzz
+                          // Real txxxx  =  DDXXX(i1,i2,i3,2,0);  // .xxxx
+                          // Real txxyy  =  DDXYY(i1,i2,i3,2,0);  // .xxyy
+                          // Real tyyyy  =  DDYYY(i1,i2,i3,2,1);  // .yyy
+                          // Real txxzz  =  DDXZZ(i1,i2,i3,2,0);  // .xxzz
+                          // Real tzzzz  =  DDZZZ(i1,i2,i3,2,2);  // .zzzz
+                          // Real tyyzz  =  DDYZZ(i1,i2,i3,2,1);  // .yyzz                
+                          // ---- COEFFICIENTS OF 3D n.Grad( LAPLACIAN ): from laplacianCoefficients.mpl ----
+                                                    Real urrr = an1 * (pow(rx, 0.3e1) + ry * ry * rx) + an2 * (ry * rx * rx + pow(ry, 0.3e1)) + an1 * rz * rz * rx + an2 * rz * rz * ry + an3 * (rz * rx * rx + rz * ry * ry + pow(rz, 0.3e1));
+                                                    Real urrs = an1 * (3 * rx * rx * sx + ry * (sy * rx + ry * sx) + sy * ry * rx) + an2 * (sy * rx * rx + 2 * ry * sx * rx + 3 * ry * ry * sy) + an1 * (rz * (sz * rx + rz * sx) + sz * rz * rx) + an2 * (rz * (sz * ry + rz * sy) + sz * rz * ry) + an3 * (sz * rx * rx + 2 * rz * sx * rx + sz * ry * ry + 2 * rz * sy * ry + 3 * rz * rz * sz);
+                                                    Real urss = an1 * (3 * rx * sx * sx + ry * sx * sy + sy * (sy * rx + ry * sx)) + an2 * (2 * sy * sx * rx + ry * sx * sx + 3 * ry * sy * sy) + an1 * (rz * sz * sx + sz * (sz * rx + rz * sx)) + an2 * (rz * sz * sy + sz * (sz * ry + rz * sy)) + an3 * (2 * sz * sx * rx + 2 * sz * sy * ry + rz * sx * sx + rz * sy * sy + 3 * rz * sz * sz);
+                                                    Real usss = an1 * (pow(sx, 0.3e1) + sx * sy * sy) + an2 * (sy * sx * sx + pow(sy, 0.3e1)) + an1 * sz * sz * sx + an2 * sz * sz * sy + an3 * (sz * sx * sx + sz * sy * sy + pow(sz, 0.3e1));
+                                                    Real urrt = an1 * (ry * (ty * rx + ry * tx) + ty * ry * rx + 3 * rx * rx * tx) + an2 * (ty * rx * rx + 2 * ry * tx * rx + 3 * ry * ry * ty) + an1 * (rz * (tz * rx + rz * tx) + tz * rz * rx) + an2 * (rz * (tz * ry + rz * ty) + tz * rz * ry) + an3 * (tz * rx * rx + 2 * rz * tx * rx + tz * ry * ry + 2 * rz * ty * ry + 3 * rz * rz * tz);
+                                                    Real urtt = an1 * (ry * tx * ty + ty * (ty * rx + ry * tx) + 3 * rx * tx * tx) + an2 * (2 * ty * tx * rx + ry * tx * tx + 3 * ry * ty * ty) + an1 * (rz * tx * tz + tz * (tz * rx + rz * tx)) + an2 * (rz * ty * tz + tz * (tz * ry + rz * ty)) + an3 * (2 * tz * tx * rx + 2 * tz * ty * ry + rz * tx * tx + rz * ty * ty + 3 * rz * tz * tz);
+                                                    Real uttt = an1 * (pow(tx, 0.3e1) + tx * ty * ty) + an2 * (ty * tx * tx + pow(ty, 0.3e1)) + an1 * tx * tz * tz + an2 * ty * tz * tz + an3 * (tz * tx * tx + tz * ty * ty + pow(tz, 0.3e1));
+                                                    Real usst = an1 * (sy * (ty * sx + sy * tx) + ty * sx * sy + 3 * sx * sx * tx) + an2 * (ty * sx * sx + 2 * sy * tx * sx + 3 * sy * sy * ty) + an1 * (sz * (tz * sx + sz * tx) + tz * sz * sx) + an2 * (sz * (tz * sy + sz * ty) + tz * sz * sy) + an3 * (tz * sx * sx + 2 * sz * tx * sx + tz * sy * sy + 2 * sz * ty * sy + 3 * sz * sz * tz);
+                                                    Real ustt = an1 * (sy * tx * ty + ty * (ty * sx + sy * tx) + 3 * sx * tx * tx) + an2 * (2 * ty * tx * sx + sy * tx * tx + 3 * sy * ty * ty) + an1 * (sz * tx * tz + tz * (tz * sx + sz * tx)) + an2 * (sz * ty * tz + tz * (tz * sy + sz * ty)) + an3 * (2 * tz * tx * sx + 2 * tz * ty * sy + sz * tx * tx + sz * ty * ty + 3 * sz * tz * tz);
+                                                    Real urr = an1 * (3 * rx * rxx + ryy * rx + 2 * ry * rxy) + an2 * (2 * rxy * rx + ry * rxx + 3 * ry * ryy) + an1 * (rzz * rx + 2 * rz * rxz) + an2 * (rzz * ry + 2 * rz * ryz) + an3 * (2 * rxz * rx + rz * rxx + 2 * ryz * ry + rz * ryy + 3 * rz * rzz);
+                                                    Real urs = an1 * (3 * sxx * rx + syy * rx + 3 * sx * rxx + 2 * sy * rxy + 2 * ry * sxy + ryy * sx) + an2 * (2 * sxy * rx + sy * rxx + 2 * sx * rxy + ry * sxx + 3 * syy * ry + 3 * sy * ryy) + an1 * (szz * rx + 2 * sz * rxz + 2 * rz * sxz + rzz * sx) + an2 * (szz * ry + 2 * sz * ryz + 2 * rz * syz + rzz * sy) + an3 * (2 * rx * sxz + sz * rxx + 2 * rxz * sx + 2 * ry * syz + sz * ryy + 2 * ryz * sy + rz * sxx + rz * syy + 3 * rz * szz + 3 * sz * rzz);
+                                                    Real uss = an1 * (3 * sx * sxx + sx * syy + 2 * sxy * sy) + an2 * (2 * sx * sxy + sxx * sy + 3 * sy * syy) + an1 * (szz * sx + 2 * sz * sxz) + an2 * (szz * sy + 2 * sz * syz) + an3 * (2 * sxz * sx + sz * sxx + 2 * syz * sy + sz * syy + 3 * sz * szz);
+                                                    Real urt = an1 * (3 * txx * rx + tyy * rx + 3 * tx * rxx + 2 * ty * rxy + 2 * ry * txy + ryy * tx) + an2 * (2 * txy * rx + ty * rxx + 2 * tx * rxy + ry * txx + 3 * tyy * ry + 3 * ty * ryy) + an1 * (tzz * rx + 2 * tz * rxz + 2 * rz * txz + rzz * tx) + an2 * (tzz * ry + 2 * tz * ryz + 2 * rz * tyz + rzz * ty) + an3 * (2 * txz * rx + tz * rxx + 2 * tx * rxz + 2 * tyz * ry + tz * ryy + 2 * ty * ryz + rz * txx + rz * tyy + 3 * tzz * rz + 3 * tz * rzz);
+                                                    Real utt = an1 * (3 * tx * txx + tx * tyy + 2 * txy * ty) + an2 * (2 * tx * txy + txx * ty + 3 * ty * tyy) + an1 * (tx * tzz + 2 * txz * tz) + an2 * (ty * tzz + 2 * tyz * tz) + an3 * (2 * tx * txz + txx * tz + 2 * ty * tyz + tyy * tz + 3 * tz * tzz);
+                                                    Real ust = an1 * (3 * txx * sx + tyy * sx + 3 * tx * sxx + 2 * ty * sxy + 2 * sy * txy + syy * tx) + an2 * (2 * txy * sx + ty * sxx + 2 * tx * sxy + sy * txx + 3 * tyy * sy + 3 * ty * syy) + an1 * (tzz * sx + 2 * tz * sxz + 2 * sz * txz + szz * tx) + an2 * (tzz * sy + 2 * tz * syz + 2 * sz * tyz + szz * ty) + an3 * (2 * txz * sx + tz * sxx + 2 * tx * sxz + 2 * tyz * sy + tz * syy + 2 * ty * syz + sz * txx + sz * tyy + 3 * tzz * sz + 3 * tz * szz);
+                                                    Real ur = an1 * (rxxx + rxyy) + an2 * (rxxy + ryyy) + an1 * rxzz + an2 * ryzz + an3 * (rzzz + ryyz + rxxz);
+                                                    Real us = an1 * (sxxx + sxyy) + an2 * (sxxy + syyy) + an1 * sxzz + an2 * syzz + an3 * (szzz + syyz + sxxz);
+                                                    Real ut = an1 * (txyy + txxx) + an2 * (tyyy + txxy) + an1 * txzz + an2 * tyzz + an3 * (tzzz + tyyz + txxz);
+                                                    const int ghost=2; 
+                                                    int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                          // Specify that this a "real" equation on the second ghost line: 
+                          // (A "real" equation has a possible non-zero right-hand-side)
+                                                    setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
+                                                    setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
+                                                    ForStencil(m1,m2,m3)
+                                                    {
+                                                        Real coeffm  = cSq*( 
+                                                                                                            urrr * rrrCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
+                                                                                                        + urrs *  rrCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
+                                                                                                        + urss *   rCoeff(m1)*  ssCoeff(m2)*   iCoeff(m3) 
+                                                                                                        + usss *   iCoeff(m1)* sssCoeff(m2)*   iCoeff(m3) 
+                                                                                                        + urrt *  rrCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
+                                                                                                        + urtt *   rCoeff(m1)*   iCoeff(m2)*  ttCoeff(m3) 
+                                                                                                        + uttt *   iCoeff(m1)*   iCoeff(m2)* tttCoeff(m3) 
+                                                                                                        + usst *   iCoeff(m1)*  ssCoeff(m2)*   tCoeff(m3) 
+                                                                                                        + ustt *   iCoeff(m1)*   sCoeff(m2)*  ttCoeff(m3) 
+                                                                                                        + urr  *  rrCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
+                                                                                                        + urs  *   rCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
+                                                                                                        + uss  *   iCoeff(m1)*  ssCoeff(m2)*   iCoeff(m3) 
+                                                                                                        + urt  *   rCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
+                                                                                                        + ust  *   iCoeff(m1)*   sCoeff(m2)*   tCoeff(m3) 
+                                                                                                        + utt  *   iCoeff(m1)*   iCoeff(m2)*  ttCoeff(m3)                                             
+                                                                                                        + ur   *   rCoeff(m1)*   iCoeff(m2)*   iCoeff(m3) 
+                                                                                                        + us   *   iCoeff(m1)*   sCoeff(m2)*   iCoeff(m3) 
+                                                                                                        + ut   *   iCoeff(m1)*   iCoeff(m2)*   tCoeff(m3) 
+                                                                                                );                                              
+                            // -- Equation 1 : Real part 
+                                                        int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
+                                                        coeffLocal(mr,i1m,i2m,i3m) = coeffm;
+                                                        int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
+                                                        setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
+                            // -- Equation 2 : imaginary part: 
+                                                        int mi  = M123CE(m1,m2,m3,ic2,eq2);                        // equation 2, component 2
+                                                        coeffLocal(mi,i1m,i2m,i3m) =  coeffm;
+                                                        setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
+                                                    } // end for stencil
+                                                } // end if mask
+                                            } // end FOR_3D
+                                        }
+                                    }  // end Curvilinear
+                                } // end useCBC
+                // fill any extra ghost with extrapolation
+                                int startGhost = orderOfAccuracy/2+1;
+                                if( orderOfAccuracy==4 && !useCBC ) startGhost=orderOfAccuracy/2;
+                                for( int ghost=startGhost; ghost<=numberOfGhostLines; ghost++ )
+                                {
+                                    {
+                                        assert( ok );
+                                        getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
+                                        bool okg =ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ig1,Ig2,Ig3);
+                                        coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0; // zero all coeff to start
+                                        FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                        {
+                                            int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                      // --- fill in the coefficients of the extrapolation formula ---
+                                            for( int me=0; me<=extrapOrder; me++ )
+                                            {
+                                                int m0 = me + M0.getBase(); 
+                                                coeffLocal(m0,i1m,i2m,i3m) = extrapCoeff[me];
+                                                int j1=i1m + me*is1, j2=i2m + me*is2, j3=i3m + me*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+                                                setEquationNumber(m0, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );      // macro to set equationNumber
+                                            }
+                                        } // end FOR_3D
+                                    }
+                                    {
+                                        assert( ok );
+                                        getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
+                                        bool okg =ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ig1,Ig2,Ig3);
+                                        coeffLocal(M1,Ig1,Ig2,Ig3) = 0.0; // zero all coeff to start
+                                        FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                        {
+                                            int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                      // --- fill in the coefficients of the extrapolation formula ---
+                                            for( int me=0; me<=extrapOrder; me++ )
+                                            {
+                                                int m0 = me + M1.getBase(); 
+                                                coeffLocal(m0,i1m,i2m,i3m) = extrapCoeff[me];
+                                                int j1=i1m + me*is1, j2=i2m + me*is2, j3=i3m + me*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+                                                setEquationNumber(m0, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );      // macro to set equationNumber
+                                            }
+                                        } // end FOR_3D
+                                    }
+                                } // end for ghost 
+
+                            printF("+++++ solveHelmholtzDirect BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) NEUMANN\n",grid,side,axis);
+              // OV_ABORT("FINISH ME");
+
+              // mg.update(MappedGrid::THEvertexBoundaryNormal);
+              // OV_GET_VERTEX_BOUNDARY_NORMAL(mg,side,axis,normal); 
+
+              // realSerialArray xCoeff(M0,Ib1,Ib2,Ib3), yCoeff(M0,Ib1,Ib2,Ib3), zCoeff; 
+              // mgop.assignCoefficients(MappedGridOperators::xDerivative ,xCoeff, Ib1,Ib2,Ib3,0,0);
+              // mgop.assignCoefficients(MappedGridOperators::yDerivative ,yCoeff, Ib1,Ib2,Ib3,0,0);
+              // if( numberOfDimensions==3 )
+              // {
+              //   zCoeff.redim(M0,Ib1,Ib2,Ib3);
+              //   mgop.assignCoefficients(MappedGridOperators::zDerivative ,zCoeff, Ib1,Ib2,Ib3,0,0);
+              // }
+
+              // FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+              // {
+                                    
+              //   int i1m=i1-is1, i2m=i2-is2, i3m=i3-is3; //  ghost point is (i1m,i2m,i3m)
+
+              //   // Specify that this a "real" equation on the first ghost line: 
+              //   // (A "real" equation has a possible non-zero right-hand-side)
+              //   setClassify(e,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+
+              //   ForStencil(m1,m2,m3)
+              //   {
+              //     int m  = M123(m1,m2,m3);        // the single-component coeff-index
+                                    
+              //     coeffLocal(m,i1m,i2m,i3m) = normal(i1,i2,i3,0)*xCoeff(m,i1,i2,i3) + normal(i1,i2,i3,1)*yCoeff(m,i1,i2,i3);
+              //     if( numberOfDimensions==3 )
+              //       coeffLocal(m,i1m,i2m,i3m) += normal(i1,i2,i3,2)*zCoeff(m,i1,i2,i3);
+
+              //     // Specify that the above coeff value is the coefficient of component ic at the grid point (j1,j2,j3).
+              //     int j1=i1+m1, j2=i2+m2, j3=i3+m3;                       // the stencil is centred on the boundary pt (i1,i2,i3)
+              //     setEquationNumber(m, e,i1m,i2m,i3m,  ic,j1,j2,j3 );      // macro to set equationNumber
+              //   }
+
+              // } // end FOR_3D
+
+              // // fill ghost 2 with extrapolation
+              // for( int ghost=2; ghost<=numberOfGhostLines; ghost++ )
+              // {
+              //   fillGhostExtrapolation(eq1,ic1,M0,ghost);
+              //   fillGhostExtrapolation(eq2,ic2,M1,ghost);              
+              // } // end for ghost
 
 
                         }
                         else if( mg.boundaryCondition(side,axis)==CgWave::absorbing || 
                                           mg.boundaryCondition(side,axis)==CgWave::abcEM2 )
                         {
-                            printF("+++++ solveHelmholtzDirect: BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) ABSORBING/EM2, c=%e\n",grid,side,axis,c);
 
-              // EM2 
-              //     c D+xD-x + .5*c D+yD-y - is*I*sgn*omega* D0x = 0 
-              // 
-              // Engquist-Majda order2 scheme
-              //  D+t (-D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : left 
-              //  D+t ( D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : right                
-              //
-              //   - D0x + c D+xD-x + .5*c D+yD-y  : left 
-              //     D0x + c D+xD-x + .5*c D+yD-y  : right
-
-               // *** FINISH ME ***
-                            Real ca = c; // c * 0.;
-              // if( par.adjustOmega )
-              //   ca = c*tan(par.frequencyArray(1)*dt/2)/(par.frequencyArraySaved(1)*dt/2); % adjust c for dt errors 
-              // end
-
-
-
-              // res = -is*(unx-ucx)/dt + (.5*c)*( unxx + ucxx) + (.25*c)*( unyy + ucyy );
-
-                            Range Rw(-halfWidth1,halfWidth1);
-                            RealArray abcCoeffr(Rw,Rw,Rw), abcCoeffi(Rw,Rw,Rw);
-                            RealArray abcCoeff2r(Rw,Rw,Rw), abcCoeff2i(Rw,Rw,Rw); // for CBC
-
-                            abcCoeffr=0.; abcCoeffi=0.; abcCoeff2r=0.; abcCoeff2i=0.; 
-
-              // EM2: BC: 
-              //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
-              // => 
-              //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
-              //  
-              // u = ur + i*ui : 
-              //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
-              //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
-              //             
-                            if( isRectangular )
-                            {
-                                if( orderOfAccuracy==2 ) 
+              //---- FILL IN THE EM RADIATION BCS ----
+                                printF("+++++ solveHelmholtzDirect: BC: FILL MATRIX BC FOR (grid,side,axis)=(%d,%d,%d) ABSORBING/EM2, c=%e\n",grid,side,axis,c);
+                // EM2 
+                //     c D+xD-x + .5*c D+yD-y - is*I*sgn*omega* D0x = 0 
+                // 
+                // Engquist-Majda order2 scheme
+                //  D+t (-D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : left 
+                //  D+t ( D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 : right                
+                //
+                //   - D0x + c D+xD-x + .5*c D+yD-y  : left 
+                //     D0x + c D+xD-x + .5*c D+yD-y  : right
+                 // *** FINISH ME ***
+                                Real ca = c; // c * 0.;
+                // if( par.adjustOmega )
+                //   ca = c*tan(par.frequencyArray(1)*dt/2)/(par.frequencyArraySaved(1)*dt/2); % adjust c for dt errors 
+                // end
+                // res = -is*(unx-ucx)/dt + (.5*c)*( unxx + ucxx) + (.25*c)*( unyy + ucyy );
+                                Range Rw(-halfWidth1,halfWidth1);
+                                RealArray abcCoeffr(Rw,Rw,Rw), abcCoeffi(Rw,Rw,Rw);
+                                RealArray abcCoeff2r(Rw,Rw,Rw), abcCoeff2i(Rw,Rw,Rw); // for CBC
+                                abcCoeffr=0.; abcCoeffi=0.; abcCoeff2r=0.; abcCoeff2i=0.; 
+                // EM2: BC: 
+                //     -is*(u).xt +  c( Dxx u + .5*Dyy u ) = 0
+                // => 
+                //   - is* i * omega*omegaSign* Dx u + c( Dxx u + .5*Dyy u ) = 0
+                //  
+                // u = ur + i*ui : 
+                //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
+                //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
+                //             
+                                if( isRectangular )
                                 {
-                                    const Real cxx = axis==0 ? ca/(dx[0]*dx[0]) : .5*ca/(dx[0]*dx[0]);
-                                    const Real cyy = axis==1 ? ca/(dx[1]*dx[1]) : .5*ca/(dx[1]*dx[1]);
-                                    const Real cx  = axis==0 ? is1*omega/(2.*dx[0]) : 0.;                
-                                    const Real cy  = axis==1 ? is2*omega/(2.*dx[1]) : 0.;
-
-                                    if( numberOfDimensions==2 )
+                                    if( orderOfAccuracy==2 ) 
                                     {
-                    // real part of equation
-                                        abcCoeffr( 0,-1,0) =         1.*cyy;
-                                        abcCoeffr(-1, 0,0) = 1.*cxx;
-                                        abcCoeffr( 0, 0,0) =-2.*cxx -2.*cyy;
-                                        abcCoeffr(+1, 0,0) = 1.*cxx;
-                                        abcCoeffr( 0,+1,0) =         1.*cyy;
-
-                    // imaginary part of equation
-                                        abcCoeffi( 0,-1,0) =        -1.*cy;
-                                        abcCoeffi(-1, 0,0) = -1.*cx;
-                                        abcCoeffi(+1, 0,0) =  1.*cx;
-                                        abcCoeffi( 0,+1,0) =         1.*cy;
-                                    }
-                                    else
-                                    {
-                    // --- THREE DIMENSIONS ---
-                                        const Real czz = axis==2 ? ca/(dx[2]*dx[2]) : .5*ca/(dx[2]*dx[2]);
-                                        const Real cz  = axis==2 ? is3*omega/(2.*dx[2]) : 0.;    
-
-                    // real part of equation
-                                        abcCoeffr( 0, 0,-1) =                 1.*czz;
-                                        abcCoeffr( 0,-1, 0) =         1.*cyy;
-                                        abcCoeffr(-1, 0, 0) = 1.*cxx;
-                                        abcCoeffr( 0, 0, 0) =-2.*cxx -2.*cyy -2.*czz;
-                                        abcCoeffr(+1, 0, 0) = 1.*cxx;
-                                        abcCoeffr( 0,+1, 0) =         1.*cyy;
-                                        abcCoeffr( 0, 0,+1) =                 1.*czz;
-
-                    // imaginary part of equation
-                                        abcCoeffi( 0, 0,-1) =                 -1.*cz;
-                                        abcCoeffi( 0,-1, 0) =        -1.*cy;
-                                        abcCoeffi(-1, 0, 0) = -1.*cx;
-                                        abcCoeffi(+1, 0, 0) =  1.*cx;
-                                        abcCoeffi( 0,+1, 0) =         1.*cy;
-                                        abcCoeffi( 0, 0,+1) =                  1.*cz;
-
-
-                                    }
-
-                                }
-                                else if( orderOfAccuracy==4 )
-                                {  
-
-                                    const Real cxx = axis==0 ? ca/(12.*dx[0]*dx[0]) : .5*ca/(12.*dx[0]*dx[0]);
-                                    const Real cyy = axis==1 ? ca/(12.*dx[1]*dx[1]) : .5*ca/(12.*dx[1]*dx[1]);
-                                    const Real czz = axis==2 ? ca/(12.*dx[2]*dx[2]) : .5*ca/(12.*dx[2]*dx[2]);
-
-                                    const Real cx  = axis==0 ? is1*omega/(12.*dx[0]) : 0.;                
-                                    const Real cy  = axis==1 ? is2*omega/(12.*dx[1]) : 0.;
-                                    const Real cz  = axis==2 ? is3*omega/(12.*dx[2]) : 0.;
-
-                 // Real cxxxx = axis==0 ? ca/(dx[0]*dx[0]*dx[0]*dx[0]) : 0.;
-                 // Real cyyyy = axis==1 ? ca/(dx[1]*dx[1]*dx[1]*dx[1]) : 0.;
-                 // Real cxxyy =        .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]);
-
-                 // Real cxxx  = axis==0 ? is1*omega/(2.*dx[0]*dx[0]*dx[0]) : 0.;                
-                 // Real cyyy  = axis==1 ? is2*omega/(2.*dx[1]*dx[1]*dx[1]) : 0.; 
-
-                  // cxxxx=0.; cyyyy=0.; 
-                  // cxxyy=0.; // ** TEST 
-
-                  // printF("solveHelmDirect: fill EM BCs order=4 (side,axis)=(%d,%d) cxxx=%g, cyyy=%g\n",side,axis,cxxx,cyyy);                 
-
-                                    if( numberOfDimensions==2 )
-                                    {
-                    // real part of equation
-                                        abcCoeffr( 0,-2,0) =            -cyy;
-                                        abcCoeffr( 0,-1,0) =         16.*cyy;
-                                        abcCoeffr(-2, 0,0) =    -cxx;
-                                        abcCoeffr(-1, 0,0) = 16.*cxx;
-                                        abcCoeffr( 0, 0,0) =-30.*cxx -30.*cyy;
-                                        abcCoeffr(+1, 0,0) = 16.*cxx;
-                                        abcCoeffr(+2, 0,0) =    -cxx;
-                                        abcCoeffr( 0,+1,0) =         16.*cyy;
-                                        abcCoeffr( 0,+2,0) =            -cyy;
-
-                    // imaginary part of equation
-                                        abcCoeffi( 0,-2,0) =     cy;
-                                        abcCoeffi( 0,-1,0) = -8.*cy;
-                                        abcCoeffi(-2, 0,0) =     cx;
-                                        abcCoeffi(-1, 0,0) = -8.*cx;
-                                        abcCoeffi(+1, 0,0) =  8.*cx;
-                                        abcCoeffi(+2, 0,0) =    -cx;
-                                        abcCoeffi( 0,+1,0) =  8.*cy;
-                                        abcCoeffi( 0,+2,0) =    -cy;
-                                    }
-                                    else
-                                    {
-                    // real part of equation
-                                        abcCoeffr( 0,0,-2) =                      -czz;
-                                        abcCoeffr( 0,0,-1) =                   16.*czz;
-                                        abcCoeffr( 0,-2,0) =            -cyy;
-                                        abcCoeffr( 0,-1,0) =         16.*cyy;
-                                        abcCoeffr(-2, 0,0) =    -cxx;
-                                        abcCoeffr(-1, 0,0) = 16.*cxx;
-                                        abcCoeffr( 0, 0,0) =-30.*cxx -30.*cyy -30.*czz;
-                                        abcCoeffr(+1, 0,0) = 16.*cxx;
-                                        abcCoeffr(+2, 0,0) =    -cxx;
-                                        abcCoeffr( 0,+1,0) =         16.*cyy;
-                                        abcCoeffr( 0,+2,0) =            -cyy;
-                                        abcCoeffr( 0,0,+1) =                   16.*czz;
-                                        abcCoeffr( 0,0,+2) =                      -czz;
-
-                    // imaginary part of equation
-                                        abcCoeffi( 0,0,-2) =                   cz;
-                                        abcCoeffi( 0,0,-1) =               -8.*cz;
-                                        abcCoeffi( 0,-2,0) =            cy;
-                                        abcCoeffi( 0,-1,0) =        -8.*cy;
-                                        abcCoeffi(-2, 0,0) =     cx;
-                                        abcCoeffi(-1, 0,0) = -8.*cx;
-                                        abcCoeffi(+1, 0,0) =  8.*cx;
-                                        abcCoeffi(+2, 0,0) =    -cx;
-                                        abcCoeffi( 0,+1,0) =        8.*cy;
-                                        abcCoeffi( 0,+2,0) =          -cy;
-                                        abcCoeffi( 0,0,+1) =                8.*cz;
-                                        abcCoeffi( 0,0,+2) =                  -cz;
-
-                                    }
-
-
-                                } 
-                                else
-                                {
-                                    printF("solveHelmholtzDirect: FINISH radiation BC EM2 for this order of accuracy = %d\n",orderOfAccuracy);
-                                    OV_ABORT("ERROR");
-                                }
-
-                            }
-                            else
-                            {
-                                  OV_ABORT("solveHelmholtzDirect:: BC ABSORBING -- FINISH ME: curvilinear"); 
-                            }
-
-                            if( false )
-                            {
-                                ::display(abcCoeffr,"abcCoeffr");
-                                ::display(abcCoeffi,"abcCoeffi");
-                            }              
-
-                            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
-                            {              
-
-
-                                const int ghost=1; 
-                                int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
-
-                // Specify that this a "real" equation on the first ghost line: 
-                // (A "real" equation has a possible non-zero right-hand-side)
-                                setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
-                                setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
-
-                                ForStencil(m1,m2,m3)
-                                {
-                  // -- Equation 1 : Real part 
-                  //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
-                                
-                                    int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
-                                    coeffLocal(mr,i1m,i2m,i3m) = abcCoeffr(m1,m2,m3);
-                                    int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
-                                    setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
-
-                                    int mi  = M123CE(m1,m2,m3,ic2,eq1);                        // equation 1, component 2
-                                    coeffLocal(mi,i1m,i2m,i3m) = -abcCoeffi(m1,m2,m3);         // *CHECK SIGN 
-                                    setEquationNumber(mi, eq1,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
-
-                  // -- Equation 2 : imaginary part: 
-                  //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0   
-                                    mi  = M123CE(m1,m2,m3,ic2,eq2);                            // equation 2, component 2
-                                    coeffLocal(mi,i1m,i2m,i3m) =  abcCoeffr(m1,m2,m3);
-                                    setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
-
-                                    mr  = M123CE(m1,m2,m3,ic1,eq2);                            // equation 2, component 1
-                                    coeffLocal(mr,i1m,i2m,i3m) = +abcCoeffi(m1,m2,m3);
-                                    setEquationNumber(mr, eq2,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
-
-                                }
-                            } // end FOR_3D
-
-
-              // Dec 17, 2025 -- we now use CBC for explicit time-stepping (but one-sided u.xxyy)
-                            bool useCBC = orderOfAccuracy==4;
-
-              // if( timeSteppingMethod==CgWave::explicitTimeStepping )  // turn off Dec 17, 2025
-              //   useCBC=false;  // currently explicit EM order 4 uses extrap5
-
-                            if( useCBC )
-                            {
-                // ------------------------
-                // --- FILL THE EM CBC ----
-                // ------------------------
-
-                                FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
-                                {
-                                    abcCoeff2r=0.; abcCoeff2i=0.; 
-
-                                    if( isRectangular )
-                                    {
-
-                                        if( orderOfAccuracy==4 )
-                                        {  
-                                            const Real cxx = axis==0 ? ca/(12.*dx[0]*dx[0]) : .5*ca/(12.*dx[0]*dx[0]);
-                                            const Real cyy = axis==1 ? ca/(12.*dx[1]*dx[1]) : .5*ca/(12.*dx[1]*dx[1]);
-                                            const Real czz = axis==2 ? ca/(12.*dx[2]*dx[2]) : .5*ca/(12.*dx[2]*dx[2]);
-
-                                            const Real cx  = axis==0 ? is1*omega/(12.*dx[0]) : 0.;                
-                                            const Real cy  = axis==1 ? is2*omega/(12.*dx[1]) : 0.;
-                                            const Real cz  = axis==2 ? is3*omega/(12.*dx[2]) : 0.;
-
-                                            Real cxxxx = axis==0 ? ca/(dx[0]*dx[0]*dx[0]*dx[0]) : 0.;
-                                            Real cyyyy = axis==1 ? ca/(dx[1]*dx[1]*dx[1]*dx[1]) : 0.;
-                                            Real czzzz = axis==2 ? ca/(dx[2]*dx[2]*dx[2]*dx[2]) : 0.;
-
-                                            Real cxxyy = ( axis==0 || axis==1 ) ? .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]) : 0.;
-                                            Real cxxzz = ( axis==0 || axis==2 ) ? .5*ca/(dx[0]*dx[0]*dx[2]*dx[2]) : 0;
-                                            Real cyyzz = ( axis==1 || axis==2 ) ? .5*ca/(dx[1]*dx[1]*dx[2]*dx[2]) : 0;
-
-                                            Real cxxx  = axis==0 ? is1*omega/(2.*dx[0]*dx[0]*dx[0]) : 0.;                
-                                            Real cyyy  = axis==1 ? is2*omega/(2.*dx[1]*dx[1]*dx[1]) : 0.; 
-                                            Real czzz  = axis==2 ? is3*omega/(2.*dx[2]*dx[2]*dx[2]) : 0.; 
-
-                      // *** TEMP ***
-                      // cxxyy=0.; cxxzz=0.; cyyzz=0.;
-                      // cxxzz=0.; cyyzz=0.;
-
-                      // *** CBC ****
+                                        const Real cxx = axis==0 ? ca/(dx[0]*dx[0]) : .5*ca/(dx[0]*dx[0]);
+                                        const Real cyy = axis==1 ? ca/(dx[1]*dx[1]) : .5*ca/(dx[1]*dx[1]);
+                                        const Real cx  = axis==0 ? is1*omega/(2.*dx[0]) : 0.;                
+                                        const Real cy  = axis==1 ? is2*omega/(2.*dx[1]) : 0.;
+                                        if( numberOfDimensions==2 )
+                                        {
                       // real part of equation
-                                            if( numberOfDimensions==2 )
-                                            {            
-                                                abcCoeff2r(-1,-1,0) =  0.;
-                                                abcCoeff2r(+1,-1,0) =  0.;
-
-                                                abcCoeff2r( 0,-2,0) =               cyyyy;
-                                                abcCoeff2r( 0,-1,0) =           -4.*cyyyy;
-                                                abcCoeff2r(-2, 0,0) =     cxxxx;
-                                                abcCoeff2r(-1, 0,0) = -4.*cxxxx;
-                                                abcCoeff2r( 0, 0,0) =  6.*cxxxx +6.*cyyyy;
-                                                abcCoeff2r(+1, 0,0) = -4.*cxxxx;
-                                                abcCoeff2r(+2, 0,0) =     cxxxx;
-                                                abcCoeff2r( 0,+1,0) =           -4.*cyyyy;
-                                                abcCoeff2r( 0,+2,0) =               cyyyy;
-
-                                                abcCoeff2r(-1,+1,0) = 0.;
-                                                abcCoeff2r(+1,+1,0) = 0.;                 
-
-                        // -- ADD u.xxyy term 
-                                                int ksv[2], &ks1=ksv[0], &ks2=ksv[1];
-                                                ks1=0, ks2=0; // centered stencil
-                                                if( useOneSidedXXYY )
-                                                { 
-                          // The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy
-                          //           X--X--X
-                          //           |     |     G=ghost, B=boundary point (i1,i2)
-                          //     G--G--B--X--X     B,X = stencil for u.xxyy on left face 
-                          //           |     |
-                          //           X--X--X                        
-                                                    ks1=is1; ks2=is2;  // shift stencil inward from the boundary
-
-                          // check for corners and do an additional shift so only boundary and interior points are used
-                                                    int axisp1 = (axis+1) % mg.numberOfDimensions(); // adjacent axis
-                                                    for( int side2=0; side2<=1; side2++ )            // adjacent sides
-                                                    {
-                                                        if( iv[axisp1]==mg.gridIndexRange(side2,axisp1) && mg.boundaryCondition(side2,axisp1)>0 )
-                                                        {
-                                                            ksv[axisp1] = 1-2*side2;
-                              // printF("solveHelmholtzDirect: useOneSided u.xxyy (i1,i2)=%3d,%3d) (side,side2)=(%2d,%2d) (ks1,ks2)=(%2d,%2d)\n",i1,i2,side,side2,ks1,ks2);
-                                                        }
-                                                    }
-
-                                                }
-                        // printF("solveHelmholtzDirect: useOneSided u.xxyy (side,axis)=(%d,%d) (i1,i2)=%3d,%3d) (ks1,ks2)=(%2d,%2d)\n",side,axis,i1,i2,ks1,ks2);
-                                                abcCoeff2r(-1+ks1,-1+ks2,0) +=      cxxyy;
-                                                abcCoeff2r(+1+ks1,-1+ks2,0) +=      cxxyy;
-                                                abcCoeff2r( 0+ks1,-1+ks2,0) +=  -2.*cxxyy;
-                                                abcCoeff2r(-1+ks1, 0+ks2,0) +=  -2.*cxxyy;
-                                                abcCoeff2r( 0+ks1, 0+ks2,0) +=  +4.*cxxyy;
-                                                abcCoeff2r(+1+ks1, 0+ks2,0) +=  -2.*cxxyy;
-                                                abcCoeff2r( 0+ks1,+1+ks2,0) +=  -2.*cxxyy;
-                                                abcCoeff2r(-1+ks1,+1+ks2,0) +=      cxxyy;
-                                                abcCoeff2r(+1+ks1,+1+ks2,0) +=      cxxyy;
-
-
-
-                        // imaginary part of equation
-                                                abcCoeff2i( 0,-2,0) =             -cyyy;
-                                                abcCoeff2i( 0,-1,0) =           2.*cyyy;
-                                                abcCoeff2i(-2, 0,0) =    -cxxx;
-                                                abcCoeff2i(-1, 0,0) =  2.*cxxx;
-                                                abcCoeff2i(+1, 0,0) = -2.*cxxx;
-                                                abcCoeff2i(+2, 0,0) =     cxxx;
-                                                abcCoeff2i( 0,+1,0) =          -2.*cyyy;
-                                                abcCoeff2i( 0,+2,0) =              cyyy;
-                                            }
-                                            else
-                                            {
-                         // ---- 3D -----
-
-                                                abcCoeff2r(-1,-1,0) =  0.;
-                                                abcCoeff2r(+1,-1,0) =  0.; 
-
-                                                abcCoeff2r(-1,0,-1) =  0.;
-                                                abcCoeff2r(+1,0,-1) =  0.;
-
-                                                abcCoeff2r(0,-1,-1) =  0.;
-                                                abcCoeff2r(0,+1,-1) =  0.;
-
-                                                abcCoeff2r( 0,0,-2) =                         czzzz;
-                                                abcCoeff2r( 0,0,-1) =                     -4.*czzzz;
-                                                abcCoeff2r( 0,-2,0) =               cyyyy;
-                                                abcCoeff2r( 0,-1,0) =           -4.*cyyyy;
-                                                abcCoeff2r(-2, 0,0) =     cxxxx;
-                                                abcCoeff2r(-1, 0,0) = -4.*cxxxx;
-                                                abcCoeff2r( 0, 0,0) =  6.*cxxxx +6.*cyyyy +6.*czzzz;
-                                                abcCoeff2r(+1, 0,0) = -4.*cxxxx;
-                                                abcCoeff2r(+2, 0,0) =     cxxxx;
-                                                abcCoeff2r( 0,+1,0) =           -4.*cyyyy;
-                                                abcCoeff2r( 0,+2,0) =               cyyyy;
-                                                abcCoeff2r( 0,0,+1) =                     -4.*czzzz;
-                                                abcCoeff2r( 0,0,+2) =                         czzzz;
-
-                                                abcCoeff2r(-1,+1,0) = 0.;
-                                                abcCoeff2r(+1,+1,0) = 0.;  
-
-                                                abcCoeff2r(-1,0,+1) = 0.;
-                                                abcCoeff2r(+1,0,+1) = 0.;  
-
-                                                abcCoeff2r(0,-1,+1) = 0.;
-                                                abcCoeff2r(0,+1,+1) = 0.;                 
-
-                        // --- ADD u.xxyy, u.xxzz, u.yyzz terms ---
-                                                int ksv[3], &ks1=ksv[0], &ks2=ksv[1], &ks3=ksv[2];
-                                                ks1=0, ks2=0, ks3=0; // centered stencil
-                                                if( useOneSidedXXYY )
-                                                { 
-                          // The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy
-                          //           X--X--X
-                          //           |     |     G=ghost, B=boundary point (i1,i2)
-                          //     G--G--B--X--X     B,X = stencil for u.xxyy on left face 
-                          //           |     |
-                          //           X--X--X                        
-                                                    ks1=is1; ks2=is2; ks3=is3; // shift stencil inward from the boundary
-
-                          // check for corners and do an additional shift so only boundary and interior points are used
-                                                    int axisp1 = (axis+1) % mg.numberOfDimensions(); // adjacent axis
-                                                    int axisp2 = (axis+2) % mg.numberOfDimensions(); // adjacent axis
-                                                    for( int side2=0; side2<=1; side2++ )            // adjacent sides
-                                                    {
-                                                        if( iv[axisp1]==mg.gridIndexRange(side2,axisp1) && mg.boundaryCondition(side2,axisp1)>0 )
-                                                        {
-                                                            ksv[axisp1] = 1-2*side2;
-                              // printF("solveHelmholtzDirect: useOneSided u.xxyy (i1,i2)=%3d,%3d) (side,side2)=(%2d,%2d) (ks1,ks2)=(%2d,%2d)\n",i1,i2,side,side2,ks1,ks2);
-                                                        }
-                                                        if( iv[axisp2]==mg.gridIndexRange(side2,axisp2) && mg.boundaryCondition(side2,axisp2)>0 )
-                                                        {
-                                                            ksv[axisp2] = 1-2*side2;
-                              // printF("solveHelmholtzDirect: useOneSided u.xxyy (i1,i2)=%3d,%3d) (side,side2)=(%2d,%2d) (ks1,ks2)=(%2d,%2d)\n",i1,i2,side,side2,ks1,ks2);
-                                                        }                            
-                                                    }
-
-                                                }
-                        // printF("solveHelmholtzDirect: useOneSided u.xxyy (side,axis)=(%d,%d) (i1,i2)=%3d,%3d) (ks1,ks2)=(%2d,%2d)\n",side,axis,i1,i2,ks1,ks2);
-                                                abcCoeff2r(-1+ks1,-1+ks2,0) +=      cxxyy;
-                                                abcCoeff2r(+1+ks1,-1+ks2,0) +=      cxxyy;
-                                                abcCoeff2r( 0+ks1,-1+ks2,0) +=  -2.*cxxyy;
-                                                abcCoeff2r(-1+ks1, 0+ks2,0) +=  -2.*cxxyy;
-                                                abcCoeff2r( 0+ks1, 0+ks2,0) +=  +4.*cxxyy;
-                                                abcCoeff2r(+1+ks1, 0+ks2,0) +=  -2.*cxxyy;
-                                                abcCoeff2r( 0+ks1,+1+ks2,0) +=  -2.*cxxyy;
-                                                abcCoeff2r(-1+ks1,+1+ks2,0) +=      cxxyy;
-                                                abcCoeff2r(+1+ks1,+1+ks2,0) +=      cxxyy;
-
-                                                abcCoeff2r(-1+ks1,0,-1+ks3) +=      cxxzz;
-                                                abcCoeff2r(+1+ks1,0,-1+ks3) +=      cxxzz;
-                                                abcCoeff2r( 0+ks1,0,-1+ks3) +=  -2.*cxxzz;
-                                                abcCoeff2r(-1+ks1,0, 0+ks3) +=  -2.*cxxzz;
-                                                abcCoeff2r( 0+ks1,0, 0+ks3) +=  +4.*cxxzz;
-                                                abcCoeff2r(+1+ks1,0, 0+ks3) +=  -2.*cxxzz;
-                                                abcCoeff2r( 0+ks1,0,+1+ks3) +=  -2.*cxxzz;
-                                                abcCoeff2r(-1+ks1,0,+1+ks3) +=      cxxzz;
-                                                abcCoeff2r(+1+ks1,0,+1+ks3) +=      cxxzz;
-
-                                                abcCoeff2r(0,-1+ks2,-1+ks3) +=      cyyzz;
-                                                abcCoeff2r(0,+1+ks2,-1+ks3) +=      cyyzz;
-                                                abcCoeff2r(0, 0+ks2,-1+ks3) +=  -2.*cyyzz;
-                                                abcCoeff2r(0,-1+ks2, 0+ks3) +=  -2.*cyyzz;
-                                                abcCoeff2r(0, 0+ks2, 0+ks3) +=  +4.*cyyzz;
-                                                abcCoeff2r(0,+1+ks2, 0+ks3) +=  -2.*cyyzz;
-                                                abcCoeff2r(0, 0+ks2,+1+ks3) +=  -2.*cyyzz;
-                                                abcCoeff2r(0,-1+ks2,+1+ks3) +=      cyyzz;
-                                                abcCoeff2r(0,+1+ks2,+1+ks3) +=      cyyzz;
-
-                        // imaginary part of equation
-                                                abcCoeff2i( 0,0,-2) =                      -czzz;
-                                                abcCoeff2i( 0,0,-1) =                    2.*czzz;
-                                                abcCoeff2i( 0,-2,0) =             -cyyy;
-                                                abcCoeff2i( 0,-1,0) =           2.*cyyy;
-                                                abcCoeff2i(-2, 0,0) =    -cxxx;
-                                                abcCoeff2i(-1, 0,0) =  2.*cxxx;
-                                                abcCoeff2i(+1, 0,0) = -2.*cxxx;
-                                                abcCoeff2i(+2, 0,0) =     cxxx;
-                                                abcCoeff2i( 0,+1,0) =          -2.*cyyy;
-                                                abcCoeff2i( 0,+2,0) =              cyyy;                        
-                                                abcCoeff2i( 0,0,+1) =                   -2.*czzz;
-                                                abcCoeff2i( 0,0,+2) =                       czzz;                        
-                                            }
-                                        } 
+                                            abcCoeffr( 0,-1,0) =         1.*cyy;
+                                            abcCoeffr(-1, 0,0) = 1.*cxx;
+                                            abcCoeffr( 0, 0,0) =-2.*cxx -2.*cyy;
+                                            abcCoeffr(+1, 0,0) = 1.*cxx;
+                                            abcCoeffr( 0,+1,0) =         1.*cyy;
+                      // imaginary part of equation
+                                            abcCoeffi( 0,-1,0) =        -1.*cy;
+                                            abcCoeffi(-1, 0,0) = -1.*cx;
+                                            abcCoeffi(+1, 0,0) =  1.*cx;
+                                            abcCoeffi( 0,+1,0) =         1.*cy;
+                                        }
                                         else
                                         {
-                                            printF("solveHelmholtzDirect: FINISH radiation BC EM2 for this order of accuracy = %d\n",orderOfAccuracy);
-                                            OV_ABORT("ERROR");
+                      // --- THREE DIMENSIONS ---
+                                            const Real czz = axis==2 ? ca/(dx[2]*dx[2]) : .5*ca/(dx[2]*dx[2]);
+                                            const Real cz  = axis==2 ? is3*omega/(2.*dx[2]) : 0.;    
+                      // real part of equation
+                                            abcCoeffr( 0, 0,-1) =                 1.*czz;
+                                            abcCoeffr( 0,-1, 0) =         1.*cyy;
+                                            abcCoeffr(-1, 0, 0) = 1.*cxx;
+                                            abcCoeffr( 0, 0, 0) =-2.*cxx -2.*cyy -2.*czz;
+                                            abcCoeffr(+1, 0, 0) = 1.*cxx;
+                                            abcCoeffr( 0,+1, 0) =         1.*cyy;
+                                            abcCoeffr( 0, 0,+1) =                 1.*czz;
+                      // imaginary part of equation
+                                            abcCoeffi( 0, 0,-1) =                 -1.*cz;
+                                            abcCoeffi( 0,-1, 0) =        -1.*cy;
+                                            abcCoeffi(-1, 0, 0) = -1.*cx;
+                                            abcCoeffi(+1, 0, 0) =  1.*cx;
+                                            abcCoeffi( 0,+1, 0) =         1.*cy;
+                                            abcCoeffi( 0, 0,+1) =                  1.*cz;
                                         }
-
                                     }
+                                    else if( orderOfAccuracy==4 )
+                                    {  
+                                        const Real cxx = axis==0 ? ca/(12.*dx[0]*dx[0]) : .5*ca/(12.*dx[0]*dx[0]);
+                                        const Real cyy = axis==1 ? ca/(12.*dx[1]*dx[1]) : .5*ca/(12.*dx[1]*dx[1]);
+                                        const Real czz = axis==2 ? ca/(12.*dx[2]*dx[2]) : .5*ca/(12.*dx[2]*dx[2]);
+                                        const Real cx  = axis==0 ? is1*omega/(12.*dx[0]) : 0.;                
+                                        const Real cy  = axis==1 ? is2*omega/(12.*dx[1]) : 0.;
+                                        const Real cz  = axis==2 ? is3*omega/(12.*dx[2]) : 0.;
+                   // Real cxxxx = axis==0 ? ca/(dx[0]*dx[0]*dx[0]*dx[0]) : 0.;
+                   // Real cyyyy = axis==1 ? ca/(dx[1]*dx[1]*dx[1]*dx[1]) : 0.;
+                   // Real cxxyy =        .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]);
+                   // Real cxxx  = axis==0 ? is1*omega/(2.*dx[0]*dx[0]*dx[0]) : 0.;                
+                   // Real cyyy  = axis==1 ? is2*omega/(2.*dx[1]*dx[1]*dx[1]) : 0.; 
+                    // cxxxx=0.; cyyyy=0.; 
+                    // cxxyy=0.; // ** TEST 
+                    // printF("solveHelmDirect: fill EM BCs order=4 (side,axis)=(%d,%d) cxxx=%g, cyyy=%g\n",side,axis,cxxx,cyyy);                 
+                                        if( numberOfDimensions==2 )
+                                        {
+                      // real part of equation
+                                            abcCoeffr( 0,-2,0) =            -cyy;
+                                            abcCoeffr( 0,-1,0) =         16.*cyy;
+                                            abcCoeffr(-2, 0,0) =    -cxx;
+                                            abcCoeffr(-1, 0,0) = 16.*cxx;
+                                            abcCoeffr( 0, 0,0) =-30.*cxx -30.*cyy;
+                                            abcCoeffr(+1, 0,0) = 16.*cxx;
+                                            abcCoeffr(+2, 0,0) =    -cxx;
+                                            abcCoeffr( 0,+1,0) =         16.*cyy;
+                                            abcCoeffr( 0,+2,0) =            -cyy;
+                      // imaginary part of equation
+                                            abcCoeffi( 0,-2,0) =     cy;
+                                            abcCoeffi( 0,-1,0) = -8.*cy;
+                                            abcCoeffi(-2, 0,0) =     cx;
+                                            abcCoeffi(-1, 0,0) = -8.*cx;
+                                            abcCoeffi(+1, 0,0) =  8.*cx;
+                                            abcCoeffi(+2, 0,0) =    -cx;
+                                            abcCoeffi( 0,+1,0) =  8.*cy;
+                                            abcCoeffi( 0,+2,0) =    -cy;
+                                        }
+                                        else
+                                        {
+                      // real part of equation
+                                            abcCoeffr( 0,0,-2) =                      -czz;
+                                            abcCoeffr( 0,0,-1) =                   16.*czz;
+                                            abcCoeffr( 0,-2,0) =            -cyy;
+                                            abcCoeffr( 0,-1,0) =         16.*cyy;
+                                            abcCoeffr(-2, 0,0) =    -cxx;
+                                            abcCoeffr(-1, 0,0) = 16.*cxx;
+                                            abcCoeffr( 0, 0,0) =-30.*cxx -30.*cyy -30.*czz;
+                                            abcCoeffr(+1, 0,0) = 16.*cxx;
+                                            abcCoeffr(+2, 0,0) =    -cxx;
+                                            abcCoeffr( 0,+1,0) =         16.*cyy;
+                                            abcCoeffr( 0,+2,0) =            -cyy;
+                                            abcCoeffr( 0,0,+1) =                   16.*czz;
+                                            abcCoeffr( 0,0,+2) =                      -czz;
+                      // imaginary part of equation
+                                            abcCoeffi( 0,0,-2) =                   cz;
+                                            abcCoeffi( 0,0,-1) =               -8.*cz;
+                                            abcCoeffi( 0,-2,0) =            cy;
+                                            abcCoeffi( 0,-1,0) =        -8.*cy;
+                                            abcCoeffi(-2, 0,0) =     cx;
+                                            abcCoeffi(-1, 0,0) = -8.*cx;
+                                            abcCoeffi(+1, 0,0) =  8.*cx;
+                                            abcCoeffi(+2, 0,0) =    -cx;
+                                            abcCoeffi( 0,+1,0) =        8.*cy;
+                                            abcCoeffi( 0,+2,0) =          -cy;
+                                            abcCoeffi( 0,0,+1) =                8.*cz;
+                                            abcCoeffi( 0,0,+2) =                  -cz;
+                                        }
+                                    } 
                                     else
                                     {
-                                          OV_ABORT("solveHelmholtzDirect:: BC ABSORBING -- FINISH ME: curvilinear"); 
+                                        printF("solveHelmholtzDirect: FINISH radiation BC EM2 for this order of accuracy = %d\n",orderOfAccuracy);
+                                        OV_ABORT("ERROR");
                                     }
-
-                                    if( false )
-                                    {
-                                        ::display(abcCoeffr,"abcCoeffr");
-                                        ::display(abcCoeffi,"abcCoeffi");
-                                    }
-
-                                    const int ghost=2; 
+                                }
+                                else
+                                {
+                                      OV_ABORT("solveHelmholtzDirect:: BC ABSORBING -- FINISH ME: curvilinear"); 
+                                }
+                                if( false )
+                                {
+                                    ::display(abcCoeffr,"abcCoeffr");
+                                    ::display(abcCoeffi,"abcCoeffi");
+                                }              
+                                FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                {              
+                                    const int ghost=1; 
                                     int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
-
-                  // Specify that this a "real" equation on the second ghost line: 
+                  // Specify that this a "real" equation on the first ghost line: 
                   // (A "real" equation has a possible non-zero right-hand-side)
-                                    setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
-                                    setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
-
+                                    setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
+                                    setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost1);              
                                     ForStencil(m1,m2,m3)
                                     {
                     // -- Equation 1 : Real part 
-                    //     is* omega*omegaSign* DxD+D- ui + c( Dxxxx ur + .5*Dxxyy ur ) = 0 
-                                    
+                    //     is* omega*omegaSign* Dx ui + c( Dxx ur + .5*Dyy ur ) = 0 
                                         int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
-                                        coeffLocal(mr,i1m,i2m,i3m) = abcCoeff2r(m1,m2,m3);
+                                        coeffLocal(mr,i1m,i2m,i3m) = abcCoeffr(m1,m2,m3);
                                         int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
                                         setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
-
                                         int mi  = M123CE(m1,m2,m3,ic2,eq1);                        // equation 1, component 2
-                                        coeffLocal(mi,i1m,i2m,i3m) = -abcCoeff2i(m1,m2,m3);         // *CHECK SIGN 
+                                        coeffLocal(mi,i1m,i2m,i3m) = -abcCoeffi(m1,m2,m3);         // *CHECK SIGN 
                                         setEquationNumber(mi, eq1,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
-
                     // -- Equation 2 : imaginary part: 
                     //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0   
                                         mi  = M123CE(m1,m2,m3,ic2,eq2);                            // equation 2, component 2
-                                        coeffLocal(mi,i1m,i2m,i3m) =  abcCoeff2r(m1,m2,m3);
+                                        coeffLocal(mi,i1m,i2m,i3m) =  abcCoeffr(m1,m2,m3);
                                         setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
-
                                         mr  = M123CE(m1,m2,m3,ic1,eq2);                            // equation 2, component 1
-                                        coeffLocal(mr,i1m,i2m,i3m) = +abcCoeff2i(m1,m2,m3);
+                                        coeffLocal(mr,i1m,i2m,i3m) = +abcCoeffi(m1,m2,m3);
                                         setEquationNumber(mr, eq2,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
-
                                     }
                                 } // end FOR_3D
-                            } // end useCBC
-
-              // fill any extra ghost with extrapolation
-                            int startGhost = orderOfAccuracy/2+1;
-                            if( orderOfAccuracy==4 && !useCBC ) startGhost=orderOfAccuracy/2;
-                            for( int ghost=startGhost; ghost<=numberOfGhostLines; ghost++ )
-                            {
+                // Dec 17, 2025 -- we now use CBC for explicit time-stepping (but one-sided u.xxyy)
+                                bool useCBC = orderOfAccuracy==4;
+                // if( timeSteppingMethod==CgWave::explicitTimeStepping )  // turn off Dec 17, 2025
+                //   useCBC=false;  // currently explicit EM order 4 uses extrap5
+                                if( useCBC )
                                 {
-                                    assert( ok );
-                                    getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
-                                    bool okg =ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ig1,Ig2,Ig3);
-                                    coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0; // zero all coeff to start
+                  // ------------------------
+                  // --- FILL THE EM CBC ----
+                  // ------------------------
                                     FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                                     {
-                                        int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
-                    // --- fill in the coefficients of the extrapolation formula ---
-                                        for( int me=0; me<=extrapOrder; me++ )
+                                        abcCoeff2r=0.; abcCoeff2i=0.; 
+                                        if( isRectangular )
                                         {
-                                            int m0 = me + M0.getBase(); 
-                                            coeffLocal(m0,i1m,i2m,i3m) = extrapCoeff[me];
-                                            int j1=i1m + me*is1, j2=i2m + me*is2, j3=i3m + me*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
-                                            setEquationNumber(m0, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );      // macro to set equationNumber
+                                            if( orderOfAccuracy==4 )
+                                            {  
+                                                const Real cxx = axis==0 ? ca/(12.*dx[0]*dx[0]) : .5*ca/(12.*dx[0]*dx[0]);
+                                                const Real cyy = axis==1 ? ca/(12.*dx[1]*dx[1]) : .5*ca/(12.*dx[1]*dx[1]);
+                                                const Real czz = axis==2 ? ca/(12.*dx[2]*dx[2]) : .5*ca/(12.*dx[2]*dx[2]);
+                                                const Real cx  = axis==0 ? is1*omega/(12.*dx[0]) : 0.;                
+                                                const Real cy  = axis==1 ? is2*omega/(12.*dx[1]) : 0.;
+                                                const Real cz  = axis==2 ? is3*omega/(12.*dx[2]) : 0.;
+                                                Real cxxxx = axis==0 ? ca/(dx[0]*dx[0]*dx[0]*dx[0]) : 0.;
+                                                Real cyyyy = axis==1 ? ca/(dx[1]*dx[1]*dx[1]*dx[1]) : 0.;
+                                                Real czzzz = axis==2 ? ca/(dx[2]*dx[2]*dx[2]*dx[2]) : 0.;
+                                                Real cxxyy = ( axis==0 || axis==1 ) ? .5*ca/(dx[0]*dx[0]*dx[1]*dx[1]) : 0.;
+                                                Real cxxzz = ( axis==0 || axis==2 ) ? .5*ca/(dx[0]*dx[0]*dx[2]*dx[2]) : 0;
+                                                Real cyyzz = ( axis==1 || axis==2 ) ? .5*ca/(dx[1]*dx[1]*dx[2]*dx[2]) : 0;
+                                                Real cxxx  = axis==0 ? is1*omega/(2.*dx[0]*dx[0]*dx[0]) : 0.;                
+                                                Real cyyy  = axis==1 ? is2*omega/(2.*dx[1]*dx[1]*dx[1]) : 0.; 
+                                                Real czzz  = axis==2 ? is3*omega/(2.*dx[2]*dx[2]*dx[2]) : 0.; 
+                        // *** TEMP ***
+                        // cxxyy=0.; cxxzz=0.; cyyzz=0.;
+                        // cxxzz=0.; cyyzz=0.;
+                        // *** CBC ****
+                        // real part of equation
+                                                if( numberOfDimensions==2 )
+                                                {            
+                                                    abcCoeff2r(-1,-1,0) =  0.;
+                                                    abcCoeff2r(+1,-1,0) =  0.;
+                                                    abcCoeff2r( 0,-2,0) =               cyyyy;
+                                                    abcCoeff2r( 0,-1,0) =           -4.*cyyyy;
+                                                    abcCoeff2r(-2, 0,0) =     cxxxx;
+                                                    abcCoeff2r(-1, 0,0) = -4.*cxxxx;
+                                                    abcCoeff2r( 0, 0,0) =  6.*cxxxx +6.*cyyyy;
+                                                    abcCoeff2r(+1, 0,0) = -4.*cxxxx;
+                                                    abcCoeff2r(+2, 0,0) =     cxxxx;
+                                                    abcCoeff2r( 0,+1,0) =           -4.*cyyyy;
+                                                    abcCoeff2r( 0,+2,0) =               cyyyy;
+                                                    abcCoeff2r(-1,+1,0) = 0.;
+                                                    abcCoeff2r(+1,+1,0) = 0.;                 
+                          // -- ADD u.xxyy term 
+                                                    int ksv[2], &ks1=ksv[0], &ks2=ksv[1];
+                                                    ks1=0, ks2=0; // centered stencil
+                                                    if( useOneSidedXXYY )
+                                                    { 
+                            // The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy
+                            //           X--X--X
+                            //           |     |     G=ghost, B=boundary point (i1,i2)
+                            //     G--G--B--X--X     B,X = stencil for u.xxyy on left face 
+                            //           |     |
+                            //           X--X--X                        
+                                                        ks1=is1; ks2=is2;  // shift stencil inward from the boundary
+                            // check for corners and do an additional shift so only boundary and interior points are used
+                                                        int axisp1 = (axis+1) % mg.numberOfDimensions(); // adjacent axis
+                                                        for( int side2=0; side2<=1; side2++ )            // adjacent sides
+                                                        {
+                                                            if( iv[axisp1]==mg.gridIndexRange(side2,axisp1) && mg.boundaryCondition(side2,axisp1)>0 )
+                                                            {
+                                                                ksv[axisp1] = 1-2*side2;
+                                // printF("solveHelmholtzDirect: useOneSided u.xxyy (i1,i2)=%3d,%3d) (side,side2)=(%2d,%2d) (ks1,ks2)=(%2d,%2d)\n",i1,i2,side,side2,ks1,ks2);
+                                                            }
+                                                        }
+                                                    }
+                          // printF("solveHelmholtzDirect: useOneSided u.xxyy (side,axis)=(%d,%d) (i1,i2)=%3d,%3d) (ks1,ks2)=(%2d,%2d)\n",side,axis,i1,i2,ks1,ks2);
+                                                    abcCoeff2r(-1+ks1,-1+ks2,0) +=      cxxyy;
+                                                    abcCoeff2r(+1+ks1,-1+ks2,0) +=      cxxyy;
+                                                    abcCoeff2r( 0+ks1,-1+ks2,0) +=  -2.*cxxyy;
+                                                    abcCoeff2r(-1+ks1, 0+ks2,0) +=  -2.*cxxyy;
+                                                    abcCoeff2r( 0+ks1, 0+ks2,0) +=  +4.*cxxyy;
+                                                    abcCoeff2r(+1+ks1, 0+ks2,0) +=  -2.*cxxyy;
+                                                    abcCoeff2r( 0+ks1,+1+ks2,0) +=  -2.*cxxyy;
+                                                    abcCoeff2r(-1+ks1,+1+ks2,0) +=      cxxyy;
+                                                    abcCoeff2r(+1+ks1,+1+ks2,0) +=      cxxyy;
+                          // imaginary part of equation
+                                                    abcCoeff2i( 0,-2,0) =             -cyyy;
+                                                    abcCoeff2i( 0,-1,0) =           2.*cyyy;
+                                                    abcCoeff2i(-2, 0,0) =    -cxxx;
+                                                    abcCoeff2i(-1, 0,0) =  2.*cxxx;
+                                                    abcCoeff2i(+1, 0,0) = -2.*cxxx;
+                                                    abcCoeff2i(+2, 0,0) =     cxxx;
+                                                    abcCoeff2i( 0,+1,0) =          -2.*cyyy;
+                                                    abcCoeff2i( 0,+2,0) =              cyyy;
+                                                }
+                                                else
+                                                {
+                           // ---- 3D -----
+                                                    abcCoeff2r(-1,-1,0) =  0.;
+                                                    abcCoeff2r(+1,-1,0) =  0.; 
+                                                    abcCoeff2r(-1,0,-1) =  0.;
+                                                    abcCoeff2r(+1,0,-1) =  0.;
+                                                    abcCoeff2r(0,-1,-1) =  0.;
+                                                    abcCoeff2r(0,+1,-1) =  0.;
+                                                    abcCoeff2r( 0,0,-2) =                         czzzz;
+                                                    abcCoeff2r( 0,0,-1) =                     -4.*czzzz;
+                                                    abcCoeff2r( 0,-2,0) =               cyyyy;
+                                                    abcCoeff2r( 0,-1,0) =           -4.*cyyyy;
+                                                    abcCoeff2r(-2, 0,0) =     cxxxx;
+                                                    abcCoeff2r(-1, 0,0) = -4.*cxxxx;
+                                                    abcCoeff2r( 0, 0,0) =  6.*cxxxx +6.*cyyyy +6.*czzzz;
+                                                    abcCoeff2r(+1, 0,0) = -4.*cxxxx;
+                                                    abcCoeff2r(+2, 0,0) =     cxxxx;
+                                                    abcCoeff2r( 0,+1,0) =           -4.*cyyyy;
+                                                    abcCoeff2r( 0,+2,0) =               cyyyy;
+                                                    abcCoeff2r( 0,0,+1) =                     -4.*czzzz;
+                                                    abcCoeff2r( 0,0,+2) =                         czzzz;
+                                                    abcCoeff2r(-1,+1,0) = 0.;
+                                                    abcCoeff2r(+1,+1,0) = 0.;  
+                                                    abcCoeff2r(-1,0,+1) = 0.;
+                                                    abcCoeff2r(+1,0,+1) = 0.;  
+                                                    abcCoeff2r(0,-1,+1) = 0.;
+                                                    abcCoeff2r(0,+1,+1) = 0.;                 
+                          // --- ADD u.xxyy, u.xxzz, u.yyzz terms ---
+                                                    int ksv[3], &ks1=ksv[0], &ks2=ksv[1], &ks3=ksv[2];
+                                                    ks1=0, ks2=0, ks3=0; // centered stencil
+                                                    if( useOneSidedXXYY )
+                                                    { 
+                            // The CBC for EM2 at order 4 uses a one-sided approx to u.xxyy
+                            //           X--X--X
+                            //           |     |     G=ghost, B=boundary point (i1,i2)
+                            //     G--G--B--X--X     B,X = stencil for u.xxyy on left face 
+                            //           |     |
+                            //           X--X--X                        
+                                                        ks1=is1; ks2=is2; ks3=is3; // shift stencil inward from the boundary
+                            // check for corners and do an additional shift so only boundary and interior points are used
+                                                        int axisp1 = (axis+1) % mg.numberOfDimensions(); // adjacent axis
+                                                        int axisp2 = (axis+2) % mg.numberOfDimensions(); // adjacent axis
+                                                        for( int side2=0; side2<=1; side2++ )            // adjacent sides
+                                                        {
+                                                            if( iv[axisp1]==mg.gridIndexRange(side2,axisp1) && mg.boundaryCondition(side2,axisp1)>0 )
+                                                            {
+                                                                ksv[axisp1] = 1-2*side2;
+                                // printF("solveHelmholtzDirect: useOneSided u.xxyy (i1,i2)=%3d,%3d) (side,side2)=(%2d,%2d) (ks1,ks2)=(%2d,%2d)\n",i1,i2,side,side2,ks1,ks2);
+                                                            }
+                                                            if( iv[axisp2]==mg.gridIndexRange(side2,axisp2) && mg.boundaryCondition(side2,axisp2)>0 )
+                                                            {
+                                                                ksv[axisp2] = 1-2*side2;
+                                // printF("solveHelmholtzDirect: useOneSided u.xxyy (i1,i2)=%3d,%3d) (side,side2)=(%2d,%2d) (ks1,ks2)=(%2d,%2d)\n",i1,i2,side,side2,ks1,ks2);
+                                                            }                            
+                                                        }
+                                                    }
+                          // printF("solveHelmholtzDirect: useOneSided u.xxyy (side,axis)=(%d,%d) (i1,i2)=%3d,%3d) (ks1,ks2)=(%2d,%2d)\n",side,axis,i1,i2,ks1,ks2);
+                                                    abcCoeff2r(-1+ks1,-1+ks2,0) +=      cxxyy;
+                                                    abcCoeff2r(+1+ks1,-1+ks2,0) +=      cxxyy;
+                                                    abcCoeff2r( 0+ks1,-1+ks2,0) +=  -2.*cxxyy;
+                                                    abcCoeff2r(-1+ks1, 0+ks2,0) +=  -2.*cxxyy;
+                                                    abcCoeff2r( 0+ks1, 0+ks2,0) +=  +4.*cxxyy;
+                                                    abcCoeff2r(+1+ks1, 0+ks2,0) +=  -2.*cxxyy;
+                                                    abcCoeff2r( 0+ks1,+1+ks2,0) +=  -2.*cxxyy;
+                                                    abcCoeff2r(-1+ks1,+1+ks2,0) +=      cxxyy;
+                                                    abcCoeff2r(+1+ks1,+1+ks2,0) +=      cxxyy;
+                                                    abcCoeff2r(-1+ks1,0,-1+ks3) +=      cxxzz;
+                                                    abcCoeff2r(+1+ks1,0,-1+ks3) +=      cxxzz;
+                                                    abcCoeff2r( 0+ks1,0,-1+ks3) +=  -2.*cxxzz;
+                                                    abcCoeff2r(-1+ks1,0, 0+ks3) +=  -2.*cxxzz;
+                                                    abcCoeff2r( 0+ks1,0, 0+ks3) +=  +4.*cxxzz;
+                                                    abcCoeff2r(+1+ks1,0, 0+ks3) +=  -2.*cxxzz;
+                                                    abcCoeff2r( 0+ks1,0,+1+ks3) +=  -2.*cxxzz;
+                                                    abcCoeff2r(-1+ks1,0,+1+ks3) +=      cxxzz;
+                                                    abcCoeff2r(+1+ks1,0,+1+ks3) +=      cxxzz;
+                                                    abcCoeff2r(0,-1+ks2,-1+ks3) +=      cyyzz;
+                                                    abcCoeff2r(0,+1+ks2,-1+ks3) +=      cyyzz;
+                                                    abcCoeff2r(0, 0+ks2,-1+ks3) +=  -2.*cyyzz;
+                                                    abcCoeff2r(0,-1+ks2, 0+ks3) +=  -2.*cyyzz;
+                                                    abcCoeff2r(0, 0+ks2, 0+ks3) +=  +4.*cyyzz;
+                                                    abcCoeff2r(0,+1+ks2, 0+ks3) +=  -2.*cyyzz;
+                                                    abcCoeff2r(0, 0+ks2,+1+ks3) +=  -2.*cyyzz;
+                                                    abcCoeff2r(0,-1+ks2,+1+ks3) +=      cyyzz;
+                                                    abcCoeff2r(0,+1+ks2,+1+ks3) +=      cyyzz;
+                          // imaginary part of equation
+                                                    abcCoeff2i( 0,0,-2) =                      -czzz;
+                                                    abcCoeff2i( 0,0,-1) =                    2.*czzz;
+                                                    abcCoeff2i( 0,-2,0) =             -cyyy;
+                                                    abcCoeff2i( 0,-1,0) =           2.*cyyy;
+                                                    abcCoeff2i(-2, 0,0) =    -cxxx;
+                                                    abcCoeff2i(-1, 0,0) =  2.*cxxx;
+                                                    abcCoeff2i(+1, 0,0) = -2.*cxxx;
+                                                    abcCoeff2i(+2, 0,0) =     cxxx;
+                                                    abcCoeff2i( 0,+1,0) =          -2.*cyyy;
+                                                    abcCoeff2i( 0,+2,0) =              cyyy;                        
+                                                    abcCoeff2i( 0,0,+1) =                   -2.*czzz;
+                                                    abcCoeff2i( 0,0,+2) =                       czzz;                        
+                                                }
+                                            } 
+                                            else
+                                            {
+                                                printF("solveHelmholtzDirect: FINISH radiation BC EM2 for this order of accuracy = %d\n",orderOfAccuracy);
+                                                OV_ABORT("ERROR");
+                                            }
+                                        }
+                                        else
+                                        {
+                                              OV_ABORT("solveHelmholtzDirect:: BC ABSORBING -- FINISH ME: curvilinear"); 
+                                        }
+                                        if( false )
+                                        {
+                                            ::display(abcCoeffr,"abcCoeffr");
+                                            ::display(abcCoeffi,"abcCoeffi");
+                                        }
+                                        const int ghost=2; 
+                                        int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                    // Specify that this a "real" equation on the second ghost line: 
+                    // (A "real" equation has a possible non-zero right-hand-side)
+                                        setClassify(eq1,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
+                                        setClassify(eq2,i1m,i2m,i3m, SparseRepForMGF::ghost2);              
+                                        ForStencil(m1,m2,m3)
+                                        {
+                      // -- Equation 1 : Real part 
+                      //     is* omega*omegaSign* DxD+D- ui + c( Dxxxx ur + .5*Dxxyy ur ) = 0 
+                                            int mr  = M123CE(m1,m2,m3,ic1,eq1);                        // equation 1, component 1
+                                            coeffLocal(mr,i1m,i2m,i3m) = abcCoeff2r(m1,m2,m3);
+                                            int j1=i1+m1, j2=i2+m2, j3=i3+m3;                          // the stencil is centred on the boundary pt (i1,i2,i3)
+                                            setEquationNumber(mr, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
+                                            int mi  = M123CE(m1,m2,m3,ic2,eq1);                        // equation 1, component 2
+                                            coeffLocal(mi,i1m,i2m,i3m) = -abcCoeff2i(m1,m2,m3);         // *CHECK SIGN 
+                                            setEquationNumber(mi, eq1,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
+                      // -- Equation 2 : imaginary part: 
+                      //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0   
+                                            mi  = M123CE(m1,m2,m3,ic2,eq2);                            // equation 2, component 2
+                                            coeffLocal(mi,i1m,i2m,i3m) =  abcCoeff2r(m1,m2,m3);
+                                            setEquationNumber(mi, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );    
+                                            mr  = M123CE(m1,m2,m3,ic1,eq2);                            // equation 2, component 1
+                                            coeffLocal(mr,i1m,i2m,i3m) = +abcCoeff2i(m1,m2,m3);
+                                            setEquationNumber(mr, eq2,i1m,i2m,i3m,  ic1,j1,j2,j3 );    
                                         }
                                     } // end FOR_3D
-                                }
+                                } // end useCBC
+                // fill any extra ghost with extrapolation
+                                int startGhost = orderOfAccuracy/2+1;
+                                if( orderOfAccuracy==4 && !useCBC ) startGhost=orderOfAccuracy/2;
+                                for( int ghost=startGhost; ghost<=numberOfGhostLines; ghost++ )
                                 {
-                                    assert( ok );
-                                    getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
-                                    bool okg =ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ig1,Ig2,Ig3);
-                                    coeffLocal(M1,Ig1,Ig2,Ig3) = 0.0; // zero all coeff to start
-                                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                                     {
-                                        int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
-                    // --- fill in the coefficients of the extrapolation formula ---
-                                        for( int me=0; me<=extrapOrder; me++ )
+                                        assert( ok );
+                                        getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
+                                        bool okg =ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ig1,Ig2,Ig3);
+                                        coeffLocal(M0,Ig1,Ig2,Ig3) = 0.0; // zero all coeff to start
+                                        FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
                                         {
-                                            int m0 = me + M1.getBase(); 
-                                            coeffLocal(m0,i1m,i2m,i3m) = extrapCoeff[me];
-                                            int j1=i1m + me*is1, j2=i2m + me*is2, j3=i3m + me*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
-                                            setEquationNumber(m0, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );      // macro to set equationNumber
-                                        }
-                                    } // end FOR_3D
-                                }
-                            } // end for ghost
+                                            int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                      // --- fill in the coefficients of the extrapolation formula ---
+                                            for( int me=0; me<=extrapOrder; me++ )
+                                            {
+                                                int m0 = me + M0.getBase(); 
+                                                coeffLocal(m0,i1m,i2m,i3m) = extrapCoeff[me];
+                                                int j1=i1m + me*is1, j2=i2m + me*is2, j3=i3m + me*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+                                                setEquationNumber(m0, eq1,i1m,i2m,i3m,  ic1,j1,j2,j3 );      // macro to set equationNumber
+                                            }
+                                        } // end FOR_3D
+                                    }
+                                    {
+                                        assert( ok );
+                                        getGhostIndex(mg.gridIndexRange(),side,axis,Ig1,Ig2,Ig3,ghost);
+                                        bool okg =ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ig1,Ig2,Ig3);
+                                        coeffLocal(M1,Ig1,Ig2,Ig3) = 0.0; // zero all coeff to start
+                                        FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                        {
+                                            int i1m=i1-is1*ghost, i2m=i2-is2*ghost, i3m=i3-is3*ghost; //  ghost point is (i1m,i2m,i3m)
+                      // --- fill in the coefficients of the extrapolation formula ---
+                                            for( int me=0; me<=extrapOrder; me++ )
+                                            {
+                                                int m0 = me + M1.getBase(); 
+                                                coeffLocal(m0,i1m,i2m,i3m) = extrapCoeff[me];
+                                                int j1=i1m + me*is1, j2=i2m + me*is2, j3=i3m + me*is3;     // index of point "m" in extrap formula is shifted in the direction (is1,is2,is3)
+                                                setEquationNumber(m0, eq2,i1m,i2m,i3m,  ic2,j1,j2,j3 );      // macro to set equationNumber
+                                            }
+                                        } // end FOR_3D
+                                    }
+                                } // end for ghost 
 
                         }
                         else if(  mg.boundaryCondition(side,axis)> 0 )
@@ -2783,6 +3251,19 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                         }
                     }
                 }
+                else if( mg.boundaryCondition(side,axis)==CgWave::neumann )
+                {
+          // getBoundaryIndex(mg.gridIndexRange(),side,axis,Ib1,Ib2,Ib3);
+          // bool ok=ParallelUtility::getLocalArrayBounds(f[grid],fLocal,Ib1,Ib2,Ib3);
+
+                  if( solveForScatteredField )
+                  {
+                      printF("solveHelmholtzDirect:ERROR: Neumann BC for scattered filed not implemented yet : (side,axis,grid)=(%d,%d,%d)\n",side,axis,grid);
+                      OV_ABORT("error");          
+                  }
+
+
+                }
                 else if( mg.boundaryCondition(side,axis)==CgWave::absorbing || 
                                   mg.boundaryCondition(side,axis)==CgWave::abcEM2 )
                 {
@@ -2796,6 +3277,11 @@ int CgWaveHoltz::solveHelmholtzDirect( realCompositeGridFunction & u, realCompos
                             fcLocal(Ig1,Ig2,Ig3,R2)=0.;
                     }
 
+                }
+                else if( mg.boundaryCondition(side,axis)>0 )
+                {
+                    printF("solveHelmholtzDirect:ERROR: unknown bc=%d on (side,axis,grid)=(%d,%d,%d)\n",mg.boundaryCondition(side,axis),side,axis,grid);
+                    OV_ABORT("error");
                 }
             } // end ForBoundary
 

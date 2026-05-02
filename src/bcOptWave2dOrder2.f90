@@ -124,6 +124,7 @@
    real tp,tm,x,y,z,utx,uty,utz
    real p0,p2,c1abcem2,c2abcem2
    integer ex,idir
+   integer useCompatiblityRBC, startGhost
    ! --- forcing options ----
    ! These must match the values in CgWave.h: 
    ! enum ForcingOptionEnum
@@ -1093,12 +1094,22 @@ real uyyzz
 real uzzzz
   real ux,uy,uz
   real uxxx,uxxy,uxyy,uyyy,uxxz,uxzz,uzzz,uyyz,uyzz,uxyz
+  real unxxx22r, unyyy22r
+  real unxxxx22r, unyyyy22r, unxxyy22r
    ! 4th-order 1 sided derivative  extrap=(1 5 10 10 5 1)
    uxOneSided(i1,i2,i3,m)=-(10./3.)*u(i1,i2,i3,m)+6.*u(i1+is1,i2+is2,i3+is3,m)-2.*u(i1+2*is1,i2+2*is2,i3+2*is3,m)+(1./3.)*u(i1+3*is1,i2+3*is2,i3+3*is3,m)
    ! 2D laplacian squared = u.xxxx + 2 u.xxyy + u.yyyy
    lap2d2Pow2(i1,i2,i3,m)= ( 6.*u(i1,i2,i3,m)   - 4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m))    +(u(i1+2,i2,i3,m)+u(i1-2,i2,i3,m)) )/(dx(0)**4) +( 6.*u(i1,i2,i3,m)    -4.*(u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m))    +(u(i1,i2+2,i3,m)+u(i1,i2-2,i3,m)) )/(dx(1)**4)  +( 8.*u(i1,i2,i3,m)     -4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m)+u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m))   +2.*(u(i1+1,i2+1,i3,m)+u(i1-1,i2+1,i3,m)+u(i1+1,i2-1,i3,m)+u(i1-1,i2-1,i3,m)) )/( (dx(0)*dx(1))**2 )
    ! 3D laplacian squared = u.xxxx + u.yyyy + u.zzzz + 2 (u.xxyy + u.xxzz + u.yyzz )
    lap3d2Pow2(i1,i2,i3,m)= ( 6.*u(i1,i2,i3,m)   - 4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m))    +(u(i1+2,i2,i3,m)+u(i1-2,i2,i3,m)) )/(dx(0)**4) +(  +6.*u(i1,i2,i3,m)    -4.*(u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m))    +(u(i1,i2+2,i3,m)+u(i1,i2-2,i3,m)) )/(dx(1)**4)+(  +6.*u(i1,i2,i3,m)    -4.*(u(i1,i2,i3+1,m)+u(i1,i2,i3-1,m))    +(u(i1,i2,i3+2,m)+u(i1,i2,i3-2,m)) )/(dx(2)**4)+(8.*u(i1,i2,i3,m)     -4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m)+u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m))   +2.*(u(i1+1,i2+1,i3,m)+u(i1-1,i2+1,i3,m)+u(i1+1,i2-1,i3,m)+u(i1-1,i2-1,i3,m)) )/( (dx(0)*dx(1))**2 ) +(8.*u(i1,i2,i3,m)     -4.*(u(i1+1,i2,i3,m)+u(i1-1,i2,i3,m)+u(i1,i2,i3+1,m)+u(i1,i2,i3-1,m))   +2.*(u(i1+1,i2,i3+1,m)+u(i1-1,i2,i3+1,m)+u(i1+1,i2,i3-1,m)+u(i1-1,i2,i3-1,m)) )/( (dx(0)*dx(2))**2 ) +(8.*u(i1,i2,i3,m)     -4.*(u(i1,i2+1,i3,m)+u(i1,i2-1,i3,m)+u(i1,i2,i3+1,m)+u(i1,i2,i3-1,m))   +2.*(u(i1,i2+1,i3+1,m)+u(i1,i2-1,i3+1,m)+u(i1,i2+1,i3-1,m)+u(i1,i2-1,i3-1,m)) )/( (dx(1)*dx(2))**2 ) 
+   ! D0 (D_D-) 
+   unxxx22r(i1,i2,i3,m) = ( -un(i1-2,i2,i3,m) +2.*un(i1-1,i2,i3,m) -2.*un(i1+1,i2,i3,m) + un(i1+2,i2,i3,m) )/(2.*dx(0)**3) 
+   unyyy22r(i1,i2,i3,m) = ( -un(i1,i2-2,i3,m) +2.*un(i1,i2-1,i3,m) -2.*un(i1,i2+1,i3,m) + un(i1,i2+2,i3,m) )/(2.*dx(1)**3) 
+   ! (D+D-)^2
+   unxxxx22r(i1,i2,i3,m) = ( 6.*un(i1,i2,i3,m) -4.*un(i1-1,i2,i3,m) -4.*un(i1+1,i2,i3,m) + un(i1-2,i2,i3,m) + un(i1+2,i2,i3,m) )/(dx(0)**4) 
+   unyyyy22r(i1,i2,i3,m) = ( 6.*un(i1,i2,i3,m) -4.*un(i1,i2-1,i3,m) -4.*un(i1,i2+1,i3,m) + un(i1,i2-2,i3,m) + un(i1,i2+2,i3,m) )/(dx(1)**4)
+   ! (D+xD-x)(D_yD-y) 
+   unxxyy22r(i1,i2,i3,m) = ( 4.*un(i1,i2,i3,m) -2.*un(i1-1,i2,i3,m) -2.*un(i1+1,i2,i3,m) -2.*un(i1,i2-1,i3,m) -2.*un(i1,i2+1,i3,m) + un(i1-1,i2-1,i3,m) + un(i1+1,i2-1,i3,m) + un(i1-1,i2+1,i3,m) + un(i1+1,i2+1,i3,m) )/(dx(0)**2 * dx(1)**2 )
    ! ! Here is the the generic boundary condition forcing array. It uses the bcOffset(side,axis) values as an
    ! ! an offset from the bcf0 array to access the bcf10, bcf01, bcf11, ... arrays
    ! bcf(side,axis,i1,i2,i3,m) = bcf0(bcOffset(side,axis) + !     (i1-dim(0,0,side,axis)+(dim(1,0,side,axis)-dim(0,0,side,axis)+1)* !     (i2-dim(0,1,side,axis)+(dim(1,1,side,axis)-dim(0,1,side,axis)+1)* !     (i3-dim(0,2,side,axis)+(dim(1,2,side,axis)-dim(0,2,side,axis)+1)*(m)))))
@@ -1196,11 +1207,11 @@ real uzzzz
      return
    end if
    if( t.le.3*dt .and. debug.gt.1 )then
-   ! if( .true. )then
+   ! if( t.le.3*dt  )then
      write(*,'(" bcOptWave: nd=",i2," grid=",i4," gridType=",i2," orderOfAccuracy=",i2," uc=",i3," twilightZone=",i2)') nd,grid,gridType,orderOfAccuracy,uc,twilightZone
      write(*,'("  addForcingBC=",i4," forcingOption=",i4," assignKnownSolutionAtBoundaries=",i4)') addForcingBC, forcingOption, assignKnownSolutionAtBoundaries
      write(*,'("  t=",e10.2," dt=",e10.2," knownSolutionOption=",i4," REAL_MIN=",e10.2)') t,dt,knownSolutionOption,REAL_MIN
-     write(*,'("  abcWave: c=",e14.6," cEM2=",e14.6)') c,cEM2
+     write(*,'("  for abcWave: c=",e14.6," cEM2=",e14.6)') c,cEM2
      write(*,'("  useUpwindDissipation=",i2," numGhost=",i2," assignCornerGhostPoints=",i2)') useUpwindDissipation,numGhost,assignCornerGhostPoints
      write(*,'("  assignBCForImplicit=",i4," bcApproach=",i4," gridIsImplicit=",i2)') assignBCForImplicit,bcApproach,gridIsImplicit
      write(*,'("  boundaryCondition=",6i4)') ((boundaryCondition(side,axis),side=0,1),axis=0,2)
@@ -2167,20 +2178,50 @@ real uzzzz
            !   write(*,*) "bcOpt: assign RHS for implicit EM2: assignBCForImplicit, side,axis,cEM2=",assignBCForImplicit, side,axis,cEM2
            ! end if
            if( gridType.eq.rectangular )then
+             useCompatiblityRBC = 1  ! 1 =  apply a CBC for the 2nd ghost line on an EM2 boundary
+             ! rhs for extrapolation conditions
+             if( useCompatiblityRBC==1 )then
+               startGhost=3
+             else
+               startGhost=2
+             end if        
               do i3=n3a,n3b
               do i2=n2a,n2b
               do i1=n1a,n1b
                if( mask(i1,i2,i3).ne.0 )then
                  j1  = i1-is1; j2  = i2-is2; j3  = i3-is3;     ! ghost 
                  i1p = i1+is1; i2p = i2+is2; i3p = i3+is3;     ! first line inside
-                 ! We need current solution un here
-                 ! res = -is*(unx-ucx)/dt + (.5*c)*( unxx + ucxx) + (.25*c)*( unyy + ucyy );
+                 ! ** We need to match the formula in implicit.bC
+                 ! 
+                 ! Engquist-Majda order2 scheme: 
+                 !  -is*D+t ( D0x W^n) + D+xD-x .5*(W^{n+1} + W^n ) + .5* D+yD-y .5*(W^{n+1} + W^n ) = 0 
+                 !  -is*D+t ( D0x W^n) + L*( .5 W^{n+1} + .5*W^n ) = 0 
+                 !  -is ( D0x W^{n+1} - W^n )/dt + L*( .5 W^{n+1} + .5*W^n ) = 0 
+                 !  -is*D0x W^{n+1}/dt + .5*L W^{n+1} = -is*D0xW^n/dt - .5*L W^n            
                  if( assignBCForImplicit.eq.1 )then
-                   if( axis==0 )then
-                     u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                    - .5*(   ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   - .5*(.5*ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) ) 
+                   if( orderOfAccuracy==2 )then
+                     if( axis==0 )then
+                       u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                    - .5*(   ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   - .5*(.5*ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) ) 
+                     else
+                       u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                     - .5*( .5*ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   - .5*(    ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) )                   
+                     end if 
+                   else if( orderOfAccuracy==4 )then
+                     ! else
+                     !   ! OLD WAY 
+                     !   if( axis==0 )then
+                     !     u(j1,j2,j3,uc) =  -is1*unx42r(i1,i2,i3,uc)/(dt) !               - .5*(   ca*unxx42r(i1,i2,i3,uc) )    !               - .5*(.5*ca*unyy42r(i1,i2,i3,uc) ) 
+                     !     ! ghost 2:
+                     !     u(j1-is1,j2-is2,j3,uc) =  -is1*unxxx22r(i1,i2,i3,uc)/(dt) !                       - .5*(   ca*unxxxx22r(i1,i2,i3,uc) )    !                       - .5*(.5*ca*unxxyy22r(i1,i2,i3,uc) )                   
+                     !   else
+                     !     u(j1,j2,j3,uc) =  -is2*uny42r(i1,i2,i3,uc)/(dt) !               - .5*(.5*ca*unxx42r(i1,i2,i3,uc) )    !               - .5*(   ca*unyy42r(i1,i2,i3,uc) ) 
+                     !     ! ghost 2: 
+                     !     u(j1-is1,j2-is2,j3,uc) =  -is2*unyyy22r(i1,i2,i3,uc)/(dt) !                       - .5*(.5*ca*unxxyy22r(i1,i2,i3,uc) )    !                       - .5*(   ca*unyyyy22r(i1,i2,i3,uc) )                                               
+                     !   end if 
+                     ! end if
                    else
-                     u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                     - .5*( .5*ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   - .5*(    ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) )                   
-                   end if 
+                     write(*,*) "bcOpt: assign RHS for implicit EM2: finish me for orderOfAccuracy=",orderOfAccuracy
+                     stop 6661
+                   end if
                    if( assignTwilightZone.eq.1 )then
                      ! CHECK ME -- added Oct 1, 2024
                      ! macro: 
@@ -2306,7 +2347,7 @@ real uzzzz
                     ! Bc for direct Helmholtz solve
                     u(j1,j2,j3,uc) = 0.
                  end if
-                 do ghost=2,numGhost
+                 do ghost=startGhost,numGhost
                    j1=i1-is1*ghost
                    j2=i2-is2*ghost
                    j3=i3-is3*ghost
@@ -4156,11 +4197,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "2" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -4253,11 +4294,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "2" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -4340,11 +4381,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "2" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -4450,11 +4491,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "2" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -4578,11 +4619,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "2" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -4681,11 +4722,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "2" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -4776,11 +4817,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "2" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -4892,11 +4933,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "2" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -5885,7 +5926,13 @@ real uzzzz
                !   write(*,'("Assign special Neumann corners conditions ")')
                ! end if
                ! cornerBC(side1,side2,side3)=taylor4thOrderEvenCorner
-               ! cornerBC(side1,side2,side3)=evenSymmetryCorner
+               if( assignTwilightZone.eq.0 )then 
+                 ! *wdh* May 1, 2206
+                 if( t .le. dt )then
+                   write(*,'("bcOptWave: assign even symmetry at Neumann-Neumman corner, side1,side2,side3=",3i2)') side1,side2,side3
+                 end if
+                 cornerBC(side1,side2,side3)=evenSymmetryCorner
+               end if
                ! cornerBC(side1,side2,side3)=0 
              else if(            bc(side1,0).eq.exactBC .and. bc(side2,1).eq.exactBC .and. ( nd.eq.2 .or. bc(side3,2).eq.exactBC ) )then
                ! ---- Do nothing at this exact corner 

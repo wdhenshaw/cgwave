@@ -171,7 +171,7 @@ if( $bc3 ne "" ){ $cmd .="\n bcNumber3=$bc3"; }
 if( $bc4 ne "" ){ $cmd .="\n bcNumber4=$bc4"; }
 if( $bc5 ne "" ){ $cmd .="\n bcNumber5=$bc5"; }
 if( $bc6 ne "" ){ $cmd .="\n bcNumber6=$bc6"; }
-printf('cmd=$cmd\n");')
+# printf('cmd=$cmd\n");')
 $cmd
 # pause
 # -- put his here for now:
@@ -238,6 +238,7 @@ if( $go eq "df"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n co
 if( $go eq "dks"  ){ $cmd="solve Helmholtz directly\n zero initial condition\n compute with krylov\n save to show\n exit"; }
 if( $go eq "fk" ){ $cmd="zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
 if( $go eq "dfk" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\nexit"; }
+if( $go eq "fks" ){ $cmd="zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\n save to show\nexit"; }
 if( $go eq "dfks" ){ $cmd="solve Helmholtz directly\n zero initial condition\ncompute with fixed-point\n zero initial condition\n compute with krylov\n save to show\nexit"; }
 if( $go eq "ks"  ){ $cmd="zero initial condition\n compute with krylov\n save to show\n exit"; }
 if( $go eq "k"  ){ $cmd="zero initial condition\n compute with krylov\n exit"; }

@@ -482,7 +482,8 @@
            do side1=0,1
              bc1 = bc(side1,0)
              bc2 = bc(side2,1)
-             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC )then
+             ! *wdh* May 1, 2026 -- corners with absorbing BC's are done in abcWave.bf90
+             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC .and. bc1.ne.abcEM2 .and. bc1.ne.absorbing .and. bc2.ne.abcEM2 .and. bc2.ne.absorbing )then
                if( ( bc1.ne.dirichlet .and. bc1.ne.exactBC .and. bc1.ne.neumann ) )then
                  write(*,*) "Un-supported corner bc1=",bc1
                  stop 2222
@@ -688,7 +689,8 @@
            do side1=0,1
              bc1 = bc(side1,0)
              bc2 = bc(side2,1)
-             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC )then
+             ! *wdh* May 1, 2026 -- corners with absorbing BC's are done in abcWave.bf90
+             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC .and. bc1.ne.abcEM2 .and. bc1.ne.absorbing .and. bc2.ne.abcEM2 .and. bc2.ne.absorbing )then
                if( ( bc1.ne.dirichlet .and. bc1.ne.exactBC .and. bc1.ne.neumann ) )then
                  write(*,*) "Un-supported corner bc1=",bc1
                  stop 2222
@@ -833,9 +835,11 @@
                              u(j1,j2,j3,0) =                       - symSign*ue2 + ue1 
                ! write(*,'("Edge: ghost j1,j2,j3=",3i4," k1,k2,k3=",3i4," u=",e10.2," err=",e9.2)') j1,j2,j3,k1,k2,k3,u(j1,j2,j3,0),u(j1,j2,j3,0)-ue1
                          else
-                           ! finish me 
-                           write(*,*) "EdgeBC: finish me for forcing option"
-                           stop 3333
+                           ! Here we assume the forcing is zero on the boundary
+                             u(j1,j2,j3,0) = 0.;
+                           ! ! finish me 
+                           ! write(*,*) "EdgeBC: finish me for forcing option"
+                           ! stop 3333
                          end if
                      end do
                      end do     
@@ -885,9 +889,11 @@
                            call ogDeriv(ep,0,0,0,0,xy(k1,k2,k3,0),xy(k1,k2,k3,1),xy(k1,k2,k3,2),t,uc,ue2 )
                          u(j1,j2,j3,0) =                       - symSign*ue2 + ue1 
                      else
-                       ! finish me 
-                       write(*,*) "SymBC: finish me for forcing option"
-                       stop 3333
+                       ! assume forcing is zero on the boundary
+                         u(j1,j2,j3,0) = 0.
+                       ! ! finish me 
+                       ! write(*,*) "SymBC: finish me for forcing option"
+                       ! stop 3333
                      end if
                  end do
                  end do          
@@ -923,7 +929,8 @@
            do side1=0,1
              bc1 = bc(side1,0)
              bc2 = bc(side2,1)
-             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC )then
+             ! *wdh* May 1, 2026 -- corners with absorbing BC's are done in abcWave.bf90
+             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC .and. bc1.ne.abcEM2 .and. bc1.ne.absorbing .and. bc2.ne.abcEM2 .and. bc2.ne.absorbing )then
                if( ( bc1.ne.dirichlet .and. bc1.ne.exactBC .and. bc1.ne.neumann ) )then
                  write(*,*) "Un-supported corner bc1=",bc1
                  stop 2222
@@ -1125,7 +1132,8 @@
            do side1=0,1
              bc1 = bc(side1,0)
              bc2 = bc(side2,1)
-             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC )then
+             ! *wdh* May 1, 2026 -- corners with absorbing BC's are done in abcWave.bf90
+             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC .and. bc1.ne.abcEM2 .and. bc1.ne.absorbing .and. bc2.ne.abcEM2 .and. bc2.ne.absorbing )then
                if( ( bc1.ne.dirichlet .and. bc1.ne.exactBC .and. bc1.ne.neumann ) )then
                  write(*,*) "Un-supported corner bc1=",bc1
                  stop 2222
@@ -1266,9 +1274,11 @@
                            u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0) - symSign*ue2 + ue1 
                ! write(*,'("Edge: ghost j1,j2,j3=",3i4," k1,k2,k3=",3i4," u=",e10.2," err=",e9.2)') j1,j2,j3,k1,k2,k3,u(j1,j2,j3,0),u(j1,j2,j3,0)-ue1
                          else
-                           ! finish me 
-                           write(*,*) "EdgeBC: finish me for forcing option"
-                           stop 3333
+                           ! Here we assume the forcing is zero on the boundary
+                            u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0)
+                           ! ! finish me 
+                           ! write(*,*) "EdgeBC: finish me for forcing option"
+                           ! stop 3333
                          end if
                      end do
                      end do     
@@ -1320,9 +1330,11 @@
                            call ogDeriv(ep,0,0,0,0,xy(k1,k2,k3,0),xy(k1,k2,k3,1),xy(k1,k2,k3,2),t,uc,ue2 )
                        u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0) - symSign*ue2 + ue1 
                      else
+                       ! assume forcing is zero on the boundary 
+                       u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0)
                        ! finish me 
-                       write(*,*) "SymBC: finish me for forcing option"
-                       stop 3333
+                       ! write(*,*) "SymBC: finish me for forcing option"
+                       ! stop 3333
                      end if
                  end do
                  end do          
@@ -1355,7 +1367,8 @@
            do side1=0,1
              bc1 = bc(side1,0)
              bc2 = bc(side2,1)
-             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC )then
+             ! *wdh* May 1, 2026 -- corners with absorbing BC's are done in abcWave.bf90
+             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC .and. bc1.ne.abcEM2 .and. bc1.ne.absorbing .and. bc2.ne.abcEM2 .and. bc2.ne.absorbing )then
                if( ( bc1.ne.dirichlet .and. bc1.ne.exactBC .and. bc1.ne.neumann ) )then
                  write(*,*) "Un-supported corner bc1=",bc1
                  stop 2222
@@ -1561,7 +1574,8 @@
            do side1=0,1
              bc1 = bc(side1,0)
              bc2 = bc(side2,1)
-             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC )then
+             ! *wdh* May 1, 2026 -- corners with absorbing BC's are done in abcWave.bf90
+             if( bc1.gt.0 .and. bc2.gt.0 .and. bc1.ne.exactBC .and. bc2.ne.exactBC .and. bc1.ne.abcEM2 .and. bc1.ne.absorbing .and. bc2.ne.abcEM2 .and. bc2.ne.absorbing )then
                if( ( bc1.ne.dirichlet .and. bc1.ne.exactBC .and. bc1.ne.neumann ) )then
                  write(*,*) "Un-supported corner bc1=",bc1
                  stop 2222
@@ -1706,9 +1720,11 @@
                              u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0) - symSign*ue2 + ue1 
                ! write(*,'("Edge: ghost j1,j2,j3=",3i4," k1,k2,k3=",3i4," u=",e10.2," err=",e9.2)') j1,j2,j3,k1,k2,k3,u(j1,j2,j3,0),u(j1,j2,j3,0)-ue1
                          else
-                           ! finish me 
-                           write(*,*) "EdgeBC: finish me for forcing option"
-                           stop 3333
+                           ! Here we assume the forcing is zero on the boundary
+                             u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0);
+                           ! ! finish me 
+                           ! write(*,*) "EdgeBC: finish me for forcing option"
+                           ! stop 3333
                          end if
                      end do
                      end do     
@@ -1758,9 +1774,11 @@
                            call ogDeriv(ep,0,0,0,0,xy(k1,k2,k3,0),xy(k1,k2,k3,1),xy(k1,k2,k3,2),t,uc,ue2 )
                          u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0) - symSign*ue2 + ue1 
                      else
-                       ! finish me 
-                       write(*,*) "SymBC: finish me for forcing option"
-                       stop 3333
+                       ! assume forcing is zero on the boundary
+                         u(j1,j2,j3,0) = symSign*u(k1,k2,k3,0)
+                       ! ! finish me 
+                       ! write(*,*) "SymBC: finish me for forcing option"
+                       ! stop 3333
                      end if
                  end do
                  end do          

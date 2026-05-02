@@ -3632,12 +3632,20 @@
         is3=0
         do side1=0,1
         do side2=0,1
+          is1=1-2*side1
+          is2=1-2*side2
+          is3 = 0       
          bc1=boundaryCondition(side1,0)
          bc2=boundaryCondition(side2,1)
          if( ((bc1.eq.abcEM2 .or. bc1.eq.absorbing) .and. bc2.gt.0 ) .or. ((bc2.eq.abcEM2 .or. bc2.eq.absorbing) .and. bc1.gt.0 ) )then
-           ! --- One of the faces at this corner is an ABC and the other has bc>0 ---         
-           ! Adjacent side is also an ABC: 
-           adjacentFaceIsABC = bc1.eq.abcEM2 .or. bc1.eq.absorbing .and. bc2.eq.abcEM2 .or. bc2.eq.absorbing
+           ! --- One of the faces at this corner is an ABC and the other has bc>0 --- 
+           if( debug.gt.8 )then
+             write(*,'(" ABC:corner (one adjacent face is an ABC) grid,side1,side2=",3i3," bc1,bc2=",2i3)') grid,side1,side2,bc1,bc2
+           end if
+           ! Adjacent side is also an ABC:  
+           ! *wdh* May 1, 2026 FIXED THIS 
+           adjacentFaceIsABC = (bc1.eq.abcEM2 .or. bc1.eq.absorbing) .and. (bc2.eq.abcEM2 .or. bc2.eq.absorbing)
+           ! adjacentFaceIsABC = bc1.eq.abcEM2 .or. bc1.eq.absorbing .and. !                     bc2.eq.abcEM2 .or. bc2.eq.absorbing
            i1=gridIndexRange(side1,0) ! (i1,i2,i3)=corner point
            i2=gridIndexRange(side2,1)
            if( mask(i1,i2,i3).gt.0 )then ! *wdh* 090712
@@ -3672,9 +3680,9 @@
             !  [ a31 a32 a33 a34 ][ uC ]   [ a31 a32 a33 a34 ][ uC_old ]   [ f3(u_old) ]   
             !  [ a41 a42 a43 a44 ][ uD ]   [ a41 a42 a43 a44 ][ uD_old ]   [ f4(u_old) ]   
             if( adjacentFaceIsABC )then
-              is1=1-2*side1
-              is2=1-2*side2
-              is3 = 0 
+              if( debug.gt.8 )then
+                write(*,'(" ABC:corner order 4 adjacentFaceIsABC: grid,side1,side2,i1,i2=",3i3,2i5)') grid,side1,side2,i1,i2          
+              end if
               if( .true. .and. gridType.eq.rectangular )then
                 ! === NEW WAY Dec 16, 2025 ====
                 !  Use compatibility equations for 2nd ghost point
@@ -4080,55 +4088,87 @@
               end if
             else 
               ! --- adjacent face is NOT another ABC ---
-              ! Extrapolate -- do this for now
-              extrapOrder=5
-              if( bc1.ne.symmetryBoundaryCondition )then
-                  ksv(0)=0
-                  ksv(1)=0
-                  ksv(2)=0
-                  ksv(0)=1-2*side1
-                  ks1=ksv(0)
-                  ks2=ksv(1)
-                  ks3=ksv(2)
-                  if( extrapOrder.eq.3 )then
-                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+ks1,i2+ks2,i3+ks3,ex)+un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex))
-                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap3(un,i1,i2,i3,ey,ks1,ks2,ks3)
-                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap3(un,i1,i2,i3,hz,ks1,ks2,ks3)
-                  else if( extrapOrder.eq.5 )then
-                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(5.*un(i1,i2,i3,ex)-10.*un(i1+ks1,i2+ks2,i3+ks3,ex)+10.*un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex)-5.*un(i1+3*ks1,i2+3*ks2,i3+3*ks3,ex)+un(i1+4*ks1,i2+4*ks2,i3+4*ks3,ex))
-                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap5(un,i1,i2,i3,ey,ks1,ks2,ks3)
-                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap5(un,i1,i2,i3,hz,ks1,ks2,ks3)
-                  else
-                    stop 1782
-                  end if
-              end if
-              if( bc2.ne.symmetryBoundaryCondition )then
-                  ksv(0)=0
-                  ksv(1)=0
-                  ksv(2)=0
-                  ksv(1)=1-2*side2
-                  ks1=ksv(0)
-                  ks2=ksv(1)
-                  ks3=ksv(2)
-                  if( extrapOrder.eq.3 )then
-                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(3.*un(i1,i2,i3,ex)-3.*un(i1+ks1,i2+ks2,i3+ks3,ex)+un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex))
-                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap3(un,i1,i2,i3,ey,ks1,ks2,ks3)
-                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap3(un,i1,i2,i3,hz,ks1,ks2,ks3)
-                  else if( extrapOrder.eq.5 )then
-                    un(i1-ks1,i2-ks2,i3-ks3,ex)=(5.*un(i1,i2,i3,ex)-10.*un(i1+ks1,i2+ks2,i3+ks3,ex)+10.*un(i1+2*ks1,i2+2*ks2,i3+2*ks3,ex)-5.*un(i1+3*ks1,i2+3*ks2,i3+3*ks3,ex)+un(i1+4*ks1,i2+4*ks2,i3+4*ks3,ex))
-                    ! un(i1-ks1,i2-ks2,i3-ks3,ey)=extrap5(un,i1,i2,i3,ey,ks1,ks2,ks3)
-                    ! un(i1-ks1,i2-ks2,i3-ks3,hz)=extrap5(un,i1,i2,i3,hz,ks1,ks2,ks3)
-                  else
-                    stop 1782
-                  end if
+              if( debug.gt.8 )then
+                write(*,'(" ABC:corner order 4 adjacentFaceIsABC=FALSE: grid,side1,side2,i1,i2=",3i3,2i5)') grid,side1,side2,i1,i2 
               end if 
+              if( bc2.eq.abcEM2 .or. bc2.eq.absorbing )then 
+                if( bc1.eq.dirichlet .or. bc1.eq.neumann )then
+                  !             DN 
+                  !             |
+                  !       B--A--DN--+---+ bc2 = EM
+                  !             |
+                  !       G  G  DN
+                  !             |
+                  !       G  G  DN
+                  !             bc1=D/N 
+                  !       
+                  if( bc1.eq.dirichlet )then 
+                    ! odd symmetry for A and B
+                    ! if( debug.gt.8 )then
+                    !   write(*,'("Set odd symmetry: i1,i2,i3=",3i3," is1=",i2," un(i1,i2,i3)=",1pe10.2," un(i1+1*is1,i2,i3,ex)=",1pe10.2)') i1,i2,i3,is1,un(i1,i2,i3,ex),un(i1+1*is1,i2,i3,ex)
+                    ! end if
+                    un(i1-1*is1,i2,i3,ex)=2.*un(i1,i2,i3,ex) - un(i1+1*is1,i2,i3,ex)
+                    un(i1-2*is1,i2,i3,ex)=2.*un(i1,i2,i3,ex) - un(i1+2*is1,i2,i3,ex)
+                  else
+                    ! even symmetry 
+                    un(i1-1*is1,i2,i3,ex)=un(i1+1*is1,i2,i3,ex)
+                    un(i1-2*is1,i2,i3,ex)=un(i1+2*is1,i2,i3,ex)              
+                  end if
+                else if( bc1.ne.symmetryBoundaryCondition )then
+                  ! extrapolate 
+                  j1=i1-is1; j2=i2; j3=0; 
+                  un(j1,j2,j3,ex)=(5.*un(j1+is1,j2,j3,ex)-10.*un(j1+is1+is1,j2+0,j3+0,ex)+10.*un(j1+is1+2*is1,j2+2*0,j3+2*0,ex)-5.*un(j1+is1+3*is1,j2+3*0,j3+3*0,ex)+un(j1+is1+4*is1,j2+4*0,j3+4*0,ex))            
+                  j1=i1-2*is1; j2=i2; j3=0; 
+                  un(j1,j2,j3,ex)=(5.*un(j1+is1,j2,j3,ex)-10.*un(j1+is1+is1,j2+0,j3+0,ex)+10.*un(j1+is1+2*is1,j2+2*0,j3+2*0,ex)-5.*un(j1+is1+3*is1,j2+3*0,j3+3*0,ex)+un(j1+is1+4*is1,j2+4*0,j3+4*0,ex))            
+                end if
+              end if
+              if( bc1.eq.abcEM2 .or. bc1.eq.absorbing )then
+                if( bc2.eq.dirichlet .or. bc2.eq.neumann )then
+                  !             |
+                  !       D--D--D---+---+ 
+                  !             |
+                  !       G  G  A=EM
+                  !             |
+                  !       G  G  B=EM
+                  !      |
+                  !       
+                  if( bc2.eq.dirichlet )then 
+                    ! odd symmetry for A and B
+                    un(i1,i2-1*is2,i3,ex)=2.*un(i1,i2,i3,ex) - un(i1,i2+1*is2,i3,ex)
+                    un(i1,i2-2*is2,i3,ex)=2.*un(i1,i2,i3,ex) - un(i1,i2+2*is2,i3,ex)
+                  else
+                    ! even symmetry 
+                    un(i1,i2-1*is2,i3,ex)=un(i1,i2+1*is2,i3,ex)
+                    un(i1,i2-2*is2,i3,ex)=un(i1,i2+2*is2,i3,ex)              
+                  end if
+                else if( bc2.ne.symmetryBoundaryCondition )then
+                  ! extrapolate    
+                  j1=i1; j2=i2-is2; j3=0; 
+                  un(j1,j2,j3,ex)=(5.*un(j1,j2+is2,j3,ex)-10.*un(j1+0,j2+is2+is2,j3+0,ex)+10.*un(j1+2*0,j2+is2+2*is2,j3+2*0,ex)-5.*un(j1+3*0,j2+is2+3*is2,j3+3*0,ex)+un(j1+4*0,j2+is2+4*is2,j3+4*0,ex))
+                  j1=i1; j2=i2-2*is2; j3=0; 
+                  un(j1,j2,j3,ex)=(5.*un(j1,j2+is2,j3,ex)-10.*un(j1+0,j2+is2+is2,j3+0,ex)+10.*un(j1+2*0,j2+is2+2*is2,j3+2*0,ex)-5.*un(j1+3*0,j2+is2+3*is2,j3+3*0,ex)+un(j1+4*0,j2+is2+4*is2,j3+4*0,ex))                                 
+                end if
+              end if
+              ! ! Extrapolate -- do this for now
+              ! extrapOrder=5
+              ! if( bc1.ne.symmetryBoundaryCondition )then
+              !   extrapGhostInDirection(i1,i2,i3,side1,0,ex,ey,hz,extrapOrder)
+              ! end if
+              ! if( bc2.ne.symmetryBoundaryCondition )then
+              !   extrapGhostInDirection(i1,i2,i3,side2,1,ex,ey,hz,extrapOrder)
+              ! end if 
             end if ! end if adjacentFaceIsABC
-            ! --- Now extrapolate the 3 ghost points "G" adjacent to the corner ---
+            ! --- Now extrapolate the 4 ghost points "G" adjacent to the corner ---
+            if( debug.gt.8 )then
+              write(*,'(" ABC: EXTRAP 3 corner ghost: grid,side1,side2,i1,i2=",3i3,2i5)') grid,side1,side2,i1,i2 
+            end if
             j1=i1-is1; j2=i2-is2; j3=0; 
             un(j1,j2,j3,ex)=(5.*un(j1+is1,j2+is2,j3+is3,ex)-10.*un(j1+is1+is1,j2+is2+is2,j3+is3+is3,ex)+10.*un(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,ex)-5.*un(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,ex)+un(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,ex))
             j1=i1-2*is1; j2=i2-is2; 
             un(j1,j2,j3,ex)=(5.*un(j1+is1,j2+is2,j3+is3,ex)-10.*un(j1+is1+is1,j2+is2+is2,j3+is3+is3,ex)+10.*un(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,ex)-5.*un(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,ex)+un(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,ex))
             j1=i1-is1; j2=i2-2*is2; 
+            un(j1,j2,j3,ex)=(5.*un(j1+is1,j2+is2,j3+is3,ex)-10.*un(j1+is1+is1,j2+is2+is2,j3+is3+is3,ex)+10.*un(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,ex)-5.*un(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,ex)+un(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,ex))
+            j1=i1-2*is1; j2=i2-2*is2; 
             un(j1,j2,j3,ex)=(5.*un(j1+is1,j2+is2,j3+is3,ex)-10.*un(j1+is1+is1,j2+is2+is2,j3+is3+is3,ex)+10.*un(j1+is1+2*is1,j2+is2+2*is2,j3+is3+2*is3,ex)-5.*un(j1+is1+3*is1,j2+is2+3*is2,j3+is3+3*is3,ex)+un(j1+is1+4*is1,j2+is2+4*is2,j3+is3+4*is3,ex))
            end if ! mask 
           end if ! if one face is ABC

@@ -38,7 +38,18 @@
 // ================================================================================================
 //
 // Macro: compute the residual in the Helmholtz equations for the COMPLEX case    
-//                           
+//   
+// NOTE:
+//   --- RETURN THE relative residual : scale by 1/omega^2 ---                        
+// ================================================================================================
+
+
+// ================================================================================================
+//
+// Macro: compute the residual in the Helmholtz equations for the REAL case    
+//   
+// NOTE:
+//   --- RETURN THE relative residual : scale by 1/omega^2 ---                        
 // ================================================================================================
 
 
@@ -298,39 +309,74 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                 }
                 else
                 {
+
                     if( filterTimeDerivative==0 )
                     {
-            // -- residual in real case ---
-                        if( ok )
-                        {
-                            where( maskLocal(I1,I2,I3)>0 )
+              // -- residual in real case ---
+                            if( ok )
                             {
-                                resLocal(I1,I2,I3,freq) = (c*c)*lap(I1,I2,I3,freq) + (om*om)*vLocal(I1,I2,I3,freq) - fLocal(I1,I2,I3,freq); 
+                                where( maskLocal(I1,I2,I3)>0 )
+                                {
+                                    resLocal(I1,I2,I3,freq) = (c*c)*lap(I1,I2,I3,freq) + (om*om)*vLocal(I1,I2,I3,freq) - fLocal(I1,I2,I3,freq); 
+                                }
                             }
-                        }
-                        Range all;
-                        ForBoundary(side,axis)
-                        {
-              // set residual to zero on dirichlet boundaries 
-                            if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
+                            Range all;
+                            ForBoundary(side,axis)
                             {
-                              getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
-                              bool okb=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
-                              if( okb )
-                              {
-                  // check size of the forcing on the boundary
-                                    FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
-                                    {
-                                        if( maskLocal(i1,i2,i3)>0 )
+                // set residual to zero on dirichlet boundaries 
+                                if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
+                                {
+                                  getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+                                  bool okb=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
+                                  if( okb )
+                                  {
+                    // check size of the forcing on the boundary
+                                        FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
                                         {
-                                            for( int freq=0; freq<numberOfFrequencies; freq++ )
-                                                maxBoundaryForce = max( maxBoundaryForce, fLocal(i1,i2,i3,freq) );
+                                            if( maskLocal(i1,i2,i3)>0 )
+                                            {
+                                                for( int freq=0; freq<numberOfFrequencies; freq++ )
+                                                    maxBoundaryForce = max( maxBoundaryForce, fLocal(i1,i2,i3,freq) );
+                                            }
                                         }
-                                    }
-                                  resLocal(Ib1,Ib2,Ib3,all)=0.;
-                              }
+                                      resLocal(Ib1,Ib2,Ib3,all)=0.;
+                                  }
+                                }
                             }
-                        }         
+              // --- RETURN THE relative residual : scale by 1/omega^2 ---
+                            resLocal *= 1./(omega*omega);
+
+            // // -- residual in real case ---
+            // if( ok )
+            // {
+            //   where( maskLocal(I1,I2,I3)>0 )
+            //   {
+            //     resLocal(I1,I2,I3,freq) = (c*c)*lap(I1,I2,I3,freq) + (om*om)*vLocal(I1,I2,I3,freq) - fLocal(I1,I2,I3,freq); 
+            //   }
+            // }
+            // Range all;
+            // ForBoundary(side,axis)
+            // {
+            //   // set residual to zero on dirichlet boundaries 
+            //   if( mg.boundaryCondition(side,axis) == CgWave::dirichlet )
+            //   {
+            //    getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
+            //    bool okb=ParallelUtility::getLocalArrayBounds(mg.mask(),maskLocal,Ib1,Ib2,Ib3);
+            //    if( okb )
+            //    {
+            //       // check size of the forcing on the boundary
+            //       FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3)
+            //       {
+            //         if( maskLocal(i1,i2,i3)>0 )
+            //         {
+            //           for( int freq=0; freq<numberOfFrequencies; freq++ )
+            //             maxBoundaryForce = max( maxBoundaryForce, fLocal(i1,i2,i3,freq) );
+            //         }
+            //       }
+            //      resLocal(Ib1,Ib2,Ib3,all)=0.;
+            //    }
+            //   }
+            // }         
                     }
                     else
                     {
@@ -887,7 +933,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                     resLocal(I1,I2,I3,1)=0.;
                                 } 
                             }
-              // relative residual
+              // --- RETURN THE relative residual : scale by 1/omega^2 ---
                             resLocal *= 1./(omega*omega);
 
                     }
@@ -915,7 +961,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                 {
                     ::display(resLocal,"resLocal","%7.0e ");
                 }
-                printF("CgWaveHoltz::residual: grid=%d : maxRes=%9.2e (all points)\n",grid,maxRes);
+                printF("CgWaveHoltz::residual: grid=%d : max-rel-res=%9.2e (all points)\n",grid,maxRes);
             }      
       // ::display(res[grid],"residual","%8.2e ");
 
@@ -960,16 +1006,16 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
         }  
         else if( useAdjustedOmega==0 || numberOfFrequencies>1 || computeEigenmodes )
         {
-              printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e.\n",freq,frequencyArray(freq),maxRes(freq));
+              printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-rel-res=%9.3e.\n",freq,frequencyArray(freq),maxRes(freq));
         }        
         else if( useAdjustedOmega==2 )
         {
-            printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-res=%9.3e (using omega), max-res=%9.3e (using omega from discrete symbol)\n",
+            printF("CgWaveHoltz::residual: freq=%2d, omega=%8.3f, max-rel-res=%9.3e (using omega), max-rel-res=%9.3e (using omega from discrete symbol)\n",
                               freq,frequencyArray(freq),maxRes(freq),maxResFromDiscreteSymbol(freq));
         } 
         else
         {
-            printF("CgWaveHoltz::residual: freq=%d, omega=%g, max-res=%9.3e (using omega from discrete symbol)\n",freq,frequencyArray(freq),maxResFromDiscreteSymbol(freq));
+            printF("CgWaveHoltz::residual: freq=%d, omega=%g, max-rel-res=%9.3e (using omega from discrete symbol)\n",freq,frequencyArray(freq),maxResFromDiscreteSymbol(freq));
         }
 
     }

@@ -11,6 +11,412 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
 *************************************
+****** Fri Feb 27, 2026
+
+
+>>>>>>>>> 24 HOLES:
+
+G32: 500K pts TS=E
+(2)
+$genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN7M7e32.order4.ng3.hdf -evFile=holes24DiskG32O4Freq100Ev128.show -show=holes24DiskG32O4Freq100Ev128o.show -go=go
+
+
+**TROUBLE**
+
+THIS IS WRONG:   5,5 -> 4,4
+
+***------- AFTER ORTHOGONALIZE -----
+ ie=   0: eig=(9.55408322e+03,0.00000000e+00) multi= 1 eigStartIndex=   0
+ ie=   1: eig=(9.56034031e+03,0.00000000e+00) multi= 1 eigStartIndex=   1
+ ie=   2: eig=(9.57268155e+03,0.00000000e+00) multi= 1 eigStartIndex=   2
+ ie=   3: eig=(9.57671999e+03,0.00000000e+00) multi= 1 eigStartIndex=   3
+ ie=   4: eig=(9.57885912e+03,0.00000000e+00) multi= 2 eigStartIndex=   5 **
+ ie=   5: eig=(9.58106576e+03,0.00000000e+00) multi= 2 eigStartIndex=   5 **
+ ie=   6: eig=(9.58352943e+03,0.00000000e+00) multi= 1 eigStartIndex=   6
+ ie=   7: eig=(9.59513850e+03,0.00000000e+00) multi= 1 eigStartIndex=   7
+ ie=   8: eig=(9.59946738e+03,0.00000000e+00) multi= 1 eigStartIndex=   8
+ ie=   9: eig=(9.60174615e+03,0.00000000e+00) multi= 1 eigStartIndex=   9
+ ie=  10: eig=(9.60605136e+03,0.00000000e+00) multi= 1 eigStartIndex=  10
+ ie=  11: eig=(9.61048510e+03,0.00000000e+00) multi= 1 eigStartIndex=  11
+ ie=  12: eig=(9.61363571e+03,0.00000000e+00) multi= 1 eigStartIndex=  12
+ ie=  13: eig=(9.62302916e+03,0.00000000e+00) multi= 1 eigStartIndex=  13
+ ie=  14: eig=(9.62429601e+03,0.00000000e+00) multi= 1 eigStartIndex=  14
+ ie=  15: eig=(9.63987323e+03,0.00000000e+00) multi= 1 eigStartIndex=  15
+ ie=  16: eig=(9.65203376e+03,0.00000000e+00) multi= 1 eigStartIndex=  16
+ ie=  17: eig=(9.65440875e+03,0.00000000e+00) multi= 1 eigStartIndex=  17
+ ie=  18: eig=(9.66616309e+03,0.00000000e+00) multi= 1 eigStartIndex=  18
+ ie=  19: eig=(9.66694296e+03,0.00000000e+00) multi= 1 eigStartIndex=  19
+ ie=  20: eig=(9.66938657e+03,0.00000000e+00) multi= 1 eigStartIndex=  20
+ ie=  21: eig=(9.68163302e+03,0.00000000e+00) multi= 1 eigStartIndex=  21
+ ie=  22: eig=(9.68194767e+03,0.00000000e+00) multi= 1 eigStartIndex=  22
+ ie=  23: eig=(9.68589086e+03,0.00000000e+00) multi= 1 eigStartIndex=  23
+ ie=  24: eig=(9.68879888e+03,0.00000000e+00) multi= 1 eigStartIndex=  24
+ ie=  25: eig=(9.70284640e+03,0.00000000e+00) multi= 1 eigStartIndex=  25
+ ie=  26: eig=(9.71099845e+03,0.00000000e+00) multi= 2 eigStartIndex=  27 **
+ ie=  27: eig=(9.71207869e+03,0.00000000e+00) multi= 2 eigStartIndex=  27 **
+ ie=  28: eig=(9.71449820e+03,0.00000000e+00) multi= 1 eigStartIndex=  28
+ ie=  29: eig=(9.71636432e+03,0.00000000e+00) multi= 1 eigStartIndex=  29
+ ie=  30: eig=(9.71669582e+03,0.00000000e+00) multi= 1 eigStartIndex=  30
+ ie=  31: eig=(9.72082469e+03,0.00000000e+00) multi= 1 eigStartIndex=  31
+ ie=  32: eig=(9.72333873e+03,0.00000000e+00) multi= 1 eigStartIndex=  32
+ ie=  33: eig=(9.72779323e+03,0.00000000e+00) multi= 1 eigStartIndex=  33
+ ie=  34: eig=(9.73804219e+03,0.00000000e+00) multi= 1 eigStartIndex=  34
+ ie=  35: eig=(9.74355726e+03,0.00000000e+00) multi= 1 eigStartIndex=  35
+ ie=  36: eig=(9.74757063e+03,0.00000000e+00) multi= 1 eigStartIndex=  36
+ ie=  37: eig=(9.76781782e+03,0.00000000e+00) multi= 1 eigStartIndex=  37
+ ie=  38: eig=(9.77405702e+03,0.00000000e+00) multi= 1 eigStartIndex=  38
+ ie=  39: eig=(9.77987875e+03,0.00000000e+00) multi= 1 eigStartIndex=  39
+ ie=  40: eig=(9.78447384e+03,0.00000000e+00) multi= 1 eigStartIndex=  40
+ ie=  41: eig=(9.78591752e+03,0.00000000e+00) multi= 1 eigStartIndex=  41
+ ie=  42: eig=(9.79375961e+03,0.00000000e+00) multi= 1 eigStartIndex=  42
+ ie=  43: eig=(9.79497575e+03,0.00000000e+00) multi= 1 eigStartIndex=  43
+ ie=  44: eig=(9.79759906e+03,0.00000000e+00) multi= 1 eigStartIndex=  44
+ ie=  45: eig=(9.79964587e+03,0.00000000e+00) multi= 1 eigStartIndex=  45
+ ie=  46: eig=(9.80248227e+03,0.00000000e+00) multi= 1 eigStartIndex=  46
+ ie=  47: eig=(9.81398725e+03,0.00000000e+00) multi= 1 eigStartIndex=  47
+ ie=  48: eig=(9.82360231e+03,0.00000000e+00) multi= 2 eigStartIndex=  49 **
+ ie=  49: eig=(9.82451188e+03,0.00000000e+00) multi= 2 eigStartIndex=  49 **
+ ie=  50: eig=(9.83504711e+03,0.00000000e+00) multi= 1 eigStartIndex=  50
+ ie=  51: eig=(9.84095208e+03,0.00000000e+00) multi= 1 eigStartIndex=  51
+ ie=  52: eig=(9.84192445e+03,0.00000000e+00) multi= 1 eigStartIndex=  52
+
+genEigs: src/genEigs.C:1681: int main(int, char**): Assertion `eigStartIndexValid(jStart) == jStart' failed.
+
+
+(1)
+mpirun -np 2 $cgwh -noplot eig.cmd -g=holesInADiskGridN7M7e32.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=16 -eigenSolver=default -show=holes24DiskG32O4Freq100Ev128.show -solveri=yale -freq=100 -numEigs=128 -numParGhost=4 -go=ks
+
+omega=1.00e+02, k=1.00e+02, lambda=6.28e-02, dx=3.13e-03, domainSize=2.00e+00, NLambda=31.831, ppw=lambda/dx= 20.1, ppw(rule-of-thumb)= 20.4 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 386, cpu= 2.45e+03(s), np=2
+ num eigs requested=128, number eigs converged =151, numArnoldiVectors=257, wave-solves/eig=  2.6, timeSteps/eig=1666.7
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 9.7744990777e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.73e-04
+ i=    1: lamRQ = 9.7776992721e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.72e-04
+ i=    2: lamRQ = 9.7840081524e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.39e-04
+ i=    3: lamRQ = 9.7860717275e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.21e-04
+ i=    4: lamRQ = 9.7871646144e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.59e-04
+ i=    5: lamRQ = 9.7882918607e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.34e-04
+ i=    6: lamRQ = 9.7895502611e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.97e-04
+ i=    7: lamRQ = 9.7954777838e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.59e-04
+ i=    8: lamRQ = 9.7976871660e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.41e-04
+ i=    9: lamRQ = 9.7988500115e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.02e-04
+ i=   10: lamRQ = 9.8010465563e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.07e-04
+ i=   11: lamRQ = 9.8033081650e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.30e-03
+ i=   12: lamRQ = 9.8049149446e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.27e-04
+ i=   13: lamRQ = 9.8097039495e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.03e-04
+
+
+
+>>>>>>> NINE HOLES ... ACTUALLY 10 HOLES
+
+holesInADiskGridN3M3e16.order4.hdf
+
+G32: TS=E
+(2)
+$genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN3M3e32.order4.ng3.hdf -evFile=nineHolesDiskG32O4Freq100Ev128.show -show=nineHolesDiskG32O4Freq100Ev128o.show -go=go
+
+(1)
+mpirun -np 1 $cgwh -noplot eig.cmd -g=holesInADiskGridN3M3e32.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=16 -eigenSolver=default -show=nineHolesDiskG32O4Freq100Ev128.show -solveri=yale -freq=100 -numEigs=128 -numParGhost=4 -go=ks
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=1.00e+02 k=1.00e+02 lambda=6.28e-02 dx=3.13e-03 domainSize=2.00e+00 NLambda=31.831 ppw=lambda/dx= 20.1 ppw(rule-of-thumb)= 20.4 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 511, cpu= 1.56e+03(s), np=4
+ num eigs requested=128, number eigs converged =135, numArnoldiVectors=257, wave-solves/eig=  3.8, timeSteps/eig=2467.9
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 9.8398595584e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.03e-05
+ i=    1: lamRQ = 9.8411032366e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.11e-04
+ i=    2: lamRQ = 9.8420923902e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.75e-04
+
+
+
+
+G16: TS=E
+(2)
+$genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN3M3e16.order4.ng3.hdf -evFile=nineHolesDiskG16O4Freq40Ev128.show -show=nineHolesDiskG16O4Freq40Ev128o.show -go=go
+
+(1)
+$cgwh -noplot eig.cmd -g=holesInADiskGridN3M3e16.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=8 -eigenSolver=default -show=nineHolesDiskG16O4Freq40Ev128.show -solveri=yale -freq=40 -numEigs=128 -numParGhost=4 -go=ks
+
+um eigs requested=128, number eigs converged =131, numArnoldiVectors=257, wave-solves/eig=  2.0, timeSteps/eig=929.9
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 3.5627037378e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.91e-05
+ i=    1: lamRQ = 3.5663203631e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.00e-05
+ i=    2: lamRQ = 3.5813389534e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.52e-05
+ i=    3: lamRQ = 3.5999647354e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.77e-05
+ i=    4: lamRQ = 3.6059864781e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.61e-05
+ i=    5: lamRQ = 3.6061105245e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.56e-05
+ i=    6: lamRQ = 3.6173276989e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.31e-04
+ i=    7: lamRQ = 3.6184747860e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.30e-05
+ i=    8: lamRQ = 3.6221226984e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.29e-05
+ i=    9: lamRQ = 3.6223800089e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.64e-05
+ i=   10: lamRQ = 3.6339426266e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.49e-05
+ i=   11: lamRQ = 3.6349639509e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.48e-04
+ i=   12: lamRQ = 3.6395104447e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.20e-04
+ i=   13: lamRQ = 3.6411492658e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.13e-04
+ i=   14: lamRQ = 3.6501954933e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.24e-05
+ i=   15: lamRQ = 3.6558146109e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.94e-05
+
+SIMPLER CASE: FOUR HOLES 
+
+>>>> G16O4
+
+(2) 
+$genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN2M2e16.order4.hdf -evFile=holeyDiskG16O4Freq20Ev32.show -show=holeyDiskG16O4Freq20Ev32o.show -go=go
+$genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN2M2e16.order4.hdf -evFile=holeyDiskG16O4Freq20Ev128.show -show=holeyDiskG16O4Freq20Ev128o.show -go=go
+
+First 32, then 128
+(1) 
+setsid $cgwh -noplot eig.cmd -g=holesInADiskGridN2M2e16.order4.hdf -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=8 -eigenSolver=default -show=holeyDiskG16O4Freq20Ev128.show -solveri=yale -freq=40 -numEigs=128 -numParGhost=4 -go=ks > holeyDiskG16O4Freq20Ev128.out
+
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 407, cpu= 1.08e+03(s), np=1
+ num eigs requested=128, number eigs converged =179, numArnoldiVectors=257, wave-solves/eig=  2.3, timeSteps/eig=181.9
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 3.8344022488e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.62e-13
+ i=    1: lamRQ = 3.8418875485e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.54e-13
+ i=    2: lamRQ = 3.8418875855e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.98e-13
+ i=    3: lamRQ = 3.8501130459e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.39e-13
+ i=    4: lamRQ = 3.8614168324e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.67e-13
+ i=    5: lamRQ = 3.8614174932e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.96e-13
+ i=    6: lamRQ = 3.8622215777e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.02e-13
+
+
+
+EV=32: 
+
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 262, cpu= 6.88e+02(s), np=1
+ num eigs requested=32, number eigs converged =33, numArnoldiVectors=65, wave-solves/eig=  7.9, timeSteps/eig=635.2
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 4.2961553037e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.99e-13
+ i=    1: lamRQ = 4.2977607593e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.28e-13
+ i=    2: lamRQ = 4.3069411682e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.75e-13
+ i=    3: lamRQ = 4.3184057042e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.88e-13
+ i=    4: lamRQ = 4.3184058368e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.91e-13
+
+
+
+>>>>> G8O4
+(2) $genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN2M2e8.order4.hdf -evFile=holeyDiskG8O4Freq20Ev32.show -show=holeyDiskG8O4Freq20Ev32o.show -multiEigTol=1e-6 -go=go
+
+ >>>> genEigs:: After orthogonalize, compute residuals || Au - lambda u ||/lambda ....
+ ie=   0  eig=[  4.0861e+02,  0.0000e+00], mult=1, max-norm res || Au - lambda u ||/lambda = 4.92e-13 resbcMax= 0.00e+00
+ ie=   1  eig=[  4.2258e+02,  0.0000e+00], mult=1, max-norm res || Au - lambda u ||/lambda = 4.23e-13 resbcMax= 0.00e+00
+ ie=   2  eig=[  4.3269e+02,  0.0000e+00], mult=1, max-norm res || Au - lambda u ||/lambda = 3.08e-13 resbcMax= 0.00e+00
+ ie=   3  eig=[  4.3306e+02,  0.0000e+00], mult=1, max-norm res || Au - lambda u ||/lambda = 2.63e-13 resbcMax= 0.00e+00
+ ie=   4  eig=[  4.4457e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 2.28e-13 resbcMax= 0.00e+00
+ ie=   5  eig=[  4.4457e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 1.77e-08 resbcMax= 0.00e+00
+ ie=   6  eig=[  4.4498e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 3.16e-13 resbcMax= 0.00e+00
+ ie=   7  eig=[  4.4498e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 2.44e-08 resbcMax= 0.00e+00
+ ie=   8  eig=[  4.5068e+02,  0.0000e+00], mult=1, max-norm res || Au - lambda u ||/lambda = 3.13e-13 resbcMax= 0.00e+00
+ ie=   9  eig=[  4.6095e+02,  0.0000e+00], mult=1, max-norm res || Au - lambda u ||/lambda = 3.13e-13 resbcMax= 0.00e+00
+ ie=  10  eig=[  4.7734e+02,  0.0000e+00], mult=2, max-norm res || Au - lambda u ||/lambda = 4.32e-13 resbcMax= 0.00e+00
+
+1)
+$cgwh -noplot eig.cmd -g=holesInADiskGridN2M2e8.order4.hdf -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=4 -eigenSolver=default -show=holeyDiskG8O4Freq20Ev32.show -solveri=yale -freq=20 -numEigs=32 -numParGhost=4 -go=ks 
+
+Np=4
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 131, cpu= 4.55e+01(s), np=1
+ num eigs requested=32, number eigs converged =32, numArnoldiVectors=65, wave-solves/eig=  4.1, timeSteps/eig=163.8
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 2.0214139432e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.97e-13
+ i=    1: lamRQ = 2.0556861956e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.55e-13
+ i=    2: lamRQ = 2.0801318251e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.01e-13
+ i=    3: lamRQ = 2.0809996851e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.74e-13
+ i=    4: lamRQ = 2.1084846302e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.60e-13
+ i=    5: lamRQ = 2.1084847219e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.32e-13
+ i=    6: lamRQ = 2.1094569651e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.94e-13
+ i=    7: lamRQ = 2.1094569794e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.70e-13
+ i=    8: lamRQ = 2.1229202811e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.64e-13
+ i=    9: lamRQ = 2.1469694959e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.83e-14
+ i=   10: lamRQ = 2.1848180757e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.83e-13
+ i=   11: lamRQ = 2.1848182111e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.93e-13
+ i=   12: lamRQ = 2.1960755368e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.07e-13
+
+
+Np=2
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 256, cpu= 4.59e+01(s), np=1
+ num eigs requested=32, number eigs converged =32, numArnoldiVectors=65, wave-solves/eig=  8.0, timeSteps/eig=160.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 2.0214139432e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.98e-13
+ i=    1: lamRQ = 2.0556861956e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.36e-13
+ i=    2: lamRQ = 2.0801318251e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.08e-13
+ i=    3: lamRQ = 2.0809996851e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.48e-13
+ i=    4: lamRQ = 2.1084846302e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.13e-13
+ i=    5: lamRQ = 2.1084847219e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.99e-13
+
+G4O4
+(2) $genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN2M2e4.order4.hdf -evFile=holeyDiskG4O4Freq10Ev32.show -show=holeyDiskG4O4Freq10Ev32o.show -multiEigTol=1e-6 -go=go
+
+1)
+$cgwh -noplot eig.cmd -g=holesInADiskGridN2M2e4.order4.hdf -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=holeyDiskG4O4Freq10Ev32.show -solveri=yale -freq=10 -numEigs=32 -numParGhost=4 -go=ks 
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 131, cpu= 3.60e+00(s), np=1
+ num eigs requested=32, number eigs converged =32, numArnoldiVectors=65, wave-solves/eig=  4.1, timeSteps/eig= 40.9
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 7.8851065206e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.45e-13
+ i=    1: lamRQ = 8.7674901157e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.73e-13
+ i=    2: lamRQ = 8.7674904421e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.81e-13
+ i=    3: lamRQ = 9.2608607454e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.69e-13
+ i=    4: lamRQ = 9.2608615860e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.73e-13
+ i=    5: lamRQ = 9.2687923979e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.25e-13
+ i=    6: lamRQ = 9.5439465464e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.74e-13
+ i=    7: lamRQ = 9.9495703400e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.12e-13
+ i=    8: lamRQ = 9.9945738503e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.89e-13
+ i=    9: lamRQ = 1.1066437751e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.31e-13
+ i=   10: lamRQ = 1.1066440003e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.40e-13
+ i=   11: lamRQ = 1.1125482576e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.57e-13
+ i=   12: lamRQ = 1.1304979852e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.52e-13
+ i=   13: lamRQ = 1.1304980962e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.85e-13
+ i=   14: lamRQ = 1.1653850951e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.23e-13
+ i=   15: lamRQ = 1.1653852912e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.56e-13
+ i=   16: lamRQ = 1.1831343325e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.08e-13
+ i=   17: lamRQ = 1.1982171575e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.89e-13
+ i=   18: lamRQ = 1.2239003076e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.89e-14
+ 
+
+
+
+
+(2) $genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN2M2e4.order2.hdf -evFile=holeyDiskG4Freq10Ev16.show -show=holeyDiskG4Freq10Ev16o.show -multiEigTol=1e-6 -go=go
+
+Setting eigTol =  6.25e-04 = max( ds^2= 6.25e-04,  1.00e-06),  ds= 2.50e-02
+
+++++ INFO: multiplicity has increased from 1 to 2
+
+*********** ORTHOGONALIZE: SUMMARY: ************ 
+       Used epsOrthog= 1.36e-02 (tolerance on inner product to detect orthogonality), 
+       Used eigTol   = 6.25e-04 (relative-tol for judging eigenvalues to be the same multiple eig)
+ ***------- AFTER ORTHOGONALIZE -----
+ ie=   0: eig=(7.66599481e+01,0.00000000e+00) multi= 2 eigStartIndex=   0
+ ie=   1: eig=(7.66686112e+01,0.00000000e+00) multi= 2 eigStartIndex=   0
+ ie=   2: eig=(8.55057887e+01,0.00000000e+00) multi= 2 eigStartIndex=   2
+ ie=   3: eig=(8.55134418e+01,0.00000000e+00) multi= 2 eigStartIndex=   2
+ ie=   4: eig=(8.56604675e+01,0.00000000e+00) multi= 1 eigStartIndex=   4
+ ie=   5: eig=(9.08024477e+01,0.00000000e+00) multi= 1 eigStartIndex=   5
+ ie=   6: eig=(9.86252390e+01,0.00000000e+00) multi= 2 eigStartIndex=   7
+ ie=   7: eig=(9.95199815e+01,0.00000000e+00) multi= 2 eigStartIndex=   7
+ ie=   8: eig=(1.21896403e+02,0.00000000e+00) multi= 2 eigStartIndex=   8
+ ie=   9: eig=(1.21908985e+02,0.00000000e+00) multi= 2 eigStartIndex=   8
+ ie=  10: eig=(1.23242117e+02,0.00000000e+00) multi= 1 eigStartIndex=  10
+ ie=  11: eig=(1.27259033e+02,0.00000000e+00) multi= 2 eigStartIndex=  11
+ ie=  12: eig=(1.27275538e+02,0.00000000e+00) multi= 2 eigStartIndex=  11
+ ie=  13: eig=(1.35227073e+02,0.00000000e+00) multi= 2 eigStartIndex=  13
+ ie=  14: eig=(1.35288303e+02,0.00000000e+00) multi= 2 eigStartIndex=  13
+ ie=  15: eig=(1.39329218e+02,0.00000000e+00) multi= 1 eigStartIndex=  15
+
+(1)
+$cgwh -noplot eig.cmd -g=holesInADiskGridN2M2e4.order2.hdf -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=1 -eigenSolver=default -show=holeyDiskG4Freq10Ev16.show -solveri=yale -freq=10 -numEigs=16 -numParGhost=4 -go=ks 
+
+tol= 1.00e-14, number of wave-solves (mat-vecs) = 109, cpu= 5.65e+00(s), np=1
+ num eigs requested=16, number eigs converged =16, numArnoldiVectors=33, wave-solves/eig=  6.8, timeSteps/eig=456.4
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 8.7555666939e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.02e-03
+ i=    1: lamRQ = 8.7560613956e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.03e-03
+ i=    2: lamRQ = 9.2469340171e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.22e-03
+ i=    3: lamRQ = 9.2473478265e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.23e-03
+ i=    4: lamRQ = 9.2552940280e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.11e-03
+ i=    5: lamRQ = 9.5290318337e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.79e-04
+ i=    6: lamRQ = 9.9310240678e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.45e-04
+ i=    7: lamRQ = 9.9759702022e+00,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.12e-04
+ i=    8: lamRQ = 1.1040670412e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.01e-03
+ i=    9: lamRQ = 1.1041240210e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.05e-03
+ i=   10: lamRQ = 1.1101446615e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.68e-03
+ i=   11: lamRQ = 1.1280914538e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.40e-03
+ i=   12: lamRQ = 1.1281646074e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.74e-03
+ i=   13: lamRQ = 1.1628717591e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.45e-03
+ i=   14: lamRQ = 1.1631349991e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.43e-03
+ i=   15: lamRQ = 1.1803779807e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.82e-03
+
+
+*************************************
+****** Fri Feb 27, 2026
+
+>>>>>>>>>>>. DISK WITH HOLES <<<<<<<<<<<<<<<<<,
+holesInADiskGridN15M15e16.order4.ng3.hdf
+
+REDUCE multiEigTol
+(2) $genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN15M15e32.order4.ng3.hdf -evFile=holeyDiskG32O4Freq80Ev128.show -show=holeyDiskG32O4Freq80Ev128o.show -multiEigTol=1e-6 -go=go
+
+Normalize eigenvectors...
+i=   0, j=   1  (phi[i],phi[j]) =  2.68e-06  eigDist/eigNorm= 1.42e-03  ... assuming this is orthogonal enough. Increasing tol for orthogonality to epsOrthog= 4.02e-06
+i=   0, j=   1  (phi[i],phi[j]) =  2.68e-06  eigStartIndex(j)=1 (orthogonal)
+i=   1, j=   2  (phi[i],phi[j]) =  3.50e-07  eigStartIndex(j)=2 (orthogonal)
+i=   2, j=   3  (phi[i],phi[j]) = -1.02e-06  eigStartIndex(j)=3 (orthogonal)
+i=   3, j=   4  (phi[i],phi[j]) = -2.10e-06  eigStartIndex(j)=4 (orthogonal)
+i=   4, j=   5  (phi[i],phi[j]) = -4.41e-07  eigStartIndex(j)=5 (orthogonal)
+i=   5, j=   6  (phi[i],phi[j]) =  9.90e-06,  lam[i]=  6.119319e+03 lam[j]=  6.123133e+03 mult(i)=1 mult(j)=1 eigStartIndex(i)=5 eigStartIndex(j)=6 eigDist/eigNorm= 6.23e-04
+WARNING: inner product is NOT small but eigenvalues are not so close ?!  |lam[i]-lam[j]|/|lam[i]| =  6.23e-04,  eigTol= 1.00e-08
+ ... increasing eigTol to  9.35e-04 (relative error in multiple eigenvalues.
+   .... made phi[6] orthogonal to phi[5]  : new inner-product =  5.85e-18
+
+ ++++ INFO: multiplicity has increased from 1 to 2
+
+
+multiEigTol=1e-5 --> lots of mult=2 eigs
+genEigs: src/genEigs.C:1676: int main(int, char**): Assertion `eigStartIndexValid(jStart) == jStart' failed.
+
+
+(1) setsid mpirun -np 8 $cgwh -noplot eig.cmd -g=holesInADiskGridN15M15e32.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=1 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=16 -eigenSolver=default -show=holeyDiskG32O4Freq80Ev128.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=80 -numEigs=128 -numParGhost=4 -go=ks > holeyDiskG32O4Freq80Ev128.out
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=8.00e+01 k=8.00e+01 lambda=7.85e-02 dx=3.13e-03 domainSize=2.00e+00 NLambda=25.4648 ppw=lambda/dx= 25.1 ppw(rule-of-thumb)= 19.3 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+cgWave:FD24u t=1.257e+00 (1140 steps) dt=1.102e-03 ||u||= 4.22e-03, cpu= 2.75e+01(s) np=8
+
+
+
+>>>> EXPLICIT:
+mpirun -np 4 $cgwh -noplot eig.cmd -g=holesInADiskGridN15M15e16.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=8 -eigenSolver=default -show=holeyDiskG16O4Freq40Ev64e.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=40 -numEigs=64 -numParGhost=4 -go=ks 
+
+
+
+
+
+
+
+IMPLICIT:
+
+(2) $genEigs -noplot orthogonalize.cmd -g=holesInADiskGridN15M15e16.order4.ng3.hdf -evFile=holeyDiskG16O4Freq40Ev64.show -show=holeyDiskG16O4Freq40Ev64o.show  -go=go
+
+(1) $cgwh -noplot eig.cmd -g=holesInADiskGridN15M15e16.order4.ng3.hdf -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -maxIterations=3000 -matlab=holeyDisk -eigenVectorFile=none -computeEigs=1 -numPeriods=8 -eigenSolver=default -show=holeyDiskG16O4Freq40Ev64.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=40 -numEigs=64 -numParGhost=4 -go=ks 
+
+
+
+GRID VERSION 1: 
+
+omega=4.00e+01, k=4.00e+01, lambda=1.57e-01, dx=6.25e-03, domainSize=2.00e+00, NLambda=12.7324, ppw=lambda/dx= 25.1, ppw(rule-of-thumb)= 16.2 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 240, cpu= 1.47e+03(s), np=1
+ num eigs requested=64, number eigs converged =77, numArnoldiVectors=129, wave-solves/eig=  3.1, timeSteps/eig=249.4
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 4.1719913408e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.25e-13
+ i=    1: lamRQ = 4.1768683292e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.17e-13
+ i=    2: lamRQ = 4.1779286600e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.55e-13
+ i=    3: lamRQ = 4.1919077225e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.10e-13
+ i=    4: lamRQ = 4.2221337651e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.40e-13
+ i=    5: lamRQ = 4.2408298118e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.02e-13
+ i=    6: lamRQ = 4.2417340237e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.68e-13
+ i=    7: lamRQ = 4.2527262730e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.22e-13
+
+>>>>>>>>>>>>>> DISK <<<<<<<<<<<<
+omega=146: for implicit time-stepping  STOPPED FOR NOW __ NEW TO FIX MG CBC
+USE MG 
+setsid mpirun -np=16 $cgwh -noplot eig.cmd -g=sice64.order4.ng3.ml5 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -maxIterations=3000 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -computeEigs=1 -numPeriods=32 -eigenSolver=default -show=diskG64O4Freq160Ev128.show -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=160 -numEigs=128 -numParGhost=4 -go=ks > diskG64O4Freq160Ev128imp.out
+
+
+*************************************
 ****** Wed Feb 25, 2026
 
 **BUG FIXED***
@@ -18,13 +424,159 @@ set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 FINER GRID CASE:
 
+G64: 1.6M pts
+sice64.order4.ng3.hdf
+
+(2) $genEigs -noplot orthogonalize.cmd -g=sice64.order4.ng3 -evFile=diskG64O4Freq160Ev256.show -show=diskG64O4Freq160Ev256o.show -go=go
+
+
+EV=256
+setsid mpirun -np=16 $cgwh -noplot eig.cmd -g=sice64.order4.ng3 -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -imode=1 -maxIterations=3000 -matlab=diskG64Ev256 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=32 -eigenSolver=default -show=diskG64O4Freq160Ev256.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=160 -numEigs=256 -numParGhost=3 -go=ks > diskG64O4Freq160Ev256.out
+
+
+omega=1.60e+02, k=1.60e+02, lambda=3.93e-02, dx=1.56e-03, domainSize=2.00e+00, NLambda=50.9296, ppw=lambda/dx= 25.1, ppw(rule-of-thumb)= 22.9 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 770, cpu= 3.75e+03(s), np=16
+ num eigs requested=256, number eigs converged =313, numArnoldiVectors=513, wave-solves/eig=  2.5, timeSteps/eig=3412.1
+
+
+(2) $genEigs -noplot orthogonalize.cmd -g=sice64.order4.ng3 -evFile=diskG64O4Freq160Ev128.show -show=diskG64O4Freq160Ev128o.show -go=go
+
+(1) setsid mpirun -np=16 $cgwh -noplot eig.cmd -g=sice64.order4.ng3 -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -imode=1 -maxIterations=3000 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=32 -eigenSolver=default -show=diskG64O4Freq160Ev128.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=160 -numEigs=128 -numParGhost=3 -go=ks > diskG64O4Freq160Ev128.out
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=1.60e+02 k=1.60e+02 lambda=3.93e-02 dx=1.56e-03 domainSize=2.00e+00 NLambda=50.9296 ppw=lambda/dx= 25.1 ppw(rule-of-thumb)= 22.9 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+cgWave:FD24u t=6.283e-01 (694 steps) dt=9.054e-04 ||u||= 2.61e-03, cpu= 3.39e+00(s) np=8
+cgWave:FD24u t=6.283e-01 (694 steps) dt=9.054e-04 ||u||= 3.23e-03, cpu= 2.47e+00(s) np=16
+
+omega=1.60e+02, k=1.60e+02, lambda=3.93e-02, dx=1.56e-03, domainSize=2.00e+00, NLambda=50.9296, ppw=lambda/dx= 25.1, ppw(rule-of-thumb)= 22.9 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 712, cpu= 3.42e+03(s), np=16
+ num eigs requested=128, number eigs converged =135, numArnoldiVectors=257, wave-solves/eig=  5.3, timeSteps/eig=7315.1
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 1.5898151673e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.28e-05
+ i=    1: lamRQ = 1.5898151681e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.24e-05
+ i=    2: lamRQ = 1.5899863514e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.32e-05
+ i=    3: lamRQ = 1.5899863516e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.32e-05
+ i=    4: lamRQ = 1.5901683033e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.24e-05
+ i=    5: lamRQ = 1.5901683036e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.24e-05
+ i=    6: lamRQ = 1.5901704177e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.65e-05
+
+
 G32: 400K pts
+sice32.order4.ml4.hdf
+sice32.order4.ng3.ml4.hdf
 
-DISK G32 omega=90 (mode from eigenwave)
+(2) $genEigs -noplot orthogonalize.cmd -g=sice32.order4.ng3 -evFile=diskG32O4Freq90Ev128.show -show=diskG32O4Freq90Ev128o.show -go=go
+
+
+DISK G32 omega=90 (mode from eigenwave)  MV=386
 TS=E 
- $cgwh -noplot eig.cmd -g=sice32.order4.ng3 -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -imode=1 -maxIterations=3000 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=16 -eigenSolver=default -show=diskG32O4Freq90Ev128.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=90 -numEigs=128 -numParGhost=2 -show=diskG8Ev16.show -go=ks
+setsid mpirun -np=4 $cgwh -noplot eig.cmd -g=sice32.order4.ng3 -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -imode=1 -maxIterations=3000 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=16 -eigenSolver=default -show=diskG32O4Freq90Ev128.show -solveri=yale -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=90 -numEigs=128 -numParGhost=3 -go=ks > diskG32O4Freq90Ev128.out
 
-PARALLEL?
+omega=9.00e+01, k=9.00e+01, lambda=6.98e-02, dx=3.13e-03, domainSize=2.00e+00, NLambda=28.6479, ppw=lambda/dx= 22.3, ppw(rule-of-thumb)= 19.9 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 386, cpu= 7.26e+02(s), np=4
+ num eigs requested=128, number eigs converged =164, numArnoldiVectors=257, wave-solves/eig=  2.4, timeSteps/eig=1454.6
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ getPointsPerWaveLength:
+ omega=9.00e+01 k=9.00e+01 lambda=6.98e-02 dx=3.13e-03 domainSize=2.00e+00 NLambda=28.6479 ppw=lambda/dx= 22.3 ppw(rule-of-thumb)= 19.9 (epsr=0.01)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+cgWave:FD24u t=1.117e+00 (618 steps) dt=1.807e-03 ||u||= 4.35e-03, cpu= 2.51e+00(s) np=2
+cgWave:FD24u t=1.117e+00 (618 steps) dt=1.807e-03 ||u||= 3.96e-03, cpu= 1.84e+00(s) np=4
+
+
+
+PARALLEL + TS=E
+mpirun -np=2 $cgwh -noplot eig.cmd -g=sice8.order4.ng3.ml3 -nf=1 -adjustOmega=0 -ts=explicit -takeImplicitFirstStep=0 -cfl=0.95 -orderInTime=2 -solver=none -tol=1e-14 -upwind=1 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=8 -eigenSolver=default  -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=15 -numEigs=16 -numParGhost=4 -show=diskG8Ev16.show -go=ks
+
+upwind=1:
+omega=1.50e+01, k=1.50e+01, lambda=4.19e-01, dx=1.22e-02, domainSize=2.00e+00, NLambda=4.77465, ppw=lambda/dx= 34.4, ppw(rule-of-thumb)= 12.7 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 69, cpu= 3.97e+01(s), np=2
+ num eigs requested=16, number eigs converged =18, numArnoldiVectors=33, wave-solves/eig=  3.8, timeSteps/eig=1824.7
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 1.3589263745e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.12e-06
+ i=    1: lamRQ = 1.3589263922e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.16e-06
+ i=    2: lamRQ = 1.4372504413e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.91e-05
+ i=    3: lamRQ = 1.4372504600e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.80e-05
+ i=    4: lamRQ = 1.4475458893e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.84e-06
+ i=    5: lamRQ = 1.4475459679e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.81e-06
+ i=    6: lamRQ = 1.4795901431e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  4.13e-06
+ i=    7: lamRQ = 1.4795931352e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.81e-06
+ i=    8: lamRQ = 1.4821227561e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.04e-06
+ i=    9: lamRQ = 1.4821227561e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.03e-06
+ i=   10: lamRQ = 1.4930881234e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.65e-07
+ i=   11: lamRQ = 1.5589786277e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.11e-06
+ i=   12: lamRQ = 1.5589786277e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.06e-06
+ i=   13: lamRQ = 1.5700123684e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.53e-05
+ i=   14: lamRQ = 1.5700123685e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.57e-05
+ i=   15: lamRQ = 1.6223409555e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.03e-05
+ i=   16: lamRQ = 1.6223409560e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  6.04e-05
+ i=   17: lamRQ = 1.6470569677e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.67e-05
+
+
+upwind=0: 
+omega=1.50e+01, k=1.50e+01, lambda=4.19e-01, dx=1.20e-02, domainSize=2.00e+00, NLambda=4.77465, ppw=lambda/dx= 34.9, ppw(rule-of-thumb)= 12.7 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 85, cpu= 1.99e+01(s), np=2
+ num eigs requested=16, number eigs converged =21, numArnoldiVectors=33, wave-solves/eig=  4.0, timeSteps/eig=1942.9
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 1.4372506627e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  7.57e-13
+ i=    1: lamRQ = 1.4372506901e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.25e-12
+ i=    2: lamRQ = 1.4475460879e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.13e-12
+ i=    3: lamRQ = 1.4475461389e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.90e-12
+ i=    4: lamRQ = 1.4795904698e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.14e-13
+ i=    5: lamRQ = 1.4795932953e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.84e-13
+ i=    6: lamRQ = 1.4821229979e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.83e-13
+ i=    7: lamRQ = 1.4821229979e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.93e-13
+ i=    8: lamRQ = 1.4930883737e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.09e-13
+ i=    9: lamRQ = 1.5589790317e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.21e-12
+ i=   10: lamRQ = 1.5589790317e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.43e-12
+ i=   11: lamRQ = 1.5700126539e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.23e-12
+ i=   12: lamRQ = 1.5700126539e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.72e-12
+ i=   13: lamRQ = 2.2578540153e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.19e-02
+ i=   14: lamRQ = 2.2581651596e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.18e-02
+ i=   15: lamRQ = 2.2581651617e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.07e-03
+ i=   16: lamRQ = 2.2582621038e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.33e-03
+ i=   17: lamRQ = 2.2582621038e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.21e-02
+ i=   18: lamRQ = 2.2583620460e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.22e-02
+ i=   19: lamRQ = 2.2583620777e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  8.75e-03
+ i=   20: lamRQ = 2.2584434915e+02,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  9.08e-03
+
+PARALLEL + MG --> *** why are residuals SO BIG **** --> FIX BCS
+
+Ogmg:INFO: Setting additional Dirichlet BC to extrapolation since equationToSolve!=OgesParameters::laplaceEquation
+Ogmg:INFO: Setting additional Neumann BC to extrapolation (l=0), eqn2 (l>0) since equationToSolve!=OgesParameters::laplaceEquation
+
+mpirun -np=2 $cgwh -noplot eig.cmd -g=sice8.order4.ml3 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=8 -eigenSolver=default -show=junk.show -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=15 -numEigs=16 -numParGhost=4 -show=diskG8Ev16.show -go=ks
+
+==== implicit: ave-iterations per solve =   5.9 (number of implicit solves=5760)
+
+omega=1.50e+01, k=1.50e+01, lambda=4.19e-01, dx=1.20e-02, domainSize=2.00e+00, NLambda=4.77465, ppw=lambda/dx= 34.9, ppw(rule-of-thumb)= 12.7 (epsr=0.01)
+ tol= 1.00e-14, number of wave-solves (mat-vecs) = 72, cpu= 3.76e+02(s), np=2
+ num eigs requested=16, number eigs converged =16, numArnoldiVectors=33, wave-solves/eig=  4.5, timeSteps/eig=360.0
+ numberOfIterations=0, iterationStartRR=5, assignRitzFrequency=1000, numberOfRitzVectors=20 (for fixed-point)
+ -----------------------------------------------------------------------------
+ i=    0: lamRQ = 1.5589782510e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.43e-04
+ i=    1: lamRQ = 1.5589782510e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.43e-04
+ i=    2: lamRQ = 1.5700115747e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.66e-04
+ i=    3: lamRQ = 1.5700115747e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  3.66e-04
+ i=    4: lamRQ = 1.6037708851e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.57e-04
+ i=    5: lamRQ = 1.6037708857e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.57e-04
+ i=    6: lamRQ = 1.6223403450e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.49e-04
+ i=    7: lamRQ = 1.6223403450e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  2.49e-04
+ i=    8: lamRQ = 1.6470564897e+01,  rel-resid = || L v + lamRQ^2 v ||/lamRQ^2 =  1.68e-04
+
+
+
+SERIAL: MG 
+$cgwh -noplot eig.cmd -g=sice8.order4.ml3 -nf=1 -adjustOmega=0 -ts=implicit -takeImplicitFirstStep=1 -cfl=1000 -orderInTime=2 -solver=none -tol=1e-14 -upwind=0 -imode=1 -maxIterations=30 -matlab=diskG16O2MGEig6 -eigenVectorFile=none -deflateWaveHoltz=0 -numToDeflate=0 -computeEigs=1 -numPeriods=8 -eigenSolver=default -show=junk.show -solveri=multigrid -rtolmg=1e-10 -atolmg=1e-10 -rtoli=1e-12 -atoli=1e-12 -rtolcg=1e-12 -atolcg=1e-12 -mgCoarseGridSolver=bcgs -mgMaxIts=20 -freq=15 -numEigs=16 -numParGhost=4 -show=diskG8Ev16.show -go=ks
 
 
 

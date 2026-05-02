@@ -77,7 +77,7 @@ int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
 
     int numStepsPerPeriod = numPlotSteps/numPeriods;
 
-    if( true || debug & 2 )
+    if( debug & 2 )
         printF("\n >>> adjustTimeStepAndFreq: numPlotSteps=%d, numStepsPerPeriod=%d, numPeriods=%d (solveHelmHelmholtz=%d, numberOfFrequencies=%d)\n\n",
             numPlotSteps,numStepsPerPeriod,numPeriods,(int)solveHelmholtz,numberOfFrequencies);
 
@@ -292,7 +292,8 @@ int CgWave::adjustTimeStepAndFrequencies( const int it, Real & nextTimeToPlot )
         Tperiod = (twoPi/omega)*numPeriods;
         tFinal  = Tperiod; 
 
-        printF("\n >>>>>>>>>>> CgWave : computeEigenmodes omega=%12.4e, numPeriods=%d, tFinal=%10.2e <<<<<<<<<<<<<\n",omega,numPeriods,tFinal );    
+        if( debug & 1 && it<=1 )
+            printF("\n >>>>>>>>>>> CgWave : computeEigenmodes omega=%12.4e, numPeriods=%d, tFinal=%10.2e <<<<<<<<<<<<<\n",omega,numPeriods,tFinal );    
     }    
 
     if( it<=1 && solveHelmholtz )

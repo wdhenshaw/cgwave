@@ -1,6 +1,182 @@
 cgwh= $(HOME)/research/cgwave/bin/cgwh
 WAHO= $(HOME)/Dropbox/AMP/waho
 
+CWH = $(HOME)/Dropbox/complexWaveHoltz
+complexWaveHoltz= $(HOME)/Dropbox/complexWaveHoltz
+
+
+# ============ COMPLEX WAVEHOLTZ PAPER - COUNT ITERATIONS VERUS OMEGA ========
+
+
+# ------------- square Order 4 BC=rrdd WAVE GUIDE --------------------
+squareO4rrdd: square128O4Omega30rrdd square128O4Omega50rrdd square256O4Omega80rrdd
+
+square128O4Omega20rrdd:
+	$(cgwh) -noplot gaussian.cmd -g=square128.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=20 -amp=400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square128O4BrrddFreq20 -go=dfk > square128O4BrrddFreq20.out
+	cp square128O4BrrddFreq20FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+	cp square128O4BrrddFreq20FD24TSINp4FP.m    $(complexWaveHoltz)/matlab/results
+
+
+
+square128O4Omega30rrdd:
+	$(cgwh) -noplot gaussian.cmd -g=square128.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square128O4BrrddFreq30 -go=dfk > square128O4BrrddFreq30.out
+	cp square128O4BrrddFreq30FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+	cp square128O4BrrddFreq30FD24TSINp4FP.m    $(complexWaveHoltz)/matlab/results
+
+square128O4Omega40rrdd:
+	$(cgwh) -noplot gaussian.cmd -g=square128.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=40 -amp=1600 -beta=40 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square128O4BrrddFreq40 -go=dfk > square128O4BrrddFreq40.out
+	cp square128O4BrrddFreq40FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+	cp square128O4BrrddFreq40FD24TSINp4FP.m    $(complexWaveHoltz)/matlab/results
+
+square128O4Omega50rrdd:
+	$(cgwh) -noplot gaussian.cmd -g=square128.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=50 -amp=2500 -beta=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square128O4BrrddFreq50 -go=dfk > square128O4BrrddFreq50.out
+	cp square128O4BrrddFreq50FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+	cp square128O4BrrddFreq50FD24TSINp4FP.m    $(complexWaveHoltz)/matlab/results
+
+square256O4Omega60rrdd:
+	$(cgwh) -noplot gaussian.cmd -g=square256.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=60 -amp=3600 -beta=60 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O4BrrddFreq60 -go=dfk > square256O4BrrddFreq60.out
+	cp square256O4BrrddFreq60FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+	cp square256O4BrrddFreq60FD24TSINp4FP.m    $(complexWaveHoltz)/matlab/results
+
+square256O4Omega70rrdd:
+	$(cgwh) -noplot gaussian.cmd -g=square256.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=70 -amp=4900 -beta=70 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=10000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O4BrrddFreq70 -go=dfk > square256O4BrrddFreq70.out
+	cp square256O4BrrddFreq70FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+	cp square256O4BrrddFreq70FD24TSINp4FP.m    $(complexWaveHoltz)/matlab/results
+
+
+square256O4Omega80rrdd:
+	$(cgwh) -noplot gaussian.cmd -g=square256.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=80 -amp=6400 -beta=80 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=40000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O4BrrddFreq80 -go=fk > square256O4BrrddFreq80.out
+	cp square256O4BrrddFreq80FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+	cp square256O4BrrddFreq80FD24TSINp4FP.m    $(complexWaveHoltz)/matlab/results
+
+square256O4Omega100rrdd:
+	$(cgwh) -noplot gaussian.cmd -g=square256.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=100 -amp=6400 -beta=100 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=40000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O4BrrddFreq100 -go=fk > square256O4BrrddFreq100.out
+	cp square256O4BrrddFreq100FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+	cp square256O4BrrddFreq100FD24TSINp4FP.m    $(complexWaveHoltz)/matlab/results
+
+
+square512O4Omega150rrdd:
+	$(cgwh) -noplot gaussian.cmd -g=square512.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=150 -amp=22500 -beta=150 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=80000 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square512O4BrrddFreq150 -go=fk > square512O4BrrddFreq150.out
+	cp square512O4BrrddFreq150FD24TSINp4gmres.m $(complexWaveHoltz)/matlab/results
+	cp square512O4BrrddFreq150FD24TSINp4FP.m    $(complexWaveHoltz)/matlab/results
+
+
+# square512O4Omega120rrdd:
+# 	$(cgwh) -noplot gaussian.cmd -g=square512.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=120 -amp=14400 -beta=120 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square512O4BrrddFreq120 -go=fk > square512O4BrrddFreq120.out
+# 	cp square512O4BrrddFreq120FD24TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+# 	cp square512O4BrrddFreq120FD24TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+# square512O4Omega160rrdd:
+# 	$(cgwh) -noplot gaussian.cmd -g=square512.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=160 -amp=25600 -beta=160 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc3=d -bc4=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square512O4BrrddFreq160 -go=fk > square512O4BrrddFreq160.out 
+# 	cp square512O4BrrddFreq160FD24TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+# 	cp square512O4BrrddFreq160FD24TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+
+
+# --------- Square Order 2 BC=drdr ------------
+squareO2drdr: square256O2Omega20drdr square256O2Omega30drdr square512O2Omega40drdr square1024O2Omega50drdr square1024O2Omega60drdr
+
+# G1024 omega=60  
+square1024O2Omega60drdr:
+	$(cgwh) -noplot gaussian.cmd -g=square1024.order2 -ts=implicit -cfl=1000 -x0=0.55 -y0=0.6 -nf=1 -freq=60 -amp=3600 -beta=60 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square1024O2BdrdrFreq60 -go=fk
+	cp square1024O2BdrdrFreq60FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square1024O2BdrdrFreq60FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+# G1024 omega=50  
+square1024O2Omega50drdr:
+	$(cgwh) -noplot gaussian.cmd -g=square1024.order2 -ts=implicit -cfl=1000 -x0=0.55 -y0=0.6 -nf=1 -freq=50 -amp=2500 -beta=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square1024O2BdrdrFreq50 -go=fk
+	cp square1024O2BdrdrFreq50FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square1024O2BdrdrFreq50FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+# G512 omega=40
+square512O2Omega40drdr:
+	$(cgwh) -noplot gaussian.cmd -g=square512.order2 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=40 -amp=1600 -beta=40 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square512O2BdrdrFreq40 -go=fk
+	cp square512O2BdrdrFreq40FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square512O2BdrdrFreq40FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+# G256 omega=30
+square256O2Omega30drdr:
+	$(cgwh) -noplot gaussian.cmd -g=square256.order2 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O2BdrdrFreq30 -go=dfk
+	cp square256O2BdrdrFreq30FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square256O2BdrdrFreq30FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+# G256 omega=20
+square256O2Omega20drdr:
+	$(cgwh) -noplot gaussian.cmd -g=square256.order2 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=20 -amp=400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O2BdrdrFreq20 -go=dfk
+	cp square256O2BdrdrFreq20FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square256O2BdrdrFreq20FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+
+
+# --------- Square Order 2 BC=rrrr ------------
+squareO2rrrr: square256O2Omega20 square512O2Omega40 square1024O2Omega50 square1024O2Omega60
+
+# G1024 omega=60  
+square1024O2Omega60:
+	$(cgwh) -noplot gaussian.cmd -g=square1024.order2 -ts=implicit -cfl=1000 -x0=0.55 -y0=0.6 -nf=1 -freq=60 -amp=3600 -beta=60 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square1024O2BrrrrFreq60 -go=fk
+	cp square1024O2BrrrrFreq60FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square1024O2BrrrrFreq60FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+# G1024 omega=50  
+square1024O2Omega50:
+	$(cgwh) -noplot gaussian.cmd -g=square1024.order2 -ts=implicit -cfl=1000 -x0=0.55 -y0=0.6 -nf=1 -freq=50 -amp=2500 -beta=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square1024O2BrrrrFreq50 -go=fk
+	cp square1024O2BrrrrFreq50FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square1024O2BrrrrFreq50FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+# G512 omega=40
+square512O2Omega40:
+	$(cgwh) -noplot gaussian.cmd -g=square512.order2 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=40 -amp=1600 -beta=40 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square512O2BrrrrFreq40 -go=fk
+	cp square512O2BrrrrFreq40FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square512O2BrrrrFreq40FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+# G256 omega=30
+square256O2Omega30:
+	$(cgwh) -noplot gaussian.cmd -g=square256.order2 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O2BrrrrFreq30 -go=dfk
+	cp square256O2BrrrrFreq30FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square256O2BrrrrFreq30FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+# G256 omega=20
+square256O2Omega20:
+	$(cgwh) -noplot gaussian.cmd -g=square256.order2 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=20 -amp=400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O2BrrrrFreq20 -go=dfk
+	cp square256O2BrrrrFreq20FD22TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square256O2BrrrrFreq20FD22TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+
+# ------------- square Order 4 BC=rrrr --------------------
+squareO4: square128O4Omega30 square128O4Omega50 square256O4Omega80 square512O4Omega120
+
+square128O4Omega30:
+	$(cgwh) -noplot gaussian.cmd -g=square128.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square128O4BrrrrFreq30 -go=dfk > square128O4BrrrrFreq30.out
+	cp square128O4BrrrrFreq30FD24TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square128O4BrrrrFreq30FD24TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+square128O4Omega50:
+	$(cgwh) -noplot gaussian.cmd -g=square128.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=50 -amp=2500 -beta=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square128O4BrrrrFreq50 -go=dfk > quare128O4BrrrrFreq50.out
+	cp square128O4BrrrrFreq50FD24TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square128O4BrrrrFreq50FD24TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+square256O4Omega80:
+	$(cgwh) -noplot gaussian.cmd -g=square256.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=80 -amp=6400 -beta=80 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O4BrrrrFreq80 -go=dfk > square256O4BrrrrFreq80.out
+	cp square256O4BrrrrFreq80FD24TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square256O4BrrrrFreq80FD24TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+square512O4Omega120:
+	$(cgwh) -noplot gaussian.cmd -g=square512.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=120 -amp=14400 -beta=120 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square512O4BrrrrFreq120 -go=fk > square512O4BrrrrFreq120.out
+	cp square512O4BrrrrFreq120FD24TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square512O4BrrrrFreq120FD24TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+square512O4Omega160:
+	$(cgwh) -noplot gaussian.cmd -g=square512.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=160 -amp=25600 -beta=160 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square512O4BrrrrFreq160 -go=fk > square512O4BrrrrFreq160.out 
+	cp square512O4BrrrrFreq160FD24TSINp1gmres.m $(complexWaveHoltz)/matlab/results
+	cp square512O4BrrrrFreq160FD24TSINp1FP.m    $(complexWaveHoltz)/matlab/results
+
+
+# ============ COMPLEX WAVEHOLTZ PAPER ========
+
+cwh:
+	$(cgwh) -noplot gaussian.cmd -g=square128.order4 -ts=implicit -cfl=10000 -x0=0.55 -y0=0.6 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=100 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square128O4BrrrrFreq30 -go=dfk
+	cp square128O4BrrrrFreq30FD24TSINp1*.m $(CWH)/results
+
 
 # ============ MULTI-FREQ SQUARE WITH MULTIGRID ===============
 

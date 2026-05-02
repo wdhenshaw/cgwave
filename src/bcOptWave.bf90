@@ -435,6 +435,7 @@ end do
     if( orderOfAccuracy.ge.4. .and. bc(side1,0).eq.neumann .and. \
                                     bc(side2,1).eq.neumann .and. \
                      ( nd.eq.2 .or. bc(side3,2).eq.neumann ) )then
+
       ! ---- This is a Neumann-Neumann corner ----
       cornerBC(side1,side2,side3)=extrapolateCorner
 
@@ -442,7 +443,13 @@ end do
       !   write(*,'("Assign special Neumann corners conditions ")')
       ! end if
       ! cornerBC(side1,side2,side3)=taylor4thOrderEvenCorner
-      ! cornerBC(side1,side2,side3)=evenSymmetryCorner
+      if( assignTwilightZone.eq.0 )then 
+        ! *wdh* May 1, 2206
+        if( t .le. dt )then
+          write(*,'("bcOptWave: assign even symmetry at Neumann-Neumman corner, side1,side2,side3=",3i2)') side1,side2,side3
+        end if
+        cornerBC(side1,side2,side3)=evenSymmetryCorner
+      end if
       ! cornerBC(side1,side2,side3)=0 
     else if(            bc(side1,0).eq.exactBC .and. \
                         bc(side2,1).eq.exactBC .and. \
@@ -2140,11 +2147,12 @@ end do
 
 ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
 ! *wdh* Dec 7, 2023 #If #ORDER eq "2"
-  if( orderOfAccuracy==4 )then
-    if( t.le.3*dt )then
-      write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-    end if
-  end if
+  ! if( orderOfAccuracy==4 )then
+  !   if( t.le.3*dt )then
+  !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+  !   end if
+  ! end if
+
 
   ! assign extram points in the tangential directions
   extram = numGhost-1 
@@ -2990,7 +2998,7 @@ end do ! end edgeDirection
 !   Assign the RHS for implicit boundary conditions
 !
 ! =========================================================================
-#beginMacro assignImplicitBoundaryConditions()
+#beginMacro assignImplicitBoundaryConditions(ORDER)
 
   ! -------- IMPLICIT BoundaryConditions --------
   ! 
@@ -3390,6 +3398,7 @@ end do ! end edgeDirection
             !  -is*D0x W^{n+1}/dt + .5*L W^{n+1} = -is*D0xW^n/dt - .5*L W^n            
             if( assignBCForImplicit.eq.1 )then
               if( orderOfAccuracy==2 )then
+                #If ORDER eq 2 
                 if( axis==0 )then
                   u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                    \
                         - .5*(   ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   \
@@ -3399,7 +3408,9 @@ end do ! end edgeDirection
                         - .5*( .5*ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   \
                         - .5*(    ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) )                   
                 end if 
+                #End
               else if( orderOfAccuracy==4 )then
+                #If ORDER eq 4 
                 !if( .true. )then
                 ! exactly match Matlab code
                 if( axis==0 )then
@@ -3418,7 +3429,8 @@ end do ! end edgeDirection
                   u(j1-is1,j2-is2,j3,uc) =          unyyy22r(i1,i2,i3,uc)/(dt) \
                                     +is2*.5*(.5*ca*unxxyy22r(i1,i2,i3,uc) )    \
                                     +is2*.5*(   ca*unyyyy22r(i1,i2,i3,uc) )                                               
-                end if                   
+                end if 
+                #End                  
                 ! else
                 !   ! OLD WAY 
                 !   if( axis==0 )then
@@ -4201,7 +4213,8 @@ subroutine NAME( ARGLIST() )
   if( assignBCForImplicit.eq.1 .or. assignBCForImplicit.eq.2 )then
 
     ! -------- IMPLICIT BoundaryConditions --------
-    assignImplicitBoundaryConditions()
+    assignImplicitBoundaryConditions(ORDER)
+
 
     if( assignCornerGhostPoints.eq.1 )then
 
@@ -4527,7 +4540,6 @@ subroutine NAME( ARGLIST() )
 #endMacro
 
 
-
 ! --- Macro to build the file for each dimension and order ---
 #beginMacro buildFile(NAME,DIM,ORDER)
 #beginFile NAME.f90
@@ -4539,10 +4551,10 @@ subroutine NAME( ARGLIST() )
 ! --- construct the different files ----
 ! ****************************************************************
 
-! buildFile(bcOptWave2dOrder2,2,2)
-! buildFile(bcOptWave3dOrder2,3,2)
+buildFile(bcOptWave2dOrder2,2,2)
+buildFile(bcOptWave3dOrder2,3,2)
 buildFile(bcOptWave2dOrder4,2,4)
-! buildFile(bcOptWave3dOrder4,3,4)
+buildFile(bcOptWave3dOrder4,3,4)
 
 
 ! buildFile(bcOptWave2dOrder4,2,6)

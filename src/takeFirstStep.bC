@@ -321,7 +321,10 @@ takeFirstStep( int cur, real t )
   FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");
 
   if( debug & 4 )
+  {
     printF("\n *******  CgWave::takeFirstStep t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
+    fprintf(pDebugFile,"\n *******  CgWave::takeFirstStep t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
+  }
 
  
   const int & addForcing = dbase.get<int>("addForcing");
@@ -417,7 +420,11 @@ takeFirstStep( int cur, real t )
       // FINISH ME FOR WHEN THERE IS FORCING
       // if( forcingOption ~
       if( forcingOption==userForcing || forcingOption==helmholtzForcing )
+      {
         printF("**** takeFirstStep: EXPLICIT FIRST STEP -- FIX ME : ADD FORCING forcingOption=%d\n",(int)forcingOption);
+        if( debug & 4 )
+          fprintf(pDebugFile,"**** takeFirstStep: EXPLICIT FIRST STEP -- FIX ME : ADD FORCING forcingOption=%d\n",(int)forcingOption);
+      }
 
       RealArray lap(J1,J2,J3);
       operators[grid].derivative(MappedGridOperators::laplacianOperator,ucLocal,lap,J1,J2,J3);
@@ -535,7 +542,10 @@ takeFirstStep( int cur, real t )
   }  
 
   if( debug & 4 )
+  {
     printF("*******  CgWave::takeFirstStep; APPLY BOUNDARY CONDTIONS t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
+    fprintf(pDebugFile,"*******  CgWave::takeFirstStep; APPLY BOUNDARY CONDTIONS t=%9.3e, cur=%d, dt=%9.3e *************\n",t,cur,dt);
+  }
 
 
   bool applyExplicitBoundaryConditions=true;
@@ -643,8 +653,14 @@ takeFirstStepHelmholtz( int cur, real t )
   assert( t==0. );
 
   const int & debug           = dbase.get<int>("debug");
+  FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+  FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");  
+
   if( debug & 4 )
+  {
     printF("*******  CgWave::takeFirstStepHelmholtz GET SOLUTION at t=dt *************\n");
+    fprintf(pDebugFile,"*******  CgWave::takeFirstStepHelmholtz GET SOLUTION at t=dt *************\n");
+  }
   
   const real & c                        = dbase.get<real>("c");
   const real & dt                       = dbase.get<real>("dt");
@@ -1001,8 +1017,16 @@ takeFirstStepHelmholtz( int cur, real t )
   if( !usePeriodicFirstStep && 
       timeSteppingMethod == explicitTimeStepping ) // May 2, 2025 added after implicit first step added for complex case
   {
+    if( debug & 8 )
+    {
+      u[next].display(sPrintF("takeFirstStepHelmholtz: BEFORE applyBC to first step, t=%9.3e",t+dt),pDebugFile,"%9.2e ");
+    }
+
     if( debug & 2 )
+    {
       printF("~~~~~~~~~~~~~~ Apply boundary conditions after the EXPLICIT first step ~~~~~~~~~~~~~\n");
+      fprintf(pDebugFile,"~~~~~~~~~~~~~~ Apply boundary conditions after the EXPLICIT first step ~~~~~~~~~~~~~\n");
+    }
     bool applyExplicitBoundaryConditions=true;
     applyBoundaryConditions( u[next],u[cur], t+dt, applyExplicitBoundaryConditions );
   }
@@ -1013,8 +1037,10 @@ takeFirstStepHelmholtz( int cur, real t )
       u[next][grid].updateGhostBoundaries();
   }
   
-  if( false )
-    u[next].display(sPrintF("takeFirstStepHelmholtz: u[next] after first step, t=%9.3e",t+dt),"%9.2e ");
+  if( debug & 8 )
+  {
+    u[next].display(sPrintF("takeFirstStepHelmholtz: u[next] after first step, t=%9.3e",t+dt),pDebugFile,"%9.2e ");
+  }
 
 
   return 0;

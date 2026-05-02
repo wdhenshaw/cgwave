@@ -36,6 +36,7 @@ $icshow=""; # show file for initial condition
 $cfl=.9; $bc="d"; 
 $ts="explicit"; $dtMax=1; $takeImplicitFirstStep=1; $takePeriodicFirstStep=0;
 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+# $bcApproach="cbc"; # bc Approach : cbc, lcbc, oneSided
 $orderInTime=-1;  # -1 = use default
 $deflateWaveHoltz=0; $deflateForcing=0; $numToDeflate=1; $eigenVectorFile="eigenVectors.hdf"; $augmentedVectorsAreEigenvectors=1;
 $eigTol=1.e-4; # eigenvalue tol for multiplicity 
@@ -260,6 +261,7 @@ if( $go eq "fk" ){ $cmd="$initialCondition\ncompute with fixed-point\n $initialC
 if( $go eq "dfk" ){ $cmd="solve Helmholtz directly\n $initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n exit"; }
 if( $go eq "dfks" ){ $cmd="solve Helmholtz directly\n $initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n save to show\n exit"; }
 if( $go eq "fks" ){ $cmd="$initialCondition\ncompute with fixed-point\n $initialCondition\n compute with krylov\n save to show\n exit"; }
+if( $go eq "fs" ){ $cmd="$initialCondition\ncompute with fixed-point\n save to show\n exit"; }
 if( $go eq "ks"  ){ $cmd="$initialCondition\n compute with krylov\n save to show\n exit"; }
 if( $go eq "as"  ){ $cmd="$initialCondition\n use augmented gmres 1\n compute with krylov\n save to show\n exit"; }
 if( $go eq "dks"  ){ $cmd="solve Helmholtz directly\n $initialCondition\n compute with krylov\n save to show\n exit"; }

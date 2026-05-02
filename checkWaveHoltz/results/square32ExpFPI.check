@@ -1,4 +1,4 @@
-# Check file for cgWaveHoltz, grid=square32, Thu May 29 14:06:31 2025
+# Check file for cgWaveHoltz, grid=square32, Thu Feb 26 15:19:28 2026
 grid=square32;
 timeStepping=explicit;
 orderOfAccuracy=4;
@@ -38,5 +38,5 @@ eigMultiplicity=[ ...
 eigsToDeflate=[ ...
 0 , 1 , 2 , 3 , 6 , 7 , 10 , 11 , 12 , 16 , ...
 15 , 14 , 13 ];
-maxRes=1.685e-02;
+maxRes=6.738e-04;
 errorBetweenWaveHoltzAndHelmholtz=4.828e-04;

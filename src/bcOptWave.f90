@@ -328,16 +328,12 @@
 ! **********************************************************************************
 
 
-
 ! --- Macro to build the file for each dimension and order ---
 
 ! ****************************************************************
 ! --- construct the different files ----
 ! ****************************************************************
 
-! buildFile(bcOptWave2dOrder2,2,2)
-! buildFile(bcOptWave3dOrder2,3,2)
-! buildFile(bcOptWave3dOrder4,3,4)
 
 
 ! buildFile(bcOptWave2dOrder4,2,6)

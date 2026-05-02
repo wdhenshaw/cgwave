@@ -156,6 +156,8 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
   const int np   = max(1,Communication_Manager::numberOfProcessors());
 
   const int & debug = dbase.get<int>("debug");
+  FILE *& debugFile  = dbase.get<FILE*>("debugFile");
+  FILE *& pDebugFile = dbase.get<FILE*>("pDebugFile");  
 
   dbase.get<int>("bcCount")++;    // count the number of times applyBC is called
 
@@ -165,9 +167,13 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
   //   return 0;
   // }
 
-  if( false || debug & 8 )
-    printF("@@ applyBoundaryConditions called at t=%9.3e, applyExplicitBoundaryConditions=%d, fillImplicitBoundaryConditions=%d,\n",t,
+  if( debug & 8 )
+  {
+    printF("\n @@ applyBoundaryConditions called at t=%9.3e, applyExplicitBoundaryConditions=%d, fillImplicitBoundaryConditions=%d,\n",t,
          applyExplicitBoundaryConditions,fillImplicitBoundaryConditions);
+    fprintf(pDebugFile,"\n @@ applyBoundaryConditions called at t=%9.3e, applyExplicitBoundaryConditions=%d, fillImplicitBoundaryConditions=%d,\n",t,
+         applyExplicitBoundaryConditions,fillImplicitBoundaryConditions);    
+  }
 
   // realCompositeGridFunction *& ucg = dbase.get<realCompositeGridFunction*>("ucg");
   // realCompositeGridFunction & u = ucg[current];
@@ -371,6 +377,9 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
                     bcLocal(0,0), frequencyArray(0),
                     pdb, ipar[0],rpar[0], ierr );
 
+          if( debug & 16 )
+           ::display(uLocal,"u after bcOptWave, before abcWave",pDebugFile,"%9.2e ");
+
           // NOTES:
           //   DO NOT CALL ABC FOR EM order 4 implicit -- FIX ME FOR UPWINDING 
           //   DO CALL ABC FOR EM ORDER 2 implicit and upwinding since we need to assign ABCs after upwind step
@@ -381,7 +390,6 @@ applyBoundaryConditions( realCompositeGridFunction & u, realCompositeGridFunctio
 
           if( !fillImplicitBoundaryConditions && applyABCs )
           // if( !fillImplicitBoundaryConditions && (orderOfAccuracy==2 || !gridIsImplicit(grid)) )
-          // if( !fillImplicitBoundaryConditions )
           {
             // Non-reflecting and Absorbing boundary conditions
             // ***NOTE*** symmetry corners and edges are assigned in this next routine *fix me*

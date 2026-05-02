@@ -69,7 +69,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
   const Real fSign = forcingOption==helmholtzForcing ? -1.0 : 1.0;  
   // const Real fSign = 1.;
   
-  if( true )
+  if( false )
   {
     printF("\n ##### userDefinedForcing: t=%9.3e option=[%s] fSign=%g ####\n\n",t,(const char*)option,fSign);
   }
@@ -148,7 +148,7 @@ userDefinedForcing( realArray & f, int iparam[], real rparam[] )
         // Use frequencyArray so we get any adjusted frequencies: --> doesn't matter if only evaluated at t=0
         Real omega = frequencyArray(freq);
 
-        if( true || t0 < 2.*dt )
+        if( (debug & 1) &&  (t0 < 2.*dt) )
           printF("\n >>> Gaussian source %i, freq=%d: setting a=%8.2e, beta=%8.2e, omega=%8.2e, p=%8.2e, x0=%8.2e, y0=%8.2e, "
                  "z0=%8.2e, t0=%8.2e, t=%8.2e, fSign=%g\n\n", m,freq,a,beta,omega,p,x0,y0,z0,t0,t,fSign);
 

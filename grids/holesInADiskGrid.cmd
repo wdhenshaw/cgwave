@@ -1,8 +1,8 @@
 #
-# A collection of holes in a rectangular domain -- for scattering prolems
+# A collection of holes in a DISK
 #
 #
-# usage: ogen [-noplot] holeCollectionGrid -factor=<num> -order=[2/4/6/8] -interp=[e/i] -nCylX=<i> -nCyly=<i> -deltaX=<f> -deltaY=<f> ...
+# usage: ogen [-noplot] holesInADiskGrid -factor=<num> -order=[2/4/6/8] -interp=[e/i] -nCylX=<i> -nCyly=<i> -deltaX=<f> -deltaY=<f> ...
 #                             -xa=<> -xb=<> -ya=<> -yb=<> -blf=<num> -ml=<> -rgd=[fixed|var] -offsetColumns=[0|1] -numGhost=<i> -periodic=[|p|np|pn]
 # 
 #  -blf : boundary-layer-factor : blf>1 : make grid lines near boundary this many times smaller
@@ -11,43 +11,53 @@
 #  -xa, -xb, -ya, -yb : bounds on the back ground grid
 #  -cx, -cy : center for the annulus
 # 
-# examples:
+#  Examples:
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=2 -nCyly=2 -deltaX=0.5 -deltaY=0.5 -offsetColumns=0 -order=2 -factor=4 
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=2 -nCyly=2 -deltaX=0.5 -deltaY=0.5 -offsetColumns=0 -order=4 -factor=4 
 #
-#     ogen -noplot holeCollectionGrid -order=2 -interp=e -blf=2 -innerRad=0.1 -periodic=nn -xa=-2 -nCylx=3 -nCyly=5 -deltaX=0.5 -deltaY=0.5 -offsetColumns=1 -factor=4 
-#     ogen -noplot holeCollectionGrid -order=4 -interp=e -blf=2 -innerRad=0.1 -periodic=nn -xa=-2 -nCylx=3 -nCyly=5 -deltaX=0.5 -deltaY=0.5 -offsetColumns=1 -numGhost=3 -factor=4 
-#     ogen -noplot holeCollectionGrid -order=4 -interp=e -blf=2 -innerRad=0.1 -periodic=nn -xa=-2 -nCylx=3 -nCyly=5 -deltaX=0.5 -deltaY=0.5 -offsetColumns=1 -numGhost=3 -factor=8
-# 
-# THREE HOLES: 
-# ogen -noplot holeCollectionGrid -prefix=threeHolesGrid -order=4 -interp=e -blf=2 -innerRad=0.35 -periodic=nn -xa=-2 -nCylx=2 -nCyly=1 -deltaX=1 -deltaY=1 -offsetColumns=1 -factor=4 
-# ogen -noplot holeCollectionGrid -prefix=threeHolesGrid -order=4 -interp=e -blf=2 -innerRad=0.35 -periodic=nn -xa=-2 -nCylx=2 -nCyly=1 -deltaX=1 -deltaY=1 -offsetColumns=1 -factor=8 
-# ogen -noplot holeCollectionGrid -prefix=threeHolesGrid -order=4 -interp=e -blf=2 -innerRad=0.35 -periodic=nn -xa=-2 -nCylx=2 -nCyly=1 -deltaX=1 -deltaY=1 -offsetColumns=1 -factor=16 
-# ogen -noplot holeCollectionGrid -prefix=threeHolesGrid -order=4 -interp=e -blf=2 -innerRad=0.35 -periodic=nn -xa=-2 -nCylx=2 -nCyly=1 -deltaX=1 -deltaY=1 -offsetColumns=1 -factor=32 
-# 
-# ogen -noplot holeCollectionGrid -prefix=threeHolesGrid -order=2 -interp=e -blf=2 -innerRad=0.35 -periodic=nn -xa=-2 -nCylx=2 -nCyly=1 -deltaX=1 -deltaY=1 -offsetColumns=1 -factor=4 
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=3 -nCyly=3 -deltaX=0.5 -deltaY=0.5 -offsetColumns=1 -order=2 -factor=4 
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=3 -nCyly=3 -deltaX=0.5 -deltaY=0.5 -offsetColumns=1 -order=4 -numGhost=3 -factor=8 
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=3 -nCyly=3 -deltaX=0.5 -deltaY=0.5 -offsetColumns=1 -order=4 -numGhost=3 -factor=16
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=3 -nCyly=3 -deltaX=0.5 -deltaY=0.5 -offsetColumns=1 -order=4 -numGhost=3 -factor=32 
 #
-$prefix="holeCollectionGrid";  $rgd="var";
+#
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=7 -nCyly=7 -deltaX=0.3 -deltaY=0.3 -offsetColumns=1 -order=2 -factor=8 
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=7 -nCyly=7 -deltaX=0.3 -deltaY=0.3 -offsetColumns=1 -numGhost=3 -order=4 -factor=8
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=7 -nCyly=7 -deltaX=0.3 -deltaY=0.3 -offsetColumns=1 -numGhost=3 -order=4 -factor=16
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=7 -nCyly=7 -deltaX=0.3 -deltaY=0.3 -offsetColumns=1 -numGhost=3 -order=4 -factor=32
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.1 -nCylx=7 -nCyly=7 -deltaX=0.3 -deltaY=0.3 -offsetColumns=1 -numGhost=3 -order=4 -factor=64
+#
+# More and smaller holes:
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.03 -nCylx=15 -nCyly=15 -deltaX=0.15 -deltaY=0.15 -offsetColumns=1 -order=2 -factor=16 
+#    ogen -noplot holesInADiskGrid -interp=e -innerRad=0.03 -nCylx=15 -nCyly=15 -deltaX=0.15 -deltaY=0.15 -offsetColumns=1 -numGhost=3 -order=4 -factor=32
+#
+$prefix="holesInADiskGrid";  $rgd="var";
 $bcSquare="d"; # old way
 $periodic="";  # new way 
 $dw=""; $iw=""; 
 $order=2; $factor=1; $interp="i"; $ml=0; # default values
 $orderOfAccuracy = "second order"; $ng=2; $interpType = "implicit for all grids";
-$name=""; $xa=-2.; $xb=2.; $ya=-2.; $yb=2.; 
+$name=""; $xa=-1.; $xb=1.; $ya=-1.; $yb=1.; 
 $cx=0.; $cy=0.;  # center for the annulus
 $blf=1;  # this means no stretching
-$deltaRadius0=.3; # radius for rgd fixed
+$deltaRadius0=.2; # radius for rgd fixed
 $numGhost=-1;  # if this value is set, then use this number of ghost points
-$innerRad=.5; 
+$innerRad=.1; 
 $stretchRes=1.5; # stretch resolution factor to increase points in stretching direction
 $offsetColumns=0; # 1=offset every second column by .5*$deltaY
+$cutOffRadius=.8; # only include disks within this radius
 #
 $nCylx=2; $nCyly=3; $deltaX=1; $deltaY=1;
+# Here is the radius of the circular boundary:
+$outerRadius=1.; $fixedRadius=.25;
 # 
 # get command line arguments
 GetOptions( "order=i"=>\$order,"factor=f"=> \$factor,"xa=f"=>\$xa,"xb=f"=>\$xb,"ya=f"=>\$ya,"yb=f"=>\$yb,\
             "interp=s"=> \$interp,"name=s"=> \$name,"ml=i"=>\$ml,"blf=f"=> \$blf, "prefix=s"=> \$prefix,\
             "cx=f"=>\$cx,"cy=f"=>\$cy,"rgd=s"=> \$rgd,"bcSquare=s"=>\$bcSquare,"numGhost=i"=>\$numGhost,\
             "iw=i"=>\$iw,"dw=i"=>\$dw,"periodic=s"=>\$periodic,"innerRad=f"=>\$innerRad,"offsetColumns=i"=>\$offsetColumns,\
-            "nCylx=i"=>\$nCylx,"nCyly=i"=>\$nCyly,"deltaX=f"=>\$deltaX,"deltaY=f"=>\$deltaY,"stretchRes=f"=>\$stretchRes );
+            "nCylx=i"=>\$nCylx,"nCyly=i"=>\$nCyly,"deltaX=f"=>\$deltaX,"deltaY=f"=>\$deltaY,"stretchRes=f"=>\$stretchRes,\
+            "fixedRadius=f"=>\$fixedRadius, "cutOffRadius=f"=>\$cutOffRadius );
 # 
 if( $order eq 4 ){ $orderOfAccuracy="fourth order"; $ng=2; }\
 elsif( $order eq 6 ){ $orderOfAccuracy="sixth order"; $ng=3; }\
@@ -61,7 +71,8 @@ if( $periodic eq "p" ){ $suffix = "p"; }
 if( $periodic eq "np" ){ $suffix = "np"; }
 if( $periodic eq "pn" ){ $suffix = "pn"; }
 if( $iw eq "" ){ $suffix .= ".order$order"; }else{ $suffix .= ".Iw$iw" . "Dw$dw" . "$bc"; }
-# $suffix = ".order$order"; 
+# $suffix = ".order$order";
+$ng0=$ng; 
 if( $numGhost ne -1 ){ $ng = $numGhost; } # overide number of ghost
 if( $numGhost ne -1 ){ $suffix .= ".ng$numGhost"; } 
 # if( $blf ne 1 ){ $suffix .= ".s$blf"; }
@@ -88,31 +99,45 @@ sub max{ local($n,$m)=@_; if( $n>$m ){ return $n; }else{ return $m; } }
 #
 create mappings
 #
-rectangle
-  set corners
-    $xa $xb $ya $yb
+Annulus
+  # optionally keep the number of radial points on the annulus fixed:
+  # $nr = 9+$ng;
+  $nr = intmg( 5+$ng0 );
+  if( $order eq 4 ){ $nr = $nr+2; } # add more for order 6 to avoid backup
+  if( $order eq 8 ){ $nr = $nr+4; } # add more for order 8 to avoid backup
+  $innerRadius= $outerRadius - ($nr-1)*$ds;
+  if( $rgd eq "fixed" ){ $innerRadius=$outerRadius-$fixedRadius; $nr=int( $fixedRadius/$ds+1.5 ); }
+  inner and outer radii
+    $innerRadius $outerRadius
   lines
-    $nx = intmg( ($xb-$xa)/$ds +1.5 ); 
-    $ny = intmg( ($yb-$ya)/$ds +1.5 ); 
-    $nx $ny
+    $nTheta = intmg( 2.*$pi*($innerRadius+$outerRadius)*.5/$ds + 1.5 );
+    $nTheta $nr
   boundary conditions
-    # $sbc="1 2 3 4";
-    # if( $bcSquare eq "p" ){ $sbc = "-1 -1 3 4"; }
-    # $sbc
-    if( $periodic eq "p" ){ $bc ="-1 -1 -1 -1"; }\
-    elsif( $periodic eq "np" ){ $bc ="1 2 -1 -1"; }\
-    elsif( $periodic eq "pn" ){ $bc ="-1 -1 3 4"; }else{ $bc="1 2 3 4"; }   
-    $bc 
+    -1 -1 0 1 
   mappingName
-  square
+   outerAnnulus
 exit
 #
-# if 
+rectangle
+  set corners
+    $xb =  $innerRadius+($ng-1)*$ds;
+    $xa = -$xb;
+    $xa $xb $xa $xb
+  lines
+    $nx = intmg( ($xb-$xa)/$ds +1.5 ); $ny=$nx; 
+    $nx $ny
+  boundary conditions
+    0 0 0 0
+  mappingName
+    square
+exit
+# #
 if( $blf>1 ){ $annulusName="AnnulusUnStretched"; $stretchAnnulusName="Annulus"; }else{ $annulusName="Annulus"; $stretchAnnulusName="AnnulusStretched"; }
 Annulus
   # Make sure there are at least 4 points on the coarsest MG level
   # $nr = max( 5+ $ng + 2*($order-2), 2**($ml+2) );
-  $nr = max( 5+ $ng, 2**($ml+2) );
+  $nr = max( 5+ $ng0 + 2*($order-2), 2**($ml+2) );
+  if( $order eq 4 ){ $nr = $nr+2; } # add more for order 4 to avoid backup
   $nr = intmg( $nr );
   # $innerRad=.5; 
   $outerRad = $innerRad + ($nr-1)*$ds;
@@ -128,7 +153,7 @@ Annulus
   boundary conditions
     -1 -1 5 0
   share
-     0  0 5 0
+     0  0 0 0
   mappingName
    $annulusName
 exit
@@ -174,20 +199,28 @@ sub makeDisk\
 # ===================================================
 #   Make an array of cylinders
 #     makeDiskArray(radius,nCylx,nCyly,x0,dx0,y0,dy0)
-#     
+#  
+# ONLY ADD cylinders that are INSIDE the main outer DISK 
+#   
 # Make cylinders at centers
 #      (x0+i*dx0,y0+j*dy0)  i=0,..,nx0, j=0,..,ny0
 # 
 # Result: $commands
 # =====================================================
+# 
+# if( $rada < $outerRadius - ($innerRad + ($ng0+5)*$ds) ){
 sub makeDiskArray \
 { local($nCylx,$nCyly,$x0,$dx0,$y0,$dy0)=@_; \
   local $cmds; $cmds=""; \
   if( $offsetColumns ){ $mod2=2; }else{ $mod2=1; } \
   for( $i=0; $i<$nCylx; $i++ ){ \
   for( $j=-($i%$mod2); $j<$nCyly; $j++ ){ \
-    makeDisk($x0+$i*$dx0,$y0+$j*$dy0 + ($i%$mod2)*$dy0*.5 ); \
+    $xca=$x0+$i*$dx0; $yca=$y0+$j*$dy0 + ($i%$mod2)*$dy0*.5; \
+    $rada = sqrt( $xca*$xca + $yca*$yca ); \
+    if( $rada < $cutOffRadius ){\
+    makeDisk($xca,$yca); \
     $cmds = $cmds . $commands; \
+    }\
   }}\
   $commands=$cmds; \
 }
@@ -203,6 +236,7 @@ $commands
 exit
 generate an overlapping grid
     square
+    outerAnnulus
     $mappingsList
   done
   change parameters

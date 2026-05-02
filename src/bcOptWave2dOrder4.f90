@@ -2638,11 +2638,6 @@ real uzzzz
                  !  -is*D0x W^{n+1}/dt + .5*L W^{n+1} = -is*D0xW^n/dt - .5*L W^n            
                  if( assignBCForImplicit.eq.1 )then
                    if( orderOfAccuracy==2 )then
-                     if( axis==0 )then
-                       u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                    - .5*(   ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   - .5*(.5*ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) ) 
-                     else
-                       u(j1,j2,j3,uc) = (un(j1,j2,j3,uc)-un(i1p,i2p,i3p,uc))/(2.*dx(axis)*dt)                     - .5*( .5*ca*(un(i1+1,i2,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1-1,i2,i3,uc))/(dx(0)**2) )   - .5*(    ca*(un(i1,i2+1,i3,uc)-2.*un(i1,i2,i3,uc)+un(i1,i2-1,i3,uc))/(dx(1)**2) )                   
-                     end if 
                    else if( orderOfAccuracy==4 )then
                      !if( .true. )then
                      ! exactly match Matlab code
@@ -2654,7 +2649,7 @@ real uzzzz
                        u(j1,j2,j3,uc) =          uny42r(i1,i2,i3,uc)/(dt) +is2*.5*(.5*ca*unxx42r(i1,i2,i3,uc) )    +is2*.5*(   ca*unyy42r(i1,i2,i3,uc) ) 
                        ! ghost 2: 
                        u(j1-is1,j2-is2,j3,uc) =          unyyy22r(i1,i2,i3,uc)/(dt) +is2*.5*(.5*ca*unxxyy22r(i1,i2,i3,uc) )    +is2*.5*(   ca*unyyyy22r(i1,i2,i3,uc) )                                               
-                     end if                   
+                     end if 
                      ! else
                      !   ! OLD WAY 
                      !   if( axis==0 )then
@@ -6549,11 +6544,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "4" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -6803,11 +6798,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "4" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -7083,11 +7078,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "4" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -7473,11 +7468,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "4" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -8079,11 +8074,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "4" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -8354,11 +8349,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "4" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -8664,11 +8659,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "4" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -9075,11 +9070,11 @@ real uzzzz
                      !---------------------------------------------------------------
                    ! *wdh* Dec 7 : Apply 2nd order conditions for fourth order scheme too 
                    ! *wdh* Dec 7, 2023 #If "4" eq "2"
-                     if( orderOfAccuracy==4 )then
-                       if( t.le.3*dt )then
-                         write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
-                       end if
-                     end if
+                     ! if( orderOfAccuracy==4 )then
+                     !   if( t.le.3*dt )then
+                     !     write(*,'("Neumann CBC order=4: Stage I: apply 2nd order conditions first")') 
+                     !   end if
+                     ! end if
                      ! assign extram points in the tangential directions
                      extram = numGhost-1 
                        m1a=gridIndexRange(0,0)-extram
@@ -10572,7 +10567,13 @@ real uzzzz
                !   write(*,'("Assign special Neumann corners conditions ")')
                ! end if
                ! cornerBC(side1,side2,side3)=taylor4thOrderEvenCorner
-               ! cornerBC(side1,side2,side3)=evenSymmetryCorner
+               if( assignTwilightZone.eq.0 )then 
+                 ! *wdh* May 1, 2206
+                 if( t .le. dt )then
+                   write(*,'("bcOptWave: assign even symmetry at Neumann-Neumman corner, side1,side2,side3=",3i2)') side1,side2,side3
+                 end if
+                 cornerBC(side1,side2,side3)=evenSymmetryCorner
+               end if
                ! cornerBC(side1,side2,side3)=0 
              else if(            bc(side1,0).eq.exactBC .and. bc(side2,1).eq.exactBC .and. ( nd.eq.2 .or. bc(side3,2).eq.exactBC ) )then
                ! ---- Do nothing at this exact corner 

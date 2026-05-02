@@ -14,7 +14,8 @@ $upwind=1; # new way
 $tf=5.; $tp=.5; $imode=0;  $implicitUpwind=0; 
 $beta2=.0; $beta4=0.; $beta6=0.; $beta8=0.; # weights in implicit time-stepping 
 $kx=1; $ky=1; $kz=1; 
-$bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+# May 1,2026 $bcApproach="oneSided"; # bc Approach : cbc, lcbc, oneSided
+$bcApproach="cbc"; # bc Approach : cbc, lcbc, oneSided
 $meApproach="std"; # or "ha"
 $matlab="cgWave"; $show=""; $flushFrequency=10;
 $cfl=.9; $bc="d"; $ts="explicit"; $dtMax=1; 

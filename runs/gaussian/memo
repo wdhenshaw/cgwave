@@ -1,4 +1,127 @@
 
+*************************************
+****** Sat May 2, 2026
+
+ADD DHS Neumann BC CURVILINEAR
+
+>>> 3D
+
+3D ORDER=4 :  DHS matches WH
+$cgwh noplot gaussian.cmd -g=box2.order4 -ts=explicit -cfl=.95 -x0=0.05 -y0=0.1 -z0=0 -nf=1 -freq=10 -amp=100 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=n -bcApproach=cbc -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -go=og
+
+solveHelmholtz: max-rel-residual [Re,Im]=[1.06e-11,2.29e-11] (gmres, numIts=80, ave-CR= 0.75 , cpu=1.34e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[3.60e-12,5.96e-12],  norm [Re,Im]=[4.16e-01,2.48e-12] (between WaveHoltz and Direct Helmholtz)
+
+
+3D ORDER=2 :  DHS matches WH
+$cgwh noplot gaussian.cmd -g=box2.order2 -ts=explicit -cfl=.95 -x0=0.05 -y0=0.1 -z0=0 -nf=1 -freq=10 -amp=100 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=n -bcApproach=cbc -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -go=og
+
+solveHelmholtz: max-rel-residual [Re,Im]=[2.18e-11,8.43e-12] (gmres, numIts=81, ave-CR= 0.76 , cpu=7.25e-01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[6.92e-12,6.87e-12],  norm [Re,Im]=[2.13e-01,1.46e-12] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+
+
+ORDER=4 :  DHS matches WH
+$cgwh noplot gaussian.cmd -g=nonSquare64.order4 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=20 -amp=400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=n -bcApproach=cbc -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -go=og
+
+solveHelmholtz: max-rel-residual [Re,Im]=[3.58e-12,5.87e-12] (gmres, numIts=131, ave-CR= 0.83 , cpu=1.70e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[6.98e-04,1.86e-12],  norm [Re,Im]=[2.90e+00,5.40e-12] (between WaveHoltz and Direct Helmholtz)
+
+
+
+ORDER=2 :  DHS matches WH
+$cgwh noplot gaussian.cmd -g=nonSquare64.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=20 -amp=400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=n -bcApproach=cbc -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -go=og
+
+solveHelmholtz: max-rel-residual [Re,Im]=[5.51e-12,9.99e-12] (gmres, numIts=132, ave-CR= 0.83 , cpu=1.02e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[6.66e-13,1.32e-12],  norm [Re,Im]=[3.90e+00,5.15e-12] (between WaveHoltz and Direct Helmholtz)
+
+
+>>>>>>>>>>> START Regression tests: bc=a
+$cgwh noplot gaussian.cmd -g=square32.order4 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bcApproach=cbc -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -go=dfk
+
+solveHelmholtz: max-rel-residual [Re,Im]=[2.53e-10,6.61e-10] (gmres, numIts=14, ave-CR= 0.25 , cpu=9.14e-02(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.88e-10,3.61e-10],  norm [Re,Im]=[3.20e-01,6.09e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+
+$cgwh noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bcApproach=cbc -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -go=dfk
+
+solveHelmholtz: max-rel-residual [Re,Im]=[1.61e-10,3.41e-10] (gmres, numIts=15, ave-CR= 0.26 , cpu=8.81e-02(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[1.46e-10,2.03e-10],  norm [Re,Im]=[3.23e-01,6.16e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+<<<<<<<<<<<<<<<<< END regression tests
+
+*******************************************
+********* Fri May 1, 2026
+
+
+bc=nrnr *trouble at NN corner ... USE CBC ... FIX BUGS ... WORKS 
+cgWave gaussian.cmd -g=square64.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.5 -orderInTime=2 -dtMax=1 -useSuperGrid=0 -bc=a -bc1=n -bc3=n -bcApproach=cbc -debug=1 -go=og
+
+
+bc=rrnn Neumann waveguide :*OK*
+cgWave gaussian.cmd -g=square64.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.1 -orderInTime=2 -dtMax=1 -useSuperGrid=0 -bc=a -bc3=n -bc4=n -debug=1 -go=og
+
+
+bc=drdr : O4 **OK**
+cgWave gaussian.cmd -g=square64.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=1 -orderInTime=2 -dtMax=1 -useSuperGrid=0 -bc=a -bc1=d -bc3=d  -debug=1 -go=og
+
+
+
+
+bc=drdr : O4 BROKEN ... **BUGS FIXED***
+valgrind $cgWave -noplot gaussian.cmd -g=square5.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=.01 -tp=.01 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -debug=63 -go=go
+
+
+abcWave: gridIsImplicit= 0 numGhost=   2
+ ABC:corner (one adjacent face is an ABC) grid,side1,side2=  0  0  1 bc1,bc2=  1  8
+ ABC:corner order 4 adjacentFaceIsABC=FALSE: grid,side1,side2,i1,i2=  0  0  1    0    5
+ ABC: EXTRAP 3 corner ghost: grid,side1,side2,i1,i2=  0  0  1    0    5
+
+ ABC:corner (one adjacent face is an ABC) grid,side1,side2=  0  1  0 bc1,bc2=  8  1
+ ABC:corner order 4 adjacentFaceIsABC=FALSE: grid,side1,side2,i1,i2=  0  1  0    5    0
+ ABC: EXTRAP 3 corner ghost: grid,side1,side2,i1,i2=  0  1  0    5    0
+
+ ABC:corner (one adjacent face is an ABC) grid,side1,side2=  0  1  1 bc1,bc2=  8  8
+ ABC:corner order 4 adjacentFaceIsABC: grid,side1,side2,i1,i2=  0  1  1    5    5
+ ABC: EXTRAP 3 corner ghost: grid,side1,side2,i1,i2=  0  1  1    5    5
+
+
+
+
+*******************************************
+********* Thurs April 30, 2026
+
+Check Dirichlet-Neumann corner bcs
+
+
+bc=drdr : O4 BROKEN:
+cgWave -noplot gaussian.cmd -g=square5.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=.02 -tp=.01 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -debug=63 -go=go
+
+
+bc=drdr : O4 BROKEN:
+cgWave gaussian.cmd -g=square8.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=.02 -tp=.01 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -debug=63 -go=go
+
+
+bc=drdr : O4 BROKEN:
+cgWave gaussian.cmd -g=square32.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.01 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=a -bc1=d -bc3=d  -debug=1 -go=og
+
+
+bc=ddrr : OK 
+cgWave gaussian.cmd -g=square32.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.05 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=a -bc1=d -bc2=d  -debug=1 -go=og
+
+
+bc=rdrd : OK 
+cgWave gaussian.cmd -g=square32.order4 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.05 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=a -bc3=d -bc4=d  -debug=1 -go=og
+
+
+bc=drdr : O2 -- looks Ok
+cgWave gaussian.cmd -g=square64.order2 -beta=15 -omega=20 -amp=-500  -x0=0.5 -y0=0.5 -ts=explicit -cfl=.95 -upwind=0 -tf=10 -tp=.2 -orderInTime=2 -dtMax=.05 -useSuperGrid=0 -bc=a -bc1=d -bc3=d  -debug=1 -go=og
+
 
 *******************************************
 ********* Fri Jan 30, 2026
