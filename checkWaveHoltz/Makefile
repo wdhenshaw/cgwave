@@ -5,7 +5,7 @@ check: buildGrids
 	@echo "\n ------ RUN WAVEHOLTZ CHECKS ------\n"
 	./checkWaveHoltz.p -solver=cgwh -testsFile=testsWaveHoltz
 
-check-quiet:  
+check-quiet: buildGrids
 	./checkWaveHoltz.p -verbose=0 -solver=cgwh -testsFile=testsWaveHoltz
 
 replace:  
