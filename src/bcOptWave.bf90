@@ -3367,6 +3367,7 @@ end do ! end edgeDirection
       ! end if
       ! stop 4444
 
+
       !  Use adjusted c for the EM2 absorbing BC to account for time-discretization errors
       !    D+t (Dx ) w + A+( ... )
       ! cEM2 = c*tan(frequencyArray(0)*dt/2.)/(frequencyArraySave(0)*dt/2.);
@@ -3484,12 +3485,35 @@ end do ! end edgeDirection
 
             end do                
           end if
-        endLoops3d();                
+        endLoops3d()                
 
       else
+        ! --- curvilinear ---
 
-       write(*,*) "bcOpt: implicit BC for absorbing/EM2 -- CURVILINEAR : finish me"
-        stop 4444          
+        ! assignBCForImplicit==2 : Direct Helmholtz Solve
+
+        if( assignBCForImplicit.eq.1 )then
+          write(*,*) "bcOpt: implicit BC for absorbing/EM2 -- CURVILINEAR : finish me assignBCForImplicit=1"
+          stop 4444 
+        end if 
+
+        beginLoops3d()
+          if( mask(i1,i2,i3).ne.0 )then
+            j1  = i1-is1; j2  = i2-is2; j3  = i3-is3;     ! ghost 
+            i1p = i1+is1; i2p = i2+is2; i3p = i3+is3;     ! first line inside
+            ! Bc for direct Helmholtz solve
+            u(j1,j2,j3,uc) = 0.
+
+            do ghost=startGhost,numGhost
+              j1=i1-is1*ghost
+              j2=i2-is2*ghost
+              j3=i3-is3*ghost
+
+              u(j1,j2,j3,uc) = 0.
+            end do               
+          end if
+        endLoops3d()
+
       end if
 
 

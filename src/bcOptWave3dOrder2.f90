@@ -2358,8 +2358,30 @@ real uzzzz
               end do
               end do
            else
-            write(*,*) "bcOpt: implicit BC for absorbing/EM2 -- CURVILINEAR : finish me"
-             stop 4444          
+             ! --- curvilinear ---
+             ! assignBCForImplicit==2 : Direct Helmholtz Solve
+             if( assignBCForImplicit.eq.1 )then
+               write(*,*) "bcOpt: implicit BC for absorbing/EM2 -- CURVILINEAR : finish me assignBCForImplicit=1"
+               stop 4444 
+             end if 
+              do i3=n3a,n3b
+              do i2=n2a,n2b
+              do i1=n1a,n1b
+               if( mask(i1,i2,i3).ne.0 )then
+                 j1  = i1-is1; j2  = i2-is2; j3  = i3-is3;     ! ghost 
+                 i1p = i1+is1; i2p = i2+is2; i3p = i3+is3;     ! first line inside
+                 ! Bc for direct Helmholtz solve
+                 u(j1,j2,j3,uc) = 0.
+                 do ghost=startGhost,numGhost
+                   j1=i1-is1*ghost
+                   j2=i2-is2*ghost
+                   j3=i3-is3*ghost
+                   u(j1,j2,j3,uc) = 0.
+                 end do               
+               end if
+              end do
+              end do
+              end do
            end if
          else if( bc(side,axis) > 0 )then
            write(*,'("bcOptWave:fill RHS for direct Helmholtz solver, unexpected boundaryCondition=",i4)') bc(side,axis)

@@ -104,7 +104,10 @@ int CgWave::getHelmholtzForcing( realCompositeGridFunction & f  )
   int numGhost = orderOfAccuracy/2;
   if( useUpwindDissipation ) numGhost++;
 
-  const int assignBCForImplicit = 1; 
+  int assignBCForImplicit = 1; 
+  if( dbase.get<int>("solveHelmholtzDirect") )
+    assignBCForImplicit = 2;  // added May 11, 2026
+
   // assignCornerGhostPoints = true if bcOptWave -> cornerWave will assign corner ghost points
   const int assignCornerGhostPoints = bcApproach==useCompatibilityBoundaryConditions ||
                                       bcApproach==useLocalCompatibilityBoundaryConditions;

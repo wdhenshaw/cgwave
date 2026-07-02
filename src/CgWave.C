@@ -233,6 +233,8 @@ CgWave( CompositeGrid & cgIn, GenericGraphicsInterface & giIn ) : cg(cgIn), gi(g
   dbase.put<int>("initialVectorsForEigenSolver")=true;              // provide initial vectors used by SLEPSc solvers
   dbase.put<int>("initialVectorSmooths")=500;                       // number of times to smooth the initial vectors for the eigen solvers
 
+  dbase.put<int>("solveHelmholtzDirect")=false;                     // if true,  use then we are Directly solving the Helmholtz equation with solveHelmholtzDirect
+
   dbase.put<EigenSolverInitialConditionEnum>("eigenSolverInitialCondition") = defaultEigenSolverInitialCondition; 
 
   dbase.put<int>("computeTimeIntegral")=false; // if true compute the time-integral (for the Helmholtz solve or other reason)

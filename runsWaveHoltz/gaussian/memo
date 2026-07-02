@@ -1,4 +1,5 @@
 
+
 ADD THESE TO grids/Makefile: 
 ogen -noplot multiKnivesGrid -prefix=sixteenKnivesGrid -nke=8 -xke=-.45 -0.35 -0.25 -0.15 0.15 0.25 0.35 .45 -nker=8 -xker=-0.4 -0.3 -0.2 -0.1 0.1 0.2 0.3 0.4 -interp=e -order=2 -factor=256
 ogen -noplot multiKnivesGrid -prefix=sixteenKnivesGrid -nke=8 -xke=-.45 -0.35 -0.25 -0.15 0.15 0.25 0.35 .45 -nker=8 -xker=-0.4 -0.3 -0.2 -0.1 0.1 0.2 0.3 0.4 -interp=e -order=2 -factor=16
@@ -6,19 +7,422 @@ ogen -noplot multiKnivesGrid -prefix=sixteenKnivesGrid -nke=8 -xke=-.45 -0.35 -0
 
 ogen -noplot multiKnivesGrid -prefix=fourteenKnivesGrid -nke=6 -xke=-0.35 -0.25 -0.15 0.15 0.25 0.35 -nker=8 -xker=-0.4 -0.3 -0.2 -0.1 0.1 0.2 0.3 0.4 -interp=e -order=2 -factor=16
 
+
+
+
 set dwh = ~/Dropbox/DeflatedWaveHoltz
 set ovp2 = ~/Dropbox/overHoltzPaper/part2
 
 set cgwh = /home/henshw/codes/cgwaveSerial/bin/cgwh  : serial cgwh
 
 
+**************************************************
+****** Wed June 3, 2026
+
+PLOT FIG FOR PAPER 
+
+plotStuff plotComplexSolution.cmd -show=diskG64O4Freq170 -solution=1 -res=2048 -field=absur absui speed
+
+
+**************************************************
+****** Sun May 31, 2026
+
+@@@ REDO omega=170 with source close to boundary
+(*) G64 freq=170
+cp diskG64O4Freq170bFD24TSENp1*.m $cwh/matlab/results
+
+setsid $cgwh -noplot gaussian.cmd -g=diske64.order4 -ts=explicit -cfl=.95 -x0=0.6 -y0=0.6 -nf=1 -freq=170 -amp=28900 -beta=170 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG64O4Freq170b -show=diskG64O4Freq170b.show -go=fks > diskG64O4Freq170b.out
+
+
+
+(*) G256 freq=500 ... RUNNING .... DONE -- NO GMRES OR SHOW FILE
+cp diskG256O4Freq500FD24TSENp1*.m $cwh/matlab/results
+
+setsid $cgwh -noplot gaussian.cmd -g=diske256.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=500 -amp=250000 -beta=500 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG256O4Freq500 -show=diskG256O4Freq500.show -go=fks > diskG256O4Freq500.out
+
+ omega=5.00e+02 k=5.00e+02 lambda=1.26e-02 dx=3.91e-04 domainSize=2.00e+00 NLambda=159.155 ppw=lambda/dx= 32.2 ppw(rule-of-thumb)= 30.5 (epsr=0.01)
+
+plotStuff plotComplexSolution.cmd -show=diskG256O4Freq500  -solution=1 -field=absur absui speed
+
+
+(*) G128 freq=300  ... RUNNING .... DONE
+cp diskG128O4Freq300FD24TSENp1*.m $cwh/matlab/results
+
+setsid $cgwh -noplot gaussian.cmd -g=diske128.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=300 -amp=90000 -beta=300 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG128O4Freq300 -show=diskG128O4Freq300.show -go=fks > diskG128O4Freq300.out
+
+ omega=3.00e+02 k=3.00e+02 lambda=2.09e-02 dx=7.81e-04 domainSize=2.00e+00 NLambda=95.493 ppw=lambda/dx= 26.8 ppw(rule-of-thumb)= 26.8 (epsr=0.01)
+
+(*) G64 freq=170
+cp diskG64O4Freq170FD24TSENp1*.m $cwh/matlab/results
+
+setsid $cgwh -noplot gaussian.cmd -g=diske64.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=170 -amp=28900 -beta=170 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG64O4Freq170 -show=diskG64O4Freq170.show -go=fks > diskG64O4Freq170.out
+
+
+plotStuff plotComplexSolution.cmd -show=diskG64O4Freq170  -solution=1 -field=absur absui speed
+
+
+(*) G32 freq=90  ** REDO -- TRY lower tol --> 1e-12 
+cp diskG32O4Freq90FD24TSENp1*.m $cwh/matlab/results
+
+setsid $cgwh -noplot gaussian.cmd -g=diske32.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=90 -amp=8100 -beta=90 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-12 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG32O4Freq90 -show=diskG32O4Freq90.show -go=fks > diskG32O4Freq90.out
+
+
+**************************************************
+****** Sat May 30, 2026
+
+DISK HIGHER FREQ compare to new theory
+
+(*) G64 freq=170
+cp diskG64O4Freq170FD24TSENp1*.m $cwh/matlab/results
+
+setsid $cgwh -noplot gaussian.cmd -g=diske64.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=170 -amp=28900 -beta=170 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG64O4Freq170 -show=diskG64O4Freq170.show -go=fks > diskG64O4Freq170.out
+
+omega=1.70e+02 k=1.70e+02 lambda=3.70e-02 dx=1.56e-03 domainSize=2.00e+00 NLambda=54.1127 ppw=lambda/dx= 23.7 ppw(rule-of-thumb)= 23.3 (epsr=0.01)
+
+
+(*) G32 freq=90
+cp diskG32O4Freq90FD24TSENp1*.m $cwh/matlab/results
+
+setsid $cgwh -noplot gaussian.cmd -g=diske32.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=90 -amp=8100 -beta=90 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG32O4Freq90 -show=diskG32O4Freq90.show -go=fks > diskG32O4Freq90.out
+
+
+omega=9.00e+01 k=9.00e+01 lambda=6.98e-02 dx=3.13e-03 domainSize=2.00e+00 NLambda=28.6479 ppw=lambda/dx= 22.3 ppw(rule-of-thumb)= 19.9 (epsr=0.01)
+
+***************************************************
+****** Mon May 25, 2026
+
+Quarter plane on a rectangle
+
+ **check residual in ur the lower right corner
+
+
+$cgwh noplot gaussian.cmd -g=rectangle0p5By1Grid16.order4 -ts=explicit -cfl=.95 -x0=0.25 -y0=0.5 -nf=1 -freq=50 -amp=2500 -beta=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=rectangleG16O4BdrdrFreq50 -show=rectangleG16O4BdrdrFreq50.show -go=dfks
+
+cp rectangleG16O4BdrdrFreq50FD24TSENp1*.m $cwh/matlab/results/
+
+solveHelmholtz: max-rel-residual [Re,Im]=[1.31e-04,3.68e-10] (gmres, numIts=78, ave-CR= 0.78 , cpu=1.03e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[3.19e-05,1.78e-05],  norm [Re,Im]=[4.54e-01,5.29e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+G8 **check residual in ur the lower right corner 
+$cgwh noplot gaussian.cmd -g=rectangle0p5By1Grid8.order4 -ts=explicit -cfl=.95 -x0=0.25 -y0=0.5 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -bc3=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=rectangleG8O4BdrdrFreq30 -show=rectangleG8O4BdrdrFreq30.show -go=dfks
+
+omega=3.00e+01, k=3.00e+01, lambda=2.09e-01, dx=1.25e-02, domainSize=1.00e+00, NLambda=4.77465, ppw=lambda/dx= 16.8, ppw(rule-of-thumb)= 12.7 (epsr=0.01)<<<
+
+solveHelmholtz: max-rel-residual [Re,Im]=[4.73e-04,3.26e-10] (gmres, numIts=48, ave-CR= 0.66 , cpu=2.86e-01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[3.90e-05,6.91e-05],  norm [Re,Im]=[5.54e-01,7.47e-01] (between WaveHoltz and Direct Helmholtz)
+
+***************************************************
+****** Sun May 24, 2026
+
+++++++++++++HALF PLANE
+
+G256 freq=80 
+$cgwh noplot gaussian.cmd -g=square256.order4 -ts=explicit -cfl=.95 -x0=0.45 -y0=0.5 -nf=1 -freq=80 -amp=6400 -beta=80 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square256O4BdrrrFreq80 -show=square256O4BdrrrFreq80.show -go=fks
+
+cp square256O4BdrrrFreq80FD24TSENp1*.m $cwh/matlab/results/
+
+omega=8.00e+01, k=8.00e+01, lambda=7.85e-02, dx=3.91e-03, domainSize=1.00e+00, NLambda=12.7324, ppw=lambda/dx= 20.1, ppw(rule-of-thumb)= 16.2 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 1.11e-13, 2.38e-11] (Re,Im) (scale= 1.53e-05), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 1.35e-14, 1.77e-12] (Re,Im) (scaled by  2.33e-10)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.76e-05, 7.11e-12] (Re,Im) (scale= 1.53e-05), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 2.62e-05, 1.59e-05] (Re,Im) (scaled by  2.33e-10)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.76e-05, 7.11e-12] (Re,Im) (scale= 1.53e-05), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 2.62e-05, 1.59e-05] (Re,Im) (scaled by  2.33e-10)
+CgWaveHoltz::residual (complex): omega=  80.000000000, max-rel-res=[Re,Im]=[3.637e-05,2.555e-10].
+solveHelmholtz: max-rel-residual [Re,Im]=[3.64e-05,2.55e-10] (gmres, numIts=116, ave-CR= 0.85 , cpu=5.93e+00(s), np=1)
+
+
+
+G128 freq=50 
+$cgwh noplot gaussian.cmd -g=square128.order4 -ts=explicit -cfl=.95 -x0=0.45 -y0=0.5 -nf=1 -freq=50 -amp=2500 -beta=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square128O4BdrrrFreq50 -show=square128O4BdrrrFreq50.show -go=dfks
+
+cp square128O4BdrrrFreq50FD24TSENp1*.m $cwh/matlab/results/
+
+
+G128 freq=30 
+$cgwh noplot gaussian.cmd -g=square128.order4 -ts=explicit -cfl=.95 -x0=0.45 -y0=0.5 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -bc1=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=square128O4BdrrrFreq30 -show=square128O4BdrrrFreq30.show -go=dfks
+
+omega=3.00e+01, k=3.00e+01, lambda=2.09e-01, dx=7.81e-03, domainSize=1.00e+00, NLambda=4.77465, ppw=lambda/dx= 26.8, ppw(rule-of-thumb)= 12.7 (epsr=0.01)<<<
+CgWaveHoltz::residual (complex): omega=  30.000000000, max-rel-res=[Re,Im]=[3.504e-05,6.434e-10].
+solveHelmholtz: max-rel-residual [Re,Im]=[3.50e-05,6.43e-10] (gmres, numIts=47, ave-CR= 0.66 , cpu=8.61e-01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.23e-06,2.29e-06],  norm [Re,Im]=[4.09e-01,5.80e-01] (between WaveHoltz and Direct Helmholtz)
+
+**************************************************
+****** Fri May 22, 2026
+
+
+G8 Order=4
+
+(*) G16 
+
+cp diskG16O4Freq50FD24TSENp1*.m $cwh/matlab/results
+
+$cgwh -noplot gaussian.cmd -g=diske16.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=50 -amp=2500 -beta=50 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG16O4Freq50 -show=diskG16O4Freq50.show -go=fks
+
+
+(*) G8 
+
+cp diskG8O4Freq30FD24TSENp1*.m $cwh/matlab/results
+
+$cgwh -noplot gaussian.cmd -g=diske8.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=30 -amp=900 -beta=30 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG8O4Freq30 -show=diskG8O4Freq30.show -go=fks
+
+ omega=3.00e+01, k=3.00e+01, lambda=2.09e-01, dx=1.25e-02, domainSize=2.00e+00, NLambda=9.5493, ppw=lambda/dx= 16.8, ppw(rule-of-thumb)= 15.1 (epsr=0.01)<<<
+
+
+omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=1.25e-02, domainSize=2.00e+00, NLambda=3.1831, ppw=lambda/dx= 50.3, ppw(rule-of-thumb)= 11.5 (epsr=0.01)<<<
+
+
+USE New disk grid 
+
+(*) G32
+
+cp diskG32O2Freq25FD22TSENp1*.m $cwh/matlab/results
+
+$cgwh -noplot gaussian.cmd -g=diske32.order2 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=25 -amp=625 -beta=25 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG32O2Freq25 -show=diskG32O2Freq25.show -go=fks
+
+solveHelmholtz: max-rel-residual [Re,Im]=[5.15e-10,5.39e-10] (gmres, numIts=39, ave-CR= 0.62 , cpu=2.83e+01(s), np=1)
+
+
+
+(*) G16
+
+cp diskG16O2Freq15FD22TSENp1*.m $cwh/matlab/results
+
+$cgwh -noplot gaussian.cmd -g=diske16.order2 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=15 -amp=225 -beta=15 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG16O2Freq15 -show=diskG16O2Freq15.show -go=dfks
+
+ omega=1.50e+01, k=1.50e+01, lambda=4.19e-01, dx=6.25e-03, domainSize=2.00e+00, NLambda=4.77465, ppw=lambda/dx= 67.0, ppw(rule-of-thumb)= 70.2 (epsr=0.01)<<<
+
+
+residual: Radiation BC: (side,axis,grid)={1,1,1) ghost 1: max-res=[ 1.37e-16, 1.29e-13] (Re,Im) (scale= 1.03e-06), max|forcing(ghost)|= 2.75e-48
+CgWaveHoltz::residual (complex): omega=  15.000000000, max-rel-res=[Re,Im]=[6.103e-10,9.705e-10].
+solveHelmholtz: max-rel-residual [Re,Im]=[6.10e-10,9.70e-10] (gmres, numIts=28, ave-CR= 0.51 , cpu=4.38e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[1.06e-09,1.42e-09],  norm [Re,Im]=[3.19e-01,6.12e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+(*) G8 
+
+cp diskG8O2Freq10FD22TSENp1*.m $cwh/matlab/results
+
+$cgwh -noplot gaussian.cmd -g=diske8.order2 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG8O2Freq10 -show=diskG8O2Freq10.show -go=dfks
+
+ omega=1.00e+01, k=1.00e+01, lambda=6.28e-01, dx=1.25e-02, domainSize=2.00e+00, NLambda=3.1831, ppw=lambda/dx= 50.3, ppw(rule-of-thumb)= 57.4 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={1,1,1) ghost 1: max-res=[ 1.21e-15, 6.51e-13] (Re,Im) (scale= 4.27e-06), max|forcing(ghost)|= 2.67e-21
+CgWaveHoltz::residual (complex): omega=  10.000000000, max-rel-res=[Re,Im]=[1.011e-09,1.634e-09].
+solveHelmholtz: max-rel-residual [Re,Im]=[1.01e-09,1.63e-09] (gmres, numIts=21, ave-CR= 0.40 , cpu=1.08e+00(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[5.46e-10,5.95e-10],  norm [Re,Im]=[3.20e-01,6.13e-01] (between WaveHoltz and Direct Helmholtz)
+
+*************************************
+****** Tues May 12, 2026
+
+O4 **BROKEN** ... FIXED 
+$cgwh -noplot gaussian.cmd -g=square32.order4 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -show=none.show -go=dfk
+
+
+
+
+REVERT TO PREVIOUS: solveHelmholtzDirect.bC_2026May11
+
+solveHelmholtz: max-rel-residual [Re,Im]=[2.53e-10,6.61e-10] (gmres, numIts=14, ave-CR= 0.25 , cpu=8.73e-02(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.88e-10,3.61e-10],  norm [Re,Im]=[3.20e-01,6.09e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+
+FIX EM BC Residuals 
+
+
+DISK : *** MATCHES DHS***
+$cgwh -noplot gaussian.cmd -g=sice4.order2 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG4O4Freq40 -show=diskG4O4Freq40.show -go=dk
+
+
+Check residual in absorbing BC: omega=  1.000000e+01, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={1,1,1) ghost 1: max-res=[ 1.02e-15, 4.09e-18] (Re,Im) (scale= 1.86e-05), max|forcing(ghost)|= 4.34e-22
+CgWaveHoltz::residual (complex): omega=  10.000000000, max-rel-res=[Re,Im]=[1.113e-11,5.084e-11].
+
+residual: Radiation BC: (side,axis,grid)={1,1,1) ghost 1: max-res=[ 4.36e-15, 6.18e-13] (Re,Im) (scale= 1.86e-05), max|forcing(ghost)|= 4.34e-22
+CgWaveHoltz::residual (complex): omega=  10.000000000, max-rel-res=[Re,Im]=[2.727e-10,7.796e-10].
+solveHelmholtz: max-rel-residual [Re,Im]=[2.73e-10,7.80e-10] (gmres, numIts=23, ave-CR= 0.42 , cpu=3.65e-01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[3.64e-10,4.09e-10],  norm [Re,Im]=[3.21e-01,6.16e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+$cgwh -noplot gaussian.cmd -g=nonSquare32.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -show=none.show -go=og
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.10e-13, 6.63e-15] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 2.12e-13
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 2.22e-16, 7.63e-17] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.71e-09
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.73e-15, 1.23e-15] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 4.87e-16
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.02e-13, 8.33e-17] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.25e-07
+CgWaveHoltz::residual (complex): omega=  10.000000000, max-rel-res=[Re,Im]=[2.945e-12,1.118e-11].
+
+*************************************
+****** Mon May 11, 2026
+
+===================================================================
+========== FIX DHS SOLVER FOR EM ABC's CURVILINEAR ================
+===================================================================
+
+START TESTING: 
+NON SQUARE ORDER=2
+
+$cgwh -noplot gaussian.cmd -g=nonSquare32.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -show=none.show -go=dfk
+
+*** omega=10, solver-max-res=0.00e+00, time for direct Helmholtz solve = 1.32e-02 (s) (iterations=0) ***
+Check residual in absorbing BC: omega=  1.000000e+01, c=  1.000000e+00
+
+DHS:
+*** omega=10, solver-max-res=0.00e+00, time for direct Helmholtz solve = 1.16e-02 (s) (iterations=0) ***
+Check residual in absorbing BC: omega=  1.000000e+01, c=  1.000000e+00
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 3.10e-13, 6.63e-15] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 2.12e-13
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 2.22e-16, 7.63e-17] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.71e-09
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 1.73e-15, 1.24e-15] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 4.87e-16
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 1.02e-13, 8.33e-17] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.25e-07
+
+WAVE-HOLTZ -- Probably an issue with one-sided ABC used for explicit TS 
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 7.70e-05, 5.21e-05] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 2.12e-13
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 7.52e-05, 9.41e-05] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.71e-09
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 4.22e-13, 2.60e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 4.87e-16
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 6.07e-13, 4.41e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.25e-07
+solveHelmholtz: max-rel-residual [Re,Im]=[3.14e-10,6.38e-10] (gmres, numIts=15, ave-CR= 0.26 , cpu=1.24e-01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[3.25e-04,3.74e-04],  norm [Re,Im]=[3.23e-01,6.16e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+---
+ bcOpt: implicit BC for absorbing/EM2 -- CURVILINEAR : finish me
+STOP 4444
+
+
+TEST bc=d
+valgrind $cgwh -noplot gaussian.cmd -g=nonSquare32.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=d -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -show=none.show -go=dfk
+
+
+
+REGRESSION Test cases for rectangular
+
+O4 
+$cgwh -noplot gaussian.cmd -g=square32.order4 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -show=none.show -go=dfk
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 6.66e-13, 3.77e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 2.12e-13
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 2: max-res=[ 3.06e-13, 1.33e-11] (Re,Im) (scaled by  9.54e-07)
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 9.19e-13, 4.87e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.71e-09
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 2: max-res=[ 2.04e-13, 1.20e-11] (Re,Im) (scaled by  9.54e-07)
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 7.06e-13, 5.81e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 4.87e-16
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 2: max-res=[ 2.98e-13, 1.94e-11] (Re,Im) (scaled by  9.54e-07)
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 9.28e-13, 4.81e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.25e-07
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 1.98e-13, 1.04e-11] (Re,Im) (scaled by  9.54e-07)
+solveHelmholtz: max-rel-residual [Re,Im]=[2.53e-10,6.61e-10] (gmres, numIts=14, ave-CR= 0.25 , cpu=1.05e-01(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[2.88e-10,3.61e-10],  norm [Re,Im]=[3.20e-01,6.09e-01] (between WaveHoltz and Direct Helmholtz)
+
+$cgwh -noplot gaussian.cmd -g=square32.order2 -ts=explicit -cfl=.95 -x0=0.55 -y0=0.6 -nf=1 -freq=10 -amp=100 -beta=10 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=junk -show=none.show -go=dfk
+
+residual: Radiation BC: (side,axis,grid)={0,0,0) ghost 1: max-res=[ 7.06e-13, 1.97e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 2.12e-13
+residual: Radiation BC: (side,axis,grid)={1,0,0) ghost 1: max-res=[ 6.05e-13, 2.29e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.71e-09
+residual: Radiation BC: (side,axis,grid)={0,1,0) ghost 1: max-res=[ 5.63e-13, 2.70e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 4.87e-16
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 6.75e-13, 1.76e-11] (Re,Im) (scale= 9.77e-04), max|forcing(ghost)|= 8.25e-07
+solveHelmholtz: max-rel-residual [Re,Im]=[1.61e-10,3.41e-10] (gmres, numIts=15, ave-CR= 0.26 , cpu=7.77e-02(s), np=1)
+solveHelmholtz: rel-max-diff [Re,Im]=[1.46e-10,2.03e-10],  norm [Re,Im]=[3.23e-01,6.16e-01] (between WaveHoltz and Direct Helmholtz)
+
+
+
+
+
++++++++++   DISK with EM RBCs
+
+
+
+$cgwh noplot gaussian.cmd -g=sice8.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=40 -amp=1600 -beta=40 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG4O4Freq40 -show=diskG4O4Freq40.show -go=og
+
+solveHelmholtz: max-rel-residual [Re,Im]=[5.38e-10,6.75e-10] (gmres, numIts=94, ave-CR= 0.82 , cpu=2.31e+00(s), np=1)
+
+
+$cgwh noplot gaussian.cmd -g=sice8.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=20 -amp=400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG4O4Freq20 -show=diskG4O4Freq20.show -go=og
+
+solveHelmholtz: max-rel-residual [Re,Im]=[2.81e-10,4.52e-10] (gmres, numIts=41, ave-CR= 0.63 , cpu=1.56e+00(s), np=1)
+
+
+O4 ? .. Runs!!
+$cgwh noplot gaussian.cmd -g=sice4.order4 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=20 -amp=400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG4O4Freq20 -show=diskG4O4Freq20.show -go=og
+
+ omega=2.00e+01, k=2.00e+01, lambda=3.14e-01, dx=2.50e-02, domainSize=2.00e+00, NLambda=6.3662, ppw=lambda/dx= 12.6, ppw(rule-of-thumb)= 13.6 (epsr=0.01)<<<
+residual: Radiation BC: (side,axis,grid)={1,1,1) ghost 1: max-res=[ 1.44e-03, 1.40e-03] (Re,Im) (scale= 1.86e-05), max|forcing(ghost)|= 1.41e-91
+residual: Radiation BC: (side,axis,grid)={1,1,1) ghost 2: max-res=[ 1.04e-10, 9.41e-11] (Re,Im) (scaled by  3.45e-10)
+solveHelmholtz: max-rel-residual [Re,Im]=[2.42e-10,3.21e-10] (gmres, numIts=50, ave-CR= 0.68 , cpu=5.44e-01(s), np=1)
+
+
+
+O2:  
+$cgwh noplot gaussian.cmd -g=sice4.order2 -ts=explicit -cfl=.95 -x0=0.15 -y0=0.25 -nf=1 -freq=20 -amp=400 -beta=20 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -imode=1 -maxIterations=1000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -adjustHelmholtzForUpwinding=0 -useSuperGrid=0 -bc=a -implicitUpwind=0 -takeImplicitFirstStep=1 -filterD0t=1 -matlab=diskG4O2Freq20 -show=diskG4O2Freq20.show -go=og
+
+omega=2.00e+01, k=2.00e+01, lambda=3.14e-01, dx=2.50e-02, domainSize=2.00e+00, NLambda=6.3662, ppw=lambda/dx= 12.6, ppw(rule-of-thumb)= 81.1 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={1,1,1) ghost 1: max-res=[ 1.46e-03, 1.41e-03] (Re,Im) (scale= 1.86e-05), max|forcing(ghost)|= 1.41e-91
+solveHelmholtz: max-rel-residual [Re,Im]=[2.56e-10,5.05e-10] (gmres, numIts=50, ave-CR= 0.68 , cpu=5.49e-01(s), np=1)
+
+
+
+*************************************
+****** Fri May 8, 2026
+
+O2 bc-drdr
+runFrequencyCases.p -order=2 -startCase=0 -endCase=6 -parallel=1 -bc=drdr -maxIterations=100000 -x0=0.25 -y0=0.3 -show=0 -testRun=1
+
+
+
+RE-RUN bc=drdr 4 with NEW WAY -- MOVE Gaussian 
+
+runFrequencyCases.p -order=4 -startCase=0 -endCase=6 -parallel=1 -bc=drdr -maxIterations=100000 -x0=0.25 -y0=0.3 -suffix=a -show=1 -testRun=1
+
+
+plotStuff plotComplexSolution.cmd -show=square1024O4BdrdrFreq287a -solution=1 -res=2048 -field=absur absui speed
+
+
+*************************************
+****** Wed May 6, 2026
+
+RE RUN ORDER 4 with NEW WAY 
+
+runFrequencyCases.p -order=4 -startCase=0 -endCase=6 -parallel=1 -bc=rrrr -maxIterations=100000 -testRun=1
+
+
+*************************************
+****** Mon May 4, 2026
+
+runFrequencyCases.p -order=2 -startCase=0 -endCase=6 -parallel=1 -bc=rrrr -maxIterations=100000 -testRun=1
+
+
+TO DO: 
+runFrequencyCases.p -order=2 -startCase=6 -endCase=6 -parallel=1 -bc=rrrr -maxIterations=100000 -testRun=1
+
+
+runFrequencyCases.p -order=2 -startCase=0 -endCase=5 -parallel=1 -bc=rrrr -maxIterations=100000 -testRun=1
+
+*************************************
+****** Sun May 3, 2026
+
+ORDER 2 runs -- 
+
+runFrequencyCases.p -order=2 -startCase=5 -endCase=5 -parallel=1 -bc=rrrr -maxIterations=100000 -testRun=1
+runFrequencyCases.p -order=2 -startCase=0 -endCase=4 -parallel=1 -bc=rrrr -maxIterations=100000 -testRun=1
+
+ ===== SUMMARY OF PPW ======
+case  0 : order=2 omega= 1.500e+01 domainSize=  1.00e+00 Nlambda=  2.39e+00, ppw=lambda/dx= 53.6 ppw(rule-of-thumb)= 49.7 (epsr=0.01) grid=square128
+case  1 : order=2 omega= 2.500e+01 domainSize=  1.00e+00 Nlambda=  3.98e+00, ppw=lambda/dx= 64.3 ppw(rule-of-thumb)= 64.1 (epsr=0.01) grid=square256
+case  2 : order=2 omega= 3.900e+01 domainSize=  1.00e+00 Nlambda=  6.21e+00, ppw=lambda/dx= 82.5 ppw(rule-of-thumb)= 80.1 (epsr=0.01) grid=square512
+case  3 : order=2 omega= 6.300e+01 domainSize=  1.00e+00 Nlambda=  1.00e+01, ppw=lambda/dx=102.1 ppw(rule-of-thumb)=101.8 (epsr=0.01) grid=square1024
+case  4 : order=2 omega= 1.000e+02 domainSize=  1.00e+00 Nlambda=  1.59e+01, ppw=lambda/dx=128.7 ppw(rule-of-thumb)=128.3 (epsr=0.01) grid=square2048
+
+
 *************************************
 ****** Sat May 2, 2026
 
 bc=rdrd QUARTER PLANE FIX MATLAB NAMES 
-runFrequencyCases.p -startCase=4 -endCase=8 -parallel=1 -bc=drdr -show=1 -testRun=1
+redo case 8 with more iterations
+runFrequencyCases.p -startCase=8 -endCase=10 -parallel=1 -bc=drdr -show=1 -maxIterations=100000 -testRun=0
 
-runFrequencyCases.p -startCase=0 -endCase=3 -parallel=0 -bc=drdr -show=1 -testRun=1
+runFrequencyCases.p -startCase=4 -endCase=8 -parallel=1 -bc=drdr -show=1 -maxIterations=100000 -testRun=0
+
+runFrequencyCases.p -startCase=0 -endCase=3 -parallel=1 -bc=drdr -show=1 -maxIterations=100000 -testRun=0
 
 
 

@@ -14,14 +14,138 @@ ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -inter
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=8 
 ogen -noplot objectsGrid -prefix=multiObjectsGrid -addBackGround=0 -xa=-4 -interp=e -order=2 -factor=16 
 
+
+
+
 -------- SLURM ADD DEPENDENCY -------
 set jobid2 = `sbatch --parsable batch2.sh`
 set jobid3 = `sbatch --parsable --dependency=afternotok:$jobid2  batch3.sh`
 
 
+----- EXAMPLES FOR THE DEMO ----
+
+
+THREE HOLES: 
+O4 : G8  kx=2 EXP  
+cgwh -noplot scat.cmd -g=threeHolesGridN2M1e8.order4 -ts=explicit -cfl=.95 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=threeHolesG8O4Scatkx2.show -takeImplicitFirstStep=1 -matlab=threeHolesG8O4Scatkx2 -go=dfks
+
+
+O4 : G8  kx=2 IMP 
+cgwh -noplot scat.cmd -g=threeHolesGridN2M1e8.order4 -ts=implicit -cfl=1000 -nf=1 -amp=1 -kx=2 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=70 -numPeriods=4 -filterTimeDerivative=1 -damp=0 -bc=d -bc1=a -bc2=a -bc3=a -bc4=a -debug=0 -eigenVectorFile=none -show=threeHolesG8O4Scatkx2.show -takeImplicitFirstStep=1 -matlab=threeHolesG8O4Scatkx2 -go=dfks
+
+
 
 ***************************************************
-****** Sunb April 26, 2026
+****** Wed June 3, 2026
+
++++++++ ANNULUS ++++
+
+(*) G32 kx=25
+setsid $cgwh -noplot scat.cmd -g=annulusScatGrid32.order4.hdf -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=25 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=7000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -bc=d -bc2=a  -debug=0 -eigenVectorFile=none -show=annulusScatG32O4Kx25.show -takeImplicitFirstStep=1 -matlab=annulusScatG32O4Kx25 -go=fks > annulusScatG32O4Kx25.out
+
+ omega=1.57e+02 k=1.57e+02 lambda=4.00e-02 dx=1.25e-03 domainSize=6.00e+00 NLambda=150 ppw=lambda/dx= 32.0 ppw(rule-of-thumb)= 30.1 (epsr=0.01)
+
+cp annulusScatG32O4Kx25FD24TSENp1*.m $cwh/matlab/results/
+
+plotStuff plotSolution -show=annulusScatG32O4Kx25 -res=2048 -field=absurTotal absuiTotal
+
+
+(*) G16 kx=16
+setsid $cgwh -noplot scat.cmd -g=annulusScatGrid16.order4.hdf -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=16 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=7000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -bc=d -bc2=a  -debug=0 -eigenVectorFile=none -show=annulusScatG16O4Kx16.show -takeImplicitFirstStep=1 -matlab=annulusScatG16O4Kx16 -go=fks > annulusScatG16O4Kx16.out
+
+omega=1.01e+02 k=1.01e+02 lambda=6.25e-02 dx=2.50e-03 domainSize=6.00e+00 NLambda=96 ppw=lambda/dx= 25.0 ppw(rule-of-thumb)= 26.9 (epsr=0.01)
+
+cp annulusScatG16O4Kx16FD24TSENp1*.m $cwh/matlab/results/
+
+
+plotStuff plotSolution -show=annulusScatG16O4Kx16 -field=absurTotal 
+
+
+***************************************************
+****** Sat May 30, 2026
+
+RERUN SCAT ON AN ANNLUUS -- COMPARE TO THEORY 
+
+(*) G4 kx=5
+$cgwh -noplot scat.cmd -g=annulusScatGrid4.order4.hdf -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=7000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -bc=d -bc2=a  -debug=0 -eigenVectorFile=none -show=annulusScatG4O4Kx5.show -takeImplicitFirstStep=1 -matlab=annulusScatG4O4Kx5 -go=fks
+
+cp annulusScatG4O4Kx5FD24TSENp1*.m $cwh/matlab/results
+
+plotStuff plotSolution -show=annulusScatG4O4Kx5 -field=speed
+
+
+
+***************************************************
+****** Sat May 23, 2026
+
++++++++ ANNULUS ++++
+(*) G8 kx=9
+$cgwh -noplot scat.cmd -g=annulusScatGrid8.order4.hdf -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=9 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=7000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -bc=d -bc2=a  -debug=0 -eigenVectorFile=none -show=annulusScatG8O4Kx9.show -takeImplicitFirstStep=1 -matlab=annulusScatG8O4Kx9 -go=fks > annulusScatG8O4Kx9.out
+
+cp annulusScatG8O4Kx9FD24TSENp1*.m $cwh/matlab/results/
+
+
+
+
+(*) G4 kx=5
+$cgwh -noplot scat.cmd -g=annulusScatGrid4.order4.hdf -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=5 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=7000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -bc=d -bc2=a  -debug=0 -eigenVectorFile=none -show=annulusScatG4O4Kx5.show -takeImplicitFirstStep=1 -matlab=annulusScatG4O4Kx5 -go=fks
+
+cp annulusScatG4O4Kx5FD24TSENp1*.m $cwh/matlab/results
+
+plotStuff plotSolution -show=annulusScatG4O4Kx5 -field=speed
+
+
+
+omega=3.14e+01, k=3.14e+01, lambda=2.00e-01, dx=1.00e-02, domainSize=6.00e+00, NLambda=29.9999, ppw=lambda/dx= 20.0, ppw(rule-of-thumb)= 20.1 (epsr=0.01)<<<
+
+
+
+
+(*) G4 kx=4
+$cgwh -noplot scat.cmd -g=annulusScatGrid4.order4.hdf -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=7000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -bc=d -bc2=a  -debug=0 -eigenVectorFile=none -show=annulusScatG4O4Kx4.show -takeImplicitFirstStep=1 -matlab=junk -go=fks
+
+plotStuff plotSolution -show=annulusScatG4O4Kx4
+
+ omega=2.51e+01, k=2.51e+01, lambda=2.50e-01, dx=1.00e-02, domainSize=6.00e+00, NLambda=23.9999, ppw=lambda/dx= 25.0, ppw(rule-of-thumb)= 19.0 (epsr=0.01)<<<
+
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 1: max-res=[ 4.60e-07, 4.63e-07] (Re,Im) (scale= 3.95e-06), max|forcing(ghost)|= 0.00e+00
+residual: Radiation BC: (side,axis,grid)={1,1,0) ghost 2: max-res=[ 2.74e-11, 2.77e-11] (Re,Im) (scaled by  1.56e-11)
+CgWaveHoltz::residual (complex): omega=  25.132741229, max-rel-res=[Re,Im]=[2.647e-10,3.492e-10].
+solveHelmholtz: max-rel-residual [Re,Im]=[2.65e-10,3.49e-10] (gmres, numIts=144, ave-CR= 0.86 , cpu=1.39e+01(s), np=1)
+
+*
+***************************************************
+****** Mon May 11, 2026
+
++++++++ ANNULUS ++++
+
+
+annulusScatGrid16.order4.hd
+
+$cgwh -noplot scat.cmd -g=annulusScatGrid4.order4.hdf -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=7000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -bc=d -bc2=a  -debug=0 -eigenVectorFile=none -show=annulusScatG4O4Kx4.show -takeImplicitFirstStep=1 -matlab=junk -go=og
+
+plotStuff plotSolution -show=annulusScatG4O4Kx4
+
+kx=4
+solveHelmholtz: max-rel-residual [Re,Im]=[2.65e-10,3.49e-10] (gmres, numIts=144, ave-CR= 0.86 , cpu=1.36e+01(s), np=1)
+
+
+$cgwh -noplot scat.cmd -g=annulusScatGrid2.order4.hdf -ts=explicit -cfl=0.95 -nf=1 -amp=1 -kx=4 -ky=0 -kz=0 -adjustOmega=1 -orderInTime=2 -solver=none -tol=1e-10 -upwind=0 -maxIterations=7000 -numPeriods=1 -filterTimeDerivative=1 -damp=0 -bc=d -bc2=a  -debug=0 -eigenVectorFile=none -show=junk.show -takeImplicitFirstStep=1 -matlab=junk -go=og
+
+kx=1: 
+ omega=6.28e+00, k=6.28e+00, lambda=1.00e+00, dx=2.00e-02, domainSize=6.00e+00, NLambda=5.99988, ppw=lambda/dx= 50.0, ppw(rule-of-thumb)= 13.4 (epsr=0.01)<<<
+solveHelmholtz: max-rel-residual [Re,Im]=[6.43e-10,1.13e-09] (gmres, numIts=34, ave-CR= 0.54 , cpu=1.84e+00(s), np=1)
+
+kx=2:
+ omega=1.26e+01, k=1.26e+01, lambda=5.00e-01, dx=2.00e-02, domainSize=6.00e+00, NLambda=11.9998, ppw=lambda/dx= 25.0, ppw(rule-of-thumb)= 16.0 (epsr=0.01)<<<
+solveHelmholtz: max-rel-residual [Re,Im]=[3.75e-10,2.96e-10] (gmres, numIts=74, ave-CR= 0.75 , cpu=2.11e+00(s), np=1)
+
+kx=4
+omega=2.51e+01, k=2.51e+01, lambda=2.50e-01, dx=2.00e-02, domainSize=6.00e+00, NLambda=23.9995, ppw=lambda/dx= 12.5, ppw(rule-of-thumb)= 19.0 (epsr=0.01)<<<
+solveHelmholtz: max-rel-residual [Re,Im]=[2.61e-10,2.81e-10] (gmres, numIts=199, ave-CR= 0.90 , cpu=4.04e+00(s), np=1)
+
+***************************************************
+****** Sun April 26, 2026
 
 cice8
 

@@ -580,6 +580,14 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                 {
                                     getBoundaryIndex(mg.indexRange(),side,axis,Ib1,Ib2,Ib3);
                                     getGhostIndex(mg.indexRange(),side,axis,Ig1,Ig2,Ig3,1);
+                                    if( !isRectangular )
+                                          mg.update(MappedGrid::THEinverseVertexDerivative );
+                  // Real dr[3]={1.,1.,1.};
+                  // // unit square grid spacings: 
+                  // for( int dir=0; dir<3; dir++ )
+                  // {
+                  //   dr[dir]=mg.gridSpacing(dir);   
+                  // }
                   // --- we scale some of the BC residuals ----
                                         Real dx[3]={1.,1.,1.};
                                         Real dr[3]={1.,1.,1.};
@@ -613,37 +621,76 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                     //    -is* omega*omegaSign* Dx ur + c( Dxx ui + .5*Dyy ui ) = 0 
                     // 
                                         Range R2 = numberOfComponents;
-                                        RealArray ux(Ib1,Ib2,Ib3,R2), uy(Ib1,Ib2,Ib3,R2), uxx(Ib1,Ib2,Ib3,R2), uyy(Ib1,Ib2,Ib3,R2);
-                                        mgop.derivative(MappedGridOperators::xDerivative,vLocal,ux,Ib1,Ib2,Ib3,R2);
-                                        mgop.derivative(MappedGridOperators::yDerivative,vLocal,uy,Ib1,Ib2,Ib3,R2);
-                                        mgop.derivative(MappedGridOperators::xxDerivative,vLocal,uxx,Ib1,Ib2,Ib3,R2);
-                                        mgop.derivative(MappedGridOperators::yyDerivative,vLocal,uyy,Ib1,Ib2,Ib3,R2);
-                                        if( axis==0 )
+                                        if( isRectangular )
                                         {
-                                            resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*ux(Ib1,Ib2,Ib3,1)) - c*( uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
-                                            resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*ux(Ib1,Ib2,Ib3,0)) - c*( uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
-                                        }
-                                        else
-                                        {
-                                            resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uy(Ib1,Ib2,Ib3,1) ) - c*( uyy(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) );
-                                            resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uy(Ib1,Ib2,Ib3,0) ) - c*( uyy(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) );
-                                        }
-                                        if( numberOfDimensions==3 )
-                                        {
-                                            RealArray uz(Ib1,Ib2,Ib3,R2), uzz(Ib1,Ib2,Ib3,R2);
-                                            mgop.derivative(MappedGridOperators::zDerivative, vLocal,uz ,Ib1,Ib2,Ib3,R2);
-                                            mgop.derivative(MappedGridOperators::zzDerivative,vLocal,uzz,Ib1,Ib2,Ib3,R2);
-                                            if( axis==0 || axis==1 )
+                                            RealArray ux(Ib1,Ib2,Ib3,R2), uy(Ib1,Ib2,Ib3,R2), uxx(Ib1,Ib2,Ib3,R2), uyy(Ib1,Ib2,Ib3,R2);
+                                            mgop.derivative(MappedGridOperators::xDerivative,vLocal,ux,Ib1,Ib2,Ib3,R2);
+                                            mgop.derivative(MappedGridOperators::yDerivative,vLocal,uy,Ib1,Ib2,Ib3,R2);
+                                            mgop.derivative(MappedGridOperators::xxDerivative,vLocal,uxx,Ib1,Ib2,Ib3,R2);
+                                            mgop.derivative(MappedGridOperators::yyDerivative,vLocal,uyy,Ib1,Ib2,Ib3,R2);
+                                            if( axis==0 )
                                             {
-                                                resLocal(Ig1,Ig2,Ig3,0) += -c*( .5*uzz(Ib1,Ib2,Ib3,0) );
-                                                resLocal(Ig1,Ig2,Ig3,1) += -c*( .5*uzz(Ib1,Ib2,Ib3,1) );
+                                                resLocal(Ig1,Ig2,Ig3,0) = +1.*(-is*omegaSign*omega*ux(Ib1,Ib2,Ib3,1)) - c*( uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
+                                                resLocal(Ig1,Ig2,Ig3,1) =     ( is*omegaSign*omega*ux(Ib1,Ib2,Ib3,0)) - c*( uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
                                             }
                                             else
                                             {
-                                                resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uz(Ib1,Ib2,Ib3,1) ) - c*( uzz(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
-                                                resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uz(Ib1,Ib2,Ib3,0) ) - c*( uzz(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
+                                                resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uy(Ib1,Ib2,Ib3,1) ) - c*( uyy(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) );
+                                                resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uy(Ib1,Ib2,Ib3,0) ) - c*( uyy(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) );
                                             }
-                                        }          
+                                            if( numberOfDimensions==3 )
+                                            {
+                                                RealArray uz(Ib1,Ib2,Ib3,R2), uzz(Ib1,Ib2,Ib3,R2);
+                                                mgop.derivative(MappedGridOperators::zDerivative, vLocal,uz ,Ib1,Ib2,Ib3,R2);
+                                                mgop.derivative(MappedGridOperators::zzDerivative,vLocal,uzz,Ib1,Ib2,Ib3,R2);
+                                                if( axis==0 || axis==1 )
+                                                {
+                                                    resLocal(Ig1,Ig2,Ig3,0) += -c*( .5*uzz(Ib1,Ib2,Ib3,0) );
+                                                    resLocal(Ig1,Ig2,Ig3,1) += -c*( .5*uzz(Ib1,Ib2,Ib3,1) );
+                                                }
+                                                else
+                                                {
+                                                    resLocal(Ig1,Ig2,Ig3,0) =  1.*( -is*omegaSign*omega*uz(Ib1,Ib2,Ib3,1) ) - c*( uzz(Ib1,Ib2,Ib3,0) + .5*uxx(Ib1,Ib2,Ib3,0) + .5*uyy(Ib1,Ib2,Ib3,0) );
+                                                    resLocal(Ig1,Ig2,Ig3,1) =  1.*(  is*omegaSign*omega*uz(Ib1,Ib2,Ib3,0) ) - c*( uzz(Ib1,Ib2,Ib3,1) + .5*uxx(Ib1,Ib2,Ib3,1) + .5*uyy(Ib1,Ib2,Ib3,1) );
+                                                }
+                                            } 
+                                        }
+                                        else
+                                        {
+                      // ---- curvilinear EM RBC ------
+                                            OV_GET_SERIAL_ARRAY(Real,mg.inverseVertexDerivative(),rxLocal);
+                      // macro to make the rxLocal array look 5-dimensional 
+                                            #define DD(i1,i2,i3,m1,m2) rxLocal(i1,i2,i3,(m1)+numberOfDimensions*(m2))             
+                                            RealArray ur(Ib1,Ib2,Ib3,R2), urr(Ib1,Ib2,Ib3,R2), uLap(Ib1,Ib2,Ib3,R2), un(Ib1,Ib2,Ib3,R2), unn(Ib1,Ib2,Ib3,R2);
+                                            if( axis==0 )
+                                            {
+                                                ur(Ib1,Ib2,Ib3,R2)  = ( vLocal(Ib1+1,Ib2,Ib3,R2)                            - vLocal(Ib1-1,Ib2,Ib3,R2) )/(2.*dr[axis]);
+                                                urr(Ib1,Ib2,Ib3,R2) = ( vLocal(Ib1+1,Ib2,Ib3,R2) -2.*vLocal(Ib1,Ib2,Ib3,R2) + vLocal(Ib1-1,Ib2,Ib3,R2) )/(dr[axis]*dr[axis]);
+                                            }
+                                            else if( axis==1 )
+                                            {
+                                                ur(Ib1,Ib2,Ib3,R2)  = ( vLocal(Ib1,Ib2+1,Ib3,R2)                            - vLocal(Ib1,Ib2-1,Ib3,R2) )/(2.*dr[axis]);
+                                                urr(Ib1,Ib2,Ib3,R2) = ( vLocal(Ib1,Ib2+1,Ib3,R2) -2.*vLocal(Ib1,Ib2,Ib3,R2) + vLocal(Ib1,Ib2-1,Ib3,R2) )/(dr[axis]*dr[axis]);            
+                                            }
+                                            else
+                                            {
+                                                ur(Ib1,Ib2,Ib3,R2)  = ( vLocal(Ib1,Ib2,Ib3+1,R2)                            - vLocal(Ib1,Ib2,Ib3-1,R2) )/(2.*dr[axis]);
+                                                urr(Ib1,Ib2,Ib3,R2) = ( vLocal(Ib1,Ib2,Ib3+1,R2) -2.*vLocal(Ib1,Ib2,Ib3,R2) + vLocal(Ib1,Ib2,Ib3-1,R2) )/(dr[axis]*dr[axis]);                    
+                                            }
+                                            mgop.derivative(MappedGridOperators::laplacianOperator,vLocal,uLap,Ib1,Ib2,Ib3,R2);
+                                            FOR_3D(i1,i2,i3,Ib1,Ib2,Ib3) // loop over points on the boundary
+                                            {              
+                                                Real normRx;
+                                                if( numberOfDimensions==2 )
+                                                    normRx = sqrt( SQR(DD(i1,i2,i3,axis,0)) + SQR(DD(i1,i2,i3,axis,1)) );
+                                                else
+                                                    normRx = sqrt( SQR(DD(i1,i2,i3,axis,0)) + SQR(DD(i1,i2,i3,axis,1)) + SQR(DD(i1,i2,i3,axis,2)) );
+                                                un(i1,i2,i3,R2)  =   -is*normRx*ur(i1,i2,i3,R2);  // approximation to D_n 
+                                                unn(i1,i2,i3,R2) = SQR(normRx)*urr(i1,i2,i3,R2);  // D_n^2 
+                                            }
+                                            resLocal(Ig1,Ig2,Ig3,0) = ( omegaSign*omega*un(Ib1,Ib2,Ib3,1)) - .5*c*( unn(Ib1,Ib2,Ib3,0) + uLap(Ib1,Ib2,Ib3,0) );
+                                            resLocal(Ig1,Ig2,Ig3,1) = (-omegaSign*omega*un(Ib1,Ib2,Ib3,0)) - .5*c*( unn(Ib1,Ib2,Ib3,1) + uLap(Ib1,Ib2,Ib3,1) );
+                                        }         
                     // -- zero residual at unused points ---
                                         where( maskLocal(Ib1,Ib2,Ib3) <=0  )   
                                         {
@@ -898,7 +945,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
                                             bool ok=ParallelUtility::getLocalArrayBounds(v[grid],vLocal,Ig1,Ig2,Ig3,includeParallelGhost); 
                                             if( ok ) 
                                             {           
-                                                for( int m=0; m<=1; m++ ) // real and iamg parts
+                                                for( int m=0; m<=1; m++ ) // real and imag parts
                                                 {
                                                     resLocal(Ig1,Ig2,Ig3,m) =     vLocal(Ig1+0*is1,Ig2+0*is2,Ig3,m)
                                                                                                         -5.*vLocal(Ig1+1*is1,Ig2+1*is2,Ig3,m)
@@ -997,7 +1044,7 @@ real CgWaveHoltz::residual( RealCompositeGridFunction & v , RealCompositeGridFun
     {
         if( filterTimeDerivative  )
         {
-            if( debug & 1)
+            if( true || debug & 1)
                 printF("CgWaveHoltz::residual (complex): omega=%14.9f, max-rel-res=[Re,Im]=[%9.3e,%9.3e].\n",freq,frequencyArray(0),maxRes(0),maxRes(1));
         }
         else if( computeEigenmodes )

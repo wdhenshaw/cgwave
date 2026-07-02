@@ -60,6 +60,12 @@ $cmd="#";
 for( $i=0; $i<=$#field; $i++ ){ $cmd .= "\n plot:$field[$i]\n \$plotName = $name . \"$field[$i].ps\"; \n hardcopy file name:0 \$plotName\n hardcopy save:0"; }
 $cmd
 
+% zoom for plotStuff plotSolution -show=annulusScatG32O4Kx25 -res=2048 -field=absurTotal absuiTotal
+set view:0 0.300353 -0.00672137 0 5.56718 1 0 0 0 1 0 0 0 1
+bigger:0
+smaller:0
+hardcopy file name:0 annulusScatG32O4Kx25absuiTotalZoom.ps
+hardcopy save:0
 
 
 solution: $solution

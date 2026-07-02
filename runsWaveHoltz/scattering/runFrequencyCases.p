@@ -12,6 +12,8 @@ if 0;
 #   runFrequencyCases.p -bc=rrdd -startCase=0 -endCase=10 -maxIterations=20000 -testRun=1
 #
 
+FINISH ME 
+
 $testRun=0; # set to 1 for a test run with no big computation
 $order=4;
 $startCase=0;
