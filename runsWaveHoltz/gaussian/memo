@@ -1,5 +1,4 @@
 
-
 ADD THESE TO grids/Makefile: 
 ogen -noplot multiKnivesGrid -prefix=sixteenKnivesGrid -nke=8 -xke=-.45 -0.35 -0.25 -0.15 0.15 0.25 0.35 .45 -nker=8 -xker=-0.4 -0.3 -0.2 -0.1 0.1 0.2 0.3 0.4 -interp=e -order=2 -factor=256
 ogen -noplot multiKnivesGrid -prefix=sixteenKnivesGrid -nke=8 -xke=-.45 -0.35 -0.25 -0.15 0.15 0.25 0.35 .45 -nker=8 -xker=-0.4 -0.3 -0.2 -0.1 0.1 0.2 0.3 0.4 -interp=e -order=2 -factor=16
